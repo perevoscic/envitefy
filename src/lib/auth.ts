@@ -1,14 +1,10 @@
 import { NextAuthOptions } from "next-auth";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
-import EmailProvider from "next-auth/providers/email";
 import AppleProvider from "next-auth/providers/apple";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET as string,
-  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -42,15 +38,6 @@ export const authOptions: NextAuthOptions = {
           }),
         ]
       : []),
-    // Conditionally enable Email provider if env is configured
-    ...(process.env.EMAIL_SERVER && process.env.EMAIL_FROM
-      ? [
-          EmailProvider({
-            server: process.env.EMAIL_SERVER,
-            from: process.env.EMAIL_FROM,
-          }),
-        ]
-      : []),
   ],
   session: { strategy: "jwt" },
   pages: {
@@ -60,7 +47,6 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, account, profile }) {
-      // Persist provider tokens (refresh/access) when user signs in
       const t: any = token as any;
       if (account?.provider === "google") {
         t.providers = t.providers || {};

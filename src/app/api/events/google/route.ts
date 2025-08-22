@@ -2,7 +2,6 @@ import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
-import { getSupabaseServiceClient } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -46,15 +45,7 @@ export async function POST(request: NextRequest) {
       requestBody,
     });
 
-    const supabase = getSupabaseServiceClient();
-    if (supabase && body.intakeId) {
-      try {
-        await supabase
-          .from("event_intakes")
-          .update({ status: "created_google", google_event_id: created.data.id || null })
-          .eq("id", body.intakeId);
-      } catch {}
-    }
+    // Removed Supabase status update
 
     return NextResponse.json({ htmlLink: created.data.htmlLink, id: created.data.id });
   } catch (err: unknown) {

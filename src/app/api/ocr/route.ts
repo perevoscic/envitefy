@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { ImageAnnotatorClient } from "@google-cloud/vision";
-import { getSupabaseServiceClient } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -33,7 +32,7 @@ function getVisionClient() {
     return new ImageAnnotatorClient({
       credentials: {
         client_email: creds.client_email,
-        private_key: creds.private_key,
+      private_key: creds.private_key,
       },
       projectId: creds.project_id,
     });
@@ -328,33 +327,8 @@ export async function POST(request: Request) {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
-    let intakeId: string | null = null;
-    const supabase = getSupabaseServiceClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from("event_intakes")
-          .insert([
-            {
-              user_email: null,
-              source_filename: (file as any)?.name || null,
-              source_mime: mime || null,
-              ocr_text: raw,
-              title: fieldsGuess.title,
-              start_at: fieldsGuess.start,
-              end_at: fieldsGuess.end,
-              location: fieldsGuess.location,
-              description: fieldsGuess.description,
-              timezone: fieldsGuess.timezone,
-              status: "draft",
-              metadata: {},
-            },
-          ])
-          .select("id")
-          .single();
-        if (!error) intakeId = (data as any)?.id || null;
-      } catch {}
-    }
+    // Removed Supabase insertion; return only parsed data
+    const intakeId: string | null = null;
 
     return NextResponse.json({
       intakeId,
