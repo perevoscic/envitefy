@@ -1,6 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
+import EmailProvider from "next-auth/providers/email";
+import AppleProvider from "next-auth/providers/apple";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET as string,
@@ -29,8 +31,30 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
+    ...(process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET
+      ? [
+          AppleProvider({
+            clientId: process.env.APPLE_CLIENT_ID as string,
+            clientSecret: process.env.APPLE_CLIENT_SECRET as string,
+          }),
+        ]
+      : []),
+    // Conditionally enable Email provider if env is configured
+    ...(process.env.EMAIL_SERVER && process.env.EMAIL_FROM
+      ? [
+          EmailProvider({
+            server: process.env.EMAIL_SERVER,
+            from: process.env.EMAIL_FROM,
+          }),
+        ]
+      : []),
   ],
   session: { strategy: "jwt" },
+  pages: {
+    signIn: "/login",
+    verifyRequest: "/verify-request",
+    newUser: "/signup",
+  },
   callbacks: {
     async jwt({ token, account, profile }) {
       // Persist provider tokens (refresh/access) when user signs in

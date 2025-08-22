@@ -154,6 +154,14 @@ export default function Home() {
     window.location.href = `/api/ics?${q}`;
   };
 
+  const connectGoogle = () => {
+    window.location.href = "/api/google/auth";
+  };
+
+  const connectOutlook = () => {
+    window.location.href = "/api/outlook/auth";
+  };
+
   const addGoogle = async () => {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
@@ -197,28 +205,31 @@ export default function Home() {
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-accent text-white p-8 md:p-12">
         <div className="relative z-10 text-center space-y-4">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-shadow-soft">
-            Snap a flyer. Save the date.
+            Snap a flyer.
+            <br />
+            Save the date.
           </h1>
           <p className="text-white/90 max-w-2xl mx-auto text-shadow-soft">
             Turn any flyer or appointment card into a calendar event in seconds.
-            Works with Google Calendar or download Apple Calendar (.ics) and
-            Outlook.
+            <br />
+            Works with Google, Apple and Outlook Calendars.
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              className="px-5 py-3 bg-primary text-white font-semibold rounded shadow-md hover:opacity-90 text-shadow-subtle"
-              onClick={openCamera}
-            >
-              Snap it
-            </button>
-            <button
-              className="px-5 py-3 bg-secondary text-white font-semibold rounded hover:opacity-90 shadow-md text-shadow-subtle"
-              onClick={openUpload}
-            >
-              Upload from device
-            </button>
-          </div>
         </div>
+      </section>
+
+      <section className="flex items-center justify-center gap-3">
+        <button
+          className="px-5 py-3 bg-primary text-white font-semibold rounded shadow-md hover:opacity-90 text-shadow-subtle"
+          onClick={openCamera}
+        >
+          Snap it
+        </button>
+        <button
+          className="px-5 py-3 bg-secondary text-white font-semibold rounded hover:opacity-90 shadow-md text-shadow-subtle"
+          onClick={openUpload}
+        >
+          Upload from device
+        </button>
       </section>
 
       <section id="scan" className="space-y-4">
@@ -244,58 +255,9 @@ export default function Home() {
             className="hidden"
           />
 
-          {loading && (
-            <div
-              className="scan-overlay"
-              role="status"
-              aria-live="polite"
-              aria-label="Scanning image"
-            >
-              <div className="scan-card">
-                <div className="scan-grid" />
-                <div className="scan-sheen" />
-                <div className="scan-title">
-                  <span className="scan-dot" />
-                  <span className="text-sm md:text-base">
-                    Scanning your image… extracting dates and details
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+          {loading && null}
 
-          <div className="flex flex-wrap gap-2 items-center">
-            {connected.google ? (
-              <button
-                className="px-4 py-2 rounded border border-success bg-surface text-success cursor-default shadow-sm text-shadow-subtle"
-                disabled
-              >
-                Connected to Google
-              </button>
-            ) : (
-              <button
-                className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
-                onClick={() => signIn("google")}
-              >
-                Connect Google
-              </button>
-            )}
-            {connected.microsoft ? (
-              <button
-                className="px-4 py-2 rounded border border-info bg-surface text-info cursor-default shadow-sm text-shadow-subtle"
-                disabled
-              >
-                Connected to Outlook
-              </button>
-            ) : (
-              <button
-                className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
-                onClick={() => signIn("azure-ad")}
-              >
-                Connect Outlook
-              </button>
-            )}
-          </div>
+          {/* Actions moved to bottom with the Apple button */}
         </div>
 
         {event && (
@@ -380,36 +342,34 @@ export default function Home() {
               />
             </div>
             <div className="flex flex-wrap gap-2 items-center">
-              {!connected.google && (
-                <button
-                  className="px-4 py-2 bg-secondary text-foreground rounded"
-                  onClick={() => signIn("google")}
-                >
-                  Connect Google
-                </button>
-              )}
-              {!connected.microsoft && (
-                <button
-                  className="px-4 py-2 bg-secondary text-foreground rounded"
-                  onClick={() => signIn("azure-ad")}
-                >
-                  Connect Outlook
-                </button>
-              )}
-              {connected.google && (
+              {connected.google ? (
                 <button
                   className="px-4 py-2 bg-primary text-white rounded shadow-sm text-shadow-subtle"
                   onClick={addGoogle}
                 >
                   Add to Google
                 </button>
+              ) : (
+                <button
+                  className="px-4 py-2 bg-primary text-white rounded shadow-sm text-shadow-subtle"
+                  onClick={connectGoogle}
+                >
+                  Connect to Google
+                </button>
               )}
-              {connected.microsoft && (
+              {connected.microsoft ? (
                 <button
                   className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
                   onClick={addOutlook}
                 >
                   Add to Outlook
+                </button>
+              ) : (
+                <button
+                  className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
+                  onClick={connectOutlook}
+                >
+                  Connect to Outlook
                 </button>
               )}
               <button

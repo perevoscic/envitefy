@@ -1,5 +1,6 @@
 import ical from "ical-generator";
 import { NextResponse } from "next/server";
+import { getSupabaseServiceClient } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   const description = searchParams.get("description") || "";
   const timezone = searchParams.get("timezone") || "America/Chicago";
   const recurrence = searchParams.get("recurrence");
+  const intakeId = searchParams.get("intakeId");
 
   if (!start || !end) {
     return NextResponse.json({ error: "Missing start or end" }, { status: 400 });
@@ -32,13 +34,24 @@ export async function GET(request: Request) {
   }
 
   const body = cal.toString();
-  return new NextResponse(body, {
+  const response = new NextResponse(body, {
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": "attachment; filename=event.ics"
     }
   });
+
+  // Fire-and-forget: mark intake as ics_downloaded if present
+  const supabase = getSupabaseServiceClient();
+  if (supabase && intakeId) {
+    supabase
+      .from("event_intakes")
+      .update({ status: "ics_downloaded" })
+      .eq("id", intakeId)
+      .then(() => {}, () => {});
+  }
+  return response;
 }
 
 

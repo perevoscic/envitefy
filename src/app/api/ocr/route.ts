@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { ImageAnnotatorClient } from "@google-cloud/vision";
+import { getSupabaseServiceClient } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -318,16 +319,47 @@ export async function POST(request: Request) {
       return keep.join("\n");
     })();
 
+    const fieldsGuess = {
+      title,
+      start: start?.toISOString() ?? null,
+      end: end?.toISOString() ?? null,
+      location: addressOnly,
+      description: cleanDescription,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    };
+
+    let intakeId: string | null = null;
+    const supabase = getSupabaseServiceClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("event_intakes")
+          .insert([
+            {
+              user_email: null,
+              source_filename: (file as any)?.name || null,
+              source_mime: mime || null,
+              ocr_text: raw,
+              title: fieldsGuess.title,
+              start_at: fieldsGuess.start,
+              end_at: fieldsGuess.end,
+              location: fieldsGuess.location,
+              description: fieldsGuess.description,
+              timezone: fieldsGuess.timezone,
+              status: "draft",
+              metadata: {},
+            },
+          ])
+          .select("id")
+          .single();
+        if (!error) intakeId = (data as any)?.id || null;
+      } catch {}
+    }
+
     return NextResponse.json({
+      intakeId,
       ocrText: raw,
-      fieldsGuess: {
-        title,
-        start: start?.toISOString() ?? null,
-        end: end?.toISOString() ?? null,
-        location: addressOnly,
-        description: cleanDescription,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-      },
+      fieldsGuess,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

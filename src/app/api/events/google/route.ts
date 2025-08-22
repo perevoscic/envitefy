@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
+import { getSupabaseServiceClient } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: reason }, { status });
     }
 
-    const body: NormalizedEvent = await request.json();
+    const body: NormalizedEvent & { intakeId?: string | null } = await request.json();
     const requestBody = toGoogleEvent(body);
 
     const oAuth2Client = new google.auth.OAuth2(
@@ -44,6 +45,17 @@ export async function POST(request: NextRequest) {
       calendarId: "primary",
       requestBody,
     });
+
+    const supabase = getSupabaseServiceClient();
+    if (supabase && body.intakeId) {
+      try {
+        await supabase
+          .from("event_intakes")
+          .update({ status: "created_google", google_event_id: created.data.id || null })
+          .eq("id", body.intakeId);
+      } catch {}
+    }
+
     return NextResponse.json({ htmlLink: created.data.htmlLink, id: created.data.id });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

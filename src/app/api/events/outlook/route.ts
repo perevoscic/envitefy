@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toMicrosoftEvent } from "@/lib/mappers";
+import { getSupabaseServiceClient } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Microsoft not connected" }, { status: 400 });
     }
 
-    const body: NormalizedEvent = await request.json();
+    const body: (NormalizedEvent & { intakeId?: string | null }) = await request.json();
     const graphBody = toMicrosoftEvent(body);
 
     // Exchange refresh token for access token
@@ -53,6 +54,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: text || "Failed to create event" }, { status: 500 });
     }
     const created: { webLink?: string; id?: string } = await createResp.json();
+
+    const supabase = getSupabaseServiceClient();
+    if (supabase && body.intakeId) {
+      try {
+        await supabase
+          .from("event_intakes")
+          .update({ status: "created_outlook", outlook_event_id: created.id || null })
+          .eq("id", body.intakeId);
+      } catch {}
+    }
+
     return NextResponse.json({ webLink: created.webLink, id: created.id });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
