@@ -244,6 +244,26 @@ export default function Home() {
             className="hidden"
           />
 
+          {loading && (
+            <div
+              className="scan-overlay"
+              role="status"
+              aria-live="polite"
+              aria-label="Scanning image"
+            >
+              <div className="scan-card">
+                <div className="scan-grid" />
+                <div className="scan-sheen" />
+                <div className="scan-title">
+                  <span className="scan-dot" />
+                  <span className="text-sm md:text-base">
+                    Scanning your image… extracting dates and details
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 items-center">
             {connected.google ? (
               <button
@@ -396,7 +416,7 @@ export default function Home() {
                 className="px-4 py-2 bg-accent text-white rounded shadow-sm text-shadow-subtle"
                 onClick={dlIcs}
               >
-                Add to Apple Calendar (.ics)
+                Connect to Apple Calendar
               </button>
             </div>
           </div>

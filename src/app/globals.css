@@ -8,19 +8,19 @@
   --muted-foreground: #737373; /* Gray */
   --border: #E0E0E0; /* Light Gray */
 
-  --primary: #FF8A80; /* Light Coral */
-  --secondary: #6FBFA7; /* Darker Mint */
-  --accent: #FFB74D; /* Amber */
+  --primary: #2DD4BF; /* Teal 400 */
+  --secondary: #6366F1; /* Indigo 500 */
+  --accent: #A855F7; /* Violet 500 */
 
-  --success: #81C784; /* Sage Green */
-  --info: #4FC3F7; /* Sky Blue */
-  --warning: #FFB74D; /* Amber */
-  --error: #E57373; /* Soft Red */
+  --success: #10B981; /* Emerald 500 */
+  --info: #60A5FA; /* Blue 400 */
+  --warning: #F59E0B; /* Amber 500 */
+  --error: #EF4444; /* Red 500 */
 
   /* On-color text for high contrast on bright buttons */
-  --on-primary: #5A5A5C; /* Softer Dark Gray */
-  --on-secondary: #5A5A5C; /* Softer Dark Gray */
-  --on-accent: #5A5A5C; /* Softer Dark Gray */
+  --on-primary: #FFFFFF; /* White for strong contrast */
+  --on-secondary: #FFFFFF; /* White for strong contrast */
+  --on-accent: #FFFFFF; /* White for strong contrast */
 }
 
 @theme inline {
@@ -54,19 +54,19 @@
     --muted-foreground: #CCCCCC; /* Gray */
     --border: #3A3A3A; /* Deep Graphite */
 
-    --primary: #F28E8D; /* Warm Coral */
-    --secondary: #6FBFA7; /* Darker Teal */
-    --accent: #F4C241; /* Gold */
+    --primary: #2DD4BF; /* Teal 400 */
+    --secondary: #6366F1; /* Indigo 500 */
+    --accent: #A855F7; /* Violet 500 */
 
-    --success: #66BB6A; /* Rich Green */
-    --info: #29B6F6; /* Bright Blue */
-    --warning: #FFA726; /* Orange */
-    --error: #E53935; /* Red */
+    --success: #22C55E; /* Emerald 600 */
+    --info: #60A5FA; /* Blue 400 */
+    --warning: #F59E0B; /* Amber 500 */
+    --error: #F43F5E; /* Rose 500 */
 
     /* On-color text on bright buttons (remain dark for contrast) */
-    --on-primary: #3A3A3A;
-    --on-secondary: #3A3A3A;
-    --on-accent: #3A3A3A;
+    --on-primary: #FFFFFF;
+    --on-secondary: #FFFFFF;
+    --on-accent: #FFFFFF;
   }
 }
 
@@ -97,14 +97,14 @@ body {
   --muted-foreground: #737373;
   --border: #E0E0E0;
 
-  --primary: #FF8A80;
-  --secondary: #6FBFA7;
-  --accent: #FFB74D;
+  --primary: #2DD4BF;
+  --secondary: #6366F1;
+  --accent: #A855F7;
 
-  --success: #81C784;
-  --info: #4FC3F7;
-  --warning: #FFB74D;
-  --error: #E57373;
+  --success: #10B981;
+  --info: #60A5FA;
+  --warning: #F59E0B;
+  --error: #EF4444;
 }
 
 :root[data-theme="dark"] {
@@ -114,12 +114,106 @@ body {
   --muted-foreground: #CCCCCC;
   --border: #3A3A3A;
 
-  --primary: #F28E8D;
-  --secondary: #6FBFA7;
-  --accent: #F4C241;
+  --primary: #2DD4BF;
+  --secondary: #6366F1;
+  --accent: #A855F7;
 
-  --success: #66BB6A;
-  --info: #29B6F6;
-  --warning: #FFA726;
-  --error: #E53935;
+  --success: #22C55E;
+  --info: #60A5FA;
+  --warning: #F59E0B;
+  --error: #F43F5E;
+}
+
+/* Scan overlay animation */
+@layer utilities {
+  .scan-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklab, var(--background) 65%, black 35%);
+    backdrop-filter: blur(2px) saturate(1.05);
+    z-index: 50;
+  }
+  .scan-card {
+    position: relative;
+    width: min(92vw, 560px);
+    aspect-ratio: 4/3;
+    border-radius: 16px;
+    background: linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--surface) 88%, black 12%),
+      color-mix(in oklab, var(--surface) 78%, black 22%)
+    );
+    border: 1px solid var(--border);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+  }
+  .scan-sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      color-mix(in oklab, var(--info) 28%, transparent 72%) 48%,
+      color-mix(in oklab, var(--info) 18%, transparent 82%) 52%,
+      transparent 100%
+    );
+    animation: scan-sweep 2.2s ease-in-out infinite;
+    mix-blend-mode: screen;
+  }
+  .scan-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--border) 55%, transparent 45%) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--border) 55%, transparent 45%) 1px,
+        transparent 1px
+      );
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at center, black, transparent 75%);
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .scan-title {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--foreground);
+  }
+  .scan-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes scan-sweep {
+  0% { transform: translateY(-100%); opacity: 0; }
+  12% { opacity: 1; }
+  50% { transform: translateY(0%); opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent); }
+  70% { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
