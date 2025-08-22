@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const tokenData = await getToken({ req: request as any });
+    const tokenData = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
     if (!tokenData) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const providers = (tokenData as any).providers || {};
     const m = providers.microsoft || {};

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
+import * as chrono from "chrono-node";
+import { useTheme } from "./providers";
 
 type EventFields = {
   title: string;
@@ -12,9 +14,12 @@ type EventFields = {
 };
 
 export default function Home() {
+  const { theme, toggleTheme } = useTheme();
   const [file, setFile] = useState<File | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ocrText, setOcrText] = useState<string>("");
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { data: session } = useSession();
@@ -35,11 +40,48 @@ export default function Home() {
     const currentFile = f ?? file;
     if (!currentFile) return;
     setLoading(true);
+    setError(null);
     const form = new FormData();
     form.append("file", currentFile);
     const res = await fetch("/api/ocr", { method: "POST", body: form });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError((j as any).error || "Failed to scan file");
+      setLoading(false);
+      return;
+    }
     const data = await res.json();
-    setEvent(data.fieldsGuess);
+    const tz =
+      data?.fieldsGuess?.timezone ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone ||
+      "UTC";
+    const formatIsoForInput = (iso: string | null, timezone: string) => {
+      if (!iso) return null;
+      try {
+        const dt = new Date(iso);
+        if (isNaN(dt.getTime())) return iso;
+        return new Intl.DateTimeFormat(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: timezone,
+        }).format(dt);
+      } catch {
+        return iso;
+      }
+    };
+    const adjusted = data.fieldsGuess
+      ? {
+          ...data.fieldsGuess,
+          start: formatIsoForInput(data.fieldsGuess.start, tz),
+          end: formatIsoForInput(data.fieldsGuess.end, tz),
+        }
+      : null;
+    setEvent(adjusted);
+    setOcrText(data.ocrText || "");
     setLoading(false);
   };
 
@@ -51,36 +93,96 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
+  const parseStartToIso = (value: string | null, timezone: string) => {
+    if (!value) return null;
+    try {
+      // Try ISO first
+      const isoDate = new Date(value);
+      if (!isNaN(isoDate.getTime())) return isoDate.toISOString();
+    } catch {}
+    const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
+    return parsed ? new Date(parsed.getTime()).toISOString() : null;
+  };
+
+  const normalizeAddress = (raw: string) => {
+    if (!raw) return "";
+    // If the string contains a street number, extract from there forward
+    const fromNumber = raw.match(/\b\d{1,6}[^\n]*/);
+    const candidate = fromNumber ? fromNumber[0] : raw;
+    const streetSuffix =
+      /(Ave(nue)?|St(reet)?|Blvd|Road|Rd|Drive|Dr|Ct|Court|Ln|Lane|Way|Pl|Place|Ter(race)?|Pkwy|Parkway|Hwy|Highway)/i;
+    if (streetSuffix.test(candidate)) {
+      return candidate
+        .replace(/^[^\d]*?(?=\d)/, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+    return candidate.trim();
+  };
+
+  const buildSubmissionEvent = (e: EventFields) => {
+    const timezone =
+      e.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const startIso = parseStartToIso(e.start, timezone);
+    if (!startIso) return null;
+    const endIso = e.end
+      ? parseStartToIso(e.end, timezone) ||
+        new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
+      : new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString();
+    const location = normalizeAddress(e.location || "");
+    return {
+      ...e,
+      start: startIso,
+      end: endIso,
+      location,
+      timezone,
+    } as EventFields;
+  };
+
   const dlIcs = () => {
-    if (!event?.start || !event?.end) return;
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) return;
     const q = new URLSearchParams({
-      title: event.title || "Event",
-      start: event.start,
-      end: event.end,
-      location: event.location || "",
-      description: event.description || "",
-      timezone: event.timezone || "America/Chicago",
+      title: ready.title || "Event",
+      start: ready.start!,
+      end: ready.end!,
+      location: ready.location || "",
+      description: ready.description || "",
+      timezone: ready.timezone || "America/Chicago",
     }).toString();
     window.location.href = `/api/ics?${q}`;
   };
 
   const addGoogle = async () => {
-    if (!event?.start || !event?.end) return;
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) return;
     const res = await fetch("/api/events/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(event),
+      credentials: "include",
+      body: JSON.stringify(ready),
     });
-    const j = await res.json();
+    let j: any = {};
+    try {
+      j = await res.json();
+    } catch {}
+    if (!res.ok) {
+      setError(j.error || "Failed to add to Google Calendar");
+      return;
+    }
     if (j.htmlLink) window.open(j.htmlLink, "_blank");
   };
 
   const addOutlook = async () => {
-    if (!event?.start || !event?.end) return;
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) return;
     const res = await fetch("/api/events/outlook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(event),
+      body: JSON.stringify(ready),
     });
     const j = await res.json();
     if (j.webLink) window.open(j.webLink, "_blank");
@@ -92,24 +194,25 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-4xl p-4 space-y-8">
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white p-8 md:p-12">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-accent text-white p-8 md:p-12">
         <div className="relative z-10 text-center space-y-4">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-shadow-soft">
             Snap a flyer. Save the date.
           </h1>
-          <p className="text-white/90 max-w-2xl mx-auto">
+          <p className="text-white/90 max-w-2xl mx-auto text-shadow-soft">
             Turn any flyer or appointment card into a calendar event in seconds.
-            Works with Google Calendar or download .ics for Apple and Outlook.
+            Works with Google Calendar or download Apple Calendar (.ics) and
+            Outlook.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
-              className="px-5 py-3 bg-white text-indigo-700 font-semibold rounded shadow hover:opacity-90"
+              className="px-5 py-3 bg-primary text-white font-semibold rounded shadow-md hover:opacity-90 text-shadow-subtle"
               onClick={openCamera}
             >
-              Snap a flyer
+              Snap it
             </button>
             <button
-              className="px-5 py-3 bg-white/10 backdrop-blur border border-white/20 text-white font-semibold rounded hover:bg-white/15"
+              className="px-5 py-3 bg-secondary text-white font-semibold rounded hover:opacity-90 shadow-md text-shadow-subtle"
               onClick={openUpload}
             >
               Upload from device
@@ -120,20 +223,11 @@ export default function Home() {
 
       <section id="scan" className="space-y-4">
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="px-4 py-2 bg-indigo-600 text-white rounded"
-              onClick={openCamera}
-            >
-              Snap it
-            </button>
-            <button
-              className="px-4 py-2 bg-gray-200 text-gray-900 rounded"
-              onClick={openUpload}
-            >
-              Upload from device
-            </button>
-          </div>
+          {error && (
+            <div className="p-3 rounded border border-error bg-surface text-error">
+              {error}
+            </div>
+          )}
           <input
             ref={cameraInputRef}
             type="file"
@@ -149,49 +243,126 @@ export default function Home() {
             onChange={(e) => onFile(e.target.files?.[0] || null)}
             className="hidden"
           />
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-            onClick={() => ingest()}
-            disabled={!file || loading}
-          >
-            {loading ? "Scanning..." : "Scan"}
-          </button>
+
+          <div className="flex flex-wrap gap-2 items-center">
+            {connected.google ? (
+              <button
+                className="px-4 py-2 rounded border border-success bg-surface text-success cursor-default shadow-sm text-shadow-subtle"
+                disabled
+              >
+                Connected to Google
+              </button>
+            ) : (
+              <button
+                className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
+                onClick={() => signIn("google")}
+              >
+                Connect Google
+              </button>
+            )}
+            {connected.microsoft ? (
+              <button
+                className="px-4 py-2 rounded border border-info bg-surface text-info cursor-default shadow-sm text-shadow-subtle"
+                disabled
+              >
+                Connected to Outlook
+              </button>
+            ) : (
+              <button
+                className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
+                onClick={() => signIn("azure-ad")}
+              >
+                Connect Outlook
+              </button>
+            )}
+          </div>
         </div>
 
         {event && (
-          <div className="space-y-2">
-            <input
-              className="w-full border p-2 rounded"
-              value={event.title}
-              onChange={(e) => setEvent({ ...event, title: e.target.value })}
-            />
-            <input
-              className="w-full border p-2 rounded"
-              value={event.start || ""}
-              onChange={(e) => setEvent({ ...event, start: e.target.value })}
-            />
-            <input
-              className="w-full border p-2 rounded"
-              value={event.end || ""}
-              onChange={(e) => setEvent({ ...event, end: e.target.value })}
-            />
-            <input
-              className="w-full border p-2 rounded"
-              value={event.location}
-              onChange={(e) => setEvent({ ...event, location: e.target.value })}
-            />
-            <textarea
-              className="w-full border p-2 rounded"
-              rows={4}
-              value={event.description}
-              onChange={(e) =>
-                setEvent({ ...event, description: e.target.value })
-              }
-            />
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label
+                htmlFor="event-title"
+                className="text-sm text-muted-foreground"
+              >
+                Title
+              </label>
+              <input
+                id="event-title"
+                className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                value={event.title}
+                onChange={(e) => setEvent({ ...event, title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                htmlFor="event-start"
+                className="text-sm text-muted-foreground"
+              >
+                Start
+              </label>
+              <input
+                id="event-start"
+                className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                value={event.start || ""}
+                onChange={(e) => setEvent({ ...event, start: e.target.value })}
+              />
+            </div>
+            {Boolean(event.end) && (
+              <div className="space-y-1">
+                <label
+                  htmlFor="event-end"
+                  className="text-sm text-muted-foreground"
+                >
+                  End
+                </label>
+                <input
+                  id="event-end"
+                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                  value={event.end || ""}
+                  onChange={(e) =>
+                    setEvent({ ...event, end: e.target.value || null })
+                  }
+                />
+              </div>
+            )}
+            <div className="space-y-1">
+              <label
+                htmlFor="event-location"
+                className="text-sm text-muted-foreground"
+              >
+                Address
+              </label>
+              <input
+                id="event-location"
+                className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                value={event.location}
+                onChange={(e) =>
+                  setEvent({ ...event, location: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                htmlFor="event-description"
+                className="text-sm text-muted-foreground"
+              >
+                Description
+              </label>
+              <textarea
+                id="event-description"
+                className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                rows={4}
+                value={event.description}
+                onChange={(e) =>
+                  setEvent({ ...event, description: e.target.value })
+                }
+              />
+            </div>
             <div className="flex flex-wrap gap-2 items-center">
               {!connected.google && (
                 <button
-                  className="px-4 py-2 bg-gray-700 text-white rounded"
+                  className="px-4 py-2 bg-secondary text-foreground rounded"
                   onClick={() => signIn("google")}
                 >
                   Connect Google
@@ -199,7 +370,7 @@ export default function Home() {
               )}
               {!connected.microsoft && (
                 <button
-                  className="px-4 py-2 bg-blue-700 text-white rounded"
+                  className="px-4 py-2 bg-secondary text-foreground rounded"
                   onClick={() => signIn("azure-ad")}
                 >
                   Connect Outlook
@@ -207,7 +378,7 @@ export default function Home() {
               )}
               {connected.google && (
                 <button
-                  className="px-4 py-2 bg-green-600 text-white rounded"
+                  className="px-4 py-2 bg-primary text-white rounded shadow-sm text-shadow-subtle"
                   onClick={addGoogle}
                 >
                   Add to Google
@@ -215,22 +386,35 @@ export default function Home() {
               )}
               {connected.microsoft && (
                 <button
-                  className="px-4 py-2 bg-sky-600 text-white rounded"
+                  className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
                   onClick={addOutlook}
                 >
                   Add to Outlook
                 </button>
               )}
               <button
-                className="px-4 py-2 bg-indigo-600 text-white rounded"
+                className="px-4 py-2 bg-accent text-white rounded shadow-sm text-shadow-subtle"
                 onClick={dlIcs}
               >
-                Download .ics
+                Add to Apple Calendar (.ics)
               </button>
             </div>
           </div>
         )}
       </section>
     </main>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-sm text-foreground hover:opacity-90"
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+    >
+      {theme === "light" ? "Switch to dark" : "Switch to light"}
+    </button>
   );
 }

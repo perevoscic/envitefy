@@ -7,13 +7,22 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const tokenData = await getToken({ req: request as any });
-    if (!tokenData) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const providers = (tokenData as any).providers || {};
+    const tokenData = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
+    const providers = (tokenData as any)?.providers || {};
     const g = providers.google || {};
-    const refreshToken = g.refreshToken;
-    if (!refreshToken) {
-      return NextResponse.json({ error: "Google not connected" }, { status: 400 });
+    let refreshToken = g.refreshToken as string | undefined;
+    let accessToken = g.accessToken as string | undefined;
+    const expiresAt = g.expiresAt as number | undefined;
+
+    // Fallback: accept refresh token from our legacy cookie if present
+    if (!refreshToken && !accessToken) {
+      const legacy = request.cookies.get("g_refresh")?.value;
+      if (legacy) refreshToken = legacy;
+    }
+    if (!refreshToken && !accessToken) {
+      const reason = tokenData ? "Google not connected" : "Unauthorized";
+      const status = tokenData ? 400 : 401;
+      return NextResponse.json({ error: reason }, { status });
     }
 
     const body: NormalizedEvent = await request.json();
@@ -24,7 +33,11 @@ export async function POST(request: NextRequest) {
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.GOOGLE_REDIRECT_URI!
     );
-    oAuth2Client.setCredentials({ refresh_token: refreshToken });
+    if (refreshToken) {
+      oAuth2Client.setCredentials({ refresh_token: refreshToken });
+    } else if (accessToken) {
+      oAuth2Client.setCredentials({ access_token: accessToken, expiry_date: expiresAt });
+    }
 
     const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
     const created = await calendar.events.insert({
