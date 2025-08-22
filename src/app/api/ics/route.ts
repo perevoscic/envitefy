@@ -1,4 +1,5 @@
 import ical from "ical-generator";
+import type { ICalAlarmType } from "ical-generator";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   const description = searchParams.get("description") || "";
   const timezone = searchParams.get("timezone") || "America/Chicago";
   const recurrence = searchParams.get("recurrence");
+  const remindersStr = searchParams.get("reminders");
   // intakeId no longer used without Supabase
   // const intakeId = searchParams.get("intakeId");
 
@@ -31,6 +33,18 @@ export async function GET(request: Request) {
     evt.repeating({
       rrule: recurrence,
     } as any);
+  }
+
+  // Add VALARM reminders if provided as query param `reminders` (comma-separated minutes)
+  if (remindersStr) {
+    remindersStr
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .forEach((minutes) => {
+        // ical-generator expects seconds for numeric trigger
+        evt.createAlarm({ type: ("display" as unknown) as ICalAlarmType, trigger: minutes * 60 });
+      });
   }
 
   const body = cal.toString();

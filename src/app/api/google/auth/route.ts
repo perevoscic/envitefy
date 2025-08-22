@@ -13,7 +13,6 @@ export async function GET() {
   const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     scope: ["https://www.googleapis.com/auth/calendar.events"],
-    prompt: "consent"
   });
   return NextResponse.redirect(url);
 }

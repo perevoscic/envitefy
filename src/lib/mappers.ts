@@ -45,6 +45,18 @@ export function toMicrosoftEvent(event: NormalizedEvent) {
     end: { dateTime: event.end, timeZone: event.timezone },
   };
   if (event.allDay) graphEvent.isAllDay = true;
+  // Microsoft supports a single reminder via reminderMinutesBeforeStart
+  if (event.reminders && event.reminders.length > 0) {
+    const minutes = Math.min(
+      ...event.reminders
+        .map((r) => (typeof r.minutes === "number" ? r.minutes : Infinity))
+        .filter((v) => isFinite(v))
+    );
+    if (isFinite(minutes)) {
+      graphEvent.reminderMinutesBeforeStart = minutes;
+      graphEvent.isReminderOn = true;
+    }
+  }
   // Recurrence mapping would require splitting RRULE to pattern/range; skip for MVP
   return graphEvent;
 }

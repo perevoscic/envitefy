@@ -4,6 +4,7 @@ import AzureADProvider from "next-auth/providers/azure-ad";
 import AppleProvider from "next-auth/providers/apple";
 
 export const authOptions: NextAuthOptions = {
+  debug: true,
   secret: process.env.NEXTAUTH_SECRET as string,
   providers: [
     GoogleProvider({
@@ -11,7 +12,6 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       authorization: {
         params: {
-          prompt: "consent",
           access_type: "offline",
           response_type: "code",
           scope:
@@ -43,7 +43,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
     verifyRequest: "/verify-request",
-    newUser: "/signup",
   },
   callbacks: {
     async jwt({ token, account, profile }) {

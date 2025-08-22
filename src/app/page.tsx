@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import * as chrono from "chrono-node";
-import { useTheme } from "./providers";
 
 type EventFields = {
   title: string;
@@ -11,10 +10,10 @@ type EventFields = {
   location: string;
   description: string;
   timezone: string;
+  reminders?: { minutes: number }[] | null;
 };
 
 export default function Home() {
-  const { theme, toggleTheme } = useTheme();
   const [file, setFile] = useState<File | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,6 +77,7 @@ export default function Home() {
           ...data.fieldsGuess,
           start: formatIsoForInput(data.fieldsGuess.start, tz),
           end: formatIsoForInput(data.fieldsGuess.end, tz),
+          reminders: [{ minutes: 1440 }],
         }
       : null;
     setEvent(adjusted);
@@ -150,6 +150,9 @@ export default function Home() {
       location: ready.location || "",
       description: ready.description || "",
       timezone: ready.timezone || "America/Chicago",
+      ...(ready.reminders && ready.reminders.length
+        ? { reminders: ready.reminders.map((r) => String(r.minutes)).join(",") }
+        : {}),
     }).toString();
     window.location.href = `/api/ics?${q}`;
   };
@@ -341,6 +344,76 @@ export default function Home() {
                 }
               />
             </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Reminders</label>
+              <div className="space-y-2">
+                {(event.reminders || []).map((r, idx) => {
+                  const dayOptions = [1, 2, 3, 7, 14, 30];
+                  const currentDays = Math.max(
+                    1,
+                    Math.round((r.minutes || 0) / 1440) || 1
+                  );
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        className="border border-border bg-surface text-foreground p-2 rounded"
+                        value={currentDays}
+                        onChange={(e) => {
+                          const days = Math.max(1, Number(e.target.value) || 1);
+                          const next = [...(event.reminders || [])];
+                          next[idx] = { minutes: days * 1440 };
+                          setEvent({ ...event, reminders: next });
+                        }}
+                      >
+                        {dayOptions.map((d) => (
+                          <option key={d} value={d}>
+                            {d} day{d === 1 ? "" : "s"} before
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        aria-label="Delete reminder"
+                        className="px-2 py-2 text-sm bg-surface border border-border rounded hover:opacity-80"
+                        onClick={() => {
+                          const next = (event.reminders || []).filter(
+                            (_, i) => i !== idx
+                          );
+                          setEvent({
+                            ...event,
+                            reminders: next.length ? next : [{ minutes: 1440 }],
+                          });
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                        >
+                          <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
+                <div>
+                  <button
+                    className="px-3 py-1 text-sm bg-surface border border-border rounded hover:opacity-80"
+                    onClick={() => {
+                      const base = (
+                        event.reminders && event.reminders.length
+                          ? event.reminders
+                          : [{ minutes: 1440 }]
+                      ) as { minutes: number }[];
+                      const next = [...base, { minutes: 1440 }];
+                      setEvent({ ...event, reminders: next });
+                    }}
+                  >
+                    + Add reminder
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2 items-center">
               {connected.google ? (
                 <button
@@ -385,16 +458,4 @@ export default function Home() {
     </main>
   );
 }
-
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  return (
-    <button
-      className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-sm text-foreground hover:opacity-90"
-      onClick={toggleTheme}
-      aria-label="Toggle theme"
-    >
-      {theme === "light" ? "Switch to dark" : "Switch to light"}
-    </button>
-  );
-}
+// Theme toggle is now housed in the left sidebar
