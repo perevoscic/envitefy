@@ -1,11 +1,18 @@
 "use client";
-import { FormEvent, useState } from "react";
-import { signIn } from "next-auth/react";
+import { FormEvent, useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
+  const { status } = useSession();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === "authenticated") router.replace("/");
+  }, [status, router]);
 
   const onEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,16 +36,16 @@ export default function SignupPage() {
       <h1 className="text-2xl font-semibold">Sign up</h1>
       <div className="space-y-3">
         <button
-          className="w-full px-4 py-2 rounded bg-primary text-white"
+          className="w-full px-4 py-2 rounded bg-[#4285F4] hover:bg-[#3367D6] text-white"
           onClick={() => signIn("google", { callbackUrl: "/" })}
         >
           Sign up with Google
         </button>
         <button
-          className="w-full px-4 py-2 rounded bg-secondary text-white"
+          className="w-full px-4 py-2 rounded bg-[#0078D4] hover:bg-[#106EBE] text-white"
           onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
         >
-          Sign up with Outlook
+          Sign up with Microsoft
         </button>
         <button
           className="w-full px-4 py-2 rounded bg-black text-white"
