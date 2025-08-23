@@ -47,7 +47,7 @@ COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/next.config.ts ./next.config.ts
 
 # Healthcheck (optional)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('http').get('http://localhost:'+ (process.env.PORT || 3000) +'/');" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('http').get('http://localhost:'+ (process.env.PORT || 3000) +'/api/health');" || exit 1
 
 USER nodeusr
 
