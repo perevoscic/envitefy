@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const code = searchParams.get("code");
     if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
 
-    const tenant = "common";
+    const tenant = process.env.OUTLOOK_TENANT_ID || "common";
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
     const params = new URLSearchParams();
     params.append("client_id", process.env.OUTLOOK_CLIENT_ID!);

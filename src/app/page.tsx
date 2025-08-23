@@ -169,11 +169,12 @@ export default function Home() {
   };
 
   const connectGoogle = () => {
-    window.location.href = "/api/google/auth";
+    signIn("google", { callbackUrl: "/", prompt: "consent" } as any);
   };
 
   const connectOutlook = () => {
-    window.location.href = "/api/outlook/auth";
+    // Request consent the first time to ensure a refresh token is issued
+    signIn("azure-ad", { callbackUrl: "/", prompt: "consent" } as any);
   };
 
   const addGoogle = async () => {
@@ -204,9 +205,18 @@ export default function Home() {
     const res = await fetch("/api/events/outlook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(ready),
     });
-    const j = await res.json();
+    let j: any = {};
+    try {
+      j = await res.json();
+    } catch {}
+    if (!res.ok) {
+      const detail = j?.error || "Failed to add to Outlook Calendar";
+      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      return;
+    }
     if (j.webLink) window.open(j.webLink, "_blank");
   };
 

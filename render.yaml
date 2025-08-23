@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: snap-my-date
+    env: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /
+    numInstances: 1
+    region: oregon
+    dockerfilePath: ./Dockerfile

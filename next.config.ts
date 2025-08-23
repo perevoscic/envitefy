@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     // Remove this once type errors are addressed
     ignoreBuildErrors: true,
   },
+  // Produce a minimal standalone server for Docker deployment
+  output: "standalone",
 };
 
 export default nextConfig;

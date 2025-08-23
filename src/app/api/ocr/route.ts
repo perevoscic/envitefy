@@ -40,6 +40,66 @@ function getVisionClient() {
   return new ImageAnnotatorClient();
 }
 
+// Basic low-confidence heuristic for titles
+function isTitleLowConfidence(title: string): boolean {
+  if (!title) return true;
+  const t = title.trim();
+  if (t.length < 6) return true;
+  // If the title contains an explicit month name, it's likely actually a date line
+  const month = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
+  if (month.test(t)) return true;
+  // Generic placeholders
+  if (/^event from flyer$/i.test(t)) return true;
+  if (/^(party|birthday|event|celebration)$/i.test(t)) return true;
+  // If it ends with an ordinal (23rd, 1st) it's probably date-tainted
+  if (/\b\d{1,2}(st|nd|rd|th)\b$/i.test(t)) return true;
+  return false;
+}
+
+async function llmExtractEvent(raw: string): Promise<{
+  title?: string;
+  start?: string | null;
+  end?: string | null;
+  address?: string;
+  description?: string;
+} | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const system =
+    "You extract calendar events from noisy OCR text. Return strict JSON only.";
+  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\n- Title should be a human-friendly event name without dates, e.g., "+Alice's Birthday Party+" not "+Party December 23rd+".\n- Parse date and time if present; if time missing, leave start null.\n- Keep address concise (street/city/state if present).\n- Description can include RSVP or extra lines.\n- Respond with ONLY JSON.`;
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    try {
+      const parsed = JSON.parse(text);
+      return parsed as any;
+    } catch {}
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function cleanAddressLabel(input: string): string {
   let s = input.trim();
   // Remove common labels like LOCATION:, ADDRESS:, VENUE:, WHERE:, AT:
@@ -85,15 +145,28 @@ function stripInvitePhrases(s: string): string {
     const isOneWord = words.length === 1;
     const isAllCaps = /[A-Z]/.test(t) && !/[a-z]/.test(t);
     const simpleWord = (isOneWord && (weekdays.test(t) || months.test(t))) || /^[A-Za-z]{3,10}$/.test(t);
+    const hasMonth = months.test(t);
+    const hasGood = goodHints.test(t);
+    const hasOrdinal = ordinal.test(t);
 
     if (goodHints.test(t)) score += 10;
-    if (ordinal.test(t) || /\b\w+'s\b/.test(t)) score += 3;
+    // Ordinals are useful ("8th Birthday"), but they often appear in dates.
+    // Keep the bonus modest and counterweight it if a month name is present.
+    if (ordinal.test(t)) score += 2;
+    if (/\b\w+[’']s\b/.test(t)) score += 3; // possessive like "Alice’s"
+    // Strong boost when both keywords appear in any order
+    if (/(birthday.*party|party.*birthday)/i.test(t)) score += 6;
     if (t.length >= 12 && t.length <= 60) score += 2;
     if (t.length >= 8 && t.length <= 80) score += 1;
 
     if (badHints.test(t)) score -= 4;
     if (simpleWord) score -= 6; // avoid lines like "FRIDAY" or just a month
     if (isAllCaps && t.length <= 9) score -= 3; // short shouty words
+    // Prefer titles without explicit calendar months; those lines are usually dates
+    // and should live in the start time rather than the title. Only penalize when
+    // we already have an event-ish phrase to choose from.
+    if (hasMonth && hasGood) score -= 8;
+    if (hasMonth && hasOrdinal && hasGood) score -= 10; // very date-like
 
     return score;
   };
@@ -113,11 +186,38 @@ function stripInvitePhrases(s: string): string {
     }
   }
 
+  // Also try combining three adjacent lines to capture patterns like
+  // "ALICE'S" + "BIRTHDAY" + "PARTY".
+  for (let i = 0; i < cleanedLines.length - 2; i++) {
+    const a = cleanedLines[i];
+    const b = cleanedLines[i + 1];
+    const c = cleanedLines[i + 2];
+    const triple = `${a} ${b} ${c}`.replace(/\s+/g, " ").trim();
+    if (/(birthday|party|wedding|concert|festival)/i.test(triple) && triple.length <= 120) {
+      let bonus = 2;
+      // Strong boost for patterns like "Alice’s Birthday Party"
+      if (/\b\w+(?:[’']s)?\s+birthday\s+party\b/i.test(triple)) bonus += 10;
+      candidates.push({ text: triple, score: scoreLine(triple) + bonus });
+    }
+  }
+
   candidates.sort((x, y) => y.score - x.score);
-  const best = candidates[0];
+  let best = candidates[0];
   if (best && best.score > 0) {
+    // If the candidate contains a date tail (e.g., "... Birthday Party December 23rd"),
+    // trim the trailing date portion so we keep the semantic title only.
+    const monthAlt = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+    const dateTail = new RegExp(
+      // month name + day (optional ordinal) + optional year, possibly preceded by "on"
+      `(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`,
+      "i"
+    );
+    let candidateText = best.text.replace(dateTail, "").trim();
+    // As a fallback, remove a pure ordinal day at the end (e.g., "... Party 23rd")
+    candidateText = candidateText.replace(/\b\d{1,2}(st|nd|rd|th)\b\s*$/i, "").trim();
+
     // Light normalization: Title Case-ish while keeping numbers/ordinals
-    const normalized = best.text
+    const normalized = candidateText
       .toLowerCase()
       .replace(/\b([a-z])(\w*)/g, (_m, a, b) => a.toUpperCase() + b)
       .replace(/\b(And|Or|Of|The|To|For|A|An|At|On|In|With)\b/g, (m) => m.toLowerCase())
@@ -365,12 +465,46 @@ export async function POST(request: Request) {
       return keep.join("\n");
     })();
 
+    let finalTitle = title;
+    let finalStart = start;
+    let finalEnd = end;
+    let finalAddress = addressOnly;
+    let finalDescription = cleanDescription;
+
+    // LLM fallback: only if configured and the title looks low-confidence
+    if (isTitleLowConfidence(finalTitle)) {
+      const llm = await llmExtractEvent(raw);
+      if (llm) {
+        if (llm.title && llm.title.trim().length > 0) finalTitle = llm.title.trim();
+        if (llm.address && llm.address.trim().length > 0) finalAddress = cleanAddressLabel(llm.address);
+        if (llm.description && llm.description.trim().length > 0) finalDescription = llm.description.trim();
+        const safeDate = (s?: string | null) => {
+          if (!s) return null;
+          const d = new Date(s);
+          return isNaN(d.getTime()) ? null : d;
+        };
+        const llmStart = safeDate(llm.start);
+        const llmEnd = safeDate(llm.end);
+        finalStart = llmStart ?? finalStart;
+        finalEnd = llmEnd ?? finalEnd;
+      }
+    }
+
+    // Ensure description contains the title at the top (without duplication)
+    const descriptionHasTitle = (
+      (finalTitle || "").trim().length > 0 &&
+      (finalDescription || "").toLowerCase().includes((finalTitle || "").toLowerCase())
+    );
+    const descriptionWithTitle = descriptionHasTitle
+      ? (finalDescription || "")
+      : [finalTitle, finalDescription].filter((s) => (s || "").trim().length > 0).join("\n\n");
+
     const fieldsGuess = {
-      title,
-      start: start?.toISOString() ?? null,
-      end: end?.toISOString() ?? null,
-      location: addressOnly,
-      description: cleanDescription,
+      title: finalTitle,
+      start: finalStart?.toISOString() ?? null,
+      end: finalEnd?.toISOString() ?? null,
+      location: finalAddress,
+      description: descriptionWithTitle,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 

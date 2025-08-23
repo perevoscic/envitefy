@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const refreshToken = (request.headers.get("x-refresh-token") || "").trim();
     if (!refreshToken) return NextResponse.json({ error: "Missing refresh token" }, { status: 401 });
 
-    const tenant = "common";
+    const tenant = process.env.OUTLOOK_TENANT_ID || "common";
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
     const params = new URLSearchParams();
     params.append("client_id", process.env.OUTLOOK_CLIENT_ID!);

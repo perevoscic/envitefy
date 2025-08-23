@@ -26,6 +26,8 @@ export async function POST(request: NextRequest) {
     params.append("client_secret", process.env.OUTLOOK_CLIENT_SECRET!);
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", refreshToken);
+    // Ensure the refreshed access token includes calendar scopes
+    params.append("scope", "openid email profile offline_access Calendars.ReadWrite");
 
     const tokenResp = await fetch(tokenUrl, {
       method: "POST",
@@ -33,8 +35,16 @@ export async function POST(request: NextRequest) {
       body: params,
     });
     if (!tokenResp.ok) {
-      const text = await tokenResp.text();
-      return NextResponse.json({ error: text || "Failed to refresh token" }, { status: 500 });
+      let detail: any = null;
+      try { detail = await tokenResp.json(); } catch {}
+      const text = !detail ? await tokenResp.text().catch(() => "") : "";
+      const message =
+        detail?.error_description ||
+        detail?.error?.message ||
+        detail?.message ||
+        text ||
+        "Failed to refresh token";
+      return NextResponse.json({ error: message }, { status: 500 });
     }
     const tokens: { access_token?: string } = await tokenResp.json();
     const accessToken = tokens.access_token;
@@ -49,8 +59,15 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(graphBody),
     });
     if (!createResp.ok) {
-      const text = await createResp.text();
-      return NextResponse.json({ error: text || "Failed to create event" }, { status: 500 });
+      let detail: any = null;
+      try { detail = await createResp.json(); } catch {}
+      const text = !detail ? await createResp.text().catch(() => "") : "";
+      const message =
+        detail?.error?.message ||
+        detail?.message ||
+        text ||
+        "Failed to create event";
+      return NextResponse.json({ error: message, debug: { request: graphBody } }, { status: 500 });
     }
     const created: { webLink?: string; id?: string } = await createResp.json();
 

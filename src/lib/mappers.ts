@@ -36,13 +36,22 @@ export function toGoogleEvent(event: NormalizedEvent) {
 }
 
 export function toMicrosoftEvent(event: NormalizedEvent) {
+  const toGraphDateTime = (iso: string) => {
+    try {
+      // Graph expects dateTime without timezone designator when timeZone is provided
+      return new Date(iso).toISOString().slice(0, 19);
+    } catch {
+      return iso;
+    }
+  };
   const bodyContent = event.description || "";
   const graphEvent: any = {
-    subject: event.title,
+    subject: event.title || "Event",
     body: { contentType: "HTML", content: bodyContent },
     location: { displayName: event.location || "" },
-    start: { dateTime: event.start, timeZone: event.timezone },
-    end: { dateTime: event.end, timeZone: event.timezone },
+    // Send UTC with dateTime formatted without timezone suffix per Graph spec
+    start: { dateTime: toGraphDateTime(event.start), timeZone: "UTC" },
+    end: { dateTime: toGraphDateTime(event.end), timeZone: "UTC" },
   };
   if (event.allDay) graphEvent.isAllDay = true;
   // Microsoft supports a single reminder via reminderMinutesBeforeStart
