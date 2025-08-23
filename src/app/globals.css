@@ -327,3 +327,20 @@ body {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* Subtle edge glow for phone shell */
+@layer utilities {
+  .phone-shell {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.20),
+      0 8px 24px rgba(0, 0, 0, 0.40),
+      0 0 18px rgba(255, 255, 255, 0.08);
+  }
+  :root[data-theme="dark"] .phone-shell {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.28),
+      0 10px 28px rgba(0, 0, 0, 0.50),
+      0 0 32px rgba(255, 255, 255, 0.877),
+      0 0 10px rgba(255, 255, 255, 0.596);
+  }
+}

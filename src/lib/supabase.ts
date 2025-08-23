@@ -1,12 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Server-only Supabase client using service role for secure writes
-const supabaseUrl = process.env.SUPABASE_URL as string;
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL) as string;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   // Do not throw at import time in case of build-time env issues; callers should handle failures
-  console.warn("Supabase env not set: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing");
+  console.warn("Supabase env not set: VITE_SUPABASE_URL/SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing");
 }
 
 export const supabaseAdmin = supabaseUrl && supabaseServiceKey

@@ -32,14 +32,6 @@ export default function Home() {
     [session]
   );
 
-  // Force light theme while on the home page; restore previous on unmount
-  useEffect(() => {
-    const previousTheme = theme;
-    if (theme !== "light") setTheme("light");
-    return () => setTheme(previousTheme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const resetForm = () => {
     setEvent(null);
     setOcrText("");
@@ -664,9 +656,9 @@ export default function Home() {
 }
 
 function PhoneMockup() {
-  const flyer = "/window.svg";
+  const flyer = "/flyer.jpg";
   return (
-    <div className="relative w-[300px] sm:w-[340px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl shadow-black/50 ring-1 ring-white/10 overflow-hidden">
+    <div className="phone-shell relative w-[300px] sm:w-[340px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl shadow-black/50 ring-1 ring-white/10 overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-40 rounded-full bg-black/70" />
 
       <div className="absolute inset-[14px] rounded-[28px] overflow-hidden">
@@ -689,24 +681,29 @@ function PhoneMockup() {
         .scanline {
           position: absolute; left: 0; right: 0; height: 2px;
           background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0));
-          transform: translate3d(0,-6%,0);
-          animation: scan 2.2s linear infinite;
-          will-change: transform;
+          top: 0%;
+          animation: scan 2.2s linear infinite alternate;
+          will-change: top;
         }
         .scanglow {
           position: absolute; left: 0; right: 0; height: 56px; top: -28px;
           background: radial-gradient(ellipse at center, rgba(255,255,255,0.16), rgba(255,255,255,0) 60%);
-          transform: translate3d(0,-6%,0);
-          animation: scan 2.2s linear infinite;
+          animation: scanGlow 2.2s linear infinite alternate;
           mix-blend-mode: screen; opacity: .9;
-          will-change: transform;
+          will-change: top;
         }
         @keyframes scan {
-          0% { transform: translate3d(0,-6%,0); }
-          100% { transform: translate3d(0,106%,0); }
+          0% { top: 0%; }
+          100% { top: 100%; }
+        }
+        @keyframes scanGlow {
+          0% { top: -28px; }
+          100% { top: calc(100% - 28px); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .scanline, .scanglow { animation: none; transform: translate3d(0,30%,0); }
+          .scanline, .scanglow { animation: none; }
+          .scanline { top: 30%; }
+          .scanglow { top: calc(30% - 28px); }
         }
       `}</style>
     </div>
