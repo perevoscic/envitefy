@@ -129,26 +129,90 @@ export default function LoginPage() {
 
           <div className="space-y-3">
             <button
-              className="w-full px-4 py-2 rounded bg-[#4285F4] hover:bg-[#3367D6] text-white"
+              className="w-full px-4 py-2 rounded bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]/30"
               onClick={() => signIn("google", { callbackUrl: "/" })}
             >
-              Continue with Google
+              <span className="inline-flex items-center justify-center gap-3 pl-[2px]">
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 48 48"
+                >
+                  <path
+                    fill="#FFC107"
+                    d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
+ s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C32.651,6.053,28.478,4,24,4C12.955,4,4,12.955,4,24
+ s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+                  />
+                  <path
+                    fill="#FF3D00"
+                    d="M6.306,14.691l6.571,4.814C14.602,16.289,18.961,14,24,14c3.059,0,5.842,1.154,7.961,3.039
+ l5.657-5.657C32.651,6.053,28.478,4,24,4C16.318,4,9.715,8.337,6.306,14.691z"
+                  />
+                  <path
+                    fill="#4CAF50"
+                    d="M24,44c5.176,0,9.86-1.977,13.409-5.197l-6.174-5.238C29.215,35.091,26.751,36,24,36
+ c-5.202,0-9.619-3.317-11.283-7.946l-6.54,5.037C9.553,39.556,16.227,44,24,44z"
+                  />
+                  <path
+                    fill="#1976D2"
+                    d="M43.611,20.083H42V20H24v8h11.303c-0.793,2.237-2.231,4.166-3.997,5.565
+ c0.001-0.001,0.002-0.001,0.003-0.002l6.174,5.238C39.059,36.284,44,30.627,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </span>
             </button>
             <button
-              className="w-full px-4 py-2 rounded bg-[#0078D4] hover:bg-[#106EBE] text-white"
+              className="w-full px-4 py-2 rounded bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0078D4]/30"
               onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
             >
-              Continue with Microsoft
+              <span className="inline-flex items-center justify-center gap-3">
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 23 23"
+                >
+                  <rect width="10" height="10" x="1" y="1" fill="#F25022" />
+                  <rect width="10" height="10" x="12" y="1" fill="#7FBA00" />
+                  <rect width="10" height="10" x="1" y="12" fill="#00A4EF" />
+                  <rect width="10" height="10" x="12" y="12" fill="#FFB900" />
+                </svg>
+                <span>Continue with Microsoft</span>
+              </span>
             </button>
             <button
-              className="w-full px-4 py-2 rounded bg-black text-white"
+              className="w-full pr-4 pl-5 py-2 rounded bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black/30"
               onClick={() => signIn("apple", { callbackUrl: "/" })}
             >
-              Continue with Apple
+              <span className="inline-flex items-center justify-center gap-3">
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="-2 0 26 24"
+                  fill="currentColor"
+                  className="shrink-0"
+                >
+                  <path d="M16.365 1.43c0 1.14-.467 2.272-1.169 3.093-.75.883-2.02 1.57-3.257 1.479-.14-1.1.43-2.265 1.112-3.03.79-.9 2.186-1.58 3.314-1.542zM20.54 17.1c-.59 1.36-.88 1.97-1.65 3.18-1.07 1.71-2.59 3.84-4.46 3.85-1.68.02-2.12-1.12-4.41-1.11-2.29.01-2.78 1.13-4.47 1.09-1.87-.05-3.3-1.94-4.37-3.65-2.38-3.78-2.63-8.22-1.16-10.56 1.04-1.67 2.7-2.65 4.57-2.67 1.8-.03 3.5 1.19 4.41 1.19.92 0 2.56-1.47 4.31-1.25.73.03 2.79.29 4.11 2.21-.11.07-2.45 1.43-2.43 4.28.03 3.41 2.98 4.54 3.07 4.58z" />
+                </svg>
+                <span>Continue with Apple</span>
+              </span>
             </button>
           </div>
 
-          <div className="h-px bg-border" />
+          <div className="flex items-center gap-3 select-none">
+            <div className="h-px bg-border flex-1" />
+            <span
+              className="text-xs tracking-wide uppercase dark:text-white"
+              style={{ color: "#000" }}
+            >
+              or
+            </span>
+            <div className="h-px bg-border flex-1" />
+          </div>
 
           <form className="space-y-3" onSubmit={onEmailSubmit}>
             <label className="block text-sm text-muted-foreground">Email</label>
@@ -162,7 +226,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full px-4 py-2 rounded bg-accent text-white disabled:opacity-70"
+              className="w-full px-4 py-2 rounded bg-[#A259FF] text-white disabled:opacity-70"
             >
               {submitting ? "Sending..." : "Continue with email"}
             </button>
