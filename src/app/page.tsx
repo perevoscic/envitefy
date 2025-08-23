@@ -30,6 +30,15 @@ export default function Home() {
     [session]
   );
 
+  const resetForm = () => {
+    setEvent(null);
+    setOcrText("");
+    setError(null);
+    setFile(null);
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const onFile = (f: File | null) => {
     setFile(f);
     if (f) ingest(f);
@@ -86,10 +95,12 @@ export default function Home() {
   };
 
   const openCamera = () => {
+    resetForm();
     cameraInputRef.current?.click();
   };
 
   const openUpload = () => {
+    resetForm();
     fileInputRef.current?.click();
   };
 
@@ -258,7 +269,13 @@ export default function Home() {
             className="hidden"
           />
 
-          {loading && null}
+          {loading && (
+            <div role="status" aria-live="polite" className="mt-3">
+              <div className="scan-inline">
+                <div className="scan-beam" />
+              </div>
+            </div>
+          )}
 
           {/* Actions moved to bottom with the Apple button */}
         </div>
@@ -378,19 +395,22 @@ export default function Home() {
                           const next = (event.reminders || []).filter(
                             (_, i) => i !== idx
                           );
-                          setEvent({
-                            ...event,
-                            reminders: next.length ? next : [{ minutes: 1440 }],
-                          });
+                          setEvent({ ...event, reminders: next });
                         }}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
-                          fill="currentColor"
+                          fill="none"
+                          stroke="currentColor"
                           className="h-4 w-4"
                         >
-                          <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z" />
+                          <path
+                            d="M6 7h12M9 7l1-2h4l1 2m-9 0l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6m4-6v6"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -400,11 +420,9 @@ export default function Home() {
                   <button
                     className="px-3 py-1 text-sm bg-surface border border-border rounded hover:opacity-80"
                     onClick={() => {
-                      const base = (
-                        event.reminders && event.reminders.length
-                          ? event.reminders
-                          : [{ minutes: 1440 }]
-                      ) as { minutes: number }[];
+                      const base = Array.isArray(event.reminders)
+                        ? (event.reminders as { minutes: number }[])
+                        : ([] as { minutes: number }[]);
                       const next = [...base, { minutes: 1440 }];
                       setEvent({ ...event, reminders: next });
                     }}

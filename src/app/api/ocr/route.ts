@@ -40,6 +40,20 @@ function getVisionClient() {
   return new ImageAnnotatorClient();
 }
 
+function cleanAddressLabel(input: string): string {
+  let s = input.trim();
+  // Remove common labels like LOCATION:, ADDRESS:, VENUE:, WHERE:, AT:
+  s = s.replace(/^\s*(location|address|venue|where)\s*[:\-]?\s*/i, "");
+  s = s.replace(/^\s*at\s+/i, "");
+  // If there's a digit (street number) later in the string, drop everything before it
+  if (/\d/.test(s)) {
+    s = s.replace(/^[^\d]*?(?=\d)/, "");
+  }
+  // Collapse spaces and drop a trailing comma or dash
+  s = s.replace(/\s{2,}/g, " ").replace(/[\s,\-]+$/g, "");
+  return s.trim();
+}
+
 function stripInvitePhrases(s: string): string {
   return s
     .replace(/^\s*(you\s+are\s+invited\s+to[:\s-]*)/i, "")
@@ -264,12 +278,16 @@ export async function POST(request: Request) {
       if (next && (cityStateZip.test(next) || hasStreetNumber.test(next)) && !timeToken.test(next)) {
         parts.push(next);
       }
-      addressOnly = parts.join(", ").replace(/^\s*\|\s*/g, "").replace(/\s{2,}/g, " ").trim();
+      addressOnly = parts.join(", ")
+        .replace(/^\s*\|\s*/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
       // If still no digit in address, fall back to line with number elsewhere
       if (!/\d/.test(addressOnly)) {
         const withNum = lines.find((l) => hasStreetNumber.test(l) && !timeToken.test(l));
         if (withNum) addressOnly = withNum.trim();
       }
+      addressOnly = cleanAddressLabel(addressOnly);
     }
 
     const cleanDescription = (() => {
@@ -283,6 +301,25 @@ export async function POST(request: Request) {
       const addressNorm = normalize(addressOnly);
       const parsedNorm = parsedText ? normalize(parsedText) : null;
       const genericWords = new Set(["party", "birthday", "event", "celebration"]);
+      const allowShortWord = new Set(["usa", "nyc", "bbq", "gym"]);
+      const englishishSuffix = /(ing|tion|ment|ness|able|ible|less|ful|ship|day|night|house|hall|park|room|center|centre|party|birthday|concert|festival|meeting|reception|ceremony|gala|parade|show)$/i;
+      const monthsShort = /(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)/i;
+      const weekdaysShort = /(mon|tue|tues|wed|thu|thur|fri|sat|sun)/i;
+      const looksEnglishWord = (wRaw: string): boolean => {
+        const w = (wRaw || "").toLowerCase().replace(/[^a-z]/g, "");
+        if (!w) return false;
+        if (allowShortWord.has(w)) return true;
+        if (monthsShort.test(w) || weekdaysShort.test(w)) return true;
+        if (w.length <= 2) return true; // keep common short words like at, to, of
+        if (!/[aeiouy]/i.test(w) && w.length >= 3) return false; // no vowels
+        if (englishishSuffix.test(w)) return true;
+        if (w.length >= 5) {
+          const vowels = (w.match(/[aeiouy]/g) || []).length;
+          if (vowels / w.length < 0.25) return false;
+        }
+        if (/(.)\1{2,}/.test(w)) return false; // repeated letters like llll
+        return true;
+      };
       const hasEnoughOverlap = (line: string, words: string[]) => {
         if (!words.length) return false;
         const lineWords = normalize(line).split(" ").filter(Boolean);
@@ -307,12 +344,22 @@ export async function POST(request: Request) {
         if (/(^|\s)(ee+|oo+|ll+)(\s|$)/i.test(stripped) && stripped.replace(/\s+/g, "").length <= 3) continue;
         if (inviteRe.test(stripped)) continue;
         if (hasEnoughOverlap(stripped, titleWords)) continue;
+        // Drop single-word noise that doesn't look like English
+        if (/^[A-Za-z]{3,}$/.test(stripped) && stripped.split(/\s+/).length === 1) {
+          if (!looksEnglishWord(stripped)) continue;
+        }
         const strippedNorm = normalize(stripped);
         if (addressNorm && (strippedNorm.includes(addressNorm) || (strippedNorm.length >= 8 && addressNorm.includes(strippedNorm)))) continue;
         // Only drop the line if it is exactly the same as the parsed time fragment
         if (parsedNorm && strippedNorm === parsedNorm) continue;
         // Ignore generic single words like "Party" when alone
         if (/^[A-Za-z]+$/.test(stripped) && genericWords.has(stripped.toLowerCase())) continue;
+        // For very short multi-word lines (<= 3 words), drop if all tokens are non-Englishish
+        const tokens = stripped.split(/\s+/).filter(Boolean);
+        if (tokens.length <= 3) {
+          const good = tokens.filter((t) => /\d/.test(t) || looksEnglishWord(t)).length;
+          if (good === 0) continue;
+        }
         keep.push(stripped);
       }
       return keep.join("\n");
