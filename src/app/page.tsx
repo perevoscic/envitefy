@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import * as chrono from "chrono-node";
 
@@ -94,20 +94,12 @@ export default function Home() {
     setLoading(false);
   };
 
-  const openCamera = () => {
-    resetForm();
-    cameraInputRef.current?.click();
-  };
-
-  const openUpload = () => {
-    resetForm();
-    fileInputRef.current?.click();
-  };
+  const openCamera = () => cameraInputRef.current?.click();
+  const openUpload = () => fileInputRef.current?.click();
 
   const parseStartToIso = (value: string | null, timezone: string) => {
     if (!value) return null;
     try {
-      // Try ISO first
       const isoDate = new Date(value);
       if (!isNaN(isoDate.getTime())) return isoDate.toISOString();
     } catch {}
@@ -117,7 +109,6 @@ export default function Home() {
 
   const normalizeAddress = (raw: string) => {
     if (!raw) return "";
-    // If the string contains a street number, extract from there forward
     const fromNumber = raw.match(/\b\d{1,6}[^\n]*/);
     const candidate = fromNumber ? fromNumber[0] : raw;
     const streetSuffix =
@@ -169,12 +160,11 @@ export default function Home() {
   };
 
   const connectGoogle = () => {
-    signIn("google", { callbackUrl: "/", prompt: "consent" } as any);
+    signIn("google", { callbackUrl: "/" } as any);
   };
 
   const connectOutlook = () => {
-    // Request consent the first time to ensure a refresh token is issued
-    signIn("azure-ad", { callbackUrl: "/", prompt: "consent" } as any);
+    signIn("azure-ad", { callbackUrl: "/" } as any);
   };
 
   const addGoogle = async () => {
@@ -187,15 +177,9 @@ export default function Home() {
       credentials: "include",
       body: JSON.stringify(ready),
     });
-    let j: any = {};
-    try {
-      j = await res.json();
-    } catch {}
-    if (!res.ok) {
-      setError(j.error || "Failed to add to Google Calendar");
-      return;
-    }
-    if (j.htmlLink) window.open(j.htmlLink, "_blank");
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    if ((j as any).htmlLink) window.open((j as any).htmlLink, "_blank");
   };
 
   const addOutlook = async () => {
@@ -208,61 +192,50 @@ export default function Home() {
       credentials: "include",
       body: JSON.stringify(ready),
     });
-    let j: any = {};
-    try {
-      j = await res.json();
-    } catch {}
-    if (!res.ok) {
-      const detail = j?.error || "Failed to add to Outlook Calendar";
-      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
-      return;
-    }
-    if (j.webLink) window.open(j.webLink, "_blank");
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    if ((j as any).webLink) window.open((j as any).webLink, "_blank");
   };
 
-  useEffect(() => {
-    // No-op; just ensure session is read early
-  }, [session]);
-
   return (
-    <main className="mx-auto max-w-4xl p-4 space-y-8">
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-accent text-white p-8 md:p-12">
-        <div className="relative z-10 text-center space-y-4">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-shadow-soft">
-            Snap a flyer.
-            <br />
-            Save the date.
-          </h1>
-          <p className="text-white/90 max-w-2xl mx-auto text-shadow-soft">
-            Turn any flyer or appointment card into a calendar event in seconds.
-            <br />
-            Works with Google, Apple and Outlook Calendars.
-          </p>
-        </div>
-      </section>
+    <main className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center p-6">
+      <section className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="order-2 lg:order-1 text-center lg:text-left">
+          <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
+            <div className="rounded-3xl bg-neutral-900/70 backdrop-blur-sm p-8">
+              <h1 className="text-6xl sm:text-7xl font-extrabold leading-[1.05] tracking-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300">
+                  Snap a flyer.
+                </span>
+                <br />
+                <span className="text-white">Save the date.</span>
+              </h1>
+              <p className="mt-5 text-lg sm:text-xl text-white/80 max-w-2xl">
+                Turn any flyer or appointment card into a calendar event in
+                seconds. Works with Google, Apple, and Outlook Calendars.
+              </p>
 
-      <section className="flex items-center justify-center gap-3">
-        <button
-          className="px-5 py-3 bg-primary text-white font-semibold rounded shadow-md hover:opacity-90 text-shadow-subtle"
-          onClick={openCamera}
-        >
-          Snap it
-        </button>
-        <button
-          className="px-5 py-3 bg-secondary text-white font-semibold rounded hover:opacity-90 shadow-md text-shadow-subtle"
-          onClick={openUpload}
-        >
-          Upload from device
-        </button>
-      </section>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
+                <button
+                  onClick={openCamera}
+                  aria-label="Open camera to snap a flyer"
+                  className="group inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-neutral-900 shadow-lg shadow-teal-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 transition"
+                >
+                  Snap It Now
+                </button>
 
-      <section id="scan" className="space-y-4">
-        <div className="space-y-3">
-          {error && (
-            <div className="p-3 rounded border border-error bg-surface text-error">
-              {error}
+                <button
+                  onClick={openUpload}
+                  aria-label="Upload a flyer or card image from your device"
+                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-violet-400/70 text-violet-200 hover:text-white hover:border-white/80 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 transition"
+                >
+                  Upload from Device
+                </button>
+              </div>
+              {/* Calendar buttons appear after a successful scan below with the form */}
             </div>
-          )}
+          </div>
+
           <input
             ref={cameraInputRef}
             type="file"
@@ -280,209 +253,465 @@ export default function Home() {
           />
 
           {loading && (
-            <div role="status" aria-live="polite" className="mt-3">
-              <div className="scan-inline">
+            <div role="status" aria-live="polite" className="mt-8">
+              <div className="scan-inline" style={{ height: 10 }}>
                 <div className="scan-beam" />
               </div>
             </div>
           )}
+          {error && (
+            <div className="mt-3 p-3 rounded border border-red-500/40 bg-red-500/10 text-red-200">
+              {error}
+            </div>
+          )}
 
-          {/* Actions moved to bottom with the Apple button */}
+          {event && (
+            <section className="mt-8 space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                  onClick={connected.google ? addGoogle : connectGoogle}
+                >
+                  {connected.google ? "Add to Google" : "Connect to Google"}
+                </button>
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                  onClick={dlIcs}
+                >
+                  Connect to Apple Calendar
+                </button>
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                  onClick={connected.microsoft ? addOutlook : connectOutlook}
+                >
+                  {connected.microsoft
+                    ? "Add to Outlook"
+                    : "Connect to Outlook"}
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label
+                    htmlFor="event-title"
+                    className="text-sm text-white/70"
+                  >
+                    Title
+                  </label>
+                  <input
+                    id="event-title"
+                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    value={event.title}
+                    onChange={(e) =>
+                      setEvent({ ...event, title: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label
+                    htmlFor="event-start"
+                    className="text-sm text-white/70"
+                  >
+                    Start
+                  </label>
+                  <input
+                    id="event-start"
+                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    value={event.start || ""}
+                    onChange={(e) =>
+                      setEvent({ ...event, start: e.target.value })
+                    }
+                  />
+                </div>
+
+                {Boolean(event.end) && (
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="event-end"
+                      className="text-sm text-white/70"
+                    >
+                      End
+                    </label>
+                    <input
+                      id="event-end"
+                      className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                      value={event.end || ""}
+                      onChange={(e) =>
+                        setEvent({ ...event, end: e.target.value || null })
+                      }
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label
+                    htmlFor="event-location"
+                    className="text-sm text-white/70"
+                  >
+                    Address
+                  </label>
+                  <input
+                    id="event-location"
+                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    value={event.location}
+                    onChange={(e) =>
+                      setEvent({ ...event, location: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label
+                    htmlFor="event-description"
+                    className="text-sm text-white/70"
+                  >
+                    Description
+                  </label>
+                  <textarea
+                    id="event-description"
+                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    rows={4}
+                    value={event.description}
+                    onChange={(e) =>
+                      setEvent({ ...event, description: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm text-white/70">Reminders</label>
+                  <div className="space-y-2">
+                    {(event.reminders || []).map((r, idx) => {
+                      const dayOptions = [1, 2, 3, 7, 14, 30];
+                      const currentDays = Math.max(
+                        1,
+                        Math.round((r.minutes || 0) / 1440) || 1
+                      );
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <select
+                            className="border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                            value={currentDays}
+                            onChange={(e) => {
+                              const days = Math.max(
+                                1,
+                                Number(e.target.value) || 1
+                              );
+                              const next = [...(event.reminders || [])];
+                              next[idx] = { minutes: days * 1440 };
+                              setEvent({ ...event, reminders: next });
+                            }}
+                          >
+                            {dayOptions.map((d) => (
+                              <option key={d} value={d}>
+                                {d} day{d === 1 ? "" : "s"} before
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            aria-label="Delete reminder"
+                            className="px-2 py-2 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                            onClick={() => {
+                              const next = (event.reminders || []).filter(
+                                (_, i) => i !== idx
+                              );
+                              setEvent({ ...event, reminders: next });
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <div>
+                      <button
+                        className="px-3 py-1 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                        onClick={() => {
+                          const base = Array.isArray(event.reminders)
+                            ? (event.reminders as { minutes: number }[])
+                            : ([] as { minutes: number }[]);
+                          const next = [...base, { minutes: 1440 }];
+                          setEvent({ ...event, reminders: next });
+                        }}
+                      >
+                        + Add reminder
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
-        {event && (
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label
-                htmlFor="event-title"
-                className="text-sm text-muted-foreground"
+        <div className="order-1 lg:order-2 hidden md:flex justify-center lg:justify-end">
+          <PhoneMockup />
+        </div>
+      </section>
+
+      {event && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setEvent(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-2xl rounded-2xl bg-neutral-900/95 ring-1 ring-white/10 p-6"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-2xl font-semibold">Review details</h2>
+              <button
+                aria-label="Close"
+                className="rounded-lg px-3 py-1.5 bg-white/10 hover:bg-white/20"
+                onClick={() => setEvent(null)}
               >
-                Title
-              </label>
-              <input
-                id="event-title"
-                className="w-full border border-border bg-surface text-foreground p-2 rounded"
-                value={event.title}
-                onChange={(e) => setEvent({ ...event, title: e.target.value })}
-              />
+                ✕
+              </button>
             </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="event-start"
-                className="text-sm text-muted-foreground"
-              >
-                Start
-              </label>
-              <input
-                id="event-start"
-                className="w-full border border-border bg-surface text-foreground p-2 rounded"
-                value={event.start || ""}
-                onChange={(e) => setEvent({ ...event, start: e.target.value })}
-              />
-            </div>
-            {Boolean(event.end) && (
+
+            <div className="mt-4 space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div className="space-y-1">
-                <label
-                  htmlFor="event-end"
-                  className="text-sm text-muted-foreground"
-                >
-                  End
+                <label htmlFor="event-title" className="text-sm text-white/70">
+                  Title
                 </label>
                 <input
-                  id="event-end"
-                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
-                  value={event.end || ""}
+                  id="event-title"
+                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  value={event.title}
                   onChange={(e) =>
-                    setEvent({ ...event, end: e.target.value || null })
+                    setEvent({ ...event, title: e.target.value })
                   }
                 />
               </div>
-            )}
-            <div className="space-y-1">
-              <label
-                htmlFor="event-location"
-                className="text-sm text-muted-foreground"
-              >
-                Address
-              </label>
-              <input
-                id="event-location"
-                className="w-full border border-border bg-surface text-foreground p-2 rounded"
-                value={event.location}
-                onChange={(e) =>
-                  setEvent({ ...event, location: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="event-description"
-                className="text-sm text-muted-foreground"
-              >
-                Description
-              </label>
-              <textarea
-                id="event-description"
-                className="w-full border border-border bg-surface text-foreground p-2 rounded"
-                rows={4}
-                value={event.description}
-                onChange={(e) =>
-                  setEvent({ ...event, description: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm text-muted-foreground">Reminders</label>
-              <div className="space-y-2">
-                {(event.reminders || []).map((r, idx) => {
-                  const dayOptions = [1, 2, 3, 7, 14, 30];
-                  const currentDays = Math.max(
-                    1,
-                    Math.round((r.minutes || 0) / 1440) || 1
-                  );
-                  return (
-                    <div key={idx} className="flex items-center gap-2">
-                      <select
-                        className="border border-border bg-surface text-foreground p-2 rounded"
-                        value={currentDays}
-                        onChange={(e) => {
-                          const days = Math.max(1, Number(e.target.value) || 1);
-                          const next = [...(event.reminders || [])];
-                          next[idx] = { minutes: days * 1440 };
-                          setEvent({ ...event, reminders: next });
-                        }}
-                      >
-                        {dayOptions.map((d) => (
-                          <option key={d} value={d}>
-                            {d} day{d === 1 ? "" : "s"} before
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        aria-label="Delete reminder"
-                        className="px-2 py-2 text-sm bg-surface border border-border rounded hover:opacity-80"
-                        onClick={() => {
-                          const next = (event.reminders || []).filter(
-                            (_, i) => i !== idx
-                          );
-                          setEvent({ ...event, reminders: next });
-                        }}
-                      >
-                        <svg
-                          aria-hidden="true"
-                          focusable="false"
-                          className="octicon octicon-trash h-4 w-4"
-                          viewBox="0 0 16 16"
-                          width="16"
-                          height="16"
-                          fill="currentColor"
-                          overflow="visible"
-                          style={{ verticalAlign: "text-bottom" }}
+
+              <div className="space-y-1">
+                <label htmlFor="event-start" className="text-sm text-white/70">
+                  Start
+                </label>
+                <input
+                  id="event-start"
+                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  value={event.start || ""}
+                  onChange={(e) =>
+                    setEvent({ ...event, start: e.target.value })
+                  }
+                />
+              </div>
+
+              {Boolean(event.end) && (
+                <div className="space-y-1">
+                  <label htmlFor="event-end" className="text-sm text-white/70">
+                    End
+                  </label>
+                  <input
+                    id="event-end"
+                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    value={event.end || ""}
+                    onChange={(e) =>
+                      setEvent({ ...event, end: e.target.value || null })
+                    }
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label
+                  htmlFor="event-location"
+                  className="text-sm text-white/70"
+                >
+                  Address
+                </label>
+                <input
+                  id="event-location"
+                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  value={event.location}
+                  onChange={(e) =>
+                    setEvent({ ...event, location: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label
+                  htmlFor="event-description"
+                  className="text-sm text-white/70"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="event-description"
+                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  rows={4}
+                  value={event.description}
+                  onChange={(e) =>
+                    setEvent({ ...event, description: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-white/70">Reminders</label>
+                <div className="space-y-2">
+                  {(event.reminders || []).map((r, idx) => {
+                    const dayOptions = [1, 2, 3, 7, 14, 30];
+                    const currentDays = Math.max(
+                      1,
+                      Math.round((r.minutes || 0) / 1440) || 1
+                    );
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <select
+                          className="border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                          value={currentDays}
+                          onChange={(e) => {
+                            const days = Math.max(
+                              1,
+                              Number(e.target.value) || 1
+                            );
+                            const next = [...(event.reminders || [])];
+                            next[idx] = { minutes: days * 1440 };
+                            setEvent({ ...event, reminders: next });
+                          }}
                         >
-                          <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"></path>
-                        </svg>
-                      </button>
-                    </div>
-                  );
-                })}
-                <div>
-                  <button
-                    className="px-3 py-1 text-sm bg-surface border border-border rounded hover:opacity-80"
-                    onClick={() => {
-                      const base = Array.isArray(event.reminders)
-                        ? (event.reminders as { minutes: number }[])
-                        : ([] as { minutes: number }[]);
-                      const next = [...base, { minutes: 1440 }];
-                      setEvent({ ...event, reminders: next });
-                    }}
-                  >
-                    + Add reminder
-                  </button>
+                          {dayOptions.map((d) => (
+                            <option key={d} value={d}>
+                              {d} day{d === 1 ? "" : "s"} before
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          aria-label="Delete reminder"
+                          className="px-2 py-2 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                          onClick={() => {
+                            const next = (event.reminders || []).filter(
+                              (_, i) => i !== idx
+                            );
+                            setEvent({ ...event, reminders: next });
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <div>
+                    <button
+                      className="px-3 py-1 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                      onClick={() => {
+                        const base = Array.isArray(event.reminders)
+                          ? (event.reminders as { minutes: number }[])
+                          : ([] as { minutes: number }[]);
+                        const next = [...base, { minutes: 1440 }];
+                        setEvent({ ...event, reminders: next });
+                      }}
+                    >
+                      + Add reminder
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              {connected.google ? (
-                <button
-                  className="px-4 py-2 bg-primary text-white rounded shadow-sm text-shadow-subtle"
-                  onClick={addGoogle}
-                >
-                  Add to Google
-                </button>
-              ) : (
-                <button
-                  className="px-4 py-2 bg-primary text-white rounded shadow-sm text-shadow-subtle"
-                  onClick={connectGoogle}
-                >
-                  Connect to Google
-                </button>
-              )}
-              {connected.microsoft ? (
-                <button
-                  className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
-                  onClick={addOutlook}
-                >
-                  Add to Outlook
-                </button>
-              ) : (
-                <button
-                  className="px-4 py-2 bg-secondary text-white rounded shadow-sm text-shadow-subtle"
-                  onClick={connectOutlook}
-                >
-                  Connect to Outlook
-                </button>
-              )}
+
+            <div className="mt-6 flex items-center gap-3 flex-wrap justify-end">
               <button
-                className="px-4 py-2 bg-accent text-white rounded shadow-sm text-shadow-subtle"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                onClick={connected.google ? addGoogle : connectGoogle}
+              >
+                {connected.google ? "Add to Google" : "Connect to Google"}
+              </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
                 onClick={dlIcs}
               >
                 Connect to Apple Calendar
               </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                onClick={connected.microsoft ? addOutlook : connectOutlook}
+              >
+                {connected.microsoft ? "Add to Outlook" : "Connect to Outlook"}
+              </button>
             </div>
           </div>
-        )}
-      </section>
+        </div>
+      )}
     </main>
   );
 }
-// Theme toggle is now housed in the left sidebar
+
+function PhoneMockup() {
+  const flyer = "/window.svg";
+  return (
+    <div className="relative w-[300px] sm:w-[340px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl shadow-black/50 ring-1 ring-white/10 overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-40 rounded-full bg-black/70" />
+
+      <div className="absolute inset-[14px] rounded-[28px] overflow-hidden">
+        <img
+          src={flyer}
+          alt="Flyer being scanned"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+
+        <div className="scanwrap absolute inset-0" aria-hidden="true">
+          <div className="scanline"></div>
+          <div className="scanglow"></div>
+        </div>
+      </div>
+
+      <div className="absolute right-0 top-24 h-16 w-1.5 rounded-l bg-white/20" />
+
+      <style>{`
+        .scanwrap { contain: content; pointer-events: none; }
+        .scanline {
+          position: absolute; left: 0; right: 0; height: 2px;
+          background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0));
+          transform: translate3d(0,-6%,0);
+          animation: scan 2.2s linear infinite;
+          will-change: transform;
+        }
+        .scanglow {
+          position: absolute; left: 0; right: 0; height: 56px; top: -28px;
+          background: radial-gradient(ellipse at center, rgba(255,255,255,0.16), rgba(255,255,255,0) 60%);
+          transform: translate3d(0,-6%,0);
+          animation: scan 2.2s linear infinite;
+          mix-blend-mode: screen; opacity: .9;
+          will-change: transform;
+        }
+        @keyframes scan {
+          0% { transform: translate3d(0,-6%,0); }
+          100% { transform: translate3d(0,106%,0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .scanline, .scanglow { animation: none; transform: translate3d(0,30%,0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function BadgeGoogle() {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 bg-white/5">
+      <span className="text-xs text-white/80">Google Calendar</span>
+    </div>
+  );
+}
+
+function BadgeApple() {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 bg-white/5">
+      <span className="text-xs text-white/80">Apple Calendar</span>
+    </div>
+  );
+}
+
+function BadgeOutlook() {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 bg-white/5">
+      <span className="text-xs text-white/80">Outlook Calendar</span>
+    </div>
+  );
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toMicrosoftEvent } from "@/lib/mappers";
+import { getMicrosoftRefreshToken } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -8,12 +9,10 @@ export async function POST(request: NextRequest) {
   try {
     const tokenData = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
     if (!tokenData) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const providers = (tokenData as any).providers || {};
-    const m = providers.microsoft || {};
-    const refreshToken = m.refreshToken as string | undefined;
-    if (!refreshToken) {
-      return NextResponse.json({ error: "Microsoft not connected" }, { status: 400 });
-    }
+    const email = (tokenData as any).email as string | undefined;
+    if (!email) return NextResponse.json({ error: "Missing user email" }, { status: 400 });
+    const refreshToken = await getMicrosoftRefreshToken(email);
+    if (!refreshToken) return NextResponse.json({ error: "Microsoft not connected" }, { status: 400 });
 
     const body: (NormalizedEvent & { intakeId?: string | null }) = await request.json();
     const graphBody = toMicrosoftEvent(body);

@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import AppleProvider from "next-auth/providers/apple";
+import { saveMicrosoftRefreshToken } from "@/lib/supabase";
 
 export const authOptions: NextAuthOptions = {
   debug: true,
@@ -13,8 +14,6 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           access_type: "offline",
-          response_type: "code",
-          prompt: "consent",
           include_granted_scopes: true,
           scope:
             "openid email profile https://www.googleapis.com/auth/calendar.events",
@@ -51,19 +50,24 @@ export const authOptions: NextAuthOptions = {
       const t: any = token as any;
       if (account?.provider === "google") {
         t.providers = t.providers || {};
+        const prev = t.providers.google || {};
         t.providers.google = {
-          accessToken: account.access_token,
-          refreshToken: account.refresh_token,
-          expiresAt: account.expires_at ? account.expires_at * 1000 : undefined,
+          accessToken: account.access_token || prev.accessToken,
+          refreshToken: account.refresh_token || prev.refreshToken,
+          expiresAt: account.expires_at ? account.expires_at * 1000 : prev.expiresAt,
         };
       }
       if (account?.provider === "azure-ad") {
         t.providers = t.providers || {};
-        t.providers.microsoft = {
-          accessToken: account.access_token,
-          refreshToken: account.refresh_token,
-          expiresAt: account.expires_at ? account.expires_at * 1000 : undefined,
-        };
+        // Persist the refresh token securely in Supabase; don't store it in the JWT
+        try {
+          if (account.refresh_token && (t.email || (profile as any)?.email)) {
+            const email = (t.email as string) || ((profile as any)?.email as string);
+            if (email) await saveMicrosoftRefreshToken(email, account.refresh_token);
+          }
+        } catch {}
+        // Keep only a small flag in the JWT to indicate connection status
+        t.providers.microsoft = { connected: true };
       }
       return t;
     },
@@ -71,9 +75,7 @@ export const authOptions: NextAuthOptions = {
       const providers = (token as any).providers || {};
       (session as any).providers = {
         google: Boolean(providers.google?.refreshToken || providers.google?.accessToken),
-        microsoft: Boolean(
-          providers.microsoft?.refreshToken || providers.microsoft?.accessToken
-        ),
+        microsoft: Boolean(providers.microsoft?.connected),
       };
       return session;
     },

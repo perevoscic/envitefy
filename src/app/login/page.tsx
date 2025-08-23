@@ -84,11 +84,16 @@ export default function LoginPage() {
 
           <div className="scan-card">
             <div className="scan-grid" />
-            <div className="scan-sheen" />
-            <div className="scan-logo-wrap">
-              <div className="scan-logo-sheen" />
-              <div className="scan-logo" />
-            </div>
+            {slide === 0 && (
+              <video
+                className="absolute inset-0 w-full h-full object-cover"
+                src="/phone-quick-scan.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            )}
             <div className="scan-title">
               <span className="scan-dot" />
               <div className="flex-1">
