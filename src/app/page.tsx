@@ -1,7 +1,8 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import * as chrono from "chrono-node";
+import { useTheme } from "./providers";
 
 type EventFields = {
   title: string;
@@ -14,6 +15,7 @@ type EventFields = {
 };
 
 export default function Home() {
+  const { theme, setTheme } = useTheme();
   const [file, setFile] = useState<File | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,14 @@ export default function Home() {
     }),
     [session]
   );
+
+  // Force light theme while on the home page; restore previous on unmount
+  useEffect(() => {
+    const previousTheme = theme;
+    if (theme !== "light") setTheme("light");
+    return () => setTheme(previousTheme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetForm = () => {
     setEvent(null);
@@ -198,19 +208,19 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="order-2 lg:order-1 text-center lg:text-left">
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
-            <div className="rounded-3xl bg-neutral-900/70 backdrop-blur-sm p-8">
-              <h1 className="text-6xl sm:text-7xl font-extrabold leading-[1.05] tracking-tight">
+            <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
+              <h1 className="text-6xl sm:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300">
                   Snap a flyer.
                 </span>
                 <br />
-                <span className="text-white">Save the date.</span>
+                <span className="text-foreground">Save the date.</span>
               </h1>
-              <p className="mt-5 text-lg sm:text-xl text-white/80 max-w-2xl">
+              <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-2xl">
                 Turn any flyer or appointment card into a calendar event in
                 seconds. Works with Google, Apple, and Outlook Calendars.
               </p>
@@ -219,7 +229,7 @@ export default function Home() {
                 <button
                   onClick={openCamera}
                   aria-label="Open camera to snap a flyer"
-                  className="group inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-neutral-900 shadow-lg shadow-teal-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 transition"
+                  className="group inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-primary hover:opacity-95 active:opacity-90 text-on-primary shadow-lg shadow-teal-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
                 >
                   Snap It Now
                 </button>
@@ -227,7 +237,7 @@ export default function Home() {
                 <button
                   onClick={openUpload}
                   aria-label="Upload a flyer or card image from your device"
-                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-violet-400/70 text-violet-200 hover:text-white hover:border-white/80 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 transition"
+                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-border/50 transition"
                 >
                   Upload from Device
                 </button>
@@ -260,7 +270,7 @@ export default function Home() {
             </div>
           )}
           {error && (
-            <div className="mt-3 p-3 rounded border border-red-500/40 bg-red-500/10 text-red-200">
+            <div className="mt-3 p-3 rounded border border-error/40 bg-error/10 text-error">
               {error}
             </div>
           )}
@@ -269,19 +279,19 @@ export default function Home() {
             <section className="mt-8 space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
                   onClick={connected.google ? addGoogle : connectGoogle}
                 >
                   {connected.google ? "Add to Google" : "Connect to Google"}
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
                   onClick={dlIcs}
                 >
                   Connect to Apple Calendar
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
                   onClick={connected.microsoft ? addOutlook : connectOutlook}
                 >
                   {connected.microsoft
@@ -294,13 +304,13 @@ export default function Home() {
                 <div className="space-y-1">
                   <label
                     htmlFor="event-title"
-                    className="text-sm text-white/70"
+                    className="text-sm text-foreground/70"
                   >
                     Title
                   </label>
                   <input
                     id="event-title"
-                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    className="w-full border border-border bg-surface text-foreground p-2 rounded"
                     value={event.title}
                     onChange={(e) =>
                       setEvent({ ...event, title: e.target.value })
@@ -311,13 +321,13 @@ export default function Home() {
                 <div className="space-y-1">
                   <label
                     htmlFor="event-start"
-                    className="text-sm text-white/70"
+                    className="text-sm text-foreground/70"
                   >
                     Start
                   </label>
                   <input
                     id="event-start"
-                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    className="w-full border border-border bg-surface text-foreground p-2 rounded"
                     value={event.start || ""}
                     onChange={(e) =>
                       setEvent({ ...event, start: e.target.value })
@@ -329,13 +339,13 @@ export default function Home() {
                   <div className="space-y-1">
                     <label
                       htmlFor="event-end"
-                      className="text-sm text-white/70"
+                      className="text-sm text-foreground/70"
                     >
                       End
                     </label>
                     <input
                       id="event-end"
-                      className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                      className="w-full border border-border bg-surface text-foreground p-2 rounded"
                       value={event.end || ""}
                       onChange={(e) =>
                         setEvent({ ...event, end: e.target.value || null })
@@ -347,13 +357,13 @@ export default function Home() {
                 <div className="space-y-1">
                   <label
                     htmlFor="event-location"
-                    className="text-sm text-white/70"
+                    className="text-sm text-foreground/70"
                   >
                     Address
                   </label>
                   <input
                     id="event-location"
-                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    className="w-full border border-border bg-surface text-foreground p-2 rounded"
                     value={event.location}
                     onChange={(e) =>
                       setEvent({ ...event, location: e.target.value })
@@ -364,13 +374,13 @@ export default function Home() {
                 <div className="space-y-1">
                   <label
                     htmlFor="event-description"
-                    className="text-sm text-white/70"
+                    className="text-sm text-foreground/70"
                   >
                     Description
                   </label>
                   <textarea
                     id="event-description"
-                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    className="w-full border border-border bg-surface text-foreground p-2 rounded"
                     rows={4}
                     value={event.description}
                     onChange={(e) =>
@@ -380,7 +390,9 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm text-white/70">Reminders</label>
+                  <label className="text-sm text-foreground/70">
+                    Reminders
+                  </label>
                   <div className="space-y-2">
                     {(event.reminders || []).map((r, idx) => {
                       const dayOptions = [1, 2, 3, 7, 14, 30];
@@ -391,7 +403,7 @@ export default function Home() {
                       return (
                         <div key={idx} className="flex items-center gap-2">
                           <select
-                            className="border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                            className="border border-border bg-surface text-foreground p-2 rounded"
                             value={currentDays}
                             onChange={(e) => {
                               const days = Math.max(
@@ -411,7 +423,7 @@ export default function Home() {
                           </select>
                           <button
                             aria-label="Delete reminder"
-                            className="px-2 py-2 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                            className="px-2 py-2 text-sm bg-surface border border-border rounded hover:opacity-80"
                             onClick={() => {
                               const next = (event.reminders || []).filter(
                                 (_, i) => i !== idx
@@ -426,7 +438,7 @@ export default function Home() {
                     })}
                     <div>
                       <button
-                        className="px-3 py-1 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                        className="px-3 py-1 text-sm bg-surface border border-border rounded hover:opacity-80"
                         onClick={() => {
                           const base = Array.isArray(event.reminders)
                             ? (event.reminders as { minutes: number }[])
@@ -453,19 +465,19 @@ export default function Home() {
       {event && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setEvent(null)}
           />
           <div
             role="dialog"
             aria-modal="true"
-            className="relative w-full max-w-2xl rounded-2xl bg-neutral-900/95 ring-1 ring-white/10 p-6"
+            className="relative w-full max-w-2xl rounded-2xl bg-surface ring-1 ring-border p-6"
           >
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-2xl font-semibold">Review details</h2>
               <button
                 aria-label="Close"
-                className="rounded-lg px-3 py-1.5 bg-white/10 hover:bg-white/20"
+                className="rounded-lg px-3 py-1.5 border border-border bg-surface hover:bg-surface/80"
                 onClick={() => setEvent(null)}
               >
                 ✕
@@ -474,12 +486,15 @@ export default function Home() {
 
             <div className="mt-4 space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div className="space-y-1">
-                <label htmlFor="event-title" className="text-sm text-white/70">
+                <label
+                  htmlFor="event-title"
+                  className="text-sm text-foreground/70"
+                >
                   Title
                 </label>
                 <input
                   id="event-title"
-                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
                   value={event.title}
                   onChange={(e) =>
                     setEvent({ ...event, title: e.target.value })
@@ -488,12 +503,15 @@ export default function Home() {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="event-start" className="text-sm text-white/70">
+                <label
+                  htmlFor="event-start"
+                  className="text-sm text-foreground/70"
+                >
                   Start
                 </label>
                 <input
                   id="event-start"
-                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
                   value={event.start || ""}
                   onChange={(e) =>
                     setEvent({ ...event, start: e.target.value })
@@ -503,12 +521,15 @@ export default function Home() {
 
               {Boolean(event.end) && (
                 <div className="space-y-1">
-                  <label htmlFor="event-end" className="text-sm text-white/70">
+                  <label
+                    htmlFor="event-end"
+                    className="text-sm text-foreground/70"
+                  >
                     End
                   </label>
                   <input
                     id="event-end"
-                    className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                    className="w-full border border-border bg-surface text-foreground p-2 rounded"
                     value={event.end || ""}
                     onChange={(e) =>
                       setEvent({ ...event, end: e.target.value || null })
@@ -520,13 +541,13 @@ export default function Home() {
               <div className="space-y-1">
                 <label
                   htmlFor="event-location"
-                  className="text-sm text-white/70"
+                  className="text-sm text-foreground/70"
                 >
                   Address
                 </label>
                 <input
                   id="event-location"
-                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
                   value={event.location}
                   onChange={(e) =>
                     setEvent({ ...event, location: e.target.value })
@@ -537,13 +558,13 @@ export default function Home() {
               <div className="space-y-1">
                 <label
                   htmlFor="event-description"
-                  className="text-sm text-white/70"
+                  className="text-sm text-foreground/70"
                 >
                   Description
                 </label>
                 <textarea
                   id="event-description"
-                  className="w-full border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
                   rows={4}
                   value={event.description}
                   onChange={(e) =>
@@ -553,7 +574,7 @@ export default function Home() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm text-white/70">Reminders</label>
+                <label className="text-sm text-foreground/70">Reminders</label>
                 <div className="space-y-2">
                   {(event.reminders || []).map((r, idx) => {
                     const dayOptions = [1, 2, 3, 7, 14, 30];
@@ -564,7 +585,7 @@ export default function Home() {
                     return (
                       <div key={idx} className="flex items-center gap-2">
                         <select
-                          className="border border-white/15 bg-neutral-900/60 text-white p-2 rounded"
+                          className="border border-border bg-surface text-foreground p-2 rounded"
                           value={currentDays}
                           onChange={(e) => {
                             const days = Math.max(
@@ -584,7 +605,7 @@ export default function Home() {
                         </select>
                         <button
                           aria-label="Delete reminder"
-                          className="px-2 py-2 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                          className="px-2 py-2 text-sm bg-surface border border-border rounded hover:opacity-80"
                           onClick={() => {
                             const next = (event.reminders || []).filter(
                               (_, i) => i !== idx
@@ -599,7 +620,7 @@ export default function Home() {
                   })}
                   <div>
                     <button
-                      className="px-3 py-1 text-sm bg-neutral-900/60 border border-white/15 rounded hover:opacity-80"
+                      className="px-3 py-1 text-sm bg-surface border border-border rounded hover:opacity-80"
                       onClick={() => {
                         const base = Array.isArray(event.reminders)
                           ? (event.reminders as { minutes: number }[])
@@ -617,19 +638,19 @@ export default function Home() {
 
             <div className="mt-6 flex items-center gap-3 flex-wrap justify-end">
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
                 onClick={connected.google ? addGoogle : connectGoogle}
               >
                 {connected.google ? "Add to Google" : "Connect to Google"}
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
                 onClick={dlIcs}
               >
                 Connect to Apple Calendar
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-base text-white/90 hover:text-white hover:border-white/40"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
                 onClick={connected.microsoft ? addOutlook : connectOutlook}
               >
                 {connected.microsoft ? "Add to Outlook" : "Connect to Outlook"}

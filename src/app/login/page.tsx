@@ -28,21 +28,13 @@ export default function LoginPage() {
   const slides = useMemo(
     () => [
       {
-        title: "Snap a flyer",
-        subtitle:
-          "Use your camera to capture flyers, invites, or appointment cards.",
-        chip: "OCR-powered extraction",
+        chip: "Snap a flyer using your camera",
       },
       {
-        title: "We parse the details",
-        subtitle:
-          "Dates, times, and addresses are detected and organized instantly.",
-        chip: "AI date & address parsing",
+        chip: "Syncs to your calendar instantly",
       },
       {
-        title: "Add to your calendar",
-        subtitle: "One tap to add to Google, Outlook, or download for Apple.",
-        chip: "Works with your calendars",
+        chip: "No more manual typing",
       },
     ],
     []
@@ -72,8 +64,8 @@ export default function LoginPage() {
           <div className="scan-grid" />
         </div>
         <div className="max-w-xl w-full space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-shadow-soft">
+          <div className="space-y-2 text-center">
+            <h2 className="text-xl md:text-4xl font-extrabold tracking-tight text-shadow-soft login-hero-heading">
               Scan flyers. Save the date.
             </h2>
             <p className="text-muted-foreground">
@@ -87,22 +79,27 @@ export default function LoginPage() {
             {slide === 0 && (
               <video
                 className="absolute inset-0 w-full h-full object-cover"
-                src="/phone-quick-scan.mp4"
+                src="/scan.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
               />
             )}
-            <div className="scan-title">
-              <span className="scan-dot" />
-              <div className="flex-1">
-                <p className="text-sm opacity-90">{slides[slide].title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {slides[slide].subtitle}
-                </p>
-              </div>
-            </div>
+            {slide === 1 && (
+              <img
+                className="absolute inset-0 w-full h-full object-cover"
+                src="/invite.jpg"
+                alt="Invite example"
+              />
+            )}
+            {slide === 2 && (
+              <img
+                className="absolute inset-0 w-full h-full object-cover"
+                src="/3rd.jpg"
+                alt="Third slide"
+              />
+            )}
           </div>
 
           <div className="flex items-center justify-center gap-2">
