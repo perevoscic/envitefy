@@ -1,5 +1,5 @@
 import ical from "ical-generator";
-import type { ICalAlarmType } from "ical-generator";
+import type { ICalAlarmType, ICalCalendarMethod } from "ical-generator";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -22,13 +22,18 @@ export async function GET(request: Request) {
   }
 
   const cal = ical({ name: "Scanned Events", timezone });
+  // Present as an invitation so iOS can show an explicit Accept/Add flow
+  cal.method(("REQUEST" as unknown) as ICalCalendarMethod);
   const evt = cal.createEvent({
+    id: (globalThis.crypto && globalThis.crypto.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
     start: new Date(start),
     end: new Date(end),
     summary: title,
     location,
-    description
+    description,
+    status: ("CONFIRMED" as unknown) as any,
   });
+  evt.organizer({ name: "Snap My Date", email: "noreply@snapmydate.com" });
   if (recurrence) {
     evt.repeating({
       rrule: recurrence,
@@ -51,9 +56,11 @@ export async function GET(request: Request) {
   const response = new NextResponse(body, {
     status: 200,
     headers: {
-      "Content-Type": "text/calendar; charset=utf-8",
-      // Inline encourages iOS/macOS Safari to open Calendar instead of downloading
-      "Content-Disposition": "inline; filename=event.ics"
+      "Content-Type": "text/calendar; charset=utf-8; method=REQUEST",
+      // Attachment typically triggers Calendar to import the event
+      "Content-Disposition": "attachment; filename=event.ics",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache"
     }
   });
 

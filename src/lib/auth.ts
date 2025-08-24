@@ -2,7 +2,27 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import AppleProvider from "next-auth/providers/apple";
-import { saveMicrosoftRefreshToken } from "@/lib/supabase";
+import { getAppleClientSecretCached } from "@/lib/apple";
+import { saveMicrosoftRefreshToken, saveGoogleRefreshToken } from "@/lib/supabase";
+
+const appleClientId = process.env.APPLE_CLIENT_ID as string | undefined;
+const appleSecretEnv = process.env.APPLE_CLIENT_SECRET as string | undefined;
+const canSignAppleDynamically = Boolean(
+  process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID && process.env.APPLE_PRIVATE_KEY
+);
+
+// Generate Apple client secret once per server start if env vars are present
+let generatedAppleClientSecret: string | undefined;
+if (!appleSecretEnv && appleClientId && canSignAppleDynamically) {
+  try {
+    // Top-level await supported in Next.js server modules
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    generatedAppleClientSecret = await getAppleClientSecretCached();
+  } catch (err) {
+    console.warn("Failed to generate Apple client secret:", err);
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   debug: true,
@@ -31,14 +51,16 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
-    ...(process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET
-      ? [
-          AppleProvider({
-            clientId: process.env.APPLE_CLIENT_ID as string,
-            clientSecret: process.env.APPLE_CLIENT_SECRET as string,
-          }),
-        ]
-      : []),
+    ...(
+      appleClientId && (appleSecretEnv || generatedAppleClientSecret)
+        ? [
+            AppleProvider({
+              clientId: appleClientId,
+              clientSecret: (appleSecretEnv || generatedAppleClientSecret) as string,
+            }),
+          ]
+        : []
+    ),
   ],
   session: { strategy: "jwt" },
   pages: {
@@ -50,12 +72,20 @@ export const authOptions: NextAuthOptions = {
       const t: any = token as any;
       if (account?.provider === "google") {
         t.providers = t.providers || {};
+        // Persist Google refresh token in Supabase; avoid losing it on other provider sign-ins
+        try {
+          if (account.refresh_token && (t.email || (profile as any)?.email)) {
+            const email = (t.email as string) || ((profile as any)?.email as string);
+            if (email) await saveGoogleRefreshToken(email, account.refresh_token);
+          }
+        } catch {}
         const prev = t.providers.google || {};
         t.providers.google = {
           accessToken: account.access_token || prev.accessToken,
           refreshToken: account.refresh_token || prev.refreshToken,
           expiresAt: account.expires_at ? account.expires_at * 1000 : prev.expiresAt,
-        };
+          connected: true,
+        } as any;
       }
       if (account?.provider === "azure-ad") {
         t.providers = t.providers || {};
@@ -66,16 +96,29 @@ export const authOptions: NextAuthOptions = {
             if (email) await saveMicrosoftRefreshToken(email, account.refresh_token);
           }
         } catch {}
-        // Keep only a small flag in the JWT to indicate connection status
-        t.providers.microsoft = { connected: true };
+        // Keep connection flag, and in dev/fallback also carry refreshToken in JWT for convenience
+        const prev = (t.providers as any).microsoft || {};
+        const nextMs: any = { connected: true };
+        if (account.refresh_token) nextMs.refreshToken = account.refresh_token;
+        else if (prev.refreshToken) nextMs.refreshToken = prev.refreshToken;
+        t.providers.microsoft = nextMs;
+      }
+      if (account?.provider === "apple") {
+        t.providers = t.providers || {};
+        t.providers.apple = { connected: true } as any;
       }
       return t;
     },
     async session({ session, token }) {
       const providers = (token as any).providers || {};
       (session as any).providers = {
-        google: Boolean(providers.google?.refreshToken || providers.google?.accessToken),
+        google: Boolean(
+          providers.google?.connected ||
+          providers.google?.refreshToken ||
+          providers.google?.accessToken
+        ),
         microsoft: Boolean(providers.microsoft?.connected),
+        apple: Boolean(providers.apple?.connected),
       };
       return session;
     },

@@ -178,6 +178,9 @@ function stripInvitePhrases(s: string): string {
       "i"
     );
     let candidateText = best.text.replace(dateTail, "").trim();
+    // Remove stray leading ordinal fragments like "th/st/nd/rd" produced by OCR
+    // when an ordinal (e.g., "8th") is split across lines and leaves "Th" at start.
+    candidateText = candidateText.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
     // As a fallback, remove a pure ordinal day at the end (e.g., "... Party 23rd")
     candidateText = candidateText.replace(/\b\d{1,2}(st|nd|rd|th)\b\s*$/i, "").trim();
 
@@ -400,7 +403,12 @@ export async function POST(request: Request) {
       const keep: string[] = [];
       for (const line of lines) {
         if (!line) continue;
-        const stripped = stripInvitePhrases(line).trim();
+        const strippedOrig = stripInvitePhrases(line).trim();
+        if (!strippedOrig) continue;
+        // Clean up common OCR artifact where an isolated ordinal suffix ("th/st/nd/rd")
+        // gets detached from a number and appears as a leading token, e.g. "Th Livia's ..."
+        // Only strip when the token is at the very start and not preceded by a digit.
+        let stripped = strippedOrig.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
         if (!stripped) continue;
         // Drop low-signal noise lines
         if (stripped.length <= 2) continue; // e, ee, 2

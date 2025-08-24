@@ -11,7 +11,22 @@ export async function POST(request: NextRequest) {
     if (!tokenData) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const email = (tokenData as any).email as string | undefined;
     if (!email) return NextResponse.json({ error: "Missing user email" }, { status: 400 });
-    const refreshToken = await getMicrosoftRefreshToken(email);
+    let refreshToken: string | null = null;
+    // Try Supabase first
+    try {
+      refreshToken = await getMicrosoftRefreshToken(email);
+    } catch {}
+    // Fallback: check JWT (dev convenience)
+    if (!refreshToken) {
+      const providers = (tokenData as any).providers || {};
+      const m = providers.microsoft || {};
+      if (m.refreshToken) refreshToken = m.refreshToken as string;
+    }
+    // Fallback: legacy cookie if present
+    if (!refreshToken) {
+      const legacy = request.cookies.get("o_refresh")?.value;
+      if (legacy) refreshToken = legacy;
+    }
     if (!refreshToken) return NextResponse.json({ error: "Microsoft not connected" }, { status: 400 });
 
     const body: (NormalizedEvent & { intakeId?: string | null }) = await request.json();

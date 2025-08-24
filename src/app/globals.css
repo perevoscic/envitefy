@@ -70,6 +70,57 @@
   }
 }
 
+/* Desktop cursor + press effects for interactive elements */
+@media (hover: hover) and (pointer: fine) {
+  /* Make cursor clearly indicate interactivity on desktop */
+  a[href]:hover,
+  button:hover,
+  [role="button"]:hover,
+  input[type="button"]:hover,
+  input[type="submit"]:hover,
+  label[for]:hover {
+    cursor: pointer;
+  }
+
+  /* Subtle press effect on buttons */
+  button,
+  [role="button"],
+  .btn,
+  a.button,
+  input[type="button"],
+  input[type="submit"] {
+    transition: transform 80ms ease, box-shadow 80ms ease, opacity 80ms ease;
+    will-change: transform;
+  }
+
+  button:active,
+  [role="button"]:active,
+  .btn:active,
+  a.button:active,
+  input[type="button"]:active,
+  input[type="submit"]:active {
+    transform: translateY(1px) scale(0.98);
+  }
+}
+
+/* Press feedback for all devices (mouse and touch) */
+button:active,
+[role="button"]:active,
+.btn:active,
+a.button:active,
+input[type="button"]:active,
+input[type="submit"]:active {
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.95);
+}
+
+/* Disable hand cursor for disabled buttons */
+button:disabled,
+input[type="button"][disabled],
+input[type="submit"][disabled] {
+  cursor: not-allowed;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -148,7 +199,8 @@ body {
   }
   .scan-card {
     position: relative;
-    width: min(92vw, 560px);
+    /* Fit parent column (e.g., iPad portrait) while capping max size */
+    width: min(100%, 560px);
     aspect-ratio: 4/3;
     border-radius: 16px;
     background: linear-gradient(
@@ -162,6 +214,7 @@ body {
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
     overflow: hidden;
   }
+  /* (reverted helpers previously added) */
   .scan-logo-wrap {
     position: absolute;
     inset: 0;

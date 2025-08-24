@@ -48,4 +48,37 @@ export async function getMicrosoftRefreshToken(email: string): Promise<string | 
   return (data as any)?.refresh_token || null;
 }
 
+type GoogleTokenRow = {
+  id: string;
+  email: string;
+  provider: "google";
+  refresh_token: string;
+  updated_at?: string;
+};
+
+export async function saveGoogleRefreshToken(email: string, refreshToken: string): Promise<void> {
+  if (!supabaseAdmin) throw new Error("Supabase admin client not configured");
+  const row: Partial<GoogleTokenRow> = {
+    email: email.toLowerCase(),
+    provider: "google",
+    refresh_token: refreshToken,
+  };
+  const { error } = await supabaseAdmin
+    .from(TABLE)
+    .upsert(row, { onConflict: "email,provider" });
+  if (error) throw error;
+}
+
+export async function getGoogleRefreshToken(email: string): Promise<string | null> {
+  if (!supabaseAdmin) throw new Error("Supabase admin client not configured");
+  const { data, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("refresh_token")
+    .eq("email", email.toLowerCase())
+    .eq("provider", "google")
+    .maybeSingle();
+  if (error) throw error;
+  return (data as any)?.refresh_token || null;
+}
+
 

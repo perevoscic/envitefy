@@ -31,6 +31,13 @@ export default function Home() {
     }),
     [session]
   );
+  const [appleLinked, setAppleLinked] = useState(false);
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("appleLinked");
+      if (v === "1") setAppleLinked(true);
+    } catch {}
+  }, []);
 
   const resetForm = () => {
     setEvent(null);
@@ -143,7 +150,7 @@ export default function Home() {
     } as EventFields;
   };
 
-  const dlIcs = () => {
+  const dlIcs = async () => {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
     if (!ready) return;
@@ -159,16 +166,33 @@ export default function Home() {
         : {}),
     }).toString();
     const path = `/api/ics?${q}`;
+    try {
+      window.localStorage.setItem("appleLinked", "1");
+      setAppleLinked(true);
+    } catch {}
     const ua = navigator.userAgent || "";
     const isApple = /iPhone|iPad|iPod|Mac/i.test(ua);
-    const isLocal = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
-    if (isApple && !isLocal) {
+    const isMac = /Macintosh|Mac OS X/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const isSafari =
+      /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
+
+    // Apple handling:
+    // - iOS: use plain https to import a single .ics (avoids subscription prompt)
+    // - macOS Safari: use webcal:// which opens Calendar and is fine on desktop
+    if (isIOS) {
+      window.location.href = path;
+      return;
+    }
+    if (isMac && isSafari) {
       const absolute = `${window.location.origin}${path}`;
       const webcalUrl = absolute.replace(/^https?:\/\//i, "webcal://");
       window.location.href = webcalUrl;
-    } else {
-      window.location.href = path;
+      return;
     }
+
+    // Non-Apple devices: just navigate to the ICS URL
+    window.location.href = path;
   };
 
   const connectGoogle = () => {
@@ -177,6 +201,16 @@ export default function Home() {
 
   const connectOutlook = () => {
     signIn("azure-ad", { callbackUrl: "/" } as any);
+  };
+
+  const closeAfter = (fn: () => void | Promise<void>) => {
+    return async () => {
+      try {
+        await fn();
+      } finally {
+        setEvent(null);
+      }
+    };
   };
 
   const addGoogle = async () => {
@@ -205,7 +239,11 @@ export default function Home() {
       body: JSON.stringify(ready),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) return;
+    if (!res.ok) {
+      const message = (j as any).error || "Failed to add to Outlook";
+      setError(message);
+      return;
+    }
     if ((j as any).webLink) window.open((j as any).webLink, "_blank");
   };
 
@@ -279,26 +317,66 @@ export default function Home() {
 
           {event && (
             <section className="mt-8 space-y-4">
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-nowrap">
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
+                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                    connected.google
+                      ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                      : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                  }`}
                   onClick={connected.google ? addGoogle : connectGoogle}
                 >
-                  {connected.google ? "Add to Google" : "Connect to Google"}
+                  {connected.google ? (
+                    <>
+                      <span>Add to</span>
+                      <IconGoogleMono className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Connect to</span>
+                      <IconGoogleMono className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
+                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                    appleLinked
+                      ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                      : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                  }`}
                   onClick={dlIcs}
                 >
-                  Connect to Apple Calendar
+                  {appleLinked ? (
+                    <>
+                      <span>Add to</span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Connect to</span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
+                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                    connected.microsoft
+                      ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                      : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                  }`}
                   onClick={connected.microsoft ? addOutlook : connectOutlook}
                 >
-                  {connected.microsoft
-                    ? "Add to Outlook"
-                    : "Connect to Outlook"}
+                  {connected.microsoft ? (
+                    <>
+                      <span>Add to</span>
+                      <IconMicrosoftMono className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Connect to</span>
+                      <IconMicrosoftMono className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -433,7 +511,21 @@ export default function Home() {
                               setEvent({ ...event, reminders: next });
                             }}
                           >
-                            Remove
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              aria-hidden="true"
+                              className="h-4 w-4"
+                            >
+                              <path
+                                d="M6 7h12M9 7V6a3 3 0 0 1 3-3 3 3 0 0 1 3 3v1m-9 0h12l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 7m5 4v6m4-6v6"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
                           </button>
                         </div>
                       );
@@ -636,7 +728,21 @@ export default function Home() {
                             setEvent({ ...event, reminders: next });
                           }}
                         >
-                          Remove
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                          >
+                            <path
+                              d="M6 7h12M9 7V6a3 3 0 0 1 3-3 3 3 0 0 1 3 3v1m-9 0h12l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 7m5 4v6m4-6v6"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
                         </button>
                       </div>
                     );
@@ -659,24 +765,70 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 flex-wrap justify-end p-6 pt-4 border-t border-border/60 bg-gradient-to-b from-transparent to-background/30">
+            <div className="mt-6 flex items-center gap-3 flex-nowrap justify-end p-6 pt-4 border-t border-border/60 bg-gradient-to-b from-transparent to-background/30">
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-primary px-5 py-2 text-base text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                onClick={connected.google ? addGoogle : connectGoogle}
+                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap hover:opacity-95 active:opacity-90 shadow-md ${
+                  connected.google
+                    ? "border-primary/60 bg-primary text-on-primary shadow-primary/25"
+                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                }`}
+                onClick={closeAfter(
+                  connected.google ? addGoogle : connectGoogle
+                )}
               >
-                {connected.google ? "Add to Google" : "Connect to Google"}
+                {connected.google ? (
+                  <>
+                    <span>Add to </span>
+                    <IconGoogleMono className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Connect to </span>
+                    <IconGoogleMono className="h-4 w-4" />
+                  </>
+                )}
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/80 px-5 py-2 text-base text-foreground/90 hover:bg-surface"
-                onClick={dlIcs}
+                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                  appleLinked
+                    ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                }`}
+                onClick={closeAfter(dlIcs)}
               >
-                Connect to Apple Calendar
+                {appleLinked ? (
+                  <>
+                    <span>Add to </span>
+                    <IconAppleMono className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Connect to </span>
+                    <IconAppleMono className="h-4 w-4" />
+                  </>
+                )}
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/80 px-5 py-2 text-base text-foreground/90 hover:bg-surface"
-                onClick={connected.microsoft ? addOutlook : connectOutlook}
+                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                  connected.microsoft
+                    ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                }`}
+                onClick={closeAfter(
+                  connected.microsoft ? addOutlook : connectOutlook
+                )}
               >
-                {connected.microsoft ? "Add to Outlook" : "Connect to Outlook"}
+                {connected.microsoft ? (
+                  <>
+                    <span>Add to </span>
+                    <IconMicrosoftMono className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Connect to </span>
+                    <IconMicrosoftMono className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -762,5 +914,54 @@ function BadgeOutlook() {
     <div className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 bg-white/5">
       <span className="text-xs text-white/80">Outlook Calendar</span>
     </div>
+  );
+}
+
+function IconGoogleMono({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="0 0 48 48"
+      className={className}
+    >
+      <path
+        fill="currentColor"
+        d="M43.611 20.083H24v8h11.303C33.654 32.74 29.223 36.083 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C32.651 6.053 28.478 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+      />
+    </svg>
+  );
+}
+
+function IconMicrosoftMono({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="0 0 23 23"
+      className={className}
+    >
+      <rect width="10" height="10" x="1" y="1" fill="currentColor" />
+      <rect width="10" height="10" x="12" y="1" fill="currentColor" />
+      <rect width="10" height="10" x="1" y="12" fill="currentColor" />
+      <rect width="10" height="10" x="12" y="12" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconAppleMono({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="-2 0 26 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M16.365 1.43c0 1.14-.467 2.272-1.169 3.093-.75.883-2.02 1.57-3.257 1.479-.14-1.1.43-2.265 1.112-3.03.79-.9 2.186-1.58 3.314-1.542zM20.54 17.1c-.59 1.36-.88 1.97-1.65 3.18-1.07 1.71-2.59 3.84-4.46 3.85-1.68.02-2.12-1.12-4.41-1.11-2.29.01-2.78 1.13-4.47 1.09-1.87-.05-3.3-1.94-4.37-3.65-2.38-3.78-2.63-8.22-1.16-10.56 1.04-1.67 2.7-2.65 4.57-2.67 1.8-.03 3.5 1.19 4.41 1.19.92 0 2.56-1.47 4.31-1.25.73.03 2.79.29 4.11 2.21-.11.07-2.45 1.43-2.43 4.28.03 3.41 2.98 4.54 3.07 4.58z" />
+    </svg>
   );
 }
