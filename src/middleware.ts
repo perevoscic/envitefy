@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
   const shouldProtect = pathname === "/";
   if (!shouldProtect) return NextResponse.next();
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req });
   if (!token) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";

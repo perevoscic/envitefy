@@ -158,7 +158,17 @@ export default function Home() {
         ? { reminders: ready.reminders.map((r) => String(r.minutes)).join(",") }
         : {}),
     }).toString();
-    window.location.href = `/api/ics?${q}`;
+    const path = `/api/ics?${q}`;
+    const ua = navigator.userAgent || "";
+    const isApple = /iPhone|iPad|iPod|Mac/i.test(ua);
+    const isLocal = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+    if (isApple && !isLocal) {
+      const absolute = `${window.location.origin}${path}`;
+      const webcalUrl = absolute.replace(/^https?:\/\//i, "webcal://");
+      window.location.href = webcalUrl;
+    } else {
+      window.location.href = path;
+    }
   };
 
   const connectGoogle = () => {
@@ -457,26 +467,47 @@ export default function Home() {
       {event && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-gradient-to-br from-background/70 via-black/30 to-accent/30 backdrop-blur-sm"
             onClick={() => setEvent(null)}
           />
           <div
             role="dialog"
             aria-modal="true"
-            className="relative w-full max-w-2xl rounded-2xl bg-surface ring-1 ring-border p-6"
+            className="relative w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/60"
+            style={{
+              background:
+                "linear-gradient(180deg, color-mix(in oklab, var(--surface) 92%, black 8%), color-mix(in oklab, var(--surface) 84%, black 16%))",
+            }}
           >
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="text-2xl font-semibold">Review details</h2>
-              <button
-                aria-label="Close"
-                className="rounded-lg px-3 py-1.5 border border-border bg-surface hover:bg-surface/80"
-                onClick={() => setEvent(null)}
+            <div className="relative p-6 pb-4">
+              <div
+                className="absolute inset-x-0 -top-24 h-32 pointer-events-none select-none"
+                aria-hidden="true"
               >
-                ✕
-              </button>
+                <div
+                  className="mx-auto h-full w-[80%] rounded-full blur-3xl opacity-40"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, color-mix(in oklab, var(--accent) 45%, transparent), transparent), radial-gradient(closest-side, color-mix(in oklab, var(--secondary) 35%, transparent), transparent)",
+                  }}
+                />
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Review details
+                </h2>
+                <button
+                  aria-label="Close"
+                  className="rounded-xl px-3 py-1.5 border border-border bg-surface/70 hover:bg-surface text-foreground/80 hover:text-foreground transition"
+                  onClick={() => setEvent(null)}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            <div className="mt-4 space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="px-6 pb-6 space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div className="space-y-1">
                 <label
                   htmlFor="event-title"
@@ -486,7 +517,7 @@ export default function Home() {
                 </label>
                 <input
                   id="event-title"
-                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                  className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
                   value={event.title}
                   onChange={(e) =>
                     setEvent({ ...event, title: e.target.value })
@@ -503,7 +534,7 @@ export default function Home() {
                 </label>
                 <input
                   id="event-start"
-                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                  className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
                   value={event.start || ""}
                   onChange={(e) =>
                     setEvent({ ...event, start: e.target.value })
@@ -521,7 +552,7 @@ export default function Home() {
                   </label>
                   <input
                     id="event-end"
-                    className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                    className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
                     value={event.end || ""}
                     onChange={(e) =>
                       setEvent({ ...event, end: e.target.value || null })
@@ -539,7 +570,7 @@ export default function Home() {
                 </label>
                 <input
                   id="event-location"
-                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                  className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
                   value={event.location}
                   onChange={(e) =>
                     setEvent({ ...event, location: e.target.value })
@@ -556,7 +587,7 @@ export default function Home() {
                 </label>
                 <textarea
                   id="event-description"
-                  className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                  className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
                   rows={4}
                   value={event.description}
                   onChange={(e) =>
@@ -577,7 +608,7 @@ export default function Home() {
                     return (
                       <div key={idx} className="flex items-center gap-2">
                         <select
-                          className="border border-border bg-surface text-foreground p-2 rounded"
+                          className="border border-border/80 bg-surface/90 text-foreground p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
                           value={currentDays}
                           onChange={(e) => {
                             const days = Math.max(
@@ -597,7 +628,7 @@ export default function Home() {
                         </select>
                         <button
                           aria-label="Delete reminder"
-                          className="px-2 py-2 text-sm bg-surface border border-border rounded hover:opacity-80"
+                          className="px-3 py-2 text-sm rounded-lg border border-border/80 bg-surface/80 hover:bg-surface transition"
                           onClick={() => {
                             const next = (event.reminders || []).filter(
                               (_, i) => i !== idx
@@ -612,7 +643,7 @@ export default function Home() {
                   })}
                   <div>
                     <button
-                      className="px-3 py-1 text-sm bg-surface border border-border rounded hover:opacity-80"
+                      className="px-3 py-1.5 text-sm rounded-lg border border-border/80 bg-surface/80 hover:bg-surface transition"
                       onClick={() => {
                         const base = Array.isArray(event.reminders)
                           ? (event.reminders as { minutes: number }[])
@@ -628,21 +659,21 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 flex-wrap justify-end">
+            <div className="mt-6 flex items-center gap-3 flex-wrap justify-end p-6 pt-4 border-t border-border/60 bg-gradient-to-b from-transparent to-background/30">
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-primary px-5 py-2 text-base text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
                 onClick={connected.google ? addGoogle : connectGoogle}
               >
                 {connected.google ? "Add to Google" : "Connect to Google"}
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/80 px-5 py-2 text-base text-foreground/90 hover:bg-surface"
                 onClick={dlIcs}
               >
                 Connect to Apple Calendar
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-5 py-2 text-base text-foreground/90 hover:text-foreground hover:bg-surface"
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/80 px-5 py-2 text-base text-foreground/90 hover:bg-surface"
                 onClick={connected.microsoft ? addOutlook : connectOutlook}
               >
                 {connected.microsoft ? "Add to Outlook" : "Connect to Outlook"}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
-import { ImageAnnotatorClient } from "@google-cloud/vision";
+import { getVisionClient } from "@/lib/gcp";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
     }
 
-    const vision = new ImageAnnotatorClient();
+    const vision = getVisionClient();
     const [result] = await vision.textDetection({
       image: { content: ocrBuffer },
       imageContext: { languageHints: ["en"] }

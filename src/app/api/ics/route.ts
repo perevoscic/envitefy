@@ -52,7 +52,8 @@ export async function GET(request: Request) {
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": "attachment; filename=event.ics"
+      // Inline encourages iOS/macOS Safari to open Calendar instead of downloading
+      "Content-Disposition": "inline; filename=event.ics"
     }
   });
 
