@@ -66,7 +66,8 @@ export default function LoginPage() {
         <div className="max-w-xl w-full space-y-6">
           <div className="space-y-2 text-center">
             <h2 className="text-xl md:text-4xl font-extrabold tracking-tight text-shadow-soft login-hero-heading">
-              Scan flyers. Save the date.
+              <span className="block">Scan flyers.</span>
+              <span className="block">Save the date.</span>
             </h2>
             <p className="text-muted-foreground">
               Turn any flyer or appointment card into a calendar event in
@@ -183,24 +184,6 @@ export default function LoginPage() {
                   <rect width="10" height="10" x="12" y="12" fill="#FFB900" />
                 </svg>
                 <span>Continue with Microsoft</span>
-              </span>
-            </button>
-            <button
-              className="w-full pr-4 pl-5 py-2 rounded bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black/30"
-              onClick={() => signIn("apple", { callbackUrl: "/" })}
-            >
-              <span className="inline-flex items-center justify-center gap-3">
-                <svg
-                  aria-hidden="true"
-                  width="20"
-                  height="20"
-                  viewBox="-2 0 26 24"
-                  fill="currentColor"
-                  className="shrink-0"
-                >
-                  <path d="M16.365 1.43c0 1.14-.467 2.272-1.169 3.093-.75.883-2.02 1.57-3.257 1.479-.14-1.1.43-2.265 1.112-3.03.79-.9 2.186-1.58 3.314-1.542zM20.54 17.1c-.59 1.36-.88 1.97-1.65 3.18-1.07 1.71-2.59 3.84-4.46 3.85-1.68.02-2.12-1.12-4.41-1.11-2.29.01-2.78 1.13-4.47 1.09-1.87-.05-3.3-1.94-4.37-3.65-2.38-3.78-2.63-8.22-1.16-10.56 1.04-1.67 2.7-2.65 4.57-2.67 1.8-.03 3.5 1.19 4.41 1.19.92 0 2.56-1.47 4.31-1.25.73.03 2.79.29 4.11 2.21-.11.07-2.45 1.43-2.43 4.28.03 3.41 2.98 4.54 3.07 4.58z" />
-                </svg>
-                <span>Continue with Apple</span>
               </span>
             </button>
           </div>

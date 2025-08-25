@@ -32,11 +32,32 @@ export default function Home() {
     [session]
   );
   const [appleLinked, setAppleLinked] = useState(false);
+  const [showPhoneMockup, setShowPhoneMockup] = useState(true);
   useEffect(() => {
     try {
       const v = window.localStorage.getItem("appleLinked");
       if (v === "1") setAppleLinked(true);
     } catch {}
+  }, []);
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    )
+      return;
+    const mq = window.matchMedia(
+      "(orientation: portrait) and (min-width: 768px)"
+    );
+    const update = () => setShowPhoneMockup(!mq.matches);
+    update();
+    try {
+      mq.addEventListener("change", update);
+      return () => mq.removeEventListener("change", update);
+    } catch {
+      // Safari < 14 fallback
+      mq.addListener(update as any);
+      return () => mq.removeListener(update as any);
+    }
   }, []);
 
   const resetForm = () => {
@@ -253,7 +274,7 @@ export default function Home() {
         <div className="order-2 lg:order-1 text-center lg:text-left">
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
-              <h1 className="text-6xl sm:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300">
                   Snap a flyer.
                 </span>
@@ -338,26 +359,28 @@ export default function Home() {
                     </>
                   )}
                 </button>
-                <button
-                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                    appleLinked
-                      ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                      : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
-                  }`}
-                  onClick={dlIcs}
-                >
-                  {appleLinked ? (
-                    <>
-                      <span>Add to</span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Connect to</span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+                {false && (
+                  <button
+                    className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                      appleLinked
+                        ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                        : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                    }`}
+                    onClick={dlIcs}
+                  >
+                    {appleLinked ? (
+                      <>
+                        <span>Add to</span>
+                        <IconAppleMono className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Connect to</span>
+                        <IconAppleMono className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                     connected.microsoft
@@ -551,9 +574,11 @@ export default function Home() {
           )}
         </div>
 
-        <div className="order-1 lg:order-2 hidden md:flex justify-center lg:justify-end">
-          <PhoneMockup />
-        </div>
+        {showPhoneMockup && (
+          <div className="order-1 lg:order-2 hidden md:flex justify-center lg:justify-end hide-phone-portrait-tablet">
+            <PhoneMockup />
+          </div>
+        )}
       </section>
 
       {event && (
@@ -788,26 +813,28 @@ export default function Home() {
                   </>
                 )}
               </button>
-              <button
-                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                  appleLinked
-                    ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                }`}
-                onClick={closeAfter(dlIcs)}
-              >
-                {appleLinked ? (
-                  <>
-                    <span>Add to </span>
-                    <IconAppleMono className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Connect to </span>
-                    <IconAppleMono className="h-4 w-4" />
-                  </>
-                )}
-              </button>
+              {false && (
+                <button
+                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                    appleLinked
+                      ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                      : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                  }`}
+                  onClick={closeAfter(dlIcs)}
+                >
+                  {appleLinked ? (
+                    <>
+                      <span>Add to </span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Connect to </span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              )}
               <button
                 className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                   connected.microsoft

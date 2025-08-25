@@ -10,7 +10,10 @@ export default function AboutPage() {
             <div className="rounded-3xl bg-neutral-900/70 backdrop-blur-sm p-10">
               <h1 className="text-5xl sm:text-6xl font-extrabold leading-[1.05] tracking-tight">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300">
-                  About Snap My Date
+                  About
+                  <span className="font-pacifico">Snap</span>
+                  <span> </span>
+                  <span className="font-montserrat">My Date</span>
                 </span>
               </h1>
               <p className="mt-5 text-lg sm:text-xl text-white/80 max-w-3xl mx-auto">

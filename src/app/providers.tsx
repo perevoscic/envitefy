@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
 import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { SidebarProvider } from "./sidebar-context";
 
 type Theme = "light" | "dark";
 
@@ -66,7 +67,9 @@ export default function Providers({
 }) {
   return (
     <SessionProvider session={session}>
-      <ThemeProvider>{children}</ThemeProvider>
+      <SidebarProvider>
+        <ThemeProvider>{children}</ThemeProvider>
+      </SidebarProvider>
     </SessionProvider>
   );
 }

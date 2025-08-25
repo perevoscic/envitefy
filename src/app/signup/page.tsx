@@ -76,7 +76,10 @@ export default function SignupPage() {
               Create your account
             </h2>
             <p className="text-muted-foreground">
-              Join Snap My Date and turn flyers into calendar events in seconds.
+              Join <span className="font-pacifico">Snap</span>
+              <span> </span>
+              <span className="font-montserrat">My Date</span> and turn flyers
+              into calendar events in seconds.
             </p>
           </div>
 
