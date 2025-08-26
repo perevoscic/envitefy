@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import * as chrono from "chrono-node";
 import { useTheme } from "./providers";
@@ -26,13 +26,33 @@ export default function Home() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { data: session } = useSession();
-  const connected = useMemo(
-    () => ({
-      google: Boolean((session as any)?.providers?.google),
-      microsoft: Boolean((session as any)?.providers?.microsoft),
-    }),
-    [session]
-  );
+  const [connected, setConnected] = useState({
+    google: false,
+    microsoft: false,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/calendars", { cache: "no-store" });
+        const j = await res.json().catch(() => ({}));
+        if (!cancelled)
+          setConnected({
+            google: Boolean((j as any).google),
+            microsoft: Boolean((j as any).microsoft),
+          });
+      } catch {
+        if (!cancelled)
+          setConnected({
+            google: Boolean((session as any)?.providers?.google),
+            microsoft: Boolean((session as any)?.providers?.microsoft),
+          });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
   const [appleLinked, setAppleLinked] = useState(false);
   const [showPhoneMockup, setShowPhoneMockup] = useState(true);
   useEffect(() => {
@@ -282,11 +302,19 @@ export default function Home() {
       if (!res.ok) {
         const message = (j as any).error || "Failed to add to Google";
         setError(message);
+        if (
+          res.status === 400 ||
+          res.status === 401 ||
+          /Unauthorized|not connected/i.test(String(message))
+        ) {
+          window.location.href = "/api/google/auth";
+          return;
+        }
         window.open(templateUrl, "_blank");
         return;
       }
       if ((j as any).htmlLink) {
-        window.open((j as any).htmlLink, "_blank");
+        window.location.assign((j as any).htmlLink);
       } else {
         // Fallback if API succeeded but no link returned
         window.open(templateUrl, "_blank");
@@ -401,7 +429,7 @@ export default function Home() {
                       ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
                       : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
                   }`}
-                  onClick={addGoogle}
+                  onClick={connected.google ? addGoogle : connectGoogle}
                 >
                   {connected.google ? (
                     <>
@@ -851,7 +879,9 @@ export default function Home() {
                     ? "border-primary/60 bg-primary text-on-primary shadow-primary/25"
                     : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
                 }`}
-                onClick={closeAfter(addGoogle)}
+                onClick={closeAfter(
+                  connected.google ? addGoogle : connectGoogle
+                )}
               >
                 {connected.google ? (
                   <>
