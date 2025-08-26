@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
       tenantId: (process.env.OUTLOOK_TENANT_ID as string) || "common",
       authorization: {
         params: {
-          scope: "openid email profile offline_access Calendars.ReadWrite",
+          scope: "openid email profile offline_access https://graph.microsoft.com/Calendars.ReadWrite",
           response_type: "code",
         },
       },

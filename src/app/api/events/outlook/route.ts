@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
     params.append("client_secret", process.env.OUTLOOK_CLIENT_SECRET!);
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", refreshToken);
-    // Ensure the refreshed access token includes calendar scopes
-    params.append("scope", "openid email profile offline_access Calendars.ReadWrite");
+    // Ensure the refreshed access token targets Microsoft Graph with calendar scope
+    params.append("scope", "offline_access https://graph.microsoft.com/Calendars.ReadWrite");
 
     const tokenResp = await fetch(tokenUrl, {
       method: "POST",

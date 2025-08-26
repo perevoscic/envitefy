@@ -74,6 +74,9 @@ export default function Home() {
   const onFile = (f: File | null) => {
     setFile(f);
     if (f) ingest(f);
+    // Always clear inputs so selecting the same file again triggers onChange
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const ingest = async (f?: File | null) => {
@@ -126,8 +129,14 @@ export default function Home() {
     setLoading(false);
   };
 
-  const openCamera = () => cameraInputRef.current?.click();
-  const openUpload = () => fileInputRef.current?.click();
+  const openCamera = () => {
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    cameraInputRef.current?.click();
+  };
+  const openUpload = () => {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    fileInputRef.current?.click();
+  };
 
   const parseStartToIso = (value: string | null, timezone: string) => {
     if (!value) return null;
@@ -231,7 +240,7 @@ export default function Home() {
       try {
         await fn();
       } finally {
-        setEvent(null);
+        resetForm();
       }
     };
   };
@@ -240,15 +249,52 @@ export default function Home() {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
     if (!ready) return;
-    const res = await fetch("/api/events/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(ready),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) return;
-    if ((j as any).htmlLink) window.open((j as any).htmlLink, "_blank");
+    const toGoogleDateTime = (iso: string) => {
+      try {
+        const s = new Date(iso).toISOString();
+        // YYYYMMDDTHHmmssZ
+        return s.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+      } catch {
+        return iso;
+      }
+    };
+    const templateUrl = (() => {
+      const params = new URLSearchParams();
+      params.set("action", "TEMPLATE");
+      params.set("text", ready.title || "Event");
+      if (ready.description) params.set("details", ready.description);
+      if (ready.location) params.set("location", ready.location);
+      if (ready.timezone) params.set("ctz", ready.timezone);
+      const startStr = toGoogleDateTime(ready.start!);
+      const endStr = toGoogleDateTime(ready.end!);
+      params.set("dates", `${startStr}/${endStr}`);
+      return `https://calendar.google.com/calendar/render?${params.toString()}`;
+    })();
+
+    try {
+      const res = await fetch("/api/events/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(ready),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = (j as any).error || "Failed to add to Google";
+        setError(message);
+        window.open(templateUrl, "_blank");
+        return;
+      }
+      if ((j as any).htmlLink) {
+        window.open((j as any).htmlLink, "_blank");
+      } else {
+        // Fallback if API succeeded but no link returned
+        window.open(templateUrl, "_blank");
+      }
+    } catch {
+      setError("Failed to add to Google");
+      window.open(templateUrl, "_blank");
+    }
   };
 
   const addOutlook = async () => {
@@ -274,9 +320,9 @@ export default function Home() {
     <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="order-2 lg:order-1 text-center lg:text-center">
-          <div className="flex items-center gap-4 mb-8 justify-center">
-            <Image src={Logo} alt="Snap My Date" width={56} height={56} />
-            <span className="text-3xl sm:text-4xl md:text-5xl text-foreground">
+          <div className="flex items-center gap-4 mb-8 justify-center -mt-6 sm:mt-0 md:-mt-4 lg:mt-0">
+            <Image src={Logo} alt="Snap My Date" width={64} height={64} />
+            <span className="text-4xl sm:text-5xl md:text-6xl text-foreground">
               <span className="font-pacifico">Snap</span>
               <span> </span>
               <span className="font-montserrat font-semibold">My Date</span>
@@ -355,7 +401,7 @@ export default function Home() {
                       ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
                       : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
                   }`}
-                  onClick={connected.google ? addGoogle : connectGoogle}
+                  onClick={addGoogle}
                 >
                   {connected.google ? (
                     <>
@@ -805,9 +851,7 @@ export default function Home() {
                     ? "border-primary/60 bg-primary text-on-primary shadow-primary/25"
                     : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
                 }`}
-                onClick={closeAfter(
-                  connected.google ? addGoogle : connectGoogle
-                )}
+                onClick={closeAfter(addGoogle)}
               >
                 {connected.google ? (
                   <>

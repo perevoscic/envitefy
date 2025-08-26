@@ -17,6 +17,8 @@ export async function POST(request: Request) {
     params.append("client_secret", process.env.OUTLOOK_CLIENT_SECRET!);
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", refreshToken);
+    // Request Graph access token with calendar scope on refresh
+    params.append("scope", "offline_access https://graph.microsoft.com/Calendars.ReadWrite");
 
     const tokenResp = await fetch(tokenUrl, {
       method: "POST",
