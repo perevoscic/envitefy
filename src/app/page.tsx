@@ -55,6 +55,8 @@ export default function Home() {
   }, [session]);
   const [appleLinked, setAppleLinked] = useState(false);
   const [showPhoneMockup, setShowPhoneMockup] = useState(true);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   useEffect(() => {
     try {
       const v = window.localStorage.getItem("appleLinked");
@@ -62,6 +64,13 @@ export default function Home() {
     } catch {}
   }, []);
   useEffect(() => {
+    // Platform detection
+    try {
+      const ua = navigator.userAgent || "";
+      setIsIOS(/iPhone|iPad|iPod/i.test(ua));
+      setIsAndroid(/Android/i.test(ua));
+    } catch {}
+
     if (
       typeof window === "undefined" ||
       typeof window.matchMedia !== "function"
@@ -314,7 +323,49 @@ export default function Home() {
         return;
       }
       if ((j as any).htmlLink) {
-        window.location.assign((j as any).htmlLink);
+        const htmlLink = (j as any).htmlLink as string;
+        if (isIOS) {
+          const scheme = "comgooglecalendar://";
+          const store =
+            "https://apps.apple.com/app/google-calendar/id909319292";
+          const timer = setTimeout(() => {
+            window.location.assign(htmlLink);
+          }, 700);
+          window.location.href = scheme;
+          setTimeout(() => {
+            try {
+              if (document.visibilityState === "visible") {
+                window.location.href = store;
+              }
+            } catch {}
+            clearTimeout(timer);
+          }, 1200);
+          return;
+        }
+        if (isAndroid) {
+          const play =
+            "https://play.google.com/store/apps/details?id=com.google.android.calendar";
+          const intent =
+            "intent://#Intent;scheme=content;package=com.google.android.calendar;end";
+          const timer = setTimeout(() => {
+            window.location.assign(htmlLink);
+          }, 700);
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = intent;
+          document.body.appendChild(iframe);
+          setTimeout(() => {
+            try {
+              if (document.visibilityState === "visible") {
+                window.location.href = play;
+              }
+            } catch {}
+            document.body.removeChild(iframe);
+            clearTimeout(timer);
+          }, 1200);
+          return;
+        }
+        window.location.assign(htmlLink);
       } else {
         // Fallback if API succeeded but no link returned
         window.open(templateUrl, "_blank");
@@ -341,7 +392,49 @@ export default function Home() {
       setError(message);
       return;
     }
-    if ((j as any).webLink) window.open((j as any).webLink, "_blank");
+    if ((j as any).webLink) {
+      const webLink = (j as any).webLink as string;
+      if (isIOS) {
+        const scheme = "ms-outlook://";
+        const store =
+          "https://apps.apple.com/app/microsoft-outlook/id951937596";
+        const t = setTimeout(() => {
+          window.location.assign(webLink);
+        }, 700);
+        window.location.href = scheme;
+        setTimeout(() => {
+          try {
+            if (document.visibilityState === "visible")
+              window.location.href = store;
+          } catch {}
+          clearTimeout(t);
+        }, 1200);
+        return;
+      }
+      if (isAndroid) {
+        const play =
+          "https://play.google.com/store/apps/details?id=com.microsoft.office.outlook";
+        const intent =
+          "intent://#Intent;scheme=mailto;package=com.microsoft.office.outlook;end";
+        const t = setTimeout(() => {
+          window.location.assign(webLink);
+        }, 700);
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = intent;
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          try {
+            if (document.visibilityState === "visible")
+              window.location.href = play;
+          } catch {}
+          document.body.removeChild(iframe);
+          clearTimeout(t);
+        }, 1200);
+        return;
+      }
+      window.open(webLink, "_blank");
+    }
   };
 
   return (
@@ -443,26 +536,28 @@ export default function Home() {
                     </>
                   )}
                 </button>
-                <button
-                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                    appleLinked
-                      ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                      : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
-                  }`}
-                  onClick={dlIcs}
-                >
-                  {appleLinked ? (
-                    <>
-                      <span>Add to</span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Connect to</span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+                {!isAndroid && (
+                  <button
+                    className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                      appleLinked
+                        ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                        : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                    }`}
+                    onClick={dlIcs}
+                  >
+                    {appleLinked ? (
+                      <>
+                        <span>Add to</span>
+                        <IconAppleMono className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Connect to</span>
+                        <IconAppleMono className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                     connected.microsoft
@@ -895,26 +990,28 @@ export default function Home() {
                   </>
                 )}
               </button>
-              <button
-                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                  appleLinked
-                    ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                }`}
-                onClick={closeAfter(dlIcs)}
-              >
-                {appleLinked ? (
-                  <>
-                    <span>Add to </span>
-                    <IconAppleMono className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Connect to </span>
-                    <IconAppleMono className="h-4 w-4" />
-                  </>
-                )}
-              </button>
+              {!isAndroid && (
+                <button
+                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                    appleLinked
+                      ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                      : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                  }`}
+                  onClick={closeAfter(dlIcs)}
+                >
+                  {appleLinked ? (
+                    <>
+                      <span>Add to </span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Connect to </span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              )}
               <button
                 className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                   connected.microsoft
