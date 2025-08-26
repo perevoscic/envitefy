@@ -64,11 +64,8 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       authorization: {
         params: {
-          access_type: "offline",
-          include_granted_scopes: true,
-          prompt: "consent",
-          scope:
-            "openid email profile https://www.googleapis.com/auth/calendar.events",
+          // Basic login-only scopes; calendar connection happens via /api/google/auth
+          scope: "openid email profile",
         },
       },
     }),

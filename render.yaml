@@ -2,7 +2,7 @@ services:
   - type: web
     name: snap-my-date
     env: docker
-    plan: starter
+    plan: standard
     autoDeploy: true
     healthCheckPath: /api/health
     numInstances: 1
