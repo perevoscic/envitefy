@@ -106,7 +106,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Returns which providers are connected in the current session.
 - **Auth**: Optional (reads NextAuth JWT if available).
 - **Detection sources**:
-  - NextAuth JWT flags/tokens: `providers.google.connected|refreshToken|accessToken`, `providers.microsoft.connected|refreshToken`, `providers.apple.connected`.
+  - NextAuth JWT tokens: `providers.google.refreshToken` (Google requires refresh token), `providers.microsoft.connected|refreshToken`, `providers.apple.connected`.
   - Legacy OAuth cookies: `g_refresh` (Google), `o_refresh` (Microsoft).
   - Supabase token store (if signed-in and configured): lookup refresh tokens by `email`.
 - **Output**: `{ google: boolean, microsoft: boolean, apple: boolean }`.

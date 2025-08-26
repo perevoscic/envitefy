@@ -246,6 +246,30 @@ export default function LeftSidebar() {
                     <span className="text-sm">Profile settings</span>
                   </Link>
 
+                  <Link
+                    href="/subscription"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+                      <line x1="2" y1="10" x2="22" y2="10" />
+                      <line x1="7" y1="15" x2="7.01" y2="15" />
+                      <line x1="11" y1="15" x2="13" y2="15" />
+                    </svg>
+                    <span className="text-sm">Subscription plan</span>
+                  </Link>
+
                   <button
                     type="button"
                     ref={calendarsButtonRef}

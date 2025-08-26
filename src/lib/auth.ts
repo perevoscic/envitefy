@@ -141,11 +141,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       const providers = (token as any).providers || {};
       (session as any).providers = {
-        google: Boolean(
-          providers.google?.connected ||
-          providers.google?.refreshToken ||
-          providers.google?.accessToken
-        ),
+        // Treat Google as connected only when we have a refresh token
+        google: Boolean(providers.google?.refreshToken),
         microsoft: Boolean(providers.microsoft?.connected),
         apple: Boolean(providers.apple?.connected),
       };

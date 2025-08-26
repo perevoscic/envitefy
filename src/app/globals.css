@@ -136,6 +136,12 @@ body {
 }
 
 @layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
   .font-pacifico { font-family: var(--font-pacifico), cursive; }
   .font-montserrat { font-family: var(--font-montserrat), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
   .text-shadow-subtle {

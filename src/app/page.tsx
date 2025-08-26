@@ -4,6 +4,7 @@ import { signIn, useSession } from "next-auth/react";
 import * as chrono from "chrono-node";
 import { useTheme } from "./providers";
 import Image from "next/image";
+import Link from "next/link";
 import Logo from "@/assets/logo.png";
 
 type EventFields = {
@@ -57,6 +58,7 @@ export default function Home() {
   const [showPhoneMockup, setShowPhoneMockup] = useState(true);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isWindows, setIsWindows] = useState(false);
   useEffect(() => {
     try {
       const v = window.localStorage.getItem("appleLinked");
@@ -69,6 +71,7 @@ export default function Home() {
       const ua = navigator.userAgent || "";
       setIsIOS(/iPhone|iPad|iPod/i.test(ua));
       setIsAndroid(/Android/i.test(ua));
+      setIsWindows(/Windows NT|Win64|Win32/i.test(ua));
     } catch {}
 
     if (
@@ -90,6 +93,21 @@ export default function Home() {
       return () => mq.removeListener(update as any);
     }
   }, []);
+
+  // Lock body scroll while the review modal is open
+  useEffect(() => {
+    try {
+      const original = document.body.style.overflow;
+      if (event) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = original || "";
+      }
+      return () => {
+        document.body.style.overflow = original || "";
+      };
+    } catch {}
+  }, [event]);
 
   const resetForm = () => {
     setEvent(null);
@@ -257,7 +275,8 @@ export default function Home() {
   };
 
   const connectGoogle = () => {
-    signIn("google", { callbackUrl: "/" } as any);
+    // Use calendar-specific OAuth to ensure we have calendar.events scope + refresh token
+    window.location.href = "/api/google/auth";
   };
 
   const connectOutlook = () => {
@@ -287,18 +306,6 @@ export default function Home() {
         return iso;
       }
     };
-    const templateUrl = (() => {
-      const params = new URLSearchParams();
-      params.set("action", "TEMPLATE");
-      params.set("text", ready.title || "Event");
-      if (ready.description) params.set("details", ready.description);
-      if (ready.location) params.set("location", ready.location);
-      if (ready.timezone) params.set("ctz", ready.timezone);
-      const startStr = toGoogleDateTime(ready.start!);
-      const endStr = toGoogleDateTime(ready.end!);
-      params.set("dates", `${startStr}/${endStr}`);
-      return `https://calendar.google.com/calendar/render?${params.toString()}`;
-    })();
 
     try {
       const res = await fetch("/api/events/google", {
@@ -316,10 +323,18 @@ export default function Home() {
           res.status === 401 ||
           /Unauthorized|not connected/i.test(String(message))
         ) {
-          window.location.href = "/api/google/auth";
+          // Carry the pending event through OAuth using the state param
+          let state = "";
+          try {
+            state = btoa(encodeURIComponent(JSON.stringify(ready)));
+          } catch {}
+          const url = `/api/google/auth?consent=1${
+            state ? `&state=${encodeURIComponent(state)}` : ""
+          }`;
+          window.location.href = url;
           return;
         }
-        window.open(templateUrl, "_blank");
+        // Do not open draft template; surface error instead
         return;
       }
       if ((j as any).htmlLink) {
@@ -365,14 +380,13 @@ export default function Home() {
           }, 1200);
           return;
         }
-        window.location.assign(htmlLink);
+        // Desktop/web: open in a new tab instead of replacing current page
+        window.open(htmlLink, "_blank");
       } else {
-        // Fallback if API succeeded but no link returned
-        window.open(templateUrl, "_blank");
+        setError("Event created, but no link returned.");
       }
     } catch {
       setError("Failed to add to Google");
-      window.open(templateUrl, "_blank");
     }
   };
 
@@ -441,14 +455,17 @@ export default function Home() {
     <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="order-2 lg:order-1 text-center lg:text-center">
-          <div className="flex items-center gap-4 mb-8 justify-center -mt-6 sm:mt-0 md:-mt-4 lg:mt-0">
+          <Link
+            href="/"
+            className="flex items-center gap-4 mb-8 justify-center -mt-6 sm:mt-0 md:-mt-4 lg:mt-0"
+          >
             <Image src={Logo} alt="Snap My Date" width={64} height={64} />
             <span className="text-4xl sm:text-5xl md:text-6xl text-foreground">
               <span className="font-pacifico">Snap</span>
               <span> </span>
               <span className="font-montserrat font-semibold">My Date</span>
             </span>
-          </div>
+          </Link>
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
@@ -536,7 +553,7 @@ export default function Home() {
                     </>
                   )}
                 </button>
-                {!isAndroid && (
+                {!isAndroid && !isWindows && (
                   <button
                     className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                       appleLinked
@@ -801,7 +818,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="px-6 pb-6 space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="px-6 pb-6 space-y-3 max-h-[70vh] overflow-y-auto no-scrollbar pr-2">
               <div className="space-y-1">
                 <label
                   htmlFor="event-title"
@@ -990,7 +1007,7 @@ export default function Home() {
                   </>
                 )}
               </button>
-              {!isAndroid && (
+              {!isAndroid && !isWindows && (
                 <button
                   className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                     appleLinked

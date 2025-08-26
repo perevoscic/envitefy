@@ -59,6 +59,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ htmlLink: created.data.htmlLink, id: created.data.id });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    const code: number | undefined = (err as any)?.code as number | undefined;
+    const lower = String(message || "").toLowerCase();
+    // Map insufficient scope/authorization errors to 401 so the client can start calendar OAuth
+    if (
+      code === 401 ||
+      code === 403 ||
+      lower.includes("insufficient") ||
+      lower.includes("forbidden") ||
+      lower.includes("unauthorized") ||
+      lower.includes("insufficient authentication scopes")
+    ) {
+      return NextResponse.json({ error: "Google not connected" }, { status: 401 });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

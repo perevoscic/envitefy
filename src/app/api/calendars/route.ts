@@ -15,10 +15,9 @@ export async function GET(request: NextRequest) {
   const microsoftCookie = request.cookies.get("o_refresh")?.value;
 
   // Start with JWT signal or cookie presence
+  // Consider Google "connected" only if we have a refresh token (JWT) or legacy cookie
   let googleConnected = Boolean(
-    providersFromJwt?.google?.connected ||
-      providersFromJwt?.google?.refreshToken ||
-      providersFromJwt?.google?.accessToken ||
+    providersFromJwt?.google?.refreshToken ||
       googleCookie
   );
   let microsoftConnected = Boolean(
