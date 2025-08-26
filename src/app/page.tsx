@@ -229,6 +229,37 @@ export default function Home() {
     } as EventFields;
   };
 
+  const toOutlookParam = (iso: string): string => {
+    try {
+      const d = new Date(iso);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return (
+        `${d.getFullYear()}-` +
+        `${pad(d.getMonth() + 1)}-` +
+        `${pad(d.getDate())}T` +
+        `${pad(d.getHours())}:` +
+        `${pad(d.getMinutes())}:` +
+        `${pad(d.getSeconds())}`
+      );
+    } catch {
+      return iso.replace(/\.\d{3}Z$/, "");
+    }
+  };
+
+  const buildOutlookComposeUrl = (e: EventFields) => {
+    const q = new URLSearchParams({
+      rru: "addevent",
+      allday: "false",
+      subject: e.title || "Event",
+      startdt: toOutlookParam(e.start!),
+      enddt: toOutlookParam(e.end!),
+      location: e.location || "",
+      body: e.description || "",
+      path: "/calendar/view/Month",
+    }).toString();
+    return `https://outlook.office.com/calendar/0/deeplink/compose?${q}`;
+  };
+
   const dlIcs = async () => {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
@@ -394,60 +425,88 @@ export default function Home() {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
     if (!ready) return;
-    const res = await fetch("/api/events/outlook", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(ready),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const message = (j as any).error || "Failed to add to Outlook";
-      setError(message);
-      return;
-    }
-    if ((j as any).webLink) {
-      const webLink = (j as any).webLink as string;
-      if (isIOS) {
-        const scheme = "ms-outlook://";
-        const store =
-          "https://apps.apple.com/app/microsoft-outlook/id951937596";
-        const t = setTimeout(() => {
-          window.location.assign(webLink);
-        }, 700);
-        window.location.href = scheme;
-        setTimeout(() => {
-          try {
-            if (document.visibilityState === "visible")
-              window.location.href = store;
-          } catch {}
-          clearTimeout(t);
-        }, 1200);
+    const composeUrl = buildOutlookComposeUrl(ready);
+    try {
+      const res = await fetch("/api/events/outlook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(ready),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = (j as any).error || "Failed to add to Outlook";
+        setError(message);
+        // Fallback to Outlook Web compose when API fails
+        window.location.assign(composeUrl);
         return;
       }
-      if (isAndroid) {
-        const play =
-          "https://play.google.com/store/apps/details?id=com.microsoft.office.outlook";
-        const intent =
-          "intent://#Intent;scheme=mailto;package=com.microsoft.office.outlook;end";
-        const t = setTimeout(() => {
-          window.location.assign(webLink);
-        }, 700);
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = intent;
-        document.body.appendChild(iframe);
-        setTimeout(() => {
-          try {
-            if (document.visibilityState === "visible")
-              window.location.href = play;
-          } catch {}
-          document.body.removeChild(iframe);
-          clearTimeout(t);
-        }, 1200);
-        return;
+      if ((j as any).webLink) {
+        const webLink = (j as any).webLink as string;
+        // Try to open Outlook app first; if not installed, fall back to web link
+        if (isIOS) {
+          const scheme = "ms-outlook://";
+          const t = setTimeout(() => {
+            window.location.assign(webLink);
+          }, 700);
+          window.location.href = scheme;
+          setTimeout(() => {
+            try {
+              if (document.visibilityState === "visible") {
+                window.location.assign(webLink);
+              }
+            } catch {}
+            clearTimeout(t);
+          }, 1200);
+          return;
+        }
+        if (isAndroid) {
+          const intent =
+            "intent://#Intent;scheme=mailto;package=com.microsoft.office.outlook;end";
+          const t = setTimeout(() => {
+            window.location.assign(webLink);
+          }, 700);
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = intent;
+          document.body.appendChild(iframe);
+          setTimeout(() => {
+            try {
+              if (document.visibilityState === "visible") {
+                window.location.assign(webLink);
+              }
+            } catch {}
+            document.body.removeChild(iframe);
+            clearTimeout(t);
+          }, 1200);
+          return;
+        }
+        // Desktop: attempt to open Outlook if present, otherwise open web link
+        try {
+          const scheme = "ms-outlook://";
+          const t = setTimeout(() => {
+            window.open(webLink, "_blank");
+          }, 700);
+          // Attempt app open via navigation
+          window.location.href = scheme;
+          setTimeout(() => {
+            try {
+              if (document.visibilityState === "visible") {
+                window.open(webLink, "_blank");
+              }
+            } catch {}
+            clearTimeout(t);
+          }, 1200);
+        } catch {
+          window.open(webLink, "_blank");
+        }
+      } else {
+        setError("Event created, but no link returned.");
+        window.location.assign(composeUrl);
       }
-      window.open(webLink, "_blank");
+    } catch {
+      setError("Failed to add to Outlook");
+      window.location.assign(composeUrl);
     }
   };
 
