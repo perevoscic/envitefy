@@ -47,7 +47,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} antialiased`}
       >
         <Providers session={session}>
-          {session ? <LeftSidebar /> : null}
+          <LeftSidebar />
           <div className="min-h-[100dvh]">
             <div className="min-h-full min-w-0 overflow-y-auto">{children}</div>
           </div>

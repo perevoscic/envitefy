@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import * as chrono from "chrono-node";
 import { useTheme } from "./providers";
+import Image from "next/image";
+import Logo from "@/assets/logo.png";
 
 type EventFields = {
   title: string;
@@ -271,7 +273,15 @@ export default function Home() {
   return (
     <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div className="order-2 lg:order-1 text-center lg:text-left">
+        <div className="order-2 lg:order-1 text-center lg:text-center">
+          <div className="flex items-center gap-4 mb-8 justify-center">
+            <Image src={Logo} alt="Snap My Date" width={56} height={56} />
+            <span className="text-3xl sm:text-4xl md:text-5xl text-foreground">
+              <span className="font-pacifico">Snap</span>
+              <span> </span>
+              <span className="font-montserrat font-semibold">My Date</span>
+            </span>
+          </div>
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
@@ -359,28 +369,26 @@ export default function Home() {
                     </>
                   )}
                 </button>
-                {false && (
-                  <button
-                    className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                      appleLinked
-                        ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                        : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
-                    }`}
-                    onClick={dlIcs}
-                  >
-                    {appleLinked ? (
-                      <>
-                        <span>Add to</span>
-                        <IconAppleMono className="h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Connect to</span>
-                        <IconAppleMono className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                    appleLinked
+                      ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                      : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                  }`}
+                  onClick={dlIcs}
+                >
+                  {appleLinked ? (
+                    <>
+                      <span>Add to</span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Connect to</span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
                 <button
                   className={`inline-flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                     connected.microsoft
@@ -813,28 +821,26 @@ export default function Home() {
                   </>
                 )}
               </button>
-              {false && (
-                <button
-                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                    appleLinked
-                      ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                      : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                  }`}
-                  onClick={closeAfter(dlIcs)}
-                >
-                  {appleLinked ? (
-                    <>
-                      <span>Add to </span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Connect to </span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              )}
+              <button
+                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                  appleLinked
+                    ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                }`}
+                onClick={closeAfter(dlIcs)}
+              >
+                {appleLinked ? (
+                  <>
+                    <span>Add to </span>
+                    <IconAppleMono className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Connect to </span>
+                    <IconAppleMono className="h-4 w-4" />
+                  </>
+                )}
+              </button>
               <button
                 className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
                   connected.microsoft

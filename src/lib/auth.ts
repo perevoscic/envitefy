@@ -1,9 +1,15 @@
 import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import AppleProvider from "next-auth/providers/apple";
 import { getAppleClientSecretCached } from "@/lib/apple";
-import { saveMicrosoftRefreshToken, saveGoogleRefreshToken } from "@/lib/supabase";
+import {
+  saveMicrosoftRefreshToken,
+  saveGoogleRefreshToken,
+  getUserByEmail,
+  verifyPassword,
+} from "@/lib/supabase";
 
 const appleClientId = process.env.APPLE_CLIENT_ID as string | undefined;
 const appleSecretEnv = process.env.APPLE_CLIENT_SECRET as string | undefined;
@@ -28,6 +34,31 @@ export const authOptions: NextAuthOptions = {
   debug: true,
   secret: process.env.NEXTAUTH_SECRET as string,
   providers: [
+    CredentialsProvider({
+      name: "Email and Password",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        try {
+          const email = credentials?.email || "";
+          const password = credentials?.password || "";
+          if (!email || !password) return null;
+          const user = await getUserByEmail(email);
+          if (!user) return null;
+          const ok = await verifyPassword(password, user.password_hash);
+          if (!ok) return null;
+          return {
+            id: user.id,
+            email: user.email,
+            name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
+          } as any;
+        } catch {
+          return null;
+        }
+      },
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,

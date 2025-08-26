@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -9,9 +9,6 @@ import Logo from "@/assets/logo.png";
 export default function LoginPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [slide, setSlide] = useState(0);
 
   useEffect(() => {
@@ -39,23 +36,6 @@ export default function LoginPage() {
     ],
     []
   );
-
-  const onEmailSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setMessage(null);
-    try {
-      const res = await signIn("email", {
-        email,
-        redirect: false,
-        callbackUrl: "/",
-      });
-      if (res?.ok) setMessage("Check your email for a sign-in link.");
-      else setMessage(res?.error || "Failed to send email link");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <main className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2">
@@ -124,7 +104,14 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-md">
           <div className="flex flex-col items-center gap-2">
             <Image src={Logo} alt="Logo" height={64} className="rounded" />
-            <h1 className="text-2xl font-semibold">Welcome back</h1>
+            <h1 className="text-2xl font-semibold text-center">
+              <span className="block">Welcome back to</span>
+              <span className="block">
+                <span className="font-pacifico">Snap</span>
+                <span> </span>
+                <span className="font-montserrat">My Date</span>
+              </span>
+            </h1>
             <p className="text-sm text-muted-foreground">
               Sign in to access your calendar assistant
             </p>
@@ -186,39 +173,19 @@ export default function LoginPage() {
                 <span>Continue with Microsoft</span>
               </span>
             </button>
-          </div>
-
-          <div className="flex items-center gap-3 select-none">
-            <div className="h-px bg-border flex-1" />
-            <span
-              className="text-xs tracking-wide uppercase dark:text-white"
-              style={{ color: "#000" }}
-            >
-              or
-            </span>
-            <div className="h-px bg-border flex-1" />
-          </div>
-
-          <form className="space-y-3" onSubmit={onEmailSubmit}>
-            <label className="block text-sm text-muted-foreground">Email</label>
-            <input
-              type="email"
-              className="w-full border border-border bg-surface text-foreground p-2 rounded"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
             <button
-              type="submit"
-              disabled={submitting}
               className="w-full px-4 py-2 rounded bg-[#A259FF] text-white disabled:opacity-70"
+              onClick={() => {
+                const el = document.getElementById("login-email-input");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  (el as HTMLInputElement).focus();
+                }
+              }}
             >
-              {submitting ? "Sending..." : "Continue with email"}
+              Continue with email
             </button>
-            {message && (
-              <p className="text-sm text-muted-foreground">{message}</p>
-            )}
-          </form>
+          </div>
 
           <p className="text-center text-sm text-muted-foreground">
             Don\'t have an account?{" "}

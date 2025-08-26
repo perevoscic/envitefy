@@ -11,6 +11,8 @@
   "dependencies": {
     "@google-cloud/vision": "^5.3.3",
     "@supabase/supabase-js": "^2.56.0",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
     "chrono-node": "^2.8.4",
     "cookie": "^1.0.2",
     "googleapis": "^156.0.0",
