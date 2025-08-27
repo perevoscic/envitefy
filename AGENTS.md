@@ -81,13 +81,17 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 ### Google OAuth Agents — GET `/api/google/auth`, GET `/api/google/callback`
 
 - **Purpose**: Start OAuth and capture a Google refresh token.
-- **Behavior**: Redirects to Google; callback sets `g_refresh` cookie and redirects to `/`.
+- **Behavior**:
+  - Auth: Redirects to Google. Optional query: `consent=1` forces the Google consent screen.
+  - Callback: Exchanges code; if a refresh token is returned, sets `g_refresh` cookie and redirects.
+  - Optional `state` support: If `state` contains a base64-encoded JSON payload representing an event `{ title, description, location, start, end, timezone }`, the callback will create the event immediately and then redirect to `/open?url=<eventHtmlLink>`.
 - **Env**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 
 ### Microsoft OAuth Agents — GET `/api/outlook/auth`, GET `/api/outlook/callback`
 
 - **Purpose**: Start OAuth and capture a Microsoft refresh token.
 - **Behavior**: Redirects to Microsoft; callback sets `o_refresh` cookie and redirects to `/`.
+- **Scopes**: Requests `offline_access https://graph.microsoft.com/Calendars.ReadWrite`.
 - **Env**: `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_REDIRECT_URI`, `OUTLOOK_TENANT_ID` (default `common`).
 
 ### Legacy direct insert (no NextAuth session)
@@ -100,6 +104,14 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - **Auth**: `x-refresh-token` header (Microsoft refresh token).
   - **Input**: `{ title, start, end, location, description, timezone }`.
   - **Output**: `{ htmlLink }`.
+
+### Signup — POST `/api/auth/signup`
+
+- **Purpose**: Create a user account in Supabase using email/password.
+- **Auth**: None.
+- **Input (JSON)**: `{ email: string, password: string, firstName?: string, lastName?: string }`.
+- **Output**: `{ ok: true }` on success or `{ error }` on failure.
+- **Env**: Supabase env (see below).
 
 ### Provider status — GET `/api/calendars`
 
@@ -155,6 +167,7 @@ Payload used by the authenticated calendar agents.
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 - **Microsoft OAuth/Graph**
   - `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_REDIRECT_URI`, `OUTLOOK_TENANT_ID` (default `common`).
+  - Token refresh requests include scopes: `offline_access https://graph.microsoft.com/Calendars.ReadWrite`.
 - **GCP Vision**
   - Prefer inline: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
   - Or ADC file path: `GOOGLE_APPLICATION_CREDENTIALS`.
@@ -176,4 +189,5 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
