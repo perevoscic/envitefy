@@ -407,24 +407,20 @@ export default function Home() {
         if (isAndroid) {
           const play =
             "https://play.google.com/store/apps/details?id=com.google.android.calendar";
-          const intent =
-            "intent://#Intent;scheme=content;package=com.google.android.calendar;end";
-          const timer = setTimeout(() => {
-            window.location.assign(htmlLink);
-          }, 700);
-          const iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = intent;
-          document.body.appendChild(iframe);
-          setTimeout(() => {
+          // On Android, loading the Calendar event link directly will hand off to the app
+          // when installed. If not installed, fall back to Play Store after a short delay.
+          const fallback = setTimeout(() => {
             try {
               if (document.visibilityState === "visible") {
-                window.location.href = play;
+                window.location.assign(play);
               }
             } catch {}
-            document.body.removeChild(iframe);
-            clearTimeout(timer);
           }, 1200);
+          try {
+            window.location.assign(htmlLink);
+          } finally {
+            setTimeout(() => clearTimeout(fallback), 2000);
+          }
           return;
         }
         // Desktop/web: open in a new tab instead of replacing current page
@@ -534,7 +530,13 @@ export default function Home() {
             href="/"
             className="flex items-center gap-4 mb-8 justify-center -mt-6 sm:mt-0 md:-mt-4 lg:mt-0"
           >
-            <Image src={Logo} alt="Snap My Date" width={64} height={64} />
+            <Image
+              src={Logo}
+              alt="Snap My Date"
+              width={64}
+              height={64}
+              className="drop-shadow-fore-subtle"
+            />
             <span className="text-4xl sm:text-5xl md:text-6xl text-foreground">
               <span className="font-pacifico">Snap</span>
               <span> </span>
@@ -544,7 +546,7 @@ export default function Home() {
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle">
                   Snap a flyer.
                 </span>
                 <br />

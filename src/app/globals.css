@@ -154,6 +154,10 @@ body {
     -webkit-text-stroke: 0.4px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
   }
+  /* Theme-aware drop shadow that adapts to foreground color */
+  .drop-shadow-fore-subtle {
+    filter: drop-shadow(0 3px 2px color-mix(in oklab, var(--foreground) 28%, transparent));
+  }
   /* Shake animation + input error helpers */
   @keyframes field-shake {
     0%, 100% { transform: translateX(0); }
