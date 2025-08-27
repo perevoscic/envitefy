@@ -38,7 +38,6 @@ RUN groupadd -g 1001 nodegrp \
     && useradd -u 1001 -g nodegrp -m nodeusr
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0 \
     PORT=8080
 
 # Copy only what we need to run the server
@@ -52,6 +51,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node 
 USER nodeusr
 
 EXPOSE 8080
-CMD ["sh", "-c", "echo Starting Next server on PORT=${PORT} HOSTNAME=${HOSTNAME}; node server.js"]
+CMD ["sh", "-lc", "echo Starting Next server on PORT=${PORT} HOSTNAME=0.0.0.0; HOSTNAME=0.0.0.0 node server.js"]
 
 

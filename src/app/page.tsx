@@ -524,7 +524,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
-      <section className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <section className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="order-2 lg:order-1 text-center lg:text-center">
           <Link
             href="/"
@@ -543,7 +543,7 @@ export default function Home() {
               <span className="font-montserrat font-semibold">My Date</span>
             </span>
           </Link>
-          <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
+          <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1 shadow-lg  ">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle">
