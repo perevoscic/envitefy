@@ -209,7 +209,12 @@ export async function POST(request: Request) {
 
     let ocrBuffer: Buffer = inputBuffer;
     if (!/pdf/i.test(mime)) {
-      ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
+      try {
+        // Some mobile formats (e.g., HEIC) may fail; fall back to original buffer
+        ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
+      } catch {
+        ocrBuffer = inputBuffer;
+      }
     }
 
     const vision = getVisionClient();

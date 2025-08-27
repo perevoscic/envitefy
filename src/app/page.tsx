@@ -133,7 +133,23 @@ export default function Home() {
     setError(null);
     const form = new FormData();
     form.append("file", currentFile);
-    const res = await fetch("/api/ocr", { method: "POST", body: form });
+    let res: Response;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      res = await fetch("/api/ocr", {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (e) {
+      setError(
+        "Upload failed. Please check your connection or try a different image."
+      );
+      setLoading(false);
+      return;
+    }
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
       setError((j as any).error || "Failed to scan file");
@@ -528,7 +544,7 @@ export default function Home() {
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]">
                   Snap a flyer.
                 </span>
                 <br />
@@ -539,7 +555,7 @@ export default function Home() {
                 seconds. Works with Google, Apple, and Outlook Calendars.
               </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
+              <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-center">
                 <button
                   onClick={openCamera}
                   aria-label="Open camera to snap a flyer"
