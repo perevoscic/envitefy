@@ -38,7 +38,8 @@ RUN groupadd -g 1001 nodegrp \
     && useradd -u 1001 -g nodegrp -m nodeusr
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    PORT=8080
 
 # Copy only what we need to run the server
 COPY --from=build /app/public ./public
@@ -47,11 +48,11 @@ COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/next.config.ts ./next.config.ts
 
 # Healthcheck (optional)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('http').get('http://localhost:'+ (process.env.PORT || 3000) +'/api/health');" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('http').get('http://localhost:'+ (process.env.PORT || 8080) +'/api/health');" || exit 1
 
 USER nodeusr
 
-EXPOSE 3000
+EXPOSE 8080
 CMD ["node", "server.js"]
 
 

@@ -22,7 +22,7 @@ export default function SubscriptionPage() {
         </span>
       </Link>
       <h4 className="text-xl text-muted-foreground mb-6 text-center">
-        Your support helps keep the lights on and new features coming.
+        Your contribution helps keep the lights on and new features coming.
         <br />
         Pick the plan that feels right for you.
       </h4>

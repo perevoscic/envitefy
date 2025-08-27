@@ -3,43 +3,52 @@ import Link from "next/link";
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-5xl grid grid-cols-1 items-center">
         <div className="text-center">
-          <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1">
-            <div className="rounded-3xl bg-neutral-900/70 backdrop-blur-sm p-10">
-              <h1 className="text-5xl sm:text-6xl font-extrabold leading-[1.05] tracking-tight">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300">
+          <div className="bg-gradient-to-tr from-fuchsia-500/15 via-sky-400/15 to-violet-500/15 rounded-3xl p-1">
+            <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-10 pb-16 border border-border">
+              <h1 className="text-5xl sm:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible">
+                <span className="bg-clip-text pb-10 text-transparent bg-gradient-to-r from-cyan-600 via-sky-500 to-fuchsia-600 dark:from-cyan-300 dark:via-sky-200 dark:to-fuchsia-300">
                   About
-                  <span className="font-pacifico">Snap</span>
+                  <span> </span>
+                  <span className="font-pacifico inline-block pb-1"> Snap</span>
                   <span> </span>
                   <span className="font-montserrat">My Date</span>
                 </span>
               </h1>
-              <p className="mt-5 text-lg sm:text-xl text-white/80 max-w-3xl mx-auto">
-                We built Snap My Date to turn the chaos of flyers, appointment
-                cards, and invites into clean, trustworthy calendar events in
-                seconds. Point, snap, and your plans are ready for Google,
-                Apple, or Outlook.
+              <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
+                Snap My Date is a simple helper for busy families. Take a quick
+                photo of a school flyer, team schedule, birthday invite, or
+                appointment card and we’ll turn it into a ready‑to‑save calendar
+                event—no typing, no stress.
               </p>
               <div className="mt-8 grid gap-5 sm:grid-cols-3 text-left">
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                  <h3 className="text-xl font-semibold">Fast OCR</h3>
-                  <p className="mt-2 text-white/70">
-                    Powered by robust text recognition to capture dates, times,
-                    and places.
+                <div className="rounded-2xl bg-surface/60 border border-border p-5">
+                  <h3 className="text-xl font-semibold text-center">
+                    Made for busy families
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    Works with school flyers, practice schedules, church
+                    bulletins, appointment cards, and more.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                  <h3 className="text-xl font-semibold">Smart Parsing</h3>
-                  <p className="mt-2 text-white/70">
-                    Understands natural language like “next Friday at 7pm.”
+                <div className="rounded-2xl bg-surface/60 border border-border p-5">
+                  <h3 className="text-xl font-semibold text-center">
+                    Just snap a photo
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    We pull the date, time, place, and details for you—no typing
+                    needed. Snap, and done.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                  <h3 className="text-xl font-semibold">One-tap Add</h3>
-                  <p className="mt-2 text-white/70">
-                    Send events straight to your favorite calendar in a click.
+                <div className="rounded-2xl bg-surface/60 border border-border p-5">
+                  <h3 className="text-xl font-semibold text-center">
+                    On your calendar instantly
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    Add to Google, Apple, or Outlook in a tap with helpful
+                    reminders from any device.
                   </p>
                 </div>
               </div>
@@ -53,7 +62,7 @@ export default function AboutPage() {
                 </Link>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-violet-400/70 text-violet-200 hover:text-white hover:border-white/80"
+                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-border text-foreground/80 hover:text-foreground hover:border-foreground/60"
                 >
                   Contact us
                 </Link>
