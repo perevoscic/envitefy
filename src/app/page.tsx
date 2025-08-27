@@ -455,62 +455,56 @@ export default function Home() {
       }
       if ((j as any).webLink) {
         const webLink = (j as any).webLink as string;
-        // Try to open Outlook app first; if not installed, fall back to web link
-        if (isIOS) {
-          const scheme = "ms-outlook://";
-          const t = setTimeout(() => {
-            window.location.assign(webLink);
-          }, 700);
-          window.location.href = scheme;
-          setTimeout(() => {
-            try {
-              if (document.visibilityState === "visible") {
-                window.location.assign(webLink);
-              }
-            } catch {}
-            clearTimeout(t);
-          }, 1200);
+        // Prefer native Outlook when available, else fall back to web
+        if (isIOS || isAndroid) {
+          // On mobile, Outlook supports universal links and will usually capture the webLink
+          window.location.assign(webLink);
           return;
         }
-        if (isAndroid) {
-          const intent =
-            "intent://#Intent;scheme=mailto;package=com.microsoft.office.outlook;end";
-          const t = setTimeout(() => {
-            window.location.assign(webLink);
-          }, 700);
-          const iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = intent;
-          document.body.appendChild(iframe);
-          setTimeout(() => {
+        // Desktop (macOS/Windows): try to open native Outlook, else open web
+        const openWeb = () => window.open(webLink, "_blank");
+        const trySchemeViaIframe = (uri: string, onFail: () => void) => {
+          const failTimer = setTimeout(() => {
             try {
-              if (document.visibilityState === "visible") {
-                window.location.assign(webLink);
+              if (document.visibilityState === "visible") onFail();
+            } finally {
+              clearTimeout(failTimer);
+            }
+          }, 900);
+          try {
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.src = uri;
+            document.body.appendChild(iframe);
+            setTimeout(() => {
+              try {
+                document.body.removeChild(iframe);
+              } catch {}
+            }, 1200);
+          } catch {
+            onFail();
+          }
+        };
+        if (isWindows) {
+          // Windows: try legacy and modern schemes
+          trySchemeViaIframe("outlook://", () => {
+            trySchemeViaIframe("ms-outlook://", openWeb);
+          });
+        } else {
+          // macOS: try scheme and then fall back to web
+          try {
+            const t = setTimeout(openWeb, 700);
+            window.location.href = "ms-outlook://";
+            setTimeout(() => {
+              try {
+                if (document.visibilityState === "visible") openWeb();
+              } finally {
+                clearTimeout(t);
               }
-            } catch {}
-            document.body.removeChild(iframe);
-            clearTimeout(t);
-          }, 1200);
-          return;
-        }
-        // Desktop: attempt to open Outlook if present, otherwise open web link
-        try {
-          const scheme = "ms-outlook://";
-          const t = setTimeout(() => {
-            window.open(webLink, "_blank");
-          }, 700);
-          // Attempt app open via navigation
-          window.location.href = scheme;
-          setTimeout(() => {
-            try {
-              if (document.visibilityState === "visible") {
-                window.open(webLink, "_blank");
-              }
-            } catch {}
-            clearTimeout(t);
-          }, 1200);
-        } catch {
-          window.open(webLink, "_blank");
+            }, 1200);
+          } catch {
+            openWeb();
+          }
         }
       } else {
         setError("Event created, but no link returned.");

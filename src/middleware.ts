@@ -21,15 +21,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Only enforce auth on the home page for now
+  // Only handle the home page: unauthenticated users go to public landing
   const shouldProtect = pathname === "/";
   if (!shouldProtect) return NextResponse.next();
 
   const token = await getToken({ req });
   if (!token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    if (pathname !== "/") url.searchParams.set("callbackUrl", pathname + search);
+    url.pathname = "/landing";
     return NextResponse.redirect(url);
   }
 

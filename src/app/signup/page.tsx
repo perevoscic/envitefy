@@ -183,7 +183,7 @@ export default function SignupPage() {
       </section>
 
       <section className="flex items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-md">
+        <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-xl shadow-black/20">
           <div className="flex flex-col items-center gap-2">
             <Link href="/">
               <Image src={Logo} alt="Logo" height={64} className="rounded" />
@@ -203,7 +203,7 @@ export default function SignupPage() {
 
           <div className="space-y-3">
             <button
-              className="w-full px-4 py-2 rounded bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]/30"
+              className="w-full px-4 py-2 rounded-full bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]/30"
               onClick={() => signIn("google", { callbackUrl: "/" })}
             >
               <span className="inline-flex items-center justify-center gap-3">
@@ -239,7 +239,7 @@ export default function SignupPage() {
               </span>
             </button>
             <button
-              className="w-full px-4 py-2 rounded bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0078D4]/30"
+              className="w-full px-4 py-2 rounded-full bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0078D4]/30"
               onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
             >
               <span className="inline-flex items-center justify-center gap-3">
@@ -258,7 +258,7 @@ export default function SignupPage() {
               </span>
             </button>
             <button
-              className="w-full px-4 py-2 rounded bg-[#A259FF] text-white disabled:opacity-70"
+              className="w-full px-4 py-2 rounded-full bg-[#A259FF] text-white disabled:opacity-70"
               onClick={() => {
                 setShowEmailForm((v) => !v);
                 requestAnimationFrame(() => {
@@ -268,7 +268,18 @@ export default function SignupPage() {
                 });
               }}
             >
-              Signup with Email
+              <span className="inline-flex items-center justify-center gap-3">
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M2 5.5A2.5 2.5 0 0 1 4.5 3h15A2.5 2.5 0 0 1 22 5.5v13A2.5 2.5 0 0 1 19.5 21h-15A2.5 2.5 0 0 1 2 18.5v-13Zm2.4-.5l7.6 5.32L19.6 5H4.4Zm15.6 2.08-7.18 5.03a1.5 1.5 0 0 1-1.64 0L4 7.08V18.5c0 .276.224.5.5.5h15a.5.5 0 0 0 .5-.5V7.08Z" />
+                </svg>
+                <span>Signup with Email</span>
+              </span>
             </button>
           </div>
 
@@ -381,7 +392,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full px-4 py-2 rounded bg-[#A259FF] text-white disabled:opacity-70"
+                className="w-full px-4 py-2 rounded-full bg-[#A259FF] text-white disabled:opacity-70"
               >
                 {submitting ? "Creating..." : "Create account"}
               </button>

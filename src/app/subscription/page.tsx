@@ -6,7 +6,7 @@ import Logo from "@/assets/logo.png";
 
 export default function SubscriptionPage() {
   return (
-    <main className="p-10 max-w-3xl mx-auto">
+    <main className="p-10 max-w-4xl mx-auto">
       <h1 className="text-3xl font-semibold text-muted-foreground mb-9 text-center">
         Thank you for supporting
       </h1>
@@ -24,17 +24,28 @@ export default function SubscriptionPage() {
       <h4 className="text-xl text-muted-foreground mb-6 text-center">
         Your contribution helps keep the lights on and new features coming.
         <br />
-        Pick the plan that feels right for you.
+        Pick the plan that feels right for you. Free trial includes 3 scans.
       </h4>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-xl border border-border bg-surface p-5 flex flex-col shadow-md text-center">
+          <h2 className="text-base font-medium mb-1">Trial</h2>
+          <div className="text-3xl font-semibold">$0</div>
+          <div className="text-xs text-muted-foreground mb-4">3 free scans</div>
+          <Link
+            href="/signup?plan=free"
+            className="mt-auto inline-flex justify-center items-center h-10 rounded-md bg-primary text-on-primary hover:opacity-90"
+          >
+            Start free
+          </Link>
+        </div>
         <div className="rounded-xl border border-border bg-surface p-5 flex flex-col shadow-md text-center">
           <h2 className="text-base font-medium mb-1">Monthly</h2>
           <div className="text-3xl font-semibold">$1.99</div>
           <div className="text-xs text-muted-foreground mb-4">per month</div>
           <button
             type="button"
-            className="mt-auto inline-flex justify-center items-center h-10 rounded-md bg-primary text-primary-foreground hover:opacity-90"
+            className="mt-auto inline-flex justify-center items-center h-10 rounded-md bg-primary text-on-primary hover:opacity-90"
             onClick={() => alert("Subscribing to Monthly ($1.99)")}
           >
             Subscribe Monthly
@@ -47,7 +58,7 @@ export default function SubscriptionPage() {
           <div className="text-xs text-muted-foreground mb-4">per year</div>
           <button
             type="button"
-            className="mt-auto inline-flex justify-center items-center h-10 rounded-md bg-primary text-primary-foreground hover:opacity-90"
+            className="mt-auto inline-flex justify-center items-center h-10 rounded-md bg-primary text-on-primary hover:opacity-90"
             onClick={() => alert("Subscribing to Yearly ($19.99)")}
           >
             Subscribe Yearly
