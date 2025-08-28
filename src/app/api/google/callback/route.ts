@@ -18,6 +18,25 @@ export async function GET(request: Request) {
       process.env.GOOGLE_REDIRECT_URI!
     );
     const { tokens } = await oAuth2Client.getToken(code);
+    // Compute external base URL to avoid 0.0.0.0:8080 redirects behind proxies
+    const deriveBaseUrl = (req: Request): string => {
+      const configured = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL;
+      if (configured) return configured;
+      const xfProto = req.headers.get("x-forwarded-proto");
+      const xfHost = req.headers.get("x-forwarded-host");
+      if (xfProto && xfHost) return `${xfProto}://${xfHost}`;
+      const host = req.headers.get("host");
+      if (host) {
+        const proto = host.includes("localhost") ? "http" : "https";
+        return `${proto}://${host}`;
+      }
+      try {
+        return new URL(req.url).origin;
+      } catch {
+        return "";
+      }
+    };
+    const baseUrl = deriveBaseUrl(request);
     const refresh = tokens.refresh_token;
     // Try to persist refresh token to Supabase against the signed-in user
     try {
@@ -56,7 +75,7 @@ export async function GET(request: Request) {
         const created = await calendar.events.insert({ calendarId: "primary", requestBody });
         const link = created.data.htmlLink || "/";
         // Redirect to a small page that opens the event in a new tab, then returns home
-        const openUrl = new URL("/open", request.url);
+        const openUrl = new URL("/open", baseUrl || request.url);
         openUrl.searchParams.set("url", link);
         const redirectResp = NextResponse.redirect(openUrl);
         if (refresh) {
@@ -76,7 +95,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const homeRedirect = NextResponse.redirect(new URL("/", request.url));
+    const homeRedirect = NextResponse.redirect(new URL("/", baseUrl || request.url));
     if (refresh) {
       homeRedirect.cookies.set({
         name: "g_refresh",
