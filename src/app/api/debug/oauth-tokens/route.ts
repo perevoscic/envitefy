@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { getGoogleRefreshToken, getMicrosoftRefreshToken } from "@/lib/supabase";
+import { getGoogleRefreshToken, getMicrosoftRefreshToken } from "@/lib/db";
 
 export const runtime = "nodejs";
 

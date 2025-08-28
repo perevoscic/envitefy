@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createUserWithEmailPassword } from "@/lib/supabase";
+import { createUserWithEmailPassword } from "@/lib/db";
 
 export async function POST(req: Request) {
   try {

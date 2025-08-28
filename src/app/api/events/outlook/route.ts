@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toMicrosoftEvent } from "@/lib/mappers";
-import { getMicrosoftRefreshToken } from "@/lib/supabase";
+import { getMicrosoftRefreshToken } from "@/lib/db";
 
 export const runtime = "nodejs";
 

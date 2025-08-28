@@ -107,11 +107,11 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 ### Signup — POST `/api/auth/signup`
 
-- **Purpose**: Create a user account in Supabase using email/password.
+- **Purpose**: Create a user account in Postgres (AWS RDS) using email/password.
 - **Auth**: None.
 - **Input (JSON)**: `{ email: string, password: string, firstName?: string, lastName?: string }`.
 - **Output**: `{ ok: true }` on success or `{ error }` on failure.
-- **Env**: Supabase env (see below).
+- **Env**: `DATABASE_URL` (Postgres connection string)
 
 ### Provider status — GET `/api/calendars`
 
@@ -120,7 +120,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Detection sources**:
   - NextAuth JWT tokens: `providers.google.refreshToken` (Google requires refresh token), `providers.microsoft.connected|refreshToken`, `providers.apple.connected`.
   - Legacy OAuth cookies: `g_refresh` (Google), `o_refresh` (Microsoft).
-  - Supabase token store (if signed-in and configured): lookup refresh tokens by `email`.
+  - Postgres token store: `oauth_tokens` table lookup by `email` or `user_id`.
 - **Output**: `{ google: boolean, microsoft: boolean, apple: boolean }`.
 
 ### OAuth token debug — GET `/api/debug/oauth-tokens`
@@ -128,6 +128,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Introspection of token storage and configuration.
 - **Auth**: NextAuth JWT if present (reads user email).
 - **Output**: `{ email, jwtProviders: {...}, supabase: { configured, error, googleStored, microsoftStored } }`.
+  - Note: `supabase.configured` remains for legacy visibility; tokens are now read from Postgres when `DATABASE_URL` is set.
 
 ### Health — GET `/api/health`
 
@@ -173,8 +174,8 @@ Payload used by the authenticated calendar agents.
   - Or ADC file path: `GOOGLE_APPLICATION_CREDENTIALS`.
 - **OpenAI (optional OCR fallback)**
   - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
-- **Supabase (token and user storage)**
-  - `SUPABASE_URL` or `VITE_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`.
+- **Postgres (token and user storage)**
+  - `DATABASE_URL` e.g. `postgresql://appuser:pass@host:5432/snapmydate?sslmode=require`.
 
 ---
 
@@ -189,5 +190,6 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
 - 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.

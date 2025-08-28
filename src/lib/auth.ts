@@ -9,7 +9,7 @@ import {
   saveGoogleRefreshToken,
   getUserByEmail,
   verifyPassword,
-} from "@/lib/supabase";
+} from "@/lib/db";
 
 const appleClientId = process.env.APPLE_CLIENT_ID as string | undefined;
 const appleSecretEnv = process.env.APPLE_CLIENT_SECRET as string | undefined;

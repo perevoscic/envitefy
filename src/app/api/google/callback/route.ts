@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { saveGoogleRefreshToken } from "@/lib/supabase";
+import { saveGoogleRefreshToken } from "@/lib/db";
 
 export const runtime = "nodejs";
 

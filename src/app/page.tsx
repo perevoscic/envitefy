@@ -522,7 +522,7 @@ export default function Home() {
         <div className="order-2 lg:order-1 text-center lg:text-center">
           <Link
             href="/"
-            className="flex items-center gap-4 mb-8 justify-center -mt-6 sm:mt-0 md:-mt-4 lg:mt-0"
+            className="flex items-center gap-4 mb-8 justify-center -mt-6 sm:mt-0 md:mt-4 lg:mt-0"
           >
             <Image
               src={Logo}

@@ -2,7 +2,7 @@ import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
-import { getGoogleRefreshToken } from "@/lib/supabase";
+import { getGoogleRefreshToken } from "@/lib/db";
 
 export const runtime = "nodejs";
 

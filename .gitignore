@@ -43,5 +43,6 @@ next-env.d.ts
 # local service account keys
 snap-my-date-*.json
 snap-my-date-406402b828d0.json
+pgssl_64.pl
 
 /src/generated/prisma
