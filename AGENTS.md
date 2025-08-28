@@ -175,7 +175,11 @@ Payload used by the authenticated calendar agents.
 - **OpenAI (optional OCR fallback)**
   - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
 - **Postgres (token and user storage)**
-  - `DATABASE_URL` e.g. `postgresql://appuser:pass@host:5432/snapmydate?sslmode=require`.
+  - `DATABASE_URL` e.g. `postgresql://appuser:pass@host:5432/snapmydate`.
+  - SSL configuration: do one of the following (not both):
+    - Set `PGSSL_DISABLE_VERIFY=true` to skip verification in dev. The app sets `ssl: { rejectUnauthorized: false }`. Remove any `sslmode` params from `DATABASE_URL` to avoid conflicts.
+    - Set `PGSSL_CA_BASE64=<base64 of rds-combined-ca-bundle.pem>` to enforce verification. The app sets `ssl: { ca, rejectUnauthorized: true }`. Remove `sslmode` from `DATABASE_URL` when passing SSL via env.
+  - To get the latest AWS RDS CA bundle, download `https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem` and base64-encode its contents.
 
 ---
 
