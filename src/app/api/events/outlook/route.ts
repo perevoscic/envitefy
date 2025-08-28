@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const email = (tokenData as any).email as string | undefined;
     if (!email) return NextResponse.json({ error: "Missing user email" }, { status: 400 });
     let refreshToken: string | null = null;
-    // Try Supabase first
+    // Try database first
     try {
       refreshToken = await getMicrosoftRefreshToken(email);
     } catch {}
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
     const created: { webLink?: string; id?: string } = await createResp.json();
 
-    // Removed Supabase status update
+    // Removed status update
 
     return NextResponse.json({ webLink: created.webLink, id: created.id });
   } catch (err: unknown) {

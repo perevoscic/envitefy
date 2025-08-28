@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       const legacy = request.cookies.get("g_refresh")?.value;
       if (legacy) refreshToken = legacy;
     }
-    // Fallback: load refresh token from Supabase if available
+    // Fallback: load refresh token from the database if available
     if (!refreshToken && !accessToken && email) {
       try {
         const supa = await getGoogleRefreshToken(email);
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       requestBody,
     });
 
-    // Removed Supabase status update
+    // Removed status update
 
     return NextResponse.json({ htmlLink: created.data.htmlLink, id: created.data.id });
   } catch (err: unknown) {

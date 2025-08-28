@@ -537,6 +537,9 @@ export default function Home() {
               <span className="font-montserrat font-semibold">My Date</span>
             </span>
           </Link>
+          <p className="-mt-6 sm:-mt-2 md:mt-0 text-sm sm:text-base text-foreground/70">
+            From paper to reminders.
+          </p>
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1 shadow-lg  ">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">

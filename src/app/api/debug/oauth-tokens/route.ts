@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     let googleStored: boolean | null = null;
     let microsoftStored: boolean | null = null;
-    let supabaseError: string | null = null;
+    let dbError: string | null = null;
 
     if (email) {
       try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         const m = await getMicrosoftRefreshToken(email);
         microsoftStored = Boolean(m);
       } catch (err: unknown) {
-        supabaseError = err instanceof Error ? err.message : String(err);
+        dbError = err instanceof Error ? err.message : String(err);
       }
     }
 
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
         google: Boolean(providers?.google?.connected || providers?.google?.refreshToken || providers?.google?.accessToken),
         microsoft: Boolean(providers?.microsoft?.connected || providers?.microsoft?.refreshToken),
       },
-      supabase: {
-        configured: Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-        error: supabaseError,
+      database: {
+        configured: Boolean(process.env.DATABASE_URL),
+        error: dbError,
         googleStored,
         microsoftStored,
       },

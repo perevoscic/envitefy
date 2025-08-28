@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       microsoftCookie
   );
 
-  // If not connected yet but we have an email, check Supabase token store
+  // If not connected yet but we have an email, check database token store
   if (email && (!googleConnected || !microsoftConnected)) {
     try {
       if (!googleConnected) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         googleConnected = Boolean(g);
       }
     } catch {
-      // Supabase not configured or lookup failed; ignore
+      // Database lookup failed; ignore
     }
     try {
       if (!microsoftConnected) {

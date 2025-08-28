@@ -64,19 +64,19 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 ### Google Events Agent (authenticated) — POST `/api/events/google`
 
 - **Purpose**: Create a Google Calendar event from a normalized event payload.
-- **Auth**: NextAuth JWT; uses stored provider tokens. Falls back to legacy cookie `g_refresh` and Supabase token store.
+- **Auth**: NextAuth JWT; uses stored provider tokens. Falls back to legacy cookie `g_refresh` and database token store.
 - **Input (JSON)**: NormalizedEvent (see schema below); optional `intakeId` ignored server-side.
 - **Output**: `{ htmlLink, id }`.
 - **Headers**: None required if signed in via NextAuth.
-- **Env**: `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, Supabase env (see below).
+- **Env**: `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 
 ### Microsoft Events Agent (authenticated) — POST `/api/events/outlook`
 
 - **Purpose**: Create an Outlook (Microsoft Graph) event from a normalized event payload.
-- **Auth**: NextAuth JWT + Supabase-stored Microsoft refresh token; falls back to JWT/cookie in dev.
+- **Auth**: NextAuth JWT + database-stored Microsoft refresh token; falls back to JWT/cookie in dev.
 - **Input (JSON)**: NormalizedEvent; optional `intakeId` ignored.
 - **Output**: `{ webLink, id }`.
-- **Env**: `NEXTAUTH_SECRET`, `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_TENANT_ID` (default `common`), Supabase env.
+- **Env**: `NEXTAUTH_SECRET`, `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_TENANT_ID` (default `common`).
 
 ### Google OAuth Agents — GET `/api/google/auth`, GET `/api/google/callback`
 
@@ -127,8 +127,8 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Introspection of token storage and configuration.
 - **Auth**: NextAuth JWT if present (reads user email).
-- **Output**: `{ email, jwtProviders: {...}, supabase: { configured, error, googleStored, microsoftStored } }`.
-  - Note: `supabase.configured` remains for legacy visibility; tokens are now read from Postgres when `DATABASE_URL` is set.
+- **Output**: `{ email, jwtProviders: {...}, database: { configured, error, googleStored, microsoftStored } }`.
+  - Tokens are read from Postgres when `DATABASE_URL` is set.
 
 ### Health — GET `/api/health`
 

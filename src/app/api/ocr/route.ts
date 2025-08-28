@@ -486,7 +486,7 @@ export async function POST(request: Request) {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
-    // Removed Supabase insertion; return only parsed data
+    // Removed database insertion; return only parsed data
     const intakeId: string | null = null;
 
     return NextResponse.json({

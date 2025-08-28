@@ -101,7 +101,7 @@ export const authOptions: NextAuthOptions = {
       const t: any = token as any;
       if (account?.provider === "google") {
         t.providers = t.providers || {};
-        // Persist Google refresh token in Supabase; avoid losing it on other provider sign-ins
+        // Persist Google refresh token in the database; avoid losing it on other provider sign-ins
         try {
           if (account.refresh_token && (t.email || (profile as any)?.email)) {
             const email = (t.email as string) || ((profile as any)?.email as string);
@@ -118,7 +118,7 @@ export const authOptions: NextAuthOptions = {
       }
       if (account?.provider === "azure-ad") {
         t.providers = t.providers || {};
-        // Persist the refresh token securely in Supabase; don't store it in the JWT
+        // Persist the refresh token securely in the database; don't store it in the JWT
         try {
           if (account.refresh_token && (t.email || (profile as any)?.email)) {
             const email = (t.email as string) || ((profile as any)?.email as string);

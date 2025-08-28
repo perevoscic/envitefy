@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     };
     const baseUrl = deriveBaseUrl(request);
     const refresh = tokens.refresh_token;
-    // Try to persist refresh token to Supabase against the signed-in user
+    // Persist refresh token to the database for the signed-in user
     try {
       const tokenData = await getToken({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

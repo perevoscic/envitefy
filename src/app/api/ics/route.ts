@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const timezone = searchParams.get("timezone") || "America/Chicago";
   const recurrence = searchParams.get("recurrence");
   const remindersStr = searchParams.get("reminders");
-  // intakeId no longer used without Supabase
+  // intakeId not used
   // const intakeId = searchParams.get("intakeId");
 
   if (!start || !end) {
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     }
   });
 
-  // Removed Supabase side-effect update
+  // No side-effect update
   return response;
 }
 

@@ -18,7 +18,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(true);
   const [slide, setSlide] = useState(0);
   const toastTimerRef = useRef<number | undefined>(undefined);
   const [toastOpen, setToastOpen] = useState(false);
@@ -190,97 +190,15 @@ export default function SignupPage() {
             </Link>
             <h1 className="text-2xl font-semibold">
               <span className="block text-center">Join</span>
-              <span className="block">
+              <span className="block text-3xl md:text-4xl pb-2">
                 <span className="font-pacifico">Snap</span>
                 <span> </span>
                 <span className="font-montserrat">My Date</span>
               </span>
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Create an account to access your calendar assistant
+            <p className="text-base md:text-lg text-foreground/70 text-center">
+              From paper to reminders.
             </p>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              className="w-full px-4 py-2 rounded-full bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]/30"
-              onClick={() => signIn("google", { callbackUrl: "/" })}
-            >
-              <span className="inline-flex items-center justify-center gap-3">
-                <svg
-                  aria-hidden="true"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 48 48"
-                >
-                  <path
-                    fill="#FFC107"
-                    d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
- s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C32.651,6.053,28.478,4,24,4C12.955,4,4,12.955,4,24
- s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-                  />
-                  <path
-                    fill="#FF3D00"
-                    d="M6.306,14.691l6.571,4.814C14.602,16.289,18.961,14,24,14c3.059,0,5.842,1.154,7.961,3.039
- l5.657-5.657C32.651,6.053,28.478,4,24,4C16.318,4,9.715,8.337,6.306,14.691z"
-                  />
-                  <path
-                    fill="#4CAF50"
-                    d="M24,44c5.176,0,9.86-1.977,13.409-5.197l-6.174-5.238C29.215,35.091,26.751,36,24,36
- c-5.202,0-9.619-3.317-11.283-7.946l-6.54,5.037C9.553,39.556,16.227,44,24,44z"
-                  />
-                  <path
-                    fill="#1976D2"
-                    d="M43.611,20.083H42V20H24v8h11.303c-0.793,2.237-2.231,4.166-3.997,5.565
- c0.001-0.001,0.002-0.001,0.003-0.002l6.174,5.238C39.059,36.284,44,30.627,44,24C44,22.659,43.862,21.35,43.611,20.083z"
-                  />
-                </svg>
-                <span>Sign up with Google</span>
-              </span>
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-full bg-white text-black border border-[#DADCE0] shadow-sm hover:bg-[#F6F6F6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0078D4]/30"
-              onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
-            >
-              <span className="inline-flex items-center justify-center gap-3">
-                <svg
-                  aria-hidden="true"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 23 23"
-                >
-                  <rect width="10" height="10" x="1" y="1" fill="#F25022" />
-                  <rect width="10" height="10" x="12" y="1" fill="#7FBA00" />
-                  <rect width="10" height="10" x="1" y="12" fill="#00A4EF" />
-                  <rect width="10" height="10" x="12" y="12" fill="#FFB900" />
-                </svg>
-                <span>Sign up with Microsoft</span>
-              </span>
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-full bg-[#A259FF] text-white disabled:opacity-70"
-              onClick={() => {
-                setShowEmailForm((v) => !v);
-                requestAnimationFrame(() => {
-                  const el = document.getElementById("email-signup-form");
-                  if (el)
-                    el.scrollIntoView({ behavior: "smooth", block: "center" });
-                });
-              }}
-            >
-              <span className="inline-flex items-center justify-center gap-3">
-                <svg
-                  aria-hidden="true"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M2 5.5A2.5 2.5 0 0 1 4.5 3h15A2.5 2.5 0 0 1 22 5.5v13A2.5 2.5 0 0 1 19.5 21h-15A2.5 2.5 0 0 1 2 18.5v-13Zm2.4-.5l7.6 5.32L19.6 5H4.4Zm15.6 2.08-7.18 5.03a1.5 1.5 0 0 1-1.64 0L4 7.08V18.5c0 .276.224.5.5.5h15a.5.5 0 0 0 .5-.5V7.08Z" />
-                </svg>
-                <span>Signup with Email</span>
-              </span>
-            </button>
           </div>
 
           {showEmailForm && (
@@ -335,18 +253,38 @@ export default function SignupPage() {
                 <button
                   type="button"
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute inset-y-0 right-2 my-auto h-6 w-6 text-muted-foreground"
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-2 my-auto h-8 w-8 rounded-full text-muted-foreground hover:bg-foreground/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   onClick={() => setShowPassword((v) => !v)}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
+                    fill="none"
+                    className="h-5 w-5 mx-auto"
                   >
                     {showPassword ? (
-                      <path d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 15.338 6.445 18 12 18c.97 0 1.87-.097 2.713-.28l-1.74-1.74A7.32 7.32 0 0 1 12 16.5c-4.613 0-7.393-2.78-8.52-4.5a9.742 9.742 0 0 1 1.884-2.245l-1.384-1.532zM20.02 15.777c.63-.604 1.17-1.3 1.546-2.03C20.774 10.662 17.555 8 12 8c-.402 0-.79.02-1.163.058l-1.79-1.79C9.944 6.096 10.94 6 12 6c5.555 0 8.774 2.662 10.066 6-.424.997-1.101 1.973-1.93 2.827l-1.116-1.05zM9.75 12a2.25 2.25 0 0 0 2.25 2.25c.22 0 .43-.032.629-.092l-2.787-2.787A2.216 2.216 0 0 0 9.75 12zm4.5 0c0-.22-.032-.43-.092-.629l-2.787-2.787c.2-.06.409-.092.629-.092A2.25 2.25 0 0 1 16.5 12z" />
+                      <>
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M5.91444 7.59106C4.3419 9.04124 3.28865 10.7415 2.77052 11.6971C2.66585 11.8902 2.66585 12.1098 2.77052 12.3029C3.28865 13.2585 4.3419 14.9588 5.91444 16.4089C7.48195 17.8545 9.50572 19 12 19C14.4943 19 16.518 17.8545 18.0855 16.4089C19.6581 14.9588 20.7113 13.2585 21.2295 12.3029C21.3341 12.1098 21.3341 11.8902 21.2295 11.6971C20.7113 10.7415 19.6581 9.04124 18.0855 7.59105C16.518 6.1455 14.4943 5 12 5C9.50572 5 7.48195 6.1455 5.91444 7.59106ZM4.55857 6.1208C6.36059 4.45899 8.84581 3 12 3C15.1542 3 17.6394 4.45899 19.4414 6.1208C21.2384 7.77798 22.4152 9.68799 22.9877 10.7438C23.4147 11.5315 23.4147 12.4685 22.9877 13.2562C22.4152 14.312 21.2384 16.222 19.4414 17.8792C17.6394 19.541 15.1542 21 12 21C8.84581 21 6.36059 19.541 4.55857 17.8792C2.76159 16.222 1.58478 14.312 1.01232 13.2562C0.58525 12.4685 0.585249 11.5315 1.01232 10.7438C1.58478 9.688 2.76159 7.77798 4.55857 6.1208ZM12 9.5C10.6193 9.5 9.49999 10.6193 9.49999 12C9.49999 13.3807 10.6193 14.5 12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5ZM7.49999 12C7.49999 9.51472 9.51471 7.5 12 7.5C14.4853 7.5 16.5 9.51472 16.5 12C16.5 14.4853 14.4853 16.5 12 16.5C9.51471 16.5 7.49999 14.4853 7.49999 12Z"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M3 3L21 21"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </>
                     ) : (
-                      <path d="M12 6c5.555 0 8.774 2.662 10.066 6-1.292 3.338-4.511 6-10.066 6S3.226 15.338 1.934 12C3.226 8.662 6.445 6 12 6zm0 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M5.91444 7.59106C4.3419 9.04124 3.28865 10.7415 2.77052 11.6971C2.66585 11.8902 2.66585 12.1098 2.77052 12.3029C3.28865 13.2585 4.3419 14.9588 5.91444 16.4089C7.48195 17.8545 9.50572 19 12 19C14.4943 19 16.518 17.8545 18.0855 16.4089C19.6581 14.9588 20.7113 13.2585 21.2295 12.3029C21.3341 12.1098 21.3341 11.8902 21.2295 11.6971C20.7113 10.7415 19.6581 9.04124 18.0855 7.59105C16.518 6.1455 14.4943 5 12 5C9.50572 5 7.48195 6.1455 5.91444 7.59106ZM4.55857 6.1208C6.36059 4.45899 8.84581 3 12 3C15.1542 3 17.6394 4.45899 19.4414 6.1208C21.2384 7.77798 22.4152 9.68799 22.9877 10.7438C23.4147 11.5315 23.4147 12.4685 22.9877 13.2562C22.4152 14.312 21.2384 16.222 19.4414 17.8792C17.6394 19.541 15.1542 21 12 21C8.84581 21 6.36059 19.541 4.55857 17.8792C2.76159 16.222 1.58478 14.312 1.01232 13.2562C0.58525 12.4685 0.585249 11.5315 1.01232 10.7438C1.58478 9.688 2.76159 7.77798 4.55857 6.1208ZM12 9.5C10.6193 9.5 9.49999 10.6193 9.49999 12C9.49999 13.3807 10.6193 14.5 12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5ZM7.49999 12C7.49999 9.51472 9.51471 7.5 12 7.5C14.4853 7.5 16.5 9.51472 16.5 12C16.5 14.4853 14.4853 16.5 12 16.5C9.51471 16.5 7.49999 14.4853 7.49999 12Z"
+                        fill="currentColor"
+                      />
                     )}
                   </svg>
                 </button>
@@ -373,18 +311,38 @@ export default function SignupPage() {
                   aria-label={
                     showConfirmPassword ? "Hide password" : "Show password"
                   }
-                  className="absolute inset-y-0 right-2 my-auto h-6 w-6 text-muted-foreground"
+                  aria-pressed={showConfirmPassword}
+                  className="absolute inset-y-0 right-2 my-auto h-8 w-8 rounded-full text-muted-foreground hover:bg-foreground/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   onClick={() => setShowConfirmPassword((v) => !v)}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
+                    fill="none"
+                    className="h-5 w-5 mx-auto"
                   >
                     {showConfirmPassword ? (
-                      <path d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 15.338 6.445 18 12 18c.97 0 1.87-.097 2.713-.28l-1.74-1.74A7.32 7.32 0 0 1 12 16.5c-4.613 0-7.393-2.78-8.52-4.5a9.742 9.742 0 0 1 1.884-2.245l-1.384-1.532zM20.02 15.777c.63-.604 1.17-1.3 1.546-2.03C20.774 10.662 17.555 8 12 8c-.402 0-.79.02-1.163.058l-1.79-1.79C9.944 6.096 10.94 6 12 6c5.555 0 8.774 2.662 10.066 6-.424.997-1.101 1.973-1.93 2.827l-1.116-1.05zM9.75 12a2.25 2.25 0 0 0 2.25 2.25c.22 0 .43-.032.629-.092l-2.787-2.787A2.216 2.216 0 0 0 9.75 12zm4.5 0c0-.22-.032-.43-.092-.629l-2.787-2.787c.2-.06.409-.092.629-.092A2.25 2.25 0 0 1 16.5 12z" />
+                      <>
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M5.91444 7.59106C4.3419 9.04124 3.28865 10.7415 2.77052 11.6971C2.66585 11.8902 2.66585 12.1098 2.77052 12.3029C3.28865 13.2585 4.3419 14.9588 5.91444 16.4089C7.48195 17.8545 9.50572 19 12 19C14.4943 19 16.518 17.8545 18.0855 16.4089C19.6581 14.9588 20.7113 13.2585 21.2295 12.3029C21.3341 12.1098 21.3341 11.8902 21.2295 11.6971C20.7113 10.7415 19.6581 9.04124 18.0855 7.59105C16.518 6.1455 14.4943 5 12 5C9.50572 5 7.48195 6.1455 5.91444 7.59106ZM4.55857 6.1208C6.36059 4.45899 8.84581 3 12 3C15.1542 3 17.6394 4.45899 19.4414 6.1208C21.2384 7.77798 22.4152 9.68799 22.9877 10.7438C23.4147 11.5315 23.4147 12.4685 22.9877 13.2562C22.4152 14.312 21.2384 16.222 19.4414 17.8792C17.6394 19.541 15.1542 21 12 21C8.84581 21 6.36059 19.541 4.55857 17.8792C2.76159 16.222 1.58478 14.312 1.01232 13.2562C0.58525 12.4685 0.585249 11.5315 1.01232 10.7438C1.58478 9.688 2.76159 7.77798 4.55857 6.1208ZM12 9.5C10.6193 9.5 9.49999 10.6193 9.49999 12C9.49999 13.3807 10.6193 14.5 12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5ZM7.49999 12C7.49999 9.51472 9.51471 7.5 12 7.5C14.4853 7.5 16.5 9.51472 16.5 12C16.5 14.4853 14.4853 16.5 12 16.5C9.51471 16.5 7.49999 14.4853 7.49999 12Z"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M3 3L21 21"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </>
                     ) : (
-                      <path d="M12 6c5.555 0 8.774 2.662 10.066 6-1.292 3.338-4.511 6-10.066 6S3.226 15.338 1.934 12C3.226 8.662 6.445 6 12 6zm0 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M5.91444 7.59106C4.3419 9.04124 3.28865 10.7415 2.77052 11.6971C2.66585 11.8902 2.66585 12.1098 2.77052 12.3029C3.28865 13.2585 4.3419 14.9588 5.91444 16.4089C7.48195 17.8545 9.50572 19 12 19C14.4943 19 16.518 17.8545 18.0855 16.4089C19.6581 14.9588 20.7113 13.2585 21.2295 12.3029C21.3341 12.1098 21.3341 11.8902 21.2295 11.6971C20.7113 10.7415 19.6581 9.04124 18.0855 7.59105C16.518 6.1455 14.4943 5 12 5C9.50572 5 7.48195 6.1455 5.91444 7.59106ZM4.55857 6.1208C6.36059 4.45899 8.84581 3 12 3C15.1542 3 17.6394 4.45899 19.4414 6.1208C21.2384 7.77798 22.4152 9.68799 22.9877 10.7438C23.4147 11.5315 23.4147 12.4685 22.9877 13.2562C22.4152 14.312 21.2384 16.222 19.4414 17.8792C17.6394 19.541 15.1542 21 12 21C8.84581 21 6.36059 19.541 4.55857 17.8792C2.76159 16.222 1.58478 14.312 1.01232 13.2562C0.58525 12.4685 0.585249 11.5315 1.01232 10.7438C1.58478 9.688 2.76159 7.77798 4.55857 6.1208ZM12 9.5C10.6193 9.5 9.49999 10.6193 9.49999 12C9.49999 13.3807 10.6193 14.5 12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5ZM7.49999 12C7.49999 9.51472 9.51471 7.5 12 7.5C14.4853 7.5 16.5 9.51472 16.5 12C16.5 14.4853 14.4853 16.5 12 16.5C9.51471 16.5 7.49999 14.4853 7.49999 12Z"
+                        fill="currentColor"
+                      />
                     )}
                   </svg>
                 </button>
