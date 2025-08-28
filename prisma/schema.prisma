@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model users {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  first_name    String?        @db.VarChar(255)
+  last_name     String?        @db.VarChar(255)
+  password_hash String
+  created_at    DateTime       @default(now()) @db.Timestamptz(6)
+  oauth_tokens  oauth_tokens[]
+
+  @@map("users")
+}
+
+model oauth_tokens {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String
+  user_id       String?  @db.Uuid
+  provider      String
+  refresh_token String
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  user          users?   @relation(fields: [user_id], references: [id])
+
+  @@unique([email, provider])
+  @@index([user_id])
+  @@map("oauth_tokens")
+}
