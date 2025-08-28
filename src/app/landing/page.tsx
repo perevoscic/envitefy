@@ -10,7 +10,7 @@ export default async function LandingPage() {
   const secondaryHref = isAuthed ? "/about" : "/login?callbackUrl=%2F";
 
   return (
-    <main className="min-h-screen w-full bg-background text-foreground">
+    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient">
       {/* Hero */}
       <section className="w-full">
         <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
