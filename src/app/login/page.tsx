@@ -141,10 +141,9 @@ export default function LoginPage() {
               </span>
             </h1>
             <p className="text-sm text-foreground/70 text-center">
-              From paper to reminders.
+              From papers to reminders.
             </p>
           </div>
-
           <form className="space-y-3" onSubmit={onEmailSubmit}>
             <input
               id="login-email-input"
@@ -184,6 +183,14 @@ export default function LoginPage() {
                 </svg>
               </button>
             </div>
+            <div className="text-right">
+              <p className="text-center text-sm text-muted-foreground">
+                Having trouble signing in?{" "}
+                <Link href="/forgot" className="text-secondary hover:underline">
+                  Reset password
+                </Link>
+              </p>
+            </div>
             <button
               type="submit"
               disabled={submitting}
@@ -195,13 +202,14 @@ export default function LoginPage() {
               <p className="text-sm text-muted-foreground">{message}</p>
             )}
           </form>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Don\'t have an account?{" "}
-            <Link className="text-secondary hover:underline" href="/signup">
-              Sign up
-            </Link>
-          </p>
+          <div className="text-right">
+            <p className="text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link className="text-secondary hover:underline" href="/signup">
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
     </main>

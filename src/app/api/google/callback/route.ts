@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { saveGoogleRefreshToken } from "@/lib/db";
+import { saveGoogleRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -48,6 +48,8 @@ export async function GET(request: Request) {
       const email = (tokenData as any)?.email as string | undefined;
       if (refresh && email) {
         await saveGoogleRefreshToken(email, refresh);
+        // Also mark Google as preferred provider for future prompts
+        await updatePreferredProviderByEmail({ email, preferredProvider: "google" });
       }
     } catch {
       // Ignore persistence failures; cookie below still enables server-side use

@@ -47,14 +47,49 @@ export default async function LandingPage() {
 
             <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-foreground/70">
               <span className="text-sm">Works with</span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 bg-surface/60 text-xs">
-                Google Calendar
+              {/* Google */}
+              <span
+                className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
+                aria-label="Google"
+              >
+                <Image
+                  src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+                  alt="Google logo"
+                  width={20}
+                  height={20}
+                />
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 bg-surface/60 text-xs">
-                Apple Calendar
+              {/* Apple (light/dark) */}
+              <span
+                className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
+                aria-label="Apple"
+              >
+                <Image
+                  src="/brands/apple-black.svg"
+                  alt="Apple logo"
+                  width={20}
+                  height={20}
+                  className="dark:hidden"
+                />
+                <Image
+                  src="/brands/apple-white.svg"
+                  alt="Apple logo"
+                  width={20}
+                  height={20}
+                  className="hidden dark:block"
+                />
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 bg-surface/60 text-xs">
-                Outlook
+              {/* Microsoft */}
+              <span
+                className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
+                aria-label="Microsoft"
+              >
+                <Image
+                  src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
+                  alt="Microsoft logo"
+                  width={20}
+                  height={20}
+                />
               </span>
             </div>
           </div>

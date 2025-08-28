@@ -13,6 +13,18 @@ const nextConfig: NextConfig = {
   },
   // Produce a minimal standalone server for Docker deployment
   output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "fonts.gstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

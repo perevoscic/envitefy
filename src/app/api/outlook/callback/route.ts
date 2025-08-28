@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { saveMicrosoftRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -31,6 +33,22 @@ export async function GET(request: Request) {
     const tokens: { access_token?: string; refresh_token?: string } = await tokenResp.json();
     const refresh = tokens.refresh_token;
     if (!refresh) return NextResponse.json({ error: "No refresh token" }, { status: 400 });
+
+    // Persist refresh token to the database for the signed-in user and set preference
+    try {
+      const tokenData = await getToken({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        req: request as any,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      const email = (tokenData as any)?.email as string | undefined;
+      if (email) {
+        await saveMicrosoftRefreshToken(email, refresh);
+        await updatePreferredProviderByEmail({ email, preferredProvider: "microsoft" });
+      }
+    } catch {
+      // ignore persistence errors
+    }
 
     // Compute external base URL similar to Google callback to avoid 0.0.0.0:8080
     const deriveBaseUrl = (req: Request): string => {

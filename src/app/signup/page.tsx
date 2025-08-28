@@ -197,7 +197,7 @@ export default function SignupPage() {
               </span>
             </h1>
             <p className="text-base md:text-lg text-foreground/70 text-center">
-              From paper to reminders.
+              From papers to reminders.
             </p>
           </div>
 

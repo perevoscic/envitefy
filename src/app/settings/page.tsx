@@ -6,11 +6,11 @@ type ApiState<T> = { loading: boolean; error: string | null; data?: T };
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
 
   // Profile form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [preferredProvider, setPreferredProvider] = useState<string>("");
   const [profileState, setProfileState] = useState<ApiState<{ ok?: boolean }>>({
     loading: false,
     error: null,
@@ -41,6 +41,7 @@ export default function SettingsPage() {
         if (ignore) return;
         setFirstName(json.firstName || "");
         setLastName(json.lastName || "");
+        setPreferredProvider(json.preferredProvider || "");
       } catch (e: any) {
         // no-op; page still renders
       }
@@ -58,7 +59,11 @@ export default function SettingsPage() {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName }),
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          preferredProvider: preferredProvider || null,
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || "Failed to update profile");
@@ -73,6 +78,10 @@ export default function SettingsPage() {
 
   async function onChangePassword(e: React.FormEvent) {
     e.preventDefault();
+    if (!currentPassword) {
+      setPwdState({ loading: false, error: "Current password is required" });
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPwdState({ loading: false, error: "Passwords do not match" });
       return;
@@ -99,147 +108,146 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="p-6 max-w-3xl">
-      <h1 className="text-xl font-semibold mb-1">Account</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Manage your profile and security settings.
-      </p>
-
-      <div className="flex items-center gap-2 border-b border-border mb-6">
-        <button
-          className={`px-3 py-2 text-sm rounded-t-md ${
-            activeTab === "profile"
-              ? "bg-surface text-foreground"
-              : "text-foreground/70 hover:text-foreground"
-          }`}
-          onClick={() => setActiveTab("profile")}
-        >
-          Profile
-        </button>
-        <button
-          className={`px-3 py-2 text-sm rounded-t-md ${
-            activeTab === "security"
-              ? "bg-surface text-foreground"
-              : "text-foreground/70 hover:text-foreground"
-          }`}
-          onClick={() => setActiveTab("security")}
-        >
-          Security
-        </button>
-      </div>
-
-      {activeTab === "profile" && (
-        <section className="space-y-6">
-          <form onSubmit={onSaveProfile} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                value={userEmail}
-                disabled
-                className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
+      <section className="w-full max-w-2xl">
+        <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-8 border border-border">
+          <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight text-center mb-1">
+            Account
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6 text-center">
+            Manage your profile and security settings.
+          </p>
+          {/* Profile (names) */}
+          <section className="space-y-6 mt-8 border-t border-border pt-6">
+            <h2 className="text-base font-semibold">Profile</h2>
+            <form onSubmit={onSaveProfile} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    First name
+                  </label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Last name
+                  </label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  First name
-                </label>
+                <label className="block text-sm font-medium mb-1">Email</label>
                 <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  type="email"
+                  value={userEmail}
+                  disabled
+                  className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Last name
+                  Default calendar
+                </label>
+                <select
+                  value={preferredProvider}
+                  onChange={(e) => setPreferredProvider(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">No default</option>
+                  <option value="google">Google Calendar</option>
+                  <option value="microsoft">Microsoft Outlook</option>
+                  <option value="apple">Apple Calendar</option>
+                </select>
+              </div>
+              {profileState.error && (
+                <p className="text-sm text-red-600">{profileState.error}</p>
+              )}
+              {profileState.data?.ok && (
+                <p className="text-sm text-green-600">Profile saved.</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={profileState.loading}
+                  className="inline-flex items-center px-4 py-2 rounded-md text-sm border border-border bg-primary/80 text-white hover:bg-primary disabled:opacity-60"
+                >
+                  {profileState.loading ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {/* Security */}
+          <section className="space-y-6 mt-8 border-t border-border pt-6">
+            <h2 className="text-base font-semibold">Security</h2>
+            <form onSubmit={onChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Current password
                 </label>
                 <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  autoComplete="current-password"
                 />
               </div>
-            </div>
-            {profileState.error && (
-              <p className="text-sm text-red-600">{profileState.error}</p>
-            )}
-            {profileState.data?.ok && (
-              <p className="text-sm text-green-600">Profile saved.</p>
-            )}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={profileState.loading}
-                className="inline-flex items-center px-4 py-2 rounded-md text-sm border border-border bg-primary/80 text-white hover:bg-primary disabled:opacity-60"
-              >
-                {profileState.loading ? "Saving..." : "Save changes"}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {activeTab === "security" && (
-        <section className="space-y-6">
-          <form onSubmit={onChangePassword} className="space-y-4 max-w-md">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Current password
-              </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                autoComplete="current-password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                New password
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                autoComplete="new-password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Confirm new password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                autoComplete="new-password"
-              />
-            </div>
-            {pwdState.error && (
-              <p className="text-sm text-red-600">{pwdState.error}</p>
-            )}
-            {pwdState.data?.ok && (
-              <p className="text-sm text-green-600">Password changed.</p>
-            )}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={pwdState.loading}
-                className="inline-flex items-center px-4 py-2 rounded-md text-sm border border-border bg-primary/80 text-white hover:bg-primary disabled:opacity-60"
-              >
-                {pwdState.loading ? "Saving..." : "Change password"}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    New password
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Confirm new password
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+              {pwdState.error && (
+                <p className="text-sm text-red-600">{pwdState.error}</p>
+              )}
+              {pwdState.data?.ok && (
+                <p className="text-sm text-green-600">Password changed.</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={pwdState.loading}
+                  className="inline-flex items-center px-4 py-2 rounded-md text-sm border border-border bg-primary/80 text-white hover:bg-primary disabled:opacity-60"
+                >
+                  {pwdState.loading ? "Saving..." : "Change password"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
     </main>
   );
 }

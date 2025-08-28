@@ -7,9 +7,13 @@ CREATE TABLE IF NOT EXISTS users (
   email text UNIQUE NOT NULL,
   first_name varchar(255),
   last_name varchar(255),
+  preferred_provider varchar(32),
   password_hash text NOT NULL,
   created_at timestamptz(6) DEFAULT now()
 );
+
+-- Ensure column exists if table pre-existed without it
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider varchar(32);
 
 -- Ensure id default exists even if table pre-existed without it
 ALTER TABLE users ALTER COLUMN id SET DEFAULT gen_random_uuid();
@@ -31,4 +35,14 @@ ALTER TABLE oauth_tokens ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
 CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user_id ON oauth_tokens(user_id);
 
+-- Password reset tokens table
+CREATE TABLE IF NOT EXISTS password_resets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text NOT NULL,
+  token text UNIQUE NOT NULL,
+  expires_at timestamptz(6) NOT NULL,
+  used_at timestamptz(6),
+  created_at timestamptz(6) DEFAULT now()
+);
 
+CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email);

@@ -113,6 +113,22 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Output**: `{ ok: true }` on success or `{ error }` on failure.
 - **Env**: `DATABASE_URL` (Postgres connection string)
 
+### Forgot Password — POST `/api/auth/forgot`
+
+- **Purpose**: Issue a password reset link (token) to the user email.
+- **Auth**: None.
+- **Input (JSON)**: `{ email: string }`.
+- **Output**: `{ ok: true }`. In non-production, also returns `{ resetUrl }` for convenience.
+- **Notes**: Always returns 200 to avoid email enumeration leaks.
+
+### Reset Password — POST `/api/auth/reset`
+
+- **Purpose**: Set a new password using a reset token.
+- **Auth**: None.
+- **Input (JSON)**: `{ token: string, newPassword: string }`.
+- **Output**: `{ ok: true }` or `{ error }`.
+- **Behavior**: Validates token (unused, unexpired), updates password, marks token as used.
+
 ### Provider status — GET `/api/calendars`
 
 - **Purpose**: Returns which providers are connected in the current session.
@@ -183,6 +199,10 @@ Payload used by the authenticated calendar agents.
 
 ---
 
+## Changelog
+
+---
+
 ## Conventions and update guidelines
 
 - When you modify any agent’s request/response shape, auth behavior, or env requirements, update the relevant section here.
@@ -194,6 +214,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-08-28: Added Forgot/Reset password agents; created `password_resets` table; non-prod returns resetUrl for testing.
 - 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
 - 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.

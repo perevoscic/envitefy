@@ -79,6 +79,7 @@ export type AppUserRow = {
   email: string;
   first_name?: string | null;
   last_name?: string | null;
+  preferred_provider?: string | null;
   password_hash: string;
   created_at?: string;
 };
@@ -86,7 +87,7 @@ export type AppUserRow = {
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `select id, email, first_name, last_name, password_hash, created_at
+    `select id, email, first_name, last_name, preferred_provider, password_hash, created_at
      from users
      where email = $1
      limit 1`,
@@ -109,7 +110,7 @@ export async function createUserWithEmailPassword(params: {
   const res = await query<AppUserRow>(
     `insert into users (email, first_name, last_name, password_hash)
      values ($1, $2, $3, $4)
-     returning id, email, first_name, last_name, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, password_hash, created_at`,
     [lower, firstName || null, lastName || null, password_hash]
   );
   return res.rows[0];
@@ -213,8 +214,27 @@ export async function updateUserNamesByEmail(params: {
     `update users
      set first_name = $2, last_name = $3
      where email = $1
-     returning id, email, first_name, last_name, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, password_hash, created_at`,
     [lower, params.firstName ?? null, params.lastName ?? null]
+  );
+  return res.rows[0];
+}
+
+export async function updatePreferredProviderByEmail(params: {
+  email: string;
+  preferredProvider: "google" | "microsoft" | "apple" | null;
+}): Promise<AppUserRow> {
+  const lower = params.email.toLowerCase();
+  const existing = await getUserByEmail(lower);
+  if (!existing) {
+    throw new Error("No local account found for this email");
+  }
+  const res = await query<AppUserRow>(
+    `update users
+     set preferred_provider = $2
+     where email = $1
+     returning id, email, first_name, last_name, preferred_provider, password_hash, created_at`,
+    [lower, params.preferredProvider]
   );
   return res.rows[0];
 }
@@ -236,3 +256,58 @@ export async function changePasswordByEmail(params: {
   );
 }
 
+export async function setPasswordByEmail(params: { email: string; newPassword: string }): Promise<void> {
+  const lower = params.email.toLowerCase();
+  const user = await getUserByEmail(lower);
+  if (!user) throw new Error("No local account found for this email");
+  const newHash = await hashPassword(params.newPassword);
+  await query(`update users set password_hash = $2 where email = $1`, [lower, newHash]);
+}
+
+export type PasswordResetRow = {
+  id: string;
+  email: string;
+  token: string;
+  expires_at: string;
+  used_at?: string | null;
+  created_at?: string;
+};
+
+function generateSecureToken(bytes: number = 32): string {
+  return randomBytes(bytes).toString("hex");
+}
+
+export async function createPasswordResetToken(email: string, ttlMinutes = 30): Promise<PasswordResetRow> {
+  const lower = email.toLowerCase();
+  const user = await getUserByEmail(lower);
+  if (!user) throw new Error("No account found for this email");
+  const token = generateSecureToken(32);
+  const expires = new Date(Date.now() + ttlMinutes * 60 * 1000);
+  const res = await query<PasswordResetRow>(
+    `insert into password_resets (email, token, expires_at)
+     values ($1, $2, $3)
+     returning id, email, token, expires_at, used_at, created_at`,
+    [lower, token, expires.toISOString()]
+  );
+  return res.rows[0];
+}
+
+export async function getValidPasswordResetByToken(token: string): Promise<PasswordResetRow | null> {
+  const res = await query<PasswordResetRow>(
+    `select id, email, token, expires_at, used_at, created_at
+     from password_resets
+     where token = $1
+     limit 1`,
+    [token]
+  );
+  const row = res.rows[0];
+  if (!row) return null;
+  if (row.used_at) return null;
+  const expires = new Date(row.expires_at).getTime();
+  if (isNaN(expires) || expires < Date.now()) return null;
+  return row;
+}
+
+export async function markPasswordResetUsed(id: string): Promise<void> {
+  await query(`update password_resets set used_at = now() where id = $1`, [id]);
+}

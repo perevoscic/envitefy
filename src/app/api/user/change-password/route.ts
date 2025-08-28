@@ -10,8 +10,8 @@ export async function POST(req: Request) {
     if (!email) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json().catch(() => ({} as any));
-    const currentPassword = String(body.currentPassword || "");
     const newPassword = String(body.newPassword || "");
+    const currentPassword = String(body.currentPassword || "");
 
     if (!currentPassword || !newPassword)
       return NextResponse.json({ error: "Current and new passwords are required" }, { status: 400 });
