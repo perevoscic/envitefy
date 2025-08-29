@@ -173,6 +173,21 @@ body {
   }
 }
 
+/* Theme-aware asset toggles */
+.show-light { display: inline-block; }
+.show-dark { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  .show-light { display: none; }
+  .show-dark { display: inline-block; }
+}
+
+/* Attribute overrides for theme show/hide */
+:root[data-theme="dark"] .show-light { display: none !important; }
+:root[data-theme="dark"] .show-dark { display: inline-block !important; }
+:root[data-theme="light"] .show-light { display: inline-block !important; }
+:root[data-theme="light"] .show-dark { display: none !important; }
+
 /* Attribute-based theme override: wins over prefers-color-scheme */
 :root[data-theme="light"] {
   --background: #FFFBF7;
