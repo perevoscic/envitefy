@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 export default function ContactPage() {
   const { data: session } = useSession();
   return (
-    <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-2xl">
         <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-8 border border-border">
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible text-center">

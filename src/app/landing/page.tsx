@@ -59,21 +59,25 @@ export default async function LandingPage() {
                   height={20}
                 />
               </span>
-              {/* Apple (auto color via currentColor) */}
+              {/* Apple (uses theme-aware SVGs from /public/brands) */}
               <span
                 className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
                 aria-label="Apple"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5 text-foreground"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M11.6 0c-.8.1-1.87.6-2.52 1.33-.55.6-1.02 1.45-.84 2.3.88.05 1.9-.5 2.5-1.2.6-.7 1.08-1.68.86-2.43zM15.49 12.57c-.01-2.49 2.05-3.74 2.16-3.81-1.2-1.76-3.09-2.01-3.76-2.05-1.59-.17-3.11.96-3.91.96-.8 0-2.05-.94-3.36-.92-1.72.02-3.31 1-4.19 2.54-1.79 3.12-.46 7.75 1.28 10.28.86 1.24 1.88 2.63 3.22 2.58 1.29-.05 1.78-.84 3.33-.84 1.55 0 2.01.84 3.38.82 1.41-.03 2.32-1.25 3.19-2.5 1.02-1.43 1.44-2.82 1.46-2.89-.03-.02-2.8-1.06-2.82-4.17z"
-                  />
-                </svg>
+                <Image
+                  src="/brands/apple-black.svg"
+                  alt="Apple logo"
+                  width={20}
+                  height={20}
+                  className="show-light"
+                />
+                <Image
+                  src="/brands/apple-white.svg"
+                  alt="Apple logo"
+                  width={20}
+                  height={20}
+                  className="show-dark"
+                />
               </span>
               {/* Microsoft */}
               <span
@@ -90,14 +94,14 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          <div className="relative mx-auto lg:mx-0 w-[320px] sm:w-[380px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl ring-1 ring-white/10 overflow-hidden">
+          <div className="relative mx-auto lg:mx-0 w-[300px] sm:w-[360px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl ring-1 ring-white/10 overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-40 rounded-full bg-black/70" />
             <div className="absolute inset-[14px] rounded-[28px] overflow-hidden">
               <Image
                 src="/invite.jpg"
                 alt="Invitation being scanned"
                 fill
-                sizes="(max-width: 1024px) 380px, 420px"
+                sizes="(max-width: 1024px) 360px, 400px"
                 className="object-cover"
                 priority
               />

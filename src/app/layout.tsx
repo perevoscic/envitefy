@@ -49,7 +49,7 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <LeftSidebar />
-          <div className="min-h-[100dvh]">
+          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground">
             <div className="min-h-full min-w-0 overflow-y-auto">{children}</div>
           </div>
         </Providers>

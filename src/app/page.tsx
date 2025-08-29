@@ -31,6 +31,19 @@ export default function Home() {
     google: false,
     microsoft: false,
   });
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const flag = localStorage.getItem("welcomeAfterSignup");
+        if (flag === "1") {
+          setShowWelcome(true);
+          localStorage.removeItem("welcomeAfterSignup");
+        }
+      }
+    } catch {}
+  }, []);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -517,7 +530,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="order-2 lg:order-1 text-center lg:text-center">
           <Link
@@ -849,10 +862,70 @@ export default function Home() {
         )}
       </section>
 
+      {showWelcome && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
+            onClick={() => setShowWelcome(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Welcome to Snap My Date"
+            className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/60"
+            style={{
+              background:
+                "linear-gradient(180deg, color-mix(in oklab, var(--surface) 92%, black 8%), color-mix(in oklab, var(--surface) 84%, black 16%))",
+            }}
+          >
+            <div className="relative p-6 pb-4">
+              <div
+                className="absolute inset-x-0 -top-24 h-32 pointer-events-none select-none"
+                aria-hidden="true"
+              >
+                <div
+                  className="mx-auto h-full w-[80%] rounded-full blur-3xl opacity-40"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, color-mix(in oklab, var(--accent) 45%, transparent), transparent), radial-gradient(closest-side, color-mix(in oklab, var(--secondary) 35%, transparent), transparent)",
+                  }}
+                />
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Welcome to
+                  <span className="block text-3xl md:text-4xl">
+                    <span className="font-pacifico"> Snap</span>
+                    <span> </span>
+                    <span className="font-montserrat">My Date</span>
+                  </span>
+                </h2>
+                <button
+                  aria-label="Close"
+                  className="rounded-xl px-3 py-1.5 border border-border bg-surface/70 hover:bg-surface text-foreground/80 hover:text-foreground transition"
+                  onClick={() => setShowWelcome(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 space-y-4">
+              <p className="text-foreground/80 text-center">
+                You’re all set.
+                <br />
+                Let’s snap your first event and turn it into a reminder!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {event && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-gradient-to-br from-background/70 via-black/30 to-accent/30 backdrop-blur-sm"
+            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
             onClick={() => setEvent(null)}
           />
           <div
@@ -1136,7 +1209,7 @@ export default function Home() {
 function PhoneMockup() {
   const flyer = "/flyer.jpg";
   return (
-    <div className="phone-shell relative w-[300px] sm:w-[340px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl shadow-black/50 ring-1 ring-white/10 overflow-hidden">
+    <div className="phone-shell relative w-[280px] sm:w-[320px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl shadow-black/50 ring-1 ring-white/10 overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-40 rounded-full bg-black/70" />
 
       <div className="absolute inset-[14px] rounded-[28px] overflow-hidden">

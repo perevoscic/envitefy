@@ -108,7 +108,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-2xl">
         <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-8 border border-border">
           <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight text-center mb-1">

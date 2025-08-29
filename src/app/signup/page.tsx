@@ -108,6 +108,10 @@ export default function SignupPage() {
         callbackUrl: "/",
       });
       if (result?.ok) {
+        try {
+          // Signal the home page to show a welcome modal after first sign-in
+          localStorage.setItem("welcomeAfterSignup", "1");
+        } catch {}
         router.replace("/");
         return;
       }
