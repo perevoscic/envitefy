@@ -183,7 +183,7 @@ export default function SignupPage() {
       </section>
 
       <section className="flex items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-xl shadow-black/20">
+        <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-xl shadow-black/10 dark:shadow-black/30">
           <div className="flex flex-col items-center gap-2">
             <Link href="/">
               <Image src={Logo} alt="Logo" height={64} className="rounded" />
