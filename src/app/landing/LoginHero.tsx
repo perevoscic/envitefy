@@ -16,6 +16,7 @@ export default function LoginHero() {
   const [cancelPeek, setCancelPeek] = useState(false);
   const hideRmTimeoutRef = useRef<number | null>(null);
   const searchParams = useSearchParams();
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   // Single source of truth for slide titles/subtitles; only the media src differs by orientation
   const slidesMeta = [
@@ -54,6 +55,16 @@ export default function LoginHero() {
     title: m.title,
     subtitle: m.subtitle,
   }));
+
+  // Single instance: choose slides by breakpoint (min-width: 768px)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(min-width: 768px)");
+    const apply = () => setIsDesktop(mql.matches);
+    apply();
+    mql.addEventListener("change", apply);
+    return () => mql.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     if (status === "authenticated") router.replace("/");
@@ -152,32 +163,22 @@ export default function LoginHero() {
 
   return (
     <section className="relative min-h-[100dvh]">
-      {/* Background slider: horizontal on all viewports */}
-      <div className="absolute inset-0 hidden md:block">
-        <BackgroundSlider
-          orientation="horizontal"
-          slides={desktopSlides}
-          paused={modalOpen}
-          peekOnMount
-          peekRepeatCount={2}
-          onPeekChange={handlePeekChange}
-          cancelPeek={cancelPeek}
-          bottomCenterSlot={readMorePill}
-          slotBottomClass="bottom-1"
-        />
-      </div>
-      <div className="absolute inset-0 md:hidden">
-        <BackgroundSlider
-          orientation="horizontal"
-          slides={mobileSlides}
-          paused={modalOpen}
-          peekOnMount
-          peekRepeatCount={2}
-          onPeekChange={handlePeekChange}
-          cancelPeek={cancelPeek}
-          bottomCenterSlot={readMorePill}
-          slotBottomClass="bottom-1"
-        />
+      {/* Single background slider instance */}
+      <div className="absolute inset-0">
+        {isDesktop !== null && (
+          <BackgroundSlider
+            key={isDesktop ? "desktop" : "mobile"}
+            orientation="horizontal"
+            slides={isDesktop ? desktopSlides : mobileSlides}
+            paused={modalOpen}
+            peekOnMount={false}
+            peekRepeatCount={0}
+            onPeekChange={handlePeekChange}
+            cancelPeek={cancelPeek}
+            bottomCenterSlot={readMorePill}
+            slotBottomClass="bottom-1"
+          />
+        )}
       </div>
       {/* Welcome stack above buttons */}
       <div

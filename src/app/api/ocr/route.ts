@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
+import { parseFootballSchedule, scheduleToEvents, type ParsedSchedule } from "@/lib/sports";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,70 @@ async function llmExtractEvent(raw: string): Promise<{
       return parsed as any;
     } catch {}
     return null;
+  } catch {
+    return null;
+  }
+}
+
+async function llmExtractSchedule(raw: string): Promise<ParsedSchedule | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const system = "You extract structured football schedules from noisy OCR text. Return strict JSON only.";
+  const user = `OCR TEXT:\n${raw}\n\nReturn JSON with keys:\n{
+  "homeTeam": string|null,
+  "season": string|null,
+  "games": [{
+    "opponent": string|null,
+    "homeAway": "home"|"away"|"neutral"|null,
+    "startISO": string|null,
+    "endISO": string|null,
+    "stadium": string|null,
+    "city": string|null,
+    "state": string|null
+  }, ...]
+}\nRules:\n- Keep only future games relative to now.\n- Deduce home vs away: "vs" => home, "@" => away.\n- If time missing but date present, leave startISO null.\n- Stadium names end with Stadium/Field/Arena/Center/Complex if present.`;
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    try {
+      const parsed = JSON.parse(text);
+      const games = Array.isArray(parsed.games)
+        ? parsed.games.map((g: any) => ({
+            opponent: g.opponent ?? null,
+            homeAway: g.homeAway ?? null,
+            startISO: g.startISO ?? null,
+            endISO: g.endISO ?? null,
+            stadium: g.stadium ?? null,
+            city: g.city ?? null,
+            state: g.state ?? null,
+            sourceLines: [],
+          }))
+        : [];
+      return {
+        detected: games.length >= 2,
+        homeTeam: parsed.homeTeam ?? null,
+        season: parsed.season ?? null,
+        games,
+      };
+    } catch {
+      return null;
+    }
   } catch {
     return null;
   }
@@ -486,6 +551,32 @@ export async function POST(request: Request) {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
+    // Schedule extraction (heuristic + optional LLM fallback)
+    const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    let schedule = parseFootballSchedule(raw, tz);
+    const lowConfidenceSchedule = !schedule.detected || !schedule.homeTeam;
+    if (lowConfidenceSchedule) {
+      const llmSched = await llmExtractSchedule(raw);
+      if (llmSched && llmSched.games.length >= schedule.games.length) {
+        schedule = {
+          detected: llmSched.detected || schedule.detected,
+          homeTeam: llmSched.homeTeam || schedule.homeTeam,
+          season: llmSched.season || schedule.season,
+          games: llmSched.games.length ? llmSched.games : schedule.games,
+        };
+      }
+    }
+    const enrichedGames = schedule.games.map((g) => {
+      if (g.startISO && !g.endISO) {
+        const d = new Date(g.startISO);
+        const end = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+        return { ...g, endISO: end.toISOString() };
+      }
+      return g;
+    });
+    schedule = { ...schedule, games: enrichedGames };
+    const events = scheduleToEvents(schedule, tz);
+
     // Removed database insertion; return only parsed data
     const intakeId: string | null = null;
 
@@ -493,6 +584,8 @@ export async function POST(request: Request) {
       intakeId,
       ocrText: raw,
       fieldsGuess,
+      schedule,
+      events,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

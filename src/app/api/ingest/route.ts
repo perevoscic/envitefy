@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
+import { parseFootballSchedule, scheduleToEvents } from "@/lib/sports";
 
 export const runtime = "nodejs";
 
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
       lines.find(l => /\d{1,5}\s+\w+|\b(Auditorium|Center|Hall|Gym|Park|Room|Suite|Ave|St|Blvd|Rd)\b/i.test(l)) ||
       "";
 
+    const tz = "America/Chicago";
+    const schedule = parseFootballSchedule(raw, tz);
+    const events = scheduleToEvents(schedule, tz);
+
     return NextResponse.json({
       ocrText: raw,
       event: {
@@ -61,8 +66,10 @@ export async function POST(request: Request) {
         end: end?.toISOString() ?? null,
         location: locationLine,
         description: raw,
-        timezone: "America/Chicago"
-      }
+        timezone: tz,
+      },
+      schedule,
+      events,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

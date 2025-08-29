@@ -2,9 +2,32 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/assets/logo.png";
 
 export default function SubscriptionPage() {
+  const router = useRouter();
+  const params = useSearchParams();
+
+  useEffect(() => {
+    const plan = params?.get?.("plan") ?? null;
+    if (!plan) return;
+    const normalized = ["free", "monthly", "yearly"].includes(plan)
+      ? plan
+      : null;
+    if (!normalized) return;
+    // Save and redirect home after applying preselected plan
+    fetch("/api/user/subscription", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: normalized }),
+      credentials: "include",
+    })
+      .then(() => router.replace("/"))
+      .catch(() => {});
+  }, [params, router]);
+
   return (
     <main className="p-10 max-w-4xl mx-auto">
       <h1 className="text-3xl font-semibold text-muted-foreground mb-9 text-center">
@@ -46,7 +69,15 @@ export default function SubscriptionPage() {
           <button
             type="button"
             className="mt-auto self-center inline-flex justify-center items-center h-10 px-6 rounded-full shadow-md bg-primary text-on-primary hover:opacity-90 hover:shadow-lg transition"
-            onClick={() => alert("Subscribing to Monthly ($1.99)")}
+            onClick={async () => {
+              await fetch("/api/user/subscription", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ plan: "monthly" }),
+                credentials: "include",
+              });
+              router.replace("/");
+            }}
           >
             Subscribe Monthly
           </button>
@@ -59,7 +90,15 @@ export default function SubscriptionPage() {
           <button
             type="button"
             className="mt-auto self-center inline-flex justify-center items-center h-10 px-6 rounded-full shadow-md bg-primary text-on-primary hover:opacity-90 hover:shadow-lg transition"
-            onClick={() => alert("Subscribing to Yearly ($19.99)")}
+            onClick={async () => {
+              await fetch("/api/user/subscription", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ plan: "yearly" }),
+                credentials: "include",
+              });
+              router.replace("/");
+            }}
           >
             Subscribe Yearly
           </button>

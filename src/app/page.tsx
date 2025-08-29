@@ -286,7 +286,10 @@ export default function Home() {
       body: e.description || "",
       path: "/calendar/view/Month",
     }).toString();
-    return `https://outlook.office.com/calendar/0/deeplink/compose?${q}`;
+    // Prefer the consumer Outlook host to avoid sign-in loops on personal accounts.
+    // Microsoft docs: use outlook.live.com for Outlook.com (MSA) and outlook.office.com for Microsoft 365 (AAD).
+    // The live.com host will redirect appropriately for many org accounts as well.
+    return `https://outlook.live.com/calendar/0/deeplink/compose?${q}`;
   };
 
   const dlIcs = async () => {
