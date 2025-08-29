@@ -171,6 +171,25 @@ body {
     border-color: var(--error) !important;
     box-shadow: 0 0 0 2px color-mix(in oklab, var(--error) 25%, transparent 75%);
   }
+
+  /* Gradient sheen inside auth modal card */
+  .auth-card-gradient {
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-card-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(120% 70% at 10% -20%, color-mix(in oklab, var(--accent) 22%, transparent) 0%, transparent 60%),
+      radial-gradient(120% 70% at 90% -15%, color-mix(in oklab, var(--secondary) 20%, transparent) 0%, transparent 62%),
+      radial-gradient(120% 80% at 50% 120%, color-mix(in oklab, var(--primary) 18%, transparent) 0%, transparent 72%);
+    opacity: 0.22;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .auth-card-gradient > * { position: relative; z-index: 1; }
 }
 
 /* Theme-aware asset toggles */
@@ -440,8 +459,21 @@ body {
   }
 }
 
-/* Dark-only soft gradient background for landing page */
+/* Soft gradient background for landing surfaces (light + dark) */
+.landing-dark-gradient {
+  /* Base (light theme): very subtle pastel washes */
+  background-image:
+    radial-gradient(60% 50% at 15% 0%, color-mix(in oklab, var(--accent) 10%, transparent) 0%, transparent 60%),
+    radial-gradient(55% 45% at 85% -10%, color-mix(in oklab, var(--secondary) 9%, transparent) 0%, transparent 62%),
+    radial-gradient(70% 60% at 50% 100%, color-mix(in oklab, var(--primary) 7%, transparent) 0%, transparent 72%),
+    radial-gradient(42% 42% at 100% 100%, color-mix(in oklab, var(--accent) 8%, transparent) 0%, transparent 70%);
+  background-repeat: no-repeat;
+  background-size: 120% 60%, 120% 60%, 120% 80%, 90% 90%;
+  background-position: left top, right top, center bottom, right bottom;
+  background-attachment: fixed;
+}
 
+/* Dark-only: stronger washes override the base */
 @media (prefers-color-scheme: dark) {
   .landing-dark-gradient {
     /* Layered radial washes that sit behind content via transparency */
@@ -450,10 +482,30 @@ body {
       radial-gradient(55% 45% at 85% -10%, color-mix(in oklab, var(--secondary) 16%, transparent) 0%, transparent 62%),
       radial-gradient(70% 60% at 50% 100%, color-mix(in oklab, var(--primary) 12%, transparent) 0%, transparent 72%),
       radial-gradient(42% 42% at 100% 100%, color-mix(in oklab, var(--accent) 14%, transparent) 0%, transparent 70%);
-    background-repeat: no-repeat;
-    background-size: 120% 60%, 120% 60%, 120% 80%, 90% 90%;
-    background-position: left top, right top, center bottom, right bottom;
-    background-attachment: fixed;
+  }
+}
+
+/* Extra-strong variant for overlays (e.g., auth modal backdrop) */
+.landing-gradient-strong {
+  background-image:
+    radial-gradient(60% 50% at 15% 0%, color-mix(in oklab, var(--accent) 22%, transparent) 0%, transparent 60%),
+    radial-gradient(55% 45% at 85% -10%, color-mix(in oklab, var(--secondary) 20%, transparent) 0%, transparent 62%),
+    radial-gradient(70% 60% at 50% 100%, color-mix(in oklab, var(--primary) 16%, transparent) 0%, transparent 72%),
+    radial-gradient(42% 42% at 100% 100%, color-mix(in oklab, var(--accent) 18%, transparent) 0%, transparent 70%);
+  background-repeat: no-repeat;
+  background-size: 120% 60%, 120% 60%, 120% 80%, 90% 90%;
+  background-position: left top, right top, center bottom, right bottom;
+  background-attachment: fixed;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-color-scheme: dark) {
+  .landing-gradient-strong {
+    background-image:
+      radial-gradient(60% 50% at 15% 0%, color-mix(in oklab, var(--accent) 34%, transparent) 0%, transparent 60%),
+      radial-gradient(55% 45% at 85% -10%, color-mix(in oklab, var(--secondary) 30%, transparent) 0%, transparent 62%),
+      radial-gradient(70% 60% at 50% 100%, color-mix(in oklab, var(--primary) 24%, transparent) 0%, transparent 72%),
+      radial-gradient(42% 42% at 100% 100%, color-mix(in oklab, var(--accent) 26%, transparent) 0%, transparent 70%);
   }
 }
 

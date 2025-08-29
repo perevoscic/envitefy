@@ -303,7 +303,7 @@ export default function LeftSidebar() {
                 </Link>
 
                 <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={() => signOut({ callbackUrl: "/landing" })}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
                 >
                   <svg
@@ -587,7 +587,7 @@ export default function LeftSidebar() {
                   </Link>
 
                   <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={() => signOut({ callbackUrl: "/landing" })}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
                   >
                     <svg

@@ -36,8 +36,8 @@ export default function ResetPasswordPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || "Failed to reset password");
-      setMessage("Password updated. Redirecting to login...");
-      setTimeout(() => router.replace("/login"), 1200);
+      setMessage("Password updated. Redirecting...");
+      setTimeout(() => router.replace("/landing"), 1200);
     } catch (err: any) {
       setMessage(err?.message || "Failed to reset password");
     } finally {

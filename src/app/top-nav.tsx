@@ -67,14 +67,14 @@ export default function TopNav() {
           {status !== "authenticated" ? (
             <div className="flex items-center gap-2">
               <Link
-                href="/login"
-                className="px-3 py-2 text-sm rounded border border-border hover:bg-surface/70"
+                href="/landing"
+                className="px-3 py-2 text-sm rounded-2xl border border-border hover:bg-surface/70"
               >
                 Sign in
               </Link>
               <Link
-                href="/signup"
-                className="px-3 py-2 text-sm rounded bg-primary text-primary-foreground hover:opacity-90"
+                href="/landing"
+                className="px-3 py-2 text-sm rounded-2xl bg-primary text-primary-foreground hover:opacity-90"
               >
                 Sign up
               </Link>
@@ -82,7 +82,7 @@ export default function TopNav() {
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => signOut({ callbackUrl: "/landing" })}
                 className="inline-flex items-center gap-2 h-9 px-3 text-sm rounded border border-border bg-transparent text-foreground/80 hover:text-foreground hover:bg-surface/70 outline-none focus:outline-none ring-0 focus:ring-0 shadow-none hover:shadow-none active:shadow-none transition-none"
                 aria-label="Log out"
                 title="Log out"

@@ -7,8 +7,7 @@ export async function middleware(req: NextRequest) {
 
   // Public paths: allow access without auth
   const publicPaths = new Set([
-    "/login",
-    "/signup",
+    "/landing",
     "/verify-request",
     "/favicon.ico",
   ]);
@@ -18,6 +17,12 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/public/") ||
     publicPaths.has(pathname)
   ) {
+    // Handle legacy /signup redirect to /landing
+    if (pathname === "/signup") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/landing";
+      return NextResponse.redirect(url);
+    }
     return NextResponse.next();
   }
 
@@ -36,7 +41,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/", "/signup"],
 };
 
 
