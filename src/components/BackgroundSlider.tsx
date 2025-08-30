@@ -122,6 +122,28 @@ export default function BackgroundSlider({
     };
   }, [slides.length, intervalMs, paused, middleEndExclusive]);
 
+  // Pause/resume any playing videos when `paused` changes
+  useEffect(() => {
+    const map = videoRefs.current;
+    map.forEach((video) => {
+      try {
+        if (paused) {
+          video.pause();
+        } else {
+          if (video.readyState >= 2) {
+            video.play().catch(() => {});
+          } else {
+            const onCanPlay = () => {
+              video.removeEventListener("canplay", onCanPlay);
+              video.play().catch(() => {});
+            };
+            video.addEventListener("canplay", onCanPlay);
+          }
+        }
+      } catch {}
+    });
+  }, [paused]);
+
   // When slides change, re-center to the middle set
   useEffect(() => {
     setIndex(middleStart);

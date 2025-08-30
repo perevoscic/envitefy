@@ -33,7 +33,7 @@ export default function AuthModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 landing-dark-gradient landing-gradient-strong opacity-60 backdrop-blur-[14px] backdrop-saturate-125"
+        className="absolute inset-0 bg-transparent backdrop-blur-[3px] backdrop-saturate-125"
         onClick={onClose}
       />
       <div className="relative w-full sm:w-[480px] max-w-[92vw] bg-surface text-foreground border border-border rounded-3xl p-5 sm:p-6 shadow-2xl auth-card-gradient">
