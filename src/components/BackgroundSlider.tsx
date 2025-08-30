@@ -347,7 +347,7 @@ export default function BackgroundSlider({
         <div className="absolute top-6 left-6 sm:top-10 sm:left-10 z-[4] pointer-events-none max-w-[78vw] sm:max-w-[46rem]">
           {slides[((index % slides.length) + slides.length) % slides.length]
             .title && (
-            <div className="text-white font-semibold tracking-tight text-2xl sm:text-4xl leading-tight text-shadow-soft">
+            <div className="text-white font-semibold tracking-tight text-3xl sm:text-5xl leading-tight text-shadow-soft">
               {
                 slides[
                   ((index % slides.length) + slides.length) % slides.length
@@ -357,7 +357,7 @@ export default function BackgroundSlider({
           )}
           {slides[((index % slides.length) + slides.length) % slides.length]
             .subtitle && (
-            <div className="mt-1 text-white/90 text-sm sm:text-lg leading-snug text-shadow-subtle">
+            <div className="mt-2 text-white/90 text-base sm:text-xl leading-snug text-shadow-subtle">
               {
                 slides[
                   ((index % slides.length) + slides.length) % slides.length

@@ -40,7 +40,7 @@ export default function AuthModal({
         <button
           aria-label="Close"
           onClick={onClose}
-          className="absolute top-3 right-3 inline-flex items-center justify-center h-8 w-8 rounded-2xl border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70"
+          className="!absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center justify-center h-8 w-8 rounded-2xl border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 z-10"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

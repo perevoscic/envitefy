@@ -170,6 +170,7 @@ export default function LoginHero() {
             key={isDesktop ? "desktop" : "mobile"}
             orientation="horizontal"
             slides={isDesktop ? desktopSlides : mobileSlides}
+            overlay={false}
             paused={modalOpen}
             peekOnMount={false}
             peekRepeatCount={0}
@@ -180,6 +181,11 @@ export default function LoginHero() {
           />
         )}
       </div>
+      {/* Static gradient layer between slider and foreground */}
+      <div
+        className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient"
+        aria-hidden
+      />
       {/* Welcome stack above buttons */}
       <div
         className={`absolute inset-x-0 z-10 flex flex-col items-center text-center ${
@@ -193,15 +199,15 @@ export default function LoginHero() {
           height={84}
           className="rounded mx-auto mt-1"
         />
-        <p className="text-2xl md:text-3xl text-white/90 font-montserrat">
+        <p className="text-3xl md:text-4xl text-white/90 font-montserrat">
           Welcome to
         </p>
-        <p className="mt-2 text-5xl md:text-3xl font-extrabold tracking-tight text-white text-shadow-soft pb-3">
+        <p className="mt-2 text-5xl md:text-7xl font-extrabold tracking-tight text-white text-shadow-soft pb-3">
           <span className="font-pacifico">Snap</span>
           <span> </span>
           <span className="font-montserrat font-semibold">My Date</span>
         </p>
-        <p className="mt-1 text-white/80 text-sm font-montserrat">
+        <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat">
           Turn any flyer into a calendar event in seconds.
         </p>
       </div>
@@ -214,7 +220,7 @@ export default function LoginHero() {
         style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
       >
         <button
-          className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow"
+          className="px-6 py-2 rounded-2xl bg-[#56b2e1] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow"
           onClick={() => {
             setMode("login");
             setModalOpen(true);
@@ -223,7 +229,7 @@ export default function LoginHero() {
           Log in
         </button>
         <button
-          className="px-6 py-2 rounded-2xl border border-white/60 bg-white/10 text-white backdrop-blur"
+          className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow"
           onClick={() => {
             setMode("signup");
             setModalOpen(true);
