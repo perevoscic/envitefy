@@ -53,56 +53,181 @@ export default function BackgroundSlider({
   bottomCenterSlot,
   slotBottomClass = "bottom-2",
 }: BackgroundSliderProps) {
-  // Slides are now provided by the caller. No built-in defaults to avoid stale content.
+  // Use a repeated track so we never visibly jump; keep index in the center set
+  const REPEAT_SETS = 3; // must be odd
+  const middleStart = slides.length; // start index of the middle set
+  const middleEndExclusive = slides.length * 2; // end (exclusive) of the middle set
 
-  const [index, setIndex] = useState(0); // can temporarily equal slides.length when showing the cloned first slide
-  const [instant, setInstant] = useState(false); // disable transition when snapping back to 0
+  const [index, setIndex] = useState(() => middleStart);
+  const [instant, setInstant] = useState(false); // disable transition when snapping
   const timerRef = useRef<number | undefined>(undefined);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const mountPeekTimeoutsRef = useRef<number[]>([]);
   const [peekPct, setPeekPct] = useState(0);
   const [isPeeking, setIsPeeking] = useState(false);
+  const wrapLockRef = useRef(false); // prevent advancing while wrapping
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
-  // Render slides with the first slide cloned at the end for seamless looping
-  const renderSlides = useMemo(() => {
-    return slides.length > 0 ? [...slides, slides[0]] : slides;
-  }, [slides]);
+  // ---- NEW: live refs to avoid stale closures in transitionend handler
+  const indexRef = useRef(index);
+  const instantRef = useRef(instant);
+  const peekingRef = useRef(isPeeking);
 
   useEffect(() => {
-    if (paused) {
+    indexRef.current = index;
+  }, [index]);
+
+  useEffect(() => {
+    instantRef.current = instant;
+  }, [instant]);
+
+  useEffect(() => {
+    peekingRef.current = isPeeking;
+  }, [isPeeking]);
+  // --------------------------------------------------------------------
+
+  // Render a repeated track to allow continuous scrolling without a visible reset
+  const renderSlides = useMemo(() => {
+    if (slides.length === 0) return slides;
+    const repeated: Slide[] = [];
+    for (let r = 0; r < REPEAT_SETS; r++) {
+      repeated.push(...slides);
+    }
+    return repeated;
+  }, [slides]);
+
+  // Auto-advance
+  useEffect(() => {
+    if (paused || slides.length <= 1) {
       if (timerRef.current !== undefined)
         window.clearInterval(timerRef.current);
       timerRef.current = undefined;
       return;
     }
     timerRef.current = window.setInterval(() => {
-      setIndex((i) => i + 1);
+      if (wrapLockRef.current) return;
+      setIndex((i) => {
+        const next = i + 1;
+        if (next >= middleEndExclusive) {
+          // Lock until the transition finishes; snap will happen in transitionend
+          wrapLockRef.current = true;
+        }
+        return next;
+      });
     }, intervalMs);
+
     return () => {
       if (timerRef.current !== undefined)
         window.clearInterval(timerRef.current);
     };
-  }, [slides.length, intervalMs, paused]);
+  }, [slides.length, intervalMs, paused, middleEndExclusive]);
 
-  // When slides change, reset to start
+  // Pause/resume any playing videos when `paused` changes
   useEffect(() => {
-    setIndex(0);
-  }, [slides.length]);
+    const map = videoRefs.current;
+    map.forEach((video) => {
+      try {
+        if (paused) {
+          video.pause();
+        } else {
+          if (video.readyState >= 2) {
+            video.play().catch(() => {});
+          } else {
+            const onCanPlay = () => {
+              video.removeEventListener("canplay", onCanPlay);
+              video.play().catch(() => {});
+            };
+            video.addEventListener("canplay", onCanPlay);
+          }
+        }
+      } catch {}
+    });
+  }, [paused]);
 
-  // Handle end-of-loop snap without reverse animation
+  // When slides change, re-center to the middle set
   useEffect(() => {
-    if (index === slides.length && trackRef.current) {
-      const id = window.setTimeout(() => {
+    setIndex(middleStart);
+  }, [slides.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep index inside the middle set (snap instantly between identical slides)
+  useEffect(() => {
+    if (!trackRef.current || slides.length <= 1) return;
+    const trackEl = trackRef.current;
+
+    const onEnd = (e: TransitionEvent) => {
+      // Only react to transform transitions on the track itself
+      if (e.propertyName !== "transform" || e.target !== trackEl) return;
+
+      // Ignore programmatic jumps or peek nudges
+      if (instantRef.current || peekingRef.current) return;
+
+      const i = indexRef.current;
+
+      if (i >= middleEndExclusive) {
+        // Sync video time between source (i) and target (i - slides.length)
+        const sourceVid = videoRefs.current.get(i);
+        const targetIdx = i - slides.length;
+        const targetVid = videoRefs.current.get(targetIdx);
+        if (sourceVid && targetVid) {
+          const applyTime = () => {
+            try {
+              targetVid.currentTime = sourceVid.currentTime;
+            } catch {}
+            if (!sourceVid.paused) targetVid.play().catch(() => {});
+          };
+          if (targetVid.readyState < 1) {
+            const onMeta = () => {
+              targetVid.removeEventListener("loadedmetadata", onMeta);
+              applyTime();
+            };
+            targetVid.addEventListener("loadedmetadata", onMeta);
+          } else {
+            applyTime();
+          }
+        }
         setInstant(true);
-        setIndex(0);
-        // allow the DOM to apply transform without transition, then re-enable
+        setIndex(i - slides.length);
+        // ensure the snap happens with no transition, then re-enable
         requestAnimationFrame(() => {
           setInstant(false);
+          wrapLockRef.current = false;
         });
-      }, 10);
-      return () => window.clearTimeout(id);
-    }
-  }, [index, slides.length]);
+      } else if (i < middleStart) {
+        // Sync video time between source (i) and target (i + slides.length)
+        const sourceVid = videoRefs.current.get(i);
+        const targetIdx = i + slides.length;
+        const targetVid = videoRefs.current.get(targetIdx);
+        if (sourceVid && targetVid) {
+          const applyTime = () => {
+            try {
+              targetVid.currentTime = sourceVid.currentTime;
+            } catch {}
+            if (!sourceVid.paused) targetVid.play().catch(() => {});
+          };
+          if (targetVid.readyState < 1) {
+            const onMeta = () => {
+              targetVid.removeEventListener("loadedmetadata", onMeta);
+              applyTime();
+            };
+            targetVid.addEventListener("loadedmetadata", onMeta);
+          } else {
+            applyTime();
+          }
+        }
+        setInstant(true);
+        setIndex(i + slides.length);
+        requestAnimationFrame(() => {
+          setInstant(false);
+          wrapLockRef.current = false;
+        });
+      }
+    };
+
+    trackEl.addEventListener("transitionend", onEnd);
+    return () => {
+      trackEl.removeEventListener("transitionend", onEnd);
+    };
+  }, [slides.length, middleEndExclusive, middleStart]);
 
   // Cancel any scheduled peeks on demand
   useEffect(() => {
@@ -124,6 +249,7 @@ export default function BackgroundSlider({
       cancelPeek
     )
       return;
+
     setIsPeeking(false);
     setPeekPct(0);
 
@@ -132,7 +258,7 @@ export default function BackgroundSlider({
     const runPeek = (iteration: number) => {
       setIsPeeking(true);
       onPeekChange?.(true, iteration, peekRepeatCount);
-      // Nudge upward (towards top) then come back
+      // Nudge toward start then come back
       setPeekPct(-Math.abs(peekOffsetPct));
       const tBack = window.setTimeout(() => {
         setPeekPct(0);
@@ -178,13 +304,14 @@ export default function BackgroundSlider({
         style={{
           transform:
             orientation === "vertical"
-              ? `translateY(calc(-${index} * 100% + ${peekPct}%))`
-              : `translateX(calc(-${index} * 100%)) translateY(${peekPct}%)`,
+              ? `translate3d(0, calc(-${index} * 100% + ${peekPct}%), 0)`
+              : `translate3d(calc(-${index} * 100%), ${peekPct}%, 0)`,
           transition: instant
             ? "none"
             : isPeeking
             ? `transform ${peekDurationMs}ms cubic-bezier(.25,.8,.25,1)`
             : "transform 700ms cubic-bezier(.25,.8,.25,1)",
+          willChange: "transform",
         }}
         ref={trackRef}
       >
@@ -201,6 +328,11 @@ export default function BackgroundSlider({
                 muted
                 loop
                 playsInline
+                preload="auto"
+                ref={(el) => {
+                  if (el) videoRefs.current.set(i, el);
+                  else videoRefs.current.delete(i);
+                }}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
@@ -213,6 +345,7 @@ export default function BackgroundSlider({
           </div>
         ))}
       </div>
+
       {/* Bottom center slot (behind track, under overlay) */}
       {bottomCenterSlot && (
         <div
@@ -221,32 +354,51 @@ export default function BackgroundSlider({
           {bottomCenterSlot}
         </div>
       )}
+
       {overlay && (
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/35 z-[3] pointer-events-none" />
       )}
+
       {/* Active slide title/subtitle (top-left) */}
-      {((slides[index] && slides[index].title) ||
-        (slides[index] && slides[index].subtitle)) && (
+      {(() => {
+        const visible = slides.length
+          ? slides[((index % slides.length) + slides.length) % slides.length]
+          : undefined;
+        return visible && (visible.title || visible.subtitle);
+      })() && (
         <div className="absolute top-6 left-6 sm:top-10 sm:left-10 z-[4] pointer-events-none max-w-[78vw] sm:max-w-[46rem]">
-          {slides[index].title && (
-            <div className="text-white font-semibold tracking-tight text-2xl sm:text-4xl leading-tight text-shadow-soft">
-              {slides[index].title}
+          {slides[((index % slides.length) + slides.length) % slides.length]
+            .title && (
+            <div className="text-white font-semibold tracking-tight text-3xl sm:text-5xl leading-tight text-shadow-soft">
+              {
+                slides[
+                  ((index % slides.length) + slides.length) % slides.length
+                ].title
+              }
             </div>
           )}
-          {slides[index].subtitle && (
-            <div className="mt-1 text-white/90 text-sm sm:text-lg leading-snug text-shadow-subtle">
-              {slides[index].subtitle}
+          {slides[((index % slides.length) + slides.length) % slides.length]
+            .subtitle && (
+            <div className="mt-2 text-white/90 text-base sm:text-xl leading-snug text-shadow-subtle">
+              {
+                slides[
+                  ((index % slides.length) + slides.length) % slides.length
+                ].subtitle
+              }
             </div>
           )}
         </div>
       )}
+
       {/* Dots */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex items-center gap-2 z-[4]">
         {slides.map((_, i) => (
           <span
             key={i}
             className={`h-1.5 w-1.5 rounded-full transition-all ${
-              i === index % slides.length ? "bg-white w-6" : "bg-white/50"
+              i === ((index % slides.length) + slides.length) % slides.length
+                ? "bg-white w-6"
+                : "bg-white/50"
             }`}
           />
         ))}

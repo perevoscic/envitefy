@@ -16,6 +16,7 @@ export default function LoginHero() {
   const [cancelPeek, setCancelPeek] = useState(false);
   const hideRmTimeoutRef = useRef<number | null>(null);
   const searchParams = useSearchParams();
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   // Single source of truth for slide titles/subtitles; only the media src differs by orientation
   const slidesMeta = [
@@ -54,6 +55,16 @@ export default function LoginHero() {
     title: m.title,
     subtitle: m.subtitle,
   }));
+
+  // Single instance: choose slides by breakpoint (min-width: 768px)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(min-width: 768px)");
+    const apply = () => setIsDesktop(mql.matches);
+    apply();
+    mql.addEventListener("change", apply);
+    return () => mql.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     if (status === "authenticated") router.replace("/");
@@ -152,33 +163,29 @@ export default function LoginHero() {
 
   return (
     <section className="relative min-h-[100dvh]">
-      {/* Background slider: horizontal on all viewports */}
-      <div className="absolute inset-0 hidden md:block">
-        <BackgroundSlider
-          orientation="horizontal"
-          slides={desktopSlides}
-          paused={modalOpen}
-          peekOnMount
-          peekRepeatCount={2}
-          onPeekChange={handlePeekChange}
-          cancelPeek={cancelPeek}
-          bottomCenterSlot={readMorePill}
-          slotBottomClass="bottom-1"
-        />
+      {/* Single background slider instance */}
+      <div className="absolute inset-0">
+        {isDesktop !== null && (
+          <BackgroundSlider
+            key={isDesktop ? "desktop" : "mobile"}
+            orientation="horizontal"
+            slides={isDesktop ? desktopSlides : mobileSlides}
+            overlay={false}
+            paused={modalOpen}
+            peekOnMount={false}
+            peekRepeatCount={0}
+            onPeekChange={handlePeekChange}
+            cancelPeek={cancelPeek}
+            bottomCenterSlot={readMorePill}
+            slotBottomClass="bottom-1"
+          />
+        )}
       </div>
-      <div className="absolute inset-0 md:hidden">
-        <BackgroundSlider
-          orientation="horizontal"
-          slides={mobileSlides}
-          paused={modalOpen}
-          peekOnMount
-          peekRepeatCount={2}
-          onPeekChange={handlePeekChange}
-          cancelPeek={cancelPeek}
-          bottomCenterSlot={readMorePill}
-          slotBottomClass="bottom-1"
-        />
-      </div>
+      {/* Static gradient layer between slider and foreground */}
+      <div
+        className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient"
+        aria-hidden
+      />
       {/* Welcome stack above buttons */}
       <div
         className={`absolute inset-x-0 z-10 flex flex-col items-center text-center ${
@@ -192,15 +199,15 @@ export default function LoginHero() {
           height={84}
           className="rounded mx-auto mt-1"
         />
-        <p className="text-2xl md:text-3xl text-white/90 font-montserrat">
+        <p className="text-3xl md:text-4xl text-white/90 font-montserrat">
           Welcome to
         </p>
-        <p className="mt-2 text-5xl md:text-3xl font-extrabold tracking-tight text-white text-shadow-soft pb-3">
+        <p className="mt-2 text-5xl md:text-7xl font-extrabold tracking-tight text-white text-shadow-soft pb-3">
           <span className="font-pacifico">Snap</span>
           <span> </span>
           <span className="font-montserrat font-semibold">My Date</span>
         </p>
-        <p className="mt-1 text-white/80 text-sm font-montserrat">
+        <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat">
           Turn any flyer into a calendar event in seconds.
         </p>
       </div>
@@ -213,7 +220,7 @@ export default function LoginHero() {
         style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
       >
         <button
-          className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow"
+          className="px-6 py-2 rounded-2xl bg-[#56b2e1] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow"
           onClick={() => {
             setMode("login");
             setModalOpen(true);
@@ -222,7 +229,7 @@ export default function LoginHero() {
           Log in
         </button>
         <button
-          className="px-6 py-2 rounded-2xl border border-white/60 bg-white/10 text-white backdrop-blur"
+          className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow"
           onClick={() => {
             setMode("signup");
             setModalOpen(true);

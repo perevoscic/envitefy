@@ -3,6 +3,7 @@
 import { FormEvent, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export type SignupFormProps = {
   onSuccess?: () => void;
@@ -10,6 +11,7 @@ export type SignupFormProps = {
 
 export default function SignupForm({ onSuccess }: SignupFormProps) {
   const router = useRouter();
+  const params = useSearchParams();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -74,7 +76,11 @@ export default function SignupForm({ onSuccess }: SignupFormProps) {
           localStorage.setItem("welcomeAfterSignup", "1");
         } catch {}
         onSuccess?.();
-        router.replace("/");
+        const preselectedPlan = params?.get?.("plan") ?? null;
+        const target = preselectedPlan
+          ? `/subscription?plan=${encodeURIComponent(preselectedPlan)}`
+          : "/subscription";
+        router.replace(target);
         return;
       }
       setMessage("Account created, please log in");
