@@ -96,7 +96,7 @@ export default function BackgroundSlider({
     return repeated;
   }, [slides]);
 
-  // Auto-advance
+  // Auto-advance: let the transitionend handler do the seamless recentering
   useEffect(() => {
     if (paused || slides.length <= 1) {
       if (timerRef.current !== undefined)
@@ -106,14 +106,42 @@ export default function BackgroundSlider({
     }
     timerRef.current = window.setInterval(() => {
       if (wrapLockRef.current) return;
-      setIndex((i) => {
-        const next = i + 1;
-        if (next >= middleEndExclusive) {
-          // Lock until the transition finishes; snap will happen in transitionend
-          wrapLockRef.current = true;
+      const i = indexRef.current;
+      // If we're on the last slide of the middle set, pre-wrap to the
+      // equivalent in the previous set, then animate forward to the first
+      // slide of the middle set. This avoids any backward snap frame.
+      if (i === middleEndExclusive - 1) {
+        const sourceVid = videoRefs.current.get(i);
+        const targetIdxSnap = i - slides.length; // n-1
+        const targetVid = videoRefs.current.get(targetIdxSnap);
+        if (sourceVid && targetVid) {
+          const applyTime = () => {
+            try {
+              targetVid.currentTime = sourceVid.currentTime;
+            } catch {}
+            if (!sourceVid.paused) targetVid.play().catch(() => {});
+          };
+          if (targetVid.readyState < 1) {
+            const onMeta = () => {
+              targetVid.removeEventListener("loadedmetadata", onMeta);
+              applyTime();
+            };
+            targetVid.addEventListener("loadedmetadata", onMeta);
+          } else {
+            applyTime();
+          }
         }
-        return next;
-      });
+        wrapLockRef.current = true;
+        setInstant(true);
+        setIndex(targetIdxSnap);
+        requestAnimationFrame(() => {
+          setInstant(false);
+          setIndex(targetIdxSnap + 1); // move to first of middle set
+          wrapLockRef.current = false;
+        });
+      } else {
+        setIndex(i + 1);
+      }
     }, intervalMs);
 
     return () => {
