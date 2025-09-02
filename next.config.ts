@@ -1,11 +1,5 @@
 import type { NextConfig } from "next";
 
-
-module.exports = {
-  reactStrictMode: true,
-  // ... keep your existing Next.js config here
-};
-
 const nextConfig: NextConfig = {
   devIndicators: false,
   eslint: {
