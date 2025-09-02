@@ -38,7 +38,9 @@ RUN groupadd -g 1001 nodegrp \
     && useradd -u 1001 -g nodegrp -m nodeusr
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    PORT=8080
+    PORT=8080 \
+    NEXT_CACHE_DIR=/tmp/next-cache \
+    TMPDIR=/tmp
 
 # Copy only what we need to run the server
 COPY --from=build /app/public ./public
@@ -47,6 +49,10 @@ COPY --from=build /app/.next/static ./.next/static
 
 # Healthcheck (optional)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('http').get('http://localhost:'+ (process.env.PORT || 8080) +'/api/health');" || exit 1
+
+RUN mkdir -p /tmp/next-cache \
+    && chown -R nodeusr:nodegrp /tmp/next-cache \
+    && chmod -R 777 /tmp/next-cache
 
 USER nodeusr
 
