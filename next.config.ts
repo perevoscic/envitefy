@@ -1,29 +1,25 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   devIndicators: false,
   eslint: {
-    // Allow production builds to successfully complete even if there are ESLint errors
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Allow production builds to complete even if there are type errors
-    // Remove this once type errors are addressed
     ignoreBuildErrors: true,
   },
-  // Produce a minimal standalone server for Docker deployment
+  // Produce a minimal standalone server for Docker/App Runner
   output: "standalone",
+
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "fonts.gstatic.com",
-      },
-      {
-        protocol: "https",
-        hostname: "upload.wikimedia.org",
-      },
+      { protocol: "https", hostname: "fonts.gstatic.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
     ],
+  },
+
+  // 👇 enable the boot-time hook so we can prep /tmp cache etc.
+  experimental: {
+    instrumentationHook: true,
   },
 };
 

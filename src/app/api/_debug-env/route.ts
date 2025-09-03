@@ -6,6 +6,5 @@ export async function GET() {
     has_NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
     has_AUTH_SECRET: !!process.env.AUTH_SECRET,
     url: process.env.NEXTAUTH_URL || process.env.AUTH_URL || null,
-    has_GOOGLE_B64: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64,
   });
 }
