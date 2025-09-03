@@ -54,8 +54,26 @@ function getPool(): Pool {
     }
 
     const poolConfig: any = { connectionString: connectionStringToUse, max: 10 };
+    // Timeouts to prevent hanging requests causing upstream 504s
+    const connectTimeoutMs = Number.parseInt(process.env.PG_CONNECT_TIMEOUT_MS || "5000", 10);
+    const idleTimeoutMs = Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "10000", 10);
+    const statementTimeoutMs = Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10);
+    if (Number.isFinite(connectTimeoutMs)) poolConfig.connectionTimeoutMillis = connectTimeoutMs;
+    if (Number.isFinite(idleTimeoutMs)) poolConfig.idleTimeoutMillis = idleTimeoutMs;
+    poolConfig.keepAlive = true;
+    poolConfig.allowExitOnIdle = false;
     if (ssl) poolConfig.ssl = ssl;
     global.__pgPool = new Pool(poolConfig);
+    // Ensure long queries also timeout server-side
+    try {
+      const timeoutValue = Math.max(1000, statementTimeoutMs);
+      global.__pgPool.on("connect", (client: PoolClient) => {
+        // Not awaited; best-effort. Sets statement_timeout for the session.
+        client.query(`SET statement_timeout TO ${timeoutValue}`);
+      });
+    } catch {
+      // ignore
+    }
   }
   return global.__pgPool;
 }

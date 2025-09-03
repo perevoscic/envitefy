@@ -2,5 +2,5 @@
 import NextAuth from "next-auth";
 import { getAuthOptions } from "@/lib/auth";
 
-const handler = NextAuth(getAuthOptions()); // ← only one argument
+const handler = NextAuth(getAuthOptions()); // v4: single-arg
 export { handler as GET, handler as POST };

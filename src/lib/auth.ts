@@ -12,6 +12,7 @@ export function getAuthOptions(): NextAuthOptions {
   return {
     debug: false,
     secret,
+    useSecureCookies: true,
     providers: [
       CredentialsProvider({
         name: "Email and Password",
