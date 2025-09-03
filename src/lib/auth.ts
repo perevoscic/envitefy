@@ -1,12 +1,15 @@
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getUserByEmail, verifyPassword } from "@/lib/db";
 
-// OAuth login providers have been removed; only credentials sign-in is enabled.
+const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+if (!secret) {
+  throw new Error("Missing AUTH_SECRET / NEXTAUTH_SECRET");
+}
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
-  secret: process.env.NEXTAUTH_SECRET as string,
+  debug: false,              // quieter logs in prod
+  secret,                    // <- works with either env name
   providers: [
     CredentialsProvider({
       name: "Email and Password",
@@ -26,7 +29,9 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user.id,
             email: user.email,
-            name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
+            name:
+              [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+              user.email,
           } as any;
         } catch {
           return null;

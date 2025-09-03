@@ -4,22 +4,23 @@ import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
 import { parseFootballSchedule, scheduleToEvents, type ParsedSchedule } from "@/lib/sports";
 
+/** Ensure this runs on Node (not Edge) and isn’t cached */
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic"; // optional but ensures it won't get cached
+export const dynamic = "force-dynamic";
+/** Give the route more time for large images + Vision */
+export const maxDuration = 60;
 
+/* ------------------------------ helpers ------------------------------ */
 
 // Basic low-confidence heuristic for titles
 function isTitleLowConfidence(title: string): boolean {
   if (!title) return true;
   const t = title.trim();
   if (t.length < 6) return true;
-  // If the title contains an explicit month name, it's likely actually a date line
   const month = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
   if (month.test(t)) return true;
-  // Generic placeholders
   if (/^event from flyer$/i.test(t)) return true;
   if (/^(party|birthday|event|celebration)$/i.test(t)) return true;
-  // If it ends with an ordinal (23rd, 1st) it's probably date-tainted
   if (/\b\d{1,2}(st|nd|rd|th)\b$/i.test(t)) return true;
   return false;
 }
@@ -34,22 +35,16 @@ async function llmExtractEvent(raw: string): Promise<{
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
-  const system =
-    "You extract calendar events from noisy OCR text. Return strict JSON only.";
+  const system = "You extract calendar events from noisy OCR text. Return strict JSON only.";
   const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\n- Title should be a human-friendly event name without dates, e.g., "+Alice's Birthday Party+" not "+Party December 23rd+".\n- Parse date and time if present; if time missing, leave start null.\n- Keep address concise (street/city/state if present).\n- Description can include RSVP or extra lines.\n- Respond with ONLY JSON.`;
+
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
         temperature: 0.1,
         response_format: { type: "json_object" },
       }),
@@ -59,10 +54,10 @@ async function llmExtractEvent(raw: string): Promise<{
     const text = j?.choices?.[0]?.message?.content || "";
     if (!text) return null;
     try {
-      const parsed = JSON.parse(text);
-      return parsed as any;
-    } catch {}
-    return null;
+      return JSON.parse(text) as any;
+    } catch {
+      return null;
+    }
   } catch {
     return null;
   }
@@ -86,16 +81,14 @@ async function llmExtractSchedule(raw: string): Promise<ParsedSchedule | null> {
     "state": string|null
   }, ...]
 }\nRules:\n- Keep only future games relative to now.\n- Deduce home vs away: "vs" => home, "@" => away.\n- If time missing but date present, leave startISO null.\n- Stadium names end with Stadium/Field/Arena/Center/Complex if present.`;
+
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
         temperature: 0.1,
         response_format: { type: "json_object" },
       }),
@@ -118,12 +111,7 @@ async function llmExtractSchedule(raw: string): Promise<ParsedSchedule | null> {
             sourceLines: [],
           }))
         : [];
-      return {
-        detected: games.length >= 2,
-        homeTeam: parsed.homeTeam ?? null,
-        season: parsed.season ?? null,
-        games,
-      };
+      return { detected: games.length >= 2, homeTeam: parsed.homeTeam ?? null, season: parsed.season ?? null, games };
     } catch {
       return null;
     }
@@ -134,14 +122,9 @@ async function llmExtractSchedule(raw: string): Promise<ParsedSchedule | null> {
 
 function cleanAddressLabel(input: string): string {
   let s = input.trim();
-  // Remove common labels like LOCATION:, ADDRESS:, VENUE:, WHERE:, AT:
   s = s.replace(/^\s*(location|address|venue|where)\s*[:\-]?\s*/i, "");
   s = s.replace(/^\s*at\s+/i, "");
-  // If there's a digit (street number) later in the string, drop everything before it
-  if (/\d/.test(s)) {
-    s = s.replace(/^[^\d]*?(?=\d)/, "");
-  }
-  // Collapse spaces and drop a trailing comma or dash
+  if (/\d/.test(s)) s = s.replace(/^[^\d]*?(?=\d)/, "");
   s = s.replace(/\s{2,}/g, " ").replace(/[\s,\-]+$/g, "");
   return s.trim();
 }
@@ -155,13 +138,13 @@ function stripInvitePhrases(s: string): string {
     .trim();
 }
 
- function pickTitle(lines: string[], raw: string): string {
+function pickTitle(lines: string[], raw: string): string {
   const cleanedLines = lines
     .map((l) => stripInvitePhrases(l.replace(/[•·\-–—\s]+$/g, "").replace(/^[•·\-–—\s]+/g, "").trim()))
     .filter((l) => l.length > 1);
 
   const weekdays = /^(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(r(s(day)?)?)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
-  const months = /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)$/i;
+  const months = /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)$/i;
   const badHints = /(rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:\.]?\d{0,2}\b)/i;
   const goodHints = /(birthday|party|anniversary|wedding|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration)/i;
   const ordinal = /\b\d{1,2}(st|nd|rd|th)\b/i;
@@ -182,52 +165,34 @@ function stripInvitePhrases(s: string): string {
     const hasOrdinal = ordinal.test(t);
 
     if (goodHints.test(t)) score += 10;
-    // Ordinals are useful ("8th Birthday"), but they often appear in dates.
-    // Keep the bonus modest and counterweight it if a month name is present.
     if (ordinal.test(t)) score += 2;
-    if (/\b\w+[’']s\b/.test(t)) score += 3; // possessive like "Alice’s"
-    // Strong boost when both keywords appear in any order
+    if (/\b\w+[’']s\b/.test(t)) score += 3;
     if (/(birthday.*party|party.*birthday)/i.test(t)) score += 6;
     if (t.length >= 12 && t.length <= 60) score += 2;
     if (t.length >= 8 && t.length <= 80) score += 1;
 
     if (badHints.test(t)) score -= 4;
-    if (simpleWord) score -= 6; // avoid lines like "FRIDAY" or just a month
-    if (isAllCaps && t.length <= 9) score -= 3; // short shouty words
-    // Prefer titles without explicit calendar months; those lines are usually dates
-    // and should live in the start time rather than the title. Only penalize when
-    // we already have an event-ish phrase to choose from.
+    if (simpleWord) score -= 6;
+    if (isAllCaps && t.length <= 9) score -= 3;
     if (hasMonth && hasGood) score -= 8;
-    if (hasMonth && hasOrdinal && hasGood) score -= 10; // very date-like
+    if (hasMonth && hasOrdinal && hasGood) score -= 10;
 
     return score;
   };
 
-  // Base candidates
-  for (const l of cleanedLines) {
-    candidates.push({ text: l, score: scoreLine(l) });
-  }
+  for (const l of cleanedLines) candidates.push({ text: l, score: scoreLine(l) });
 
-  // Try combining adjacent lines, e.g. "YOU ARE INVITED TO JAMES 8TH" + "BIRTHDAY"
   for (let i = 0; i < cleanedLines.length - 1; i++) {
-    const a = cleanedLines[i];
-    const b = cleanedLines[i + 1];
-    const combined = `${a} ${b}`.replace(/\s+/g, " ").trim();
+    const combined = `${cleanedLines[i]} ${cleanedLines[i + 1]}`.replace(/\s+/g, " ").trim();
     if (/(birthday|party|wedding|concert|festival)/i.test(combined) && combined.length <= 90) {
       candidates.push({ text: combined, score: scoreLine(combined) + 1 });
     }
   }
-
-  // Also try combining three adjacent lines to capture patterns like
-  // "ALICE'S" + "BIRTHDAY" + "PARTY".
   for (let i = 0; i < cleanedLines.length - 2; i++) {
-    const a = cleanedLines[i];
-    const b = cleanedLines[i + 1];
-    const c = cleanedLines[i + 2];
-    const triple = `${a} ${b} ${c}`.replace(/\s+/g, " ").trim();
+    const triple = `${cleanedLines[i]} ${cleanedLines[i + 1]} ${cleanedLines[i + 2]}`
+      .replace(/\s+/g, " ").trim();
     if (/(birthday|party|wedding|concert|festival)/i.test(triple) && triple.length <= 120) {
       let bonus = 2;
-      // Strong boost for patterns like "Alice’s Birthday Party"
       if (/\b\w+(?:[’']s)?\s+birthday\s+party\b/i.test(triple)) bonus += 10;
       candidates.push({ text: triple, score: scoreLine(triple) + bonus });
     }
@@ -236,22 +201,12 @@ function stripInvitePhrases(s: string): string {
   candidates.sort((x, y) => y.score - x.score);
   let best = candidates[0];
   if (best && best.score > 0) {
-    // If the candidate contains a date tail (e.g., "... Birthday Party December 23rd"),
-    // trim the trailing date portion so we keep the semantic title only.
     const monthAlt = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
-    const dateTail = new RegExp(
-      // month name + day (optional ordinal) + optional year, possibly preceded by "on"
-      `(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`,
-      "i"
-    );
+    const dateTail = new RegExp(`(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`, "i");
     let candidateText = best.text.replace(dateTail, "").trim();
-    // Remove stray leading ordinal fragments like "th/st/nd/rd" produced by OCR
-    // when an ordinal (e.g., "8th") is split across lines and leaves "Th" at start.
     candidateText = candidateText.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
-    // As a fallback, remove a pure ordinal day at the end (e.g., "... Party 23rd")
     candidateText = candidateText.replace(/\b\d{1,2}(st|nd|rd|th)\b\s*$/i, "").trim();
 
-    // Light normalization: Title Case-ish while keeping numbers/ordinals
     const normalized = candidateText
       .toLowerCase()
       .replace(/\b([a-z])(\w*)/g, (_m, a, b) => a.toUpperCase() + b)
@@ -260,65 +215,71 @@ function stripInvitePhrases(s: string): string {
     return normalized;
   }
 
-  // Fallback: first reasonable non-junk line
   const fallback = cleanedLines.find((l) => l.length > 5 && !badHints.test(l) && !weekdays.test(l) && !months.test(l));
   return fallback || "Event from flyer";
 }
+
+/* ------------------------------ route ------------------------------ */
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
-    if (!(file instanceof File)) return NextResponse.json({ error: "No file" }, { status: 400 });
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "No file" }, { status: 400 });
+    }
 
     const mime = file.type || "";
     const inputBuffer = Buffer.from(await file.arrayBuffer());
 
+    // Preprocess image for better OCR; gracefully fall back if sharp can't handle the format
     let ocrBuffer: Buffer = inputBuffer;
     if (!/pdf/i.test(mime)) {
       try {
-        // Some mobile formats (e.g., HEIC) may fail; fall back to original buffer
         ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
       } catch {
         ocrBuffer = inputBuffer;
       }
     }
 
+    // --- Google Vision (explicit client using server-side creds) ---
     const vision = getVisionClient();
+
+    // Either Buffer directly or {image: {content: <Buffer>}} both work.
     const [result] = await vision.textDetection({
       image: { content: ocrBuffer },
       imageContext: { languageHints: ["en"] },
     });
-    const text = result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "";
+
+    const text =
+      result.fullTextAnnotation?.text ||
+      result.textAnnotations?.[0]?.description ||
+      "";
     const raw = (text || "").replace(/\s+\n/g, "\n").trim();
 
+    // Title detection
     const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
     const title = pickTitle(lines, raw);
 
+    // Time parsing via chrono
     const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
     const timeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     const rangeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     let start: Date | null = null;
     let end: Date | null = null;
     let parsedText: string | null = null;
+
     if (parsed.length) {
-      // Prefer explicit calendar dates (month & day) over time-only fragments like
-      // "doors open at 10pm". If both appear, choose the one with the richest
-      // explicit date information; secondarily consider time/ranges.
       const score = (r: any): number => {
         const t = (r?.text || "") as string;
         const hasTime = timeLike.test(t);
         const hasRange = rangeLike.test(t);
         const known = r?.start?.knownValues || {};
-        // Strong signal if month and day explicitly present
         let s = 0;
         if (known.month && known.day) s += 6;
-        // Some signal for explicit weekday
         if (known.weekday) s += 1;
-        // Time/range signals (weaker than explicit date)
         if (hasRange) s += 2;
         if (hasTime) s += 1;
-        // Penalize time-only (no explicit date context)
         if (hasTime && !(known.month && known.day) && !known.weekday) s -= 4;
         return s;
       };
@@ -326,24 +287,20 @@ export async function POST(request: Request) {
       const c = byPreference[0];
       start = c.start?.date() ?? null;
       end = c.end?.date() ?? null;
-      // Do not infer an end time; leave null unless explicitly present
       parsedText = (c as any).text || null;
 
-      // If the chosen parse contains an explicit calendar date but NO explicit time,
-      // try to merge in a separate time-only fragment like "2 PM" or a range.
       const cAny: any = c as any;
       const chosenHasExplicitDate = Boolean(cAny?.start?.knownValues?.month && cAny?.start?.knownValues?.day);
       const chosenHasExplicitTime = typeof cAny?.start?.knownValues?.hour === "number";
       if (start && chosenHasExplicitDate && !chosenHasExplicitTime) {
-        // Look for a separate time-only parse result
         const timeOnly = byPreference.find((r: any) => {
           const kv = r?.start?.knownValues || {};
           const hasTime = typeof kv.hour === "number";
           const hasExplicitDate = Boolean(kv.month && kv.day) || Boolean(kv.weekday);
-          // ensure it's really a time token like "2 PM" and not another date
           const t = (r?.text || "") as string;
           return hasTime && !hasExplicitDate && timeLike.test(t);
         }) as any | undefined;
+
         if (timeOnly) {
           const tStart: Date = timeOnly.start?.date() as Date;
           if (tStart && start) {
@@ -351,7 +308,6 @@ export async function POST(request: Request) {
             merged.setHours(tStart.getHours(), tStart.getMinutes(), 0, 0);
             start = merged;
           }
-          // If it's a time range, map the end as well on the same day
           const tEnd: Date | null = (timeOnly.end?.date?.() as Date) || null;
           if (tEnd) {
             const endMerged = new Date(start);
@@ -362,22 +318,23 @@ export async function POST(request: Request) {
       }
     }
 
-    // Address extraction: prefer lines that look like venue/street and NOT times
+    // Address extraction
     const timeToken = /\b\d{1,2}(:\d{2})?\s?(a\.?m\.?|p\.?m\.?)\b/i;
     const hasStreetNumber = /\b\d{1,6}\s+[A-Za-z]/;
-    const venueOrSuffix = /\b(Auditorium|Center|Hall|Gym|Gymnastics|Park|Room|Suite|Ave(nue)?|St(reet)?|Blvd|Rd|Road|Dr|Drive|Ct|Court|Ln|Lane|Way|Pl|Place|Ter(race)?|Pkwy|Parkway|Hwy|Highway|Parkway|Boulevard|Street|Avenue)\b/i;
+    const venueOrSuffix =
+      /\b(Auditorium|Center|Hall|Gym|Gymnastics|Park|Room|Suite|Ave(nue)?|St(reet)?|Blvd|Rd|Road|Dr|Drive|Ct|Court|Ln|Lane|Way|Pl|Place|Ter(race)?|Pkwy|Parkway|Hwy|Highway|Boulevard|Street|Avenue)\b/i;
 
     const lineScores = lines.map((l, idx) => {
       let score = 0;
-      if (timeToken.test(l)) score -= 10; // never pick pure time lines
+      if (timeToken.test(l)) score -= 10;
       if (hasStreetNumber.test(l)) score += 5;
       if (venueOrSuffix.test(l)) score += 3;
-      // Prefer lines followed by city/state/zip
       const next = lines[idx + 1] || "";
       const cityStateZip = /\b[A-Za-z\.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
       if (cityStateZip.test(next)) score += 2;
       return score;
     });
+
     let locIdx = -1;
     let bestScore = -Infinity;
     for (let i = 0; i < lineScores.length; i++) {
@@ -386,6 +343,7 @@ export async function POST(request: Request) {
         locIdx = i;
       }
     }
+
     let addressOnly = "";
     if (locIdx >= 0 && bestScore > 0) {
       const parts: string[] = [];
@@ -396,8 +354,6 @@ export async function POST(request: Request) {
       if (prev && !timeToken.test(prev) && venueOrSuffix.test(prev) && !hasStreetNumber.test(prev)) {
         parts.push(prev);
       }
-      // If the line is a compound like "21 OCTOBER | 256 ROAD, LOS ANGELES | CALL: ...",
-      // pick the most address-like segment and drop date/cta segments.
       const badSegment = /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b)/i;
       const monthName = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
       const segments = line.split(/\s*[|•·]\s*/).map((s) => s.trim()).filter(Boolean);
@@ -406,7 +362,7 @@ export async function POST(request: Request) {
       for (const s of (segments.length ? segments : [line])) {
         let sc = 0;
         if (badSegment.test(s)) sc -= 10;
-        if (monthName.test(s) && !hasStreetNumber.test(s)) sc -= 4; // looks like a pure date piece
+        if (monthName.test(s) && !hasStreetNumber.test(s)) sc -= 4;
         if (hasStreetNumber.test(s)) sc += 5;
         if (venueOrSuffix.test(s)) sc += 3;
         if (sc > segScore) {
@@ -418,11 +374,7 @@ export async function POST(request: Request) {
       if (next && (cityStateZip.test(next) || hasStreetNumber.test(next)) && !timeToken.test(next)) {
         parts.push(next);
       }
-      addressOnly = parts.join(", ")
-        .replace(/^\s*\|\s*/g, "")
-        .replace(/\s{2,}/g, " ")
-        .trim();
-      // If still no digit in address, fall back to line with number elsewhere
+      addressOnly = parts.join(", ").replace(/^\s*\|\s*/g, "").replace(/\s{2,}/g, " ").trim();
       if (!/\d/.test(addressOnly)) {
         const withNum = lines.find((l) => hasStreetNumber.test(l) && !timeToken.test(l));
         if (withNum) addressOnly = withNum.trim();
@@ -430,36 +382,36 @@ export async function POST(request: Request) {
       addressOnly = cleanAddressLabel(addressOnly);
     }
 
+    // Description cleaning
     const cleanDescription = (() => {
       const normalize = (s: string) =>
-        s
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
+        s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
       const titleWords = normalize(title).split(" ").filter(Boolean);
       const addressNorm = normalize(addressOnly);
       const parsedNorm = parsedText ? normalize(parsedText) : null;
       const genericWords = new Set(["party", "birthday", "event", "celebration"]);
       const allowShortWord = new Set(["usa", "nyc", "bbq", "gym"]);
-      const englishishSuffix = /(ing|tion|ment|ness|able|ible|less|ful|ship|day|night|house|hall|park|room|center|centre|party|birthday|concert|festival|meeting|reception|ceremony|gala|parade|show)$/i;
+      const englishishSuffix =
+        /(ing|tion|ment|ness|able|ible|less|ful|ship|day|night|house|hall|park|room|center|centre|party|birthday|concert|festival|meeting|reception|ceremony|gala|parade|show)$/i;
       const monthsShort = /(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)/i;
       const weekdaysShort = /(mon|tue|tues|wed|thu|thur|fri|sat|sun)/i;
+
       const looksEnglishWord = (wRaw: string): boolean => {
         const w = (wRaw || "").toLowerCase().replace(/[^a-z]/g, "");
         if (!w) return false;
         if (allowShortWord.has(w)) return true;
         if (monthsShort.test(w) || weekdaysShort.test(w)) return true;
-        if (w.length <= 2) return true; // keep common short words like at, to, of
-        if (!/[aeiouy]/i.test(w) && w.length >= 3) return false; // no vowels
+        if (w.length <= 2) return true;
+        if (!/[aeiouy]/i.test(w) && w.length >= 3) return false;
         if (englishishSuffix.test(w)) return true;
         if (w.length >= 5) {
           const vowels = (w.match(/[aeiouy]/g) || []).length;
           if (vowels / w.length < 0.25) return false;
         }
-        if (/(.)\1{2,}/.test(w)) return false; // repeated letters like llll
+        if (/(.)\1{2,}/.test(w)) return false;
         return true;
       };
+
       const hasEnoughOverlap = (line: string, words: string[]) => {
         if (!words.length) return false;
         const lineWords = normalize(line).split(" ").filter(Boolean);
@@ -468,38 +420,33 @@ export async function POST(request: Request) {
         for (const w of words) if (lineWords.includes(w)) matches++;
         return matches / words.length >= 0.6 || matches >= Math.min(3, words.length);
       };
-      const monthRe = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
-      const timeRe = /\b\d{1,2}(:\d{2})?\s?(am|pm)\b/i;
-      const yearRe = /\b20\d{2}\b/;
+
       const inviteRe = /\b(you\s+are\s+invited(\s+to)?|you'?re\s+invited(\s+to)?)\b/i;
+
       const keep: string[] = [];
       for (const line of lines) {
         if (!line) continue;
         const strippedOrig = stripInvitePhrases(line).trim();
         if (!strippedOrig) continue;
-        // Clean up common OCR artifact where an isolated ordinal suffix ("th/st/nd/rd")
-        // gets detached from a number and appears as a leading token, e.g. "Th Livia's ..."
-        // Only strip when the token is at the very start and not preceded by a digit.
         let stripped = strippedOrig.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
         if (!stripped) continue;
-        // Drop low-signal noise lines
-        if (stripped.length <= 2) continue; // e, ee, 2
-        if (/^\d+$/.test(stripped)) continue; // pure number
-        if (/^[A-Za-z]$/.test(stripped)) continue; // single char
+
+        if (stripped.length <= 2) continue;
+        if (/^\d+$/.test(stripped)) continue;
+        if (/^[A-Za-z]$/.test(stripped)) continue;
         if (/(^|\s)(ee+|oo+|ll+)(\s|$)/i.test(stripped) && stripped.replace(/\s+/g, "").length <= 3) continue;
         if (inviteRe.test(stripped)) continue;
         if (hasEnoughOverlap(stripped, titleWords)) continue;
-        // Drop single-word noise that doesn't look like English
+
         if (/^[A-Za-z]{3,}$/.test(stripped) && stripped.split(/\s+/).length === 1) {
           if (!looksEnglishWord(stripped)) continue;
         }
         const strippedNorm = normalize(stripped);
         if (addressNorm && (strippedNorm.includes(addressNorm) || (strippedNorm.length >= 8 && addressNorm.includes(strippedNorm)))) continue;
-        // Only drop the line if it is exactly the same as the parsed time fragment
         if (parsedNorm && strippedNorm === parsedNorm) continue;
-        // Ignore generic single words like "Party" when alone
+
         if (/^[A-Za-z]+$/.test(stripped) && genericWords.has(stripped.toLowerCase())) continue;
-        // For very short multi-word lines (<= 3 words), drop if all tokens are non-Englishish
+
         const tokens = stripped.split(/\s+/).filter(Boolean);
         if (tokens.length <= 3) {
           const good = tokens.filter((t) => /\d/.test(t) || looksEnglishWord(t)).length;
@@ -510,36 +457,33 @@ export async function POST(request: Request) {
       return keep.join("\n");
     })();
 
+    // Build final fields
     let finalTitle = title;
     let finalStart = start;
     let finalEnd = end;
     let finalAddress = addressOnly;
     let finalDescription = cleanDescription;
 
-    // LLM fallback: only if configured and the title looks low-confidence
     if (isTitleLowConfidence(finalTitle)) {
       const llm = await llmExtractEvent(raw);
       if (llm) {
-        if (llm.title && llm.title.trim().length > 0) finalTitle = llm.title.trim();
-        if (llm.address && llm.address.trim().length > 0) finalAddress = cleanAddressLabel(llm.address);
-        if (llm.description && llm.description.trim().length > 0) finalDescription = llm.description.trim();
+        if (llm.title?.trim()) finalTitle = llm.title.trim();
+        if (llm.address?.trim()) finalAddress = cleanAddressLabel(llm.address);
+        if (llm.description?.trim()) finalDescription = llm.description.trim();
         const safeDate = (s?: string | null) => {
           if (!s) return null;
           const d = new Date(s);
           return isNaN(d.getTime()) ? null : d;
         };
-        const llmStart = safeDate(llm.start);
-        const llmEnd = safeDate(llm.end);
-        finalStart = llmStart ?? finalStart;
-        finalEnd = llmEnd ?? finalEnd;
+        finalStart = safeDate(llm.start) ?? finalStart;
+        finalEnd = safeDate(llm.end) ?? finalEnd;
       }
     }
 
-    // Ensure description contains the title at the top (without duplication)
-    const descriptionHasTitle = (
+    const descriptionHasTitle =
       (finalTitle || "").trim().length > 0 &&
-      (finalDescription || "").toLowerCase().includes((finalTitle || "").toLowerCase())
-    );
+      (finalDescription || "").toLowerCase().includes((finalTitle || "").toLowerCase());
+
     const descriptionWithTitle = descriptionHasTitle
       ? (finalDescription || "")
       : [finalTitle, finalDescription].filter((s) => (s || "").trim().length > 0).join("\n\n");
@@ -553,7 +497,7 @@ export async function POST(request: Request) {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
-    // Schedule extraction (heuristic + optional LLM fallback)
+    // Schedule extraction (+ optional LLM fallback)
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     let schedule = parseFootballSchedule(raw, tz);
     const lowConfidenceSchedule = !schedule.detected || !schedule.homeTeam;
@@ -571,28 +515,23 @@ export async function POST(request: Request) {
     const enrichedGames = schedule.games.map((g) => {
       if (g.startISO && !g.endISO) {
         const d = new Date(g.startISO);
-        const end = new Date(d.getTime() + 3 * 60 * 60 * 1000);
-        return { ...g, endISO: end.toISOString() };
+        const end2 = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+        return { ...g, endISO: end2.toISOString() };
       }
       return g;
     });
     schedule = { ...schedule, games: enrichedGames };
     const events = scheduleToEvents(schedule, tz);
 
-    // Removed database insertion; return only parsed data
     const intakeId: string | null = null;
 
-    return NextResponse.json({
-      intakeId,
-      ocrText: raw,
-      fieldsGuess,
-      schedule,
-      events,
-    });
+    return NextResponse.json(
+      { intakeId, ocrText: raw, fieldsGuess, schedule, events },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Surface errors clearly (helps when App Runner is misconfigured)
+    return NextResponse.json({ error: "OCR route failed", detail: message }, { status: 500 });
   }
 }
-
-

@@ -1,4 +1,3 @@
-// src/app/api/_debug-vision/route.ts
 export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { getVisionClient } from "@/lib/gcp";
@@ -9,6 +8,9 @@ export async function GET() {
     const [proj] = await client.getProjectId();
     return NextResponse.json({ ok: true, projectId: proj });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: String(e?.message || e) },
+      { status: 500 }
+    );
   }
 }
