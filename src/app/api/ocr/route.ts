@@ -3,6 +3,7 @@ import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
 import { parseFootballSchedule, scheduleToEvents, type ParsedSchedule } from "@/lib/sports";
+import { GoogleAuth } from "google-auth-library";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
 export const runtime = "nodejs";
@@ -201,7 +202,7 @@ function pickTitle(lines: string[], raw: string): string {
   candidates.sort((x, y) => y.score - x.score);
   let best = candidates[0];
   if (best && best.score > 0) {
-    const monthAlt = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+    const monthAlt = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?)";
     const dateTail = new RegExp(`(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`, "i");
     let candidateText = best.text.replace(dateTail, "").trim();
     candidateText = candidateText.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
@@ -219,15 +220,55 @@ function pickTitle(lines: string[], raw: string): string {
   return fallback || "Event from flyer";
 }
 
+/* ------------------------------ Vision REST fallback ------------------------------ */
+
+async function visionRestOCR(ocrBuffer: Buffer) {
+  const b64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
+  if (!b64) throw new Error("Missing GOOGLE_APPLICATION_CREDENTIALS_BASE64");
+  const creds = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+
+  const auth = new GoogleAuth({
+    credentials: creds,
+    scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+  });
+  const client = await auth.getClient();
+  const token = await client.getAccessToken();
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 45_000);
+  const resp = await fetch("https://vision.googleapis.com/v1/images:annotate", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          image: { content: ocrBuffer.toString("base64") },
+          features: [{ type: "TEXT_DETECTION" }],
+          imageContext: { languageHints: ["en"] },
+        },
+      ],
+    }),
+    signal: ac.signal,
+  });
+  clearTimeout(timer);
+
+  if (!resp.ok) throw new Error(`REST Vision HTTP ${resp.status}`);
+  const j: any = await resp.json();
+  // Normalize to SDK-like shape
+  return {
+    fullTextAnnotation: { text: j?.responses?.[0]?.fullTextAnnotation?.text || "" },
+    textAnnotations: j?.responses?.[0]?.textAnnotations || [],
+  };
+}
+
 /* ------------------------------ route ------------------------------ */
 
 export async function POST(request: Request) {
-  console.log(">>> OCR API HIT", {
-    has_NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
-    has_AUTH_SECRET: !!process.env.AUTH_SECRET,
-    has_OPENAI_KEY: !!process.env.OPENAI_API_KEY,
-    cookies: request.headers.get("cookie")?.slice(0, 120), // first 120 chars only
-  });
+  // Minimal debug; we can remove once stable
+  console.log(">>> OCR HIT");
 
   try {
     const formData = await request.formData();
@@ -249,39 +290,28 @@ export async function POST(request: Request) {
       }
     }
 
-    // --- Google Vision (explicit client using server-side creds) ---
+    // --- Google Vision with SDK + timeout, then REST fallback ---
     const vision = getVisionClient();
-
-    // just before calling Vision
-    console.log(">>> before Vision", { bytes: ocrBuffer.length, mime });
+    let result: any;
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 45_000);
-
-      const [result] = await vision.textDetection({
-        image: { content: ocrBuffer },
-        imageContext: { languageHints: ["en"] },
-      });
-
-      clearTimeout(timer);
-      console.log(">>> after Vision", {
-        hasFull: !!result.fullTextAnnotation?.text,
-        hasFirst: !!result.textAnnotations?.[0]?.description,
-      });
-    } catch (e: any) {
-      console.error(">>> Vision error", e);
-      return NextResponse.json(
-        { error: "OCR route failed", detail: e?.message || String(e) },
-        { status: 502 }
+      const sdkCall = (async () => {
+        const [res] = await vision.textDetection({
+          image: { content: ocrBuffer },
+          imageContext: { languageHints: ["en"] },
+        });
+        return res;
+      })();
+      const timeout = new Promise<never>((_, rej) =>
+        setTimeout(() => rej(new Error("VISION_SDK_TIMEOUT")), 45_000)
       );
+      result = await Promise.race([sdkCall, timeout]);
+      console.log(">>> Vision path: SDK");
+    } catch (e) {
+      console.warn(">>> SDK failed, using REST:", (e as Error)?.message);
+      result = await visionRestOCR(ocrBuffer);
+      console.log(">>> Vision path: REST");
     }
-
-    // Either Buffer directly or {image: {content: <Buffer>}} both work.
-    const [result] = await vision.textDetection({
-      image: { content: ocrBuffer },
-      imageContext: { languageHints: ["en"] },
-    });
 
     const text =
       result.fullTextAnnotation?.text ||
@@ -290,7 +320,7 @@ export async function POST(request: Request) {
     const raw = (text || "").replace(/\s+\n/g, "\n").trim();
 
     // Title detection
-    const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = raw.split("\n").map((l: string) => l.trim()).filter(Boolean);
     const title = pickTitle(lines, raw);
 
     // Time parsing via chrono
@@ -356,7 +386,7 @@ export async function POST(request: Request) {
     const venueOrSuffix =
       /\b(Auditorium|Center|Hall|Gym|Gymnastics|Park|Room|Suite|Ave(nue)?|St(reet)?|Blvd|Rd|Road|Dr|Drive|Ct|Court|Ln|Lane|Way|Pl|Place|Ter(race)?|Pkwy|Parkway|Hwy|Highway|Boulevard|Street|Avenue)\b/i;
 
-    const lineScores = lines.map((l, idx) => {
+    const lineScores = lines.map((l: string, idx: number) => {
       let score = 0;
       if (timeToken.test(l)) score -= 10;
       if (hasStreetNumber.test(l)) score += 5;
@@ -387,8 +417,8 @@ export async function POST(request: Request) {
         parts.push(prev);
       }
       const badSegment = /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b)/i;
-      const monthName = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
-      const segments = line.split(/\s*[|•·]\s*/).map((s) => s.trim()).filter(Boolean);
+      const monthName = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)/i;
+      const segments = line.split(/\s*[|•·]\s*/).map((s: string) => s.trim()).filter(Boolean);
       let bestSegment = "";
       let segScore = -Infinity;
       for (const s of (segments.length ? segments : [line])) {
@@ -408,7 +438,7 @@ export async function POST(request: Request) {
       }
       addressOnly = parts.join(", ").replace(/^\s*\|\s*/g, "").replace(/\s{2,}/g, " ").trim();
       if (!/\d/.test(addressOnly)) {
-        const withNum = lines.find((l) => hasStreetNumber.test(l) && !timeToken.test(l));
+        const withNum = lines.find((l: string) => hasStreetNumber.test(l) && !timeToken.test(l));
         if (withNum) addressOnly = withNum.trim();
       }
       addressOnly = cleanAddressLabel(addressOnly);
@@ -563,7 +593,6 @@ export async function POST(request: Request) {
     );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    // Surface errors clearly (helps when App Runner is misconfigured)
     return NextResponse.json({ error: "OCR route failed", detail: message }, { status: 500 });
   }
 }
