@@ -252,6 +252,31 @@ export async function POST(request: Request) {
     // --- Google Vision (explicit client using server-side creds) ---
     const vision = getVisionClient();
 
+    // just before calling Vision
+    console.log(">>> before Vision", { bytes: ocrBuffer.length, mime });
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 45_000);
+
+      const [result] = await vision.textDetection({
+        image: { content: ocrBuffer },
+        imageContext: { languageHints: ["en"] },
+      });
+
+      clearTimeout(timer);
+      console.log(">>> after Vision", {
+        hasFull: !!result.fullTextAnnotation?.text,
+        hasFirst: !!result.textAnnotations?.[0]?.description,
+      });
+    } catch (e: any) {
+      console.error(">>> Vision error", e);
+      return NextResponse.json(
+        { error: "OCR route failed", detail: e?.message || String(e) },
+        { status: 502 }
+      );
+    }
+
     // Either Buffer directly or {image: {content: <Buffer>}} both work.
     const [result] = await vision.textDetection({
       image: { content: ocrBuffer },
