@@ -222,6 +222,13 @@ function pickTitle(lines: string[], raw: string): string {
 /* ------------------------------ route ------------------------------ */
 
 export async function POST(request: Request) {
+  console.log(">>> OCR API HIT", {
+    has_NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
+    has_AUTH_SECRET: !!process.env.AUTH_SECRET,
+    has_OPENAI_KEY: !!process.env.OPENAI_API_KEY,
+    cookies: request.headers.get("cookie")?.slice(0, 120), // first 120 chars only
+  });
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");
