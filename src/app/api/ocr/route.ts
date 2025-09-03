@@ -5,6 +5,8 @@ import { getVisionClient } from "@/lib/gcp";
 import { parseFootballSchedule, scheduleToEvents, type ParsedSchedule } from "@/lib/sports";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // optional but ensures it won't get cached
+
 
 // Basic low-confidence heuristic for titles
 function isTitleLowConfidence(title: string): boolean {
