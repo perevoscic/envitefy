@@ -235,7 +235,7 @@ async function visionRestOCR(ocrBuffer: Buffer) {
   const token = await client.getAccessToken();
 
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 45_000);
+  const timer = setTimeout(() => ac.abort(), 30_000); // 30s cap for REST
   const resp = await fetch("https://vision.googleapis.com/v1/images:annotate", {
     method: "POST",
     headers: {
@@ -243,26 +243,31 @@ async function visionRestOCR(ocrBuffer: Buffer) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      requests: [
-        {
-          image: { content: ocrBuffer.toString("base64") },
-          features: [{ type: "TEXT_DETECTION" }],
-          imageContext: { languageHints: ["en"] },
-        },
-      ],
+      requests: [{
+        image: { content: ocrBuffer.toString("base64") },
+        features: [{ type: "TEXT_DETECTION" }],
+        imageContext: { languageHints: ["en"] },
+      }],
     }),
     signal: ac.signal,
+  }).catch((e) => {
+    clearTimeout(timer);
+    throw e;
   });
   clearTimeout(timer);
 
-  if (!resp.ok) throw new Error(`REST Vision HTTP ${resp.status}`);
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => "");
+    console.warn(">>> REST Vision non-OK", resp.status, txt.slice(0, 300));
+    throw new Error(`REST Vision HTTP ${resp.status}`);
+  }
   const j: any = await resp.json();
-  // Normalize to SDK-like shape
   return {
     fullTextAnnotation: { text: j?.responses?.[0]?.fullTextAnnotation?.text || "" },
     textAnnotations: j?.responses?.[0]?.textAnnotations || [],
   };
 }
+
 
 /* ------------------------------ route ------------------------------ */
 
