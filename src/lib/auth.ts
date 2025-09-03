@@ -1,8 +1,7 @@
-import { type NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getUserByEmail, verifyPassword } from "@/lib/db";
 
-// Build-safe getter (no throw at import)
 export function getAuthOptions(): NextAuthOptions {
   const secret =
     process.env.AUTH_SECRET ??
@@ -10,7 +9,7 @@ export function getAuthOptions(): NextAuthOptions {
     (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
 
   return {
-    debug: false,
+    debug: true,              // TEMP: leave on while debugging
     secret,
     useSecureCookies: true,
     providers: [
@@ -21,25 +20,49 @@ export function getAuthOptions(): NextAuthOptions {
           password: { label: "Password", type: "password" },
         },
         async authorize(credentials) {
+          const email = credentials?.email?.trim() || "";
+          const password = credentials?.password || "";
+
+          if (!email || !password) {
+            console.error("[auth] missing email/password");
+            return null;
+          }
+
+          console.log("[auth] authorize start", { email });
+
           try {
-            const email = credentials?.email || "";
-            const password = credentials?.password || "";
-            if (!email || !password) return null;
-
             const user = await getUserByEmail(email);
-            if (!user) return null;
+            if (!user) {
+              console.warn("[auth] user not found", { email });
+              return null;
+            }
 
-            const ok = await verifyPassword(password, user.password_hash);
-            if (!ok) return null;
+            if (!user.password_hash) {
+              console.error("[auth] user has no password_hash", { userId: user.id });
+              return null;
+            }
 
+            let ok = false;
+            try {
+              ok = await verifyPassword(password, user.password_hash);
+            } catch (e) {
+              console.error("[auth] verifyPassword threw", e);
+              return null;
+            }
+
+            if (!ok) {
+              console.warn("[auth] bad password", { email });
+              return null;
+            }
+
+            console.log("[auth] authorize success", { userId: user.id });
             return {
               id: user.id,
               email: user.email,
-              name:
-                [user.first_name, user.last_name].filter(Boolean).join(" ") ||
-                user.email,
+              name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
             } as any;
-          } catch {
+          } catch (err) {
+            console.error("[auth] authorize threw", err);
             return null;
           }
         },
@@ -51,5 +74,4 @@ export function getAuthOptions(): NextAuthOptions {
   };
 }
 
-// Optional back-compat export
 export const authOptions = getAuthOptions();
