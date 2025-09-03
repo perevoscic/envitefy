@@ -1,10 +1,17 @@
+// src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Always allow APIs and static
+  // helper to return with a marker header
+  const ok = () => {
+    const res = NextResponse.next();
+    res.headers.set("x-mw-version", "v2");  // <<< marker
+    return res;
+  };
+
   if (
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
@@ -13,21 +20,18 @@ export async function middleware(req: NextRequest) {
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml"
   ) {
-    // Legacy /signup -> /landing
     if (pathname === "/signup") {
       const url = req.nextUrl.clone();
       url.pathname = "/landing";
       return NextResponse.redirect(url);
     }
-    return NextResponse.next();
+    return ok();
   }
 
-  // Public pages
   if (pathname === "/landing" || pathname === "/verify-request") {
-    return NextResponse.next();
+    return ok();
   }
 
-  // Only protect "/"
   if (pathname === "/") {
     const hasSession =
       req.cookies.has("__Secure-next-auth.session-token") ||
@@ -40,9 +44,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  return ok();
 }
 
-export const config = {
-  matcher: ["/", "/signup"],
-};
+export const config = { matcher: ["/", "/signup"] };
