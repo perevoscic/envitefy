@@ -76,6 +76,9 @@ export default function Home() {
   const reviewModalRef = useRef<HTMLDivElement | null>(null);
   const firstFieldRef = useRef<HTMLInputElement | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  // Track first-open focus and original body overflow to avoid re-focusing on every state change
+  const modalOpenedRef = useRef(false);
+  const bodyOverflowOriginalRef = useRef<string | null>(null);
   // Location helpers
   const [placeSuggestions, setPlaceSuggestions] = useState<
     { label: string; lat: number; lon: number }[]
@@ -125,20 +128,26 @@ export default function Home() {
     }
   }, []);
 
-  // Lock body scroll while the review modal is open
+  // Lock body scroll while the review modal is open and focus first field only once on open
   useEffect(() => {
     try {
-      const original = document.body.style.overflow;
       if (event) {
+        if (bodyOverflowOriginalRef.current === null) {
+          bodyOverflowOriginalRef.current = document.body.style.overflow || "";
+        }
         document.body.style.overflow = "hidden";
-        // Focus first field when modal opens
-        setTimeout(() => firstFieldRef.current?.focus(), 10);
+        if (!modalOpenedRef.current) {
+          // Focus first field when modal opens (do not re-focus on subsequent edits)
+          setTimeout(() => firstFieldRef.current?.focus(), 10);
+          modalOpenedRef.current = true;
+        }
       } else {
-        document.body.style.overflow = original || "";
+        if (bodyOverflowOriginalRef.current !== null) {
+          document.body.style.overflow = bodyOverflowOriginalRef.current;
+          bodyOverflowOriginalRef.current = null;
+        }
+        modalOpenedRef.current = false;
       }
-      return () => {
-        document.body.style.overflow = original || "";
-      };
     } catch {}
   }, [event]);
 
