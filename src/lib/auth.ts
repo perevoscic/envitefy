@@ -19,53 +19,46 @@ export function getAuthOptions(): NextAuthOptions {
           email: { label: "Email", type: "text" },
           password: { label: "Password", type: "password" },
         },
-        async authorize(credentials) {
-          const email = credentials?.email?.trim() || "";
-          const password = credentials?.password || "";
+// src/lib/auth.ts (only the authorize function body changed)
+async authorize(credentials) {
+  const email = (credentials?.email || "").toLowerCase();
+  const password = credentials?.password || "";
+  try {
+    console.log("[auth] credentials sign-in start", { email });
 
-          if (!email || !password) {
-            console.error("[auth] missing email/password");
-            return null;
-          }
+    if (!email || !password) {
+      console.warn("[auth] missing email/password");
+      return null;
+    }
 
-          console.log("[auth] authorize start", { email });
+    const user = await getUserByEmail(email);
+    console.log("[auth] getUserByEmail result", { found: !!user });
 
-          try {
-            const user = await getUserByEmail(email);
-            if (!user) {
-              console.warn("[auth] user not found", { email });
-              return null;
-            }
+    if (!user) {
+      console.warn("[auth] user not found");
+      return null;
+    }
 
-            if (!user.password_hash) {
-              console.error("[auth] user has no password_hash", { userId: user.id });
-              return null;
-            }
+    const ok = await verifyPassword(password, user.password_hash);
+    console.log("[auth] password check", { ok });
 
-            let ok = false;
-            try {
-              ok = await verifyPassword(password, user.password_hash);
-            } catch (e) {
-              console.error("[auth] verifyPassword threw", e);
-              return null;
-            }
+    if (!ok) {
+      console.warn("[auth] bad password");
+      return null;
+    }
 
-            if (!ok) {
-              console.warn("[auth] bad password", { email });
-              return null;
-            }
+    return {
+      id: user.id,
+      email: user.email,
+      name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
+    } as any;
+  } catch (err: any) {
+    console.error("[auth] authorize error", { message: err?.message, code: err?.code, stack: err?.stack });
+    // Returning null triggers CredentialsSignin (401). We just want the *server log* details.
+    return null;
+  }
+}
 
-            console.log("[auth] authorize success", { userId: user.id });
-            return {
-              id: user.id,
-              email: user.email,
-              name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
-            } as any;
-          } catch (err) {
-            console.error("[auth] authorize threw", err);
-            return null;
-          }
-        },
       }),
     ],
     session: { strategy: "jwt" },
