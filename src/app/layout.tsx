@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Pacifico, Montserrat } from "next/font/google";
+import Link from "next/link";
 import Providers from "./providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -49,8 +50,23 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <LeftSidebar />
-          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground">
-            <div className="min-h-full min-w-0 overflow-y-auto">{children}</div>
+          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
+            <div className="flex-1 min-w-0">{children}</div>
+            <footer>
+              <div className="max-w-7xl mx-auto px-4 py-6 text-sm text-foreground/80">
+                <div className="flex flex-wrap items-center justify-center gap-4 text-center">
+                  <Link href="/terms" className="hover:text-foreground">
+                    Terms of Use
+                  </Link>
+                  <span className="opacity-40">•</span>
+                  <Link href="/privacy" className="hover:text-foreground">
+                    Privacy Policy
+                  </Link>
+                  <span className="opacity-40">•</span>
+                  <span>© {new Date().getFullYear()} Snap My Date</span>
+                </div>
+              </div>
+            </footer>
           </div>
         </Providers>
       </body>
