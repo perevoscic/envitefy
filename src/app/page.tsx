@@ -448,8 +448,23 @@ export default function Home() {
   };
 
   const connectGoogle = () => {
-    // Use calendar-specific OAuth to ensure we have calendar.events scope + refresh token
-    window.location.href = "/api/google/auth";
+    // If we already have an event, carry it through OAuth so the callback can create it
+    let url = "/api/google/auth";
+    try {
+      if (event) {
+        const ready = buildSubmissionEvent(event);
+        if (ready) {
+          let state = "";
+          try {
+            state = btoa(encodeURIComponent(JSON.stringify(ready)));
+          } catch {}
+          url = `/api/google/auth?consent=1${
+            state ? `&state=${encodeURIComponent(state)}` : ""
+          }`;
+        }
+      }
+    } catch {}
+    window.location.href = url;
   };
 
   const connectOutlook = () => {

@@ -273,7 +273,6 @@ async function visionRestOCR(ocrBuffer: Buffer) {
 
 export async function POST(request: Request) {
   // Minimal debug; we can remove once stable
-  console.log(">>> OCR HIT");
 
   try {
     const formData = await request.formData();
@@ -311,7 +310,6 @@ export async function POST(request: Request) {
         setTimeout(() => rej(new Error("VISION_SDK_TIMEOUT")), 45_000)
       );
       result = await Promise.race([sdkCall, timeout]);
-      console.log(">>> Vision path: SDK");
     } catch (e) {
       console.warn(">>> SDK failed, using REST:", (e as Error)?.message);
       result = await visionRestOCR(ocrBuffer);

@@ -16,11 +16,6 @@ const nextConfig = {
       { protocol: "https", hostname: "upload.wikimedia.org" },
     ],
   },
-
-  // 👇 enable the boot-time hook so we can prep /tmp cache etc.
-  experimental: {
-    instrumentationHook: true,
-  },
 };
 
 export default nextConfig;

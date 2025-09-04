@@ -11,6 +11,7 @@ export default function LeftSidebar() {
   const { data: session, status } = useSession();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
   const menuRef = useRef<HTMLDivElement | null>(null);

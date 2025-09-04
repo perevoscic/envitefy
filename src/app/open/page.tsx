@@ -7,7 +7,12 @@ export default function Open() {
       const sp = new URLSearchParams(window.location.search);
       const url = sp.get("url");
       if (url) {
-        window.open(url, "_blank");
+        const newWindow = window.open(url, "_blank");
+        // If the browser blocked the popup, navigate in the current tab
+        if (!newWindow) {
+          window.location.replace(url);
+          return;
+        }
       }
     } catch {}
     // Always return home after attempting to open
