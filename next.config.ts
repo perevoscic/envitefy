@@ -14,6 +14,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "fonts.gstatic.com" },
       { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "static.thenounproject.com" },
     ],
   },
 };

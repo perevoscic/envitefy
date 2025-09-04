@@ -165,8 +165,8 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Auth**: Optional (reads NextAuth JWT if available).
 - **Detection sources**:
   - NextAuth JWT tokens: `providers.google.refreshToken` (Google requires refresh token), `providers.microsoft.connected|refreshToken`, `providers.apple.connected`.
-  - Legacy OAuth cookies: `g_refresh` (Google), `o_refresh` (Microsoft).
   - Postgres token store: `oauth_tokens` table lookup by `email` or `user_id`.
+  - Legacy OAuth cookies: `g_refresh` (Google), `o_refresh` (Microsoft). These are only considered when no user is signed in (no JWT email) to avoid cross-user leakage on shared browsers.
 - **Output**: `{ google: boolean, microsoft: boolean, apple: boolean }`.
 
 ### OAuth token debug — GET `/api/debug/oauth-tokens`

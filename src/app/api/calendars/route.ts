@@ -14,17 +14,23 @@ export async function GET(request: NextRequest) {
   const googleCookie = request.cookies.get("g_refresh")?.value;
   const microsoftCookie = request.cookies.get("o_refresh")?.value;
 
-  // Start with JWT signal or cookie presence
-  // Consider Google "connected" only if we have a refresh token (JWT) or legacy cookie
+  // Determine connection without cross-user cookie leakage:
+  // - If signed in (email present), ignore legacy cookies; rely on JWT/DB
+  // - If not signed in, allow legacy cookies as a convenience
   let googleConnected = Boolean(
-    providersFromJwt?.google?.refreshToken ||
-      googleCookie
+    providersFromJwt?.google?.refreshToken
   );
+  if (!googleConnected && !email && googleCookie) {
+    googleConnected = true;
+  }
+
   let microsoftConnected = Boolean(
     providersFromJwt?.microsoft?.connected ||
-      providersFromJwt?.microsoft?.refreshToken ||
-      microsoftCookie
+      providersFromJwt?.microsoft?.refreshToken
   );
+  if (!microsoftConnected && !email && microsoftCookie) {
+    microsoftConnected = true;
+  }
 
   // If not connected yet but we have an email, check database token store
   if (email && (!googleConnected || !microsoftConnected)) {

@@ -16,17 +16,18 @@ export async function POST(request: NextRequest) {
     let accessToken = g.accessToken as string | undefined;
     const expiresAt = g.expiresAt as number | undefined;
 
-    // Fallback: accept refresh token from our legacy cookie if present
+    // Prefer DB token for signed-in users; avoid cookie to prevent cross-user leakage
     if (!refreshToken && !accessToken) {
-      const legacy = request.cookies.get("g_refresh")?.value;
-      if (legacy) refreshToken = legacy;
-    }
-    // Fallback: load refresh token from the database if available
-    if (!refreshToken && !accessToken && email) {
-      try {
-        const supa = await getGoogleRefreshToken(email);
-        if (supa) refreshToken = supa;
-      } catch {}
+      if (email) {
+        try {
+          const dbToken = await getGoogleRefreshToken(email);
+          if (dbToken) refreshToken = dbToken;
+        } catch {}
+      } else {
+        // Unauthenticated/legacy fallback: accept refresh token from our legacy cookie if present
+        const legacy = request.cookies.get("g_refresh")?.value;
+        if (legacy) refreshToken = legacy;
+      }
     }
     if (!refreshToken && !accessToken) {
       const reason = tokenData ? "Google not connected" : "Unauthorized";

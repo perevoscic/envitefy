@@ -11,6 +11,8 @@ export default function LeftSidebar() {
   const { data: session, status } = useSession();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [resourcesOpenFloating, setResourcesOpenFloating] = useState(false);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
@@ -50,10 +52,16 @@ export default function LeftSidebar() {
         !buttonRef.current.contains(e.target as Node)
       ) {
         setMenuOpen(false);
+        setResourcesOpen(false);
+        setResourcesOpenFloating(false);
       }
     };
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setResourcesOpen(false);
+        setResourcesOpenFloating(false);
+      }
     };
     document.addEventListener("click", onDown);
     document.addEventListener("keydown", onEsc);
@@ -258,28 +266,126 @@ export default function LeftSidebar() {
                   </button>
                 </div>
 
-                <Link
-                  href="/about"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setResourcesOpenFloating((v) => !v)}
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                   >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  <span className="text-sm">About us</span>
-                </Link>
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src="https://static.thenounproject.com/png/privacy-settings-icon-1512233-512.png"
+                        alt="Resources"
+                        width={16}
+                        height={16}
+                        className="h-4 w-4 object-contain"
+                      />
+                      <span className="text-sm">Resources</span>
+                    </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`h-4 w-4 transition-transform ${
+                        resourcesOpenFloating ? "rotate-90" : "rotate-0"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+
+                  {resourcesOpenFloating && (
+                    <div className="hidden md:block absolute top-0 left-full ml-2 w-64 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2 z-[1100]">
+                      <Link
+                        href="/about"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setResourcesOpenFloating(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        <span className="text-sm">About us</span>
+                      </Link>
+
+                      <Link
+                        href="/privacy"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setResourcesOpenFloating(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="10"
+                            rx="2"
+                            ry="2"
+                          />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <span className="text-sm">Privacy</span>
+                      </Link>
+
+                      <Link
+                        href="/terms"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setResourcesOpenFloating(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+                          <path d="M14 2v6h6" />
+                        </svg>
+                        <span className="text-sm">Terms of use</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
                 <Link
                   href="/contact"
@@ -542,28 +648,126 @@ export default function LeftSidebar() {
                     </button>
                   </div>
 
-                  <Link
-                    href="/about"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setResourcesOpen((v) => !v)}
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                     >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <span className="text-sm">About us</span>
-                  </Link>
+                      <div className="flex items-center gap-3">
+                        <Image
+                          src="https://static.thenounproject.com/png/privacy-settings-icon-1512233-512.png"
+                          alt="Resources"
+                          width={16}
+                          height={16}
+                          className="h-4 w-4 object-contain"
+                        />
+                        <span className="text-sm">Resources</span>
+                      </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-4 w-4 transition-transform ${
+                          resourcesOpen ? "rotate-180 md:rotate-90" : "rotate-0"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    {resourcesOpen && (
+                      <div className="absolute left-0 bottom-full mb-2 md:bottom-auto md:top-0 md:left-full md:ml-2 w-64 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2 z-[1100]">
+                        <Link
+                          href="/about"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setResourcesOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                          </svg>
+                          <span className="text-sm">About us</span>
+                        </Link>
+
+                        <Link
+                          href="/privacy"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setResourcesOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <rect
+                              x="3"
+                              y="11"
+                              width="18"
+                              height="10"
+                              rx="2"
+                              ry="2"
+                            />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                          <span className="text-sm">Privacy</span>
+                        </Link>
+
+                        <Link
+                          href="/terms"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setResourcesOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+                            <path d="M14 2v6h6" />
+                          </svg>
+                          <span className="text-sm">Terms of use</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
 
                   <Link
                     href="/contact"
