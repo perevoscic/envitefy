@@ -1,5 +1,6 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 type EventFields = {
   title: string;
@@ -21,6 +22,7 @@ export default function EventActions({
   className?: string;
 }) {
   // No visible inputs; infer contact targets from event details
+  const { data: session } = useSession();
   const absoluteUrl = useMemo(() => {
     try {
       if (!shareUrl) return "";
@@ -77,19 +79,124 @@ export default function EventActions({
     return digits || null;
   };
 
+  const formatDateRange = (
+    startIso: string | null | undefined,
+    endIso: string | null | undefined,
+    timeZone?: string
+  ): string => {
+    try {
+      if (!startIso) return "";
+      const start = new Date(startIso);
+      const end = endIso ? new Date(endIso) : null;
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: timeZone || undefined,
+      });
+      const sameDay =
+        end &&
+        start.getFullYear() === end.getFullYear() &&
+        start.getMonth() === end.getMonth() &&
+        start.getDate() === end.getDate();
+      if (end) {
+        if (sameDay) {
+          const dayPart = new Intl.DateTimeFormat(undefined, {
+            weekday: "short",
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            timeZone: timeZone || undefined,
+          }).format(start);
+          const timeFmt = new Intl.DateTimeFormat(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+            timeZone: timeZone || undefined,
+          });
+          return `${dayPart}, ${timeFmt.format(start)} - ${timeFmt.format(
+            end
+          )} ${timeZone ? `(${timeZone})` : ""}`.trim();
+        }
+        return `${dateFmt.format(start)} - ${dateFmt.format(end)} ${
+          timeZone ? `(${timeZone})` : ""
+        }`.trim();
+      }
+      return `${dateFmt.format(start)} ${
+        timeZone ? `(${timeZone})` : ""
+      }`.trim();
+    } catch {
+      return `${startIso || ""}${endIso ? ` - ${endIso}` : ""}`;
+    }
+  };
+
+  const extractRsvpSubject = (title?: string | null): string => {
+    try {
+      const t = (title || "").trim();
+      if (!t) return "the event";
+      // Try to extract a name prior to 's (e.g., "Livia's Birthday Party")
+      const m = t.match(/([^\s][^']*?)\s*(?:'s|’s)\b/i);
+      if (m && m[1]) {
+        const name = m[1].trim();
+        return `${name}'s birthday`;
+      }
+      // Otherwise fall back to the full title
+      return t;
+    } catch {
+      return title || "the event";
+    }
+  };
+
+  const userFullName = useMemo(() => {
+    const name = (session?.user?.name as string) || "";
+    return name.trim();
+  }, [session]);
+
   const onEmail = () => {
     const to = findEmail() || "";
-    const subject = encodeURIComponent(event?.title || "Event");
-    const body = encodeURIComponent(
-      `${event?.title || "Event"}\n${absoluteUrl}`
+    const title = event?.title || "Event";
+    const whenLine = formatDateRange(
+      safeEvent?.start || null,
+      safeEvent?.end || null,
+      event?.timezone
     );
+    const parts = [
+      `${title}`,
+      "",
+      whenLine ? `Date: ${whenLine}` : undefined,
+      event?.location ? `Location: ${event.location}` : undefined,
+      event?.description ? "" : undefined,
+      event?.description ? `${event.description}` : undefined,
+      "",
+      absoluteUrl ? `Event link: ${absoluteUrl}` : undefined,
+      "",
+      "—",
+      "Sent via SnapMyDate · snapmydate.com",
+    ].filter(Boolean) as string[];
+    const body = encodeURIComponent(parts.join("\n"));
+    const subject = encodeURIComponent(title);
     window.location.href = `mailto:${encodeURIComponent(
       to
     )}?subject=${subject}&body=${body}`;
   };
 
   const onRsvp = () => {
-    const message = `${event?.title || "Event"} - ${absoluteUrl}`;
+    const rsvpTarget = extractRsvpSubject(event?.title);
+    const intro = [
+      "Hi, there,",
+      userFullName ? `this is ${userFullName},` : undefined,
+      "parent of ______,",
+      `RSVP-ing for ${rsvpTarget}`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const message = [intro, absoluteUrl ? `\n${absoluteUrl}` : undefined]
+      .filter(Boolean)
+      .join("");
     const phone = findPhone();
     const email = findEmail();
     if (phone) {
