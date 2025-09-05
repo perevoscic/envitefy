@@ -123,6 +123,15 @@ export default function LeftSidebar() {
     };
   }, [itemMenuId]);
 
+  // Always close menus on route change so navigation from a menu item hides the dropdowns.
+  useEffect(() => {
+    setMenuOpen(false);
+    setResourcesOpen(false);
+    setResourcesOpenFloating(false);
+    setItemMenuId(null);
+    setItemMenuPos(null);
+  }, [pathname]);
+
   const displayName =
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
@@ -622,7 +631,7 @@ export default function LeftSidebar() {
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="hidden md:block fixed bottom-16 left-3 z-[1000] w-64 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
+              className="hidden md:block fixed bottom-16 left-3 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
             >
               <div className="p-2">
                 <Link
@@ -770,7 +779,7 @@ export default function LeftSidebar() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       className={`h-4 w-4 transition-transform ${
-                        resourcesOpenFloating ? "rotate-90" : "rotate-0"
+                        resourcesOpenFloating ? "rotate-0" : "rotate-90"
                       }`}
                       aria-hidden="true"
                     >
@@ -1021,6 +1030,15 @@ export default function LeftSidebar() {
                   >
                     <Link
                       href={prettyHref}
+                      onClick={() => {
+                        try {
+                          const isDesktop =
+                            typeof window !== "undefined" &&
+                            typeof window.matchMedia === "function" &&
+                            window.matchMedia("(min-width: 768px)").matches;
+                          if (!isDesktop) setIsCollapsed(true);
+                        } catch {}
+                      }}
                       className="block pr-8"
                       title={h.title}
                     >
@@ -1378,11 +1396,11 @@ export default function LeftSidebar() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         className={`h-4 w-4 transition-transform ${
-                          resourcesOpen ? "rotate-180 md:rotate-90" : "rotate-0"
+                          resourcesOpen ? "rotate-0" : "rotate-90"
                         }`}
                         aria-hidden="true"
                       >
-                        <polyline points="6 9 12 15 18 9" />
+                        <polyline points="9 18 15 12 9 6" />
                       </svg>
                     </button>
 
