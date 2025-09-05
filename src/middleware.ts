@@ -41,7 +41,15 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  // Keep the homepage publicly accessible (no auth redirects)
+  // Redirect signed-out users who visit the homepage to the public landing page
+  if (pathname === "/") {
+    if (!hasSession) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/landing";
+      return NextResponse.redirect(url, 308);
+    }
+    return ok();
+  }
 
   // Optional: redirect legacy /signup to the public landing page
   if (pathname === "/signup") {
