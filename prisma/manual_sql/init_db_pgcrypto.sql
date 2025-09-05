@@ -46,3 +46,15 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email);
+
+-- Event history (stores normalized event payloads for quick retrieval/share)
+CREATE TABLE IF NOT EXISTS event_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id),
+  title text NOT NULL,
+  data jsonb NOT NULL,
+  created_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_history_user_id_created_at
+  ON event_history(user_id, created_at DESC);

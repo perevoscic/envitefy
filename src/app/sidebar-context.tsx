@@ -1,5 +1,12 @@
 "use client";
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 interface SidebarContextType {
   isCollapsed: boolean;
@@ -25,13 +32,32 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   children,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => true);
+  const STORAGE_KEY = "sidebar:collapsed";
+
+  // Restore persisted state on mount
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === "0" || stored === "false") {
+        setIsCollapsed(false);
+      } else if (stored === "1" || stored === "true") {
+        setIsCollapsed(true);
+      }
+    } catch {}
+  }, []);
+
+  const setIsCollapsedAndPersist = (collapsed: boolean) => {
+    setIsCollapsed(collapsed);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+    } catch {}
+  };
 
   const toggleSidebar = () => {
-    setIsCollapsed((prev) => {
-      const next = !prev;
+    setIsCollapsed((previous) => {
+      const next = !previous;
       try {
-        // eslint-disable-next-line no-console
-        console.debug("Sidebar toggle:", { previous: prev, next });
+        window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
       } catch {}
       return next;
     });
@@ -39,7 +65,11 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
 
   return (
     <SidebarContext.Provider
-      value={{ isCollapsed, setIsCollapsed, toggleSidebar }}
+      value={{
+        isCollapsed,
+        setIsCollapsed: setIsCollapsedAndPersist,
+        toggleSidebar,
+      }}
     >
       {children}
     </SidebarContext.Provider>

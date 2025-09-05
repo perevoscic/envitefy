@@ -286,6 +286,23 @@ export default function Home() {
         }
       : null;
     setEvent(adjusted);
+    // Save history for authenticated users (server will associate user if signed in)
+    try {
+      const payload = {
+        title:
+          (adjusted && adjusted.title) || data?.fieldsGuess?.title || "Event",
+        data: adjusted || data?.fieldsGuess || null,
+      };
+      const r = await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => ({}));
+      // Optionally expose the new id to enable share link in-session later
+      (window as any).__lastEventId = j?.id;
+    } catch {}
     setOcrText(data.ocrText || "");
     setLoading(false);
   };

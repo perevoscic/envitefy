@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
@@ -13,6 +14,11 @@ export default function LeftSidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [resourcesOpenFloating, setResourcesOpenFloating] = useState(false);
+  const [itemMenuId, setItemMenuId] = useState<string | null>(null);
+  const [itemMenuPos, setItemMenuPos] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
@@ -26,12 +32,19 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     if (!isOpen) return;
+    const isDesktop = () =>
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(min-width: 768px)").matches;
+
     const onClick = (e: MouseEvent) => {
+      if (isDesktop()) return; // Desktop: ignore outside clicks
       const target = e.target as Node | null;
       if (!asideRef.current) return;
       if (!asideRef.current.contains(target)) setIsCollapsed(true);
     };
     const onKey = (e: KeyboardEvent) => {
+      if (isDesktop()) return; // Desktop: only close via X button
       if (e.key === "Escape") setIsCollapsed(true);
     };
     document.addEventListener("click", onClick);
@@ -71,6 +84,31 @@ export default function LeftSidebar() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      try {
+        const target = e.target as Element | null;
+        const itemEl = target?.closest(
+          "[data-history-item]"
+        ) as HTMLElement | null;
+        if (itemEl && itemEl.getAttribute("data-history-item") === itemMenuId) {
+          return; // Click inside the currently open item's area → ignore
+        }
+      } catch {}
+      setItemMenuId(null);
+      setItemMenuPos(null);
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setItemMenuId(null);
+    };
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [itemMenuId]);
+
   const displayName =
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
@@ -86,6 +124,73 @@ export default function LeftSidebar() {
     const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
     return (first + last).toUpperCase();
   })();
+
+  const [history, setHistory] = useState<
+    { id: string; title: string; created_at?: string }[]
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (status !== "authenticated") return;
+    (async () => {
+      try {
+        const res = await fetch("/api/history", { cache: "no-store" });
+        const j = await res.json().catch(() => ({ items: [] }));
+        if (!cancelled)
+          setHistory(
+            (j.items || []).map((r: any) => ({
+              id: r.id,
+              title: r.title,
+              created_at: r.created_at,
+            }))
+          );
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  const shareHistoryItem = async (prettyHref: string) => {
+    try {
+      const url = new URL(prettyHref, window.location.origin).toString();
+      if ((navigator as any).share) {
+        await (navigator as any).share({ title: "Snap My Date", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        // eslint-disable-next-line no-alert
+        alert("Link copied to clipboard");
+      }
+    } catch {}
+  };
+
+  const renameHistoryItem = async (id: string, currentTitle: string) => {
+    // eslint-disable-next-line no-alert
+    const next = prompt("Rename event", currentTitle || "");
+    if (next == null) return; // cancelled
+    const title = next.trim();
+    if (!title) return;
+    try {
+      await fetch(`/api/history/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      setHistory((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, title } : r))
+      );
+    } catch {}
+  };
+
+  const deleteHistoryItem = async (id: string) => {
+    // eslint-disable-next-line no-alert
+    const ok = confirm("Delete this event? This cannot be undone.");
+    if (!ok) return;
+    try {
+      await fetch(`/api/history/${id}`, { method: "DELETE" });
+      setHistory((prev) => prev.filter((r) => r.id !== id));
+    } catch {}
+  };
 
   if (status !== "authenticated") return null;
 
@@ -438,7 +543,7 @@ export default function LeftSidebar() {
 
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 h-full z-[300] border-r border-border bg-surface/70 backdrop-blur supports-[backdrop-filter]:bg-surface/70 flex flex-col ${
+        className={`fixed left-0 top-0 h-full z-[6000] border-r border-border bg-surface/70 backdrop-blur supports-[backdrop-filter]:bg-surface/70 flex flex-col ${
           isOpen ? "overflow-visible" : "overflow-hidden"
         } transition-[width,opacity] duration-200 ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
@@ -481,8 +586,195 @@ export default function LeftSidebar() {
           </div>
         </div>
 
-        {/* Middle: empty for now */}
-        <div className="flex-1" />
+        {/* Middle: Event history */}
+        <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
+          <div className="p-3 space-y-2">
+            <div className="px-2 text-xs uppercase tracking-wide text-foreground/60">
+              Recent events
+            </div>
+            <nav className="space-y-1">
+              {history.length === 0 && (
+                <div className="px-2 py-2 text-foreground/60 text-sm">
+                  No history yet
+                </div>
+              )}
+              {history.map((h) => {
+                const slug = (h.title || "")
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-+|-+$/g, "");
+                const uid = (session?.user as any)?.id as string | undefined;
+                const prettyHref =
+                  uid && slug ? `/${uid}/event/${slug}` : `/event/${h.id}`;
+                return (
+                  <div
+                    key={h.id}
+                    data-history-item={h.id}
+                    className="relative px-2 py-2 rounded-md hover:bg-surface/70 text-sm"
+                  >
+                    <Link
+                      href={prettyHref}
+                      className="block pr-8"
+                      title={h.title}
+                    >
+                      <div className="truncate">
+                        {h.title || "Untitled event"}
+                      </div>
+                      <div className="text-xs text-foreground/60">
+                        {h.created_at
+                          ? new Date(h.created_at).toLocaleDateString()
+                          : ""}
+                      </div>
+                    </Link>
+                    <button
+                      type="button"
+                      aria-label="Item options"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = e.currentTarget as HTMLElement | null;
+                        if (itemMenuId === h.id) {
+                          setItemMenuId(null);
+                          setItemMenuPos(null);
+                          return;
+                        }
+                        if (target) {
+                          const rect = target.getBoundingClientRect();
+                          setItemMenuPos({
+                            left: Math.round(rect.right + 8),
+                            top: Math.round(rect.top + rect.height / 2),
+                          });
+                        }
+                        setItemMenuId(h.id);
+                      }}
+                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <circle cx="5" cy="12" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="19" cy="12" r="1.5" />
+                      </svg>
+                    </button>
+                    {itemMenuId === h.id &&
+                      itemMenuPos &&
+                      createPortal(
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            position: "fixed",
+                            left: itemMenuPos.left,
+                            top: itemMenuPos.top,
+                            transform: "translateY(-10%)",
+                          }}
+                          className="z-[10000] w-32 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
+                        >
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuId(null);
+                              setItemMenuPos(null);
+                              await shareHistoryItem(prettyHref);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            >
+                              <circle cx="18" cy="5" r="3" />
+                              <circle cx="6" cy="12" r="3" />
+                              <circle cx="18" cy="19" r="3" />
+                              <line
+                                x1="8.59"
+                                y1="13.51"
+                                x2="15.42"
+                                y2="17.49"
+                              />
+                              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                            </svg>
+                            <span className="text-sm">Share</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuId(null);
+                              setItemMenuPos(null);
+                              await renameHistoryItem(h.id, h.title);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                            <span className="text-sm">Rename</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuId(null);
+                              setItemMenuPos(null);
+                              await deleteHistoryItem(h.id);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                            <span className="text-sm">Delete</span>
+                          </button>
+                        </div>,
+                        document.body
+                      )}
+                  </div>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
 
         {/* Bottom: User button with dropdown */}
         <div className="border-t border-border p-3">

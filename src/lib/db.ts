@@ -150,7 +150,7 @@ export async function verifyPassword(password: string, passwordHash: string): Pr
   return timingSafeEqual(storedKey, derivedKey);
 }
 
-async function getUserIdByEmail(email: string): Promise<string | null> {
+export async function getUserIdByEmail(email: string): Promise<string | null> {
   const lower = email.toLowerCase();
   const res = await query<{ id: string }>(`select id from users where email = $1 limit 1`, [lower]);
   return res.rows[0]?.id || null;
@@ -309,6 +309,93 @@ export async function updateSubscriptionPlanByEmail(params: {
   await ensureUsersHasSubscriptionPlanColumn();
   const lower = params.email.toLowerCase();
   await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
+}
+
+// Event history
+export type EventHistoryRow = {
+  id: string;
+  user_id?: string | null;
+  title: string;
+  data: any;
+  created_at?: string;
+};
+
+export async function insertEventHistory(params: {
+  userId?: string | null;
+  title: string;
+  data: any;
+}): Promise<EventHistoryRow> {
+  const res = await query<EventHistoryRow>(
+    `insert into event_history (user_id, title, data)
+     values ($1, $2, $3)
+     returning id, user_id, title, data, created_at`,
+    [params.userId || null, params.title, JSON.stringify(params.data)]
+  );
+  return res.rows[0];
+}
+
+export async function getEventHistoryById(id: string): Promise<EventHistoryRow | null> {
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, data, created_at
+     from event_history
+     where id = $1
+     limit 1`,
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
+export async function updateEventHistoryTitle(id: string, title: string): Promise<EventHistoryRow | null> {
+  const res = await query<EventHistoryRow>(
+    `update event_history
+     set title = $2
+     where id = $1
+     returning id, user_id, title, data, created_at`,
+    [id, title]
+  );
+  return res.rows[0] || null;
+}
+
+export async function deleteEventHistoryById(id: string): Promise<void> {
+  await query(`delete from event_history where id = $1`, [id]);
+}
+
+function slugifyTitleForQuery(title: string): string {
+  return (title || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function getEventHistoryByUserAndSlug(userId: string, slug: string): Promise<EventHistoryRow | null> {
+  // Fetch a handful of recent events and match by slug server-side to avoid DB funcs
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, data, created_at
+     from event_history
+     where user_id = $1
+     order by created_at desc
+     limit 200`,
+    [userId]
+  );
+  const rows = res.rows || [];
+  const target = slug.toLowerCase();
+  for (const r of rows) {
+    const s = slugifyTitleForQuery(r.title || "");
+    if (s && s === target) return r;
+  }
+  return null;
+}
+
+export async function listEventHistoryByUser(userId: string, limit: number = 50): Promise<EventHistoryRow[]> {
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, data, created_at
+     from event_history
+     where user_id = $1
+     order by created_at desc
+     limit $2`,
+    [userId, Math.max(1, Math.min(200, limit))]
+  );
+  return res.rows;
 }
 
 export type PasswordResetRow = {
