@@ -6,6 +6,7 @@ import { useTheme } from "./providers";
 import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/assets/logo.png";
+import { preparePickedImage } from "@/utils/pickImage";
 
 type EventFields = {
   title: string;
@@ -216,12 +217,32 @@ export default function Home() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const onFile = (f: File | null) => {
-    setFile(f);
-    if (f) ingest(f);
+  const onFile = async (f: File | null) => {
     // Always clear inputs so selecting the same file again triggers onChange
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    try {
+      // Pass PDFs straight through; convert and downscale images
+      if (/pdf/i.test(f.type)) {
+        setFile(f);
+        await ingest(f);
+        return;
+      }
+      const prepared = await preparePickedImage(f, {
+        maxSide: 2000,
+        quality: 0.85,
+      });
+      setFile(prepared.file);
+      await ingest(prepared.file);
+    } catch {
+      // Fallback to original if processing fails
+      setFile(f);
+      await ingest(f);
+    }
   };
 
   const ingest = async (f?: File | null) => {
