@@ -342,11 +342,19 @@ export default function Home() {
       (window as any).__lastEventId = j?.id;
       try {
         const createdId = (j as any)?.id;
-        const createdTitle = payload.title;
+        const createdTitle = (j as any)?.title || payload.title;
+        const createdAt = (j as any)?.created_at || new Date().toISOString();
+        const createdStart =
+          (j as any)?.data?.start || (payload as any)?.data?.start || null;
         if (createdId && typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("history:created", {
-              detail: { id: createdId, title: createdTitle },
+              detail: {
+                id: createdId,
+                title: createdTitle,
+                created_at: createdAt,
+                start: createdStart,
+              },
             })
           );
         }

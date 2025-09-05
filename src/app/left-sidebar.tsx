@@ -59,14 +59,16 @@ export default function LeftSidebar() {
   }, [isOpen, setIsCollapsed]);
 
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
+    const onOutside = (e: Event) => {
       if (!menuOpen) return;
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(e.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node | null;
+      const withinMenu = menuRef.current
+        ? menuRef.current.contains(target as Node)
+        : false;
+      const withinButton = buttonRef.current
+        ? buttonRef.current.contains(target as Node)
+        : false;
+      if (!withinMenu && !withinButton) {
         setMenuOpen(false);
         setResourcesOpen(false);
         setResourcesOpenFloating(false);
@@ -79,10 +81,19 @@ export default function LeftSidebar() {
         setResourcesOpenFloating(false);
       }
     };
-    document.addEventListener("click", onDown);
+    // Use capture phase so it still triggers if inner handlers stop propagation
+    document.addEventListener("pointerdown", onOutside, true);
+    document.addEventListener("mousedown", onOutside, true);
+    document.addEventListener("touchstart", onOutside, true);
+    document.addEventListener("click", onOutside, true);
+    document.addEventListener("focusin", onOutside, true);
     document.addEventListener("keydown", onEsc);
     return () => {
-      document.removeEventListener("click", onDown);
+      document.removeEventListener("pointerdown", onOutside, true);
+      document.removeEventListener("mousedown", onOutside, true);
+      document.removeEventListener("touchstart", onOutside, true);
+      document.removeEventListener("click", onOutside, true);
+      document.removeEventListener("focusin", onOutside, true);
       document.removeEventListener("keydown", onEsc);
     };
   }, [menuOpen]);
@@ -129,7 +140,7 @@ export default function LeftSidebar() {
   })();
 
   const [history, setHistory] = useState<
-    { id: string; title: string; created_at?: string }[]
+    { id: string; title: string; created_at?: string; data?: any }[]
   >([]);
 
   useEffect(() => {
@@ -145,6 +156,7 @@ export default function LeftSidebar() {
               id: r.id,
               title: r.title,
               created_at: r.created_at,
+              data: r.data,
             }))
           );
       } catch {}
@@ -157,8 +169,26 @@ export default function LeftSidebar() {
   useEffect(() => {
     if (status !== "authenticated") return;
     let cancelled = false;
-    const onCreated = async () => {
+    const onCreated = async (e: Event) => {
       try {
+        const anyEvent = e as any;
+        const detail = (anyEvent && anyEvent.detail) || null;
+        if (detail && detail.id) {
+          // Optimistically prepend; avoid duplicates
+          setHistory((prev) => {
+            const exists = prev.some((r) => r.id === detail.id);
+            const nextItem = {
+              id: String(detail.id),
+              title: String(detail.title || "Event"),
+              created_at: String(detail.created_at || new Date().toISOString()),
+              data: detail.start ? { start: String(detail.start) } : undefined,
+            } as { id: string; title: string; created_at?: string; data?: any };
+            const next = exists ? prev : [nextItem, ...prev];
+            return next.slice(0, 200);
+          });
+          return;
+        }
+        // Fallback: full refetch
         const res = await fetch("/api/history", { cache: "no-store" });
         const j = await res.json().catch(() => ({ items: [] }));
         if (!cancelled)
@@ -167,6 +197,7 @@ export default function LeftSidebar() {
               id: r.id,
               title: r.title,
               created_at: r.created_at,
+              data: r.data,
             }))
           );
       } catch {}
@@ -286,7 +317,7 @@ export default function LeftSidebar() {
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="hidden md:block fixed bottom-16 left-3 z-[1000] w-72 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
+              className="hidden md:block fixed bottom-16 left-3 z-[1000] w-64 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
             >
               <div className="p-2">
                 <Link
@@ -630,6 +661,15 @@ export default function LeftSidebar() {
             <div className="px-0">
               <Link
                 href="/"
+                onClick={() => {
+                  try {
+                    const isDesktop =
+                      typeof window !== "undefined" &&
+                      typeof window.matchMedia === "function" &&
+                      window.matchMedia("(min-width: 768px)").matches;
+                    if (!isDesktop) setIsCollapsed(true);
+                  } catch {}
+                }}
                 className="block px-2 py-2 rounded-md hover:bg-surface/70 text-sm"
               >
                 <div className="flex items-center gap-2 pl-0">
@@ -683,9 +723,15 @@ export default function LeftSidebar() {
                         {h.title || "Untitled event"}
                       </div>
                       <div className="text-xs text-foreground/60">
-                        {h.created_at
-                          ? new Date(h.created_at).toLocaleDateString()
-                          : ""}
+                        {(() => {
+                          const start =
+                            (h as any)?.data?.start ||
+                            (h as any)?.data?.event?.start;
+                          const dateStr = start || h.created_at;
+                          return dateStr
+                            ? new Date(dateStr).toLocaleDateString()
+                            : "";
+                        })()}
                       </div>
                     </Link>
                     <button
@@ -879,7 +925,7 @@ export default function LeftSidebar() {
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="absolute bottom-12 left-0 right-0 z-[1000] rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
+                className="absolute bottom-12 left-0 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
               >
                 <div className="p-2">
                   <Link
@@ -1036,7 +1082,7 @@ export default function LeftSidebar() {
                     </button>
 
                     {resourcesOpen && (
-                      <div className="absolute left-0 bottom-full mb-2 md:bottom-auto md:top-0 md:left-full md:ml-2 w-64 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2 z-[1100]">
+                      <div className="absolute left-0 bottom-full mb-2 md:bottom-auto md:top-0 md:left-full md:ml-2 w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2 z-[1100]">
                         <Link
                           href="/about"
                           onClick={() => {
