@@ -20,31 +20,37 @@ export async function middleware(req: NextRequest) {
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml"
   ) {
-    if (pathname === "/signup") {
+    return ok();
+  }
+
+  const hasSession =
+    req.cookies.has("__Secure-next-auth.session-token") ||
+    req.cookies.has("next-auth.session-token");
+
+  // Hide landing from authenticated users
+  if (pathname === "/landing") {
+    if (hasSession) {
       const url = req.nextUrl.clone();
-      url.pathname = "/landing";
-      return NextResponse.redirect(url);
+      url.pathname = "/";
+      return NextResponse.redirect(url, 308);
     }
     return ok();
   }
 
-  if (pathname === "/landing" || pathname === "/verify-request") {
+  if (pathname === "/verify-request") {
     return ok();
   }
 
-  if (pathname === "/") {
-    const hasSession =
-      req.cookies.has("__Secure-next-auth.session-token") ||
-      req.cookies.has("next-auth.session-token");
+  // Keep the homepage publicly accessible (no auth redirects)
 
-    if (!hasSession) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/landing";
-      return NextResponse.redirect(url);
-    }
+  // Optional: redirect legacy /signup to the public landing page
+  if (pathname === "/signup") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/landing";
+    return NextResponse.redirect(url, 308);
   }
 
   return ok();
 }
 
-export const config = { matcher: ["/", "/signup"] };
+export const config = { matcher: ["/((?!_next|api|public|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map)).*)"] };
