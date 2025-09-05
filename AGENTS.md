@@ -15,7 +15,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback.
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
-- **Output**: JSON with extracted text and best-guess fields. Also detects football multi-game schedules and returns normalized events.
+- **Output**: JSON with extracted text and best-guess fields. Also detects football multi-game schedules and returns normalized events. Includes a heuristic `category` when detectable.
 
 ```bash
 curl -X POST \
@@ -35,6 +35,7 @@ curl -X POST \
     "description": "Alice’s Birthday Party...",
     "timezone": "America/Chicago"
   },
+  "category": "Birthdays",
   "schedule": {
     "detected": true,
     "homeTeam": "Chicago Tigers",
@@ -77,7 +78,7 @@ curl -X POST \
 - **Purpose**: Simpler OCR and chrono-based parse; quick baseline.
 - **Auth**: None.
 - **Input**: `multipart/form-data` `file`.
-- **Output**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events }`.
+- **Output**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events, category }`.
 - **Env**: Same GCP Vision credentials as above. No LLM usage here.
 
 ### ICS Agent — GET `/api/ics`

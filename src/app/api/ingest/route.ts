@@ -58,6 +58,24 @@ export async function POST(request: Request) {
     const schedule = parseFootballSchedule(raw, tz);
     const events = scheduleToEvents(schedule, tz);
 
+    // Category detection (lightweight)
+    const detectCategory = (fullText: string, sched: any): string | null => {
+      try {
+        if (sched && typeof sched.detected === "boolean" && sched.detected) return "Football Schedule";
+        if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
+        const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(fullText);
+        const hasAppt = /(appointment|appt)/i.test(fullText);
+        if (isDoctorLike && hasAppt) return "Doctor Appointments";
+        if (isDoctorLike) return "Doctor Appointments";
+        if (hasAppt) return "Appointments";
+        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(football|soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
+          return "Sport Schedule";
+        }
+      } catch {}
+      return null;
+    };
+    const category = detectCategory(raw, schedule);
+
     return NextResponse.json({
       ocrText: raw,
       event: {
@@ -70,6 +88,7 @@ export async function POST(request: Request) {
       },
       schedule,
       events,
+      category,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

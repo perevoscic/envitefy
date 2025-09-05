@@ -151,6 +151,265 @@ export default function LeftSidebar() {
   const [history, setHistory] = useState<
     { id: string; title: string; created_at?: string; data?: any }[]
   >([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
+    {}
+  );
+  const [colorMenuFor, setColorMenuFor] = useState<string | null>(null);
+  const [colorMenuPos, setColorMenuPos] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+
+  // Default color per known category
+  const defaultCategoryColor = (c: string): string => {
+    if (c === "Birthdays") return "pink";
+    if (c === "Doctor Appointments") return "emerald";
+    if (c === "Appointments") return "amber";
+    if (c === "Football Schedule") return "sky";
+    if (c === "Sport Schedule") return "indigo";
+    return "slate"; // neutral fallback
+  };
+
+  useEffect(() => {
+    // Load stored colors once
+    try {
+      const raw = localStorage.getItem("categoryColors");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") setCategoryColors(parsed);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const onDocClick = () => {
+      setColorMenuFor(null);
+      setColorMenuPos(null);
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setColorMenuFor(null);
+        setColorMenuPos(null);
+      }
+    };
+    if (colorMenuFor) {
+      document.addEventListener("click", onDocClick);
+      document.addEventListener("keydown", onEsc);
+    }
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [colorMenuFor]);
+
+  useEffect(() => {
+    // Ensure categories present in history have defaults
+    try {
+      const categories = Array.from(
+        new Set(
+          history
+            .map((h) => (h as any)?.data?.category as string | null)
+            .filter((c): c is string => Boolean(c))
+        )
+      );
+      if (categories.length === 0) return;
+      setCategoryColors((prev) => {
+        const next = { ...prev } as Record<string, string>;
+        let changed = false;
+        for (const c of categories)
+          if (!next[c]) {
+            next[c] = defaultCategoryColor(c);
+            changed = true;
+          }
+        if (changed) {
+          try {
+            localStorage.setItem("categoryColors", JSON.stringify(next));
+          } catch {}
+        }
+        return next;
+      });
+    } catch {}
+  }, [history]);
+
+  const cycleCategoryColor = (category: string) => {
+    const palette = [
+      "pink",
+      "rose",
+      "fuchsia",
+      "violet",
+      "indigo",
+      "sky",
+      "cyan",
+      "green",
+      "emerald",
+      "amber",
+      "orange",
+    ];
+    setCategoryColors((prev) => {
+      const current = prev[category] || defaultCategoryColor(category);
+      const idx = palette.indexOf(current);
+      const nextColor = palette[(idx + 1) % palette.length];
+      const next = { ...prev, [category]: nextColor };
+      try {
+        localStorage.setItem("categoryColors", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const colorClasses = (
+    color: string
+  ): { swatch: string; badge: string; tint: string; hoverTint: string } => {
+    switch (color) {
+      case "red":
+        return {
+          swatch: "bg-red-500 border-red-400",
+          badge: "bg-red-500/20 text-red-300 border-red-400/30",
+          tint: "bg-red-500/10",
+          hoverTint: "hover:bg-red-500/15",
+        };
+      case "pink":
+        return {
+          swatch: "bg-pink-500 border-pink-400",
+          badge: "bg-pink-500/20 text-pink-300 border-pink-400/30",
+          tint: "bg-pink-500/10",
+          hoverTint: "hover:bg-pink-500/15",
+        };
+      case "rose":
+        return {
+          swatch: "bg-rose-500 border-rose-400",
+          badge: "bg-rose-500/20 text-rose-300 border-rose-400/30",
+          tint: "bg-rose-500/10",
+          hoverTint: "hover:bg-rose-500/15",
+        };
+      case "fuchsia":
+        return {
+          swatch: "bg-fuchsia-500 border-fuchsia-400",
+          badge: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/30",
+          tint: "bg-fuchsia-500/10",
+          hoverTint: "hover:bg-fuchsia-500/15",
+        };
+      case "violet":
+        return {
+          swatch: "bg-violet-500 border-violet-400",
+          badge: "bg-violet-500/20 text-violet-300 border-violet-400/30",
+          tint: "bg-violet-500/10",
+          hoverTint: "hover:bg-violet-500/15",
+        };
+      case "purple":
+        return {
+          swatch: "bg-purple-500 border-purple-400",
+          badge: "bg-purple-500/20 text-purple-300 border-purple-400/30",
+          tint: "bg-purple-500/10",
+          hoverTint: "hover:bg-purple-500/15",
+        };
+      case "indigo":
+        return {
+          swatch: "bg-indigo-500 border-indigo-400",
+          badge: "bg-indigo-500/20 text-indigo-300 border-indigo-400/30",
+          tint: "bg-indigo-500/10",
+          hoverTint: "hover:bg-indigo-500/15",
+        };
+      case "blue":
+        return {
+          swatch: "bg-blue-500 border-blue-400",
+          badge: "bg-blue-500/20 text-blue-300 border-blue-400/30",
+          tint: "bg-blue-500/10",
+          hoverTint: "hover:bg-blue-500/15",
+        };
+      case "sky":
+        return {
+          swatch: "bg-sky-500 border-sky-400",
+          badge: "bg-sky-500/20 text-sky-300 border-sky-400/30",
+          tint: "bg-sky-500/10",
+          hoverTint: "hover:bg-sky-500/15",
+        };
+      case "cyan":
+        return {
+          swatch: "bg-cyan-500 border-cyan-400",
+          badge: "bg-cyan-500/20 text-cyan-300 border-cyan-400/30",
+          tint: "bg-cyan-500/10",
+          hoverTint: "hover:bg-cyan-500/15",
+        };
+      case "teal":
+        return {
+          swatch: "bg-teal-500 border-teal-400",
+          badge: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+          tint: "bg-teal-500/10",
+          hoverTint: "hover:bg-teal-500/15",
+        };
+      case "emerald":
+        return {
+          swatch: "bg-emerald-500 border-emerald-400",
+          badge: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
+          tint: "bg-emerald-500/10",
+          hoverTint: "hover:bg-emerald-500/15",
+        };
+      case "green":
+        return {
+          swatch: "bg-green-500 border-green-400",
+          badge: "bg-green-500/20 text-green-300 border-green-400/30",
+          tint: "bg-green-500/10",
+          hoverTint: "hover:bg-green-500/15",
+        };
+      case "lime":
+        return {
+          swatch: "bg-lime-500 border-lime-400",
+          badge: "bg-lime-500/20 text-lime-300 border-lime-400/30",
+          tint: "bg-lime-500/10",
+          hoverTint: "hover:bg-lime-500/15",
+        };
+      case "yellow":
+        return {
+          swatch: "bg-yellow-500 border-yellow-400",
+          badge: "bg-yellow-500/20 text-yellow-300 border-yellow-400/30",
+          tint: "bg-yellow-500/10",
+          hoverTint: "hover:bg-yellow-500/15",
+        };
+      case "amber":
+        return {
+          swatch: "bg-amber-500 border-amber-400",
+          badge: "bg-amber-500/20 text-amber-300 border-amber-400/30",
+          tint: "bg-amber-500/10",
+          hoverTint: "hover:bg-amber-500/15",
+        };
+      case "orange":
+        return {
+          swatch: "bg-orange-500 border-orange-400",
+          badge: "bg-orange-500/20 text-orange-300 border-orange-400/30",
+          tint: "bg-orange-500/10",
+          hoverTint: "hover:bg-orange-500/15",
+        };
+      case "slate":
+        return {
+          swatch: "bg-slate-500 border-slate-400",
+          badge: "bg-slate-500/20 text-slate-300 border-slate-400/30",
+          tint: "bg-slate-500/10",
+          hoverTint: "hover:bg-slate-500/15",
+        };
+      default:
+        return {
+          swatch: "bg-foreground/40 border-border/60",
+          badge: "bg-surface/70 text-foreground/70 border-border/70",
+          tint: "bg-surface/60",
+          hoverTint: "hover:bg-surface/70",
+        };
+    }
+  };
+
+  const setCategoryColor = (category: string, color: string) => {
+    if (!category) return;
+    setCategoryColors((prev) => {
+      const next = { ...prev, [category]: color } as Record<string, string>;
+      try {
+        localStorage.setItem("categoryColors", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setColorMenuFor(null);
+    setColorMenuPos(null);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1005,10 +1264,93 @@ export default function LeftSidebar() {
                   <span>New snap</span>
                 </div>
               </Link>
+              {(() => {
+                const categories = Array.from(
+                  new Set(
+                    history
+                      .map((h) => (h as any)?.data?.category as string | null)
+                      .filter((c): c is string => Boolean(c))
+                  )
+                );
+                if (categories.length === 0) return null;
+                const buttonClass = (_c: string) => {
+                  return `hover:bg-surface/70`;
+                };
+                return (
+                  <div className="mt-2 space-y-1">
+                    {categories.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setActiveCategory(c)}
+                        className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${buttonClass(
+                          c
+                        )}`}
+                        aria-pressed={activeCategory === c}
+                        title={c}
+                      >
+                        <span className="truncate inline-flex items-center gap-2">
+                          {/* Cake icon for Birthdays; default dot otherwise */}
+                          {c === "Birthdays" ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            >
+                              <path d="M18,8H13V5H11V8H6a4,4,0,0,0-4,4v9H22V12A4,4,0,0,0,18,8Zm2,11H4V16a3.78,3.78,0,0,0,2.71-1.3,1.54,1.54,0,0,1,2.58,0,3.49,3.49,0,0,0,5.42,0,1.54,1.54,0,0,1,2.58,0A3.78,3.78,0,0,0,20,16Zm0-5a2,2,0,0,1-1.29-.7,3.49,3.49,0,0,0-5.42,0,1.54,1.54,0,0,1-2.58,0,3.49,3.49,0,0,0-5.42,0A2,2,0,0,1,4,14V12a2,2,0,0,1,2-2H18a2,2,0,0,1,2,2ZM12,4.19a1.55,1.55,0,0,0,1.55-1.55C13.55,1.4,12,0,12,0s-1.55,1.4-1.55,2.64A1.55,1.55,0,0,0,12,4.19Z" />
+                            </svg>
+                          ) : (
+                            <span className="inline-block h-2 w-2 rounded-full bg-foreground/70" />
+                          )}
+                          {c}
+                        </span>
+                        {(() => {
+                          const color =
+                            categoryColors[c] || defaultCategoryColor(c);
+                          const ccls = colorClasses(color);
+                          return (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Edit ${c} color`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  const rect = (
+                                    e.currentTarget as HTMLElement
+                                  ).getBoundingClientRect();
+                                  setColorMenuPos({
+                                    left: Math.round(rect.right + 8),
+                                    top: Math.round(rect.top + rect.height / 2),
+                                  });
+                                } catch {
+                                  setColorMenuPos(null);
+                                }
+                                setColorMenuFor(c);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  (e.currentTarget as HTMLElement).click();
+                                }
+                              }}
+                              className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
+                              title="Edit color"
+                            />
+                          );
+                        })()}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
             <div className="border-t border-border mx-2 my-3" />
             <div className="px-2 text-xs uppercase tracking-wide text-foreground/60">
-              Recent events
+              Recent scans
             </div>
             <nav className="space-y-1">
               {history.length === 0 && (
@@ -1016,193 +1358,244 @@ export default function LeftSidebar() {
                   No history yet
                 </div>
               )}
-              {history.map((h) => {
-                const slug = (h.title || "")
-                  .toLowerCase()
-                  .replace(/[^a-z0-9]+/g, "-")
-                  .replace(/^-+|-+$/g, "");
-                const prettyHref = `/event/${slug}-${h.id}`;
-                return (
-                  <div
-                    key={h.id}
-                    data-history-item={h.id}
-                    className="relative px-2 py-2 rounded-md hover:bg-surface/70 text-sm"
-                  >
-                    <Link
-                      href={prettyHref}
-                      onClick={() => {
-                        try {
-                          const isDesktop =
-                            typeof window !== "undefined" &&
-                            typeof window.matchMedia === "function" &&
-                            window.matchMedia("(min-width: 768px)").matches;
-                          if (!isDesktop) setIsCollapsed(true);
-                        } catch {}
-                      }}
-                      className="block pr-8"
-                      title={h.title}
+              {history
+                .filter((h) => {
+                  // Filter by category if selected
+                  const c = (h as any)?.data?.category as string | null;
+                  if (!activeCategory) return true;
+                  return c === activeCategory;
+                })
+                .filter((h) => {
+                  // Hide past birthdays for the Birthdays filter
+                  if (activeCategory === "Birthdays") {
+                    const startISO = (h as any)?.data?.startISO as
+                      | string
+                      | null;
+                    const start = startISO ? new Date(startISO) : null;
+                    if (start && !isNaN(start.getTime())) {
+                      return (
+                        start.getTime() >= Date.now() - 24 * 60 * 60 * 1000
+                      );
+                    }
+                  }
+                  return true;
+                })
+                .map((h) => {
+                  const slug = (h.title || "")
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-+|-+$/g, "");
+                  const prettyHref = `/event/${slug}-${h.id}`;
+                  const category = (h as any)?.data?.category as string | null;
+                  const rowAndBadge = (() => {
+                    if (!category)
+                      return {
+                        row: "",
+                        badge:
+                          "bg-surface/70 text-foreground/70 border-border/70",
+                      };
+                    const color =
+                      categoryColors[category] ||
+                      defaultCategoryColor(category);
+                    const ccls = colorClasses(color);
+                    const row = category === "Birthdays" ? ccls.tint : "";
+                    return { row, badge: ccls.badge };
+                  })();
+                  return (
+                    <div
+                      key={h.id}
+                      data-history-item={h.id}
+                      className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
                     >
-                      <div className="truncate">
-                        {h.title || "Untitled event"}
-                      </div>
-                      <div className="text-xs text-foreground/60">
-                        {(() => {
-                          const start =
-                            (h as any)?.data?.start ||
-                            (h as any)?.data?.event?.start;
-                          const dateStr = start || h.created_at;
-                          return dateStr
-                            ? new Date(dateStr).toLocaleDateString()
-                            : "";
-                        })()}
-                      </div>
-                    </Link>
-                    <button
-                      type="button"
-                      aria-label="Item options"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const target = e.currentTarget as HTMLElement | null;
-                        if (itemMenuId === h.id) {
-                          setItemMenuId(null);
-                          setItemMenuPos(null);
-                          return;
-                        }
-                        if (target) {
-                          const rect = target.getBoundingClientRect();
-                          setItemMenuPos({
-                            left: Math.round(rect.right + 8),
-                            top: Math.round(rect.top + rect.height / 2),
-                          });
-                        }
-                        setItemMenuId(h.id);
-                      }}
-                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="h-4 w-4"
-                        aria-hidden="true"
+                      <Link
+                        href={prettyHref}
+                        onClick={() => {
+                          try {
+                            const isDesktop =
+                              typeof window !== "undefined" &&
+                              typeof window.matchMedia === "function" &&
+                              window.matchMedia("(min-width: 768px)").matches;
+                            if (!isDesktop) setIsCollapsed(true);
+                          } catch {}
+                        }}
+                        className="block pr-8"
+                        title={h.title}
                       >
-                        <circle cx="5" cy="12" r="1.5" />
-                        <circle cx="12" cy="12" r="1.5" />
-                        <circle cx="19" cy="12" r="1.5" />
-                      </svg>
-                    </button>
-                    {itemMenuId === h.id &&
-                      itemMenuPos &&
-                      createPortal(
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            position: "fixed",
-                            left: itemMenuPos.left,
-                            top: itemMenuPos.top,
-                            transform: "translateY(-10%)",
-                          }}
-                          className="z-[10000] w-32 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
+                        <div className="truncate flex items-center gap-2">
+                          {category && category !== "Birthdays" && (
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] ${rowAndBadge.badge}`}
+                            >
+                              {category}
+                            </span>
+                          )}
+                          <span className="truncate">
+                            {h.title || "Untitled event"}
+                          </span>
+                        </div>
+                        <div className="text-xs text-foreground/60">
+                          {(() => {
+                            const start =
+                              (h as any)?.data?.start ||
+                              (h as any)?.data?.event?.start;
+                            const dateStr = start || h.created_at;
+                            return dateStr
+                              ? new Date(dateStr).toLocaleDateString()
+                              : "";
+                          })()}
+                        </div>
+                      </Link>
+                      <button
+                        type="button"
+                        aria-label="Item options"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const target = e.currentTarget as HTMLElement | null;
+                          if (itemMenuId === h.id) {
+                            setItemMenuId(null);
+                            setItemMenuPos(null);
+                            return;
+                          }
+                          if (target) {
+                            const rect = target.getBoundingClientRect();
+                            setItemMenuPos({
+                              left: Math.round(rect.right + 8),
+                              top: Math.round(rect.top + rect.height / 2),
+                            });
+                          }
+                          setItemMenuId(h.id);
+                        }}
+                        className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                          aria-hidden="true"
                         >
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuId(null);
-                              setItemMenuPos(null);
-                              await shareHistoryItem(prettyHref);
+                          <circle cx="5" cy="12" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="19" cy="12" r="1.5" />
+                        </svg>
+                      </button>
+                      {itemMenuId === h.id &&
+                        itemMenuPos &&
+                        createPortal(
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "fixed",
+                              left: itemMenuPos.left,
+                              top: itemMenuPos.top,
+                              transform: "translateY(-10%)",
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                            className="z-[10000] w-32 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuId(null);
+                                setItemMenuPos(null);
+                                await shareHistoryItem(prettyHref);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                             >
-                              <circle cx="18" cy="5" r="3" />
-                              <circle cx="6" cy="12" r="3" />
-                              <circle cx="18" cy="19" r="3" />
-                              <line
-                                x1="8.59"
-                                y1="13.51"
-                                x2="15.42"
-                                y2="17.49"
-                              />
-                              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                            </svg>
-                            <span className="text-sm">Share</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuId(null);
-                              setItemMenuPos(null);
-                              await renameHistoryItem(h.id, h.title);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <circle cx="18" cy="5" r="3" />
+                                <circle cx="6" cy="12" r="3" />
+                                <circle cx="18" cy="19" r="3" />
+                                <line
+                                  x1="8.59"
+                                  y1="13.51"
+                                  x2="15.42"
+                                  y2="17.49"
+                                />
+                                <line
+                                  x1="15.41"
+                                  y1="6.51"
+                                  x2="8.59"
+                                  y2="10.49"
+                                />
+                              </svg>
+                              <span className="text-sm">Share</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuId(null);
+                                setItemMenuPos(null);
+                                await renameHistoryItem(h.id, h.title);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                             >
-                              <path d="M12 20h9" />
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                            </svg>
-                            <span className="text-sm">Rename</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuId(null);
-                              setItemMenuPos(null);
-                              await deleteHistoryItem(h.id);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                              </svg>
+                              <span className="text-sm">Rename</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuId(null);
+                                setItemMenuPos(null);
+                                await deleteHistoryItem(h.id);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
                             >
-                              <path d="M3 6h18" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              <line x1="10" y1="11" x2="10" y2="17" />
-                              <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                            <span className="text-sm">Delete</span>
-                          </button>
-                        </div>,
-                        document.body
-                      )}
-                  </div>
-                );
-              })}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
+                              <span className="text-sm">Delete</span>
+                            </button>
+                          </div>,
+                          document.body
+                        )}
+                    </div>
+                  );
+                })}
             </nav>
           </div>
         </div>
@@ -1541,6 +1934,73 @@ export default function LeftSidebar() {
           </div>
         </div>
       </aside>
+      {colorMenuFor &&
+        colorMenuPos &&
+        createPortal(
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              left: colorMenuPos.left,
+              top: colorMenuPos.top,
+              transform: "translateY(-50%)",
+            }}
+            className="z-[12000] w-[220px] rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
+          >
+            <div className="px-2 py-1 text-xs uppercase tracking-wide text-foreground/60 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-3.5 w-3.5"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M8.56078 20.2501L20.5608 8.25011L15.7501 3.43945L3.75012 15.4395V20.2501H8.56078ZM15.7501 5.56077L18.4395 8.25011L16.5001 10.1895L13.8108 7.50013L15.7501 5.56077ZM12.7501 8.56079L15.4395 11.2501L7.93946 18.7501H5.25012L5.25012 16.0608L12.7501 8.56079Z"
+                />
+              </svg>
+              Edit color
+            </div>
+            <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
+              {(
+                [
+                  "red",
+                  "pink",
+                  "violet",
+                  "blue",
+                  "teal",
+                  "green",
+                  "yellow",
+                  "orange",
+                ] as const
+              ).map((name) => {
+                const ccls = colorClasses(name);
+                const selected =
+                  (categoryColors[colorMenuFor] ||
+                    defaultCategoryColor(colorMenuFor)) === name;
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    className={`h-6 w-6 rounded-[5px] border ${ccls.swatch} ${
+                      selected ? "ring-2 ring-foreground/80" : ""
+                    }`}
+                    aria-label={`Choose ${name}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const cat = colorMenuFor as string;
+                      setCategoryColor(cat, name);
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 }

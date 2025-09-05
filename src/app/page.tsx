@@ -347,10 +347,16 @@ export default function Home() {
         () => null
       );
       const baseData = adjusted || data?.fieldsGuess || null;
+      const category = (data && (data as any).category) || null;
+      // Also keep original ISO datetimes for future filtering
+      const startISO = (data?.fieldsGuess?.start as string | null) || null;
+      const endISO = (data?.fieldsGuess?.end as string | null) || null;
       const payload = {
         title:
           (adjusted && adjusted.title) || data?.fieldsGuess?.title || "Event",
-        data: baseData ? { ...baseData, thumbnail } : null,
+        data: baseData
+          ? { ...baseData, thumbnail, category, startISO, endISO }
+          : { thumbnail, category, startISO, endISO },
       };
       const r = await fetch("/api/history", {
         method: "POST",

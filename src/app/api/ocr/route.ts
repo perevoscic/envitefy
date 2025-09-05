@@ -588,10 +588,35 @@ export async function POST(request: Request) {
     schedule = { ...schedule, games: enrichedGames };
     const events = scheduleToEvents(schedule, tz);
 
+    // --- Category detection ---
+    const detectCategory = (fullText: string, sched: any, guess: any): string | null => {
+      try {
+        const text = (fullText || "").toLowerCase();
+        // Football schedule detected by parser
+        if (sched && typeof sched.detected === "boolean" && sched.detected) {
+          return "Football Schedule";
+        }
+        // Doctor/Dentist/Clinic appointments
+        const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(fullText);
+        const hasAppt = /(appointment|appt)/i.test(fullText);
+        if (isDoctorLike && hasAppt) return "Doctor Appointments";
+        if (isDoctorLike) return "Doctor Appointments";
+        if (hasAppt) return "Appointments";
+        // Birthday
+        if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
+        // Sports generic (fallback)
+        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(football|soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
+          return "Sport Schedule";
+        }
+      } catch {}
+      return null;
+    };
+
     const intakeId: string | null = null;
+    const category: string | null = detectCategory(raw, schedule, fieldsGuess);
 
     return NextResponse.json(
-      { intakeId, ocrText: raw, fieldsGuess, schedule, events },
+      { intakeId, ocrText: raw, fieldsGuess, schedule, events, category },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err: unknown) {
