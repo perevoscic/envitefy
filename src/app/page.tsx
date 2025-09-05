@@ -255,6 +255,40 @@ export default function Home() {
       return;
     }
     const data = await res.json();
+    const createThumbnailDataUrl = async (
+      sourceFile: File,
+      maxSize: number = 1024
+    ): Promise<string | null> => {
+      try {
+        if (!sourceFile.type.startsWith("image/")) return null;
+        const blobUrl = URL.createObjectURL(sourceFile);
+        const img = document.createElement("img");
+        const loaded: HTMLImageElement = await new Promise(
+          (resolve, reject) => {
+            img.onload = () => resolve(img);
+            img.onerror = reject as any;
+            img.src = blobUrl;
+          }
+        );
+        const { width, height } = loaded;
+        const scale = Math.min(1, maxSize / Math.max(width, height));
+        const w = Math.max(1, Math.round(width * scale));
+        const h = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.drawImage(loaded, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/webp", 0.82);
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {}
+        return dataUrl;
+      } catch {
+        return null;
+      }
+    };
     const tz =
       data?.fieldsGuess?.timezone ||
       Intl.DateTimeFormat().resolvedOptions().timeZone ||
@@ -288,10 +322,14 @@ export default function Home() {
     setEvent(adjusted);
     // Save history for authenticated users (server will associate user if signed in)
     try {
+      const thumbnail = await createThumbnailDataUrl(currentFile).catch(
+        () => null
+      );
+      const baseData = adjusted || data?.fieldsGuess || null;
       const payload = {
         title:
           (adjusted && adjusted.title) || data?.fieldsGuess?.title || "Event",
-        data: adjusted || data?.fieldsGuess || null,
+        data: baseData ? { ...baseData, thumbnail } : null,
       };
       const r = await fetch("/api/history", {
         method: "POST",
@@ -302,6 +340,17 @@ export default function Home() {
       const j = await r.json().catch(() => ({}));
       // Optionally expose the new id to enable share link in-session later
       (window as any).__lastEventId = j?.id;
+      try {
+        const createdId = (j as any)?.id;
+        const createdTitle = payload.title;
+        if (createdId && typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("history:created", {
+              detail: { id: createdId, title: createdTitle },
+            })
+          );
+        }
+      } catch {}
     } catch {}
     setOcrText(data.ocrText || "");
     setLoading(false);

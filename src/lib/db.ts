@@ -156,6 +156,8 @@ export async function getUserIdByEmail(email: string): Promise<string | null> {
   return res.rows[0]?.id || null;
 }
 
+// handle-based helpers removed per revert
+
 export async function saveMicrosoftRefreshToken(email: string, refreshToken: string): Promise<void> {
   const lower = email.toLowerCase();
   const userId = await getUserIdByEmail(lower);
@@ -382,6 +384,49 @@ export async function getEventHistoryByUserAndSlug(userId: string, slug: string)
   for (const r of rows) {
     const s = slugifyTitleForQuery(r.title || "");
     if (s && s === target) return r;
+  }
+  return null;
+}
+
+/**
+ * Resolve an event by either a UUID id, a plain slug, or a combined slug-id value ("my-event-title-<uuid>").
+ * - If `userId` is provided and a plain slug is passed, we attempt to match against recent user events for stability.
+ */
+export async function getEventHistoryBySlugOrId(params: {
+  value: string;
+  userId?: string | null;
+}): Promise<EventHistoryRow | null> {
+  const raw = (params.value || "").trim();
+  if (!raw) return null;
+
+  const maybeUuid = raw.replace(/^.*-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i, "$1");
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw);
+  const endsWithUuid = /^[\w-]*-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw);
+
+  if (isUuid) {
+    return await getEventHistoryById(raw);
+  }
+  if (endsWithUuid) {
+    return await getEventHistoryById(maybeUuid);
+  }
+
+  const slug = slugifyTitleForQuery(raw);
+  if (!slug) return null;
+  if (params.userId) {
+    const row = await getEventHistoryByUserAndSlug(params.userId, slug);
+    if (row) return row;
+  }
+  // Fallback: try a broader search across recent events for any user (limited)
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, data, created_at
+     from event_history
+     order by created_at desc
+     limit 500`
+  );
+  const rows = res.rows || [];
+  for (const r of rows) {
+    const s = slugifyTitleForQuery(r.title || "");
+    if (s && s === slug) return r;
   }
   return null;
 }

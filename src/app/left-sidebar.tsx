@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -11,6 +12,8 @@ import Logo from "@/assets/logo.png";
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [resourcesOpenFloating, setResourcesOpenFloating] = useState(false);
@@ -151,6 +154,30 @@ export default function LeftSidebar() {
     };
   }, [status]);
 
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let cancelled = false;
+    const onCreated = async () => {
+      try {
+        const res = await fetch("/api/history", { cache: "no-store" });
+        const j = await res.json().catch(() => ({ items: [] }));
+        if (!cancelled)
+          setHistory(
+            (j.items || []).map((r: any) => ({
+              id: r.id,
+              title: r.title,
+              created_at: r.created_at,
+            }))
+          );
+      } catch {}
+    };
+    window.addEventListener("history:created", onCreated as any);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("history:created", onCreated as any);
+    };
+  }, [status]);
+
   const shareHistoryItem = async (prettyHref: string) => {
     try {
       const url = new URL(prettyHref, window.location.origin).toString();
@@ -189,6 +216,17 @@ export default function LeftSidebar() {
     try {
       await fetch(`/api/history/${id}`, { method: "DELETE" });
       setHistory((prev) => prev.filter((r) => r.id !== id));
+      // If the user is currently viewing this event, navigate back to home
+      try {
+        const currentPath =
+          typeof window !== "undefined" ? window.location.pathname : pathname;
+        if (
+          currentPath &&
+          (currentPath === `/event/${id}` || currentPath.endsWith(`-${id}`))
+        ) {
+          router.replace("/");
+        }
+      } catch {}
     } catch {}
   };
 
@@ -589,6 +627,32 @@ export default function LeftSidebar() {
         {/* Middle: Event history */}
         <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
           <div className="p-3 space-y-2">
+            <div className="px-0">
+              <Link
+                href="/"
+                className="block px-2 py-2 rounded-md hover:bg-surface/70 text-sm"
+              >
+                <div className="flex items-center gap-2 pl-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="7" width="18" height="14" rx="2" ry="2" />
+                    <path d="M16 7l-1.5-2h-5L8 7" />
+                    <circle cx="12" cy="14" r="3" />
+                  </svg>
+                  <span>New snap</span>
+                </div>
+              </Link>
+            </div>
+            <div className="border-t border-border mx-2 my-3" />
             <div className="px-2 text-xs uppercase tracking-wide text-foreground/60">
               Recent events
             </div>
@@ -603,9 +667,7 @@ export default function LeftSidebar() {
                   .toLowerCase()
                   .replace(/[^a-z0-9]+/g, "-")
                   .replace(/^-+|-+$/g, "");
-                const uid = (session?.user as any)?.id as string | undefined;
-                const prettyHref =
-                  uid && slug ? `/${uid}/event/${slug}` : `/event/${h.id}`;
+                const prettyHref = `/event/${slug}-${h.id}`;
                 return (
                   <div
                     key={h.id}

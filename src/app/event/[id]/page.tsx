@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import CopyButton from "@/components/CopyButton";
-import { getEventHistoryById } from "@/lib/db";
+import EventActions from "@/components/EventActions";
+import ThumbnailModal from "@/components/ThumbnailModal";
+import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +15,15 @@ export default async function EventPage({
   params: Promise<{ id: string }> | { id: string };
 }) {
   const awaitedParams = await params;
-  const row = await getEventHistoryById(awaitedParams.id);
-  if (!row) return notFound();
+  // Try to resolve by slug, slug-id, or id; prefer user context for slug-only matches
   const session: any = await getServerSession(authOptions as any);
+  const sessionEmail = (session?.user?.email as string | undefined) || null;
+  const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
+  const row = await getEventHistoryBySlugOrId({
+    value: awaitedParams.id,
+    userId,
+  });
+  if (!row) return notFound();
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
@@ -26,11 +34,13 @@ export default async function EventPage({
       .replace(/^-+|-+$/g, "");
   const slug = slugify(title);
   const base = process.env.NEXT_PUBLIC_BASE_URL || "";
-  const sessionUserId: string | undefined = (session?.user as any)?.id;
-  const ownerId = row.user_id || sessionUserId || null;
-  const shareUrl = ownerId
-    ? `${base}/${ownerId}/event/${encodeURIComponent(slug)}`
-    : `${base}/event/${awaitedParams.id}`;
+  const canonical = `/event/${slug}-${row.id}`;
+  const shareUrl = `${base}${canonical}`;
+
+  // Redirect to canonical slug-id URL if needed
+  if (awaitedParams.id !== `${slug}-${row.id}`) {
+    redirect(canonical);
+  }
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
@@ -41,38 +51,19 @@ export default async function EventPage({
             Created {new Date(createdAt).toLocaleString()}
           </p>
         )}
-        <div className="flex gap-2 pt-2">
-          <CopyButton
-            text={shareUrl}
-            className="px-3 py-1.5 rounded border border-border bg-surface hover:bg-surface/80"
-          >
-            Copy share link
-          </CopyButton>
-          <Link
-            href={`/api/ics?title=${encodeURIComponent(
-              data?.title || title
-            )}&start=${encodeURIComponent(
-              data?.start || ""
-            )}&end=${encodeURIComponent(
-              data?.end || ""
-            )}&location=${encodeURIComponent(
-              data?.location || ""
-            )}&description=${encodeURIComponent(
-              data?.description || ""
-            )}&timezone=${encodeURIComponent(
-              data?.timezone || "America/Chicago"
-            )}`}
-            className="px-3 py-1.5 rounded border border-border bg-surface hover:bg-surface/80"
-          >
-            Download ICS
-          </Link>
-        </div>
+        {/* Actions moved to bottom */}
       </div>
 
       <section className="mt-6 space-y-3">
         <div>
           <h2 className="text-sm font-semibold text-foreground/80">Details</h2>
-          <div className="mt-2 rounded border border-border p-3 bg-surface">
+          <div className="mt-2 rounded border border-border p-3 bg-surface relative">
+            {data?.thumbnail && (
+              <ThumbnailModal
+                src={data.thumbnail as string}
+                alt={`${title} flyer`}
+              />
+            )}
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <dt className="text-foreground/70">Start</dt>
@@ -102,6 +93,8 @@ export default async function EventPage({
           </div>
         </div>
       </section>
+
+      <EventActions shareUrl={shareUrl} event={data as any} className="mt-6" />
     </main>
   );
 }
