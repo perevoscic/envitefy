@@ -606,7 +606,7 @@ export async function POST(request: Request) {
         if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
         // Sports generic (fallback)
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(football|soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
-          return "Sport Schedule";
+          return "Sport Events";
         }
       } catch {}
       return null;

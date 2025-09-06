@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         if (isDoctorLike) return "Doctor Appointments";
         if (hasAppt) return "Appointments";
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(football|soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
-          return "Sport Schedule";
+          return "Sport Events";
         }
       } catch {}
       return null;
