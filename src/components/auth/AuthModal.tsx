@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import Image from "next/image";
@@ -19,6 +19,45 @@ export default function AuthModal({
   onClose,
   onModeChange,
 }: AuthModalProps) {
+  // Broadcast global open/close so other components (e.g., background slider)
+  // can react when any auth modal is shown anywhere on the page.
+  const openRef = useRef(open);
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!didMountRef.current) {
+      // Initial mount: only dispatch if starting open
+      didMountRef.current = true;
+      if (open) {
+        try {
+          window.dispatchEvent(new Event("smd-auth-modal-open"));
+        } catch {}
+      }
+      openRef.current = open;
+      return;
+    }
+    // Subsequent updates: dispatch only on actual transitions
+    if (open !== openRef.current) {
+      try {
+        window.dispatchEvent(
+          new Event(open ? "smd-auth-modal-open" : "smd-auth-modal-close")
+        );
+      } catch {}
+      openRef.current = open;
+    }
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window === "undefined") return;
+      if (openRef.current) {
+        try {
+          window.dispatchEvent(new Event("smd-auth-modal-close"));
+        } catch {}
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";

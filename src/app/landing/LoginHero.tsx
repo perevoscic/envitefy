@@ -17,6 +17,7 @@ export default function LoginHero() {
   const hideRmTimeoutRef = useRef<number | null>(null);
   const searchParams = useSearchParams();
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  const [authModalOpenCount, setAuthModalOpenCount] = useState(0);
 
   // Single source of truth for slide titles/subtitles; only the media src differs by orientation
   const slidesMeta = [
@@ -64,6 +65,24 @@ export default function LoginHero() {
     apply();
     mql.addEventListener("change", apply);
     return () => mql.removeEventListener("change", apply);
+  }, []);
+
+  // Listen for global auth modal open/close to pause background slider
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onOpen = () =>
+      setAuthModalOpenCount((c) => (Number.isFinite(c) ? c + 1 : 1));
+    const onClose = () =>
+      setAuthModalOpenCount((c) => {
+        const next = (Number.isFinite(c) ? c : 1) - 1;
+        return next > 0 ? next : 0;
+      });
+    window.addEventListener("smd-auth-modal-open", onOpen as any);
+    window.addEventListener("smd-auth-modal-close", onClose as any);
+    return () => {
+      window.removeEventListener("smd-auth-modal-open", onOpen as any);
+      window.removeEventListener("smd-auth-modal-close", onClose as any);
+    };
   }, []);
 
   useEffect(() => {
@@ -171,7 +190,7 @@ export default function LoginHero() {
             orientation="horizontal"
             slides={isDesktop ? desktopSlides : mobileSlides}
             overlay={false}
-            paused={modalOpen}
+            paused={modalOpen || authModalOpenCount > 0}
             peekOnMount={false}
             peekRepeatCount={0}
             onPeekChange={handlePeekChange}
