@@ -184,6 +184,89 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 ---
 
+### History — GET/POST `/api/history`, GET/PATCH/DELETE `/api/history/[id]`
+
+- **Purpose**: Store and manage extracted events/history items for users.
+- **Auth**:
+  - List (GET `/api/history`) requires session to return user items; returns `{ items: [] }` when unauthenticated.
+  - Create (POST `/api/history`) associates the row to the signed-in user when available; still accepts unauthenticated writes.
+  - Read single (GET `/api/history/[id]`) is public.
+  - Update title (PATCH) and Delete (DELETE) require session and ownership.
+- **Input**:
+  - POST `/api/history`: `{ title?: string, data?: any }`.
+  - PATCH `/api/history/[id]`: `{ title: string }`.
+- **Output**:
+  - GET list: `{ items: Array<HistoryRow> }`.
+  - GET single: `HistoryRow` or `{ error }` with 404.
+  - POST: created `HistoryRow` `{ status: 201 }`.
+  - PATCH: updated `HistoryRow`.
+  - DELETE: `{ ok: true }`.
+
+### OAuth disconnect — POST `/api/oauth/disconnect`
+
+- **Purpose**: Clear legacy OAuth cookies for Google and Microsoft.
+- **Auth**: None.
+- **Behavior**: Expires `g_refresh` and `o_refresh` cookies; returns `{ ok: true }`.
+
+### User Profile — GET/PUT `/api/user/profile`
+
+- **Purpose**: Read and update user profile, preferred provider, and subscription plan.
+- **Auth**: NextAuth session required.
+- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, name }`.
+- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|null }`.
+- **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan }`.
+
+### Change Password — POST `/api/user/change-password`
+
+- **Purpose**: Change password for the signed-in user.
+- **Auth**: NextAuth session required.
+- **Input (JSON)**: `{ currentPassword: string, newPassword: string }` (min length 8).
+- **Output**: `{ ok: true }` or `{ error }`.
+
+### Subscription — GET/PUT `/api/user/subscription`
+
+- **Purpose**: Read or set the user's subscription plan.
+- **Auth**: NextAuth session required.
+- **GET Output**: `{ plan: "free"|"monthly"|"yearly"|null }`.
+- **PUT Input (JSON)**: `{ plan: "free"|"monthly"|"yearly"|null }`.
+- **PUT Output**: `{ ok: true, plan }`.
+
+### Debug: NextAuth/Env — GET `/api/debug`
+
+- **Purpose**: Quick introspection of auth/env configuration.
+- **Output**: `{ has_NEXTAUTH_SECRET, has_AUTH_SECRET, url, cacheDir }`.
+
+### Debug: GCP creds presence — GET `/api/debug-env`
+
+- **Purpose**: Validate `GOOGLE_APPLICATION_CREDENTIALS_BASE64` is present and decodable.
+- **Output**: `{ base64: boolean, client_email? }`.
+
+### Debug: Vision client — GET `/api/debug-vision`
+
+- **Purpose**: Validate Vision SDK can initialize and report project ID.
+- **Output**: `{ ok, projectId, hasGOOGLE_B64, b64Length }`.
+
+### Debug: OCR upload — POST `/api/debug-ocr`
+
+- **Purpose**: Test file upload/processing pipeline.
+- **Input**: `multipart/form-data` `file`.
+- **Output**: `{ ok, receivedBytes, processedBytes, mime, name }`.
+
+### Debug: DB (PG\* env) — GET `/api/debug-db`
+
+- **Purpose**: Test connectivity using discrete `PG*` env variables.
+- **Output**: `{ ok: true, rows }` or `{ ok: false, err }`.
+
+### DB test (DATABASE_URL) — GET `/api/db-test`
+
+- **Purpose**: Test Postgres connectivity using `DATABASE_URL`.
+- **Output**: `{ ok, ms, now }` or `{ ok: false, error }`.
+
+### Egress test — GET `/api/net`
+
+- **Purpose**: Check outbound network access (HEAD to Google Vision endpoint).
+- **Output**: `{ ok, status }` or `{ ok: false, error }`.
+
 ## NormalizedEvent schema
 
 Payload used by the authenticated calendar agents.
@@ -211,6 +294,9 @@ Payload used by the authenticated calendar agents.
 
 - **NextAuth**
   - `NEXTAUTH_SECRET`: JWT signing secret.
+  - `AUTH_SECRET`: Optional; alternative read by auth setup. If both are set, either works.
+  - `NEXTAUTH_URL`: External base URL for NextAuth; also used to compute callback redirects.
+  - `PUBLIC_BASE_URL`: Optional; used by OAuth callbacks to construct external redirects when behind proxies.
 - **Google OAuth/Calendar**
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 - **Microsoft OAuth/Graph**
@@ -227,6 +313,7 @@ Payload used by the authenticated calendar agents.
     - Set `PGSSL_DISABLE_VERIFY=true` to skip verification in dev. The app sets `ssl: { rejectUnauthorized: false }`. Remove any `sslmode` params from `DATABASE_URL` to avoid conflicts.
     - Set `PGSSL_CA_BASE64=<base64 of rds-combined-ca-bundle.pem>` to enforce verification. The app sets `ssl: { ca, rejectUnauthorized: true }`. Remove `sslmode` from `DATABASE_URL` when passing SSL via env.
   - To get the latest AWS RDS CA bundle, download `https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem` and base64-encode its contents.
+  - Optional debug connectivity also supports `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` via `/api/debug-db`.
 
 ---
 
@@ -249,3 +336,5 @@ Payload used by the authenticated calendar agents.
 - 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
 - 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
+
+- 2025-09-10: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).

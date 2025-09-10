@@ -35,19 +35,20 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     if (!isOpen) return;
-    const isDesktop = () =>
+    const isPhoneHiddenViewport = () =>
       typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(min-width: 768px)").matches;
+      // Phone mockup is only shown at lg (≥1024px); below that it's hidden
+      window.matchMedia("(max-width: 1023px)").matches;
 
     const onClick = (e: MouseEvent) => {
-      if (isDesktop()) return; // Desktop: ignore outside clicks
+      if (!isPhoneHiddenViewport()) return; // Desktop: ignore outside clicks
       const target = e.target as Node | null;
       if (!asideRef.current) return;
       if (!asideRef.current.contains(target)) setIsCollapsed(true);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (isDesktop()) return; // Desktop: only close via X button
+      if (!isPhoneHiddenViewport()) return; // Desktop: only close via X button
       if (e.key === "Escape") setIsCollapsed(true);
     };
     document.addEventListener("click", onClick);
@@ -737,6 +738,9 @@ export default function LeftSidebar() {
                 width={16}
                 height={16}
                 className="h-4 w-4 object-contain"
+                style={{
+                  filter: isDark ? "invert(1)" : "invert(0)",
+                }}
               />
               <span className="text-sm">Resources</span>
             </div>
@@ -862,7 +866,7 @@ export default function LeftSidebar() {
 
         <button
           onClick={() => signOut({ callbackUrl: "/landing" })}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -1077,6 +1081,9 @@ export default function LeftSidebar() {
                         width={16}
                         height={16}
                         className="h-4 w-4 object-contain"
+                        style={{
+                          filter: isDark ? "invert(1)" : "invert(0)",
+                        }}
                       />
                       <span className="text-sm">Resources</span>
                     </div>
@@ -1209,7 +1216,7 @@ export default function LeftSidebar() {
 
                 <button
                   onClick={() => signOut({ callbackUrl: "/landing" })}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1287,11 +1294,12 @@ export default function LeftSidebar() {
                 href="/"
                 onClick={() => {
                   try {
-                    const isDesktop =
+                    const isTouch =
                       typeof window !== "undefined" &&
                       typeof window.matchMedia === "function" &&
-                      window.matchMedia("(min-width: 768px)").matches;
-                    if (!isDesktop) setIsCollapsed(true);
+                      window.matchMedia("(hover: none), (pointer: coarse)")
+                        .matches;
+                    if (isTouch) setIsCollapsed(true);
                   } catch {}
                 }}
                 className="block px-2 py-2 rounded-md hover:bg-surface/70 text-sm"
@@ -1319,11 +1327,12 @@ export default function LeftSidebar() {
                 href="/calendar"
                 onClick={() => {
                   try {
-                    const isDesktop =
+                    const isTouch =
                       typeof window !== "undefined" &&
                       typeof window.matchMedia === "function" &&
-                      window.matchMedia("(min-width: 768px)").matches;
-                    if (!isDesktop) setIsCollapsed(true);
+                      window.matchMedia("(hover: none), (pointer: coarse)")
+                        .matches;
+                    if (isTouch) setIsCollapsed(true);
                   } catch {}
                 }}
                 className="mt-1 block px-2 py-2 rounded-md hover:bg-surface/70 text-sm"
@@ -1554,11 +1563,13 @@ export default function LeftSidebar() {
                         href={prettyHref}
                         onClick={() => {
                           try {
-                            const isDesktop =
+                            const isTouch =
                               typeof window !== "undefined" &&
                               typeof window.matchMedia === "function" &&
-                              window.matchMedia("(min-width: 768px)").matches;
-                            if (!isDesktop) setIsCollapsed(true);
+                              window.matchMedia(
+                                "(hover: none), (pointer: coarse)"
+                              ).matches;
+                            if (isTouch) setIsCollapsed(true);
                           } catch {}
                         }}
                         className="block pr-8"
@@ -1920,6 +1931,9 @@ export default function LeftSidebar() {
                           width={16}
                           height={16}
                           className="h-4 w-4 object-contain"
+                          style={{
+                            filter: isDark ? "invert(1)" : "invert(0)",
+                          }}
                         />
                         <span className="text-sm">Resources</span>
                       </div>
@@ -2052,7 +2066,7 @@ export default function LeftSidebar() {
 
                   <button
                     onClick={() => signOut({ callbackUrl: "/landing" })}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

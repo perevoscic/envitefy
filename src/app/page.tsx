@@ -114,10 +114,9 @@ export default function Home() {
       typeof window.matchMedia !== "function"
     )
       return;
-    const mq = window.matchMedia(
-      "(orientation: portrait) and (min-width: 768px)"
-    );
-    const update = () => setShowPhoneMockup(!mq.matches);
+    // Only show the phone mockup on desktop (lg and up: >= 1024px)
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setShowPhoneMockup(mq.matches);
     update();
     try {
       mq.addEventListener("change", update);
@@ -1094,7 +1093,7 @@ export default function Home() {
         </div>
 
         {showPhoneMockup && (
-          <div className="order-1 lg:order-2 hidden md:flex justify-center lg:justify-end hide-phone-portrait-tablet">
+          <div className="order-1 lg:order-2 hidden lg:flex justify-center lg:justify-end">
             <PhoneMockup />
           </div>
         )}
