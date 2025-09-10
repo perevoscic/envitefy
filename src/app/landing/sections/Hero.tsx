@@ -13,11 +13,11 @@ export default async function Hero() {
         <div className="text-center lg:text-left">
           <h1 className="text-4xl sm:text-6xl font-extrabold leading-[1.08] tracking-tight">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle">
-              Snap it. We calendar it.
+              Snap it.
             </span>
             <br />
-            <span className="text-foreground">
-              Save family dates in seconds.
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle">
+              We calendar it.
             </span>
           </h1>
           <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto lg:mx-0">

@@ -18,18 +18,6 @@ export default function Demo() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onPick = () => fileInputRef.current?.click();
-  const onSample = async (path: string) => {
-    try {
-      const res = await fetch(path);
-      const blob = await res.blob();
-      const file = new File([blob], path.split("/").pop() || "sample.jpg", {
-        type: blob.type || "image/jpeg",
-      });
-      await ingest(file);
-    } catch {
-      setError("Failed to load sample image");
-    }
-  };
 
   const ingest = async (file: File) => {
     setLoading(true);
@@ -85,7 +73,7 @@ export default function Demo() {
           Live demo
         </h2>
         <p className="mt-2 text-center text-foreground/70 max-w-2xl mx-auto">
-          Try it with a sample or your own image. We only use uploads to extract
+          Upload an image from your device. We only use uploads to extract
           details.
         </p>
 
@@ -93,21 +81,9 @@ export default function Demo() {
           <div className="flex flex-wrap gap-3">
             <button
               className="rounded-xl border border-border px-4 py-2 bg-surface/70 hover:bg-surface"
-              onClick={() => onSample("/flyer.jpg")}
-            >
-              Use sample: Flyer
-            </button>
-            <button
-              className="rounded-xl border border-border px-4 py-2 bg-surface/70 hover:bg-surface"
-              onClick={() => onSample("/invite.jpg")}
-            >
-              Use sample: Invite
-            </button>
-            <button
-              className="rounded-xl border border-border px-4 py-2 bg-surface/70 hover:bg-surface"
               onClick={onPick}
             >
-              Upload your image
+              Upload from device
             </button>
           </div>
           <input
