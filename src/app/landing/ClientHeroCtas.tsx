@@ -8,7 +8,7 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const primaryHref = "/subscription";
-  const secondaryHref = isAuthed ? "/about" : "/landing";
+  const secondaryHref = isAuthed ? "/about" : "/";
 
   if (isAuthed) {
     return (

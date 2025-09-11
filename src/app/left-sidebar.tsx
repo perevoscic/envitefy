@@ -893,7 +893,7 @@ export default function LeftSidebar() {
         </Link>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/landing" })}
+          onClick={() => signOut({ callbackUrl: "/" })}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
         >
           <svg
@@ -1243,7 +1243,7 @@ export default function LeftSidebar() {
                 </Link>
 
                 <button
-                  onClick={() => signOut({ callbackUrl: "/landing" })}
+                  onClick={() => signOut({ callbackUrl: "/" })}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
                 >
                   <svg
@@ -2189,7 +2189,7 @@ export default function LeftSidebar() {
                   </Link>
 
                   <button
-                    onClick={() => signOut({ callbackUrl: "/landing" })}
+                    onClick={() => signOut({ callbackUrl: "/" })}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
                   >
                     <svg

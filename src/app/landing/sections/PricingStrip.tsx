@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
   const primaryHref = "/subscription";
-  const secondaryHref = isAuthed ? "/about" : "/landing";
+  const secondaryHref = isAuthed ? "/about" : "/";
   return (
     <section className="w-full">
       <div className="max-w-7xl mx-auto px-6 pb-16">

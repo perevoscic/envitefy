@@ -63,7 +63,7 @@ async authorize(credentials) {
       }),
     ],
     session: { strategy: "jwt" },
-    pages: { signIn: "/landing", verifyRequest: "/verify-request" },
+    pages: { signIn: "/", verifyRequest: "/verify-request" },
     callbacks: {},
   };
 }

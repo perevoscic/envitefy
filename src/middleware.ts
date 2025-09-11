@@ -27,34 +27,36 @@ export async function middleware(req: NextRequest) {
     req.cookies.has("__Secure-next-auth.session-token") ||
     req.cookies.has("next-auth.session-token");
 
-  // Hide landing from authenticated users
+  // Redirect legacy /landing to root homepage
   if (pathname === "/landing") {
-    if (hasSession) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url, 308);
-    }
-    return ok();
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url, 308);
   }
 
   if (pathname === "/verify-request") {
     return ok();
   }
 
-  // Redirect signed-out users who visit the homepage to the public landing page
+  // Public homepage at "/"; optionally redirect authenticated users to "/snap"
   if (pathname === "/") {
-    if (!hasSession) {
+    if (hasSession) {
       const url = req.nextUrl.clone();
-      url.pathname = "/landing";
+      url.pathname = "/snap";
       return NextResponse.redirect(url, 308);
     }
-    return ok();
-  }
-
-  // Optional: redirect legacy /signup to the public landing page
-  if (pathname === "/signup") {
+    // Render landing content at "/" without changing the URL
     const url = req.nextUrl.clone();
     url.pathname = "/landing";
+    const res = NextResponse.rewrite(url);
+    res.headers.set("x-mw-version", "v2");
+    return res;
+  }
+
+  // Optional: redirect legacy /signup to the public homepage
+  if (pathname === "/signup") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
     return NextResponse.redirect(url, 308);
   }
 

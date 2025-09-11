@@ -30,10 +30,10 @@ export default function NotFound() {
             <span>Go home</span>
           </Link>
           <Link
-            href="/landing"
+            href="/"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-surface hover:bg-surface/80"
           >
-            <span>Landing</span>
+            <span>Home</span>
           </Link>
         </div>
       </div>
