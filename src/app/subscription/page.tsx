@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import GiftSnapModal from "@/components/GiftSnapModal";
 import Logo from "@/assets/logo.png";
 
 export default function SubscriptionPage() {
@@ -12,6 +13,7 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<
     "free" | "monthly" | "yearly"
   >("monthly");
+  const [giftOpen, setGiftOpen] = useState(false);
 
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
@@ -187,6 +189,34 @@ export default function SubscriptionPage() {
           Subscribe
         </button>
       </div>
+      <div className="mt-8 max-w-xl mx-auto w-full">
+        <div className="rounded-xl bg-surface p-5 shadow-md">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="text-xl font-semibold text-foreground text-center">
+              Promo Code
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="w-full px-4 py-2 rounded-lg bg-sky-500 text-white shadow hover:shadow-md active:shadow-sm transition"
+              onClick={() => {
+                router.push("/contact?topic=redeem");
+              }}
+            >
+              Redeem a Snap
+            </button>
+            <button
+              type="button"
+              className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition"
+              onClick={() => setGiftOpen(true)}
+            >
+              Gift a Snap
+            </button>
+          </div>
+        </div>
+      </div>
+      <GiftSnapModal open={giftOpen} onClose={() => setGiftOpen(false)} />
     </main>
   );
 }

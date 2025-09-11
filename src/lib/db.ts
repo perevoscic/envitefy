@@ -313,6 +313,72 @@ export async function updateSubscriptionPlanByEmail(params: {
   await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
 }
 
+// Promo codes
+export type PromoCodeRow = {
+  id: string;
+  code: string;
+  amount_cents: number;
+  currency: string;
+  created_by_email?: string | null;
+  recipient_name?: string | null;
+  recipient_email?: string | null;
+  message?: string | null;
+  expires_at?: string | null;
+  redeemed_at?: string | null;
+  created_at?: string | null;
+};
+
+function generatePromoCode(length: number = 12): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing chars
+  let out = "";
+  const bytes = randomBytes(length);
+  for (let i = 0; i < length; i++) {
+    out += alphabet[bytes[i] % alphabet.length];
+  }
+  return out;
+}
+
+export async function createGiftPromoCode(params: {
+  amountCents: number;
+  currency?: string;
+  createdByEmail?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  message?: string | null;
+  expiresAt?: Date | null;
+}): Promise<PromoCodeRow> {
+  const code = generatePromoCode(12);
+  const res = await query<PromoCodeRow>(
+    `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, expires_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8)
+     returning id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, expires_at, redeemed_at, created_at`,
+    [
+      code,
+      Math.max(0, Math.floor(params.amountCents || 0)),
+      (params.currency || "USD").toUpperCase(),
+      params.createdByEmail || null,
+      params.recipientName || null,
+      params.recipientEmail || null,
+      params.message || null,
+      params.expiresAt ? params.expiresAt.toISOString() : null,
+    ]
+  );
+  return res.rows[0];
+}
+
+export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | null> {
+  const res = await query<PromoCodeRow>(
+    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, expires_at, redeemed_at, created_at
+     from promo_codes where code = $1 limit 1`,
+    [code]
+  );
+  return res.rows[0] || null;
+}
+
+export async function markPromoCodeRedeemed(id: string): Promise<void> {
+  await query(`update promo_codes set redeemed_at = now() where id = $1 and redeemed_at is null`, [id]);
+}
+
 // Event history
 export type EventHistoryRow = {
   id: string;

@@ -58,3 +58,21 @@ CREATE TABLE IF NOT EXISTS event_history (
 
 CREATE INDEX IF NOT EXISTS idx_event_history_user_id_created_at
   ON event_history(user_id, created_at DESC);
+
+-- Promo codes (gift codes for subscriptions or credits)
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text UNIQUE NOT NULL,
+  amount_cents integer NOT NULL,
+  currency varchar(10) NOT NULL DEFAULT 'USD',
+  created_by_email text,
+  recipient_name text,
+  recipient_email text,
+  message text,
+  expires_at timestamptz(6),
+  redeemed_at timestamptz(6),
+  created_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_promo_codes_created_at ON promo_codes(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_promo_codes_recipient_email ON promo_codes(recipient_email);

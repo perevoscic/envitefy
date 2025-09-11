@@ -108,7 +108,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6 pt-15">
       <section className="w-full max-w-2xl">
         <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-8 border border-border">
           <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight text-center mb-1">
@@ -154,21 +154,7 @@ export default function SettingsPage() {
                   className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Default calendar
-                </label>
-                <select
-                  value={preferredProvider}
-                  onChange={(e) => setPreferredProvider(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">No default</option>
-                  <option value="google">Google Calendar</option>
-                  <option value="microsoft">Microsoft Outlook</option>
-                  <option value="apple">Apple Calendar</option>
-                </select>
-              </div>
+              <div></div>
               {profileState.error && (
                 <p className="text-sm text-red-600">{profileState.error}</p>
               )}

@@ -13,16 +13,10 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
   if (isAuthed) {
     return (
       <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
-        <Link
-          href={primaryHref}
-          className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-primary hover:opacity-95 active:opacity-90 text-on-primary shadow-lg shadow-teal-500/25"
-        >
+        <Link href={primaryHref} className="btn btn-primary btn-lg">
           Manage plan
         </Link>
-        <Link
-          href={secondaryHref}
-          className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70"
-        >
+        <Link href={secondaryHref} className="btn btn-outline btn-lg">
           Learn more
         </Link>
       </div>
@@ -33,7 +27,7 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
     <div className="relative">
       <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
         <button
-          className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-primary hover:opacity-95 active:opacity-90 text-on-primary shadow-lg shadow-teal-500/25"
+          className="btn btn-primary btn-lg"
           onClick={() => {
             setMode("signup");
             setOpen(true);
@@ -42,7 +36,7 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
           Get started free
         </button>
         <button
-          className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70"
+          className="btn btn-outline btn-lg"
           onClick={() => {
             setMode("login");
             setOpen(true);

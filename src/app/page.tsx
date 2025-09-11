@@ -793,7 +793,7 @@ export default function Home() {
           <div className="bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 rounded-3xl p-1 shadow-lg  ">
             <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-foreground">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle">
                   Snap a flyer.
                 </span>
                 <br />
@@ -808,15 +808,29 @@ export default function Home() {
                 <button
                   onClick={openCamera}
                   aria-label="Open camera to snap a flyer"
-                  className="inline-flex items-center gap-2 justify-center rounded-2xl px-3 py-2 text-sm bg-primary text-primary-foreground hover:opacity-90 active:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition shadow-md shadow-primary/20"
+                  className="btn btn-primary"
                 >
                   <svg
                     className="h-4 w-4"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
+                    fill="none"
                     aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path d="M4 7h3.172l1.414-1.414A2 2 0 0 1 9.828 5h4.344a2 2 0 0 1 1.414.586L17 7h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V9a2 2 0 0 1 2-2zm8 3a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z" />
+                    <path
+                      d="M12 16C13.6569 16 15 14.6569 15 13C15 11.3431 13.6569 10 12 10C10.3431 10 9 11.3431 9 13C9 14.6569 10.3431 16 12 16Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M3 16.8V9.2C3 8.0799 3 7.51984 3.21799 7.09202C3.40973 6.71569 3.71569 6.40973 4.09202 6.21799C4.51984 6 5.0799 6 6.2 6H7.25464C7.37758 6 7.43905 6 7.49576 5.9935C7.79166 5.95961 8.05705 5.79559 8.21969 5.54609C8.25086 5.49827 8.27836 5.44328 8.33333 5.33333C8.44329 5.11342 8.49827 5.00346 8.56062 4.90782C8.8859 4.40882 9.41668 4.08078 10.0085 4.01299C10.1219 4 10.2448 4 10.4907 4H13.5093C13.7552 4 13.8781 4 13.9915 4.01299C14.5833 4.08078 15.1141 4.40882 15.4394 4.90782C15.5017 5.00345 15.5567 5.11345 15.6667 5.33333C15.7216 5.44329 15.7491 5.49827 15.7803 5.54609C15.943 5.79559 16.2083 5.95961 16.5042 5.9935C16.561 6 16.6224 6 16.7454 6H17.8C18.9201 6 19.4802 6 19.908 6.21799C20.2843 6.40973 20.5903 6.71569 20.782 7.09202C21 7.51984 21 8.0799 21 9.2V16.8C21 17.9201 21 18.4802 20.782 18.908C20.5903 19.2843 20.2843 19.5903 19.908 19.782C19.4802 20 18.9201 20 17.8 20H6.2C5.0799 20 4.51984 20 4.09202 19.782C3.71569 19.5903 3.40973 19.2843 3.21799 18.908C3 18.4802 3 17.9201 3 16.8Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   <span>Snap It Now</span>
                 </button>
@@ -824,15 +838,29 @@ export default function Home() {
                 <button
                   onClick={openUpload}
                   aria-label="Upload a flyer or card image from your device"
-                  className="inline-flex items-center gap-2 justify-center rounded-2xl px-3 py-2 text-sm border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-border/50 transition"
+                  className="btn btn-outline"
                 >
                   <svg
                     className="h-4 w-4"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
+                    fill="none"
                     aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path d="M20 18v2H4v-2h16zM12 3l5 5h-3v6h-4V8H7l5-5z" />
+                    <path
+                      d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   <span>Upload</span>
                 </button>

@@ -10,6 +10,7 @@
     "db:init": "node scripts/init-db.js"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.886.0",
     "@google-cloud/vision": "^5.3.3",
     "@prisma/client": "^6.15.0",
     "@types/bcryptjs": "^2.4.6",

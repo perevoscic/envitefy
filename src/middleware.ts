@@ -28,23 +28,30 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req: req as any, secret });
   const hasSession = Boolean(token);
 
-  // Redirect legacy /landing to root homepage
+  // Allow direct access to /landing without redirecting back to /
   if (pathname === "/landing") {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url, 308);
+    return ok();
   }
 
   if (pathname === "/verify-request") {
     return ok();
   }
 
-  // Public homepage at "/"; optionally redirect authenticated users to "/snap"
+  // Require authentication for the snap experience
+  if (pathname.startsWith("/snap") && !hasSession) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/landing";
+    return NextResponse.redirect(url, 302);
+  }
+
+  // Public homepage at "/":
+  // - authenticated users go to "/snap"
+  // - unauthenticated users see landing content (rewrite)
   if (pathname === "/") {
     if (hasSession) {
       const url = req.nextUrl.clone();
       url.pathname = "/snap";
-      return NextResponse.redirect(url, 308);
+      return NextResponse.redirect(url, 302);
     }
     // Render landing content at "/" without changing the URL
     const url = req.nextUrl.clone();

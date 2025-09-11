@@ -134,6 +134,21 @@ function slugify(t: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function startOfISOWeek(date: Date): Date {
+  const d = startOfDay(new Date(date));
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = (day + 6) % 7; // days since Monday
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+
+function endOfISOWeek(date: Date): Date {
+  const start = startOfISOWeek(date);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return end;
+}
+
 function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   for (const item of items) {
@@ -224,6 +239,7 @@ export default function CalendarPage() {
     date: Date;
     items: CalendarEvent[];
   } | null>(null);
+  const [upcomingView, setUpcomingView] = useState<"week" | "month">("week");
 
   useEffect(() => {
     let cancelled = false;
@@ -294,6 +310,76 @@ export default function CalendarPage() {
     [cursor]
   );
   const byDay = useMemo(() => groupEventsByDay(events), [events]);
+  const upcoming = useMemo(() => {
+    const now = new Date();
+    return events.filter((e) => {
+      try {
+        return new Date(e.start) >= now;
+      } catch {
+        return false;
+      }
+    });
+  }, [events]);
+
+  const groupedByWeek = useMemo(() => {
+    const map = new Map<
+      string,
+      { rangeLabel: string; items: CalendarEvent[] }
+    >();
+    const dateFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+    for (const ev of upcoming) {
+      try {
+        const d = new Date(ev.start);
+        const weekStart = startOfISOWeek(d);
+        const weekEnd = endOfISOWeek(d);
+        const key = weekStart.toISOString();
+        if (!map.has(key)) {
+          map.set(key, {
+            rangeLabel: `${dateFmt.format(weekStart)} – ${dateFmt.format(
+              weekEnd
+            )}`,
+            items: [],
+          });
+        }
+        map.get(key)!.items.push(ev);
+      } catch {}
+    }
+    // sort by week start
+    return Array.from(map.entries())
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .map(([, v]) => v);
+  }, [upcoming]);
+
+  const groupedByMonth = useMemo(() => {
+    const map = new Map<string, { label: string; items: CalendarEvent[] }>();
+    const labelFmt = new Intl.DateTimeFormat(undefined, {
+      month: "long",
+      year: "numeric",
+    });
+    for (const ev of upcoming) {
+      try {
+        const d = new Date(ev.start);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (!map.has(key)) {
+          map.set(key, {
+            label: labelFmt.format(new Date(d.getFullYear(), d.getMonth(), 1)),
+            items: [],
+          });
+        }
+        map.get(key)!.items.push(ev);
+      } catch {}
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => {
+        const [ay, am] = a[0].split("-").map(Number);
+        const [by, bm] = b[0].split("-").map(Number);
+        return new Date(ay, am, 1).getTime() - new Date(by, bm, 1).getTime();
+      })
+      .map(([, v]) => v);
+  }, [upcoming]);
 
   const monthFormatter = useMemo(
     () =>
@@ -420,29 +506,32 @@ export default function CalendarPage() {
                   <div
                     key={date.toISOString()}
                     onClick={() => onDayClick(date)}
-                    className={`h-full cursor-pointer bg-surface p-1.5 sm:p-2 md:min-h-[96px] ${
+                    className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[46px] sm:min-h-[55px] md:min-h-[64px] ${
                       isCurrentMonth ? "" : "bg-foreground/[.02]"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-start">
                       <div
-                        className={`h-6 w-6 flex items-center justify-center rounded-full text-xs ${
+                        className={`h-5 w-5 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[10px] ${
                           isToday
                             ? "bg-foreground text-background"
-                            : "text-foreground/80"
+                            : isCurrentMonth
+                            ? "text-foreground/80"
+                            : "text-foreground/40"
                         }`}
                       >
                         {date.getDate()}
                       </div>
-                      {/* Event dots (match event colors) */}
-                      <div className="flex items-center gap-1">
-                        {items.slice(0, 8).map((ev) => renderEventDot(ev))}
-                        {items.length > 8 && (
-                          <span className="text-[10px] text-foreground/60">
-                            +{items.length - 8}
-                          </span>
-                        )}
-                      </div>
+                    </div>
+
+                    {/* Event dots under the date */}
+                    <div className="mt-1 flex items-center gap-1">
+                      {items.slice(0, 8).map((ev) => renderEventDot(ev))}
+                      {items.length > 8 && (
+                        <span className="text-[10px] text-foreground/60">
+                          +{items.length - 8}
+                        </span>
+                      )}
                     </div>
 
                     {/* Desktop pills (limit to 2 items) */}
@@ -467,6 +556,148 @@ export default function CalendarPage() {
             </React.Fragment>
           ))}
         </div>
+      </div>
+
+      {/* Upcoming (toggle) */}
+      <div className="mx-auto max-w-6xl mt-8">
+        <h2 className="text-lg font-semibold">Upcoming events</h2>
+        <div className="mt-3">
+          <div className="relative inline-flex w-[220px] select-none rounded-full border border-border bg-surface">
+            <span
+              className={`absolute inset-0 m-1 w-1/2 rounded-full bg-foreground/10 transition-transform ${
+                upcomingView === "week" ? "translate-x-0" : "translate-x-full"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setUpcomingView("week")}
+              className={`relative z-10 flex-1 px-4 py-1.5 text-sm ${
+                upcomingView === "week"
+                  ? "text-foreground"
+                  : "text-foreground/70"
+              }`}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              onClick={() => setUpcomingView("month")}
+              className={`relative z-10 flex-1 px-4 py-1.5 text-sm ${
+                upcomingView === "month"
+                  ? "text-foreground"
+                  : "text-foreground/70"
+              }`}
+            >
+              Month
+            </button>
+          </div>
+        </div>
+
+        {upcomingView === "week" ? (
+          <div className="mt-4 space-y-2">
+            {upcoming.length === 0 && (
+              <div className="text-sm text-foreground/70">
+                No upcoming events.
+              </div>
+            )}
+            {upcoming
+              .slice()
+              .sort(
+                (a, b) =>
+                  new Date(a.start).getTime() - new Date(b.start).getTime()
+              )
+              .map((ev) => {
+                const chosenColorName = ev.category
+                  ? categoryColors[ev.category] ||
+                    defaultCategoryColor(ev.category)
+                  : "";
+                const tone = chosenColorName
+                  ? colorTintAndDot(chosenColorName)
+                  : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+                return (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => setOpenEvent(ev)}
+                    className={`w-full text-left rounded-md ${tone.tint} text-black px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    title={ev.title}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate font-medium">{ev.title}</span>
+                      <span className="shrink-0 text-sm text-foreground/70">
+                        {new Date(ev.start).toLocaleString()}
+                      </span>
+                    </div>
+                    {ev.location && (
+                      <div className="mt-0.5 text-xs text-foreground/60 truncate">
+                        {ev.location}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {groupedByMonth.length === 0 && (
+              <div className="text-sm text-foreground/70">
+                No upcoming events.
+              </div>
+            )}
+            {groupedByMonth.map((group, idx) => (
+              <div
+                key={idx}
+                className="border border-border rounded-md overflow-hidden"
+              >
+                <div className="px-3 py-2 bg-surface/60 text-sm text-foreground/80 border-b border-border">
+                  {group.label}
+                </div>
+                <ul className="divide-y divide-border">
+                  {group.items
+                    .slice()
+                    .sort(
+                      (a, b) =>
+                        new Date(a.start).getTime() -
+                        new Date(b.start).getTime()
+                    )
+                    .map((ev) => {
+                      const chosenColorName = ev.category
+                        ? categoryColors[ev.category] ||
+                          defaultCategoryColor(ev.category)
+                        : "";
+                      const tone = chosenColorName
+                        ? colorTintAndDot(chosenColorName)
+                        : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+                      return (
+                        <li key={ev.id}>
+                          <button
+                            type="button"
+                            onClick={() => setOpenEvent(ev)}
+                            className={`w-full text-left rounded-md ${tone.tint} text-black px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                            title={ev.title}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="truncate font-medium">
+                                {ev.title}
+                              </span>
+                              <span className="shrink-0 text-sm text-foreground/70">
+                                {new Date(ev.start).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {ev.location && (
+                              <div className="mt-0.5 text-xs text-foreground/60 truncate">
+                                {ev.location}
+                              </div>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Day list modal */}

@@ -10,6 +10,15 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ## Agent catalog
 
+### Promo Gift Agent — POST `/api/promo/gift`
+
+- **Purpose**: Generate a promo code (gift) for selected plan duration; returns the created code. Intended to be paired with payment processing and delivery email.
+- **Auth**: Optional (reads NextAuth session to attribute creator email).
+- **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message?: string }`.
+- **Pricing**: Server computes cents using $2.99/month and $29.99/year per unit.
+- **Output**: `{ ok: true, promo: { code, amount_cents, currency, ... } }`.
+- **Env**: `DATABASE_URL` (Postgres connection).
+
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
 
 - **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback.
@@ -315,3 +324,4 @@ Payload used by the authenticated calendar agents.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
 
 - 2025-09-10: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).
+- 2025-09-11: Added Promo Gift agent and `promo_codes` table; UI modal on Subscription page to create gifts.

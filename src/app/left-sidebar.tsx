@@ -1393,13 +1393,17 @@ export default function LeftSidebar() {
                       .filter((c): c is string => Boolean(c))
                   )
                 );
+                // Sort categories A → Z for consistent display
+                const sortedCategories = [...categories].sort((a, b) =>
+                  a.localeCompare(b)
+                );
                 if (categories.length === 0) return null;
                 const buttonClass = (_c: string) => {
                   return `hover:bg-surface/70`;
                 };
                 return (
                   <div ref={categoriesRef} className="mt-2 space-y-1">
-                    {categories.map((c) => {
+                    {sortedCategories.map((c) => {
                       const futureCount = (() => {
                         try {
                           const now = Date.now();
@@ -1449,12 +1453,13 @@ export default function LeftSidebar() {
                               ) : c === "Sport Events" ? (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
+                                  viewBox="0 0 512 512"
                                   fill="currentColor"
                                   className="h-4 w-4"
                                   aria-hidden="true"
                                 >
-                                  <path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm0 2a8 8 0 016.32 3.1l-2.16.86A6 6 0 006 12c0 1.3.41 2.5 1.1 3.47L5.4 17.6A8 8 0 0112 4Zm0 16a8 8 0 01-6.32-3.1l2.16-.86A6 6 0 0018 12c0-1.3-.41-2.5-1.1-3.47l1.7-2.13A8 8 0 0112 20Zm-2-8a2 2 0 114 0 2 2 0 01-4 0Z" />
+                                  <path d="M367.918,69.237H129.781h-9.365l-7.227,5.949L9.514,160.546L0,168.382v12.322v79.167v21.874l21.534,3.824 l106.199,18.9c11.706,2.082,21.551,9.824,26.335,20.71l0.425,0.96l0.498,0.927c0.008,0.016,3.059,5.753,5.119,11.676 c21.993,63.19,76.312,104.023,138.385,104.023c44.031,0,84.652-19.019,111.437-52.186l67.359-84.359l0.624-0.782l0.566-0.832 l0.212-0.314l11.119-14.616l0.867-1.139l0.74-1.232C504.884,264.867,512,239.289,512,213.319 C512,133.872,447.365,69.237,367.918,69.237z M403.516,356.781l-13.894,17.395c-21.627,26.778-54.021,42.482-91.127,42.482 c-54.255,0-96.72-37.63-113.728-86.501c-2.821-8.106-6.798-15.483-6.798-15.483c-8.277-18.84-25.404-32.309-45.664-35.912 L26.106,259.87v-70.397H247.06c17.404,0,35.135,0,54.876,0c31.655,0,60.233,12.807,80.989,33.55 c20.739,20.752,33.541,49.331,33.546,80.986C416.466,323.078,411.738,340.975,403.516,356.781z M469.034,273.867l-11.726,15.415 l-0.417,0.646l-24.109,30.193c0.646-5.294,1.092-10.648,1.092-16.112c-0.004-72.87-59.065-131.931-131.938-131.94 c-19.741,0-37.472,0-54.876,0H36.592l93.188-76.727c0,0,202.62,0,238.137,0c65.158,0,117.976,52.823,117.976,117.977 C485.894,235.49,479.67,256.149,469.034,273.867z" />
+                                  <polygon points="240.836,154.853 315.673,154.853 369.809,109.466 294.972,109.466 " />
                                 </svg>
                               ) : c === "Doctor Appointments" ? (
                                 <svg
@@ -1476,17 +1481,6 @@ export default function LeftSidebar() {
                                 >
                                   <path d="M18,5V3a1,1,0,0,0-2,0V5H8V3A1,1,0,0,0,6,3V5H2V21H22V5Zm2,14H4V7H20ZM9,10H7v2H9Zm0,4H7v2H9Zm8-4H11v2h6Zm0,4H11v2h6Z" />
                                 </svg>
-                              ) : c === "Sport Events" ? (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 512 512"
-                                  fill="currentColor"
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M367.918,69.237H129.781h-9.365l-7.227,5.949L9.514,160.546L0,168.382v12.322v79.167v21.874l21.534,3.824 l106.199,18.9c11.706,2.082,21.551,9.824,26.335,20.71l0.425,0.96l0.498,0.927c0.008,0.016,3.059,5.753,5.119,11.676 c21.993,63.19,76.312,104.023,138.385,104.023c44.031,0,84.652-19.019,111.437-52.186l67.359-84.359l0.624-0.782l0.566-0.832 l0.212-0.314l11.119-14.616l0.867-1.139l0.74-1.232C504.884,264.867,512,239.289,512,213.319 C512,133.872,447.365,69.237,367.918,69.237z M403.516,356.781l-13.894,17.395c-21.627,26.778-54.021,42.482-91.127,42.482 c-54.255,0-96.72-37.63-113.728-86.501c-2.821-8.106-6.798-15.483-6.798-15.483c-8.277-18.84-25.404-32.309-45.664-35.912 L26.106,259.87v-70.397H247.06c17.404,0,35.135,0,54.876,0c31.655,0,60.233,12.807,80.989,33.55 c20.739,20.752,33.541,49.331,33.546,80.986C416.466,323.078,411.738,340.975,403.516,356.781z M469.034,273.867l-11.726,15.415 l-0.417,0.646l-24.109,30.193c0.646-5.294,1.092-10.648,1.092-16.112c-0.004-72.87-59.065-131.931-131.938-131.94 c-19.741,0-37.472,0-54.876,0H36.592l93.188-76.727c0,0,202.62,0,238.137,0c65.158,0,117.976,52.823,117.976,117.977 C485.894,235.49,479.67,256.149,469.034,273.867z" />
-                                  <polygon points="240.836,154.853 315.673,154.853 369.809,109.466 294.972,109.466 " />
-                                </svg>
                               ) : c === "Play Days" ? (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -1503,61 +1497,65 @@ export default function LeftSidebar() {
                                 <span className="inline-block h-2 w-2 rounded-full bg-foreground/70" />
                               )}
                               {c}
-                              {futureCount > 0 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                                  {futureCount}
-                                </span>
-                              )}
                             </span>
                             {(() => {
                               const color =
                                 categoryColors[c] || defaultCategoryColor(c);
                               const ccls = colorClasses(color);
                               return (
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-label={`Edit ${c} color`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    try {
-                                      const rect = (
-                                        e.currentTarget as HTMLElement
-                                      ).getBoundingClientRect();
-                                      const menuWidth = 220;
-                                      const viewportPadding = 8;
-                                      const idealLeft =
-                                        rect.left +
-                                        rect.width / 2 -
-                                        menuWidth / 2;
-                                      const clampedLeft = Math.max(
-                                        viewportPadding,
-                                        Math.min(
-                                          idealLeft,
-                                          window.innerWidth -
-                                            menuWidth -
-                                            viewportPadding
-                                        )
-                                      );
-                                      setColorMenuPos({
-                                        left: Math.round(clampedLeft),
-                                        top: Math.round(rect.bottom + 12),
-                                      });
-                                    } catch {
-                                      setColorMenuPos(null);
-                                    }
-                                    setColorMenuFor(c);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
+                                <span className="inline-flex items-center gap-2">
+                                  {futureCount > 0 && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                                      {futureCount}
+                                    </span>
+                                  )}
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Edit ${c} color`}
+                                    onClick={(e) => {
                                       e.preventDefault();
-                                      (e.currentTarget as HTMLElement).click();
-                                    }
-                                  }}
-                                  className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
-                                  title="Edit color"
-                                />
+                                      e.stopPropagation();
+                                      try {
+                                        const rect = (
+                                          e.currentTarget as HTMLElement
+                                        ).getBoundingClientRect();
+                                        const menuWidth = 220;
+                                        const viewportPadding = 8;
+                                        const idealLeft =
+                                          rect.left +
+                                          rect.width / 2 -
+                                          menuWidth / 2;
+                                        const clampedLeft = Math.max(
+                                          viewportPadding,
+                                          Math.min(
+                                            idealLeft,
+                                            window.innerWidth -
+                                              menuWidth -
+                                              viewportPadding
+                                          )
+                                        );
+                                        setColorMenuPos({
+                                          left: Math.round(clampedLeft),
+                                          top: Math.round(rect.bottom + 12),
+                                        });
+                                      } catch {
+                                        setColorMenuPos(null);
+                                      }
+                                      setColorMenuFor(c);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        (
+                                          e.currentTarget as HTMLElement
+                                        ).click();
+                                      }
+                                    }}
+                                    className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
+                                    title="Edit color"
+                                  />
+                                </span>
                               );
                             })()}
                           </button>
