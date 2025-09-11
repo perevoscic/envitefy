@@ -8,7 +8,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const tokenData = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
+    const secret =
+      process.env.AUTH_SECRET ??
+      process.env.NEXTAUTH_SECRET ??
+      (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
+    const tokenData = await getToken({ req: request as any, secret });
     const providers = (tokenData as any)?.providers || {};
     const email = (tokenData as any)?.email as string | undefined;
     const g = providers.google || {};
@@ -23,6 +27,11 @@ export async function POST(request: NextRequest) {
           const dbToken = await getGoogleRefreshToken(email);
           if (dbToken) refreshToken = dbToken;
         } catch {}
+        // Dev-only fallback: allow legacy cookie even when signed in to ease setup
+        if (!refreshToken && process.env.NODE_ENV !== "production") {
+          const legacy = request.cookies.get("g_refresh")?.value;
+          if (legacy) refreshToken = legacy;
+        }
       } else {
         // Unauthenticated/legacy fallback: accept refresh token from our legacy cookie if present
         const legacy = request.cookies.get("g_refresh")?.value;

@@ -99,6 +99,7 @@ export type AppUserRow = {
   last_name?: string | null;
   preferred_provider?: string | null;
   subscription_plan?: string | null;
+  ever_paid?: boolean | null;
   scans_remaining?: number | null;
   credits?: number | null;
   password_hash: string;
@@ -108,7 +109,7 @@ export type AppUserRow = {
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `select id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at
+    `select id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at
      from users
      where email = $1
      limit 1`,
@@ -129,9 +130,9 @@ export async function createUserWithEmailPassword(params: {
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash, subscription_plan, scans_remaining, credits)
-     values ($1, $2, $3, $4, 'free', 3, 0)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at`,
+    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, scans_remaining, credits)
+     values ($1, $2, $3, $4, 'free', false, 3, 3)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at`,
     [lower, firstName || null, lastName || null, password_hash]
   );
   return res.rows[0];
@@ -240,7 +241,7 @@ export async function updateUserNamesByEmail(params: {
     `update users
      set first_name = $2, last_name = $3
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at`,
     [lower, params.firstName ?? null, params.lastName ?? null]
   );
   return res.rows[0];
@@ -259,7 +260,7 @@ export async function updatePreferredProviderByEmail(params: {
     `update users
      set preferred_provider = $2
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at`,
     [lower, params.preferredProvider]
   );
   return res.rows[0];
@@ -312,12 +313,32 @@ export async function updateSubscriptionPlanByEmail(params: {
 }): Promise<void> {
   await ensureUsersHasSubscriptionPlanColumn();
   const lower = params.email.toLowerCase();
-  await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
+  // When moving to a paid plan, mark ever_paid = true and clear free scans
+  if (params.plan === "monthly" || params.plan === "yearly") {
+    await query(
+      `update users
+       set subscription_plan = $2,
+           ever_paid = true,
+           scans_remaining = coalesce(scans_remaining, 0)
+       where email = $1`,
+      [lower, params.plan]
+    );
+  } else {
+    await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
+  }
 }
 
 // Scans credits
 async function ensureUsersHasScansColumn(): Promise<void> {
   await query(`alter table users add column if not exists scans_remaining integer`);
+  await query(`alter table users alter column scans_remaining set default 3`);
+  // One-time backfill for free or unspecified plans
+  await query(
+    `update users
+     set scans_remaining = 3
+     where scans_remaining is null
+       and (subscription_plan = 'free' or subscription_plan is null)`
+  );
 }
 
 export async function getScansRemainingByEmail(email: string): Promise<number | null> {
@@ -353,13 +374,15 @@ export async function incrementScansByEmail(email: string, delta: number): Promi
 export async function initFreeScansIfMissing(email: string, amount: number = 3): Promise<number | null> {
   await ensureUsersHasSubscriptionPlanColumn();
   await ensureUsersHasScansColumn();
+  await ensureUsersHasCreditsColumn();
   const lower = email.toLowerCase();
   await query(
     `update users
-     set scans_remaining = $2
+     set scans_remaining = coalesce(scans_remaining, $2),
+         credits = $2
      where email = $1
        and (subscription_plan = 'free' or subscription_plan is null)
-       and scans_remaining is null`,
+       and (credits is null or credits <= 0)`,
     [lower, Math.max(0, Math.trunc(amount))]
   );
   const res = await query<{ scans_remaining: number | null }>(
@@ -375,14 +398,15 @@ async function ensureUsersHasCreditsColumn(): Promise<void> {
   await query(`alter table users add column if not exists credits integer`);
 }
 
-export async function getCreditsByEmail(email: string): Promise<number> {
+export async function getCreditsByEmail(email: string): Promise<number | null> {
   await ensureUsersHasCreditsColumn();
   const lower = email.toLowerCase();
   const res = await query<{ credits: number | null }>(
     `select credits from users where email = $1 limit 1`,
     [lower]
   );
-  return Number.isFinite(res.rows[0]?.credits as any) ? (res.rows[0]?.credits as number) : 0;
+  const v = res.rows[0]?.credits;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
 export async function incrementCreditsByEmail(email: string, delta: number): Promise<number> {
@@ -390,7 +414,10 @@ export async function incrementCreditsByEmail(email: string, delta: number): Pro
   const lower = email.toLowerCase();
   const res = await query<{ credits: number | null }>(
     `update users
-     set credits = greatest(0, coalesce(credits, 0) + $2)
+     set credits = case
+       when (credits is null or credits <= 0) and $2 < 0 then greatest(0, 3 + $2)
+       else greatest(0, coalesce(credits, 0) + $2)
+     end
      where email = $1
      returning credits`,
     [lower, Math.trunc(delta)]

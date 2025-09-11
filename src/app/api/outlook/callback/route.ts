@@ -36,10 +36,14 @@ export async function GET(request: Request) {
 
     // Persist refresh token to the database for the signed-in user and set preference
     try {
+      const secret =
+        process.env.AUTH_SECRET ??
+        process.env.NEXTAUTH_SECRET ??
+        (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
       const tokenData = await getToken({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         req: request as any,
-        secret: process.env.NEXTAUTH_SECRET,
+        secret,
       });
       const email = (tokenData as any)?.email as string | undefined;
       if (email) {

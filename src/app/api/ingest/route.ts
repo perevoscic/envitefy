@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { incrementCreditsByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -74,6 +77,12 @@ export async function POST(request: Request) {
       return null;
     };
     const category = detectCategory(raw, schedule);
+
+    try {
+      const session = await getServerSession(authOptions);
+      const email = session?.user?.email as string | undefined;
+      if (email) await incrementCreditsByEmail(email, -1);
+    } catch {}
 
     return NextResponse.json({
       ocrText: raw,

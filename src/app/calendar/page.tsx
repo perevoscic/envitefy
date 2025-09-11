@@ -311,10 +311,12 @@ export default function CalendarPage() {
   );
   const byDay = useMemo(() => groupEventsByDay(events), [events]);
   const upcoming = useMemo(() => {
-    const now = new Date();
+    // "Upcoming" should include events happening today or later.
+    // Past-day events remain on the calendar grid but are hidden from this list.
+    const todayStart = startOfDay(new Date());
     return events.filter((e) => {
       try {
-        return new Date(e.start) >= now;
+        return new Date(e.start) >= todayStart;
       } catch {
         return false;
       }

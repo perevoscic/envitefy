@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { incrementCreditsByEmail } from "@/lib/db";
 import { GoogleAuth } from "google-auth-library";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
@@ -534,6 +537,12 @@ export async function POST(request: Request) {
 
     const intakeId: string | null = null;
     const category: string | null = detectCategory(raw, schedule, fieldsGuess);
+
+    try {
+      const session = await getServerSession(authOptions);
+      const email = session?.user?.email as string | undefined;
+      if (email) await incrementCreditsByEmail(email, -1);
+    } catch {}
 
     return NextResponse.json(
       { intakeId, ocrText: raw, fieldsGuess, schedule, events, category },

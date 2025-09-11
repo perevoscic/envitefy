@@ -127,7 +127,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Create a user account in Postgres (AWS RDS) using email/password.
 - **Auth**: None.
 - **Input (JSON)**: `{ email: string, password: string, firstName?: string, lastName?: string }`.
-- **Behavior**: New users are created with `subscription_plan = "free"` and `scans_remaining = 3`.
+- **Behavior**: New users are created with `subscription_plan = "free"` and `credits = 3`.
 - **Output**: `{ ok: true }` on success or `{ error }` on failure.
 - **Env**: `DATABASE_URL` (Postgres connection string)
 
@@ -199,7 +199,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Read and update user profile, preferred provider, and subscription plan.
 - **Auth**: NextAuth session required.
-- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, scanCredits, name }`.
+- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name }`.
 - **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|null }`.
 - **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan }`.
 

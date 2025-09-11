@@ -32,6 +32,7 @@ export default function SnapPage() {
     google: false,
     microsoft: false,
   });
+  const [credits, setCredits] = useState<number | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
@@ -63,6 +64,24 @@ export default function SnapPage() {
             microsoft: Boolean((session as any)?.providers?.microsoft),
           });
       }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+  // Load remaining credits (signed-in users)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/user/profile", { cache: "no-store" });
+        if (!cancelled && res.ok) {
+          const j = await res.json().catch(() => ({}));
+          if (typeof (j as any)?.credits === "number") {
+            setCredits((j as any).credits as number);
+          }
+        }
+      } catch {}
     })();
     return () => {
       cancelled = true;
@@ -216,7 +235,18 @@ export default function SnapPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const redirectIfNoCredits = (): boolean => {
+    try {
+      if (typeof credits === "number" && credits <= 0) {
+        window.location.href = "/subscription";
+        return true;
+      }
+    } catch {}
+    return false;
+  };
+
   const onFile = async (f: File | null) => {
+    if (redirectIfNoCredits()) return;
     // Always clear inputs so selecting the same file again triggers onChange
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -391,10 +421,12 @@ export default function SnapPage() {
   };
 
   const openCamera = () => {
+    if (redirectIfNoCredits()) return;
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     cameraInputRef.current?.click();
   };
   const openUpload = () => {
+    if (redirectIfNoCredits()) return;
     if (fileInputRef.current) fileInputRef.current.value = "";
     fileInputRef.current?.click();
   };
@@ -805,6 +837,29 @@ export default function SnapPage() {
                 Turn any flyer or appointment card into a calendar event in
                 seconds. Works with Google, Apple, and Outlook Calendars.
               </p>
+
+              {/* Credits pill */}
+              <div className="mt-6 flex justify-center">
+                <Link
+                  href="/subscription"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 text-foreground/90 text-xs px-3 py-1.5 hover:bg-surface"
+                >
+                  <span aria-hidden>🎟️</span>
+                  {typeof credits === "number" ? (
+                    <>
+                      <span className="font-semibold">{credits}</span>
+                      <span>credits left. Subscribe</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Free trial:</span>
+                      <span className="font-semibold">3</span>
+                      <span>credits</span>
+                    </>
+                  )}
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
 
               <div className="mt-8 flex flex-row gap-3 justify-center lg:justify-center">
                 <button

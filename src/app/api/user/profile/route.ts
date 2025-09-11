@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, getScansRemainingByEmail, initFreeScansIfMissing } from "@/lib/db";
+import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeScansIfMissing, getCreditsByEmail } from "@/lib/db";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -11,22 +11,24 @@ export async function GET() {
   const email = session.user.email as string;
   const user = await getUserByEmail(email);
   const plan = await getSubscriptionPlanByEmail(email);
-  // Backfill free users who never received scans_remaining
+  // Backfill free users who never received initial credits
   const scans = await (async () => {
-    const current = await getScansRemainingByEmail(email);
-    if (current == null && (plan === "free" || plan == null)) {
+    const current = await getCreditsByEmail(email);
+    if ((plan === "free" || plan == null) && current == null) {
+      // initialize to 3 only when there is truly no value set (legacy rows)
       return await initFreeScansIfMissing(email, 3);
     }
     return current ?? 0;
   })();
   const responsePlan = plan || "free";
+  const creditsCount = typeof scans === "number" ? scans : (await getCreditsByEmail(email)) ?? 0;
   return NextResponse.json({
     email: user?.email || email,
     firstName: user?.first_name || null,
     lastName: user?.last_name || null,
     preferredProvider: user?.preferred_provider || null,
     subscriptionPlan: responsePlan,
-    scanCredits: responsePlan === "free" ? (typeof scans === "number" ? scans : 0) : null,
+    credits: Number.isFinite(creditsCount as any) ? creditsCount : 0,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
   });
 }

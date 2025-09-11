@@ -58,8 +58,8 @@ export default function SubscriptionPage() {
           setCurrentPlan("free");
           setSelectedPlan("free");
         }
-        if (typeof profileJson?.scanCredits === "number") {
-          setScanCredits(profileJson.scanCredits);
+        if (typeof profileJson?.credits === "number") {
+          setScanCredits(profileJson.credits);
         }
       } catch {}
     }
@@ -133,8 +133,8 @@ export default function SubscriptionPage() {
               <h2 className="text-base font-medium">Trial</h2>
               <div className="text-xs text-muted-foreground">
                 {typeof scanCredits === "number"
-                  ? `${scanCredits} free scans left`
-                  : "3 free scans"}
+                  ? `${scanCredits} credits left`
+                  : "3 trial credits"}
               </div>
             </div>
             <div className="text-right sm:text-center sm:mt-1">

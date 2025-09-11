@@ -142,6 +142,7 @@ export default function LeftSidebar() {
   const [subscriptionPlan, setSubscriptionPlan] = useState<
     "free" | "monthly" | "yearly" | null
   >(null);
+  const [credits, setCredits] = useState<number>(0);
   useEffect(() => {
     let ignore = false;
     async function loadProfile() {
@@ -154,12 +155,13 @@ export default function LeftSidebar() {
         if (!res.ok) return;
         if (!ignore) {
           setScanCredits(
-            typeof json.scanCredits === "number" ? json.scanCredits : null
+            typeof json.credits === "number" ? json.credits : null
           );
           const p = json.subscriptionPlan;
           setSubscriptionPlan(
             p === "free" || p === "monthly" || p === "yearly" ? p : null
           );
+          if (typeof json.credits === "number") setCredits(json.credits);
         }
       } catch {}
     }
@@ -1925,12 +1927,12 @@ export default function LeftSidebar() {
                 <span className="truncate text-sm font-medium">
                   {displayName}
                 </span>
-                {subscriptionPlan === "free" &&
-                  typeof scanCredits === "number" && (
-                    <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                      {scanCredits}
-                    </span>
-                  )}
+                {(typeof scanCredits === "number" ? scanCredits : credits) >
+                  0 && (
+                  <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    {typeof scanCredits === "number" ? scanCredits : credits}
+                  </span>
+                )}
               </div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
