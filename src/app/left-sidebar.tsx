@@ -138,6 +138,36 @@ export default function LeftSidebar() {
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
     "User";
+  const [scanCredits, setScanCredits] = useState<number | null>(null);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<
+    "free" | "monthly" | "yearly" | null
+  >(null);
+  useEffect(() => {
+    let ignore = false;
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/user/profile", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) return;
+        if (!ignore) {
+          setScanCredits(
+            typeof json.scanCredits === "number" ? json.scanCredits : null
+          );
+          const p = json.subscriptionPlan;
+          setSubscriptionPlan(
+            p === "free" || p === "monthly" || p === "yearly" ? p : null
+          );
+        }
+      } catch {}
+    }
+    if (status === "authenticated") loadProfile();
+    return () => {
+      ignore = true;
+    };
+  }, [status]);
   const isDark = theme === "dark";
   const initials = (() => {
     const base =
@@ -1891,9 +1921,17 @@ export default function LeftSidebar() {
               aria-expanded={menuOpen}
               className="w-full inline-flex items-center justify-between gap-3 px-3 py-2 text-foreground/90 hover:text-foreground hover:bg-surface/70 focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-md"
             >
-              <span className="truncate text-sm font-medium">
-                {displayName}
-              </span>
+              <div className="min-w-0 flex-1 inline-flex items-center gap-2">
+                <span className="truncate text-sm font-medium">
+                  {displayName}
+                </span>
+                {subscriptionPlan === "free" &&
+                  typeof scanCredits === "number" && (
+                    <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      {scanCredits}
+                    </span>
+                  )}
+              </div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"

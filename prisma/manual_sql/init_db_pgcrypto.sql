@@ -14,6 +14,18 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Ensure column exists if table pre-existed without it
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider varchar(32);
+-- Ensure subscription_plan column exists
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan varchar(32);
+-- Ensure scans_remaining column exists and default
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_remaining integer;
+ALTER TABLE users ALTER COLUMN scans_remaining SET DEFAULT 3;
+-- Backfill null scans_remaining to default of 3
+UPDATE users SET scans_remaining = 3 WHERE scans_remaining IS NULL;
+-- Add credits column to store purchased/earned credits separate from free scans
+ALTER TABLE users ADD COLUMN IF NOT EXISTS credits integer;
+ALTER TABLE users ALTER COLUMN credits SET DEFAULT 0;
+-- Backfill null credits to 0
+UPDATE users SET credits = 0 WHERE credits IS NULL;
 
 -- Ensure id default exists even if table pre-existed without it
 ALTER TABLE users ALTER COLUMN id SET DEFAULT gen_random_uuid();

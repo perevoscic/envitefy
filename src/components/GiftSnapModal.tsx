@@ -10,8 +10,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [quantity, setQuantity] = useState<number>(1);
-  const [period, setPeriod] = useState<"months" | "years">("months");
+  const [quantity, setQuantity] = useState<number>(3);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -53,6 +52,10 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
       setResult("Please enter a valid quantity.");
       return;
     }
+    if (!message.trim()) {
+      setResult("Please enter a message.");
+      return;
+    }
     setSubmitting(true);
     setResult(null);
     try {
@@ -61,7 +64,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quantity: Math.round(quantity),
-          period,
+          period: "months",
           recipientName: fullName,
           recipientEmail: email.trim(),
           message,
@@ -81,7 +84,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
     }
   };
 
-  const unitLabel = period === "years" ? "years" : "months";
+  // months only now
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -119,12 +122,12 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
 
         <h2 className="text-xl font-semibold text-center">Gift a Snap</h2>
         <p className="text-sm text-muted-foreground text-center mt-1">
-          Enter recipient details and choose the number of months or years to
-          gift. We'll generate a redeemable promo code.
+          Enter recipient details and choose how many months to gift. We'll
+          generate a redeemable promo code.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
               placeholder="First name"
@@ -142,39 +145,28 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
           </div>
           <input
             type="email"
-            placeholder="Email (required)"
+            placeholder="Recipient email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-            <div>
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={quantity}
-                onChange={(e) =>
-                  setQuantity(
-                    Math.max(1, Math.floor(Number(e.target.value) || 0))
-                  )
-                }
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
+          <div className="grid grid-cols-1 gap-3 items-center">
             <select
-              value={period}
+              value={quantity}
               onChange={(e) =>
-                setPeriod((e.target.value as "months" | "years") || "months")
+                setQuantity(Math.floor(Number(e.target.value) || 3))
               }
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
             >
-              <option value="months">Months</option>
-              <option value="years">Years</option>
+              {[3, 6, 12, 24].map((m) => (
+                <option key={m} value={m}>
+                  {m} months
+                </option>
+              ))}
             </select>
           </div>
           <textarea
-            placeholder="Add a message (optional)"
+            placeholder="Add a message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
@@ -188,21 +180,21 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
           </div>
         )}
 
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            type="button"
-            className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition disabled:opacity-60"
-            disabled={submitting}
-            onClick={onSubmit}
-          >
-            {submitting ? "Creating..." : "Create Gift Code"}
-          </button>
+        <div className="mt-5 grid grid-cols-2 gap-3">
           <button
             type="button"
             className="w-full px-4 py-2 rounded-lg bg-surface text-foreground border border-border hover:bg-surface/80"
             onClick={onClose}
           >
             Cancel
+          </button>
+          <button
+            type="button"
+            className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition disabled:opacity-60"
+            disabled={submitting}
+            onClick={onSubmit}
+          >
+            {submitting ? "Snapping..." : "Snap the Gift"}
           </button>
         </div>
       </div>

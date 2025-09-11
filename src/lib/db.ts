@@ -99,6 +99,8 @@ export type AppUserRow = {
   last_name?: string | null;
   preferred_provider?: string | null;
   subscription_plan?: string | null;
+  scans_remaining?: number | null;
+  credits?: number | null;
   password_hash: string;
   created_at?: string;
 };
@@ -106,7 +108,7 @@ export type AppUserRow = {
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `select id, email, first_name, last_name, preferred_provider, subscription_plan, password_hash, created_at
+    `select id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at
      from users
      where email = $1
      limit 1`,
@@ -127,9 +129,9 @@ export async function createUserWithEmailPassword(params: {
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash)
-     values ($1, $2, $3, $4)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, password_hash, created_at`,
+    `insert into users (email, first_name, last_name, password_hash, subscription_plan, scans_remaining, credits)
+     values ($1, $2, $3, $4, 'free', 3, 0)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at`,
     [lower, firstName || null, lastName || null, password_hash]
   );
   return res.rows[0];
@@ -238,7 +240,7 @@ export async function updateUserNamesByEmail(params: {
     `update users
      set first_name = $2, last_name = $3
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at`,
     [lower, params.firstName ?? null, params.lastName ?? null]
   );
   return res.rows[0];
@@ -257,7 +259,7 @@ export async function updatePreferredProviderByEmail(params: {
     `update users
      set preferred_provider = $2
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, scans_remaining, credits, password_hash, created_at`,
     [lower, params.preferredProvider]
   );
   return res.rows[0];
@@ -311,6 +313,89 @@ export async function updateSubscriptionPlanByEmail(params: {
   await ensureUsersHasSubscriptionPlanColumn();
   const lower = params.email.toLowerCase();
   await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
+}
+
+// Scans credits
+async function ensureUsersHasScansColumn(): Promise<void> {
+  await query(`alter table users add column if not exists scans_remaining integer`);
+}
+
+export async function getScansRemainingByEmail(email: string): Promise<number | null> {
+  await ensureUsersHasScansColumn();
+  const lower = email.toLowerCase();
+  const res = await query<{ scans_remaining: number | null }>(
+    `select scans_remaining from users where email = $1 limit 1`,
+    [lower]
+  );
+  const v = res.rows[0]?.scans_remaining;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+export async function incrementScansByEmail(email: string, delta: number): Promise<number | null> {
+  await ensureUsersHasScansColumn();
+  const lower = email.toLowerCase();
+  const res = await query<{ scans_remaining: number | null }>(
+    `update users
+     set scans_remaining = greatest(0, coalesce(scans_remaining, 0) + $2)
+     where email = $1
+     returning scans_remaining`,
+    [lower, Math.trunc(delta)]
+  );
+  const v = res.rows[0]?.scans_remaining;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/**
+ * Initialize free trial scans for legacy users missing a value.
+ * Only applies when subscription_plan = 'free' AND scans_remaining IS NULL.
+ * Does not top-up users who have already consumed or have a value (including 0).
+ */
+export async function initFreeScansIfMissing(email: string, amount: number = 3): Promise<number | null> {
+  await ensureUsersHasSubscriptionPlanColumn();
+  await ensureUsersHasScansColumn();
+  const lower = email.toLowerCase();
+  await query(
+    `update users
+     set scans_remaining = $2
+     where email = $1
+       and (subscription_plan = 'free' or subscription_plan is null)
+       and scans_remaining is null`,
+    [lower, Math.max(0, Math.trunc(amount))]
+  );
+  const res = await query<{ scans_remaining: number | null }>(
+    `select scans_remaining from users where email = $1 limit 1`,
+    [lower]
+  );
+  const v = res.rows[0]?.scans_remaining;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+// Credits helpers
+async function ensureUsersHasCreditsColumn(): Promise<void> {
+  await query(`alter table users add column if not exists credits integer`);
+}
+
+export async function getCreditsByEmail(email: string): Promise<number> {
+  await ensureUsersHasCreditsColumn();
+  const lower = email.toLowerCase();
+  const res = await query<{ credits: number | null }>(
+    `select credits from users where email = $1 limit 1`,
+    [lower]
+  );
+  return Number.isFinite(res.rows[0]?.credits as any) ? (res.rows[0]?.credits as number) : 0;
+}
+
+export async function incrementCreditsByEmail(email: string, delta: number): Promise<number> {
+  await ensureUsersHasCreditsColumn();
+  const lower = email.toLowerCase();
+  const res = await query<{ credits: number | null }>(
+    `update users
+     set credits = greatest(0, coalesce(credits, 0) + $2)
+     where email = $1
+     returning credits`,
+    [lower, Math.trunc(delta)]
+  );
+  return Number.isFinite(res.rows[0]?.credits as any) ? (res.rows[0]?.credits as number) : 0;
 }
 
 // Promo codes

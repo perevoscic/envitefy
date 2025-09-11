@@ -768,7 +768,7 @@ export default function SnapPage() {
 
   return (
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
-      <section className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+      <section className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
         <div className="order-2 lg:order-1 text-center lg:text-center">
           <Link
             href="/snap"
