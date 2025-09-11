@@ -72,6 +72,9 @@ export default function SubscriptionPage() {
               : undefined
           }
         >
+          {selectedPlan === "free" && (
+            <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-[#9CA3AF]" />
+          )}
           <span
             className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-xs font-medium rounded-full text-white shadow-sm z-10"
             style={{ backgroundColor: "#9CA3AF" }}
@@ -108,6 +111,9 @@ export default function SubscriptionPage() {
             if (e.key === "Enter" || e.key === " ") setSelectedPlan("monthly");
           }}
         >
+          {selectedPlan === "monthly" && (
+            <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-sky-500" />
+          )}
           <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-xs font-medium rounded-full bg-sky-500 text-white shadow-sm">
             Most Popular
           </span>
@@ -142,6 +148,9 @@ export default function SubscriptionPage() {
             if (e.key === "Enter" || e.key === " ") setSelectedPlan("yearly");
           }}
         >
+          {selectedPlan === "yearly" && (
+            <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-emerald-500" />
+          )}
           <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-xs font-medium rounded-full bg-emerald-500 text-white shadow-sm">
             Best Value
           </span>
