@@ -22,6 +22,8 @@ export default function LeftSidebar() {
     left: number;
     top: number;
   } | null>(null);
+  const [showThumbnails, setShowThumbnails] = useState<boolean>(false);
+  const [previewHref, setPreviewHref] = useState<string | null>(null);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
@@ -132,6 +134,16 @@ export default function LeftSidebar() {
     setItemMenuId(null);
     setItemMenuPos(null);
   }, [pathname]);
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewHref(null);
+    };
+    if (previewHref) {
+      document.addEventListener("keydown", onEsc);
+      return () => document.removeEventListener("keydown", onEsc);
+    }
+  }, [previewHref]);
 
   const displayName =
     (session?.user?.name as string) ||
@@ -1376,7 +1388,10 @@ export default function LeftSidebar() {
                       <button
                         key={c}
                         type="button"
-                        onClick={() => setActiveCategory(c)}
+                        onClick={() => {
+                          setActiveCategory(c);
+                          setShowThumbnails(true);
+                        }}
                         className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${buttonClass(
                           c
                         )}`}

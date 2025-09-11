@@ -53,17 +53,19 @@ export default async function RootLayout({
           <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
             <div className="flex-1 min-w-0">{children}</div>
             <footer>
-              <div className="max-w-7xl mx-auto px-4 py-6 text-sm text-foreground/80">
-                <div className="flex flex-wrap items-center justify-center gap-4 text-center">
-                  <Link href="/terms" className="hover:text-foreground">
-                    Terms of Use
-                  </Link>
-                  <span className="opacity-40">•</span>
-                  <Link href="/privacy" className="hover:text-foreground">
-                    Privacy Policy
-                  </Link>
-                  <span className="opacity-40">•</span>
-                  <span>© {new Date().getFullYear()} Snap My Date</span>
+              <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
+                <div className="w-full overflow-x-auto">
+                  <p className="text-center whitespace-nowrap">
+                    <Link href="/terms" className="hover:text-foreground">
+                      Terms of Use
+                    </Link>
+                    <span className="opacity-40 mx-2">•</span>
+                    <Link href="/privacy" className="hover:text-foreground">
+                      Privacy Policy
+                    </Link>
+                    <span className="opacity-40 mx-2">•</span>
+                    <span>© {new Date().getFullYear()} Snap My Date</span>
+                  </p>
                 </div>
               </div>
             </footer>
