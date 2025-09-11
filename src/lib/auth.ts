@@ -11,7 +11,8 @@ export function getAuthOptions(): NextAuthOptions {
   return {
     debug: true,              // TEMP: leave on while debugging
     secret,
-    useSecureCookies: true,  // Force non-secure cookies for local dev consistency
+    // Secure cookies only in production/HTTPS; localhost (http) must be non-secure
+    useSecureCookies: process.env.NODE_ENV === "production",
     providers: [
       CredentialsProvider({
         name: "Email and Password",
