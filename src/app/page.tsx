@@ -808,7 +808,7 @@ export default function Home() {
                 <button
                   onClick={openCamera}
                   aria-label="Open camera to snap a flyer"
-                  className="btn btn-primary"
+                  className="btn btn-primary inline-flex items-center gap-2 whitespace-nowrap appearance-none px-3 py-2 rounded-2xl font-semibold text-sm bg-primary text-on-primary shadow-md shadow-primary/25"
                 >
                   <svg
                     className="h-4 w-4"
@@ -838,7 +838,7 @@ export default function Home() {
                 <button
                   onClick={openUpload}
                   aria-label="Upload a flyer or card image from your device"
-                  className="btn btn-outline"
+                  className="btn btn-outline inline-flex items-center gap-2 whitespace-nowrap appearance-none px-3 py-2 rounded-2xl font-semibold text-sm border border-border bg-surface/80 text-foreground"
                 >
                   <svg
                     className="h-4 w-4"

@@ -151,7 +151,7 @@ body {
     padding-left: calc(3rem + env(safe-area-inset-left));
     padding-right: calc(3rem + env(safe-area-inset-right));
   }
-
+  
   /* iOS-only padding helper to guarantee gutters even if other rules fail */
   @supports (-webkit-touch-callout: none) {
     .ios-px-12 {
@@ -176,6 +176,12 @@ body {
     font-weight: 600; /* font-semibold */
     transition: box-shadow 120ms ease, opacity 120ms ease, transform 80ms ease, background-color 120ms ease, color 120ms ease, border-color 120ms ease;
     outline: none;
+    /* Safari/iOS minimal reset without leaving @layer */
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    white-space: nowrap;
   }
   .btn:active { transform: translateY(1px) scale(0.98); }
   .btn:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent); }

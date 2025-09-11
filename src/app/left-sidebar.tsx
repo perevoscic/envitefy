@@ -140,6 +140,14 @@ export default function LeftSidebar() {
     setResourcesOpenFloating(false);
     setItemMenuId(null);
     setItemMenuPos(null);
+    // On small screens, auto-collapse the sidebar after navigation
+    try {
+      const isNarrow =
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(max-width: 1023px)").matches;
+      if (isNarrow) setIsCollapsed(true);
+    } catch {}
   }, [pathname]);
 
   const displayName =
