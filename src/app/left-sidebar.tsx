@@ -168,7 +168,6 @@ export default function LeftSidebar() {
     if (c === "Birthdays") return "pink";
     if (c === "Doctor Appointments") return "teal";
     if (c === "Appointments") return "amber";
-    if (c === "Football Schedule") return "sky";
     if (c === "Sport Events") return "indigo";
     if (c === "Play Days") return "rose";
     return "slate"; // neutral fallback
@@ -178,7 +177,6 @@ export default function LeftSidebar() {
     "Birthdays",
     "Doctor Appointments",
     "Appointments",
-    "Football Schedule",
     "Sport Events",
     "Play Days",
   ];
@@ -286,6 +284,11 @@ export default function LeftSidebar() {
       const next = { ...prev, [category]: nextColor };
       try {
         localStorage.setItem("categoryColors", JSON.stringify(next));
+        try {
+          window.dispatchEvent(
+            new CustomEvent("categoryColorsUpdated", { detail: next })
+          );
+        } catch {}
       } catch {}
       return next;
     });
@@ -472,6 +475,11 @@ export default function LeftSidebar() {
       const next = { ...prev, [category]: color } as Record<string, string>;
       try {
         localStorage.setItem("categoryColors", JSON.stringify(next));
+        try {
+          window.dispatchEvent(
+            new CustomEvent("categoryColorsUpdated", { detail: next })
+          );
+        } catch {}
       } catch {}
       return next;
     });
@@ -1438,20 +1446,15 @@ export default function LeftSidebar() {
                                 >
                                   <path d="M18,8H13V5H11V8H6a4,4,0,0,0-4,4v9H22V12A4,4,0,0,0,18,8Zm2,11H4V16a3.78,3.78,0,0,0,2.71-1.3,1.54,1.54,0,0,1,2.58,0,3.49,3.49,0,0,0,5.42,0,1.54,1.54,0,0,1,2.58,0A3.78,3.78,0,0,0,20,16Zm0-5a2,2,0,0,1-1.29-.7,3.49,3.49,0,0,0-5.42,0,1.54,1.54,0,0,1-2.58,0,3.49,3.49,0,0,0-5.42,0A2,2,0,0,1,4,14V12a2,2,0,0,1,2-2H18a2,2,0,0,1,2,2ZM12,4.19a1.55,1.55,0,0,0,1.55-1.55C13.55,1.4,12,0,12,0s-1.55,1.4-1.55,2.64A1.55,1.55,0,0,0,12,4.19Z" />
                                 </svg>
-                              ) : c === "Football Schedule" ? (
+                              ) : c === "Sport Events" ? (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 24 24"
-                                  fill="none"
+                                  fill="currentColor"
                                   className="h-4 w-4"
                                   aria-hidden="true"
                                 >
-                                  <path
-                                    fillRule="evenodd"
-                                    clipRule="evenodd"
-                                    fill="currentColor"
-                                    d="M6.45635 6.45637C8.583 4.32971 11.5287 3.57849 14.2767 3.44059C16.8147 3.31323 19.0625 3.71611 20.0701 3.92988C20.2838 4.93738 20.6864 7.18553 20.5588 9.72381C20.4208 12.4721 19.6695 15.4178 17.5436 17.5437C15.4178 19.6695 12.4721 20.4208 9.72381 20.5588C7.18553 20.6864 4.93738 20.2838 3.92989 20.0701C3.71611 19.0625 3.31323 16.8147 3.44059 14.2767C3.57848 11.5287 4.32969 8.58304 6.45635 6.45637ZM20.7172 2.02387C19.7764 1.81449 17.1751 1.29263 14.1765 1.4431C11.1898 1.59298 7.66622 2.41805 5.04213 5.04216C2.41804 7.66627 1.59297 11.1898 1.4431 14.1765C1.29263 17.1751 1.81449 19.7764 2.02387 20.7172C2.07994 20.9691 2.19242 21.2809 2.45576 21.5442C2.7191 21.8076 3.03083 21.92 3.28275 21.9761C4.22374 22.1855 6.82539 22.707 9.82416 22.5563C12.8109 22.4063 16.3345 21.5813 18.9579 18.9579C21.5812 16.3345 22.4063 12.8109 22.5563 9.82417C22.707 6.82539 22.1855 4.22373 21.9761 3.28274C21.92 3.03081 21.8076 2.71908 21.5442 2.45574C21.2809 2.1924 20.9691 2.07993 20.7172 2.02387ZM16.2071 9.20715C16.5976 8.81662 16.5976 8.18346 16.2071 7.79294C15.8166 7.40241 15.1834 7.40241 14.7929 7.79294L13.5 9.08583L12.7071 8.29294C12.3166 7.90241 11.6834 7.90241 11.2929 8.29294C10.9024 8.68346 10.9024 9.31662 11.2929 9.70715L12.0858 10.5L10.5 12.0858L9.70709 11.2929C9.31657 10.9024 8.6834 10.9024 8.29288 11.2929C7.90235 11.6835 7.90235 12.3166 8.29288 12.7071L9.08577 13.5L7.79288 14.7929C7.40235 15.1835 7.40235 15.8166 7.79288 16.2071C8.1834 16.5977 8.81657 16.5977 9.20709 16.2071L10.5 14.9143L11.2929 15.7071C11.6834 16.0977 12.3166 16.0977 12.7071 15.7071C13.0976 15.3166 13.0976 14.6835 12.7071 14.2929L11.9142 13.5L13.5 11.9143L14.2929 12.7071C14.6834 13.0977 15.3166 13.0977 15.7071 12.7071C16.0976 12.3166 16.0976 11.6835 15.7071 11.2929L14.9142 10.5L16.2071 9.20715Z"
-                                  />
+                                  <path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm0 2a8 8 0 016.32 3.1l-2.16.86A6 6 0 006 12c0 1.3.41 2.5 1.1 3.47L5.4 17.6A8 8 0 0112 4Zm0 16a8 8 0 01-6.32-3.1l2.16-.86A6 6 0 0018 12c0-1.3-.41-2.5-1.1-3.47l1.7-2.13A8 8 0 0112 20Zm-2-8a2 2 0 114 0 2 2 0 01-4 0Z" />
                                 </svg>
                               ) : c === "Doctor Appointments" ? (
                                 <svg
@@ -1522,11 +1525,24 @@ export default function LeftSidebar() {
                                       const rect = (
                                         e.currentTarget as HTMLElement
                                       ).getBoundingClientRect();
+                                      const menuWidth = 220;
+                                      const viewportPadding = 8;
+                                      const idealLeft =
+                                        rect.left +
+                                        rect.width / 2 -
+                                        menuWidth / 2;
+                                      const clampedLeft = Math.max(
+                                        viewportPadding,
+                                        Math.min(
+                                          idealLeft,
+                                          window.innerWidth -
+                                            menuWidth -
+                                            viewportPadding
+                                        )
+                                      );
                                       setColorMenuPos({
-                                        left: Math.round(rect.right + 8),
-                                        top: Math.round(
-                                          rect.top + rect.height / 2
-                                        ),
+                                        left: Math.round(clampedLeft),
+                                        top: Math.round(rect.bottom + 12),
                                       });
                                     } catch {
                                       setColorMenuPos(null);
@@ -2208,7 +2224,7 @@ export default function LeftSidebar() {
               position: "fixed",
               left: colorMenuPos.left,
               top: colorMenuPos.top,
-              transform: "translateY(-50%)",
+              transform: "none",
             }}
             className="z-[12000] w-[220px] rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
           >

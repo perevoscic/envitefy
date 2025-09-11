@@ -15,7 +15,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback.
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
-- **Output**: JSON with extracted text and best-guess fields. Also detects football multi-game schedules and returns normalized events. Includes a heuristic `category` when detectable.
+- **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable.
 
 ```bash
 curl -X POST \
@@ -37,35 +37,12 @@ curl -X POST \
   },
   "category": "Birthdays",
   "schedule": {
-    "detected": true,
-    "homeTeam": "Chicago Tigers",
-    "season": "2025",
-    "games": [
-      {
-        "opponent": "Green Bay Packers",
-        "homeAway": "home",
-        "startISO": "2025-09-07T18:00:00.000Z",
-        "endISO": "2025-09-07T21:00:00.000Z",
-        "stadium": "Soldier Field",
-        "city": null,
-        "state": null,
-        "sourceLines": ["Sun Sep 7, 1 PM vs Packers", "Soldier Field"]
-      }
-    ]
+    "detected": false,
+    "homeTeam": null,
+    "season": null,
+    "games": []
   },
-  "events": [
-    {
-      "title": "Home: Chicago Tigers vs Green Bay Packers",
-      "start": "2025-09-07T18:00:00.000Z",
-      "end": "2025-09-07T21:00:00.000Z",
-      "allDay": false,
-      "timezone": "America/Chicago",
-      "location": "Soldier Field",
-      "description": "Home: Chicago Tigers vs Green Bay Packers\nSun Sep 7, 1 PM vs Packers\nSoldier Field",
-      "recurrence": null,
-      "reminders": [{ "minutes": 30 }]
-    }
-  ]
+  "events": []
 }
 ```
 
@@ -78,7 +55,7 @@ curl -X POST \
 - **Purpose**: Simpler OCR and chrono-based parse; quick baseline.
 - **Auth**: None.
 - **Input**: `multipart/form-data` `file`.
-- **Output**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events, category }`.
+- **Output**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events, category }` (schedule/events are empty; football schedule detection removed).
 - **Env**: Same GCP Vision credentials as above. No LLM usage here.
 
 ### ICS Agent — GET `/api/ics`

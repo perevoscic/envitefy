@@ -1,9 +1,5 @@
 const features = [
   {
-    title: "Multi‑game schedules",
-    desc: "Detects team schedules and expands dates into separate events.",
-  },
-  {
     title: "PDF support",
     desc: "Upload PDFs directly—no conversion needed.",
   },

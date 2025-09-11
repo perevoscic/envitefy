@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import EventActions from "@/components/EventActions";
-import { getEventColor } from "@/lib/event-colors";
 
 type HistoryItem = {
   id: string;
@@ -23,6 +22,66 @@ type CalendarEvent = {
   description?: string | null;
   category?: string | null;
 };
+
+// Mirror the sidebar color logic so calendar tiles match "Recent Snapped"
+function defaultCategoryColor(c: string): string {
+  if (c === "Birthdays") return "pink";
+  if (c === "Doctor Appointments") return "teal";
+  if (c === "Appointments") return "amber";
+  if (c === "Sport Events") return "indigo";
+  if (c === "Play Days") return "rose";
+  return "slate";
+}
+
+function colorTintAndDot(color: string): { tint: string; dot: string } {
+  switch (color) {
+    case "lime":
+      return { tint: "bg-lime-500/10", dot: "bg-lime-500" };
+    case "zinc":
+      return { tint: "bg-zinc-500/10", dot: "bg-zinc-500" };
+    case "neutral":
+      return { tint: "bg-neutral-500/10", dot: "bg-neutral-500" };
+    case "stone":
+      return { tint: "bg-stone-500/10", dot: "bg-stone-500" };
+    case "gray":
+      return { tint: "bg-gray-500/10", dot: "bg-gray-500" };
+    case "red":
+      return { tint: "bg-red-500/10", dot: "bg-red-500" };
+    case "pink":
+      return { tint: "bg-pink-500/10", dot: "bg-pink-500" };
+    case "rose":
+      return { tint: "bg-rose-500/10", dot: "bg-rose-500" };
+    case "fuchsia":
+      return { tint: "bg-fuchsia-500/10", dot: "bg-fuchsia-500" };
+    case "violet":
+      return { tint: "bg-violet-500/10", dot: "bg-violet-500" };
+    case "purple":
+      return { tint: "bg-purple-500/10", dot: "bg-purple-500" };
+    case "indigo":
+      return { tint: "bg-indigo-500/10", dot: "bg-indigo-500" };
+    case "blue":
+      return { tint: "bg-blue-500/10", dot: "bg-blue-500" };
+    case "sky":
+      return { tint: "bg-sky-500/10", dot: "bg-sky-500" };
+    case "cyan":
+      return { tint: "bg-cyan-500/10", dot: "bg-cyan-500" };
+    case "teal":
+      return { tint: "bg-teal-500/10", dot: "bg-teal-500" };
+    case "emerald":
+      return { tint: "bg-emerald-500/10", dot: "bg-emerald-500" };
+    case "green":
+      return { tint: "bg-green-500/10", dot: "bg-green-500" };
+    case "yellow":
+      return { tint: "bg-yellow-500/10", dot: "bg-yellow-500" };
+    case "amber":
+      return { tint: "bg-amber-500/10", dot: "bg-amber-500" };
+    case "orange":
+      return { tint: "bg-orange-500/10", dot: "bg-orange-500" };
+    case "slate":
+    default:
+      return { tint: "bg-surface/60", dot: "bg-foreground/40" };
+  }
+}
 
 function startOfDay(date: Date): Date {
   const d = new Date(date);
@@ -156,6 +215,10 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
+    {}
+  );
+
   const [openEvent, setOpenEvent] = useState<CalendarEvent | null>(null);
   const [openDay, setOpenDay] = useState<{
     date: Date;
@@ -192,6 +255,40 @@ export default function CalendarPage() {
     };
   }, []);
 
+  // Load stored category color overrides so tiles match sidebar tints
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("categoryColors");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") setCategoryColors(parsed);
+      }
+    } catch {}
+    // Listen for cross-component updates when category colors change
+    const onColors = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail;
+        if (detail && typeof detail === "object") {
+          setCategoryColors(detail as Record<string, string>);
+        }
+      } catch {}
+    };
+    try {
+      window.addEventListener(
+        "categoryColorsUpdated",
+        onColors as EventListener
+      );
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener(
+          "categoryColorsUpdated",
+          onColors as EventListener
+        );
+      } catch {}
+    };
+  }, []);
+
   const { weeks, month, year } = useMemo(
     () => getMonthMatrix(cursor),
     [cursor]
@@ -225,14 +322,12 @@ export default function CalendarPage() {
   };
 
   const renderEventPill = (ev: CalendarEvent) => {
-    const color = getEventColor(ev.category || ev.title || "");
-    const start = new Date(ev.start);
-    const timeStr = isNaN(start.getTime())
-      ? ""
-      : new Intl.DateTimeFormat(undefined, {
-          hour: "numeric",
-          minute: "2-digit",
-        }).format(start);
+    const chosenColorName = ev.category
+      ? categoryColors[ev.category] || defaultCategoryColor(ev.category)
+      : "";
+    const tone = chosenColorName
+      ? colorTintAndDot(chosenColorName)
+      : { tint: "bg-surface/60", dot: "bg-foreground/40" };
     return (
       <button
         key={ev.id}
@@ -240,22 +335,25 @@ export default function CalendarPage() {
           e.stopPropagation();
           setOpenEvent(ev);
         }}
-        className={`hidden md:flex items-center gap-2 rounded-md border ${color.border} ${color.bg} ${color.text} px-2 py-1 text-[11px] leading-tight hover:brightness-[.97]`}
+        className={`hidden md:flex flex-col rounded-md ${tone.tint} text-black px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
         title={ev.title}
       >
-        <span className={`h-2 w-2 rounded-full ${color.dot}`} />
         <span className="truncate max-w-[10rem]">{ev.title}</span>
-        {timeStr && <span className="opacity-70">· {timeStr}</span>}
       </button>
     );
   };
 
   const renderEventDot = (ev: CalendarEvent) => {
-    const color = getEventColor(ev.category || ev.title || "");
+    const chosenColorName = ev.category
+      ? categoryColors[ev.category] || defaultCategoryColor(ev.category)
+      : "";
+    const tone = chosenColorName
+      ? colorTintAndDot(chosenColorName)
+      : { tint: "bg-surface/60", dot: "bg-foreground/40" };
     return (
       <span
         key={ev.id}
-        className={`inline-block h-1.5 w-1.5 rounded-full ${color.dot}`}
+        className={`inline-block h-1.5 w-1.5 rounded-full ${tone.dot}`}
       />
     );
   };
@@ -310,7 +408,7 @@ export default function CalendarPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-7 grid-rows-6 auto-rows-fr gap-px rounded-md border border-border bg-border w-full max-w-full">
+        <div className="grid grid-cols-7 grid-rows-6 auto-rows-fr gap-px rounded-md border border-border bg-border w-full max-w-full shadow-md sm:shadow-lg transition-shadow">
           {weeks.map((week, wi) => (
             <React.Fragment key={wi}>
               {week.map((date) => {
@@ -322,7 +420,7 @@ export default function CalendarPage() {
                   <div
                     key={date.toISOString()}
                     onClick={() => onDayClick(date)}
-                    className={`h-full cursor-pointer bg-surface p-1.5 sm:p-2 ${
+                    className={`h-full cursor-pointer bg-surface p-1.5 sm:p-2 md:min-h-[96px] ${
                       isCurrentMonth ? "" : "bg-foreground/[.02]"
                     }`}
                   >
@@ -336,21 +434,21 @@ export default function CalendarPage() {
                       >
                         {date.getDate()}
                       </div>
-                      {/* Mobile dots */}
-                      <div className="md:hidden flex items-center gap-1">
-                        {items.slice(0, 4).map((ev) => renderEventDot(ev))}
-                        {items.length > 4 && (
+                      {/* Event dots (match event colors) */}
+                      <div className="flex items-center gap-1">
+                        {items.slice(0, 8).map((ev) => renderEventDot(ev))}
+                        {items.length > 8 && (
                           <span className="text-[10px] text-foreground/60">
-                            +{items.length - 4}
+                            +{items.length - 8}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Desktop pills */}
+                    {/* Desktop pills (limit to 2 items) */}
                     <div className="mt-2 hidden md:flex flex-col gap-1.5">
-                      {items.slice(0, 3).map((ev) => renderEventPill(ev))}
-                      {items.length > 3 && (
+                      {items.slice(0, 2).map((ev) => renderEventPill(ev))}
+                      {items.length > 2 && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -359,7 +457,7 @@ export default function CalendarPage() {
                           }}
                           className="text-[11px] text-left text-foreground/70 hover:text-foreground"
                         >
-                          +{items.length - 3} more
+                          +{items.length - 2} more
                         </button>
                       )}
                     </div>
@@ -399,14 +497,13 @@ export default function CalendarPage() {
             </div>
             <div className="mt-3 space-y-2">
               {openDay.items.map((ev) => {
-                const color = getEventColor(ev.category || ev.title || "");
-                const start = new Date(ev.start);
-                const timeStr = isNaN(start.getTime())
-                  ? ""
-                  : new Intl.DateTimeFormat(undefined, {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    }).format(start);
+                const chosenColorName = ev.category
+                  ? categoryColors[ev.category] ||
+                    defaultCategoryColor(ev.category)
+                  : "";
+                const tone = chosenColorName
+                  ? colorTintAndDot(chosenColorName)
+                  : { tint: "bg-surface/60", dot: "bg-foreground/40" };
                 return (
                   <button
                     key={ev.id}
@@ -414,16 +511,10 @@ export default function CalendarPage() {
                       setOpenDay(null);
                       setOpenEvent(ev);
                     }}
-                    className={`w-full text-left rounded-md border ${color.border} ${color.bg} ${color.text} px-3 py-2 text-sm hover:brightness-[.97]`}
+                    className={`w-full text-left rounded-md ${tone.tint} text-black px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full ${color.dot}`}
-                      />
-                      <span className="font-medium truncate">{ev.title}</span>
-                      {timeStr && (
-                        <span className="opacity-70">· {timeStr}</span>
-                      )}
+                    <div className="flex flex-col">
+                      <span className="truncate">{ev.title}</span>
                     </div>
                   </button>
                 );

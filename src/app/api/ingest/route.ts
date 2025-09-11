@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
-import { parseFootballSchedule, scheduleToEvents } from "@/lib/sports";
 
 export const runtime = "nodejs";
 
@@ -55,20 +54,20 @@ export async function POST(request: Request) {
       "";
 
     const tz = "America/Chicago";
-    const schedule = parseFootballSchedule(raw, tz);
-    const events = scheduleToEvents(schedule, tz);
+    const schedule = { detected: false, homeTeam: null, season: null, games: [] };
+    const events: any[] = [];
 
     // Category detection (lightweight)
     const detectCategory = (fullText: string, sched: any): string | null => {
       try {
-        if (sched && typeof sched.detected === "boolean" && sched.detected) return "Football Schedule";
+        // No special football handling
         if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
         const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(fullText);
         const hasAppt = /(appointment|appt)/i.test(fullText);
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
         if (hasAppt) return "Appointments";
-        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(football|soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
+        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";
         }
       } catch {}

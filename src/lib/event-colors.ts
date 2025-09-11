@@ -95,7 +95,7 @@ export function getEventColor(input?: string | null): EventColor {
   if (/meet|manager|standup|sync|call/.test(key)) return COLOR_MAP.Meetings;
   if (/class|course|school|lesson|study/.test(key)) return COLOR_MAP.Education;
   if (/concert|show|live|gig|karaoke/.test(key)) return COLOR_MAP.Concerts;
-  if (/soccer|football|game|match|home|away|stadium|vs/.test(key))
+  if (/soccer|game|match|home|away|stadium|vs/.test(key))
     return COLOR_MAP.Sports;
   if (/family|kids|parent|mom|dad/.test(key)) return COLOR_MAP.Family;
   const normalized = (input[0].toUpperCase() + input.slice(1)) as EventCategory;
