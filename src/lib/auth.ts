@@ -11,7 +11,7 @@ export function getAuthOptions(): NextAuthOptions {
   return {
     debug: true,              // TEMP: leave on while debugging
     secret,
-    useSecureCookies: false,  // Force non-secure cookies for local dev consistency
+    useSecureCookies: true,  // Force non-secure cookies for local dev consistency
     providers: [
       CredentialsProvider({
         name: "Email and Password",
