@@ -1,6 +1,7 @@
 // src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -23,9 +24,9 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  const hasSession =
-    req.cookies.has("__Secure-next-auth.session-token") ||
-    req.cookies.has("next-auth.session-token");
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const token = await getToken({ req: req as any, secret });
+  const hasSession = Boolean(token);
 
   // Redirect legacy /landing to root homepage
   if (pathname === "/landing") {
