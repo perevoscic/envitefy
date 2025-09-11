@@ -56,7 +56,7 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <LeftSidebar />
-          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col px-12 px-12-safe">
+          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col px-12 px-12-safe ios-px-12">
             <div className="flex-1 min-w-0">{children}</div>
             <footer>
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">

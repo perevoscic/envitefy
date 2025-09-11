@@ -32,6 +32,8 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback.
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
+- **Query options**:
+  - `llm=1` or `engine=openai` forces OpenAI image parsing in addition to Google Vision OCR text, useful when Vision misses spelled-out times.
 - **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable.
 
 ```bash
@@ -66,6 +68,10 @@ curl -X POST \
 - **Env**:
   - `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Vision.
   - Optional LLM fallback: `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
+
+#### Notes
+
+- Time parsing improved to detect spelled-out phrases like "four o'clock in the afternoon" and merge with detected dates; afternoon/evening keywords bias to PM.
 
 ### OCR Agent (lightweight) — POST `/api/ingest`
 

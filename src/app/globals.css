@@ -151,6 +151,16 @@ body {
     padding-left: calc(3rem + env(safe-area-inset-left));
     padding-right: calc(3rem + env(safe-area-inset-right));
   }
+
+  /* iOS-only padding helper to guarantee gutters even if other rules fail */
+  @supports (-webkit-touch-callout: none) {
+    .ios-px-12 {
+      padding-left: calc(3rem + env(safe-area-inset-left));
+      padding-right: calc(3rem + env(safe-area-inset-right));
+      padding-left: calc(3rem + constant(safe-area-inset-left));
+      padding-right: calc(3rem + constant(safe-area-inset-right));
+    }
+  }
   /* Button system */
   .btn {
     display: inline-flex;

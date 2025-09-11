@@ -27,6 +27,7 @@ export default function LeftSidebar() {
   const isOpen = !isCollapsed;
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
 
@@ -46,6 +47,13 @@ export default function LeftSidebar() {
       if (!isPhoneHiddenViewport()) return; // Desktop: ignore outside clicks
       const target = e.target as Node | null;
       if (!asideRef.current) return;
+      // Ignore clicks originating from the hamburger open button
+      if (
+        openButtonRef.current &&
+        openButtonRef.current.contains(target as Node)
+      ) {
+        return;
+      }
       if (!asideRef.current.contains(target)) setIsCollapsed(true);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -956,7 +964,13 @@ export default function LeftSidebar() {
         <button
           type="button"
           aria-label="Open menu"
-          onClick={() => setIsCollapsed(false)}
+          ref={openButtonRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsCollapsed(false);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           className="fixed top-3 left-3 z-[400] inline-flex items-center justify-center h-9 w-9"
           suppressHydrationWarning
         >

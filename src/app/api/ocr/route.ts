@@ -68,6 +68,90 @@ async function llmExtractEvent(raw: string): Promise<{
 
 // Football schedule extraction removed
 
+async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promise<{
+  title?: string;
+  start?: string | null;
+  end?: string | null;
+  address?: string;
+  description?: string;
+} | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const base64 = imageBytes.toString("base64");
+  const system = "You are a precise assistant that reads event invitations from an image and returns clean JSON fields for calendar creation.";
+  const userText =
+    "Extract a calendar event as strict JSON {title,start,end,address,description}. Parse spelled-out times like 'four o'clock in the afternoon' and include timezone if visible, otherwise omit. Use ISO 8601 for dates.";
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText },
+              { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    try {
+      return JSON.parse(text) as any;
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+// Detect spelled-out time phrases like "four o'clock in the afternoon"
+function detectSpelledTime(raw: string): { hour: number; minute: number; meridiem: "am" | "pm" | null } | null {
+  const text = (raw || "").toLowerCase();
+  const numberMap: Record<string, number> = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+    eleven: 11,
+    twelve: 12,
+  };
+  const word = "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve";
+  const oc = "o(?:'|’|`)?clock";
+  const mer = "(?:in\\s+the\\s+)?(morning|afternoon|evening|night)";
+  // Examples: "four o'clock in the afternoon", "at seven in the evening", "eleven o’clock"
+  const re1 = new RegExp(`\\b(${word})\\b(?:\\s+${oc})?(?:\\s+${mer})?`, "i");
+  const m = text.match(re1);
+  if (!m) return null;
+  const numWord = (m[1] || "").toLowerCase();
+  const hour = numberMap[numWord];
+  if (!hour) return null;
+  const meridiemWord = (m[2] || "").toLowerCase();
+  let meridiem: "am" | "pm" | null = null;
+  if (meridiemWord) {
+    if (/(afternoon|evening|night)/i.test(meridiemWord)) meridiem = "pm";
+    if (/morning/i.test(meridiemWord)) meridiem = "am";
+  }
+  return { hour, minute: 0, meridiem };
+}
+
 function cleanAddressLabel(input: string): string {
   let s = input.trim();
   s = s.replace(/^\s*(location|address|venue|where)\s*[:\-]?\s*/i, "");
@@ -222,6 +306,8 @@ export async function POST(request: Request) {
   // Minimal debug; we can remove once stable
 
   try {
+    const url = new URL(request.url);
+    const forceLLM = url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
     const formData = await request.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) {
@@ -327,6 +413,28 @@ export async function POST(request: Request) {
             end = endMerged;
           }
         }
+      }
+    }
+
+    // Spelled-out time fallback (e.g., "four o'clock in the afternoon")
+    if (start) {
+      const spelled = detectSpelledTime(raw);
+      if (spelled) {
+        const hasAfternoon = /\bafternoon\b/i.test(raw);
+        const hasEvening = /\b(evening|night)\b/i.test(raw);
+        const hasMorning = /\bmorning\b/i.test(raw);
+        let hour24 = spelled.hour % 12;
+        if (spelled.meridiem === "pm") hour24 += 12;
+        if (spelled.meridiem === null) {
+          if (hasAfternoon || hasEvening) {
+            hour24 += 12;
+          } else if (!hasMorning && /(wedding|ceremony|reception)/i.test(raw) && hour24 >= 1 && hour24 <= 6) {
+            hour24 += 12;
+          }
+        }
+        const merged = new Date(start);
+        merged.setHours(hour24, spelled.minute, 0, 0);
+        start = merged;
       }
     }
 
@@ -469,12 +577,33 @@ export async function POST(request: Request) {
       return keep.join("\n");
     })();
 
+    // Optional LLM-from-image extraction
+    let llmImage: any = null;
+    if (forceLLM) {
+      try {
+        llmImage = await llmExtractEventFromImage(ocrBuffer, mime || "application/octet-stream");
+      } catch {}
+    }
+
     // Build final fields
     let finalTitle = title;
     let finalStart = start;
     let finalEnd = end;
     let finalAddress = addressOnly;
     let finalDescription = cleanDescription;
+
+    if (llmImage) {
+      const safeDate = (s?: string | null) => {
+        if (!s) return null;
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      };
+      if (typeof llmImage.title === "string" && llmImage.title.trim()) finalTitle = llmImage.title.trim();
+      if (typeof llmImage.address === "string" && llmImage.address.trim()) finalAddress = cleanAddressLabel(llmImage.address);
+      if (typeof llmImage.description === "string" && llmImage.description.trim()) finalDescription = llmImage.description.trim();
+      finalStart = safeDate(llmImage.start) ?? finalStart;
+      finalEnd = safeDate(llmImage.end) ?? finalEnd;
+    }
 
     if (isTitleLowConfidence(finalTitle)) {
       const llm = await llmExtractEvent(raw);
