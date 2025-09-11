@@ -70,6 +70,9 @@ export async function POST(request: Request) {
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
         if (hasAppt) return "Appointments";
+        if (/(wedding|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText)) {
+          return "Weddings";
+        }
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";
         }

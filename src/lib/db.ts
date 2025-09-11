@@ -100,7 +100,6 @@ export type AppUserRow = {
   preferred_provider?: string | null;
   subscription_plan?: string | null;
   ever_paid?: boolean | null;
-  scans_remaining?: number | null;
   credits?: number | null;
   password_hash: string;
   created_at?: string;
@@ -109,7 +108,7 @@ export type AppUserRow = {
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `select id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at
+    `select id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at
      from users
      where email = $1
      limit 1`,
@@ -130,9 +129,9 @@ export async function createUserWithEmailPassword(params: {
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, scans_remaining, credits)
-     values ($1, $2, $3, $4, 'free', false, 3, 3)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at`,
+    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
+     values ($1, $2, $3, $4, 'free', false, 3)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, firstName || null, lastName || null, password_hash]
   );
   return res.rows[0];
@@ -241,7 +240,7 @@ export async function updateUserNamesByEmail(params: {
     `update users
      set first_name = $2, last_name = $3
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, params.firstName ?? null, params.lastName ?? null]
   );
   return res.rows[0];
@@ -260,7 +259,7 @@ export async function updatePreferredProviderByEmail(params: {
     `update users
      set preferred_provider = $2
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, scans_remaining, credits, password_hash, created_at`,
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, params.preferredProvider]
   );
   return res.rows[0];
@@ -313,13 +312,12 @@ export async function updateSubscriptionPlanByEmail(params: {
 }): Promise<void> {
   await ensureUsersHasSubscriptionPlanColumn();
   const lower = params.email.toLowerCase();
-  // When moving to a paid plan, mark ever_paid = true and clear free scans
+  // When moving to a paid plan, mark ever_paid = true
   if (params.plan === "monthly" || params.plan === "yearly") {
     await query(
       `update users
        set subscription_plan = $2,
-           ever_paid = true,
-           scans_remaining = coalesce(scans_remaining, 0)
+           ever_paid = true
        where email = $1`,
       [lower, params.plan]
     );
@@ -328,68 +326,20 @@ export async function updateSubscriptionPlanByEmail(params: {
   }
 }
 
-// Scans credits
-async function ensureUsersHasScansColumn(): Promise<void> {
-  await query(`alter table users add column if not exists scans_remaining integer`);
-  await query(`alter table users alter column scans_remaining set default 3`);
-  // One-time backfill for free or unspecified plans
-  await query(
-    `update users
-     set scans_remaining = 3
-     where scans_remaining is null
-       and (subscription_plan = 'free' or subscription_plan is null)`
-  );
-}
-
-export async function getScansRemainingByEmail(email: string): Promise<number | null> {
-  await ensureUsersHasScansColumn();
-  const lower = email.toLowerCase();
-  const res = await query<{ scans_remaining: number | null }>(
-    `select scans_remaining from users where email = $1 limit 1`,
-    [lower]
-  );
-  const v = res.rows[0]?.scans_remaining;
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-
-export async function incrementScansByEmail(email: string, delta: number): Promise<number | null> {
-  await ensureUsersHasScansColumn();
-  const lower = email.toLowerCase();
-  const res = await query<{ scans_remaining: number | null }>(
-    `update users
-     set scans_remaining = greatest(0, coalesce(scans_remaining, 0) + $2)
-     where email = $1
-     returning scans_remaining`,
-    [lower, Math.trunc(delta)]
-  );
-  const v = res.rows[0]?.scans_remaining;
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-
-/**
- * Initialize free trial scans for legacy users missing a value.
- * Only applies when subscription_plan = 'free' AND scans_remaining IS NULL.
- * Does not top-up users who have already consumed or have a value (including 0).
- */
-export async function initFreeScansIfMissing(email: string, amount: number = 3): Promise<number | null> {
+// Free credits initialization for legacy users
+export async function initFreeCreditsIfMissing(email: string, amount: number = 3): Promise<number | null> {
   await ensureUsersHasSubscriptionPlanColumn();
-  await ensureUsersHasScansColumn();
   await ensureUsersHasCreditsColumn();
   const lower = email.toLowerCase();
-  await query(
+  const res = await query<{ credits: number | null }>(
     `update users
-     set scans_remaining = coalesce(scans_remaining, $2),
-         credits = $2
+     set credits = coalesce(credits, $2)
      where email = $1
        and (subscription_plan = 'free' or subscription_plan is null)
-       and (credits is null or credits <= 0)`,
+     returning credits`,
     [lower, Math.max(0, Math.trunc(amount))]
   );
-  const res = await query<{ scans_remaining: number | null }>(
-    `select scans_remaining from users where email = $1 limit 1`,
-    [lower]
-  );
-  const v = res.rows[0]?.scans_remaining;
+  const v = res.rows[0]?.credits;
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
@@ -435,8 +385,11 @@ export type PromoCodeRow = {
   recipient_name?: string | null;
   recipient_email?: string | null;
   message?: string | null;
+  quantity?: number | null;
+  period?: string | null; // 'months' | 'years'
   expires_at?: string | null;
   redeemed_at?: string | null;
+  redeemed_by_email?: string | null;
   created_at?: string | null;
 };
 
@@ -458,12 +411,14 @@ export async function createGiftPromoCode(params: {
   recipientEmail?: string | null;
   message?: string | null;
   expiresAt?: Date | null;
+  quantity?: number | null;
+  period?: "months" | "years" | null;
 }): Promise<PromoCodeRow> {
   const code = generatePromoCode(12);
   const res = await query<PromoCodeRow>(
-    `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, expires_at)
-     values ($1, $2, $3, $4, $5, $6, $7, $8)
-     returning id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, expires_at, redeemed_at, created_at`,
+    `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     returning id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, created_at`,
     [
       code,
       Math.max(0, Math.floor(params.amountCents || 0)),
@@ -472,6 +427,8 @@ export async function createGiftPromoCode(params: {
       params.recipientName || null,
       params.recipientEmail || null,
       params.message || null,
+      params.quantity == null ? null : Math.max(0, Math.floor(params.quantity)),
+      params.period || null,
       params.expiresAt ? params.expiresAt.toISOString() : null,
     ]
   );
@@ -480,15 +437,51 @@ export async function createGiftPromoCode(params: {
 
 export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | null> {
   const res = await query<PromoCodeRow>(
-    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, expires_at, redeemed_at, created_at
+    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, created_at
      from promo_codes where code = $1 limit 1`,
     [code]
   );
   return res.rows[0] || null;
 }
 
-export async function markPromoCodeRedeemed(id: string): Promise<void> {
-  await query(`update promo_codes set redeemed_at = now() where id = $1 and redeemed_at is null`, [id]);
+export async function markPromoCodeRedeemed(id: string, redeemedByEmail?: string | null): Promise<void> {
+  await query(
+    `update promo_codes
+     set redeemed_at = now(),
+         redeemed_by_email = coalesce($2, redeemed_by_email),
+         expires_at = coalesce(expires_at, now() + interval '90 days')
+     where id = $1 and redeemed_at is null`,
+    [id, redeemedByEmail || null]
+  );
+}
+
+// Subscription expiration helpers
+async function ensureUsersHasSubscriptionExpiresColumn(): Promise<void> {
+  await query(`alter table users add column if not exists subscription_expires_at timestamptz(6)`);
+}
+
+export async function extendUserSubscriptionByMonths(email: string, months: number): Promise<{ expiresAt: string | null }> {
+  await ensureUsersHasSubscriptionPlanColumn();
+  await ensureUsersHasSubscriptionExpiresColumn();
+  const lower = email.toLowerCase();
+  const monthsInt = Math.max(0, Math.floor(months));
+  if (monthsInt <= 0) return { expiresAt: null };
+  // Compute new expiry in SQL: if null or past, base is now(); else existing date
+  const res = await query<{ subscription_expires_at: string | null }>(
+    `update users
+     set subscription_plan = case when subscription_plan in ('monthly','yearly') then subscription_plan else 'monthly' end,
+         ever_paid = true,
+         subscription_expires_at = (
+           case
+             when subscription_expires_at is null or subscription_expires_at < now() then (now() + make_interval(months => $2))
+             else (subscription_expires_at + make_interval(months => $2))
+           end
+         )
+     where email = $1
+     returning subscription_expires_at`,
+    [lower, monthsInt]
+  );
+  return { expiresAt: res.rows[0]?.subscription_expires_at || null };
 }
 
 // Event history

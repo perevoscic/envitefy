@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeScansIfMissing, getCreditsByEmail } from "@/lib/db";
+import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail } from "@/lib/db";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -11,17 +11,16 @@ export async function GET() {
   const email = session.user.email as string;
   const user = await getUserByEmail(email);
   const plan = await getSubscriptionPlanByEmail(email);
-  // Backfill free users who never received initial credits
-  const scans = await (async () => {
+  // Backfill free users who never received initial credits (legacy rows)
+  const init = await (async () => {
     const current = await getCreditsByEmail(email);
     if ((plan === "free" || plan == null) && current == null) {
-      // initialize to 3 only when there is truly no value set (legacy rows)
-      return await initFreeScansIfMissing(email, 3);
+      return await initFreeCreditsIfMissing(email, 3);
     }
     return current ?? 0;
   })();
   const responsePlan = plan || "free";
-  const creditsCount = typeof scans === "number" ? scans : (await getCreditsByEmail(email)) ?? 0;
+  const creditsCount = typeof init === "number" ? init : (await getCreditsByEmail(email)) ?? 0;
   return NextResponse.json({
     email: user?.email || email,
     firstName: user?.first_name || null,

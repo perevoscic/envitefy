@@ -42,10 +42,19 @@ export default function RedeemPromoModal({
         credentials: "include",
       });
       const json = await res.json();
+      if (res.status === 401) {
+        setResult("Please sign in to redeem.");
+        return;
+      }
       if (!res.ok) {
         setResult(json?.error || "Invalid code");
       } else {
-        setResult("Code redeemed! Thank you.");
+        const months = Number(json?.months || 0);
+        setResult(
+          months > 0
+            ? `Code redeemed! ${months} month(s) added.`
+            : "Code redeemed! Thank you."
+        );
       }
     } catch {
       setResult("Network error. Please try again.");

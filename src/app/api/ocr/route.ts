@@ -527,6 +527,8 @@ export async function POST(request: Request) {
         if (hasAppt) return "Appointments";
         // Birthday
         if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
+        // Weddings
+        if (/(wedding|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText)) return "Weddings";
         // Sports generic (fallback)
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";

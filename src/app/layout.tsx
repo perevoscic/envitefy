@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Pacifico, Montserrat } from "next/font/google";
 import Link from "next/link";
 import Providers from "./providers";
@@ -37,6 +37,12 @@ export const metadata: Metadata = {
     "Snap My Date is a tool that allows you to add events to your calendar by taking a photo of a flyer.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -50,7 +56,7 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <LeftSidebar />
-          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
+          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col px-12 px-12-safe">
             <div className="flex-1 min-w-0">{children}</div>
             <footer>
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">

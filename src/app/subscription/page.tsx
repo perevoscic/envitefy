@@ -17,7 +17,7 @@ export default function SubscriptionPage() {
   const [currentPlan, setCurrentPlan] = useState<
     "free" | "monthly" | "yearly" | null
   >(null);
-  const [scanCredits, setScanCredits] = useState<number | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
 
@@ -58,9 +58,8 @@ export default function SubscriptionPage() {
           setCurrentPlan("free");
           setSelectedPlan("free");
         }
-        if (typeof profileJson?.credits === "number") {
-          setScanCredits(profileJson.credits);
-        }
+        if (typeof profileJson?.credits === "number")
+          setCredits(profileJson.credits);
       } catch {}
     }
     load();
@@ -132,8 +131,8 @@ export default function SubscriptionPage() {
             <div className="text-left sm:text-center">
               <h2 className="text-base font-medium">Trial</h2>
               <div className="text-xs text-muted-foreground">
-                {typeof scanCredits === "number"
-                  ? `${scanCredits} credits left`
+                {typeof credits === "number"
+                  ? `${credits} credits left`
                   : "3 trial credits"}
               </div>
             </div>

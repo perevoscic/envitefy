@@ -28,6 +28,7 @@ function defaultCategoryColor(c: string): string {
   if (c === "Birthdays") return "pink";
   if (c === "Doctor Appointments") return "teal";
   if (c === "Appointments") return "amber";
+  if (c === "Weddings") return "rose";
   if (c === "Sport Events") return "indigo";
   if (c === "Play Days") return "rose";
   return "slate";
@@ -485,7 +486,10 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-7 text-center text-xs sm:text-sm text-foreground/70">
+        <div
+          className="mt-4 grid grid-cols-7 text-center text-xs sm:text-sm text-foreground/70"
+          style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
+        >
           {Array.from({ length: 7 }).map((_, i) => {
             const d = new Date(2024, 7, 4 + i); // Sun..Sat reference
             return (
@@ -496,7 +500,13 @@ export default function CalendarPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-7 grid-rows-6 auto-rows-fr gap-px rounded-md border border-border bg-border w-full max-w-full shadow-md sm:shadow-lg transition-shadow">
+        <div
+          className="grid grid-cols-7 grid-rows-6 gap-px rounded-md border border-border bg-border w-full max-w-full shadow-md sm:shadow-lg transition-shadow"
+          style={{
+            gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+            gridTemplateRows: "repeat(6, minmax(0, 1fr))",
+          }}
+        >
           {weeks.map((week, wi) => (
             <React.Fragment key={wi}>
               {week.map((date) => {

@@ -12,12 +12,20 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### Promo Gift Agent — POST `/api/promo/gift`
 
-- **Purpose**: Generate a promo code (gift) for selected plan duration; returns the created code. Intended to be paired with payment processing and delivery email.
+- **Purpose**: Generate a promo code (gift) for selected plan duration; returns the created code. Pairs with payment processing and sends a delivery email to the recipient via SES.
 - **Auth**: Optional (reads NextAuth session to attribute creator email).
 - **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message?: string }`.
 - **Pricing**: Server computes cents using $2.99/month and $29.99/year per unit.
-- **Output**: `{ ok: true, promo: { code, amount_cents, currency, ... } }`.
-- **Env**: `DATABASE_URL` (Postgres connection).
+- **Output**: `{ ok: true, promo: { code, amount_cents, currency, quantity, period, ... } }`.
+- **Env**: `DATABASE_URL`, `SES_FROM_EMAIL`, and AWS creds/region for SES (`AWS_REGION` or `AWS_DEFAULT_REGION`, and standard AWS credentials).
+
+### Promo Redeem Agent — POST `/api/promo/redeem`
+
+- **Purpose**: Redeem a promo code and extend the signed-in user's subscription expiration.
+- **Auth**: NextAuth session required.
+- **Input (JSON)**: `{ code: string }`.
+- **Behavior**: Validates code (exists, not expired/redeemed). Converts gift to months using `quantity+period` or amount fallback, extends `users.subscription_expires_at`, and marks code redeemed by the user's email.
+- **Output**: `{ ok: true, months }` or `{ error }`.
 
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
 
@@ -325,4 +333,4 @@ Payload used by the authenticated calendar agents.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
 
 - 2025-09-10: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).
-- 2025-09-11: Added Promo Gift agent and `promo_codes` table; UI modal on Subscription page to create gifts.
+- 2025-09-11: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.

@@ -75,7 +75,8 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
       if (!res.ok) {
         setResult(json?.error || "Failed to create gift");
       } else {
-        setResult(`Gift created. Code: ${json?.promo?.code || "-"}`);
+        const code = json?.promo?.code || "-";
+        setResult(`Gift created. Code: ${code}`);
       }
     } catch (err: any) {
       setResult("Network error. Please try again.");

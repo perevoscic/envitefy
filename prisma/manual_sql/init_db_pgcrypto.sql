@@ -19,13 +19,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan varchar(32);
 -- Track if a user has ever been on a paid plan
 ALTER TABLE users ADD COLUMN IF NOT EXISTS ever_paid boolean;
 ALTER TABLE users ALTER COLUMN ever_paid SET DEFAULT false;
--- Ensure scans_remaining column exists and default
-ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_remaining integer;
-ALTER TABLE users ALTER COLUMN scans_remaining SET DEFAULT 3;
--- Backfill null scans_remaining to default of 3
-UPDATE users SET scans_remaining = 3 WHERE scans_remaining IS NULL;
--- Add credits column to store purchased/earned credits separate from free scans
+-- Add credits column to store purchased/earned credits
 ALTER TABLE users ADD COLUMN IF NOT EXISTS credits integer;
+-- Remove legacy scans_remaining column if present
+ALTER TABLE users DROP COLUMN IF EXISTS scans_remaining;
 
 -- Ensure id default exists even if table pre-existed without it
 ALTER TABLE users ALTER COLUMN id SET DEFAULT gen_random_uuid();
@@ -81,10 +78,18 @@ CREATE TABLE IF NOT EXISTS promo_codes (
   recipient_name text,
   recipient_email text,
   message text,
+  -- Optional metadata about the gift units
+  quantity integer,
+  period varchar(16), -- 'months' | 'years'
   expires_at timestamptz(6),
   redeemed_at timestamptz(6),
+  redeemed_by_email text,
   created_at timestamptz(6) DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_promo_codes_created_at ON promo_codes(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_promo_codes_recipient_email ON promo_codes(recipient_email);
+CREATE INDEX IF NOT EXISTS idx_promo_codes_redeemed_at ON promo_codes(redeemed_at);
+
+-- Add user subscription expiration to support gifted months
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at timestamptz(6);

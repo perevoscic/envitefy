@@ -850,6 +850,10 @@ export default function SnapPage() {
                       <span className="font-semibold">{credits}</span>
                       <span>credits left. Subscribe</span>
                     </>
+                  ) : session?.user ? (
+                    <>
+                      <span>Checking credits…</span>
+                    </>
                   ) : (
                     <>
                       <span>Free trial:</span>
@@ -864,6 +868,7 @@ export default function SnapPage() {
               <div className="mt-8 flex flex-row gap-3 justify-center lg:justify-center">
                 <button
                   onClick={openCamera}
+                  disabled={Boolean(session?.user) && credits === null}
                   aria-label="Open camera to snap a flyer"
                   className="btn btn-primary"
                 >
@@ -894,6 +899,7 @@ export default function SnapPage() {
 
                 <button
                   onClick={openUpload}
+                  disabled={Boolean(session?.user) && credits === null}
                   aria-label="Upload a flyer or card image from your device"
                   className="btn btn-outline"
                 >

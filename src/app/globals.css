@@ -136,6 +136,21 @@ body {
 }
 
 @layer utilities {
+  /* Adds only iOS notch safe-area insets horizontally (no base padding). */
+  .safe-inset-x {
+    padding-left: max(env(safe-area-inset-left), constant(safe-area-inset-left));
+    padding-right: max(env(safe-area-inset-right), constant(safe-area-inset-right));
+  }
+
+  /* Combine base px-12 (3rem) with iOS safe-area insets */
+  .px-12-safe {
+    /* Old iOS fallback */
+    padding-left: calc(3rem + constant(safe-area-inset-left));
+    padding-right: calc(3rem + constant(safe-area-inset-right));
+    /* Modern iOS */
+    padding-left: calc(3rem + env(safe-area-inset-left));
+    padding-right: calc(3rem + env(safe-area-inset-right));
+  }
   /* Button system */
   .btn {
     display: inline-flex;
@@ -267,14 +282,31 @@ body {
 @layer utilities {
   /* Applies symmetric horizontal padding that adapts with breakpoints */
   .content-gutters { padding-left: 1rem; padding-right: 1rem; }
+  /* Add iOS safe-area insets on devices with notches (no-op elsewhere) */
+  .content-gutters {
+    padding-left: calc(1rem + env(safe-area-inset-left));
+    padding-right: calc(1rem + env(safe-area-inset-right));
+  }
   @media (min-width: 640px) { /* sm */
     .content-gutters { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .content-gutters {
+      padding-left: calc(1.25rem + env(safe-area-inset-left));
+      padding-right: calc(1.25rem + env(safe-area-inset-right));
+    }
   }
   @media (min-width: 768px) { /* md */
     .content-gutters { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .content-gutters {
+      padding-left: calc(1.5rem + env(safe-area-inset-left));
+      padding-right: calc(1.5rem + env(safe-area-inset-right));
+    }
   }
   @media (min-width: 1024px) { /* lg */
     .content-gutters { padding-left: 2rem; padding-right: 2rem; }
+    .content-gutters {
+      padding-left: calc(2rem + env(safe-area-inset-left));
+      padding-right: calc(2rem + env(safe-area-inset-right));
+    }
   }
 }
 
