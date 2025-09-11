@@ -42,8 +42,31 @@ export default async function EventPage({
     redirect(canonical);
   }
 
+  // Detect RSVP phone and build SMS/Call links
+  const aggregateContactText = `${(data?.rsvp as string | undefined) || ""} ${
+    (data?.description as string | undefined) || ""
+  } ${(data?.location as string | undefined) || ""}`.trim();
+  const phoneMatch = aggregateContactText.match(/\+?\d[\d\s().-]{6,}\d/);
+  const rsvpPhone = phoneMatch ? phoneMatch[0].replace(/[^\d+]/g, "") : null;
+  const userName = ((session as any)?.user?.name as string | undefined) || "";
+  const smsIntroParts = [
+    "Hi, there,",
+    userName ? ` this is ${userName},` : "",
+    " RSVP-ing for ",
+    title || "the event",
+  ];
+  const smsBody = `${smsIntroParts.join("").trim()}${
+    shareUrl ? `\n${shareUrl}` : ""
+  }`;
+  const smsHref = rsvpPhone
+    ? `sms:${encodeURIComponent(rsvpPhone)}?&body=${encodeURIComponent(
+        smsBody
+      )}`
+    : null;
+  const telHref = rsvpPhone ? `tel:${encodeURIComponent(rsvpPhone)}` : null;
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
+    <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">{title}</h1>
         {createdAt && (
@@ -80,6 +103,33 @@ export default async function EventPage({
               <div>
                 <dt className="text-foreground/70">Location</dt>
                 <dd className="font-medium">{data?.location || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-foreground/70">RSVP</dt>
+                <dd className="font-medium">
+                  {rsvpPhone ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {smsHref && (
+                        <a
+                          href={smsHref}
+                          className="underline hover:no-underline"
+                        >
+                          Text {rsvpPhone}
+                        </a>
+                      )}
+                      {telHref && (
+                        <a
+                          href={telHref}
+                          className="underline hover:no-underline"
+                        >
+                          Call
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
               </div>
             </dl>
             {data?.description && (

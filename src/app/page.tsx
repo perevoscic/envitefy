@@ -804,21 +804,37 @@ export default function Home() {
                 seconds. Works with Google, Apple, and Outlook Calendars.
               </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-center">
+              <div className="mt-8 flex flex-row gap-3 justify-center lg:justify-center">
                 <button
                   onClick={openCamera}
                   aria-label="Open camera to snap a flyer"
-                  className="group inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-primary hover:opacity-95 active:opacity-90 text-on-primary shadow-lg shadow-teal-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+                  className="inline-flex items-center gap-2 justify-center rounded-2xl px-3 py-2 text-sm bg-primary text-primary-foreground hover:opacity-90 active:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition shadow-md shadow-primary/20"
                 >
-                  Snap It Now
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 7h3.172l1.414-1.414A2 2 0 0 1 9.828 5h4.344a2 2 0 0 1 1.414.586L17 7h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V9a2 2 0 0 1 2-2zm8 3a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z" />
+                  </svg>
+                  <span>Snap It Now</span>
                 </button>
 
                 <button
                   onClick={openUpload}
                   aria-label="Upload a flyer or card image from your device"
-                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-border/50 transition"
+                  className="inline-flex items-center gap-2 justify-center rounded-2xl px-3 py-2 text-sm border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-border/50 transition"
                 >
-                  Upload from Device
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 18v2H4v-2h16zM12 3l5 5h-3v6h-4V8H7l5-5z" />
+                  </svg>
+                  <span>Upload</span>
                 </button>
               </div>
               {/* Calendar buttons appear after a successful scan below with the form */}

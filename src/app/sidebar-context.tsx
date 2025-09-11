@@ -42,6 +42,20 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
         setIsCollapsed(false);
       } else if (stored === "1" || stored === "true") {
         setIsCollapsed(true);
+      } else {
+        // No stored preference → collapse by default on mobile/tablet (touch or narrow)
+        const supportsMatchMedia = typeof window.matchMedia === "function";
+        const isTouch = supportsMatchMedia
+          ? window.matchMedia("(hover: none), (pointer: coarse)").matches
+          : false;
+        const isNarrow = supportsMatchMedia
+          ? window.matchMedia("(max-width: 1023px)").matches
+          : false;
+        const shouldCollapse = isTouch || isNarrow;
+        setIsCollapsed(shouldCollapse);
+        try {
+          window.localStorage.setItem(STORAGE_KEY, shouldCollapse ? "1" : "0");
+        } catch {}
       }
     } catch {}
   }, []);

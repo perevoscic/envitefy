@@ -192,6 +192,21 @@ body {
   .auth-card-gradient > * { position: relative; z-index: 1; }
 }
 
+/* Consistent responsive horizontal gutters for layouts */
+@layer utilities {
+  /* Applies symmetric horizontal padding that adapts with breakpoints */
+  .content-gutters { padding-left: 1rem; padding-right: 1rem; }
+  @media (min-width: 640px) { /* sm */
+    .content-gutters { padding-left: 1.25rem; padding-right: 1.25rem; }
+  }
+  @media (min-width: 768px) { /* md */
+    .content-gutters { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
+  @media (min-width: 1024px) { /* lg */
+    .content-gutters { padding-left: 2rem; padding-right: 2rem; }
+  }
+}
+
 /* Theme-aware asset toggles */
 .show-light { display: inline-block; }
 .show-dark { display: none; }
@@ -510,5 +525,14 @@ body {
 @supports (-webkit-touch-callout: none) {
   @media (orientation: portrait) and (min-width: 768px) {
     .hide-phone-portrait-tablet { display: none !important; }
+  }
+
+  /* iPad Safari: add a bit more gutter so fixed buttons don't crowd content */
+  @media (min-width: 768px) and (max-width: 1366px) {
+    .ipad-gutters {
+      padding-left: calc(2rem + 1rem);
+      padding-right: calc(2rem + 1rem);
+      padding-top: calc(3.5rem + 0.75rem);
+    }
   }
 }

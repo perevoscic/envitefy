@@ -22,14 +22,13 @@ export default function LeftSidebar() {
     left: number;
     top: number;
   } | null>(null);
-  const [showThumbnails, setShowThumbnails] = useState<boolean>(false);
-  const [previewHref, setPreviewHref] = useState<string | null>(null);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const asideRef = useRef<HTMLDivElement | null>(null);
+  const categoriesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) setMenuOpen(false);
@@ -135,16 +134,6 @@ export default function LeftSidebar() {
     setItemMenuPos(null);
   }, [pathname]);
 
-  useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreviewHref(null);
-    };
-    if (previewHref) {
-      document.addEventListener("keydown", onEsc);
-      return () => document.removeEventListener("keydown", onEsc);
-    }
-  }, [previewHref]);
-
   const displayName =
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
@@ -225,6 +214,21 @@ export default function LeftSidebar() {
       document.removeEventListener("keydown", onEsc);
     };
   }, [colorMenuFor]);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!activeCategory) return;
+      try {
+        const target = e.target as Node | null;
+        if (categoriesRef.current && categoriesRef.current.contains(target)) {
+          return;
+        }
+      } catch {}
+      setActiveCategory(null);
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [activeCategory]);
 
   useEffect(() => {
     // Ensure categories present in history have defaults
@@ -572,9 +576,13 @@ export default function LeftSidebar() {
     } catch {}
   };
 
-  const deleteHistoryItem = async (id: string) => {
+  const deleteHistoryItem = async (id: string, title?: string) => {
     // eslint-disable-next-line no-alert
-    const ok = confirm("Delete this event? This cannot be undone.");
+    const ok = confirm(
+      `Are you sure you want to delete this event?\n\n${
+        title || "Untitled event"
+      }`
+    );
     if (!ok) return;
     try {
       await fetch(`/api/history/${id}`, { method: "DELETE" });
@@ -910,22 +918,22 @@ export default function LeftSidebar() {
           type="button"
           aria-label="Open menu"
           onClick={() => setIsCollapsed(false)}
-          className="fixed top-3 left-3 z-[400] inline-flex items-center justify-center h-9 w-9 rounded-md border border-border bg-surface/80 hover:bg-surface"
+          className="fixed top-3 left-3 z-[400] inline-flex items-center justify-center h-9 w-9"
+          suppressHydrationWarning
         >
           <svg
+            viewBox="0 0 64 64"
+            version="1.1"
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
+            className="h-15 w-15 text-foreground"
             aria-hidden="true"
+            suppressHydrationWarning
           >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
+            <g transform="translate(0,64) scale(1,-1)">
+              <rect x="10" y="14" width="14" height="6" fill="currentColor" />
+              <rect x="10" y="29" width="28" height="6" fill="currentColor" />
+              <rect x="10" y="44" width="42" height="6" fill="currentColor" />
+            </g>
           </svg>
         </button>
       )}
@@ -1371,153 +1379,273 @@ export default function LeftSidebar() {
               </Link>
               {(() => {
                 const categories = Array.from(
-                  new Set([
-                    ...predefinedCategories,
-                    ...history
+                  new Set(
+                    history
                       .map((h) => (h as any)?.data?.category as string | null)
-                      .filter((c): c is string => Boolean(c)),
-                  ])
+                      .filter((c): c is string => Boolean(c))
+                  )
                 );
                 if (categories.length === 0) return null;
                 const buttonClass = (_c: string) => {
                   return `hover:bg-surface/70`;
                 };
                 return (
-                  <div className="mt-2 space-y-1">
-                    {categories.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => {
-                          setActiveCategory(c);
-                          setShowThumbnails(true);
-                        }}
-                        className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${buttonClass(
-                          c
-                        )}`}
-                        aria-pressed={activeCategory === c}
-                        title={c}
-                      >
-                        <span className="truncate inline-flex items-center gap-2">
-                          {/* Category icons */}
-                          {c === "Birthdays" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path d="M18,8H13V5H11V8H6a4,4,0,0,0-4,4v9H22V12A4,4,0,0,0,18,8Zm2,11H4V16a3.78,3.78,0,0,0,2.71-1.3,1.54,1.54,0,0,1,2.58,0,3.49,3.49,0,0,0,5.42,0,1.54,1.54,0,0,1,2.58,0A3.78,3.78,0,0,0,20,16Zm0-5a2,2,0,0,1-1.29-.7,3.49,3.49,0,0,0-5.42,0,1.54,1.54,0,0,1-2.58,0,3.49,3.49,0,0,0-5.42,0A2,2,0,0,1,4,14V12a2,2,0,0,1,2-2H18a2,2,0,0,1,2,2ZM12,4.19a1.55,1.55,0,0,0,1.55-1.55C13.55,1.4,12,0,12,0s-1.55,1.4-1.55,2.64A1.55,1.55,0,0,0,12,4.19Z" />
-                            </svg>
-                          ) : c === "Football Schedule" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                clipRule="evenodd"
-                                fill="currentColor"
-                                d="M6.45635 6.45637C8.583 4.32971 11.5287 3.57849 14.2767 3.44059C16.8147 3.31323 19.0625 3.71611 20.0701 3.92988C20.2838 4.93738 20.6864 7.18553 20.5588 9.72381C20.4208 12.4721 19.6695 15.4178 17.5436 17.5437C15.4178 19.6695 12.4721 20.4208 9.72381 20.5588C7.18553 20.6864 4.93738 20.2838 3.92989 20.0701C3.71611 19.0625 3.31323 16.8147 3.44059 14.2767C3.57848 11.5287 4.32969 8.58304 6.45635 6.45637ZM20.7172 2.02387C19.7764 1.81449 17.1751 1.29263 14.1765 1.4431C11.1898 1.59298 7.66622 2.41805 5.04213 5.04216C2.41804 7.66627 1.59297 11.1898 1.4431 14.1765C1.29263 17.1751 1.81449 19.7764 2.02387 20.7172C2.07994 20.9691 2.19242 21.2809 2.45576 21.5442C2.7191 21.8076 3.03083 21.92 3.28275 21.9761C4.22374 22.1855 6.82539 22.707 9.82416 22.5563C12.8109 22.4063 16.3345 21.5813 18.9579 18.9579C21.5812 16.3345 22.4063 12.8109 22.5563 9.82417C22.707 6.82539 22.1855 4.22373 21.9761 3.28274C21.92 3.03081 21.8076 2.71908 21.5442 2.45574C21.2809 2.1924 20.9691 2.07993 20.7172 2.02387ZM16.2071 9.20715C16.5976 8.81662 16.5976 8.18346 16.2071 7.79294C15.8166 7.40241 15.1834 7.40241 14.7929 7.79294L13.5 9.08583L12.7071 8.29294C12.3166 7.90241 11.6834 7.90241 11.2929 8.29294C10.9024 8.68346 10.9024 9.31662 11.2929 9.70715L12.0858 10.5L10.5 12.0858L9.70709 11.2929C9.31657 10.9024 8.6834 10.9024 8.29288 11.2929C7.90235 11.6835 7.90235 12.3166 8.29288 12.7071L9.08577 13.5L7.79288 14.7929C7.40235 15.1835 7.40235 15.8166 7.79288 16.2071C8.1834 16.5977 8.81657 16.5977 9.20709 16.2071L10.5 14.9143L11.2929 15.7071C11.6834 16.0977 12.3166 16.0977 12.7071 15.7071C13.0976 15.3166 13.0976 14.6835 12.7071 14.2929L11.9142 13.5L13.5 11.9143L14.2929 12.7071C14.6834 13.0977 15.3166 13.0977 15.7071 12.7071C16.0976 12.3166 16.0976 11.6835 15.7071 11.2929L14.9142 10.5L16.2071 9.20715Z"
-                              />
-                            </svg>
-                          ) : c === "Doctor Appointments" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="-2.5 0 19 19"
-                              fill="currentColor"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path d="M11.56 10.11v2.046a3.827 3.827 0 1 1-7.655 0v-.45A3.61 3.61 0 0 1 .851 8.141V5.25a1.682 1.682 0 0 1 .763-1.408 1.207 1.207 0 1 1 .48 1.04.571.571 0 0 0-.135.368v2.89a2.5 2.5 0 0 0 5 0V5.25a.57.57 0 0 0-.108-.334 1.208 1.208 0 1 1 .533-1.018 1.681 1.681 0 0 1 .683 1.352v2.89a3.61 3.61 0 0 1-3.054 3.565v.45a2.719 2.719 0 0 0 5.438 0V10.11a2.144 2.144 0 1 1 1.108 0zm.48-2.07a1.035 1.035 0 1 0-1.035 1.035 1.037 1.037 0 0 0 1.036-1.035z" />
-                            </svg>
-                          ) : c === "Appointments" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path d="M18,5V3a1,1,0,0,0-2,0V5H8V3A1,1,0,0,0,6,3V5H2V21H22V5Zm2,14H4V7H20ZM9,10H7v2H9Zm0,4H7v2H9Zm8-4H11v2h6Zm0,4H11v2h6Z" />
-                            </svg>
-                          ) : c === "Sport Events" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 512 512"
-                              fill="currentColor"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path d="M367.918,69.237H129.781h-9.365l-7.227,5.949L9.514,160.546L0,168.382v12.322v79.167v21.874l21.534,3.824 l106.199,18.9c11.706,2.082,21.551,9.824,26.335,20.71l0.425,0.96l0.498,0.927c0.008,0.016,3.059,5.753,5.119,11.676 c21.993,63.19,76.312,104.023,138.385,104.023c44.031,0,84.652-19.019,111.437-52.186l67.359-84.359l0.624-0.782l0.566-0.832 l0.212-0.314l11.119-14.616l0.867-1.139l0.74-1.232C504.884,264.867,512,239.289,512,213.319 C512,133.872,447.365,69.237,367.918,69.237z M403.516,356.781l-13.894,17.395c-21.627,26.778-54.021,42.482-91.127,42.482 c-54.255,0-96.72-37.63-113.728-86.501c-2.821-8.106-6.798-15.483-6.798-15.483c-8.277-18.84-25.404-32.309-45.664-35.912 L26.106,259.87v-70.397H247.06c17.404,0,35.135,0,54.876,0c31.655,0,60.233,12.807,80.989,33.55 c20.739,20.752,33.541,49.331,33.546,80.986C416.466,323.078,411.738,340.975,403.516,356.781z M469.034,273.867l-11.726,15.415 l-0.417,0.646l-24.109,30.193c0.646-5.294,1.092-10.648,1.092-16.112c-0.004-72.87-59.065-131.931-131.938-131.94 c-19.741,0-37.472,0-54.876,0H36.592l93.188-76.727c0,0,202.62,0,238.137,0c65.158,0,117.976,52.823,117.976,117.977 C485.894,235.49,479.67,256.149,469.034,273.867z" />
-                              <polygon points="240.836,154.853 315.673,154.853 369.809,109.466 294.972,109.466 " />
-                            </svg>
-                          ) : c === "Play Days" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 512 512"
-                              fill="currentColor"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path d="M504.984,407.552c-4.486-4.37-10.547-6.739-16.809-6.578c-33.187,0.855-64.219-6.478-92.22-26.71 c-25.3-18.279-45.075-44.849-61.547-71.479c-9.209-14.888-17.894-33.443-42.745-52.21c-30.764-23.236-71.898-33.537-109.531-33.63 v-50.912l55.611,41.751c25.235,6.452,49.633,17.687,70.077,34.915c18.506,15.595,27.542,30.093,35.339,43.223l10.051-4.423 l5.98,29.697c12.223,17.828,24.964,32.867,39.287,44.615c1.685-3.255,2.321-7.08,1.541-10.952l-18.14-90.084 c-0.993-4.926-4.152-9.143-8.601-11.481c-4.449-2.336-9.714-2.544-14.333-0.566l-23.457,10.049 c-6.28-25.238-8.436-33.902-14.58-58.596l56.505-77.152c4.538-6.196,3.194-14.9-3.003-19.439 c-6.197-4.539-14.898-3.194-19.44,3.003l-57.133,78.01l-38.956,10.266l-76.747-57.619v-9.2c0-5.202-2.352-10.126-6.399-13.395 l-75.536-61.009c-5.327-4.302-12.935-4.302-18.263,0L6.399,108.655C2.353,111.925,0,116.848,0,122.05v337.033 c0,4.693,3.805,8.497,8.497,8.497h20.366c4.693,0,8.498-3.805,8.498-8.497v-90.074h107.411v90.074 c0,4.693,3.805,8.497,8.497,8.497h4.179c0.21,0,0.275,0,0.266,0h15.921c4.693,0,8.498-3.805,8.498-8.497V284.537 c18.986,2.052,43.324,7.407,65.79,20.479c18.565,10.803,33.309,25.424,43.879,43.523c23.311,39.917,44.09,65.968,67.373,84.471 c38.645,30.711,83.079,38.657,132.495,32.511c0.009-0.001,0.019-0.002,0.029-0.003C503.326,464.062,512,454.201,512,442.482v-18.3 C512,417.919,509.469,411.922,504.984,407.552z M144.772,339.822L144.772,339.822H37.361v-40.863h107.411V339.822z M144.772,269.771L144.772,269.771H37.361v-42.007h107.411V269.771z" />
-                              <path d="M448.619,294.203c-58.083-46.371-53.978-43.173-55.356-44.016c0.486,1.719-0.339-2.18,10.325,50.777l24.206,19.325 c7.204,5.752,17.706,4.571,23.456-2.631C457.001,310.456,455.823,299.954,448.619,294.203z" />
-                              <circle cx="271.262" cy="146.57" r="32.45" />
-                            </svg>
-                          ) : (
-                            <span className="inline-block h-2 w-2 rounded-full bg-foreground/70" />
+                  <div ref={categoriesRef} className="mt-2 space-y-1">
+                    {categories.map((c) => {
+                      const futureCount = (() => {
+                        try {
+                          const now = Date.now();
+                          return history.filter((h) => {
+                            const hc = (h as any)?.data?.category as
+                              | string
+                              | null;
+                            if (hc !== c) return false;
+                            const iso = (h as any)?.data?.startISO as
+                              | string
+                              | null;
+                            if (!iso) return false;
+                            const t = new Date(iso).getTime();
+                            return !isNaN(t) && t >= now;
+                          }).length;
+                        } catch {
+                          return 0;
+                        }
+                      })();
+                      return (
+                        <div key={c} className="">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveCategory((prev) =>
+                                prev === c ? null : c
+                              );
+                            }}
+                            className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${buttonClass(
+                              c
+                            )}`}
+                            aria-pressed={activeCategory === c}
+                            title={c}
+                          >
+                            <span className="truncate inline-flex items-center gap-2">
+                              {/* Category icons */}
+                              {c === "Birthdays" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M18,8H13V5H11V8H6a4,4,0,0,0-4,4v9H22V12A4,4,0,0,0,18,8Zm2,11H4V16a3.78,3.78,0,0,0,2.71-1.3,1.54,1.54,0,0,1,2.58,0,3.49,3.49,0,0,0,5.42,0,1.54,1.54,0,0,1,2.58,0A3.78,3.78,0,0,0,20,16Zm0-5a2,2,0,0,1-1.29-.7,3.49,3.49,0,0,0-5.42,0,1.54,1.54,0,0,1-2.58,0,3.49,3.49,0,0,0-5.42,0A2,2,0,0,1,4,14V12a2,2,0,0,1,2-2H18a2,2,0,0,1,2,2ZM12,4.19a1.55,1.55,0,0,0,1.55-1.55C13.55,1.4,12,0,12,0s-1.55,1.4-1.55,2.64A1.55,1.55,0,0,0,12,4.19Z" />
+                                </svg>
+                              ) : c === "Football Schedule" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    clipRule="evenodd"
+                                    fill="currentColor"
+                                    d="M6.45635 6.45637C8.583 4.32971 11.5287 3.57849 14.2767 3.44059C16.8147 3.31323 19.0625 3.71611 20.0701 3.92988C20.2838 4.93738 20.6864 7.18553 20.5588 9.72381C20.4208 12.4721 19.6695 15.4178 17.5436 17.5437C15.4178 19.6695 12.4721 20.4208 9.72381 20.5588C7.18553 20.6864 4.93738 20.2838 3.92989 20.0701C3.71611 19.0625 3.31323 16.8147 3.44059 14.2767C3.57848 11.5287 4.32969 8.58304 6.45635 6.45637ZM20.7172 2.02387C19.7764 1.81449 17.1751 1.29263 14.1765 1.4431C11.1898 1.59298 7.66622 2.41805 5.04213 5.04216C2.41804 7.66627 1.59297 11.1898 1.4431 14.1765C1.29263 17.1751 1.81449 19.7764 2.02387 20.7172C2.07994 20.9691 2.19242 21.2809 2.45576 21.5442C2.7191 21.8076 3.03083 21.92 3.28275 21.9761C4.22374 22.1855 6.82539 22.707 9.82416 22.5563C12.8109 22.4063 16.3345 21.5813 18.9579 18.9579C21.5812 16.3345 22.4063 12.8109 22.5563 9.82417C22.707 6.82539 22.1855 4.22373 21.9761 3.28274C21.92 3.03081 21.8076 2.71908 21.5442 2.45574C21.2809 2.1924 20.9691 2.07993 20.7172 2.02387ZM16.2071 9.20715C16.5976 8.81662 16.5976 8.18346 16.2071 7.79294C15.8166 7.40241 15.1834 7.40241 14.7929 7.79294L13.5 9.08583L12.7071 8.29294C12.3166 7.90241 11.6834 7.90241 11.2929 8.29294C10.9024 8.68346 10.9024 9.31662 11.2929 9.70715L12.0858 10.5L10.5 12.0858L9.70709 11.2929C9.31657 10.9024 8.6834 10.9024 8.29288 11.2929C7.90235 11.6835 7.90235 12.3166 8.29288 12.7071L9.08577 13.5L7.79288 14.7929C7.40235 15.1835 7.40235 15.8166 7.79288 16.2071C8.1834 16.5977 8.81657 16.5977 9.20709 16.2071L10.5 14.9143L11.2929 15.7071C11.6834 16.0977 12.3166 16.0977 12.7071 15.7071C13.0976 15.3166 13.0976 14.6835 12.7071 14.2929L11.9142 13.5L13.5 11.9143L14.2929 12.7071C14.6834 13.0977 15.3166 13.0977 15.7071 12.7071C16.0976 12.3166 16.0976 11.6835 15.7071 11.2929L14.9142 10.5L16.2071 9.20715Z"
+                                  />
+                                </svg>
+                              ) : c === "Doctor Appointments" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="-2.5 0 19 19"
+                                  fill="currentColor"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M11.56 10.11v2.046a3.827 3.827 0 1 1-7.655 0v-.45A3.61 3.61 0 0 1 .851 8.141V5.25a1.682 1.682 0 0 1 .763-1.408 1.207 1.207 0 1 1 .48 1.04.571.571 0 0 0-.135.368v2.89a2.5 2.5 0 0 0 5 0V5.25a.57.57 0 0 0-.108-.334 1.208 1.208 0 1 1 .533-1.018 1.681 1.681 0 0 1 .683 1.352v2.89a3.61 3.61 0 0 1-3.054 3.565v.45a2.719 2.719 0 0 0 5.438 0V10.11a2.144 2.144 0 1 1 1.108 0zm.48-2.07a1.035 1.035 0 1 0-1.035 1.035 1.037 1.037 0 0 0 1.036-1.035z" />
+                                </svg>
+                              ) : c === "Appointments" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M18,5V3a1,1,0,0,0-2,0V5H8V3A1,1,0,0,0,6,3V5H2V21H22V5Zm2,14H4V7H20ZM9,10H7v2H9Zm0,4H7v2H9Zm8-4H11v2h6Zm0,4H11v2h6Z" />
+                                </svg>
+                              ) : c === "Sport Events" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 512 512"
+                                  fill="currentColor"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M367.918,69.237H129.781h-9.365l-7.227,5.949L9.514,160.546L0,168.382v12.322v79.167v21.874l21.534,3.824 l106.199,18.9c11.706,2.082,21.551,9.824,26.335,20.71l0.425,0.96l0.498,0.927c0.008,0.016,3.059,5.753,5.119,11.676 c21.993,63.19,76.312,104.023,138.385,104.023c44.031,0,84.652-19.019,111.437-52.186l67.359-84.359l0.624-0.782l0.566-0.832 l0.212-0.314l11.119-14.616l0.867-1.139l0.74-1.232C504.884,264.867,512,239.289,512,213.319 C512,133.872,447.365,69.237,367.918,69.237z M403.516,356.781l-13.894,17.395c-21.627,26.778-54.021,42.482-91.127,42.482 c-54.255,0-96.72-37.63-113.728-86.501c-2.821-8.106-6.798-15.483-6.798-15.483c-8.277-18.84-25.404-32.309-45.664-35.912 L26.106,259.87v-70.397H247.06c17.404,0,35.135,0,54.876,0c31.655,0,60.233,12.807,80.989,33.55 c20.739,20.752,33.541,49.331,33.546,80.986C416.466,323.078,411.738,340.975,403.516,356.781z M469.034,273.867l-11.726,15.415 l-0.417,0.646l-24.109,30.193c0.646-5.294,1.092-10.648,1.092-16.112c-0.004-72.87-59.065-131.931-131.938-131.94 c-19.741,0-37.472,0-54.876,0H36.592l93.188-76.727c0,0,202.62,0,238.137,0c65.158,0,117.976,52.823,117.976,117.977 C485.894,235.49,479.67,256.149,469.034,273.867z" />
+                                  <polygon points="240.836,154.853 315.673,154.853 369.809,109.466 294.972,109.466 " />
+                                </svg>
+                              ) : c === "Play Days" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 512 512"
+                                  fill="currentColor"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M504.984,407.552c-4.486-4.37-10.547-6.739-16.809-6.578c-33.187,0.855-64.219-6.478-92.22-26.71 c-25.3-18.279-45.075-44.849-61.547-71.479c-9.209-14.888-17.894-33.443-42.745-52.21c-30.764-23.236-71.898-33.537-109.531-33.63 v-50.912l55.611,41.751c25.235,6.452,49.633,17.687,70.077,34.915c18.506,15.595,27.542,30.093,35.339,43.223l10.051-4.423 l5.98,29.697c12.223,17.828,24.964,32.867,39.287,44.615c1.685-3.255,2.321-7.08,1.541-10.952l-18.14-90.084 c-0.993-4.926-4.152-9.143-8.601-11.481c-4.449-2.336-9.714-2.544-14.333-0.566l-23.457,10.049 c-6.28-25.238-8.436-33.902-14.58-58.596l56.505-77.152c4.538-6.196,3.194-14.9-3.003-19.439 c-6.197-4.539-14.898-3.194-19.44,3.003l-57.133,78.01l-38.956,10.266l-76.747-57.619v-9.2c0-5.202-2.352-10.126-6.399-13.395 l-75.536-61.009c-5.327-4.302-12.935-4.302-18.263,0L6.399,108.655C2.353,111.925,0,116.848,0,122.05v337.033 c0,4.693,3.805,8.497,8.497,8.497h20.366c4.693,0,8.498-3.805,8.498-8.497v-90.074h107.411v90.074 c0,4.693,3.805,8.497,8.497,8.497h4.179c0.21,0,0.275,0,0.266,0h15.921c4.693,0,8.498-3.805,8.498-8.497V284.537 c18.986,2.052,43.324,7.407,65.79,20.479c18.565,10.803,33.309,25.424,43.879,43.523c23.311,39.917,44.09,65.968,67.373,84.471 c38.645,30.711,83.079,38.657,132.495,32.511c0.009-0.001,0.019-0.002,0.029-0.003C503.326,464.062,512,454.201,512,442.482v-18.3 C512,417.919,509.469,411.922,504.984,407.552z M144.772,339.822L144.772,339.822H37.361v-40.863h107.411V339.822z M144.772,269.771L144.772,269.771H37.361v-42.007h107.411V269.771z" />
+                                  <path d="M448.619,294.203c-58.083-46.371-53.978-43.173-55.356-44.016c0.486,1.719-0.339-2.18,10.325,50.777l24.206,19.325 c7.204,5.752,17.706,4.571,23.456-2.631C457.001,310.456,455.823,299.954,448.619,294.203z" />
+                                  <circle cx="271.262" cy="146.57" r="32.45" />
+                                </svg>
+                              ) : (
+                                <span className="inline-block h-2 w-2 rounded-full bg-foreground/70" />
+                              )}
+                              {c}
+                              {futureCount > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                                  {futureCount}
+                                </span>
+                              )}
+                            </span>
+                            {(() => {
+                              const color =
+                                categoryColors[c] || defaultCategoryColor(c);
+                              const ccls = colorClasses(color);
+                              return (
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label={`Edit ${c} color`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    try {
+                                      const rect = (
+                                        e.currentTarget as HTMLElement
+                                      ).getBoundingClientRect();
+                                      setColorMenuPos({
+                                        left: Math.round(rect.right + 8),
+                                        top: Math.round(
+                                          rect.top + rect.height / 2
+                                        ),
+                                      });
+                                    } catch {
+                                      setColorMenuPos(null);
+                                    }
+                                    setColorMenuFor(c);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      (e.currentTarget as HTMLElement).click();
+                                    }
+                                  }}
+                                  className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
+                                  title="Edit color"
+                                />
+                              );
+                            })()}
+                          </button>
+                          {activeCategory === c && (
+                            <div className="mt-1 mb-2">
+                              {(() => {
+                                const items = history.filter(
+                                  (h) => (h as any)?.data?.category === c
+                                );
+                                if (items.length === 0)
+                                  return (
+                                    <div className="text-xs text-foreground/60 px-1 py-0.5">
+                                      No events
+                                    </div>
+                                  );
+                                return (
+                                  <div className="space-y-1">
+                                    {items.map((h) => {
+                                      const slug = (h.title || "")
+                                        .toLowerCase()
+                                        .replace(/[^a-z0-9]+/g, "-")
+                                        .replace(/^-+|-+$/g, "");
+                                      const prettyHref = `/event/${slug}-${h.id}`;
+                                      const category = (h as any)?.data
+                                        ?.category as string | null;
+                                      const rowAndBadge = (() => {
+                                        if (!category)
+                                          return {
+                                            row: "",
+                                            badge:
+                                              "bg-surface/70 text-foreground/70 border-border/70",
+                                          };
+                                        const color =
+                                          categoryColors[category] ||
+                                          defaultCategoryColor(category);
+                                        const ccls = colorClasses(color);
+                                        const row = ccls.tint;
+                                        return { row, badge: ccls.badge };
+                                      })();
+                                      return (
+                                        <div
+                                          key={h.id}
+                                          data-history-item={h.id}
+                                          className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
+                                        >
+                                          <Link
+                                            href={prettyHref}
+                                            onClick={() => {
+                                              try {
+                                                const isTouch =
+                                                  typeof window !==
+                                                    "undefined" &&
+                                                  typeof window.matchMedia ===
+                                                    "function" &&
+                                                  window.matchMedia(
+                                                    "(hover: none), (pointer: coarse)"
+                                                  ).matches;
+                                                if (isTouch)
+                                                  setIsCollapsed(true);
+                                              } catch {}
+                                            }}
+                                            className="block pr-8"
+                                            title={h.title}
+                                          >
+                                            <div className="truncate flex items-center gap-2">
+                                              <span className="truncate">
+                                                {h.title || "Untitled event"}
+                                              </span>
+                                            </div>
+                                            <div className="text-xs text-foreground/60">
+                                              {(() => {
+                                                const start =
+                                                  (h as any)?.data?.start ||
+                                                  (h as any)?.data?.event
+                                                    ?.start;
+                                                const dateStr =
+                                                  start || h.created_at;
+                                                return dateStr
+                                                  ? new Date(
+                                                      dateStr
+                                                    ).toLocaleDateString()
+                                                  : "";
+                                              })()}
+                                            </div>
+                                          </Link>
+                                          {/* Options menu removed for category list items */}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           )}
-                          {c}
-                        </span>
-                        {(() => {
-                          const color =
-                            categoryColors[c] || defaultCategoryColor(c);
-                          const ccls = colorClasses(color);
-                          return (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              aria-label={`Edit ${c} color`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                try {
-                                  const rect = (
-                                    e.currentTarget as HTMLElement
-                                  ).getBoundingClientRect();
-                                  setColorMenuPos({
-                                    left: Math.round(rect.right + 8),
-                                    top: Math.round(rect.top + rect.height / 2),
-                                  });
-                                } catch {
-                                  setColorMenuPos(null);
-                                }
-                                setColorMenuFor(c);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  (e.currentTarget as HTMLElement).click();
-                                }
-                              }}
-                              className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
-                              title="Edit color"
-                            />
-                          );
-                        })()}
-                      </button>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
             </div>
             <div className="border-t border-border mx-2 my-3" />
             <div className="px-2 text-xs uppercase tracking-wide text-foreground/60">
-              Recent scans
+              Recent Snapped
             </div>
             <nav className="space-y-1">
               {history.length === 0 && (
@@ -1525,239 +1653,211 @@ export default function LeftSidebar() {
                   No history yet
                 </div>
               )}
-              {history
-                .filter((h) => {
-                  // Filter by category if selected
-                  const c = (h as any)?.data?.category as string | null;
-                  if (!activeCategory) return true;
-                  return c === activeCategory;
-                })
-                .filter((h) => {
-                  // Hide past birthdays for the Birthdays filter
-                  if (activeCategory === "Birthdays") {
-                    const startISO = (h as any)?.data?.startISO as
-                      | string
-                      | null;
-                    const start = startISO ? new Date(startISO) : null;
-                    if (start && !isNaN(start.getTime())) {
-                      return (
-                        start.getTime() >= Date.now() - 24 * 60 * 60 * 1000
-                      );
-                    }
-                  }
-                  return true;
-                })
-                .map((h) => {
-                  const slug = (h.title || "")
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-+|-+$/g, "");
-                  const prettyHref = `/event/${slug}-${h.id}`;
-                  const category = (h as any)?.data?.category as string | null;
-                  const rowAndBadge = (() => {
-                    if (!category)
-                      return {
-                        row: "",
-                        badge:
-                          "bg-surface/70 text-foreground/70 border-border/70",
-                      };
-                    const color =
-                      categoryColors[category] ||
-                      defaultCategoryColor(category);
-                    const ccls = colorClasses(color);
-                    const row = ccls.tint; // tint all categories, not just Birthdays
-                    return { row, badge: ccls.badge };
-                  })();
-                  return (
-                    <div
-                      key={h.id}
-                      data-history-item={h.id}
-                      className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
+              {history.map((h) => {
+                const slug = (h.title || "")
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-+|-+$/g, "");
+                const prettyHref = `/event/${slug}-${h.id}`;
+                const category = (h as any)?.data?.category as string | null;
+                const rowAndBadge = (() => {
+                  if (!category)
+                    return {
+                      row: "",
+                      badge:
+                        "bg-surface/70 text-foreground/70 border-border/70",
+                    };
+                  const color =
+                    categoryColors[category] || defaultCategoryColor(category);
+                  const ccls = colorClasses(color);
+                  const row = ccls.tint; // tint all categories, not just Birthdays
+                  return { row, badge: ccls.badge };
+                })();
+                return (
+                  <div
+                    key={h.id}
+                    data-history-item={h.id}
+                    className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
+                  >
+                    <Link
+                      href={prettyHref}
+                      onClick={() => {
+                        try {
+                          const isTouch =
+                            typeof window !== "undefined" &&
+                            typeof window.matchMedia === "function" &&
+                            window.matchMedia(
+                              "(hover: none), (pointer: coarse)"
+                            ).matches;
+                          if (isTouch) setIsCollapsed(true);
+                        } catch {}
+                      }}
+                      className="block pr-8"
+                      title={h.title}
                     >
-                      <Link
-                        href={prettyHref}
-                        onClick={() => {
-                          try {
-                            const isTouch =
-                              typeof window !== "undefined" &&
-                              typeof window.matchMedia === "function" &&
-                              window.matchMedia(
-                                "(hover: none), (pointer: coarse)"
-                              ).matches;
-                            if (isTouch) setIsCollapsed(true);
-                          } catch {}
-                        }}
-                        className="block pr-8"
-                        title={h.title}
+                      <div className="truncate flex items-center gap-2">
+                        <span className="truncate">
+                          {h.title || "Untitled event"}
+                        </span>
+                      </div>
+                      <div className="text-xs text-foreground/60">
+                        {(() => {
+                          const start =
+                            (h as any)?.data?.start ||
+                            (h as any)?.data?.event?.start;
+                          const dateStr = start || h.created_at;
+                          return dateStr
+                            ? new Date(dateStr).toLocaleDateString()
+                            : "";
+                        })()}
+                      </div>
+                    </Link>
+                    <button
+                      type="button"
+                      aria-label="Item options"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = e.currentTarget as HTMLElement | null;
+                        if (itemMenuId === h.id) {
+                          setItemMenuId(null);
+                          setItemMenuPos(null);
+                          return;
+                        }
+                        if (target) {
+                          const rect = target.getBoundingClientRect();
+                          setItemMenuPos({
+                            left: Math.round(rect.right + 8),
+                            top: Math.round(rect.top + rect.height / 2),
+                          });
+                        }
+                        setItemMenuId(h.id);
+                      }}
+                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                        aria-hidden="true"
                       >
-                        <div className="truncate flex items-center gap-2">
-                          <span className="truncate">
-                            {h.title || "Untitled event"}
-                          </span>
-                        </div>
-                        <div className="text-xs text-foreground/60">
-                          {(() => {
-                            const start =
-                              (h as any)?.data?.start ||
-                              (h as any)?.data?.event?.start;
-                            const dateStr = start || h.created_at;
-                            return dateStr
-                              ? new Date(dateStr).toLocaleDateString()
-                              : "";
-                          })()}
-                        </div>
-                      </Link>
-                      <button
-                        type="button"
-                        aria-label="Item options"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const target = e.currentTarget as HTMLElement | null;
-                          if (itemMenuId === h.id) {
-                            setItemMenuId(null);
-                            setItemMenuPos(null);
-                            return;
-                          }
-                          if (target) {
-                            const rect = target.getBoundingClientRect();
-                            setItemMenuPos({
-                              left: Math.round(rect.right + 8),
-                              top: Math.round(rect.top + rect.height / 2),
-                            });
-                          }
-                          setItemMenuId(h.id);
-                        }}
-                        className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="h-4 w-4"
-                          aria-hidden="true"
+                        <circle cx="5" cy="12" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="19" cy="12" r="1.5" />
+                      </svg>
+                    </button>
+                    {itemMenuId === h.id &&
+                      itemMenuPos &&
+                      createPortal(
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            position: "fixed",
+                            left: itemMenuPos.left,
+                            top: itemMenuPos.top,
+                            transform: "translateY(-10%)",
+                          }}
+                          className="z-[10000] w-32 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
                         >
-                          <circle cx="5" cy="12" r="1.5" />
-                          <circle cx="12" cy="12" r="1.5" />
-                          <circle cx="19" cy="12" r="1.5" />
-                        </svg>
-                      </button>
-                      {itemMenuId === h.id &&
-                        itemMenuPos &&
-                        createPortal(
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              position: "fixed",
-                              left: itemMenuPos.left,
-                              top: itemMenuPos.top,
-                              transform: "translateY(-10%)",
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuId(null);
+                              setItemMenuPos(null);
+                              await shareHistoryItem(prettyHref);
                             }}
-                            className="z-[10000] w-32 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                           >
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setItemMenuId(null);
-                                setItemMenuPos(null);
-                                await shareHistoryItem(prettyHref);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                              aria-hidden="true"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              >
-                                <circle cx="18" cy="5" r="3" />
-                                <circle cx="6" cy="12" r="3" />
-                                <circle cx="18" cy="19" r="3" />
-                                <line
-                                  x1="8.59"
-                                  y1="13.51"
-                                  x2="15.42"
-                                  y2="17.49"
-                                />
-                                <line
-                                  x1="15.41"
-                                  y1="6.51"
-                                  x2="8.59"
-                                  y2="10.49"
-                                />
-                              </svg>
-                              <span className="text-sm">Share</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setItemMenuId(null);
-                                setItemMenuPos(null);
-                                await renameHistoryItem(h.id, h.title);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                              <circle cx="18" cy="5" r="3" />
+                              <circle cx="6" cy="12" r="3" />
+                              <circle cx="18" cy="19" r="3" />
+                              <line
+                                x1="8.59"
+                                y1="13.51"
+                                x2="15.42"
+                                y2="17.49"
+                              />
+                              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                            </svg>
+                            <span className="text-sm">Share</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuId(null);
+                              setItemMenuPos(null);
+                              await renameHistoryItem(h.id, h.title);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                              aria-hidden="true"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              >
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                              </svg>
-                              <span className="text-sm">Rename</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setItemMenuId(null);
-                                setItemMenuPos(null);
-                                await deleteHistoryItem(h.id);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                            <span className="text-sm">Rename</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuId(null);
+                              setItemMenuPos(null);
+                              await deleteHistoryItem(h.id, h.title);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                              aria-hidden="true"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              >
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
-                              </svg>
-                              <span className="text-sm">Delete</span>
-                            </button>
-                          </div>,
-                          document.body
-                        )}
-                    </div>
-                  );
-                })}
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                            <span className="text-sm">Delete</span>
+                          </button>
+                        </div>,
+                        document.body
+                      )}
+                  </div>
+                );
+              })}
             </nav>
           </div>
         </div>
