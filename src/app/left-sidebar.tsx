@@ -1550,7 +1550,7 @@ export default function LeftSidebar() {
                       categoryColors[category] ||
                       defaultCategoryColor(category);
                     const ccls = colorClasses(color);
-                    const row = category === "Birthdays" ? ccls.tint : "";
+                    const row = ccls.tint; // tint all categories, not just Birthdays
                     return { row, badge: ccls.badge };
                   })();
                   return (
@@ -1576,13 +1576,6 @@ export default function LeftSidebar() {
                         title={h.title}
                       >
                         <div className="truncate flex items-center gap-2">
-                          {category && category !== "Birthdays" && (
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] ${rowAndBadge.badge}`}
-                            >
-                              {category}
-                            </span>
-                          )}
                           <span className="truncate">
                             {h.title || "Untitled event"}
                           </span>
