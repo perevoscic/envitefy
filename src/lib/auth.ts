@@ -8,11 +8,6 @@ export function getAuthOptions(): NextAuthOptions {
     process.env.NEXTAUTH_SECRET ??
     (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
 
-  // iOS Safari requires HTTPS for Secure cookies; in local HTTP dev we must disable them
-  const nextAuthUrl = process.env.NEXTAUTH_URL || "";
-  const useSecure =
-    process.env.NODE_ENV === "production" || nextAuthUrl.startsWith("https://");
-
   return {
     debug: true,              // TEMP: leave on while debugging
     secret,
