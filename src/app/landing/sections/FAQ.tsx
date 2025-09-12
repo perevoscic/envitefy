@@ -3,24 +3,36 @@ import { useState } from "react";
 
 const qs = [
   {
-    q: "How accurate is the OCR?",
-    a: "Very good on clear photos and PDFs. You can review and edit details before saving.",
+    q: "How accurate is Snap My Date's OCR technology?",
+    a: "Snap My Date utilizes advanced OCR to extract event details from clear photos and PDFs with high accuracy. While our system is very robust, you always have the opportunity to review and edit any extracted information before saving it to your calendar.",
   },
   {
-    q: "Does it work with schedules?",
-    a: "Yes. We detect multi‑game schedules and expand them into separate events when possible.",
+    q: "Can Snap My Date handle complex schedules, like sports or school events?",
+    a: "Absolutely! Our system is designed to detect and parse multi-game or multi-event schedules from a single flyer. When possible, we automatically expand these into individual, ready-to-save calendar events, saving you time and effort.",
   },
   {
-    q: "What about privacy?",
-    a: "Uploads are processed to extract event details. You control what is saved in your history.",
+    q: "Does Snap My Date integrate with Apple Calendar?",
+    a: "Yes! We generate universally compatible .ics files, which can be easily imported into Apple Calendar on your iOS devices and macOS. It's a seamless way to get your events into your preferred Apple ecosystem.",
   },
   {
-    q: "Do you support Apple Calendar?",
-    a: "Yes. We generate standard .ics files that import on iOS and macOS.",
+    q: "Can I upload PDF files for event extraction?",
+    a: "Yes, you can directly upload PDF documents. Our OCR engine processes them just like image files, allowing for efficient extraction of event information from multi-page documents as well.",
   },
   {
-    q: "Can I use PDFs?",
-    a: "Yes. Upload PDFs directly; we pass them through OCR like images.",
+    q: "What are the available subscription plans?",
+    a: "Snap My Date offers various plans, including a free tier that comes with a set number of credits for event extractions. Paid plans provide more features and additional credits, catering to different usage needs. You can view detailed plan information on our Subscription page.",
+  },
+  {
+    q: "How do promo codes work?",
+    a: "Promo codes can be used to extend your subscription or gift credits to others. If you have a code, you can redeem it via your Subscription settings to instantly update your account benefits. Promo codes are a great way to enjoy more of Snap My Date's features!",
+  },
+  {
+    q: "Which calendar services does Snap My Date support for direct integration?",
+    a: "Snap My Date offers direct, secure integration with Google Calendar and Microsoft Outlook. This allows for quick, one-tap saving of extracted events directly into your chosen calendar, complete with all details and reminders.",
+  },
+  {
+    q: "What types of image files can I upload?",
+    a: "You can upload various common image formats, including JPEG, PNG, and GIF. For best results, we recommend clear, well-lit images of your event materials.",
   },
 ];
 
