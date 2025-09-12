@@ -62,11 +62,11 @@ export default async function RootLayout({
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
                 <div className="w-full overflow-x-auto">
                   <p className="text-center whitespace-nowrap">
-                    <Link href="/terms" className="hover:text-foreground">
+                    <Link href="https://www.snapmydate.com/terms" className="hover:text-foreground">
                       Terms of Use
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
-                    <Link href="/privacy" className="hover:text-foreground">
+                    <Link href="https://www.snapmydate.com/privacy" className="hover:text-foreground">
                       Privacy Policy
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
