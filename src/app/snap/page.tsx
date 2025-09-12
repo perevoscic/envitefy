@@ -34,6 +34,7 @@ export default function SnapPage() {
   });
   const [credits, setCredits] = useState<number | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [bulkEvents, setBulkEvents] = useState<any[] | null>(null);
 
   useEffect(() => {
     try {
@@ -228,6 +229,7 @@ export default function SnapPage() {
 
   const resetForm = () => {
     setEvent(null);
+    setBulkEvents(null);
     setOcrText("");
     setError(null);
     setFile(null);
@@ -369,6 +371,39 @@ export default function SnapPage() {
           reminders: [{ minutes: 1440 }],
         }
       : null;
+    // Prepare bulk events when provided by OCR schedule
+    const normalizedBulk: any[] = Array.isArray((data as any).events)
+      ? ((data as any).events as any[])
+          .map((ev) => {
+            try {
+              const startIso = typeof ev.start === "string" ? ev.start : null;
+              if (!startIso) return null;
+              const endIso =
+                (typeof ev.end === "string" && ev.end) ||
+                new Date(
+                  new Date(startIso).getTime() + 90 * 60 * 1000
+                ).toISOString();
+              return {
+                title:
+                  (ev.title as string) ||
+                  (adjusted?.title as string) ||
+                  "Event",
+                start: startIso,
+                end: endIso,
+                allDay: Boolean(ev.allDay),
+                timezone: (ev.timezone as string) || tz,
+                location: (ev.location as string) || "",
+                description:
+                  (ev.description as string) || (data?.ocrText as string) || "",
+                reminders: [{ minutes: 1440 }],
+              } as any;
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean)
+      : [];
+    setBulkEvents(normalizedBulk.length > 1 ? normalizedBulk : null);
     setEvent(adjusted);
     // Save history for authenticated users (server will associate user if signed in)
     try {
@@ -798,6 +833,181 @@ export default function SnapPage() {
     }
   };
 
+  // ---------- Bulk actions ----------
+  const addGoogleBulk = async () => {
+    const list = Array.isArray(bulkEvents) ? bulkEvents : [];
+    if (!list.length) return;
+    try {
+      const res = await fetch("/api/events/google/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ events: list }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError((j as any).error || "Failed to add events to Google");
+        return;
+      }
+      window.alert("Google: bulk events processed. Check your calendar.");
+    } catch {
+      setError("Failed to add events to Google");
+    }
+  };
+
+  const addOutlookBulk = async () => {
+    const list = Array.isArray(bulkEvents) ? bulkEvents : [];
+    if (!list.length) return;
+    try {
+      const res = await fetch("/api/events/outlook/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ events: list }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError((j as any).error || "Failed to add events to Outlook");
+        return;
+      }
+      window.alert("Outlook: bulk events processed. Check your calendar.");
+    } catch {
+      setError("Failed to add events to Outlook");
+    }
+  };
+
+  const dlIcsBulk = async () => {
+    const list = Array.isArray(bulkEvents) ? bulkEvents : [];
+    if (!list.length) return;
+    try {
+      const res = await fetch("/api/events/ics/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ events: list, filename: "events" }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setError((j as any).error || "Failed to generate ICS");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "events.ics";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch {}
+      }, 500);
+      try {
+        window.localStorage.setItem("appleLinked", "1");
+        setAppleLinked(true);
+      } catch {}
+    } catch {
+      setError("Failed to generate ICS");
+    }
+  };
+
+  // ---------- Open provider compose pages (one-by-one approvals) ----------
+  const toGCalTimestamp = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return (
+        `${d.getUTCFullYear()}` +
+        `${pad(d.getUTCMonth() + 1)}` +
+        `${pad(d.getUTCDate())}` +
+        "T" +
+        `${pad(d.getUTCHours())}` +
+        `${pad(d.getUTCMinutes())}` +
+        `${pad(d.getUTCSeconds())}` +
+        "Z"
+      );
+    } catch {
+      return iso.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+    }
+  };
+
+  const openGoogleDrafts = async () => {
+    const list = Array.isArray(bulkEvents) ? bulkEvents : [];
+    if (!list.length) return;
+    if (
+      !window.confirm(
+        `We will open ${list.length} Google Calendar tabs for you to approve.`
+      )
+    )
+      return;
+    for (const ev of list) {
+      const title = encodeURIComponent((ev.title as string) || "Event");
+      const details = encodeURIComponent((ev.description as string) || "");
+      const location = encodeURIComponent((ev.location as string) || "");
+      let dates = "";
+      if (ev.allDay) {
+        const s = (ev.start as string).slice(0, 10).replace(/-/g, "");
+        const e = (ev.end as string).slice(0, 10).replace(/-/g, "");
+        dates = `${s}/${e}`;
+      } else {
+        dates = `${toGCalTimestamp(ev.start as string)}/${toGCalTimestamp(
+          ev.end as string
+        )}`;
+      }
+      const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
+      window.open(url, "_blank");
+      await new Promise((r) => setTimeout(r, 350));
+    }
+  };
+
+  const toOutlookParamIso = (iso: string): string => {
+    try {
+      const d = new Date(iso);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return (
+        `${d.getFullYear()}-` +
+        `${pad(d.getMonth() + 1)}-` +
+        `${pad(d.getDate())}T` +
+        `${pad(d.getHours())}:` +
+        `${pad(d.getMinutes())}:` +
+        `${pad(d.getSeconds())}`
+      );
+    } catch {
+      return iso.replace(/\.\d{3}Z$/, "");
+    }
+  };
+
+  const buildOutlookComposeFromNormalized = (ev: any) => {
+    const q = new URLSearchParams({
+      rru: "addevent",
+      allday: String(Boolean(ev.allDay)),
+      subject: (ev.title as string) || "Event",
+      startdt: toOutlookParamIso(ev.start as string),
+      enddt: toOutlookParamIso(ev.end as string),
+      location: (ev.location as string) || "",
+      body: (ev.description as string) || "",
+      path: "/calendar/view/Month",
+    }).toString();
+    return `https://outlook.live.com/calendar/0/deeplink/compose?${q}`;
+  };
+
+  const openOutlookDrafts = async () => {
+    const list = Array.isArray(bulkEvents) ? bulkEvents : [];
+    if (!list.length) return;
+    if (
+      !window.confirm(
+        `We will open ${list.length} Outlook compose tabs for you to approve.`
+      )
+    )
+      return;
+    for (const ev of list) {
+      const url = buildOutlookComposeFromNormalized(ev);
+      window.open(url, "_blank");
+      await new Promise((r) => setTimeout(r, 350));
+    }
+  };
+
   return (
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
@@ -1027,6 +1237,62 @@ export default function SnapPage() {
                   )}
                 </button>
               </div>
+              {Array.isArray(bulkEvents) && bulkEvents.length > 1 && (
+                <div className="mt-3 flex items-center gap-3 flex-nowrap">
+                  <span className="text-sm text-foreground/70 whitespace-nowrap">
+                    Bulk ({bulkEvents.length})
+                  </span>
+                  <button
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm whitespace-nowrap ${
+                      connected.google
+                        ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                        : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                    }`}
+                    onClick={connected.google ? addGoogleBulk : connectGoogle}
+                  >
+                    <span>Add all to</span>
+                    <IconGoogleMono className="h-4 w-4" />
+                  </button>
+                  <button
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm whitespace-nowrap border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface`}
+                    onClick={openGoogleDrafts}
+                  >
+                    <span>Open GCal drafts</span>
+                  </button>
+                  {!isAndroid && !isWindows && (
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm whitespace-nowrap ${
+                        appleLinked
+                          ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                          : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                      }`}
+                      onClick={dlIcsBulk}
+                    >
+                      <span>Add all to</span>
+                      <IconAppleMono className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm whitespace-nowrap ${
+                      connected.microsoft
+                        ? "border border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                        : "border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface"
+                    }`}
+                    onClick={
+                      connected.microsoft ? addOutlookBulk : connectOutlook
+                    }
+                  >
+                    <span>Add all to</span>
+                    <IconMicrosoftMono className="h-4 w-4" />
+                  </button>
+                  <button
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm whitespace-nowrap border border-border bg-surface/70 text-foreground/90 hover:text-foreground hover:bg-surface`}
+                    onClick={openOutlookDrafts}
+                  >
+                    <span>Open Outlook drafts</span>
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-3">
                 <div className="space-y-1">

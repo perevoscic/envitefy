@@ -35,6 +35,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Query options**:
   - `llm=1` or `engine=openai` forces OpenAI image parsing in addition to Google Vision OCR text, useful when Vision misses spelled-out times.
 - **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable.
+- **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets attempt venue lookup via OpenStreetMap.
 
 ```bash
 curl -X POST \
@@ -88,6 +89,13 @@ curl -X POST \
 - **Input (query)**: `title`, `start` (ISO), `end` (ISO), `location`, `description`, `timezone` (IANA, default `America/Chicago`), optional `recurrence` (RRULE), optional `reminders` (comma-separated minutes).
 - **Output**: `text/calendar` (attachment `event.ics`).
 
+### ICS Bulk — POST `/api/events/ics/bulk`
+
+- **Purpose**: Generate a single `.ics` containing multiple VEVENTs for bulk import (Apple Calendar friendly, also works with Google/Outlook).
+- **Auth**: None.
+- **Input (JSON)**: `{ events: NormalizedEvent[], filename?: string }`.
+- **Output**: `text/calendar` (attachment `events.ics`).
+
 ```bash
 curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2025-06-23T21:00:00Z&location=Home&timezone=America/Chicago"
 ```
@@ -108,6 +116,20 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Input (JSON)**: NormalizedEvent; optional `intakeId` ignored.
 - **Output**: `{ webLink, id }`.
 - **Env**: `NEXTAUTH_SECRET`, `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_TENANT_ID` (default `common`).
+
+### Google Events Bulk — POST `/api/events/google/bulk`
+
+- **Purpose**: Create multiple Google Calendar events in one request.
+- **Auth**: NextAuth JWT; uses stored provider tokens (same as single insert).
+- **Input (JSON)**: `{ events: NormalizedEvent[] }`.
+- **Output**: `{ ok: true, results: Array<{ index, id?, htmlLink?, error? }> }`.
+
+### Microsoft Events Bulk — POST `/api/events/outlook/bulk`
+
+- **Purpose**: Create multiple Outlook events in one request.
+- **Auth**: NextAuth JWT + stored Microsoft refresh token; dev falls back to JWT/cookie.
+- **Input (JSON)**: `{ events: NormalizedEvent[] }`.
+- **Output**: `{ ok: true, results: Array<{ index, id?, webLink?, error? }> }`.
 
 ### Google OAuth Agents — GET `/api/google/auth`, GET `/api/google/callback`
 

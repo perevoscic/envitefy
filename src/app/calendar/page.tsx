@@ -150,6 +150,41 @@ function endOfISOWeek(date: Date): Date {
   return end;
 }
 
+function formatEventDateTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const dateStr = new Intl.DateTimeFormat(undefined, {
+      month: "long",
+      day: "numeric",
+    }).format(d);
+    const hours24 = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours24 >= 12 ? "PM" : "AM";
+    let hours12 = hours24 % 12;
+    if (hours12 === 0) hours12 = 12;
+    const timeStr =
+      minutes === 0
+        ? `${hours12}${ampm}`
+        : `${hours12}:${String(minutes).padStart(2, "0")}${ampm}`;
+    return `${dateStr}, ${timeStr}`;
+  } catch {
+    return iso;
+  }
+}
+
+function pickLocationName(location: string): string {
+  const s = String(location || "").trim();
+  if (!s) return s;
+  const first = s.split(/[,\n\-]/)[0].trim();
+  const hasDigit = /\d/.test(first);
+  const addressToken =
+    /\b(Street|St|Ave|Avenue|Blvd|Boulevard|Road|Rd|Drive|Dr|Court|Ct|Lane|Ln|Way|Place|Pl|Terrace|Ter|Pkwy|Parkway|Hwy|Highway|Suite|Ste|Apt|Unit|#)\b/i;
+  if (!hasDigit && !addressToken.test(first) && first.length >= 2) {
+    return first;
+  }
+  return s;
+}
+
 function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   for (const item of items) {
@@ -631,20 +666,21 @@ export default function CalendarPage() {
                     key={ev.id}
                     type="button"
                     onClick={() => setOpenEvent(ev)}
-                    className={`w-full text-left rounded-md ${tone.tint} text-black px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                     title={ev.title}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate font-medium">{ev.title}</span>
-                      <span className="shrink-0 text-sm text-foreground/70">
-                        {new Date(ev.start).toLocaleString()}
+                    <div className="flex items-center gap-3">
+                      <span className="truncate font-medium text-foreground">
+                        {ev.title}
                       </span>
                     </div>
-                    {ev.location && (
-                      <div className="mt-0.5 text-xs text-foreground/60 truncate">
-                        {ev.location}
-                      </div>
-                    )}
+                    <div className="mt-0.5 text-xs text-foreground/70 truncate">
+                      {ev.location
+                        ? `${formatEventDateTime(
+                            ev.start
+                          )} at ${pickLocationName(ev.location)}`
+                        : formatEventDateTime(ev.start)}
+                    </div>
                   </button>
                 );
               })}
@@ -685,22 +721,21 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setOpenEvent(ev)}
-                            className={`w-full text-left rounded-md ${tone.tint} text-black px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                            className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                             title={ev.title}
                           >
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="truncate font-medium">
+                            <div className="flex items-center gap-3">
+                              <span className="truncate font-medium text-foreground">
                                 {ev.title}
                               </span>
-                              <span className="shrink-0 text-sm text-foreground/70">
-                                {new Date(ev.start).toLocaleDateString()}
-                              </span>
                             </div>
-                            {ev.location && (
-                              <div className="mt-0.5 text-xs text-foreground/60 truncate">
-                                {ev.location}
-                              </div>
-                            )}
+                            <div className="mt-0.5 text-xs text-foreground/70 truncate">
+                              {ev.location
+                                ? `${formatEventDateTime(
+                                    ev.start
+                                  )} at ${pickLocationName(ev.location)}`
+                                : formatEventDateTime(ev.start)}
+                            </div>
                           </button>
                         </li>
                       );

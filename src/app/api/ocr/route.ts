@@ -116,6 +116,101 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   }
 }
 
+// OpenAI-only extraction for gymnastics season schedules: returns multiple events
+async function llmExtractGymnasticsScheduleFromImage(
+  imageBytes: Buffer,
+  mime: string,
+  timezone: string
+): Promise<{
+  season?: string | null;
+  homeTeam?: string | null;
+  homeAddress?: string | null;
+  events?: Array<{
+    title: string;
+    start: string; // ISO date or datetime
+    end: string; // ISO
+    allDay?: boolean;
+    timezone?: string;
+    location?: string | null;
+    description?: string | null;
+  }>;
+} | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const base64 = imageBytes.toString("base64");
+  const system =
+    "You read gymnastics season schedule posters and output clean JSON with a list of meets as calendar events. Use visual cues (colors, legends, 'VS' vs 'AT') to determine home vs away. Do not hallucinate dates.";
+  const userText =
+    "Extract gymnastics season schedule as strict JSON with keys: season (string|nullable), homeTeam (string|nullable), homeAddress (string|nullable if visible), events (array).\nRules: If the poster legend shows colors (e.g., red=HOME, black=AWAY), use that to set home vs away. Also use 'VS' for home and 'AT' for away when present. A trailing '*' means MAC MEETS; include 'MAC Meet' in description when starred.\nFor each event include: title (e.g., 'NIU Gymnastics: vs Central Michigan' or 'NIU Gymnastics: at Bowling Green'), start (ISO date at 00:00 local if time missing), end (ISO date next day for all-day), allDay:true, timezone set to provided TZ, location (home uses homeAddress if visible; away: leave empty if flyer doesn't show), description short (opponent + 'home' or 'away', include 'MAC Meet' when starred). Do not include any extra keys. Dates must include year from the poster heading if present.";
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText + `\nTIMEZONE: ${timezone}` },
+              { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    try {
+      const parsed = JSON.parse(text) as any;
+      const events = Array.isArray(parsed?.events) ? parsed.events : [];
+      // Normalize dates to ISO with all-day boundaries when only date provided
+      const normalize = (ev: any) => {
+        const title = String(ev?.title || "Meet").slice(0, 120);
+        const loc = typeof ev?.location === "string" ? ev.location : "";
+        const startIso = typeof ev?.start === "string" ? ev.start : null;
+        const endIso = typeof ev?.end === "string" ? ev.end : null;
+        let s = startIso;
+        let e = endIso;
+        try {
+          if (s && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
+            // convert date to all-day UTC boundaries
+            s = new Date(`${s}T00:00:00.000Z`).toISOString();
+            const d = new Date(s);
+            e = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
+          }
+        } catch {}
+        return {
+          title,
+          start: s || new Date().toISOString(),
+          end: e || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+          allDay: Boolean(ev?.allDay ?? true),
+          timezone,
+          location: loc,
+          description: typeof ev?.description === "string" ? ev.description.slice(0, 600) : "",
+        };
+      };
+      const normalized = events.map(normalize);
+      return {
+        season: parsed?.season ?? null,
+        homeTeam: parsed?.homeTeam ?? null,
+        homeAddress: parsed?.homeAddress ?? null,
+        events: normalized,
+      };
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
 // Detect spelled-out time phrases like "four o'clock in the afternoon"
 function detectSpelledTime(raw: string): { hour: number; minute: number; meridiem: "am" | "pm" | null } | null {
   const text = (raw || "").toLowerCase();
@@ -308,6 +403,7 @@ export async function POST(request: Request) {
   try {
     const url = new URL(request.url);
     const forceLLM = url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
+    const gymOnly = url.searchParams.get("gym") === "1" || url.searchParams.get("sport") === "gymnastics";
     const formData = await request.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) {
@@ -638,10 +734,225 @@ export async function POST(request: Request) {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
-    // Schedule extraction removed
+    // ---------------- Gymnastics schedule extraction ----------------
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-    const schedule = { detected: false, homeTeam: null, season: null, games: [] };
-    const events: any[] = [];
+    const schedule = { detected: false as boolean, homeTeam: null as string | null, season: null as string | null, games: [] as any[] };
+    let events: any[] = [];
+
+    const monthMap: Record<string, number> = {
+      jan: 0, january: 0,
+      feb: 1, february: 1,
+      mar: 2, march: 2,
+      apr: 3, april: 3,
+      may: 4,
+      jun: 5, june: 5,
+      jul: 6, july: 6,
+      aug: 7, august: 7,
+      sep: 8, sept: 8, september: 8,
+      oct: 9, october: 9,
+      nov: 10, november: 10,
+      dec: 11, december: 11,
+    };
+
+    const hasGymnasticsSchedule = /gymnastics/i.test(raw) && /schedule/i.test(raw);
+    if (hasGymnasticsSchedule && (gymOnly || forceLLM)) {
+      // OpenAI-exclusive path for gymnastics schedules
+      const llmSched = await llmExtractGymnasticsScheduleFromImage(ocrBuffer, mime || "application/octet-stream", tz);
+      if (llmSched && Array.isArray(llmSched.events) && llmSched.events.length) {
+        schedule.detected = true;
+        schedule.homeTeam = (llmSched.homeTeam as any) || schedule.homeTeam;
+        schedule.season = (llmSched.season as any) || schedule.season;
+
+        // Minimal geocode helper for away meets when location missing
+        const geocode = async (query: string): Promise<string | null> => {
+          try {
+            const ac = new AbortController();
+            const timer = setTimeout(() => ac.abort(), 2500);
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+            const r = await fetch(url, {
+              headers: { "Accept-Language": "en", "User-Agent": "snapmydate/1.0 (+https://snapmydate.app)" },
+              signal: ac.signal,
+            });
+            clearTimeout(timer);
+            const j: any[] = await r.json().catch(() => []);
+            const top = Array.isArray(j) && j.length ? j[0] : null;
+            return top?.display_name || null;
+          } catch {
+            return null;
+          }
+        };
+
+        const homeAddress = (llmSched.homeAddress as any) || "";
+        const filled: any[] = [];
+        for (const rawEv of llmSched.events) {
+          let ev = { ...rawEv } as any;
+          const t = String(ev.title || "");
+          const isAway = /\bat\b/i.test(t) && !/\bvs\.?\b/i.test(t);
+          if (!ev.location) {
+            if (!isAway) {
+              if (homeAddress) ev.location = homeAddress;
+            } else {
+              // Try to infer opponent from title after 'at'
+              const m = t.split(/\bat\b/i)[1];
+              const opponent = m ? m.replace(/\*/g, "").trim() : "";
+              if (opponent) {
+                const addr = await geocode(`${opponent} gymnastics`);
+                if (addr) ev.location = addr;
+              }
+            }
+          }
+          filled.push({ ...ev, category: "Sport Events" });
+        }
+        events = filled;
+      }
+    } else if (hasGymnasticsSchedule) {
+      schedule.detected = true;
+
+      // Try to capture the season year (e.g., 2026) if present near header
+      const yearMatch = raw.match(/\b(20\d{2})\b.*?gymnastics.*?schedule/i) || raw.match(/gymnastics.*?schedule.*?\b(20\d{2})\b/i);
+      const season = yearMatch ? yearMatch[1] : null;
+      schedule.season = season;
+
+      // Heuristic home team from top-most large acronym or title
+      const acr = lines.find((l: string) => /^[A-Z]{2,6}$/.test(l.trim())) || null;
+      schedule.homeTeam = acr;
+
+      // Collapse lines into date-led blocks
+      const monthRe = /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)/i;
+      const dateStartRe = new RegExp(`^\\s*${monthRe.source}\\s*\\b(\\d{1,2})\\b`, "i");
+
+      type Block = { month: string; day: number; text: string };
+      const blocks: Block[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        const m = l.match(dateStartRe);
+        if (m) {
+          const month = (m[1] || m[0]).toLowerCase();
+          const day = Number(m[2] || m[1]);
+          let text = l;
+          // join subsequent lines until next date-start or blank separator
+          let j = i + 1;
+          while (j < lines.length && !dateStartRe.test(lines[j])) {
+            const s = lines[j];
+            // stop at obvious footer legend
+            if (/home\b|away\b|mac\s*meets?/i.test(s)) break;
+            if (/^\s*$/.test(s)) break;
+            text += "\n" + s;
+            j++;
+          }
+          i = j - 1;
+          blocks.push({ month, day, text });
+        }
+      }
+
+      // Opponent parsing: detect at/vs and list of opponents
+      const normalizeOpponents = (s: string): { homeAway: "home" | "away"; opponents: string[]; label: string } | null => {
+        const t = s.replace(/\s+/g, " ").trim();
+        let homeAway: "home" | "away" | null = null;
+        let label = t;
+        if (/\bvs\b|\bvs\.\b/i.test(t)) {
+          homeAway = "home";
+          label = t.replace(/.*?\bvs\.?\s*/i, "");
+        } else if (/\bat\b/i.test(t)) {
+          homeAway = "away";
+          label = t.replace(/.*?\bat\s*/i, "");
+        }
+        if (!homeAway) return null;
+        const cleaned = label
+          .replace(/\*(?:\s|$)/g, " ")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+        // Split multiple opponents if separated by newlines or obvious delimiters
+        const opponents = cleaned
+          .split(/[\n|•·]/)
+          .join(" ")
+          .split(/\s{2,}|\s{1}(?=[A-Z]{2,}(?:\s|$))/)
+          .join(" ")
+          .split(/\s{2,}/)
+          .filter(Boolean);
+        // Fallback: further split by separators
+        const dedup = Array.from(new Set(cleaned.split(/[,/]|\s{2,}|\s{1}\u00B7\s{1}/).map((x) => x.trim()).filter(Boolean)));
+        const finalOpponents = opponents.length >= 1 ? [cleaned] : dedup;
+        return { homeAway, opponents: finalOpponents.length ? finalOpponents : [cleaned], label: cleaned };
+      };
+
+      // Optional away geocode using Nominatim with tight timeout
+      const geocode = async (query: string): Promise<{ label: string; confidence: number } | null> => {
+        try {
+          const ac = new AbortController();
+          const timer = setTimeout(() => ac.abort(), 2500);
+          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+          const r = await fetch(url, {
+            headers: { "Accept-Language": "en", "User-Agent": "snapmydate/1.0 (+https://snapmydate.app)" },
+            signal: ac.signal,
+          });
+          clearTimeout(timer);
+          const j: any[] = await r.json().catch(() => []);
+          const top = Array.isArray(j) && j.length ? j[0] : null;
+          if (!top) return null;
+          const disp = (top.display_name as string) || "";
+          return { label: disp, confidence: 0.6 };
+        } catch {
+          return null;
+        }
+      };
+
+      for (const b of blocks) {
+        // Determine at/vs line inside block
+        const linesIn = b.text.split("\n").map((x) => x.trim()).filter(Boolean);
+        const main = linesIn.find((x) => /\b(vs\.?|at)\b/i.test(x)) || linesIn[0];
+        const opp = normalizeOpponents(main || "");
+        if (!opp) continue;
+
+        // Build date
+        const mKey = (b.month || "").toLowerCase();
+        const monthIndex = monthMap[mKey];
+        if (typeof monthIndex !== "number") continue;
+        const nowYear = new Date().getFullYear();
+        const seasonYear = season ? Number(season) : nowYear;
+        let year = seasonYear;
+        // If month is Jan/Feb/Mar and season likely spans academic year, keep seasonYear
+        const dateLocal = new Date(Date.UTC(year, monthIndex, b.day, 0, 0, 0));
+
+        // Times are usually not on schedule images; mark as all-day
+        const startISO = new Date(dateLocal).toISOString().slice(0, 10);
+        const endISO = new Date(Date.UTC(year, monthIndex, b.day + 1, 0, 0, 0)).toISOString().slice(0, 10);
+
+        // Location: home uses detected address; away attempts geocode
+        let location = "";
+        let locationNote = "";
+        if (opp.homeAway === "home") {
+          location = finalAddress || fieldsGuess.location || "";
+          if (!location) locationNote = "Home meet — address missing";
+        } else {
+          const q = `${opp.opponents[0]} gymnastics arena`;
+          const g = await geocode(q);
+          if (g?.label) location = g.label;
+          if (!location) locationNote = `Away meet at ${opp.opponents[0]}`;
+        }
+
+        const prettyOpp = opp.label.replace(/\s{2,}/g, " ");
+        const evTitle = `${schedule.homeTeam ? schedule.homeTeam + " " : ""}Gymnastics: ${opp.homeAway === "home" ? "vs" : "at"} ${prettyOpp}`.trim();
+
+        // Push both schedule game (semantic) and normalized event
+        schedule.games.push({
+          date: { month: monthIndex + 1, day: b.day, year },
+          opponent: prettyOpp,
+          home: opp.homeAway === "home",
+        });
+
+        events.push({
+          title: evTitle,
+          start: startISO + "T00:00:00.000Z",
+          end: endISO + "T00:00:00.000Z",
+          allDay: true,
+          timezone: tz,
+          location,
+          description: [evTitle, locationNote].filter(Boolean).join("\n"),
+          category: "Sport Events",
+        });
+      }
+    }
 
     // --- Category detection ---
     const detectCategory = (fullText: string, sched: any, guess: any): string | null => {
