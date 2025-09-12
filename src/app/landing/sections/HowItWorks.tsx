@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function HowItWorks() {
   return (
     <section aria-labelledby="how-it-works" className="w-full">

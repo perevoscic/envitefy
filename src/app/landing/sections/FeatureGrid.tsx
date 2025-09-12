@@ -1,31 +1,35 @@
 const features = [
   {
-    title: "PDF support",
-    desc: "Upload PDFs directly—no conversion needed.",
+    title: "Family calendar harmony",
+    desc: "All events in one place — no more juggling.",
   },
   {
-    title: "Timezone smart",
-    desc: "Keeps your local timezone; travel handling that just works.",
-  },
-  {
-    title: "One‑tap add",
-    desc: "Google, Apple (ICS), and Outlook via Graph.",
+    title: "Carpool & activity sync",
+    desc: "Share with other parents to keep pickups and practices aligned.",
   },
   {
     title: "Automatic reminders",
     desc: "Quick chips for 1h, 1d, 1w. Edit anytime.",
   },
   {
-    title: "History & sharing",
-    desc: "Saved items and shareable detail pages for family.",
+    title: "RSVP in one tap",
+    desc: "send reply with our intelligent in seconds.",
   },
   {
-    title: "Privacy‑first",
-    desc: "You control what is saved. Simple, transparent use.",
+    title: "Photo-to-plan magic",
+    desc: "Snap a flyer, we’ll turn it into calendar details instantly.",
   },
   {
-    title: "No lock‑in",
-    desc: "ICS support means your events work anywhere.",
+    title: "One less thing to remember",
+    desc: "Birthdays, weddings, play-days auto-saved, so nothing slips.",
+  },
+  {
+    title: "Never late again",
+    desc: "No more missed events, no more rushing.",
+  },
+  {
+    title: "Peaceful mornings",
+    desc: "Start the day calm with a clear plan — no last-minute chaos.",
   },
 ];
 

@@ -25,15 +25,6 @@ export default async function Hero() {
             ready‑to‑save calendar events. No typing.
           </p>
           <ClientHeroCtas isAuthed={isAuthed} />
-          <div className="mt-4 text-center lg:text-left">
-            <Link
-              href="#demo"
-              className="text-sm text-foreground/70 hover:text-foreground underline underline-offset-4"
-            >
-              Try a live demo ↓
-            </Link>
-          </div>
-
           <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-foreground/70">
             <span className="text-sm">Works with</span>
             <span
@@ -80,22 +71,23 @@ export default async function Hero() {
           </div>
         </div>
 
-        <div className="hidden lg:block relative mx-auto lg:mx-0 w-[300px] sm:w-[360px] aspect-[9/19.5] rounded-[38px] bg-neutral-800 shadow-2xl ring-1 ring-white/10 overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-40 rounded-full bg-black/70" />
-          <div className="absolute inset-[14px] rounded-[28px] overflow-hidden">
-            <Image
-              src="/invite.jpg"
-              alt="Invitation being scanned"
-              fill
-              sizes="(max-width: 1024px) 360px, 400px"
-              className="object-cover"
-              priority
-            />
-            <div className="scanwrap absolute inset-0" aria-hidden="true">
-              <div className="scanline"></div>
-              <div className="scanglow"></div>
-            </div>
-          </div>
+        <div className="hidden lg:block relative mx-auto lg:mx-0">
+          <Image
+            src="/invite.png"
+            alt="Invitation being scanned"
+            width={500}
+            height={500}
+            priority
+            className="show-light"
+          />
+          <Image
+            src="/invite_dark.png"
+            alt="Invitation being scanned (dark theme)"
+            width={500}
+            height={500}
+            priority
+            className="show-dark"
+          />
         </div>
       </div>
     </section>

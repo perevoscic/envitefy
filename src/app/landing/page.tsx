@@ -2,7 +2,6 @@ import LoginHero from "./LoginHero";
 import Hero from "./sections/Hero";
 import HowItWorks from "./sections/HowItWorks";
 import FeatureGrid from "./sections/FeatureGrid";
-import Demo from "./sections/Demo";
 import Integrations from "./sections/Integrations";
 import Testimonials from "./sections/Testimonials";
 import FinalCta from "./sections/FinalCta";
@@ -16,7 +15,6 @@ export default async function LandingPage() {
       <Hero />
       <HowItWorks />
       <FeatureGrid />
-      <Demo />
       <Integrations />
       <Testimonials />
       <UseCases />
