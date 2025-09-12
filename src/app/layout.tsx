@@ -34,7 +34,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Snap My Date",
   description:
-    "Snap My Date is a tool that allows you to add events to your calendar by taking a photo of a flyer.",
+    "Snap My Date is an innovative event management tool to scan birthday invites, flyers, wedding invitations, appointment cards instantly adding events to your preferred calendar. Simplify your scheduling with our powerful calendar integration and keep your family events organized.",
 };
 
 export const viewport: Viewport = {
@@ -62,11 +62,17 @@ export default async function RootLayout({
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
                 <div className="w-full overflow-x-auto">
                   <p className="text-center whitespace-nowrap">
-                    <Link href="https://www.snapmydate.com/terms" className="hover:text-foreground">
+                    <Link
+                      href="https://www.snapmydate.com/terms"
+                      className="hover:text-foreground"
+                    >
                       Terms of Use
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
-                    <Link href="https://www.snapmydate.com/privacy" className="hover:text-foreground">
+                    <Link
+                      href="https://www.snapmydate.com/privacy"
+                      className="hover:text-foreground"
+                    >
                       Privacy Policy
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
