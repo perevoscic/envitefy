@@ -39,10 +39,12 @@ export async function POST(req: NextRequest) {
       message,
       quantity,
       period,
-      expiresAt: null,
+      // Default expiry handled in DB helper; pass undefined to use default
+      expiresAt: undefined,
     });
 
     // Delivery email (best-effort; don't fail the creation if email fails)
+    let emailSent = false;
     if (recipientEmail) {
       try {
         await sendGiftEmail({
@@ -54,12 +56,13 @@ export async function POST(req: NextRequest) {
           period,
           message,
         });
+        emailSent = true;
       } catch (e) {
         // ignore email send failure for now
       }
     }
 
-    return NextResponse.json({ ok: true, promo });
+    return NextResponse.json({ ok: true, promo, emailSent });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Failed to create gift code" }, { status: 500 });
   }

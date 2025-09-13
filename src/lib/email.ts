@@ -73,6 +73,44 @@ export async function sendGiftEmail(params: {
   await getSes().send(cmd);
 }
 
+export async function sendPasswordResetEmail(params: {
+  toEmail: string;
+  resetUrl: string;
+}): Promise<void> {
+  assertEnv("SES_FROM_EMAIL", process.env.SES_FROM_EMAIL);
+  const from = process.env.SES_FROM_EMAIL as string;
+  const to = params.toEmail;
+  const subject = `Reset your Snap My Date password`;
+  const text = [
+    `We received a request to reset your password.`,
+    ``,
+    `Reset link: ${params.resetUrl}`,
+    ``,
+    `If you didn't request this, you can ignore this email.`,
+  ].join("\n");
+  const html = `<!doctype html>
+  <html><body>
+  <p>We received a request to reset your password.</p>
+  <p><a href="${params.resetUrl}">Reset your password</a></p>
+  <p>If you didn't request this, you can ignore this email.</p>
+  </body></html>`;
+
+  const cmd = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    Content: {
+      Simple: {
+        Subject: { Data: subject },
+        Body: {
+          Text: { Data: text },
+          Html: { Data: html },
+        },
+      },
+    },
+  });
+  await getSes().send(cmd);
+}
+
 function escapeHtml(s: string): string {
   return s
     .replaceAll("&", "&amp;")

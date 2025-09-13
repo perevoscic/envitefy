@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 
 export type GiftSnapModalProps = {
   open: boolean;
@@ -15,6 +16,10 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const { data: session } = useSession();
+  const [senderFirstName, setSenderFirstName] = useState("");
+  const [senderLastName, setSenderLastName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -37,6 +42,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
   if (!open) return null;
 
   const onSubmit = async () => {
+    const isAuthed = !!session?.user?.email;
     const fullName =
       `${firstName}`.trim() + (lastName.trim() ? ` ${lastName.trim()}` : "");
     if (!firstName.trim() || !lastName.trim()) {
@@ -47,6 +53,19 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
     if (!emailOk) {
       setResult("Please enter a valid email.");
       return;
+    }
+    if (!isAuthed) {
+      if (!senderFirstName.trim() || !senderLastName.trim()) {
+        setResult("Please enter your first and last name.");
+        return;
+      }
+      const senderEmailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(
+        senderEmail.trim()
+      );
+      if (!senderEmailOk) {
+        setResult("Please enter a valid sender email.");
+        return;
+      }
     }
     if (!Number.isFinite(quantity) || quantity <= 0) {
       setResult("Please enter a valid quantity.");
@@ -59,6 +78,14 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
     setSubmitting(true);
     setResult(null);
     try {
+      let finalMessage = message.trim();
+      if (!isAuthed) {
+        const fromFull =
+          `${senderFirstName}`.trim() +
+          (senderLastName.trim() ? ` ${senderLastName.trim()}` : "");
+        const fromLine = `From: ${fromFull} <${senderEmail.trim()}>`;
+        finalMessage = `${finalMessage}\n\n${fromLine}`;
+      }
       const res = await fetch("/api/promo/gift", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,7 +94,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
           period: "months",
           recipientName: fullName,
           recipientEmail: email.trim(),
-          message,
+          message: finalMessage,
         }),
         credentials: "include",
       });
@@ -77,6 +104,10 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
       } else {
         const code = json?.promo?.code || "-";
         setResult(`Gift created. Code: ${code}`);
+        try {
+          // Simple popup confirmation for the user
+          alert("Gift was sent successfully!");
+        } catch {}
       }
     } catch (err: any) {
       setResult("Network error. Please try again.");
@@ -166,6 +197,36 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
               ))}
             </select>
           </div>
+          {!session?.user?.email && (
+            <div className="mt-2 grid grid-cols-1 gap-3">
+              <div className="text-xs text-muted-foreground">
+                From (your details)
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Your first name"
+                  value={senderFirstName}
+                  onChange={(e) => setSenderFirstName(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Your last name"
+                  value={senderLastName}
+                  onChange={(e) => setSenderLastName(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
+              <input
+                type="email"
+                placeholder="Your email"
+                value={senderEmail}
+                onChange={(e) => setSenderEmail(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+          )}
           <textarea
             placeholder="Add a message"
             value={message}

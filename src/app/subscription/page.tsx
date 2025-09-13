@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GiftSnapModal from "@/components/GiftSnapModal";
 import RedeemPromoModal from "@/components/RedeemPromoModal";
+import AuthModal from "@/components/auth/AuthModal";
 import Logo from "@/assets/logo.png";
 
 export default function SubscriptionPage() {
@@ -13,13 +14,16 @@ export default function SubscriptionPage() {
   const params = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<
     "free" | "monthly" | "yearly"
-  >("free");
+  >("monthly");
   const [currentPlan, setCurrentPlan] = useState<
     "free" | "monthly" | "yearly" | null
   >(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState<boolean>(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
 
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
@@ -50,13 +54,20 @@ export default function SubscriptionPage() {
         const planJson = await planRes.json().catch(() => ({}));
         const profileJson = await profileRes.json().catch(() => ({}));
         if (ignore) return;
+        setIsAuthed(planRes.ok);
         const plan = planJson?.plan;
-        if (plan === "free" || plan === "monthly" || plan === "yearly") {
-          setCurrentPlan(plan);
-          setSelectedPlan(plan);
+        if (planRes.ok) {
+          if (plan === "free" || plan === "monthly" || plan === "yearly") {
+            setCurrentPlan(plan);
+            setSelectedPlan(plan);
+          } else {
+            setCurrentPlan("free");
+            setSelectedPlan("free");
+          }
         } else {
-          setCurrentPlan("free");
-          setSelectedPlan("free");
+          // Unauthenticated: do not mark FREE as current; default to Monthly selection
+          setCurrentPlan(null);
+          setSelectedPlan("monthly");
         }
         if (typeof profileJson?.credits === "number")
           setCredits(profileJson.credits);
@@ -143,7 +154,7 @@ export default function SubscriptionPage() {
               </div>
             </div>
           </div>
-          {currentPlan === "free" && (
+          {isAuthed && currentPlan === "free" && (
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
               Current plan
             </div>
@@ -184,7 +195,7 @@ export default function SubscriptionPage() {
               <div className="text-xs text-muted-foreground">per month</div>
             </div>
           </div>
-          {currentPlan === "monthly" && (
+          {isAuthed && currentPlan === "monthly" && (
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
               Current plan
             </div>
@@ -224,7 +235,7 @@ export default function SubscriptionPage() {
               <div className="text-xs text-muted-foreground">2 FREE Months</div>
             </div>
           </div>
-          {currentPlan === "yearly" && (
+          {isAuthed && currentPlan === "yearly" && (
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
               Current plan
             </div>
@@ -236,6 +247,11 @@ export default function SubscriptionPage() {
           type="button"
           className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow select-none"
           onClick={async () => {
+            if (!isAuthed) {
+              setAuthMode("signup");
+              setAuthOpen(true);
+              return;
+            }
             if (currentPlan && selectedPlan === currentPlan) return;
             await fetch("/api/user/subscription", {
               method: "PUT",
@@ -245,9 +261,11 @@ export default function SubscriptionPage() {
             });
             router.replace("/");
           }}
-          disabled={!!currentPlan && selectedPlan === currentPlan}
+          disabled={isAuthed && !!currentPlan && selectedPlan === currentPlan}
         >
-          {currentPlan && selectedPlan === currentPlan
+          {!isAuthed
+            ? "Subscribe"
+            : currentPlan && selectedPlan === currentPlan
             ? "Current plan"
             : selectedPlan === "free"
             ? "Select Free"
@@ -283,6 +301,12 @@ export default function SubscriptionPage() {
       <RedeemPromoModal
         open={redeemOpen}
         onClose={() => setRedeemOpen(false)}
+      />
+      <AuthModal
+        open={authOpen}
+        mode={authMode}
+        onClose={() => setAuthOpen(false)}
+        onModeChange={setAuthMode}
       />
     </main>
   );

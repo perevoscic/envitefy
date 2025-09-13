@@ -7,9 +7,13 @@ import { useSearchParams } from "next/navigation";
 
 export type SignupFormProps = {
   onSuccess?: () => void;
+  onSwitchMode?: (mode: "login" | "signup") => void;
 };
 
-export default function SignupForm({ onSuccess }: SignupFormProps) {
+export default function SignupForm({
+  onSuccess,
+  onSwitchMode,
+}: SignupFormProps) {
   const router = useRouter();
   const params = useSearchParams();
   const [firstName, setFirstName] = useState("");
@@ -241,6 +245,16 @@ export default function SignupForm({ onSuccess }: SignupFormProps) {
         >
           {submitting ? "Creating..." : "Create account"}
         </button>
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => onSwitchMode?.("login")}
+            className="text-secondary hover:underline"
+          >
+            Log in
+          </button>
+        </p>
         {message && <p className="text-sm text-muted-foreground">{message}</p>}
       </form>
 

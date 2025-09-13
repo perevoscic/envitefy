@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPasswordResetToken, getUserByEmail } from "@/lib/db";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -16,11 +17,18 @@ export async function POST(request: Request) {
       const base = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL || new URL(request.url).origin;
       const resetUrl = new URL("/reset", base);
       resetUrl.searchParams.set("token", reset.token);
-      // TODO: integrate with email provider. For now, return the URL in response in non-production
-      const includeLink = process.env.NODE_ENV !== "production";
-      return NextResponse.json({ ok: true, ...(includeLink ? { resetUrl: resetUrl.toString() } : {}) });
+      let emailSent = false;
+      try {
+        await sendPasswordResetEmail({ toEmail: email, resetUrl: resetUrl.toString() });
+        emailSent = true;
+      } catch {
+        // In non-production, include URL to aid testing if email fails
+        const includeLink = process.env.NODE_ENV !== "production";
+        return NextResponse.json({ ok: true, emailSent: false, ...(includeLink ? { resetUrl: resetUrl.toString() } : {}) });
+      }
+      return NextResponse.json({ ok: true, emailSent });
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, emailSent: false });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });

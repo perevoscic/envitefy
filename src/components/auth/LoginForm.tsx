@@ -7,9 +7,10 @@ import Link from "next/link";
 
 export type LoginFormProps = {
   onSuccess?: () => void;
+  onSwitchMode?: (mode: "login" | "signup") => void;
 };
 
-export default function LoginForm({ onSuccess }: LoginFormProps) {
+export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -114,6 +115,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       >
         {submitting ? "Signing in..." : "Sign in"}
       </button>
+      <p className="text-center text-sm text-muted-foreground">
+        Don't have an account yet?{" "}
+        <button
+          type="button"
+          onClick={() => onSwitchMode?.("signup")}
+          className="text-secondary hover:underline"
+        >
+          Sign up
+        </button>
+      </p>
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </form>
   );

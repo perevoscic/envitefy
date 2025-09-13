@@ -415,6 +415,12 @@ export async function createGiftPromoCode(params: {
   period?: "months" | "years" | null;
 }): Promise<PromoCodeRow> {
   const code = generatePromoCode(12);
+  // Some databases may enforce NOT NULL on expires_at. Default to 90 days if not provided.
+  const defaultTtlMs = 90 * 24 * 60 * 60 * 1000; // 90 days
+  const effectiveExpiresAt = (params.expiresAt instanceof Date && !isNaN(params.expiresAt.getTime()))
+    ? params.expiresAt
+    : new Date(Date.now() + defaultTtlMs);
+
   const res = await query<PromoCodeRow>(
     `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at)
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -429,10 +435,27 @@ export async function createGiftPromoCode(params: {
       params.message || null,
       params.quantity == null ? null : Math.max(0, Math.floor(params.quantity)),
       params.period || null,
-      params.expiresAt ? params.expiresAt.toISOString() : null,
+      effectiveExpiresAt.toISOString(),
     ]
   );
-  return res.rows[0];
+
+  const row = res.rows[0];
+  // Attach creator user id when available and column exists. Ignore errors if column is missing.
+  if (params.createdByEmail) {
+    try {
+      const creatorUserId = await getUserIdByEmail(params.createdByEmail);
+      if (creatorUserId) {
+        await query(
+          `update promo_codes set created_by_user_id = $2 where id = $1`,
+          [row.id, creatorUserId]
+        ).catch(() => {});
+      }
+    } catch {
+      // best-effort only
+    }
+  }
+
+  return row;
 }
 
 export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | null> {
