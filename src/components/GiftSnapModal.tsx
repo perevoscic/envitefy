@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSidebar } from "@/app/sidebar-context";
 import { useSession } from "next-auth/react";
 
 export type GiftSnapModalProps = {
@@ -8,6 +9,7 @@ export type GiftSnapModalProps = {
 };
 
 export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
+  const { setIsCollapsed } = useSidebar();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,29 +17,61 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { data: session } = useSession();
   const [senderFirstName, setSenderFirstName] = useState("");
   const [senderLastName, setSenderLastName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
 
+  function resetFormState() {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setQuantity(3);
+    setMessage("");
+    setSubmitting(false);
+    setResult(null);
+    setSuccess(false);
+    setSuccessMsg(null);
+    setSenderFirstName("");
+    setSenderLastName("");
+    setSenderEmail("");
+  }
+
+  function handleClose() {
+    resetFormState();
+    onClose();
+  }
+
   useEffect(() => {
     if (open) {
+      try {
+        setIsCollapsed(true);
+      } catch {}
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = "";
       };
     }
-  }, [open]);
+  }, [open, setIsCollapsed]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // When the modal is opened again, ensure it starts fresh
+  useEffect(() => {
+    if (open) {
+      resetFormState();
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -102,12 +136,22 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
       if (!res.ok) {
         setResult(json?.error || "Failed to create gift");
       } else {
-        const code = json?.promo?.code || "-";
-        setResult(`Gift created. Code: ${code}`);
-        try {
-          // Simple popup confirmation for the user
-          alert("Gift was sent successfully!");
-        } catch {}
+        const emailSent = !!json?.emailSent;
+        const emailError: string | null | undefined = json?.emailError;
+        setSuccess(true);
+        setSuccessMsg(
+          emailSent
+            ? "Gift sent! The promo code was emailed to the recipient."
+            : emailError
+            ? `Gift created, but email failed: ${emailError}`
+            : "Gift created, but email delivery failed. Please try again later."
+        );
+        if (emailSent) {
+          // Auto-close shortly after showing success state
+          setTimeout(() => {
+            handleClose();
+          }, 1400);
+        }
       }
     } catch (err: any) {
       setResult("Network error. Please try again.");
@@ -122,7 +166,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-        onClick={onClose}
+        onClick={handleClose}
       />
       <div
         ref={containerRef}
@@ -133,7 +177,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
       >
         <button
           aria-label="Close"
-          onClick={onClose}
+          onClick={handleClose}
           className="!absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center justify-center h-8 w-8 rounded-2xl border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 z-10"
         >
           <svg
@@ -152,113 +196,139 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
           </svg>
         </button>
 
-        <h2 className="text-xl font-semibold text-center">Gift a Snap</h2>
-        <p className="text-sm text-muted-foreground text-center mt-1">
-          Enter recipient details and choose how many months to gift. We'll
-          generate a redeemable promo code.
-        </p>
+        {!success ? (
+          <>
+            <h2 className="text-xl font-semibold text-center">Gift a Snap</h2>
+            <p className="text-sm text-muted-foreground text-center mt-1">
+              Enter recipient details and choose how many months to gift. We'll
+              generate a redeemable promo code.
+            </p>
 
-        <div className="mt-4 grid grid-cols-1 gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="First name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            <input
-              type="text"
-              placeholder="Last name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-            />
-          </div>
-          <input
-            type="email"
-            placeholder="Recipient email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-          />
-          <div className="grid grid-cols-1 gap-3 items-center">
-            <select
-              value={quantity}
-              onChange={(e) =>
-                setQuantity(Math.floor(Number(e.target.value) || 3))
-              }
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-            >
-              {[3, 6, 12, 24].map((m) => (
-                <option key={m} value={m}>
-                  {m} months
-                </option>
-              ))}
-            </select>
-          </div>
-          {!session?.user?.email && (
-            <div className="mt-2 grid grid-cols-1 gap-3">
-              <div className="text-xs text-muted-foreground">
-                From (your details)
-              </div>
+            <div className="mt-4 grid grid-cols-1 gap-3">
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
-                  placeholder="Your first name"
-                  value={senderFirstName}
-                  onChange={(e) => setSenderFirstName(e.target.value)}
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 <input
                   type="text"
-                  placeholder="Your last name"
-                  value={senderLastName}
-                  onChange={(e) => setSenderLastName(e.target.value)}
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
               <input
                 type="email"
-                placeholder="Your email"
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
+                placeholder="Recipient email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+              />
+              <div className="grid grid-cols-1 gap-3 items-center">
+                <select
+                  value={quantity}
+                  onChange={(e) =>
+                    setQuantity(Math.floor(Number(e.target.value) || 3))
+                  }
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  {[3, 6, 12, 24].map((m) => (
+                    <option key={m} value={m}>
+                      {m} months
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {!session?.user?.email && (
+                <div className="mt-2 grid grid-cols-1 gap-3">
+                  <div className="text-xs text-muted-foreground">
+                    From (your details)
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Your first name"
+                      value={senderFirstName}
+                      onChange={(e) => setSenderFirstName(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Your last name"
+                      value={senderLastName}
+                      onChange={(e) => setSenderLastName(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="Your email"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+              )}
+              <textarea
+                placeholder="Add a message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={3}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
-          )}
-          <textarea
-            placeholder="Add a message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-          />
-        </div>
 
-        {result && (
-          <div className="mt-3 text-center text-xs text-muted-foreground">
-            {result}
+            {result && (
+              <div className="mt-3 text-center text-xs text-muted-foreground">
+                {result}
+              </div>
+            )}
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="w-full px-4 py-2 rounded-lg bg-surface text-foreground border border-border hover:bg-surface/80"
+                onClick={handleClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition disabled:opacity-60"
+                disabled={submitting}
+                onClick={onSubmit}
+              >
+                {submitting ? "Snapping..." : "Snap the Gift"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-10 w-10 text-emerald-500"
+              aria-hidden="true"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            <h3 className="mt-3 text-lg font-semibold text-center">
+              Gift sent
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground text-center max-w-[32ch]">
+              {successMsg}
+            </p>
           </div>
         )}
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            className="w-full px-4 py-2 rounded-lg bg-surface text-foreground border border-border hover:bg-surface/80"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition disabled:opacity-60"
-            disabled={submitting}
-            onClick={onSubmit}
-          >
-            {submitting ? "Snapping..." : "Snap the Gift"}
-          </button>
-        </div>
       </div>
     </div>
   );

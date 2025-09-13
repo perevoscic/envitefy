@@ -219,6 +219,21 @@ export default function LeftSidebar() {
     return "slate"; // neutral fallback
   };
 
+  // Basic keyword-based category guesser when OCR did not set one
+  const guessCategoryFromText = (text: string): string | null => {
+    const s = String(text || "").toLowerCase();
+    if (!s) return null;
+    if (/birthday|b-day|turns\s+\d+|party for/.test(s)) return "Birthdays";
+    if (/wedding|bridal|ceremony|reception/.test(s)) return "Weddings";
+    if (/doctor|dentist|appointment|check[- ]?up|clinic/.test(s))
+      return "Doctor Appointments";
+    if (/game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(s))
+      return "Sport Events";
+    if (/playdate|play\s*day|kids?\s*play/.test(s)) return "Play Days";
+    if (/appointment|meeting|consult/.test(s)) return "Appointments";
+    return null;
+  };
+
   const predefinedCategories = [
     "Birthdays",
     "Doctor Appointments",
@@ -281,7 +296,14 @@ export default function LeftSidebar() {
       const categories = Array.from(
         new Set(
           history
-            .map((h) => (h as any)?.data?.category as string | null)
+            .map((h) => {
+              const explicit = (h as any)?.data?.category as string | null;
+              if (explicit) return explicit;
+              const blob = `${h.title || ""} ${
+                (h as any)?.data?.description || ""
+              }`;
+              return guessCategoryFromText(blob);
+            })
             .filter((c): c is string => Boolean(c))
         )
       );

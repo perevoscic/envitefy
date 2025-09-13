@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSidebar } from "@/app/sidebar-context";
 
 export type RedeemPromoModalProps = {
   open: boolean;
@@ -10,6 +11,7 @@ export default function RedeemPromoModal({
   open,
   onClose,
 }: RedeemPromoModalProps) {
+  const { setIsCollapsed } = useSidebar();
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -17,12 +19,15 @@ export default function RedeemPromoModal({
 
   useEffect(() => {
     if (open) {
+      try {
+        setIsCollapsed(true);
+      } catch {}
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = "";
       };
     }
-  }, [open]);
+  }, [open, setIsCollapsed]);
 
   if (!open) return null;
 

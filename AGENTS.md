@@ -12,12 +12,13 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### Promo Gift Agent — POST `/api/promo/gift`
 
-- **Purpose**: Generate a promo code (gift) for selected plan duration; returns the created code. Pairs with payment processing and sends a delivery email to the recipient via SES.
+- **Purpose**: Generate a promo code (gift) for selected plan duration; sends a delivery email to the recipient via SES. The promo code is only delivered via email and is not returned in the API response.
 - **Auth**: Optional (reads NextAuth session to attribute creator email).
 - **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message?: string }`.
 - **Pricing**: Server computes cents using $2.99/month and $29.99/year per unit.
-- **Output**: `{ ok: true, promo: { code, amount_cents, currency, quantity, period, ... } }`.
-- **Env**: `DATABASE_URL`, `SES_FROM_EMAIL`, and AWS creds/region for SES (`AWS_REGION` or `AWS_DEFAULT_REGION`, and standard AWS credentials).
+- **Output**: `{ ok: true, promo: { amount_cents, currency, quantity, period, ... }, emailSent: boolean }` (code omitted by design). In non-production, response also includes `{ emailError?: string }` for diagnostics when SES delivery fails.
+- **Env**: `DATABASE_URL`, `SES_FROM_EMAIL_GIFT`, and AWS creds/region for SES (`AWS_REGION` or `AWS_DEFAULT_REGION`, and standard AWS credentials). Ensure the `SES_FROM_EMAIL_GIFT` identity/domain is verified in the configured region and credentials have `ses:SendEmail` permission.
+  - From address policy: Gift emails always send From `SES_FROM_EMAIL_GIFT` (no fallbacks). The requester's email is used only as Reply-To when available.
 
 ### Promo Redeem Agent — POST `/api/promo/redeem`
 
@@ -287,6 +288,11 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 ### Egress test — GET `/api/net`
 
+- ### Debug: History — GET `/api/debug/history`
+
+- **Purpose**: Inspect recent `event_history` inserts and whether the current session has user-linked rows.
+- **Output**: `{ user: { id, email }|null, mineCount, recentCount, mine: HistoryRow[], recent: HistoryRow[] }`.
+
 - **Purpose**: Check outbound network access (HEAD to Google Vision endpoint).
 - **Output**: `{ ok, status }` or `{ ok: false, error }`.
 
@@ -330,6 +336,11 @@ Payload used by the authenticated calendar agents.
   - Or ADC file path: `GOOGLE_APPLICATION_CREDENTIALS`.
 - **OpenAI (optional OCR fallback)**
   - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
+- **AWS SES (email senders)**
+  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Snap My Date <no-reply@snapmydate.com>` (password reset, system mail)
+  - `SES_FROM_EMAIL_GIFT` e.g. `"Snap My Date Gifts" <gift@snapmydate.com>` (gift delivery emails)
+  - `SES_FROM_EMAIL_CONTACT` e.g. `"Snap My Date Support" <contact@snapmydate.com>` (reserved for contact replies)
+  - Region: `AWS_REGION` or `AWS_DEFAULT_REGION` and standard AWS credentials
 - **Postgres (token and user storage)**
   - `DATABASE_URL` e.g. `postgresql://appuser:pass@host:5432/snapmydate`.
   - SSL configuration: do one of the following (not both):
@@ -362,3 +373,5 @@ Payload used by the authenticated calendar agents.
 
 - 2025-09-10: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).
 - 2025-09-11: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.
+- 2025-09-13: Promo Gift Agent no longer returns gift code in response; code is email-only and UI shows in-modal success with auto-close.
+- 2025-09-13: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.

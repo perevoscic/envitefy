@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSidebar } from "@/app/sidebar-context";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import Image from "next/image";
@@ -19,6 +20,7 @@ export default function AuthModal({
   onClose,
   onModeChange,
 }: AuthModalProps) {
+  const { setIsCollapsed } = useSidebar();
   // Broadcast global open/close so other components (e.g., background slider)
   // can react when any auth modal is shown anywhere on the page.
   const openRef = useRef(open);
@@ -60,12 +62,16 @@ export default function AuthModal({
 
   useEffect(() => {
     if (open) {
+      // Collapse the left sidebar when the auth modal opens
+      try {
+        setIsCollapsed(true);
+      } catch {}
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = "";
       };
     }
-  }, [open]);
+  }, [open, setIsCollapsed]);
 
   if (!open) return null;
 

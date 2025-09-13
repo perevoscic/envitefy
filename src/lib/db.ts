@@ -467,6 +467,28 @@ export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | n
   return res.rows[0] || null;
 }
 
+export async function listRecentPromoCodes(limit: number = 5): Promise<PromoCodeRow[]> {
+  const res = await query<PromoCodeRow>(
+    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, created_at
+     from promo_codes
+     order by created_at desc
+     limit $1`,
+    [Math.max(1, Math.min(50, Math.floor(limit)))]
+  );
+  return res.rows || [];
+}
+
+export async function getCurrentDatabaseIdentity(): Promise<{ db: string; user: string; host: string | null } | null> {
+  try {
+    const r = await query<{ db: string; user: string; host: string | null }>(
+      `select current_database() as db, current_user as user, inet_server_addr()::text as host`
+    );
+    return r.rows[0] || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function markPromoCodeRedeemed(id: string, redeemedByEmail?: string | null): Promise<void> {
   await query(
     `update promo_codes
@@ -521,11 +543,12 @@ export async function insertEventHistory(params: {
   title: string;
   data: any;
 }): Promise<EventHistoryRow> {
+  const id = randomUUID();
   const res = await query<EventHistoryRow>(
-    `insert into event_history (user_id, title, data)
-     values ($1, $2, $3)
+    `insert into event_history (id, user_id, title, data)
+     values ($1, $2, $3, $4)
      returning id, user_id, title, data, created_at`,
-    [params.userId || null, params.title, JSON.stringify(params.data)]
+    [id, params.userId || null, params.title, JSON.stringify(params.data)]
   );
   return res.rows[0];
 }
@@ -635,6 +658,17 @@ export async function listEventHistoryByUser(userId: string, limit: number = 50)
     [userId, Math.max(1, Math.min(200, limit))]
   );
   return res.rows;
+}
+
+export async function listRecentEventHistory(limit: number = 20): Promise<EventHistoryRow[]> {
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, data, created_at
+     from event_history
+     order by created_at desc
+     limit $1`,
+    [Math.max(1, Math.min(200, limit))]
+  );
+  return res.rows || [];
 }
 
 export type PasswordResetRow = {

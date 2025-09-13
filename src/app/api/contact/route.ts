@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 
 type ContactBody = {
   name?: string;
@@ -19,7 +20,32 @@ async function sendEmail(params: {
   to: string;
   subject: string;
   text: string;
+  replyToEmail?: string;
 }): Promise<{ delivered: boolean; messageId?: string }> {
+  // Prefer SES if configured
+  const sesFrom =
+    getEnv("SES_FROM_EMAIL_CONTACT") ||
+    getEnv("SES_FROM_EMAIL") ||
+    getEnv("SES_FROM_EMAIL_NO_REPLY");
+  if (sesFrom) {
+    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1";
+    const ses = new SESv2Client({ region });
+    const cmd = new SendEmailCommand({
+      FromEmailAddress: sesFrom,
+      Destination: { ToAddresses: [params.to] },
+      Content: {
+        Simple: {
+          Subject: { Data: params.subject },
+          Body: { Text: { Data: params.text } },
+        },
+      },
+      ReplyToAddresses: params.replyToEmail ? [params.replyToEmail] : undefined,
+    });
+    const info = await ses.send(cmd);
+    return { delivered: true, messageId: (info as any)?.MessageId };
+  }
+
+  // Fallback to SMTP if available
   const host = getEnv("SMTP_HOST");
   const portStr = getEnv("SMTP_PORT");
   const user = getEnv("SMTP_USER");
@@ -27,7 +53,7 @@ async function sendEmail(params: {
   const secureStr = getEnv("SMTP_SECURE");
 
   if (!host || !portStr || !user || !pass) {
-    // In dev or when SMTP isn't configured, pretend success without sending.
+    // In dev or when neither SES nor SMTP is configured, pretend success without sending.
     return { delivered: false };
   }
 
@@ -46,6 +72,7 @@ async function sendEmail(params: {
     to: params.to,
     subject: params.subject,
     text: params.text,
+    replyTo: params.replyToEmail,
   });
   return { delivered: true, messageId: info?.messageId };
 }
@@ -62,8 +89,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing title or message" }, { status: 400 });
     }
 
-    const receiver = getEnv("CONTACT_TO") || getEnv("SMTP_FROM") || email;
-    const from = getEnv("SMTP_FROM") || (email ? `${name || "Website User"} <${email}>` : "no-reply@snapmydate.local");
+    const receiver = getEnv("CONTACT_TO") || "contact@snapmydate.com";
+    const from =
+      getEnv("SES_FROM_EMAIL_CONTACT") ||
+      getEnv("SES_FROM_EMAIL") ||
+      getEnv("SES_FROM_EMAIL_NO_REPLY") ||
+      getEnv("SMTP_FROM") ||
+      "no-reply@snapmydate.com";
 
     const subject = `[Contact] ${title}`;
     const text = [
@@ -75,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     let delivered = false;
     try {
-      const res = await sendEmail({ from, to: receiver || from, subject, text });
+      const res = await sendEmail({ from, to: receiver || from, subject, text, replyToEmail: email || undefined });
       delivered = !!res.delivered;
     } catch {
       delivered = false;

@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useSidebar } from "@/app/sidebar-context";
 
 export default function ThumbnailModal({
   src,
@@ -11,6 +12,14 @@ export default function ThumbnailModal({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { setIsCollapsed } = useSidebar();
+  useEffect(() => {
+    if (open) {
+      try {
+        setIsCollapsed(true);
+      } catch {}
+    }
+  }, [open, setIsCollapsed]);
   if (!src) return null;
   return (
     <>

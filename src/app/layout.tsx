@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Pacifico, Montserrat } from "next/font/google";
+import Script from "next/script";
 import Link from "next/link";
 import Providers from "./providers";
 import { getServerSession } from "next-auth";
@@ -50,10 +51,23 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession(authOptions);
   return (
-    <html lang="en">
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} antialiased`}
       >
+        <Script id="theme-init" strategy="beforeInteractive">{`
+          (function(){
+            try {
+              var stored = localStorage.getItem('theme');
+              var theme = (stored === 'light' || stored === 'dark')
+                ? stored
+                : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+              document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+              // noop
+            }
+          })();
+        `}</Script>
         <Providers session={session}>
           <LeftSidebar />
           <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">

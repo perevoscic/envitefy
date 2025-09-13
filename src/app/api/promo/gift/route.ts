@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     // Delivery email (best-effort; don't fail the creation if email fails)
     let emailSent = false;
+    let emailError: string | null = null;
     if (recipientEmail) {
       try {
         await sendGiftEmail({
@@ -58,11 +59,34 @@ export async function POST(req: NextRequest) {
         });
         emailSent = true;
       } catch (e) {
-        // ignore email send failure for now
+        // Capture diagnostics but do not fail gift creation
+        try {
+          const err = e as any;
+          const details = [
+            err?.name && `name=${String(err.name)}`,
+            err?.message && `message=${String(err.message)}`,
+            err?.code && `code=${String(err.code)}`,
+            err?.$metadata?.httpStatusCode && `status=${String(err.$metadata.httpStatusCode)}`,
+          ]
+            .filter(Boolean)
+            .join(" ");
+          console.error("[promo/gift] sendGiftEmail failed:", details || e);
+          emailError = err?.message || "send failed";
+        } catch {
+          emailError = "send failed";
+        }
       }
     }
 
-    return NextResponse.json({ ok: true, promo, emailSent });
+    // Do not expose the gift code in the response; only email it to the recipient
+    const { code: _hidden, ...promoSansCode } = promo || {} as any;
+    const isProd = process.env.NODE_ENV === "production";
+    return NextResponse.json({
+      ok: true,
+      promo: promoSansCode,
+      emailSent,
+      ...(isProd ? {} : { emailError }),
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Failed to create gift code" }, { status: 500 });
   }
