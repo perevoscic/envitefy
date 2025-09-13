@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
-import { randomBytes, scrypt as nodeScrypt, timingSafeEqual } from "crypto";
+import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "crypto";
 import { promisify } from "util";
 const scrypt = promisify(nodeScrypt);
 
@@ -656,11 +656,12 @@ export async function createPasswordResetToken(email: string, ttlMinutes = 30): 
   if (!user) throw new Error("No account found for this email");
   const token = generateSecureToken(32);
   const expires = new Date(Date.now() + ttlMinutes * 60 * 1000);
+  const id = randomUUID();
   const res = await query<PasswordResetRow>(
-    `insert into password_resets (email, token, expires_at)
-     values ($1, $2, $3)
+    `insert into password_resets (id, email, token, expires_at)
+     values ($1, $2, $3, $4)
      returning id, email, token, expires_at, used_at, created_at`,
-    [lower, token, expires.toISOString()]
+    [id, lower, token, expires.toISOString()]
   );
   return res.rows[0];
 }

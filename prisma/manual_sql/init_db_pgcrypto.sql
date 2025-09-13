@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS password_resets (
   created_at timestamptz(6) DEFAULT now()
 );
 
+-- Ensure id default exists even if table pre-existed without it
+ALTER TABLE password_resets ALTER COLUMN id SET DEFAULT gen_random_uuid();
+
 CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email);
 
 -- Event history (stores normalized event payloads for quick retrieval/share)
