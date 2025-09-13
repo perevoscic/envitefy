@@ -21,10 +21,11 @@ export async function POST(request: Request) {
       try {
         await sendPasswordResetEmail({ toEmail: email, resetUrl: resetUrl.toString() });
         emailSent = true;
-      } catch {
-        // In non-production, include URL to aid testing if email fails
+      } catch (err: unknown) {
+        // In non-production, include URL and error to aid testing if email fails
         const includeLink = process.env.NODE_ENV !== "production";
-        return NextResponse.json({ ok: true, emailSent: false, ...(includeLink ? { resetUrl: resetUrl.toString() } : {}) });
+        const message = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ ok: true, emailSent: false, ...(includeLink ? { resetUrl: resetUrl.toString(), reason: message } : {}) });
       }
       return NextResponse.json({ ok: true, emailSent });
     }
