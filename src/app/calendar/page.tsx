@@ -316,7 +316,10 @@ export default function CalendarPage() {
         if (parsed && typeof parsed === "object") setCategoryColors(parsed);
       }
     } catch {}
-    // Listen for cross-component updates when category colors change
+  }, []);
+
+  // Listen for cross-component updates when category colors change
+  useEffect(() => {
     const onColors = (e: Event) => {
       try {
         const detail = (e as CustomEvent).detail;
@@ -353,6 +356,22 @@ export default function CalendarPage() {
     return events.filter((e) => {
       try {
         return new Date(e.start) >= todayStart;
+      } catch {
+        return false;
+      }
+    });
+  }, [events]);
+
+  const upcomingWeek = useMemo(() => {
+    // For Week view, only show events in the next 7 days
+    const todayStart = startOfDay(new Date());
+    const weekEnd = new Date(todayStart);
+    weekEnd.setDate(todayStart.getDate() + 7);
+
+    return events.filter((e) => {
+      try {
+        const eventDate = new Date(e.start);
+        return eventDate >= todayStart && eventDate < weekEnd;
       } catch {
         return false;
       }
@@ -642,12 +661,12 @@ export default function CalendarPage() {
 
         {upcomingView === "week" ? (
           <div className="mt-4 space-y-2">
-            {upcoming.length === 0 && (
+            {upcomingWeek.length === 0 && (
               <div className="text-sm text-foreground/70">
-                No upcoming events.
+                No upcoming events this week.
               </div>
             )}
-            {upcoming
+            {upcomingWeek
               .slice()
               .sort(
                 (a, b) =>

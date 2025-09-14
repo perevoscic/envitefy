@@ -183,8 +183,6 @@ export default function LeftSidebar() {
       ignore = true;
     };
   }, [status]);
-
-  // (Reverted) category sync via custom event was removed per request
   const isDark = theme === "dark";
   const initials = (() => {
     const base =
@@ -210,18 +208,14 @@ export default function LeftSidebar() {
     top: number;
   } | null>(null);
 
-  const CATEGORY_COLORS_VERSION = "2";
-
   // Default color per known category
   const defaultCategoryColor = (c: string): string => {
     if (c === "Birthdays") return "pink";
-    // Use amber for doctor appointments to distinguish clearly from Weddings
-    if (c === "Doctor Appointments") return "amber";
+    if (c === "Doctor Appointments") return "teal";
     if (c === "Appointments") return "amber";
     if (c === "Weddings") return "rose";
     if (c === "Sport Events") return "indigo";
     if (c === "Play Days") return "rose";
-    if (c === "Events") return "slate";
     return "slate"; // neutral fallback
   };
 
@@ -250,19 +244,8 @@ export default function LeftSidebar() {
   ];
 
   useEffect(() => {
-    // Load or re-seed stored colors once with a simple version gate
+    // Load stored colors once
     try {
-      const currentVersion = localStorage.getItem("categoryColorsVersion");
-      if (currentVersion !== CATEGORY_COLORS_VERSION) {
-        const seeded: Record<string, string> = {};
-        for (const c of predefinedCategories) {
-          seeded[c] = defaultCategoryColor(c);
-        }
-        setCategoryColors(seeded);
-        localStorage.setItem("categoryColors", JSON.stringify(seeded));
-        localStorage.setItem("categoryColorsVersion", CATEGORY_COLORS_VERSION);
-        return;
-      }
       const raw = localStorage.getItem("categoryColors");
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -604,33 +587,9 @@ export default function LeftSidebar() {
         const anyEvent = e as any;
         const detail = (anyEvent && anyEvent.detail) || null;
         if (detail && detail.id) {
-          // Optimistically upsert with category/start included
+          // Optimistically prepend; avoid duplicates
           setHistory((prev) => {
             const exists = prev.some((r) => r.id === detail.id);
-            if (exists) {
-              return prev.map((r) =>
-                r.id === detail.id
-                  ? {
-                      ...r,
-                      title: String(detail.title || r.title || "Event"),
-                      created_at: String(
-                        detail.created_at ||
-                          r.created_at ||
-                          new Date().toISOString()
-                      ),
-                      data: {
-                        ...(r as any).data,
-                        ...(detail.start
-                          ? { start: String(detail.start) }
-                          : {}),
-                        ...(detail.category
-                          ? { category: String(detail.category) }
-                          : {}),
-                      },
-                    }
-                  : r
-              );
-            }
             const nextItem = {
               id: String(detail.id),
               title: String(detail.title || "Event"),
@@ -642,7 +601,7 @@ export default function LeftSidebar() {
                   : {}),
               },
             } as { id: string; title: string; created_at?: string; data?: any };
-            const next = [nextItem, ...prev];
+            const next = exists ? prev : [nextItem, ...prev];
             return next.slice(0, 200);
           });
           return;
@@ -1510,16 +1469,7 @@ export default function LeftSidebar() {
                 const categories = Array.from(
                   new Set(
                     history
-                      .map((h) => {
-                        const explicit = (h as any)?.data?.category as
-                          | string
-                          | null;
-                        if (explicit && explicit.trim()) return explicit;
-                        const blob = `${h.title || ""} ${
-                          (h as any)?.data?.description || ""
-                        }`;
-                        return guessCategoryFromText(blob) || "Events";
-                      })
+                      .map((h) => (h as any)?.data?.category as string | null)
                       .filter((c): c is string => Boolean(c))
                   )
                 );
@@ -1534,21 +1484,12 @@ export default function LeftSidebar() {
                 return (
                   <div ref={categoriesRef} className="mt-2 space-y-1">
                     {sortedCategories.map((c) => {
-                      const classify = (h: any): string => {
-                        const explicit = (h as any)?.data?.category as
-                          | string
-                          | null;
-                        if (explicit && explicit.trim()) return explicit;
-                        const blob = `${h.title || ""} ${
-                          (h as any)?.data?.description || ""
-                        }`;
-                        return guessCategoryFromText(blob) || "Events";
-                      };
                       // Show total count of items in the category (not only future-dated)
                       const totalCount = (() => {
                         try {
-                          return history.filter((h) => classify(h) === c)
-                            .length;
+                          return history.filter(
+                            (h) => (h as any)?.data?.category === c
+                          ).length;
                         } catch {
                           return 0;
                         }
@@ -1723,7 +1664,7 @@ export default function LeftSidebar() {
                             <div className="mt-1 mb-2">
                               {(() => {
                                 const items = history.filter(
-                                  (h) => classify(h) === c
+                                  (h) => (h as any)?.data?.category === c
                                 );
                                 if (items.length === 0)
                                   return (
@@ -1833,23 +1774,18 @@ export default function LeftSidebar() {
                   .replace(/[^a-z0-9]+/g, "-")
                   .replace(/^-+|-+$/g, "");
                 const prettyHref = `/event/${slug}-${h.id}`;
-                const explicitCategory = (h as any)?.data?.category as
-                  | string
-                  | null;
-                const derivedCategory = (() => {
-                  if (explicitCategory && explicitCategory.trim())
-                    return explicitCategory;
-                  const blob = `${h.title || ""} ${
-                    (h as any)?.data?.description || ""
-                  }`;
-                  return guessCategoryFromText(blob) || "Events";
-                })();
+                const category = (h as any)?.data?.category as string | null;
                 const rowAndBadge = (() => {
+                  if (!category)
+                    return {
+                      row: "",
+                      badge:
+                        "bg-surface/70 text-foreground/70 border-border/70",
+                    };
                   const color =
-                    categoryColors[derivedCategory] ||
-                    defaultCategoryColor(derivedCategory);
+                    categoryColors[category] || defaultCategoryColor(category);
                   const ccls = colorClasses(color);
-                  const row = ccls.tint;
+                  const row = ccls.tint; // tint all categories, not just Birthdays
                   return { row, badge: ccls.badge };
                 })();
                 return (
