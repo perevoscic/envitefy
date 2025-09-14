@@ -594,7 +594,12 @@ export default function LeftSidebar() {
               id: String(detail.id),
               title: String(detail.title || "Event"),
               created_at: String(detail.created_at || new Date().toISOString()),
-              data: detail.start ? { start: String(detail.start) } : undefined,
+              data: {
+                ...(detail.start ? { start: String(detail.start) } : {}),
+                ...(detail.category
+                  ? { category: String(detail.category) }
+                  : {}),
+              },
             } as { id: string; title: string; created_at?: string; data?: any };
             const next = exists ? prev : [nextItem, ...prev];
             return next.slice(0, 200);
@@ -1479,21 +1484,12 @@ export default function LeftSidebar() {
                 return (
                   <div ref={categoriesRef} className="mt-2 space-y-1">
                     {sortedCategories.map((c) => {
-                      const futureCount = (() => {
+                      // Show total count of items in the category (not only future-dated)
+                      const totalCount = (() => {
                         try {
-                          const now = Date.now();
-                          return history.filter((h) => {
-                            const hc = (h as any)?.data?.category as
-                              | string
-                              | null;
-                            if (hc !== c) return false;
-                            const iso = (h as any)?.data?.startISO as
-                              | string
-                              | null;
-                            if (!iso) return false;
-                            const t = new Date(iso).getTime();
-                            return !isNaN(t) && t >= now;
-                          }).length;
+                          return history.filter(
+                            (h) => (h as any)?.data?.category === c
+                          ).length;
                         } catch {
                           return 0;
                         }
@@ -1609,9 +1605,9 @@ export default function LeftSidebar() {
                               const ccls = colorClasses(color);
                               return (
                                 <span className="inline-flex items-center gap-2">
-                                  {futureCount > 0 && (
+                                  {totalCount > 0 && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                                      {futureCount}
+                                      {totalCount}
                                     </span>
                                   )}
                                   <span

@@ -15,6 +15,7 @@ type EventFields = {
   location: string;
   description: string;
   timezone: string;
+  category?: string | null;
   reminders?: { minutes: number }[] | null;
 };
 
@@ -32,6 +33,7 @@ export default function Home() {
     google: false,
     microsoft: false,
   });
+  const [category, setCategory] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
@@ -212,6 +214,7 @@ export default function Home() {
     setOcrText("");
     setError(null);
     setFile(null);
+    setCategory(null);
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -275,6 +278,9 @@ export default function Home() {
       return;
     }
     const data = await res.json();
+    try {
+      setCategory((data as any)?.category || null);
+    } catch {}
     const createThumbnailDataUrl = async (
       sourceFile: File,
       maxSize: number = 1024
@@ -346,7 +352,8 @@ export default function Home() {
         () => null
       );
       const baseData = adjusted || data?.fieldsGuess || null;
-      const category = (data && (data as any).category) || null;
+      const inferredCategory = (data && (data as any).category) || null;
+      const selectedCategory = category ?? inferredCategory;
       // Also keep original ISO datetimes for future filtering
       const startISO = (data?.fieldsGuess?.start as string | null) || null;
       const endISO = (data?.fieldsGuess?.end as string | null) || null;
@@ -354,8 +361,14 @@ export default function Home() {
         title:
           (adjusted && adjusted.title) || data?.fieldsGuess?.title || "Event",
         data: baseData
-          ? { ...baseData, thumbnail, category, startISO, endISO }
-          : { thumbnail, category, startISO, endISO },
+          ? {
+              ...baseData,
+              thumbnail,
+              category: selectedCategory,
+              startISO,
+              endISO,
+            }
+          : { thumbnail, category: selectedCategory, startISO, endISO },
       };
       const r = await fetch("/api/history", {
         method: "POST",
@@ -372,6 +385,10 @@ export default function Home() {
         const createdAt = (j as any)?.created_at || new Date().toISOString();
         const createdStart =
           (j as any)?.data?.start || (payload as any)?.data?.start || null;
+        const createdCategory =
+          (j as any)?.data?.category ||
+          (payload as any)?.data?.category ||
+          null;
         if (createdId && typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("history:created", {
@@ -380,6 +397,7 @@ export default function Home() {
                 title: createdTitle,
                 created_at: createdAt,
                 start: createdStart,
+                category: createdCategory,
               },
             })
           );
@@ -1287,6 +1305,32 @@ export default function Home() {
                         })
                       }
                     />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="event-category"
+                      className="text-sm text-foreground/70 flex items-center gap-2"
+                    >
+                      <span aria-hidden>🏷️</span>
+                      <span>Category</span>
+                    </label>
+                    <select
+                      id="event-category"
+                      className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
+                      value={category || ""}
+                      onChange={(e) => setCategory(e.target.value || null)}
+                    >
+                      <option value="">All</option>
+                      <option value="Birthdays">Birthdays</option>
+                      <option value="Weddings">Weddings</option>
+                      <option value="Doctor Appointments">
+                        Dr Appointments
+                      </option>
+                      <option value="Appointments">Appointments</option>
+                      <option value="Play Days">Play Days</option>
+                      <option value="Sport Events">Sport Events</option>
+                    </select>
                   </div>
 
                   <div className="space-y-1">

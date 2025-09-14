@@ -39,7 +39,7 @@ async function llmExtractEvent(raw: string): Promise<{
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const system = "You extract calendar events from noisy OCR text. Return strict JSON only.";
-  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\n- Title should be a human-friendly event name without dates, e.g., "+Alice's Birthday Party+" not "+Party December 23rd+".\n- Parse date and time if present; if time missing, leave start null.\n- Keep address concise (street/city/state if present).\n- Description can include RSVP or extra lines.\n- Respond with ONLY JSON.`;
+  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\nRules:\n- Title should be a human-friendly event name without dates, e.g., "+Alice's Birthday Party+" not "+Party December 23rd+".\n- Parse date and time if present; if time missing, leave start null.\n- Keep address concise (street/city/state if present).\n- Description can include RSVP or extra lines.\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines \"Date\" and \"Time\" near an \"Appointment\" section.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If the appointment type is shown (e.g., Annual Visit), use that as the title; otherwise use \'Doctor Appointment\'.\n- Respond with ONLY JSON.`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -79,9 +79,9 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const base64 = imageBytes.toString("base64");
-  const system = "You are a precise assistant that reads event invitations from an image and returns clean JSON fields for calendar creation.";
+  const system = "You are a precise assistant that reads event invitations and appointment slips from an image and returns clean JSON fields for calendar creation.";
   const userText =
-    "Extract a calendar event as strict JSON {title,start,end,address,description}. Parse spelled-out times like 'four o'clock in the afternoon' and include timezone if visible, otherwise omit. Use ISO 8601 for dates.";
+    "Extract a calendar event as strict JSON {title,start,end,address,description}. Parse spelled-out times like 'four o'clock in the afternoon' and include timezone if visible, otherwise omit. Use ISO 8601 for dates. For MEDICAL APPOINTMENTS (doctor/clinic/hospital/Ascension/Sacred Heart), never use DOB/Date of Birth as the event date; instead, use the labeled 'Date' and 'Time' for the appointment. Put patient name, DOB, provider/doctor, and clinic/facility in description. If an appointment type like 'Annual Visit' exists, use it for title; otherwise use 'Doctor Appointment'.";
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -263,6 +263,31 @@ function stripInvitePhrases(s: string): string {
     .replace(/^\s*(you\s+are\s+invited[:\s-]*)/i, "")
     .replace(/^\s*(you'?re\s+invited[:\s-]*)/i, "")
     .trim();
+}
+
+// When the flyer has a standalone line "Join us for", enrich it with the
+// birthday person's name if the title contains a possessive (e.g., "Livia’s").
+function improveJoinUsFor(description: string, title: string): string {
+  try {
+    const lines = (description || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    const joinIdx = lines.findIndex((l) => /^join\s+us\s+for\s*$/i.test(l));
+    if (joinIdx === -1) return description;
+
+    const possessiveMatch = (title || "").match(/\b([A-Z][A-Za-z\-]+(?:\s+[A-Z][A-Za-z\-]+){0,2})[’']s\b/);
+    if (!possessiveMatch) return description;
+
+    const namePossessive = possessiveMatch[0];
+    const nextIsBirthdayParty = !!lines[joinIdx + 1] && /\bbirthday\s*party\b/i.test(lines[joinIdx + 1]);
+    const replacement = `Join us for ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}`
+      .replace(/\s+/g, " ")
+      .trim();
+
+    lines[joinIdx] = replacement;
+    if (nextIsBirthdayParty) lines.splice(joinIdx + 1, 1);
+    return lines.join("\n");
+  } catch {
+    return description;
+  }
 }
 
 function pickTitle(lines: string[], raw: string): string {
@@ -463,6 +488,61 @@ export async function POST(request: Request) {
     let end: Date | null = null;
     let parsedText: string | null = null;
 
+    // Prefer explicit medical Appointment Date/Time labels over DOB when detected
+    const isMedical = /(doctor|dr\.|dentist|clinic|hospital|ascension|sacred\s*heart)/i.test(raw) && /(appointment|appt)/i.test(raw);
+    let medicalStart: Date | null = null;
+    let medicalParsedText: string | null = null;
+    if (isMedical) {
+      let apptDateStr: string | null = null;
+      let apptTimeStr: string | null = null;
+      const dobM = raw.match(/\b(dob|date\s*of\s*birth)[:#\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+      const dobStr = dobM?.[2] || null;
+      // Labeled same-line patterns
+      const dateLM = raw.match(/\b(appointment\s*date|appt\s*date|date)\b[:#\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+      const timeLM = raw.match(/\b(appointment\s*time|time)\b[:#\-]?\s*(\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?))/i);
+      apptDateStr = (dateLM?.[2] || null);
+      apptTimeStr = (timeLM?.[2] || null);
+      // Two-line label followed by value
+      if (!apptDateStr || (dobStr && apptDateStr === dobStr)) {
+        for (let i = 0; i < lines.length - 1; i++) {
+          if (/^\s*(appointment\s*date|appt\s*date|date)\s*:?\s*$/i.test(lines[i])) {
+            const next = lines[i + 1];
+            const m = next.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/);
+            if (m) { apptDateStr = m[0]; break; }
+          }
+        }
+      }
+      if (!apptTimeStr) {
+        for (let i = 0; i < lines.length - 1; i++) {
+          if (/^\s*(appointment\s*time|time)\s*:?\s*$/i.test(lines[i])) {
+            const next = lines[i + 1];
+            const m = next.match(/\b\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?)\b/i);
+            if (m) { apptTimeStr = m[0]; break; }
+          }
+        }
+      }
+      if (apptDateStr) {
+        const [mm, dd, yy] = apptDateStr.split(/[\/\-]/).map((x) => x.trim());
+        const year = Number(yy.length === 2 ? (Number(yy) + 2000) : yy);
+        const month = Number(mm) - 1;
+        const day = Number(dd);
+        let hours = 9;
+        let minutes = 0;
+        if (apptTimeStr) {
+          const tm = apptTimeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i);
+          if (tm) {
+            hours = Number(tm[1]);
+            minutes = Number(tm[2] || 0);
+            const mer = (tm[3] || "").toLowerCase();
+            if (mer.includes("p") && hours < 12) hours += 12;
+            if (mer.includes("a") && hours === 12) hours = 0;
+          }
+        }
+        medicalStart = new Date(year, month, day, hours, minutes, 0, 0);
+        medicalParsedText = `${apptDateStr}${apptTimeStr ? " " + apptTimeStr : ""}`;
+      }
+    }
+
     if (parsed.length) {
       const score = (r: any): number => {
         const t = (r?.text || "") as string;
@@ -477,7 +557,13 @@ export async function POST(request: Request) {
         if (hasTime && !(known.month && known.day) && !known.weekday) s -= 4;
         return s;
       };
-      const byPreference = [...parsed].sort((a, b) => score(b as any) - score(a as any));
+      // Penalize obvious DOB matches (Date of Birth) so they are not selected as the event date
+      const looksLikeDob = (t: string) => /\b(dob|date\s*of\s*birth)\b/i.test(t);
+      const byPreference = [...parsed].sort((a, b) => {
+        const sa = score(a as any) - (looksLikeDob((a as any).text || "") ? 10 : 0);
+        const sb = score(b as any) - (looksLikeDob((b as any).text || "") ? 10 : 0);
+        return sb - sa;
+      });
       const c = byPreference[0];
       start = c.start?.date() ?? null;
       end = c.end?.date() ?? null;
@@ -513,7 +599,7 @@ export async function POST(request: Request) {
     }
 
     // Spelled-out time fallback (e.g., "four o'clock in the afternoon")
-    if (start) {
+    if (start && !medicalStart) {
       const spelled = detectSpelledTime(raw);
       if (spelled) {
         const hasAfternoon = /\bafternoon\b/i.test(raw);
@@ -532,6 +618,12 @@ export async function POST(request: Request) {
         merged.setHours(hour24, spelled.minute, 0, 0);
         start = merged;
       }
+    }
+    // If we detected explicit medical appointment Date/Time, prefer it over other parses
+    if (medicalStart) {
+      start = medicalStart;
+      end = null;
+      parsedText = medicalParsedText;
     }
 
     // Address extraction
@@ -561,7 +653,18 @@ export async function POST(request: Request) {
     }
 
     let addressOnly = "";
-    if (locIdx >= 0 && bestScore > 0) {
+    // Medical-specific: prefer Dept./Address block when present
+    if (isMedical) {
+      const idx = lines.findIndex((l: string) => /^(dept\.?\s*\/\s*address|department\s*\/\s*address|dept\.?\s*\/?\s*address|dept\.?\s*\/\s*adr(?:ess)?)$/i.test(l));
+      if (idx >= 0) {
+        const block = [lines[idx + 1], lines[idx + 2], lines[idx + 3]].filter(Boolean) as string[];
+        const hasStreetNo = /\b\d{1,6}\s+[A-Za-z]/;
+        const cityStateZip = /\b[A-Za-z\.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
+        const pick = block.find((s) => hasStreetNo.test(s) || cityStateZip.test(s));
+        if (pick) addressOnly = pick.trim();
+      }
+    }
+    if (locIdx >= 0 && bestScore > 0 && !addressOnly) {
       const parts: string[] = [];
       const line = lines[locIdx].replace(/[–—-]\s*$/g, "").trim();
       const prev = lines[locIdx - 1]?.replace(/[–—-]\s*$/g, "").trim();
@@ -654,6 +757,10 @@ export async function POST(request: Request) {
         if (inviteRe.test(stripped)) continue;
         if (hasEnoughOverlap(stripped, titleWords)) continue;
 
+        // Skip standalone time-like tokens (e.g., "3:30", "3:30PM") and score-like "1-0"/"1:0"
+        if (/^\d{1,2}([:\.]\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?$/i.test(stripped)) continue;
+        if (/^\d+\s*[:\-]\s*\d+$/.test(stripped)) continue;
+
         if (/^[A-Za-z]{3,}$/.test(stripped) && stripped.split(/\s+/).length === 1) {
           if (!looksEnglishWord(stripped)) continue;
         }
@@ -670,6 +777,21 @@ export async function POST(request: Request) {
         }
         keep.push(stripped);
       }
+      // Surface key medical fields if present: patient, DOB, provider, facility
+      try {
+        const full = lines.join("\n");
+        const patientMatch = full.match(/\bpatient\s*(name|id)?[:#\-]?\s*([A-Z][A-Za-z'\-]+\s+[A-Z][A-Za-z'\-]+)\b/i);
+        const dobMatch = full.match(/\b(dob|date\s*of\s*birth)[:#\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+        const providerMatch = full.match(/\b(dr\.?|doctor)\s*([A-Z][A-Za-z\s\-']+)|\bprovider[:#\-]?\s*([A-Z][A-Za-z\s\-']+)/i);
+        const facilityMatch = full.match(/\b(ascension|sacred\s*heart|medical\s+group|clinic|hospital)[^\n]*\b/iu);
+        const extras: string[] = [];
+        if (patientMatch) extras.push(`Patient: ${(patientMatch[2] || "").trim()}`);
+        if (dobMatch) extras.push(`DOB: ${(dobMatch[2] || "").trim()}`);
+        const provider = (providerMatch?.[2] || providerMatch?.[3] || "").trim();
+        if (provider) extras.push(`Provider: ${provider}`);
+        if (facilityMatch) extras.push(`Facility: ${facilityMatch[0].trim()}`);
+        if (extras.length) return [keep.join("\n"), extras.join(" | ")].filter(Boolean).join("\n\n");
+      } catch {}
       return keep.join("\n");
     })();
 
@@ -716,6 +838,49 @@ export async function POST(request: Request) {
         finalEnd = safeDate(llm.end) ?? finalEnd;
       }
     }
+
+    // For medical slips, force title to "<Appointment Type> with Dr <Name>" when possible,
+    // and keep notes minimal (just the title line)
+    if (/(appointment|appt)/i.test(raw) && /(doctor|dr\.|clinic|hospital|ascension|sacred\s*heart)/i.test(raw)) {
+      // 1) Try to read appointment reason near the "Appointment" label
+      const appIdx = lines.findIndex((l: string) => /^\s*appointment\s*$/i.test(l));
+      let reasonLine: string | null = null;
+      if (appIdx >= 0) {
+        reasonLine = lines[appIdx + 1] || null;
+      }
+      // 2) Fallback regexes for common reasons
+      const reasonMatch = (raw.match(/\b(annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?))\b/i) || [])[0];
+      let apptTypeRaw = (reasonLine && reasonLine.trim()) || reasonMatch || "Doctor Appointment";
+      // Clean trailing codes (e.g., "Annual Visit 20")
+      apptTypeRaw = apptTypeRaw.replace(/\b\d+\b/g, "").replace(/\s{2,}/g, " ").trim();
+      const apptType = apptTypeRaw;
+
+      // Provider detection:
+      // a) Prefixed with Dr./Doctor
+      let provider: string | null = null;
+      const provA = raw.match(/\b(?:dr\.?\s*|doctor\s+)([A-Z][A-Za-z\-']+(?:\s+[A-Z][A-Za-z\-']+)*)\b/);
+      if (provA) provider = (provA[1] || "").trim();
+      // b) NAME , MD|DO|NP... (uppercase or titlecase)
+      if (!provider) {
+        const provB = raw.match(/\b([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4})\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD)\b/i);
+        if (provB) provider = (provB[1] || "").trim();
+      }
+      // c) The line immediately after reason (often provider)
+      if (!provider && reasonLine) {
+        const cand = (lines[appIdx + 2] || "").trim();
+        if (/^[A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(cand)) provider = cand.replace(/\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C)$/i, "").trim();
+      }
+
+      // Title-case helper
+      const toTitle = (s: string) => s.replace(/\s+/g, " ").trim().replace(/\b\w/g, (m: string) => m.toUpperCase());
+      if (provider) finalTitle = `${toTitle(apptType)} with Dr ${toTitle(provider)}`;
+      else finalTitle = toTitle(apptType);
+      // Notes should be just the title to avoid clutter as requested
+      finalDescription = finalTitle;
+    }
+
+    // Enrich generic "Join us for" line with the birthday person's name from title
+    finalDescription = improveJoinUsFor(finalDescription, finalTitle);
 
     const descriptionHasTitle =
       (finalTitle || "").trim().length > 0 &&
@@ -960,7 +1125,7 @@ export async function POST(request: Request) {
         const text = (fullText || "").toLowerCase();
         // Football handling removed
         // Doctor/Dentist/Clinic appointments
-        const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(fullText);
+        const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(fullText);
         const hasAppt = /(appointment|appt)/i.test(fullText);
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
