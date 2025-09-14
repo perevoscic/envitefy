@@ -554,11 +554,21 @@ export default function Home() {
       ? parseStartToIso(e.end, timezone) ||
         (() => {
           const d = new Date(startIso);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String((d.getHours() + 1) % 24).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00`;
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+            2,
+            "0"
+          )}-${String(d.getDate()).padStart(2, "0")}T${String(
+            (d.getHours() + 1) % 24
+          ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00`;
         })()
       : (() => {
           const d = new Date(startIso);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String((d.getHours() + 1) % 24).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00`;
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+            2,
+            "0"
+          )}-${String(d.getDate()).padStart(2, "0")}T${String(
+            (d.getHours() + 1) % 24
+          ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00`;
         })();
     const location = normalizeAddress(e.location || "");
     return {
