@@ -6,6 +6,7 @@ import {
   updateEventHistoryTitle,
   deleteEventHistoryById,
   getUserIdByEmail,
+  updateEventHistoryDataMerge,
 } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -35,17 +36,24 @@ export async function PATCH(
 
   const id = params.id;
   const body = await req.json().catch(() => ({}));
-  const title = (body.title as string) || "";
-  if (!title || title.trim().length === 0) {
-    return NextResponse.json({ error: "Title required" }, { status: 400 });
-  }
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (existing.user_id && existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const updated = await updateEventHistoryTitle(id, title.trim());
-  return NextResponse.json(updated);
+  // Support updating title or merging into data (e.g., category fix)
+  if (typeof body.title === "string" && body.title.trim().length > 0) {
+    const updated = await updateEventHistoryTitle(id, String(body.title).trim());
+    return NextResponse.json(updated);
+  }
+  if (body && (body.category != null || body.data != null)) {
+    const patch: any = {};
+    if (body.category != null) patch.category = String(body.category);
+    if (body.data && typeof body.data === "object") Object.assign(patch, body.data);
+    const updated = await updateEventHistoryDataMerge(id, patch);
+    return NextResponse.json(updated);
+  }
+  return NextResponse.json({ error: "No updatable fields" }, { status: 400 });
 }
 
 export async function DELETE(
@@ -69,5 +77,4 @@ export async function DELETE(
   await deleteEventHistoryById(id);
   return NextResponse.json({ ok: true });
 }
-
 

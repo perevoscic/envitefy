@@ -25,10 +25,10 @@ type CalendarEvent = {
 
 // Mirror the sidebar color logic so calendar tiles match "Recent Snapped"
 function defaultCategoryColor(c: string): string {
-  if (c === "Birthdays") return "pink";
-  if (c === "Doctor Appointments") return "teal";
+  if (c === "Birthdays") return "green"; // default palette expectation
+  if (c === "Doctor Appointments") return "red";
   if (c === "Appointments") return "amber";
-  if (c === "Weddings") return "rose";
+  if (c === "Weddings") return "blue";
   if (c === "Sport Events") return "indigo";
   if (c === "Play Days") return "rose";
   return "slate";

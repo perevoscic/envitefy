@@ -210,10 +210,10 @@ export default function LeftSidebar() {
 
   // Default color per known category
   const defaultCategoryColor = (c: string): string => {
-    if (c === "Birthdays") return "pink";
-    if (c === "Doctor Appointments") return "teal";
+    if (c === "Birthdays") return "green"; // default palette expectation
+    if (c === "Doctor Appointments") return "red";
     if (c === "Appointments") return "amber";
-    if (c === "Weddings") return "rose";
+    if (c === "Weddings") return "blue";
     if (c === "Sport Events") return "indigo";
     if (c === "Play Days") return "rose";
     return "slate"; // neutral fallback
@@ -1873,7 +1873,7 @@ export default function LeftSidebar() {
                             top: itemMenuPos.top,
                             transform: "translateY(-10%)",
                           }}
-                          className="z-[10000] w-32 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
+                          className="z-[10000] w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
                         >
                           <button
                             type="button"
@@ -1937,6 +1937,78 @@ export default function LeftSidebar() {
                             </svg>
                             <span className="text-sm">Rename</span>
                           </button>
+                          <div className="my-1 h-px bg-border" />
+                          {["Birthdays", "Weddings", "Doctor Appointments", "Appointments", "Sport Events", "General Events"].map(
+                            (label) => (
+                              <button
+                                key={label}
+                                type="button"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setItemMenuId(null);
+                                  setItemMenuPos(null);
+                                  try {
+                                    await fetch(`/api/history/${h.id}`, {
+                                      method: "PATCH",
+                                      headers: { "content-type": "application/json" },
+                                      body: JSON.stringify({ category: label }),
+                                    });
+                                    setHistory((prev) =>
+                                      prev.map((r) =>
+                                        r.id === h.id
+                                          ? {
+                                              ...r,
+                                              data: {
+                                                ...(r.data || {}),
+                                                category: label,
+                                              },
+                                            }
+                                          : r
+                                      )
+                                    );
+                                    setCategoryColors((prev) => {
+                                      const next = { ...prev } as Record<
+                                        string,
+                                        string
+                                      >;
+                                      if (!next[label])
+                                        next[label] = defaultCategoryColor(label);
+                                      try {
+                                        localStorage.setItem(
+                                          "categoryColors",
+                                          JSON.stringify(next)
+                                        );
+                                        window.dispatchEvent(
+                                          new CustomEvent(
+                                            "categoryColorsUpdated",
+                                            { detail: next }
+                                          )
+                                        );
+                                      } catch {}
+                                      return next;
+                                    });
+                                  } catch {}
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <span className="text-sm">Mark as {label}</span>
+                              </button>
+                            )
+                          )}
                           <button
                             type="button"
                             onClick={async (e) => {

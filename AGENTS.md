@@ -221,7 +221,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - Update title (PATCH) and Delete (DELETE) require session and ownership.
 - **Input**:
   - POST `/api/history`: `{ title?: string, data?: any }`.
-  - PATCH `/api/history/[id]`: `{ title: string }`.
+  - PATCH `/api/history/[id]`: Either `{ title: string }` or `{ category: string }` or `{ data: object }` to shallow-merge into the JSON `data` (e.g., to fix the saved `category`).
 - **Output**:
   - GET list: `{ items: Array<HistoryRow> }`.
   - GET single: `HistoryRow` or `{ error }` with 404.
@@ -380,3 +380,4 @@ Payload used by the authenticated calendar agents.
 - 2025-09-13: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.
 - 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing. Also switched event times to be preserved as typed (floating) with no cross‑timezone adjustment; ICS supports `floating=1`.
 - 2025-09-14: OCR/ingest: Category detection is words-only (from OCR text). Removed any image-only category influence. If wedding and birthday keywords both appear, neither is preferred (category left unset). Tightened birthday matching (e.g., 'birthday party', 'b‑day', 'turns 5').
+- 2025-09-14: History PATCH now supports updating `data` (shallow merge) or just `category` to fix miscategorized rows post‑creation. Left sidebar adds quick "Mark as <Category>" to re-sync colors.

@@ -405,8 +405,12 @@ export default function Home() {
           return null;
         }
       })();
+      // IMPORTANT: Do not prefer the React state `category` here because it can
+      // still hold the previous scan's value in the same tick. Prefer the
+      // freshly detected or guessed category from this OCR result, falling
+      // back to the prior UI state only if nothing was detected.
       const selectedCategory =
-        category ?? inferredCategory ?? guessedFromText ?? "General Events";
+        inferredCategory ?? guessedFromText ?? category ?? "General Events";
       // Also keep original ISO datetimes for future filtering
       const startISO = (data?.fieldsGuess?.start as string | null) || null;
       const endISO = (data?.fieldsGuess?.end as string | null) || null;

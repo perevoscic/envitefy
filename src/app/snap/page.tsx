@@ -466,8 +466,12 @@ export default function SnapPage() {
           return null;
         }
       })();
+      // IMPORTANT: Avoid using the current `category` state as first priority
+      // because `setCategory(...)` above is async and may still hold the
+      // previous scan's value within this same function call. Use the freshly
+      // detected/guessed category for this scan first.
       const selectedCategory =
-        category ?? inferredCategory ?? guessedFromText ?? "General Events";
+        inferredCategory ?? guessedFromText ?? category ?? "General Events";
       // Also keep original ISO datetimes for future filtering
       const startISO = (data?.fieldsGuess?.start as string | null) || null;
       const endISO = (data?.fieldsGuess?.end as string | null) || null;

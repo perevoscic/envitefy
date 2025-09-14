@@ -575,6 +575,22 @@ export async function updateEventHistoryTitle(id: string, title: string): Promis
   return res.rows[0] || null;
 }
 
+export async function updateEventHistoryDataMerge(
+  id: string,
+  patch: any
+): Promise<EventHistoryRow | null> {
+  // Merge provided patch object into existing JSONB data. Later keys override.
+  // jsonb concatenation '||' merges objects shallowly; sufficient for category updates.
+  const res = await query<EventHistoryRow>(
+    `update event_history
+     set data = coalesce(data, '{}'::jsonb) || $2::jsonb
+     where id = $1
+     returning id, user_id, title, data, created_at`,
+    [id, JSON.stringify(patch ?? {})]
+  );
+  return res.rows[0] || null;
+}
+
 export async function deleteEventHistoryById(id: string): Promise<void> {
   await query(`delete from event_history where id = $1`, [id]);
 }
