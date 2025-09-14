@@ -14,10 +14,15 @@ export function toGoogleEvent(event: NormalizedEvent) {
   const isAllDay = Boolean(event.allDay);
   const start = isAllDay
     ? { date: event.start.slice(0, 10) }
-    : { dateTime: event.start, timeZone: event.timezone };
+    : // Keep local clock time exactly as typed; include the user's timezone
+      (event.timezone && event.timezone.trim()
+        ? { dateTime: event.start, timeZone: event.timezone }
+        : { dateTime: event.start });
   const end = isAllDay
     ? { date: event.end.slice(0, 10) }
-    : { dateTime: event.end, timeZone: event.timezone };
+    : (event.timezone && event.timezone.trim()
+        ? { dateTime: event.end, timeZone: event.timezone }
+        : { dateTime: event.end });
 
   const overrides = (event.reminders || [])
     .filter((r) => typeof r.minutes === "number")
@@ -36,22 +41,15 @@ export function toGoogleEvent(event: NormalizedEvent) {
 }
 
 export function toMicrosoftEvent(event: NormalizedEvent) {
-  const toGraphDateTime = (iso: string) => {
-    try {
-      // Graph expects dateTime without timezone designator when timeZone is provided
-      return new Date(iso).toISOString().slice(0, 19);
-    } catch {
-      return iso;
-    }
-  };
+  const toGraphLocal = (s: string) => (s || "").slice(0, 19); // expect local 'YYYY-MM-DDTHH:mm:ss'
   const bodyContent = event.description || "";
   const graphEvent: any = {
     subject: event.title || "Event",
     body: { contentType: "HTML", content: bodyContent },
     location: { displayName: event.location || "" },
-    // Send UTC with dateTime formatted without timezone suffix per Graph spec
-    start: { dateTime: toGraphDateTime(event.start), timeZone: "UTC" },
-    end: { dateTime: toGraphDateTime(event.end), timeZone: "UTC" },
+    // Preserve local clock time exactly as typed using the user's timezone
+    start: { dateTime: toGraphLocal(event.start), timeZone: event.timezone || "UTC" },
+    end: { dateTime: toGraphLocal(event.end), timeZone: event.timezone || "UTC" },
   };
   if (event.allDay) graphEvent.isAllDay = true;
   // Microsoft supports a single reminder via reminderMinutesBeforeStart
@@ -83,5 +81,4 @@ export function toIcsFields(event: NormalizedEvent) {
     reminders: event.reminders || null,
   };
 }
-
 

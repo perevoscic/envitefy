@@ -90,7 +90,7 @@ curl -X POST \
 
 - **Purpose**: Generate an `.ics` file (invitation) from query params.
 - **Auth**: None.
-- **Input (query)**: `title`, `start` (ISO), `end` (ISO), `location`, `description`, `timezone` (IANA, default `America/Chicago`), optional `recurrence` (RRULE), optional `reminders` (comma-separated minutes), optional `disposition` (`inline`|`attachment`, default `attachment`).
+- **Input (query)**: `title`, `start` (ISO), `end` (ISO), `location`, `description`, optional `timezone` (ignored when `floating=1`), optional `floating=1` (treat as floating local times, no timezone conversion), optional `recurrence` (RRULE), optional `reminders` (comma-separated minutes), optional `disposition` (`inline`|`attachment`, default `attachment`).
 - **Output**: `text/calendar` (defaults to attachment `event.ics`; pass `disposition=inline` to encourage native Calendar opening on iOS/macOS).
 
 ### ICS Bulk — POST `/api/events/ics/bulk`
@@ -378,4 +378,4 @@ Payload used by the authenticated calendar agents.
 - 2025-09-11: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.
 - 2025-09-13: Promo Gift Agent no longer returns gift code in response; code is email-only and UI shows in-modal success with auto-close.
 - 2025-09-13: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.
-- 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing.
+- 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing. Also switched event times to be preserved as typed (floating) with no cross‑timezone adjustment; ICS supports `floating=1`.

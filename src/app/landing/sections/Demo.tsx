@@ -53,10 +53,7 @@ export default function Demo() {
       end: data?.fieldsGuess?.end || null,
       location: data?.fieldsGuess?.location || "",
       description: data?.fieldsGuess?.description || "",
-      timezone:
-        data?.fieldsGuess?.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
     setEvent(e);
     setOcrText(data?.ocrText || "");

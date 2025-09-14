@@ -93,7 +93,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Parse spelled-out times such as 'four o'clock in the afternoon' and combine with any nearby date text.",
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
-      "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General.",
+      "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
       "Special cases — MEDICAL APPOINTMENTS: never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Include patient name, DOB, provider and facility in description. Title should be '<Appointment Type> with Dr <Name>' when possible, otherwise 'Doctor Appointment'.",
     ].join("\n");
   try {
@@ -1098,57 +1098,27 @@ export async function POST(request: Request) {
     const descriptionWithTitle = descriptionHasTitle
       ? (finalDescription || "")
       : [finalTitle, finalDescription].filter((s) => (s || "").trim().length > 0).join("\n\n");
-
-    const inferredTZ = inferTimezoneFromAddress(finalAddress || raw);
-
-    // If we have a clock time and a target timezone different from the server
-    // zone, reinterpret the parsed time-of-day in that target timezone so the
-    // displayed local time matches the invite. This avoids cross-zone shifts
-    // (e.g., parsed in America/Chicago but event is in America/Los_Angeles → 5 PM becoming 3 PM).
-    const serverTZ = (() => {
-      try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; }
-    })();
-    const getOffsetMinutes = (date: Date, tz: string): number => {
-      try {
-        const dtf = new Intl.DateTimeFormat("en-US", {
-          timeZone: tz,
-          year: "numeric", month: "2-digit", day: "2-digit",
-          hour: "2-digit", minute: "2-digit", second: "2-digit",
-          hour12: false,
-        });
-        const parts = dtf.formatToParts(date);
-        const map: any = {};
-        for (const p of parts) map[p.type] = p.value;
-        const asUTC = Date.UTC(
-          Number(map.year), Number(map.month) - 1, Number(map.day),
-          Number(map.hour), Number(map.minute), Number(map.second)
-        );
-        // difference (ms) between the same instant expressed as UTC from the TZ clock
-        // and the actual UTC timestamp
-        return Math.round((asUTC - date.getTime()) / 60000);
-      } catch { return 0; }
-    };
-    const shiftToTimezone = (date: Date, targetTz: string): Date => {
-      if (!serverTZ || !targetTz || serverTZ === targetTz) return date;
-      try {
-        const serverOff = getOffsetMinutes(date, serverTZ);
-        const targetOff = getOffsetMinutes(date, targetTz);
-        const deltaMin = serverOff - targetOff; // add this many minutes
-        return new Date(date.getTime() + deltaMin * 60 * 1000);
-      } catch { return date; }
+    // Do NOT adjust for timezones: preserve the time exactly as it appears on
+    // the flyer/invite. Downstream clients can treat it as a floating time.
+    const toLocalNoZ = (d: Date | null) => {
+      if (!d) return null;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const y = d.getFullYear();
+      const m = pad(d.getMonth() + 1);
+      const day = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mm = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      return `${y}-${m}-${day}T${hh}:${mm}:${ss}`; // no timezone designator → floating local time
     };
 
-    if (finalStart && inferredTZ && startHasClockTime) {
-      finalStart = shiftToTimezone(finalStart, inferredTZ);
-      if (finalEnd) finalEnd = shiftToTimezone(finalEnd, inferredTZ);
-    }
     const fieldsGuess = {
       title: finalTitle,
-      start: finalStart?.toISOString() ?? null,
-      end: finalEnd?.toISOString() ?? null,
+      start: toLocalNoZ(finalStart),
+      end: toLocalNoZ(finalEnd),
       location: finalAddress,
       description: descriptionWithTitle,
-      timezone: inferredTZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      timezone: "", // omit timezone; UI will show times as typed
     };
 
     // ---------------- Gymnastics schedule extraction ----------------

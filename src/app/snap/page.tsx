@@ -333,7 +333,7 @@ export default function SnapPage() {
             ? "Play Days"
             : /appointment|meeting|consult/.test(s)
             ? "Appointments"
-            : "Events";
+            : "General Events";
           setCategory(guessed);
         } catch {}
       }
@@ -372,10 +372,7 @@ export default function SnapPage() {
         return null;
       }
     };
-    const tz =
-      data?.fieldsGuess?.timezone ||
-      Intl.DateTimeFormat().resolvedOptions().timeZone ||
-      "UTC";
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     const formatIsoForInput = (iso: string | null, timezone: string) => {
       if (!iso) return null;
       try {
@@ -399,6 +396,7 @@ export default function SnapPage() {
           ...data.fieldsGuess,
           start: formatIsoForInput(data.fieldsGuess.start, tz),
           end: formatIsoForInput(data.fieldsGuess.end, tz),
+          timezone: tz,
           reminders: [{ minutes: 1440 }],
         }
       : null;
@@ -469,7 +467,7 @@ export default function SnapPage() {
         }
       })();
       const selectedCategory =
-        category ?? inferredCategory ?? guessedFromText ?? "Events";
+        category ?? inferredCategory ?? guessedFromText ?? "General Events";
       // Also keep original ISO datetimes for future filtering
       const startISO = (data?.fieldsGuess?.start as string | null) || null;
       const endISO = (data?.fieldsGuess?.end as string | null) || null;
@@ -539,11 +537,28 @@ export default function SnapPage() {
   const parseStartToIso = (value: string | null, timezone: string) => {
     if (!value) return null;
     try {
-      const isoDate = new Date(value);
-      if (!isNaN(isoDate.getTime())) return isoDate.toISOString();
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const y = d.getFullYear();
+        const m = pad(d.getMonth() + 1);
+        const day = pad(d.getDate());
+        const hh = pad(d.getHours());
+        const mm = pad(d.getMinutes());
+        const ss = pad(d.getSeconds());
+        return `${y}-${m}-${day}T${hh}:${mm}:${ss}`;
+      }
     } catch {}
     const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
-    return parsed ? new Date(parsed.getTime()).toISOString() : null;
+    if (!parsed) return null;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const y = parsed.getFullYear();
+    const m = pad(parsed.getMonth() + 1);
+    const day = pad(parsed.getDate());
+    const hh = pad(parsed.getHours());
+    const mm = pad(parsed.getMinutes());
+    const ss = pad(parsed.getSeconds());
+    return `${y}-${m}-${day}T${hh}:${mm}:${ss}`;
   };
 
   const normalizeAddress = (raw: string) => {
@@ -658,7 +673,8 @@ export default function SnapPage() {
       end: ready.end!,
       location: ready.location || "",
       description: ready.description || "",
-      timezone: ready.timezone || "America/Chicago",
+      timezone: "",
+      floating: "1",
       ...(ready.reminders && ready.reminders.length
         ? { reminders: ready.reminders.map((r) => String(r.minutes)).join(",") }
         : {}),
@@ -1743,12 +1759,7 @@ export default function SnapPage() {
                         setEvent({ ...event, start: e.target.value })
                       }
                     />
-                    <p className="text-xs text-foreground/60">
-                      Times in{" "}
-                      {event.timezone ||
-                        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-                        "your timezone"}
-                    </p>
+                    {/* Intentionally omit timezone label: times are saved as typed */}
                   </div>
 
                   {Boolean(event.end) && (

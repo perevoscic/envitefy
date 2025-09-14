@@ -11,7 +11,8 @@ export async function GET(request: Request) {
   const end = searchParams.get("end");
   const location = searchParams.get("location") || "";
   const description = searchParams.get("description") || "";
-  const timezone = searchParams.get("timezone") || "America/Chicago";
+  const timezone = searchParams.get("timezone") || null;
+  const floating = searchParams.get("floating") === "1";
   const recurrence = searchParams.get("recurrence");
   const remindersStr = searchParams.get("reminders");
   const disposition = (searchParams.get("disposition") || "attachment").toLowerCase();
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing start or end" }, { status: 400 });
   }
 
-  const cal = ical({ name: "Scanned Events", timezone });
+  const cal = ical({ name: "Scanned Events", timezone: floating ? null : timezone });
   // Present as an invitation so iOS can show an explicit Accept/Add flow
   cal.method(("REQUEST" as unknown) as ICalCalendarMethod);
   const evt = cal.createEvent({
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
     description,
     status: ("CONFIRMED" as unknown) as any,
   });
+  if (floating) evt.floating(true);
   evt.organizer({ name: "Snap My Date", email: "noreply@snapmydate.com" });
   if (recurrence) {
     evt.repeating({
@@ -68,5 +70,4 @@ export async function GET(request: Request) {
   // No side-effect update
   return response;
 }
-
 
