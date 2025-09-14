@@ -23,7 +23,7 @@ function isTitleLowConfidence(title: string): boolean {
   const month = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
   if (month.test(t)) return true;
   if (/^event from flyer$/i.test(t)) return true;
-  if (/^(party|birthday|event|celebration)$/i.test(t)) return true;
+  if (/^(party|birthday|event|celebration|invitation|invitation\s*card)$/i.test(t)) return true;
   if (/\b\d{1,2}(st|nd|rd|th)\b$/i.test(t)) return true;
   return false;
 }
@@ -39,7 +39,7 @@ async function llmExtractEvent(raw: string): Promise<{
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const system = "You extract calendar events from noisy OCR text. Return strict JSON only.";
-  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\nRules:\n- Title should be a human-friendly event name without dates, e.g., "+Alice's Birthday Party+" not "+Party December 23rd+".\n- Parse date and time if present; if time missing, leave start null.\n- Keep address concise (street/city/state if present).\n- Description can include RSVP or extra lines.\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines \"Date\" and \"Time\" near an \"Appointment\" section.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If the appointment type is shown (e.g., Annual Visit), use that as the title; otherwise use \'Doctor Appointment\'.\n- Respond with ONLY JSON.`;
+  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- Description may include RSVP or short context.\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If an appointment type is shown (e.g., Annual Visit), use it for title; otherwise 'Doctor Appointment'.\n- Respond with ONLY JSON.`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -74,14 +74,28 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   end?: string | null;
   address?: string;
   description?: string;
+  category?: string;
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const base64 = imageBytes.toString("base64");
-  const system = "You are a precise assistant that reads event invitations and appointment slips from an image and returns clean JSON fields for calendar creation.";
+  const system =
+    "You are a careful assistant that reads invitations and appointment slips from images. You transcribe decorative cursive text accurately and return only clean JSON fields for calendar creation.";
   const userText =
-    "Extract a calendar event as strict JSON {title,start,end,address,description}. Parse spelled-out times like 'four o'clock in the afternoon' and include timezone if visible, otherwise omit. Use ISO 8601 for dates. For MEDICAL APPOINTMENTS (doctor/clinic/hospital/Ascension/Sacred Heart), never use DOB/Date of Birth as the event date; instead, use the labeled 'Date' and 'Time' for the appointment. Put patient name, DOB, provider/doctor, and clinic/facility in description. If an appointment type like 'Annual Visit' exists, use it for title; otherwise use 'Doctor Appointment'.";
+    [
+      "Task: From the image, extract a single calendar event as strict JSON with keys {title,start,end,address,description,category}.",
+      "General rules:",
+      "- Read ornate/cursive fonts carefully (names often appear in large script).",
+      "- Treat boilerplate headers like 'Invitation', 'Invitation Card', 'You're Invited' as NOT the title.",
+      "- Build a specific, human title without dates, e.g., '<Name> & <Name> Wedding' or " +
+        "'<Name>'s Birthday Party'.",
+      "- Parse spelled-out times such as 'four o'clock in the afternoon' and combine with any nearby date text.",
+      "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
+      "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
+      "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General.",
+      "Special cases — MEDICAL APPOINTMENTS: never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Include patient name, DOB, provider and facility in description. Title should be '<Appointment Type> with Dr <Name>' when possible, otherwise 'Doctor Appointment'.",
+    ].join("\n");
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -256,6 +270,33 @@ function cleanAddressLabel(input: string): string {
   return s.trim();
 }
 
+// Lightweight U.S. timezone guesser from address text (best-effort, no network)
+function inferTimezoneFromAddress(addressOrText: string): string | null {
+  const s = (addressOrText || "").toLowerCase();
+  const has = (...parts: string[]) => parts.some((p) => s.includes(p.toLowerCase()));
+  // Direct city hints
+  if (has("fresno", "los angeles", "san francisco", "san jose", "sacramento", "oakland", "san diego")) return "America/Los_Angeles";
+  if (has("phoenix", "mesa", "tucson", "az ", " arizona")) return "America/Phoenix";
+  if (has("seattle", "spokane", "wa ", " washington")) return "America/Los_Angeles";
+  if (has("portland", "or ", " oregon")) return "America/Los_Angeles";
+  if (has("boise", "id ", " idaho")) return "America/Boise";
+  if (has("denver", "co ", " colorado", "ut ", " utah", "nm ", " new mexico", "mt ", " montana", "wy ", " wyoming")) return "America/Denver";
+  if (has("chicago", "il ", " illinois", "wi ", " wisconsin", "mn ", " minnesota", "ia ", " iowa", "mo ", " missouri", "ok ", " oklahoma", "ks ", " kansas", "ne ", " nebraska", "tx ", " texas", "la ", " louisiana", "ar ", " arkansas", "tn ", " tennessee")) return "America/Chicago";
+  if (has("new york", "ny ", "nyc", "fl ", " florida", "ga ", " georgia", "nc ", " north carolina", "sc ", " south carolina", "pa ", " pennsylvania", "nj ", " new jersey", "oh ", " ohio", "mi ", " michigan", "va ", " virginia", "dc", "washington, dc", "ma ", " massachusetts", "ct ", " connecticut")) return "America/New_York";
+  if (has("anchorage", "ak ", " alaska")) return "America/Anchorage";
+  if (has("honolulu", "hi ", " hawaii")) return "Pacific/Honolulu";
+  // State-only heuristics
+  if (has(" ca ", " california")) return "America/Los_Angeles";
+  if (has(" wa ", " washington")) return "America/Los_Angeles";
+  if (has(" or ", " oregon")) return "America/Los_Angeles";
+  if (has(" nv ", " nevada")) return "America/Los_Angeles";
+  if (has(" az ", " arizona")) return "America/Phoenix";
+  if (has(" co ", " colorado", " ut ", " utah", " nm ", " new mexico", " mt ", " montana", " wy ", " wyoming", " id ", " idaho")) return "America/Denver";
+  if (has(" il ", " illinois", " wi ", " wisconsin", " mn ", " minnesota", " ia ", " iowa", " mo ", " missouri", " ok ", " oklahoma", " ks ", " kansas", " ne ", " nebraska", " la ", " louisiana", " ar ", " arkansas", " tx ", " texas")) return "America/Chicago";
+  if (has(" ny ", " new york", " nj ", " new jersey", " pa ", " pennsylvania", " oh ", " ohio", " mi ", " michigan", " ga ", " georgia", " fl ", " florida", " ma ", " massachusetts", " ct ", " connecticut", " dc")) return "America/New_York";
+  return null;
+}
+
 function stripInvitePhrases(s: string): string {
   return s
     .replace(/^\s*(you\s+are\s+invited\s+to[:\s-]*)/i, "")
@@ -427,8 +468,8 @@ function pickTitle(lines: string[], raw: string): string {
 
   const weekdays = /^(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(r(s(day)?)?)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
   const months = /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)$/i;
-  const badHints = /(rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:\.]?\d{0,2}\b)/i;
-  const goodHints = /(birthday|party|anniversary|wedding|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration)/i;
+  const badHints = /(invitation(\s*card)?|rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:\.]?\d{0,2}\b)/i;
+  const goodHints = /(birthday|party|anniversary|wedding|marriage|nupti(al)?|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration)/i;
   const ordinal = /\b\d{1,2}(st|nd|rd|th)\b/i;
 
   type Candidate = { text: string; score: number };
@@ -1022,8 +1063,8 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    // If this looks like a wedding invite, produce a clean title and short human sentence
-    if (/(wedding|bride|groom|ceremony|reception)/i.test(raw) || /wedding/i.test(finalTitle)) {
+    // If this looks like a wedding/marriage invite, produce a clean title and short human sentence
+    if (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) || /(wedding|marriage)/i.test(finalTitle)) {
       try {
         const wr = await llmRewriteWedding(raw, finalTitle, finalAddress);
         if (wr?.title) finalTitle = wr.title;
@@ -1039,13 +1080,14 @@ export async function POST(request: Request) {
       ? (finalDescription || "")
       : [finalTitle, finalDescription].filter((s) => (s || "").trim().length > 0).join("\n\n");
 
+    const inferredTZ = inferTimezoneFromAddress(finalAddress || raw);
     const fieldsGuess = {
       title: finalTitle,
       start: finalStart?.toISOString() ?? null,
       end: finalEnd?.toISOString() ?? null,
       location: finalAddress,
       description: descriptionWithTitle,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      timezone: inferredTZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
     // ---------------- Gymnastics schedule extraction ----------------
@@ -1282,7 +1324,7 @@ export async function POST(request: Request) {
         // Birthday
         if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
         // Weddings
-        if (/(wedding|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText)) return "Weddings";
+        if (/(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText)) return "Weddings";
         // Sports generic (fallback)
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";
@@ -1292,7 +1334,10 @@ export async function POST(request: Request) {
     };
 
     const intakeId: string | null = null;
-    const category: string | null = detectCategory(raw, schedule, fieldsGuess);
+    // Prefer LLM-provided category when available
+    const category: string | null = (typeof llmImage?.category === "string" && llmImage.category.trim())
+      ? llmImage.category.trim()
+      : detectCategory(raw, schedule, fieldsGuess);
 
     try {
       const session = await getServerSession(authOptions);

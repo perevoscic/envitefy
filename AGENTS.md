@@ -30,7 +30,7 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
 
-- **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback.
+- **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback (optimized for invitations and appointments).
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
 - **Query options**:
@@ -74,6 +74,8 @@ curl -X POST \
 #### Notes
 
 - Time parsing improved to detect spelled-out phrases like "four o'clock in the afternoon" and merge with detected dates; afternoon/evening keywords bias to PM.
+- LLM prompt now prioritizes decorative/cursive text (names) on invitation cards and ignores boilerplate like "Invitation"/"Invitation Card" when forming titles. It also classifies wedding/marriage invites and can surface an LLM-provided `category` when present.
+- Basic timezone inference from U.S. addresses (e.g., "Fresno, CA" → `America/Los_Angeles`). If no hint is found, falls back to the server timezone.
 
 ### OCR Agent (lightweight) — POST `/api/ingest`
 
@@ -375,3 +377,4 @@ Payload used by the authenticated calendar agents.
 - 2025-09-11: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.
 - 2025-09-13: Promo Gift Agent no longer returns gift code in response; code is email-only and UI shows in-modal success with auto-close.
 - 2025-09-13: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.
+- 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing.
