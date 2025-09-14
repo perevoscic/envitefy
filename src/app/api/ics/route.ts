@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const timezone = searchParams.get("timezone") || "America/Chicago";
   const recurrence = searchParams.get("recurrence");
   const remindersStr = searchParams.get("reminders");
+  const disposition = (searchParams.get("disposition") || "attachment").toLowerCase();
   // intakeId not used
   // const intakeId = searchParams.get("intakeId");
 
@@ -57,8 +58,8 @@ export async function GET(request: Request) {
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8; method=REQUEST",
-      // Attachment typically triggers Calendar to import the event
-      "Content-Disposition": "attachment; filename=event.ics",
+      // Allow caller to request inline to better trigger native handlers on iOS/macOS
+      "Content-Disposition": `${disposition === "inline" ? "inline" : "attachment"}; filename=event.ics`,
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache"
     }

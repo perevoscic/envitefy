@@ -6,6 +6,7 @@ import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { extractFirstPhoneNumber } from "@/utils/phone";
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +47,7 @@ export default async function EventPage({
   const aggregateContactText = `${(data?.rsvp as string | undefined) || ""} ${
     (data?.description as string | undefined) || ""
   } ${(data?.location as string | undefined) || ""}`.trim();
-  const phoneMatch = aggregateContactText.match(/\+?\d[\d\s().-]{6,}\d/);
-  const rsvpPhone = phoneMatch ? phoneMatch[0].replace(/[^\d+]/g, "") : null;
+  const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const smsIntroParts = [
     "Hi, there,",
@@ -103,6 +103,10 @@ export default async function EventPage({
               <div>
                 <dt className="text-foreground/70">Location</dt>
                 <dd className="font-medium">{data?.location || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-foreground/70">Category</dt>
+                <dd className="font-medium">{data?.category || "—"}</dd>
               </div>
               <div>
                 <dt className="text-foreground/70">RSVP</dt>

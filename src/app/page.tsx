@@ -279,7 +279,34 @@ export default function Home() {
     }
     const data = await res.json();
     try {
-      setCategory((data as any)?.category || null);
+      // Prefer OCR-detected category; otherwise fallback via keywords from description/title
+      const detected = (data as any)?.category || null;
+      setCategory(detected);
+      if (!detected) {
+        try {
+          const blob = `${(data?.fieldsGuess?.title as string) || ""} ${
+            (data?.ocrText as string) || ""
+          }`;
+          // Lightweight keyword guess aligned with sidebar logic
+          const s = blob.toLowerCase();
+          const guessed = /birthday|b-day|turns\s+\d+|party for/.test(s)
+            ? "Birthdays"
+            : /wedding|bridal|ceremony|reception/.test(s)
+            ? "Weddings"
+            : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
+            ? "Doctor Appointments"
+            : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
+                s
+              )
+            ? "Sport Events"
+            : /playdate|play\s*day|kids?\s*play/.test(s)
+            ? "Play Days"
+            : /appointment|meeting|consult/.test(s)
+            ? "Appointments"
+            : "Events";
+          setCategory(guessed);
+        } catch {}
+      }
     } catch {}
     const createThumbnailDataUrl = async (
       sourceFile: File,
@@ -353,7 +380,33 @@ export default function Home() {
       );
       const baseData = adjusted || data?.fieldsGuess || null;
       const inferredCategory = (data && (data as any).category) || null;
-      const selectedCategory = category ?? inferredCategory;
+      const guessedFromText = (() => {
+        try {
+          const blob = `${(data?.fieldsGuess?.title as string) || ""} ${
+            (data?.ocrText as string) || ""
+          }`;
+          const s = blob.toLowerCase();
+          return /birthday|b-day|turns\s+\d+|party for/.test(s)
+            ? "Birthdays"
+            : /wedding|bridal|ceremony|reception/.test(s)
+            ? "Weddings"
+            : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
+            ? "Doctor Appointments"
+            : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
+                s
+              )
+            ? "Sport Events"
+            : /playdate|play\s*day|kids?\s*play/.test(s)
+            ? "Play Days"
+            : /appointment|meeting|consult/.test(s)
+            ? "Appointments"
+            : null;
+        } catch {
+          return null;
+        }
+      })();
+      const selectedCategory =
+        category ?? inferredCategory ?? guessedFromText ?? "Events";
       // Also keep original ISO datetimes for future filtering
       const startISO = (data?.fieldsGuess?.start as string | null) || null;
       const endISO = (data?.fieldsGuess?.end as string | null) || null;
@@ -401,6 +454,7 @@ export default function Home() {
               },
             })
           );
+          // (Reverted) category sync via custom event was removed per request
         }
       } catch {}
     } catch {}
@@ -545,6 +599,9 @@ export default function Home() {
         : {}),
     }).toString();
     const path = `/api/ics?${q}`;
+    const inlinePath = `${path}${
+      path.includes("?") ? "&" : "?"
+    }disposition=inline`;
     try {
       window.localStorage.setItem("appleLinked", "1");
       setAppleLinked(true);
@@ -558,15 +615,25 @@ export default function Home() {
 
     // Apple handling:
     // - iOS: use plain https to import a single .ics (avoids subscription prompt)
-    // - macOS Safari: use webcal:// which opens Calendar and is fine on desktop
+    // - macOS (all browsers): use webcal:// to open the native Calendar app
     if (isIOS) {
-      window.location.href = path;
+      window.location.href = inlinePath;
       return;
     }
-    if (isMac && isSafari) {
+    if (isMac) {
       const absolute = `${window.location.origin}${path}`;
       const webcalUrl = absolute.replace(/^https?:\/\//i, "webcal://");
-      window.location.href = webcalUrl;
+      try {
+        window.location.href = webcalUrl;
+      } catch {}
+      // Fallback: if Calendar didn't open, revert to inline HTTPS after a short delay
+      try {
+        setTimeout(() => {
+          if (document.visibilityState === "visible") {
+            window.location.href = inlinePath;
+          }
+        }, 1500);
+      } catch {}
       return;
     }
 

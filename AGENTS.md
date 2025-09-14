@@ -87,8 +87,8 @@ curl -X POST \
 
 - **Purpose**: Generate an `.ics` file (invitation) from query params.
 - **Auth**: None.
-- **Input (query)**: `title`, `start` (ISO), `end` (ISO), `location`, `description`, `timezone` (IANA, default `America/Chicago`), optional `recurrence` (RRULE), optional `reminders` (comma-separated minutes).
-- **Output**: `text/calendar` (attachment `event.ics`).
+- **Input (query)**: `title`, `start` (ISO), `end` (ISO), `location`, `description`, `timezone` (IANA, default `America/Chicago`), optional `recurrence` (RRULE), optional `reminders` (comma-separated minutes), optional `disposition` (`inline`|`attachment`, default `attachment`).
+- **Output**: `text/calendar` (defaults to attachment `event.ics`; pass `disposition=inline` to encourage native Calendar opening on iOS/macOS).
 
 ### ICS Bulk — POST `/api/events/ics/bulk`
 
@@ -98,7 +98,7 @@ curl -X POST \
 - **Output**: `text/calendar` (attachment `events.ics`).
 
 ```bash
-curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2025-06-23T21:00:00Z&location=Home&timezone=America/Chicago"
+curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2025-06-23T21:00:00Z&location=Home&timezone=America/Chicago&disposition=inline"
 ```
 
 ### Google Events Agent (authenticated) — POST `/api/events/google`

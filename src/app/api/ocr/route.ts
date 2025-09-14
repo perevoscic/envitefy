@@ -266,8 +266,9 @@ function stripInvitePhrases(s: string): string {
 }
 
 // When the flyer has a standalone line "Join us for", enrich it with the
-// birthday person's name if the title contains a possessive (e.g., "Livia’s").
-function improveJoinUsFor(description: string, title: string): string {
+// birthday person's name if the title contains a possessive (e.g., "Livia’s"),
+// and append a short venue label (e.g., "at US Gold Gymnastics") when available.
+function improveJoinUsFor(description: string, title: string, location?: string): string {
   try {
     const lines = (description || "").split("\n").map((l) => l.trim()).filter(Boolean);
     const joinIdx = lines.findIndex((l) => /^join\s+us\s+for\s*$/i.test(l));
@@ -278,15 +279,144 @@ function improveJoinUsFor(description: string, title: string): string {
 
     const namePossessive = possessiveMatch[0];
     const nextIsBirthdayParty = !!lines[joinIdx + 1] && /\bbirthday\s*party\b/i.test(lines[joinIdx + 1]);
-    const replacement = `Join us for ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}`
+    // Try to pick a concise venue label either from provided location or nearby lines
+    const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Bar|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom)\b/i;
+    const timeToken = /\b\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?)\b/i;
+    let usedVenueIdx: number | null = null;
+    let venue: string = "";
+    // 1) From location/address argument
+    try {
+      const loc = cleanAddressLabel(String(location || "")).split(",")[0].trim();
+      if (loc && !/\d/.test(loc) && venueKeywords.test(loc)) venue = loc;
+    } catch {}
+    // 2) From nearby lines on the flyer description
+    if (!venue) {
+      const candidates: Array<{ idx: number; text: string }> = [];
+      const consider = (idx: number) => {
+        const s = lines[idx];
+        if (!s) return;
+        const t = cleanAddressLabel(s);
+        if (!t || /\d/.test(t) || timeToken.test(t)) return;
+        if (venueKeywords.test(t)) candidates.push({ idx, text: t });
+      };
+      // Prefer the line after "Birthday Party" if present, else immediate neighbors
+      if (nextIsBirthdayParty) consider(joinIdx + 2);
+      consider(joinIdx + 1);
+      consider(joinIdx + 3);
+      consider(joinIdx - 1);
+      if (candidates.length) {
+        const pick = candidates[0];
+        venue = pick.text;
+        usedVenueIdx = pick.idx;
+      }
+    }
+
+    const replacement = `Join us for ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}${venue ? ` at ${venue}` : ""}`
       .replace(/\s+/g, " ")
       .trim();
 
     lines[joinIdx] = replacement;
     if (nextIsBirthdayParty) lines.splice(joinIdx + 1, 1);
+    if (usedVenueIdx !== null) {
+      // Adjust for previous splice if we removed the Birthday Party line
+      const adjustedIdx = usedVenueIdx > joinIdx && nextIsBirthdayParty ? usedVenueIdx - 1 : usedVenueIdx;
+      if (adjustedIdx >= 0 && adjustedIdx < lines.length && lines[adjustedIdx] && /\b(birthday\s*party)\b/i.test(replacement)) {
+        // Remove the venue line we inlined to avoid duplication
+        lines.splice(adjustedIdx, 1);
+      }
+    }
     return lines.join("\n");
   } catch {
     return description;
+  }
+}
+
+// Rewrite birthday descriptions into a single friendly sentence via LLM.
+// Returns null on failure or when the feature is disabled (no OPENAI_API_KEY).
+async function llmRewriteBirthdayDescription(
+  title: string,
+  location: string,
+  description: string
+): Promise<string | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const system =
+    "You rewrite short event notes into one friendly invitation sentence for a calendar description. Output plain text only (no JSON), one sentence, under 160 characters.";
+  // Give the model explicit guidance so it standardizes the sentence while adapting to available fields
+  const user =
+    `TITLE: ${title || ""}\nLOCATION: ${location || ""}\nNOTES: ${description || ""}\n\n` +
+    "Task: If this event is a birthday party, write ONE human-friendly sentence using this template when possible: 'Please, join us for <Name>'s Birthday Party at <Location>'. " +
+    "Rules: If the location is missing, omit the 'at …' clause. Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json().catch(() => null);
+    const text = (j?.choices?.[0]?.message?.content || "").trim();
+    if (!text) return null;
+    return text.replace(/\s+/g, " ").trim();
+  } catch {
+    return null;
+  }
+}
+
+// Produce clean wedding title and description using the OCR text.
+// Returns null on failure; otherwise returns a tuple [title, description].
+async function llmRewriteWedding(
+  rawText: string,
+  title: string,
+  location: string
+): Promise<{ title: string; description: string } | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const system =
+    "You rewrite wedding invitation copy into a clean calendar title and a short, friendly description. Output strict JSON only.";
+  const user =
+    `OCR TEXT:\n${rawText}\n\n` +
+    "Task: Detect the couple's full names (proper case, not all caps) and write:\n" +
+    "- title: 'Wedding Celebration of <Name A> & <Name B>' (no date/time in title).\n" +
+    "- description: one or two sentences like: '<Name A> & <Name B> invite you to join their wedding celebration together with their parents <time phrase if present>. Dinner and dancing to follow' and, if a venue or address is available, append 'at <venue or address>' to the end.\n" +
+    "Rules: Use names from the text; keep casing normal (capitalize names only); do not repeat dates; prefer the natural time phrase from the text like 'at four o'clock in the afternoon' when it exists; maximum description 300 chars.\n" +
+    `KNOWN LOCATION (optional): ${location || ""}`;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json().catch(() => null);
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    const parsed = JSON.parse(text);
+    const t = String(parsed?.title || "").trim();
+    const d = String(parsed?.description || "").trim();
+    if (!t || !d) return null;
+    return { title: t.slice(0, 120), description: d.slice(0, 600) };
+  } catch {
+    return null;
   }
 }
 
@@ -880,7 +1010,26 @@ export async function POST(request: Request) {
     }
 
     // Enrich generic "Join us for" line with the birthday person's name from title
-    finalDescription = improveJoinUsFor(finalDescription, finalTitle);
+    finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
+
+    // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
+    if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
+      try {
+        const rewritten = await llmRewriteBirthdayDescription(finalTitle, finalAddress, finalDescription);
+        if (rewritten && rewritten.length >= 20) {
+          finalDescription = rewritten.slice(0, 300);
+        }
+      } catch {}
+    }
+
+    // If this looks like a wedding invite, produce a clean title and short human sentence
+    if (/(wedding|bride|groom|ceremony|reception)/i.test(raw) || /wedding/i.test(finalTitle)) {
+      try {
+        const wr = await llmRewriteWedding(raw, finalTitle, finalAddress);
+        if (wr?.title) finalTitle = wr.title;
+        if (wr?.description) finalDescription = wr.description;
+      } catch {}
+    }
 
     const descriptionHasTitle =
       (finalTitle || "").trim().length > 0 &&

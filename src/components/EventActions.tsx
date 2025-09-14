@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState, useEffect } from "react";
+import { extractFirstPhoneNumber } from "@/utils/phone";
 import { useSession } from "next-auth/react";
 
 type EventFields = {
@@ -73,10 +74,7 @@ export default function EventActions({
 
   const findPhone = (): string | null => {
     const text = `${event?.description || ""} ${event?.location || ""}`;
-    const m = text.match(/\+?\d[\d\s().-]{6,}\d/);
-    if (!m) return null;
-    const digits = m[0].replace(/[^\d+]/g, "");
-    return digits || null;
+    return extractFirstPhoneNumber(text);
   };
 
   const formatDateRange = (
