@@ -662,6 +662,7 @@ export async function POST(request: Request) {
     const rangeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     let start: Date | null = null;
     let end: Date | null = null;
+    let startHasClockTime = false; // track if a time-of-day is present
     let parsedText: string | null = null;
 
     // Prefer explicit medical Appointment Date/Time labels over DOB when detected
@@ -748,6 +749,7 @@ export async function POST(request: Request) {
       const cAny: any = c as any;
       const chosenHasExplicitDate = Boolean(cAny?.start?.knownValues?.month && cAny?.start?.knownValues?.day);
       const chosenHasExplicitTime = typeof cAny?.start?.knownValues?.hour === "number";
+      if (chosenHasExplicitTime) startHasClockTime = true;
       if (start && chosenHasExplicitDate && !chosenHasExplicitTime) {
         const timeOnly = byPreference.find((r: any) => {
           const kv = r?.start?.knownValues || {};
@@ -770,6 +772,7 @@ export async function POST(request: Request) {
             endMerged.setHours(tEnd.getHours(), tEnd.getMinutes(), 0, 0);
             end = endMerged;
           }
+          startHasClockTime = true;
         }
       }
     }
@@ -793,6 +796,7 @@ export async function POST(request: Request) {
         const merged = new Date(start);
         merged.setHours(hour24, spelled.minute, 0, 0);
         start = merged;
+        startHasClockTime = true;
       }
     }
     // If we detected explicit medical appointment Date/Time, prefer it over other parses
@@ -1096,6 +1100,48 @@ export async function POST(request: Request) {
       : [finalTitle, finalDescription].filter((s) => (s || "").trim().length > 0).join("\n\n");
 
     const inferredTZ = inferTimezoneFromAddress(finalAddress || raw);
+
+    // If we have a clock time and a target timezone different from the server
+    // zone, reinterpret the parsed time-of-day in that target timezone so the
+    // displayed local time matches the invite. This avoids cross-zone shifts
+    // (e.g., parsed in America/Chicago but event is in America/Los_Angeles → 5 PM becoming 3 PM).
+    const serverTZ = (() => {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; }
+    })();
+    const getOffsetMinutes = (date: Date, tz: string): number => {
+      try {
+        const dtf = new Intl.DateTimeFormat("en-US", {
+          timeZone: tz,
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+          hour12: false,
+        });
+        const parts = dtf.formatToParts(date);
+        const map: any = {};
+        for (const p of parts) map[p.type] = p.value;
+        const asUTC = Date.UTC(
+          Number(map.year), Number(map.month) - 1, Number(map.day),
+          Number(map.hour), Number(map.minute), Number(map.second)
+        );
+        // difference (ms) between the same instant expressed as UTC from the TZ clock
+        // and the actual UTC timestamp
+        return Math.round((asUTC - date.getTime()) / 60000);
+      } catch { return 0; }
+    };
+    const shiftToTimezone = (date: Date, targetTz: string): Date => {
+      if (!serverTZ || !targetTz || serverTZ === targetTz) return date;
+      try {
+        const serverOff = getOffsetMinutes(date, serverTZ);
+        const targetOff = getOffsetMinutes(date, targetTz);
+        const deltaMin = serverOff - targetOff; // add this many minutes
+        return new Date(date.getTime() + deltaMin * 60 * 1000);
+      } catch { return date; }
+    };
+
+    if (finalStart && inferredTZ && startHasClockTime) {
+      finalStart = shiftToTimezone(finalStart, inferredTZ);
+      if (finalEnd) finalEnd = shiftToTimezone(finalEnd, inferredTZ);
+    }
     const fieldsGuess = {
       title: finalTitle,
       start: finalStart?.toISOString() ?? null,
