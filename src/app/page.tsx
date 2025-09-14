@@ -289,10 +289,12 @@ export default function Home() {
           }`;
           // Lightweight keyword guess aligned with sidebar logic
           const s = blob.toLowerCase();
-          const guessed = /birthday|b-day|turns\s+\d+|party for/.test(s)
-            ? "Birthdays"
-            : /wedding|bridal|ceremony|reception/.test(s)
+          const hasWedding = /\b(wedding|bridal|ceremony|reception)\b/.test(s);
+          const hasBirthday = /\b(birthday\s*party|b-?day|turns\s+\d+|birthday)\b/.test(s);
+          const guessed = hasWedding && !hasBirthday
             ? "Weddings"
+            : hasBirthday && !hasWedding
+            ? "Birthdays"
             : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
             ? "Doctor Appointments"
             : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(

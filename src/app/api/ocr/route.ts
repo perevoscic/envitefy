@@ -1352,10 +1352,11 @@ export async function POST(request: Request) {
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
         if (hasAppt) return "Appointments";
-        // Birthday
-        if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
-        // Weddings
-        if (/(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText)) return "Weddings";
+        // Weddings / Birthdays — words-only detection. If both appear, do not prefer either.
+        const hasWedding = /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
+        const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
+        if (hasWedding && !hasBirthday) return "Weddings";
+        if (hasBirthday && !hasWedding) return "Birthdays";
         // Sports generic (fallback)
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";
@@ -1365,10 +1366,8 @@ export async function POST(request: Request) {
     };
 
     const intakeId: string | null = null;
-    // Prefer LLM-provided category when available
-    const category: string | null = (typeof llmImage?.category === "string" && llmImage.category.trim())
-      ? llmImage.category.trim()
-      : detectCategory(raw, schedule, fieldsGuess);
+    // Category is derived strictly from OCR text (words only); ignore any image-only LLM labels
+    const category: string | null = detectCategory(raw, schedule, fieldsGuess);
 
     try {
       const session = await getServerSession(authOptions);

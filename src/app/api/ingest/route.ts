@@ -64,15 +64,16 @@ export async function POST(request: Request) {
     const detectCategory = (fullText: string, sched: any): string | null => {
       try {
         // No special football handling
-        if (/(birthday|b-?day)/i.test(fullText)) return "Birthdays";
+        // Weddings/Birthdays — words-only; if both present, do not prefer either
+        const hasWedding = /(wedding|marriage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
+        const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
+        if (hasWedding && !hasBirthday) return "Weddings";
+        if (hasBirthday && !hasWedding) return "Birthdays";
         const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(fullText);
         const hasAppt = /(appointment|appt)/i.test(fullText);
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
         if (hasAppt) return "Appointments";
-        if (/(wedding|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText)) {
-          return "Weddings";
-        }
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";
         }
@@ -106,5 +107,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-
