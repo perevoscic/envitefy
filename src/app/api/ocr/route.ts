@@ -424,13 +424,13 @@ async function llmRewriteWedding(
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const system =
-    "You rewrite wedding invitation copy into a clean calendar title and a short, friendly description. Output strict JSON only.";
+    "You rewrite wedding invitation copy into a clean calendar title and a short description using ONLY facts present in the image text. Output strict JSON only.";
   const user =
     `OCR TEXT:\n${rawText}\n\n` +
     "Task: Detect the couple's full names (proper case, not all caps) and write:\n" +
     "- title: 'Wedding Celebration of <Name A> & <Name B>' (no date/time in title).\n" +
-    "- description: one or two sentences like: '<Name A> & <Name B> invite you to join their wedding celebration together with their parents <time phrase if present>. Dinner and dancing to follow' and, if a venue or address is available, append 'at <venue or address>' to the end.\n" +
-    "Rules: Use names from the text; keep casing normal (capitalize names only); do not repeat dates; prefer the natural time phrase from the text like 'at four o'clock in the afternoon' when it exists; maximum description 300 chars.\n" +
+    "- description: ONE concise sentence using only information explicitly present in the text: couple names, venue/address (if present), and time (only if present). Do not invent or add template phrases. Include 'together with their parents' ONLY if that exact phrase appears. If the time is numeric (e.g., 17:00 or 5:00 PM), use a compact 'at 5:00 PM' style; if a spelled-out phrase like 'five o'clock in the afternoon' appears verbatim, you may keep it as-is. If time is missing, omit it. Do not add filler like 'Dinner and dancing to follow'.\n" +
+    "Rules: Use names from the text; keep natural casing (capitalize names only); never fabricate details; maximum description 200 characters.\n" +
     `KNOWN LOCATION (optional): ${location || ""}`;
 
   try {
@@ -453,7 +453,12 @@ async function llmRewriteWedding(
     if (!text) return null;
     const parsed = JSON.parse(text);
     const t = String(parsed?.title || "").trim();
-    const d = String(parsed?.description || "").trim();
+    let d = String(parsed?.description || "").trim();
+    // Guard against templated hallucinations not in the original text
+    const rawLower = (rawText || "").toLowerCase();
+    if (!/parents?/i.test(rawLower)) {
+      d = d.replace(/\s*together with their parents\s*/i, " ").replace(/\s{2,}/g, " ").trim();
+    }
     if (!t || !d) return null;
     return { title: t.slice(0, 120), description: d.slice(0, 600) };
   } catch {
@@ -1068,7 +1073,17 @@ export async function POST(request: Request) {
       try {
         const wr = await llmRewriteWedding(raw, finalTitle, finalAddress);
         if (wr?.title) finalTitle = wr.title;
-        if (wr?.description) finalDescription = wr.description;
+        if (wr?.description) {
+          let desc = wr.description;
+          // If model produced a spelled-out phrase not present on the card, prefer numeric time if we have one
+          if (!/o['’]?clock/i.test(raw) && /o['’]?clock/i.test(desc) && finalStart instanceof Date) {
+            try {
+              const timeStr = new Date(finalStart).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+              desc = desc.replace(/at\s+[^,\n]*o['’]?clock[^,\n]*/i, `at ${timeStr}`);
+            } catch {}
+          }
+          finalDescription = desc;
+        }
       } catch {}
     }
 
