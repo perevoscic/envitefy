@@ -709,8 +709,9 @@ export default function SnapPage() {
   };
 
   const connectGoogle = () => {
+    // Always request consent to guarantee a refresh token the first time
     // If we already have an event, carry it through OAuth so the callback can create it
-    let url = "/api/google/auth";
+    let url = "/api/google/auth?consent=1";
     try {
       if (event) {
         const ready = buildSubmissionEvent(event);
@@ -729,7 +730,8 @@ export default function SnapPage() {
   };
 
   const connectOutlook = () => {
-    signIn("azure-ad", { callbackUrl: "/" } as any);
+    // Start our custom Microsoft OAuth flow (not NextAuth provider)
+    window.location.href = "/api/outlook/auth";
   };
 
   const closeAfter = (fn: () => void | Promise<void>) => {
