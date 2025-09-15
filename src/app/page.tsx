@@ -645,33 +645,15 @@ export default function Home() {
       setAppleLinked(true);
     } catch {}
     const ua = navigator.userAgent || "";
-    const isApple = /iPhone|iPad|iPod|Mac/i.test(ua);
     const isMac = /Macintosh|Mac OS X/i.test(ua);
     const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const isSafari =
-      /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
+    const isSafari = /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
 
     // Apple handling:
-    // - iOS: use plain https to import a single .ics (avoids subscription prompt)
-    // - macOS (all browsers): use webcal:// to open the native Calendar app
-    if (isIOS) {
+    // - iOS: use plain https inline import (avoids subscription prompt)
+    // - macOS Safari: also use inline import to avoid “Subscribe” prompt
+    if (isIOS || (isMac && isSafari)) {
       window.location.href = inlinePath;
-      return;
-    }
-    if (isMac) {
-      const absolute = `${window.location.origin}${path}`;
-      const webcalUrl = absolute.replace(/^https?:\/\//i, "webcal://");
-      try {
-        window.location.href = webcalUrl;
-      } catch {}
-      // Fallback: if Calendar didn't open, revert to inline HTTPS after a short delay
-      try {
-        setTimeout(() => {
-          if (document.visibilityState === "visible") {
-            window.location.href = inlinePath;
-          }
-        }, 1500);
-      } catch {}
       return;
     }
 
