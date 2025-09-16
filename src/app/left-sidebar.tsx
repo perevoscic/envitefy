@@ -1433,19 +1433,21 @@ export default function LeftSidebar() {
                     className="flex items-center gap-2"
                   >
                     <svg
+                      viewBox="0 0 16 16"
                       xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      fill="currentColor"
                       className="h-4 w-4"
                       aria-hidden="true"
                     >
-                      <rect x="3" y="7" width="18" height="14" rx="2" ry="2" />
-                      <path d="M16 7l-1.5-2h-5L8 7" />
-                      <circle cx="12" cy="14" r="3" />
+                      <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+                      <g strokeLinecap="round" strokeLinejoin="round"></g>
+                      <g id="SVGRepo_iconCarrier">
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M9.5 1.1l3.4 3.5.1.4v2h-1V6H8V2H3v11h4v1H2.5l-.5-.5v-12l.5-.5h6.7l.3.1zM9 2v3h2.9L9 2zm4 14h-1v-3H9v-1h3V9h1v3h3v1h-3v3z"
+                        ></path>
+                      </g>
                     </svg>
                     <span>New snap</span>
                   </Link>
