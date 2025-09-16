@@ -77,15 +77,62 @@ export default function AuthModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-transparent backdrop-blur-[3px] backdrop-saturate-125"
         onClick={onClose}
       />
-      <div className="relative w-full sm:w-[480px] max-w-[92vw] bg-surface text-foreground border border-border rounded-3xl p-5 sm:p-6 shadow-2xl auth-card-gradient">
+      {/* Wrapper creates a stacking context for a top-most close button */}
+      <div className="relative w-full sm:w-[480px] max-w-[92vw]">
+        {/* Card */}
+        <div className="relative bg-surface text-foreground border border-border rounded-3xl p-5 sm:p-6 shadow-2xl auth-card-gradient">
+          <div className="pt-2 pb-4 text-center">
+            <Image
+              src={Logo}
+              alt="Snap My Date"
+              height={60}
+              className="mx-auto rounded"
+            />
+            {mode === "login" ? (
+              <>
+                <p className="mt-3 text-base text-foreground/80">
+                  Welcome back to
+                </p>
+                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground text-shadow-soft">
+                  <span className="font-pacifico">Snap</span>
+                  <span> </span>
+                  <span className="font-montserrat font-semibold">My Date</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 text-base text-foreground/80">Join</p>
+                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground text-shadow-soft">
+                  <span className="font-pacifico">Snap</span>
+                  <span> </span>
+                  <span className="font-montserrat font-semibold">My Date</span>
+                </p>
+              </>
+            )}
+          </div>
+          {mode === "login" ? (
+            <LoginForm
+              onSuccess={onClose}
+              onSwitchMode={() => onModeChange?.("signup")}
+            />
+          ) : (
+            <SignupForm
+              onSuccess={onClose}
+              onSwitchMode={() => onModeChange?.("login")}
+            />
+          )}
+        </div>
+        {/* Close button sits above the card and avoids gradient/pseudo overlays */}
         <button
+          type="button"
           aria-label="Close"
           onClick={onClose}
-          className="!absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center justify-center h-8 w-8 rounded-2xl border border-border text-foreground/80 hover:text-foreground hover:bg-surface/70 z-10"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center justify-center h-10 w-10 rounded-2xl border border-border bg-surface/70 text-foreground/80 hover:text-foreground hover:bg-surface/90 shadow-sm z-20 pointer-events-auto touch-manipulation"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -102,46 +149,6 @@ export default function AuthModal({
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-        <div className="pt-2 pb-4 text-center">
-          <Image
-            src={Logo}
-            alt="Snap My Date"
-            height={60}
-            className="mx-auto rounded"
-          />
-          {mode === "login" ? (
-            <>
-              <p className="mt-3 text-base text-foreground/80">
-                Welcome back to
-              </p>
-              <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground text-shadow-soft">
-                <span className="font-pacifico">Snap</span>
-                <span> </span>
-                <span className="font-montserrat font-semibold">My Date</span>
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="mt-3 text-base text-foreground/80">Join</p>
-              <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground text-shadow-soft">
-                <span className="font-pacifico">Snap</span>
-                <span> </span>
-                <span className="font-montserrat font-semibold">My Date</span>
-              </p>
-            </>
-          )}
-        </div>
-        {mode === "login" ? (
-          <LoginForm
-            onSuccess={onClose}
-            onSwitchMode={() => onModeChange?.("signup")}
-          />
-        ) : (
-          <SignupForm
-            onSuccess={onClose}
-            onSwitchMode={() => onModeChange?.("login")}
-          />
-        )}
       </div>
     </div>
   );
