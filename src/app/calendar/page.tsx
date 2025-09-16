@@ -803,7 +803,7 @@ export default function CalendarPage() {
                       setOpenDay(null);
                       setOpenEvent(ev);
                     }}
-                    className={`w-full text-left rounded-md ${tone.tint} text-black px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                   >
                     <div className="flex flex-col">
                       <span className="truncate">{ev.title}</span>

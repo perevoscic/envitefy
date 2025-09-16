@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
+import EventEditModal from "@/components/EventEditModal";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -74,12 +76,23 @@ export default async function EventPage({
             Created {new Date(createdAt).toLocaleString()}
           </p>
         )}
-        {/* Actions moved to bottom */}
       </div>
 
       <section className="mt-6 space-y-3">
         <div>
-          <h2 className="text-sm font-semibold text-foreground/80">Details</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-sm font-semibold text-foreground/80">
+              Details
+            </h2>
+            <div className="flex items-center gap-2">
+              <EventEditModal
+                eventId={row.id}
+                eventData={data}
+                eventTitle={title}
+              />
+              <EventDeleteModal eventId={row.id} eventTitle={title} />
+            </div>
+          </div>
           <div className="mt-2 rounded border border-border p-3 bg-surface relative">
             {data?.thumbnail && (
               <ThumbnailModal
