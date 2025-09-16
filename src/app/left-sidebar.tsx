@@ -24,8 +24,8 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
-  const [resourcesOpenFloating, setResourcesOpenFloating] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpenFloating, setSettingsOpenFloating] = useState(false);
   const [itemMenuId, setItemMenuId] = useState<string | null>(null);
   const [itemMenuPos, setItemMenuPos] = useState<{
     left: number;
@@ -93,15 +93,15 @@ export default function LeftSidebar() {
         : false;
       if (!withinMenu && !withinButton) {
         setMenuOpen(false);
-        setResourcesOpen(false);
-        setResourcesOpenFloating(false);
+        setSettingsOpen(false);
+        setSettingsOpenFloating(false);
       }
     };
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMenuOpen(false);
-        setResourcesOpen(false);
-        setResourcesOpenFloating(false);
+        setSettingsOpen(false);
+        setSettingsOpenFloating(false);
       }
     };
     // Use capture phase so it still triggers if inner handlers stop propagation
@@ -156,8 +156,8 @@ export default function LeftSidebar() {
   // Always close menus on route change so navigation from a menu item hides the dropdowns.
   useEffect(() => {
     setMenuOpen(false);
-    setResourcesOpen(false);
-    setResourcesOpenFloating(false);
+    setSettingsOpen(false);
+    setSettingsOpenFloating(false);
     setItemMenuId(null);
     setItemMenuPos(null);
     setItemMenuCategoryOpenFor(null);
@@ -708,24 +708,8 @@ export default function LeftSidebar() {
     isDark: boolean;
     toggleTheme: () => void;
     onCloseMenu: () => void;
-    resourcesOpen: boolean;
-    toggleResources: () => void;
-    closeResources: () => void;
-    resourcesPanelClass: string;
-    chevronOpenClass: string;
-    chevronClosedClass: string;
   }) => {
-    const {
-      isDark,
-      toggleTheme,
-      onCloseMenu,
-      resourcesOpen,
-      toggleResources,
-      closeResources,
-      resourcesPanelClass,
-      chevronOpenClass,
-      chevronClosedClass,
-    } = props;
+    const { isDark, toggleTheme, onCloseMenu } = props;
     return (
       <div className="p-2">
         <Link
@@ -747,7 +731,7 @@ export default function LeftSidebar() {
             <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
           </svg>
-          <span className="text-sm">Profile settings</span>
+          <span className="text-sm">Settings</span>
         </Link>
 
         <Link
@@ -771,7 +755,7 @@ export default function LeftSidebar() {
             <line x1="7" y1="15" x2="7.01" y2="15" />
             <line x1="11" y1="15" x2="13" y2="15" />
           </svg>
-          <span className="text-sm">Subscription plan</span>
+          <span className="text-sm">Subscription</span>
         </Link>
 
         <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface">
@@ -848,122 +832,28 @@ export default function LeftSidebar() {
           </button>
         </div>
 
-        <div className="relative">
-          <button
-            type="button"
-            onClick={toggleResources}
-            className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+        <Link
+          href="/about"
+          onClick={onCloseMenu}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
           >
-            <div className="flex items-center gap-3">
-              <Image
-                src="https://static.thenounproject.com/png/privacy-settings-icon-1512233-512.png"
-                alt="Resources"
-                width={16}
-                height={16}
-                className="h-4 w-4 object-contain"
-                style={{
-                  filter: isDark ? "invert(1)" : "invert(0)",
-                }}
-              />
-              <span className="text-sm">Resources</span>
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`h-4 w-4 transition-transform ${
-                resourcesOpen ? chevronOpenClass : chevronClosedClass
-              }`}
-              aria-hidden="true"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-
-          {resourcesOpen && (
-            <div className={resourcesPanelClass}>
-              <Link
-                href="/about"
-                onClick={() => {
-                  onCloseMenu();
-                  closeResources();
-                }}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                <span className="text-sm">About us</span>
-              </Link>
-
-              <Link
-                href="/privacy"
-                onClick={() => {
-                  onCloseMenu();
-                  closeResources();
-                }}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="11" width="18" height="10" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <span className="text-sm">Privacy</span>
-              </Link>
-
-              <Link
-                href="/terms"
-                onClick={() => {
-                  onCloseMenu();
-                  closeResources();
-                }}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
-                  <path d="M14 2v6h6" />
-                </svg>
-                <span className="text-sm">Terms of use</span>
-              </Link>
-            </div>
-          )}
-        </div>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <span className="text-sm">About us</span>
+        </Link>
 
         <Link
           href="/contact"
@@ -1056,11 +946,16 @@ export default function LeftSidebar() {
             aria-label="Open profile menu"
             onClick={(e) => {
               e.stopPropagation();
-              setMenuOpen((v) => !v);
+              setMenuOpen((v) => {
+                const next = !v;
+                setSettingsOpen(false);
+                setSettingsOpenFloating(false);
+                return next;
+              });
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            className="inline-flex fixed bottom-3 left-3 z-[400] items-center justify-center h-10 w-10 rounded-full border border-border bg-surface/90 text-foreground/90 hover:bg-surface shadow"
+            className="inline-flex fixed bottom-3 left-3 z-[400] items-center justify-center h-10 w-10 rounded-full border border-border bg-surface/90 text-foreground/90 hover:bg-surface shadow-lg"
           >
             <span className="text-xs font-semibold select-none">
               {initials}
@@ -1074,54 +969,110 @@ export default function LeftSidebar() {
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="block fixed bottom-16 left-3 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
+              className="block fixed bottom-16 left-3 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
             >
               <div className="p-2">
-                <Link
-                  href="/settings"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpenFloating((v) => {
+                        const next = !v;
+                        return next;
+                      });
+                    }}
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                   >
-                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
-                  </svg>
-                  <span className="text-sm">Profile settings</span>
-                </Link>
+                    <div className="flex items-center gap-3">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
+                      </svg>
+                      <span className="text-sm">Settings</span>
+                    </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`h-4 w-4 transition-transform ${
+                        settingsOpenFloating ? "rotate-0" : "rotate-90"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
 
-                <Link
-                  href="/subscription"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                    <line x1="7" y1="15" x2="7.01" y2="15" />
-                    <line x1="11" y1="15" x2="13" y2="15" />
-                  </svg>
-                  <span className="text-sm">Subscription plan</span>
-                </Link>
+                  {settingsOpenFloating && (
+                    <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
+                      <Link
+                        href="/settings"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setSettingsOpenFloating(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="7" r="4" />
+                          <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+                        </svg>
+                        <span className="text-sm">Profile</span>
+                      </Link>
+
+                      <Link
+                        href="/subscription"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setSettingsOpenFloating(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+                          <line x1="2" y1="10" x2="22" y2="10" />
+                          <line x1="7" y1="15" x2="7.01" y2="15" />
+                          <line x1="11" y1="15" x2="13" y2="15" />
+                        </svg>
+                        <span className="text-sm">Subscription</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
                 <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface">
                   <div className="flex items-center gap-3">
@@ -1197,133 +1148,38 @@ export default function LeftSidebar() {
                   </button>
                 </div>
 
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setResourcesOpenFloating((v) => !v)}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                <Link
+                  href="/about"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setSettingsOpenFloating(false);
+                  }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
                   >
-                    <div className="flex items-center gap-3">
-                      <Image
-                        src="https://static.thenounproject.com/png/privacy-settings-icon-1512233-512.png"
-                        alt="Resources"
-                        width={16}
-                        height={16}
-                        className="h-4 w-4 object-contain"
-                        style={{
-                          filter: isDark ? "invert(1)" : "invert(0)",
-                        }}
-                      />
-                      <span className="text-sm">Resources</span>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`h-4 w-4 transition-transform ${
-                        resourcesOpenFloating ? "rotate-0" : "rotate-90"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-
-                  {resourcesOpenFloating && (
-                    <div className="hidden md:block absolute top-0 left-full ml-2 w-64 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2 z-[1100]">
-                      <Link
-                        href="/about"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          setResourcesOpenFloating(false);
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="16" x2="12" y2="12" />
-                          <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
-                        <span className="text-sm">About us</span>
-                      </Link>
-
-                      <Link
-                        href="/privacy"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          setResourcesOpenFloating(false);
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                        >
-                          <rect
-                            x="3"
-                            y="11"
-                            width="18"
-                            height="10"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        <span className="text-sm">Privacy</span>
-                      </Link>
-
-                      <Link
-                        href="/terms"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          setResourcesOpenFloating(false);
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                        >
-                          <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
-                          <path d="M14 2v6h6" />
-                        </svg>
-                        <span className="text-sm">Terms of use</span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span className="text-sm">About us</span>
+                </Link>
 
                 <Link
                   href="/contact"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setSettingsOpenFloating(false);
+                  }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                 >
                   <svg
@@ -2238,7 +2094,12 @@ export default function LeftSidebar() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setMenuOpen((v) => !v);
+              setMenuOpen((v) => {
+                const next = !v;
+                setSettingsOpen(false);
+                setSettingsOpenFloating(false);
+                return next;
+                });
               }}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
@@ -2278,54 +2139,110 @@ export default function LeftSidebar() {
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="absolute bottom-12 left-0 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg overflow-visible"
+                className="absolute bottom-12 left-0 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
               >
                 <div className="p-2">
-                  <Link
-                    href="/settings"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
+                  <div className="relative">
+                    <button
+                      type="button"
+                    onClick={() => {
+                      setSettingsOpen((v) => {
+                        const next = !v;
+                        return next;
+                      });
+                    }}
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                     >
-                      <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
-                    </svg>
-                    <span className="text-sm">Profile settings</span>
-                  </Link>
+                      <div className="flex items-center gap-3">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
+                        </svg>
+                        <span className="text-sm">Settings</span>
+                      </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-4 w-4 transition-transform ${
+                          settingsOpen ? "rotate-0" : "rotate-90"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
 
-                  <Link
-                    href="/subscription"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
-                      <line x1="2" y1="10" x2="22" y2="10" />
-                      <line x1="7" y1="15" x2="7.01" y2="15" />
-                      <line x1="11" y1="15" x2="13" y2="15" />
-                    </svg>
-                    <span className="text-sm">Subscription plan</span>
-                  </Link>
+                    {settingsOpen && (
+                      <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
+                        <Link
+                          href="/settings"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setSettingsOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="7" r="4" />
+                            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+                          </svg>
+                          <span className="text-sm">Profile</span>
+                        </Link>
+
+                        <Link
+                          href="/subscription"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setSettingsOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+                            <line x1="2" y1="10" x2="22" y2="10" />
+                            <line x1="7" y1="15" x2="7.01" y2="15" />
+                            <line x1="11" y1="15" x2="13" y2="15" />
+                          </svg>
+                          <span className="text-sm">Subscription</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface">
                     <div className="flex items-center gap-3">
@@ -2401,133 +2318,38 @@ export default function LeftSidebar() {
                     </button>
                   </div>
 
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setResourcesOpen((v) => !v)}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                  <Link
+                    href="/about"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setSettingsOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
                     >
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src="https://static.thenounproject.com/png/privacy-settings-icon-1512233-512.png"
-                          alt="Resources"
-                          width={16}
-                          height={16}
-                          className="h-4 w-4 object-contain"
-                          style={{
-                            filter: isDark ? "invert(1)" : "invert(0)",
-                          }}
-                        />
-                        <span className="text-sm">Resources</span>
-                      </div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`h-4 w-4 transition-transform ${
-                          resourcesOpen ? "rotate-0" : "rotate-90"
-                        }`}
-                        aria-hidden="true"
-                      >
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-
-                    {resourcesOpen && (
-                      <div className="absolute left-0 bottom-full mb-2 md:bottom-auto md:top-0 md:left-full md:ml-2 w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2 z-[1100]">
-                        <Link
-                          href="/about"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            setResourcesOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                          </svg>
-                          <span className="text-sm">About us</span>
-                        </Link>
-
-                        <Link
-                          href="/privacy"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            setResourcesOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <rect
-                              x="3"
-                              y="11"
-                              width="18"
-                              height="10"
-                              rx="2"
-                              ry="2"
-                            />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                          </svg>
-                          <span className="text-sm">Privacy</span>
-                        </Link>
-
-                        <Link
-                          href="/terms"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            setResourcesOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
-                            <path d="M14 2v6h6" />
-                          </svg>
-                          <span className="text-sm">Terms of use</span>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <span className="text-sm">About us</span>
+                  </Link>
 
                   <Link
                     href="/contact"
-                    onClick={() => setMenuOpen(false)}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setSettingsOpen(false);
+                    }}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                   >
                     <svg
