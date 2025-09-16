@@ -502,7 +502,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-[60vh] p-4 sm:p-6 pt-16 sm:pt-20">
+    <div className="min-h-[60vh] p-4 sm:p-6 pt-8 sm:pt-10">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -572,7 +572,7 @@ export default function CalendarPage() {
                   <div
                     key={date.toISOString()}
                     onClick={() => onDayClick(date)}
-                    className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[40px] sm:min-h-[48px] md:min-h-[56px] ${
+                    className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[32px] sm:min-h-[40px] md:min-h-[48px] ${
                       isCurrentMonth ? "" : "bg-foreground/[.02]"
                     }`}
                   >
@@ -607,9 +607,9 @@ export default function CalendarPage() {
                       )}
                     </div>
 
-                    {/* Desktop pills (limit to 3 items) */}
+                    {/* Desktop pills (limit to 2 items) */}
                     <div className="mt-2 hidden md:flex flex-col gap-1.5">
-                      {items.slice(0, 3).map((ev) => renderEventPill(ev))}
+                      {items.slice(0, 2).map((ev) => renderEventPill(ev))}
                     </div>
                   </div>
                 );
