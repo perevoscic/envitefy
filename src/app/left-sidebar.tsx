@@ -9,6 +9,15 @@ import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
 import Logo from "@/assets/logo.png";
 
+const CATEGORY_OPTIONS = [
+  "Birthdays",
+  "Weddings",
+  "Doctor Appointments",
+  "Appointments",
+  "Sport Events",
+  "General Events",
+] as const;
+
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
   const { theme, toggleTheme } = useTheme();
@@ -22,6 +31,9 @@ export default function LeftSidebar() {
     left: number;
     top: number;
   } | null>(null);
+  const [itemMenuCategoryOpenFor, setItemMenuCategoryOpenFor] = useState<
+    string | null
+  >(null);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
@@ -121,9 +133,14 @@ export default function LeftSidebar() {
       } catch {}
       setItemMenuId(null);
       setItemMenuPos(null);
+      setItemMenuCategoryOpenFor(null);
     };
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setItemMenuId(null);
+      if (e.key === "Escape") {
+        setItemMenuId(null);
+        setItemMenuPos(null);
+        setItemMenuCategoryOpenFor(null);
+      }
     };
     document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", onEsc);
@@ -140,6 +157,7 @@ export default function LeftSidebar() {
     setResourcesOpenFloating(false);
     setItemMenuId(null);
     setItemMenuPos(null);
+    setItemMenuCategoryOpenFor(null);
     // On small screens, auto-collapse the sidebar after navigation
     try {
       const isNarrow =
@@ -1788,6 +1806,7 @@ export default function LeftSidebar() {
                   const row = ccls.tint; // tint all categories, not just Birthdays
                   return { row, badge: ccls.badge };
                 })();
+                const categoryMenuOpen = itemMenuCategoryOpenFor === h.id;
                 return (
                   <div
                     key={h.id}
@@ -1837,6 +1856,7 @@ export default function LeftSidebar() {
                         if (itemMenuId === h.id) {
                           setItemMenuId(null);
                           setItemMenuPos(null);
+                          setItemMenuCategoryOpenFor(null);
                           return;
                         }
                         if (target) {
@@ -1846,6 +1866,7 @@ export default function LeftSidebar() {
                             top: Math.round(rect.top + rect.height / 2),
                           });
                         }
+                        setItemMenuCategoryOpenFor(null);
                         setItemMenuId(h.id);
                       }}
                       className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
@@ -1873,18 +1894,19 @@ export default function LeftSidebar() {
                             top: itemMenuPos.top,
                             transform: "translateY(-10%)",
                           }}
-                          className="z-[10000] w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
+                          className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
                         >
                           <button
                             type="button"
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              setItemMenuCategoryOpenFor(null);
                               setItemMenuId(null);
                               setItemMenuPos(null);
                               await shareHistoryItem(prettyHref);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1915,11 +1937,12 @@ export default function LeftSidebar() {
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              setItemMenuCategoryOpenFor(null);
                               setItemMenuId(null);
                               setItemMenuPos(null);
                               await renameHistoryItem(h.id, h.title);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1938,87 +1961,153 @@ export default function LeftSidebar() {
                             <span className="text-sm">Rename</span>
                           </button>
                           <div className="my-1 h-px bg-border" />
-                          {["Birthdays", "Weddings", "Doctor Appointments", "Appointments", "Sport Events", "General Events"].map(
-                            (label) => (
-                              <button
-                                key={label}
-                                type="button"
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setItemMenuId(null);
-                                  setItemMenuPos(null);
-                                  try {
-                                    await fetch(`/api/history/${h.id}`, {
-                                      method: "PATCH",
-                                      headers: { "content-type": "application/json" },
-                                      body: JSON.stringify({ category: label }),
-                                    });
-                                    setHistory((prev) =>
-                                      prev.map((r) =>
-                                        r.id === h.id
-                                          ? {
-                                              ...r,
-                                              data: {
-                                                ...(r.data || {}),
-                                                category: label,
-                                              },
-                                            }
-                                          : r
-                                      )
-                                    );
-                                    setCategoryColors((prev) => {
-                                      const next = { ...prev } as Record<
-                                        string,
-                                        string
-                                      >;
-                                      if (!next[label])
-                                        next[label] = defaultCategoryColor(label);
+                          <button
+                            type="button"
+                            aria-expanded={categoryMenuOpen}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setItemMenuCategoryOpenFor(
+                                categoryMenuOpen ? null : h.id
+                              );
+                            }}
+                            className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                          >
+                            <span className="inline-flex items-center gap-3">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M4 6h16" />
+                                <path d="M7 12h13" />
+                                <path d="M10 18h10" />
+                              </svg>
+                              <span className="text-sm">Change category</span>
+                            </span>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className={`h-3.5 w-3.5 transition-transform ${
+                                categoryMenuOpen ? "rotate-90" : ""
+                              }`}
+                              aria-hidden="true"
+                            >
+                              <path d="m9 6 6 6-6 6" />
+                            </svg>
+                          </button>
+                          {categoryMenuOpen && (
+                            <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5">
+                              {CATEGORY_OPTIONS.map((label) => {
+                                const isActive = category === label;
+                                return (
+                                  <button
+                                    key={label}
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setItemMenuCategoryOpenFor(null);
+                                      setItemMenuId(null);
+                                      setItemMenuPos(null);
                                       try {
-                                        localStorage.setItem(
-                                          "categoryColors",
-                                          JSON.stringify(next)
-                                        );
-                                        window.dispatchEvent(
-                                          new CustomEvent(
-                                            "categoryColorsUpdated",
-                                            { detail: next }
+                                        await fetch(`/api/history/${h.id}`, {
+                                          method: "PATCH",
+                                          headers: {
+                                            "content-type": "application/json",
+                                          },
+                                          body: JSON.stringify({
+                                            category: label,
+                                          }),
+                                        });
+                                        setHistory((prev) =>
+                                          prev.map((r) =>
+                                            r.id === h.id
+                                              ? {
+                                                  ...r,
+                                                  data: {
+                                                    ...(r.data || {}),
+                                                    category: label,
+                                                  },
+                                                }
+                                              : r
                                           )
                                         );
+                                        setCategoryColors((prev) => {
+                                          const next = {
+                                            ...prev,
+                                          } as Record<string, string>;
+                                          if (!next[label])
+                                            next[label] =
+                                              defaultCategoryColor(label);
+                                          try {
+                                            localStorage.setItem(
+                                              "categoryColors",
+                                              JSON.stringify(next)
+                                            );
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "categoryColorsUpdated",
+                                                { detail: next }
+                                              )
+                                            );
+                                          } catch {}
+                                          return next;
+                                        });
                                       } catch {}
-                                      return next;
-                                    });
-                                  } catch {}
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M20 6L9 17l-5-5" />
-                                </svg>
-                                <span className="text-sm">Mark as {label}</span>
-                              </button>
-                            )
+                                    }}
+                                    className={`flex w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                                      isActive
+                                        ? "bg-foreground/10 text-foreground"
+                                        : "text-foreground/80 hover:bg-foreground/10 hover:text-foreground"
+                                    }`}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className={`h-4 w-4 ${
+                                        isActive ? "" : "opacity-40"
+                                      }`}
+                                      aria-hidden="true"
+                                    >
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                    <span className="text-sm">
+                                      Mark as {label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
+                          <div className="my-1 h-px bg-border" />
                           <button
                             type="button"
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              setItemMenuCategoryOpenFor(null);
                               setItemMenuId(null);
                               setItemMenuPos(null);
                               await deleteHistoryItem(h.id, h.title);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-500/10"
+                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-500 hover:bg-red-500/10"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"

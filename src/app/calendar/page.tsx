@@ -478,7 +478,7 @@ export default function CalendarPage() {
           e.stopPropagation();
           setOpenEvent(ev);
         }}
-        className={`hidden md:flex flex-col rounded-md ${tone.tint} text-black px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+        className={`hidden md:flex flex-col rounded-md ${tone.tint} text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
         title={ev.title}
       >
         <span className="truncate max-w-[10rem]">{ev.title}</span>
@@ -572,11 +572,11 @@ export default function CalendarPage() {
                   <div
                     key={date.toISOString()}
                     onClick={() => onDayClick(date)}
-                    className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[46px] sm:min-h-[55px] md:min-h-[64px] ${
+                    className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[40px] sm:min-h-[48px] md:min-h-[56px] ${
                       isCurrentMonth ? "" : "bg-foreground/[.02]"
                     }`}
                   >
-                    <div className="flex items-center justify-start">
+                    <div className="flex items-center gap-2">
                       <div
                         className={`h-5 w-5 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[10px] ${
                           isToday
@@ -588,33 +588,28 @@ export default function CalendarPage() {
                       >
                         {date.getDate()}
                       </div>
-                    </div>
-
-                    {/* Event dots under the date */}
-                    <div className="mt-1 flex items-center gap-1">
-                      {items.slice(0, 8).map((ev) => renderEventDot(ev))}
-                      {items.length > 8 && (
-                        <span className="text-[10px] text-foreground/60">
-                          +{items.length - 8}
-                        </span>
+                      {items.length > 0 && (
+                        <div className="ml-1 flex items-center gap-1">
+                          {items.slice(0, 8).map((ev) => renderEventDot(ev))}
+                          {items.length > 8 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenDay({ date, items });
+                              }}
+                              className="text-[10px] text-foreground/60 hover:text-foreground/80"
+                            >
+                              +{items.length - 8}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    {/* Desktop pills (limit to 2 items) */}
+                    {/* Desktop pills (limit to 3 items) */}
                     <div className="mt-2 hidden md:flex flex-col gap-1.5">
-                      {items.slice(0, 2).map((ev) => renderEventPill(ev))}
-                      {items.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenDay({ date, items });
-                          }}
-                          className="text-[11px] text-left text-foreground/70 hover:text-foreground"
-                        >
-                          +{items.length - 2} more
-                        </button>
-                      )}
+                      {items.slice(0, 3).map((ev) => renderEventPill(ev))}
                     </div>
                   </div>
                 );
