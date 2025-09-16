@@ -103,8 +103,10 @@ export async function POST(req: NextRequest) {
             unit_amount: unitAmount,
             product_data: {
               name: `Snap My Date Gift (${period === "years" ? "Year" : "Month"})`,
-              description: `${quantity} ${period === "years" ? "year" : "month"}${quantity === 1 ? "" : "s"} of Snap My Date`.
-                trim(),
+              metadata: {
+                type: "gift",
+                period,
+              },
             },
           },
           quantity,
@@ -131,4 +133,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err?.message || "Failed to start gift checkout" }, { status: 500 });
   }
 }
-

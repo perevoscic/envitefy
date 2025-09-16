@@ -106,4 +106,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err?.message || "Failed to create checkout session" }, { status: 500 });
   }
 }
-

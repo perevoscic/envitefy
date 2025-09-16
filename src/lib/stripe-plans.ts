@@ -80,7 +80,6 @@ export async function ensureStripePriceForPlan(stripe: Stripe, plan: StripePlanI
     lookup_key: config.lookupKey,
     product_data: {
       name: config.name,
-      description: config.description,
       metadata: { plan },
     },
     metadata: { plan },
@@ -91,4 +90,3 @@ export async function ensureStripePriceForPlan(stripe: Stripe, plan: StripePlanI
 export function getGiftUnitAmount(period: "months" | "years"): number {
   return period === "years" ? STRIPE_PLAN_CONFIG.yearly.unitAmount : STRIPE_PLAN_CONFIG.monthly.unitAmount;
 }
-
