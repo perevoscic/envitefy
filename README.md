@@ -58,6 +58,12 @@ DATABASE_URL=postgresql://appuser:pass@host:5432/snapmydate
 PGSSL_DISABLE_VERIFY=true
 # or
 PGSSL_CA_BASE64=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+APP_URL=http://localhost:3000
 ```
 
 Tips:

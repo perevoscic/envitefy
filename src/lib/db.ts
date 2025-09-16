@@ -92,6 +92,15 @@ async function query<T extends QueryResultRow = QueryResultRow>(text: string, pa
   return withClient((client) => client.query<T>(text, params));
 }
 
+const USER_SELECT_COLUMNS = `
+  id, email, first_name, last_name, preferred_provider,
+  subscription_plan, subscription_expires_at,
+  ever_paid, credits,
+  stripe_customer_id, stripe_subscription_id, stripe_subscription_status,
+  stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end,
+  password_hash, created_at
+`;
+
 export type AppUserRow = {
   id: string;
   email: string;
@@ -99,8 +108,15 @@ export type AppUserRow = {
   last_name?: string | null;
   preferred_provider?: string | null;
   subscription_plan?: string | null;
+  subscription_expires_at?: string | null;
   ever_paid?: boolean | null;
   credits?: number | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  stripe_subscription_status?: string | null;
+  stripe_price_id?: string | null;
+  stripe_current_period_end?: string | null;
+  stripe_cancel_at_period_end?: boolean | null;
   password_hash: string;
   created_at?: string;
 };
@@ -108,7 +124,7 @@ export type AppUserRow = {
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `select id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at
+    `select ${USER_SELECT_COLUMNS}
      from users
      where email = $1
      limit 1`,
@@ -294,6 +310,18 @@ async function ensureUsersHasSubscriptionPlanColumn(): Promise<void> {
   await query(`alter table users add column if not exists subscription_plan varchar(32)`);
 }
 
+async function ensureUsersHasStripeBillingColumns(): Promise<void> {
+  await query(`
+    alter table users add column if not exists stripe_customer_id varchar(255);
+    alter table users add column if not exists stripe_subscription_id varchar(255);
+    alter table users add column if not exists stripe_subscription_status varchar(64);
+    alter table users add column if not exists stripe_price_id varchar(255);
+    alter table users add column if not exists stripe_current_period_end timestamptz(6);
+    alter table users add column if not exists stripe_cancel_at_period_end boolean;
+    alter table users alter column stripe_cancel_at_period_end set default false;
+  `);
+}
+
 export type SubscriptionPlan = "free" | "monthly" | "yearly";
 
 export async function getSubscriptionPlanByEmail(email: string): Promise<string | null> {
@@ -324,6 +352,126 @@ export async function updateSubscriptionPlanByEmail(params: {
   } else {
     await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
   }
+}
+
+function isoStringOrNull(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed.length) return null;
+    const d = new Date(trimmed);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString();
+  }
+  return null;
+}
+
+function buildUserWhereClause(
+  params: { userId?: string | null; email?: string | null },
+  startIndex: number
+): { clause: string; values: any[] } {
+  if (params.userId) {
+    return { clause: `id = $${startIndex}`, values: [params.userId] };
+  }
+  if (params.email) {
+    return { clause: `lower(email) = lower($${startIndex})`, values: [params.email] };
+  }
+  throw new Error("User identifier required");
+}
+
+export async function getUserByStripeCustomerId(customerId: string): Promise<AppUserRow | null> {
+  if (!customerId) return null;
+  await ensureUsersHasStripeBillingColumns();
+  const res = await query<AppUserRow>(
+    `select ${USER_SELECT_COLUMNS}
+     from users
+     where stripe_customer_id = $1
+     limit 1`,
+    [customerId]
+  );
+  return res.rows[0] || null;
+}
+
+export async function getUserByStripeSubscriptionId(subscriptionId: string): Promise<AppUserRow | null> {
+  if (!subscriptionId) return null;
+  await ensureUsersHasStripeBillingColumns();
+  const res = await query<AppUserRow>(
+    `select ${USER_SELECT_COLUMNS}
+     from users
+     where stripe_subscription_id = $1
+     limit 1`,
+    [subscriptionId]
+  );
+  return res.rows[0] || null;
+}
+
+type StripeStateUpdate = {
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeSubscriptionStatus?: string | null;
+  stripePriceId?: string | null;
+  stripeCurrentPeriodEnd?: string | Date | null;
+  stripeCancelAtPeriodEnd?: boolean | null;
+  subscriptionPlan?: SubscriptionPlan | null;
+  subscriptionExpiresAt?: string | Date | null;
+};
+
+export async function updateUserStripeState(
+  identifier: { userId?: string | null; email?: string | null },
+  updates: StripeStateUpdate
+): Promise<void> {
+  if (!identifier.userId && !identifier.email) {
+    throw new Error("updateUserStripeState requires a user identifier");
+  }
+  await ensureUsersHasStripeBillingColumns();
+  await ensureUsersHasSubscriptionPlanColumn();
+  await ensureUsersHasSubscriptionExpiresColumn();
+
+  const setParts: string[] = [];
+  const values: any[] = [];
+
+  const setField = (column: string, value: any) => {
+    setParts.push(`${column} = $${values.length + 1}`);
+    values.push(value);
+  };
+
+  if (Object.prototype.hasOwnProperty.call(updates, "stripeCustomerId")) {
+    setField("stripe_customer_id", updates.stripeCustomerId ?? null);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "stripeSubscriptionId")) {
+    setField("stripe_subscription_id", updates.stripeSubscriptionId ?? null);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "stripeSubscriptionStatus")) {
+    setField("stripe_subscription_status", updates.stripeSubscriptionStatus ?? null);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "stripePriceId")) {
+    setField("stripe_price_id", updates.stripePriceId ?? null);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "stripeCurrentPeriodEnd")) {
+    setField("stripe_current_period_end", isoStringOrNull(updates.stripeCurrentPeriodEnd));
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "stripeCancelAtPeriodEnd")) {
+    setField("stripe_cancel_at_period_end", updates.stripeCancelAtPeriodEnd ?? false);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "subscriptionPlan")) {
+    setField("subscription_plan", updates.subscriptionPlan ?? null);
+    if (updates.subscriptionPlan === "monthly" || updates.subscriptionPlan === "yearly") {
+      setParts.push("ever_paid = true");
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "subscriptionExpiresAt")) {
+    setField("subscription_expires_at", isoStringOrNull(updates.subscriptionExpiresAt));
+  }
+
+  if (setParts.length === 0) return;
+
+  const where = buildUserWhereClause(identifier, values.length + 1);
+  const sql = `update users set ${setParts.join(", ")} where ${where.clause}`;
+  await query(sql, [...values, ...where.values]);
 }
 
 // Free credits initialization for legacy users
@@ -390,6 +538,12 @@ export type PromoCodeRow = {
   expires_at?: string | null;
   redeemed_at?: string | null;
   redeemed_by_email?: string | null;
+  stripe_payment_intent_id?: string | null;
+  stripe_checkout_session_id?: string | null;
+  stripe_charge_id?: string | null;
+  stripe_refund_id?: string | null;
+  revoked_at?: string | null;
+  metadata?: any;
   created_at?: string | null;
 };
 
@@ -413,6 +567,10 @@ export async function createGiftPromoCode(params: {
   expiresAt?: Date | null;
   quantity?: number | null;
   period?: "months" | "years" | null;
+  stripePaymentIntentId?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  stripeChargeId?: string | null;
+  metadata?: Record<string, any> | null;
 }): Promise<PromoCodeRow> {
   const code = generatePromoCode(12);
   // Some databases may enforce NOT NULL on expires_at. Default to 90 days if not provided.
@@ -422,9 +580,9 @@ export async function createGiftPromoCode(params: {
     : new Date(Date.now() + defaultTtlMs);
 
   const res = await query<PromoCodeRow>(
-    `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-     returning id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, created_at`,
+    `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, metadata)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+     returning id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, stripe_refund_id, revoked_at, metadata, created_at`,
     [
       code,
       Math.max(0, Math.floor(params.amountCents || 0)),
@@ -436,6 +594,10 @@ export async function createGiftPromoCode(params: {
       params.quantity == null ? null : Math.max(0, Math.floor(params.quantity)),
       params.period || null,
       effectiveExpiresAt.toISOString(),
+      params.stripePaymentIntentId || null,
+      params.stripeCheckoutSessionId || null,
+      params.stripeChargeId || null,
+      params.metadata ? JSON.stringify(params.metadata) : null,
     ]
   );
 
@@ -460,7 +622,8 @@ export async function createGiftPromoCode(params: {
 
 export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | null> {
   const res = await query<PromoCodeRow>(
-    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, created_at
+    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email,
+            stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, stripe_refund_id, revoked_at, metadata, created_at
      from promo_codes where code = $1 limit 1`,
     [code]
   );
@@ -469,7 +632,8 @@ export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | n
 
 export async function listRecentPromoCodes(limit: number = 5): Promise<PromoCodeRow[]> {
   const res = await query<PromoCodeRow>(
-    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email, created_at
+    `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email,
+            stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, stripe_refund_id, revoked_at, metadata, created_at
      from promo_codes
      order by created_at desc
      limit $1`,
@@ -498,6 +662,227 @@ export async function markPromoCodeRedeemed(id: string, redeemedByEmail?: string
      where id = $1 and redeemed_at is null`,
     [id, redeemedByEmail || null]
   );
+}
+
+export async function revokePromoCodesByPaymentIntent(params: {
+  paymentIntentId: string;
+  refundId?: string | null;
+  metadata?: Record<string, any> | null;
+}): Promise<void> {
+  const metaJson = params.metadata ? JSON.stringify(params.metadata) : null;
+  await query(
+    `update promo_codes
+     set revoked_at = now(),
+         stripe_refund_id = coalesce($2, stripe_refund_id),
+         metadata = case when $3::text is not null then coalesce(metadata, '{}'::jsonb) || $3::jsonb else metadata end
+     where stripe_payment_intent_id = $1 and revoked_at is null`,
+    [params.paymentIntentId, params.refundId || null, metaJson]
+  );
+}
+
+export type GiftOrderRow = {
+  id: string;
+  stripe_checkout_session_id?: string | null;
+  stripe_payment_intent_id?: string | null;
+  stripe_customer_id?: string | null;
+  purchaser_email?: string | null;
+  purchaser_name?: string | null;
+  recipient_name?: string | null;
+  recipient_email?: string | null;
+  message?: string | null;
+  quantity: number;
+  period: string;
+  amount_cents: number;
+  currency: string;
+  status: string;
+  promo_code_id?: string | null;
+  metadata?: any;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export async function createGiftOrder(params: {
+  purchaserEmail?: string | null;
+  purchaserName?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  message?: string | null;
+  quantity: number;
+  period: "months" | "years";
+  amountCents: number;
+  currency?: string;
+  metadata?: Record<string, any> | null;
+}): Promise<GiftOrderRow> {
+  const res = await query<GiftOrderRow>(
+    `insert into gift_orders (purchaser_email, purchaser_name, recipient_name, recipient_email, message, quantity, period, amount_cents, currency, status, metadata)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10)
+     returning id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_customer_id, purchaser_email, purchaser_name,
+               recipient_name, recipient_email, message, quantity, period, amount_cents, currency, status, promo_code_id,
+               metadata, created_at, updated_at`,
+    [
+      params.purchaserEmail || null,
+      params.purchaserName || null,
+      params.recipientName || null,
+      params.recipientEmail || null,
+      params.message || null,
+      Math.max(1, Math.floor(params.quantity || 1)),
+      params.period,
+      Math.max(0, Math.floor(params.amountCents || 0)),
+      (params.currency || "USD").toUpperCase(),
+      params.metadata ? JSON.stringify(params.metadata) : null,
+    ]
+  );
+  return res.rows[0];
+}
+
+export async function updateGiftOrderStripeRefs(params: {
+  orderId: string;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+  stripeCustomerId?: string | null;
+  status?: string | null;
+  metadata?: Record<string, any> | null;
+}): Promise<void> {
+  const setParts: string[] = [];
+  const values: any[] = [];
+
+  const push = (column: string, value: any) => {
+    setParts.push(`${column} = $${values.length + 1}`);
+    values.push(value);
+  };
+
+  if (params.stripeCheckoutSessionId !== undefined) {
+    push("stripe_checkout_session_id", params.stripeCheckoutSessionId);
+  }
+  if (params.stripePaymentIntentId !== undefined) {
+    push("stripe_payment_intent_id", params.stripePaymentIntentId);
+  }
+  if (params.stripeCustomerId !== undefined) {
+    push("stripe_customer_id", params.stripeCustomerId);
+  }
+  if (params.status) {
+    push("status", params.status);
+  }
+  if (params.metadata) {
+    setParts.push(`metadata = coalesce(metadata, '{}'::jsonb) || $${values.length + 1}::jsonb`);
+    values.push(JSON.stringify(params.metadata));
+  }
+  if (!setParts.length) return;
+
+  setParts.push("updated_at = now()");
+  values.push(params.orderId);
+  await query(
+    `update gift_orders set ${setParts.join(", ")} where id = $${values.length}`,
+    values
+  );
+}
+
+export async function markGiftOrderStatus(params: {
+  orderId: string;
+  status: "pending" | "paid" | "fulfilled" | "failed" | "refunded";
+  stripePaymentIntentId?: string | null;
+  stripeChargeId?: string | null;
+  stripeRefundId?: string | null;
+  metadataMerge?: Record<string, any> | null;
+}): Promise<void> {
+  const setParts: string[] = ["status = $1", "updated_at = now()"]; // $1 reserved for status
+  const values: any[] = [params.status];
+
+  if (params.stripePaymentIntentId !== undefined) {
+    setParts.push(`stripe_payment_intent_id = $${values.length + 1}`);
+    values.push(params.stripePaymentIntentId);
+  }
+
+  const metadata: Record<string, any> = {};
+  if (params.stripeChargeId !== undefined && params.stripeChargeId !== null) {
+    metadata.chargeId = params.stripeChargeId;
+  }
+  if (params.stripeRefundId !== undefined && params.stripeRefundId !== null) {
+    metadata.refundId = params.stripeRefundId;
+  }
+  if (params.metadataMerge) {
+    Object.assign(metadata, params.metadataMerge);
+  }
+  if (Object.keys(metadata).length > 0) {
+    setParts.push(`metadata = coalesce(metadata, '{}'::jsonb) || $${values.length + 1}::jsonb`);
+    values.push(JSON.stringify(metadata));
+  }
+
+  values.push(params.orderId);
+  const sql = `update gift_orders set ${setParts.join(", ")} where id = $${values.length}`;
+  await query(sql, values);
+}
+
+export async function attachPromoCodeToGiftOrder(params: {
+  orderId: string;
+  promoCodeId: string;
+  status?: "fulfilled" | "paid";
+}): Promise<void> {
+  const setParts = ["promo_code_id = $1", "updated_at = now()"]; // $1 reserved
+  const values: any[] = [params.promoCodeId];
+  if (params.status) {
+    setParts.push(`status = $${values.length + 1}`);
+    values.push(params.status);
+  }
+  values.push(params.orderId);
+  await query(`update gift_orders set ${setParts.join(", ")} where id = $${values.length}`, values);
+}
+
+export async function getGiftOrderById(id: string): Promise<GiftOrderRow | null> {
+  const res = await query<GiftOrderRow>(
+    `select id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_customer_id, purchaser_email, purchaser_name,
+            recipient_name, recipient_email, message, quantity, period, amount_cents, currency, status, promo_code_id,
+            metadata, created_at, updated_at
+     from gift_orders
+     where id = $1
+     limit 1`,
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
+export async function getGiftOrderByCheckoutSessionId(sessionId: string): Promise<GiftOrderRow | null> {
+  if (!sessionId) return null;
+  const res = await query<GiftOrderRow>(
+    `select id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_customer_id, purchaser_email, purchaser_name,
+            recipient_name, recipient_email, message, quantity, period, amount_cents, currency, status, promo_code_id,
+            metadata, created_at, updated_at
+     from gift_orders
+     where stripe_checkout_session_id = $1
+     limit 1`,
+    [sessionId]
+  );
+  return res.rows[0] || null;
+}
+
+export async function getGiftOrderByPaymentIntentId(paymentIntentId: string): Promise<GiftOrderRow | null> {
+  if (!paymentIntentId) return null;
+  const res = await query<GiftOrderRow>(
+    `select id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_customer_id, purchaser_email, purchaser_name,
+            recipient_name, recipient_email, message, quantity, period, amount_cents, currency, status, promo_code_id,
+            metadata, created_at, updated_at
+     from gift_orders
+     where stripe_payment_intent_id = $1
+     limit 1`,
+    [paymentIntentId]
+  );
+  return res.rows[0] || null;
+}
+
+export async function recordStripeWebhookEvent(params: {
+  eventId: string;
+  type: string;
+  payload: any;
+}): Promise<boolean> {
+  if (!params.eventId) return false;
+  const res = await query<{ id: string }>(
+    `insert into stripe_webhook_events (event_id, type, payload)
+     values ($1, $2, $3)
+     on conflict (event_id) do nothing
+     returning id`,
+    [params.eventId, params.type, JSON.stringify(params.payload ?? {})]
+  );
+  return res.rowCount > 0;
 }
 
 // Subscription expiration helpers

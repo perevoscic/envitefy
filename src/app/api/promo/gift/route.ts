@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import Stripe from "stripe";
 import { authOptions } from "@/lib/auth";
-import { createGiftPromoCode } from "@/lib/db";
-import { sendGiftEmail } from "@/lib/email";
+import {
+  createGiftOrder,
+  updateGiftOrderStripeRefs,
+} from "@/lib/db";
+import { getAppBaseUrl, getStripeClient } from "@/lib/stripe";
+import { getGiftUnitAmount } from "@/lib/stripe-plans";
 
-// Pricing: $2.99/month or $29.99/year
-const PRICE_PER_MONTH_CENTS = 299;
-const PRICE_PER_YEAR_CENTS = 2999;
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const MONTHLY_PRICE_CENTS = getGiftUnitAmount("months");
+const YEARLY_PRICE_CENTS = getGiftUnitAmount("years");
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const email = session?.user?.email || null;
     const body = (await req.json().catch(() => ({}))) as any;
 
     const quantityRaw = Math.floor(Number(body?.quantity || 0));
@@ -21,75 +27,108 @@ export async function POST(req: NextRequest) {
     const recipientName = (body?.recipientName || "").toString().trim() || null;
     const recipientEmail = (body?.recipientEmail || "").toString().trim() || null;
     const message = (body?.message || "").toString().trim() || null;
-
-    const amountCents = period === "years"
-      ? quantity * PRICE_PER_YEAR_CENTS
-      : quantity * PRICE_PER_MONTH_CENTS;
+    const senderFirstName = (body?.senderFirstName || "").toString().trim();
+    const senderLastName = (body?.senderLastName || "").toString().trim();
+    const senderEmailRaw = (body?.senderEmail || "").toString().trim();
 
     if (recipientEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(recipientEmail)) {
       return NextResponse.json({ error: "Invalid recipient email" }, { status: 400 });
     }
 
-    const promo = await createGiftPromoCode({
-      amountCents,
-      currency: (body?.currency || "USD").toUpperCase(),
-      createdByEmail: email,
+    const isAuthed = Boolean(session?.user?.email);
+    let purchaserEmail = session?.user?.email || null;
+    let purchaserName = (session?.user?.name || "").trim();
+
+    if (!isAuthed) {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(senderEmailRaw)) {
+        return NextResponse.json({ error: "Valid sender email required" }, { status: 400 });
+      }
+      if (!senderFirstName || !senderLastName) {
+        return NextResponse.json({ error: "Sender first and last name required" }, { status: 400 });
+      }
+      purchaserEmail = senderEmailRaw;
+      purchaserName = `${senderFirstName} ${senderLastName}`.trim();
+    }
+
+    if (!message) {
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    const unitAmount = period === "years" ? YEARLY_PRICE_CENTS : MONTHLY_PRICE_CENTS;
+    const amountCents = unitAmount * quantity;
+    const stripe = getStripeClient();
+    const baseUrl = getAppBaseUrl(req.nextUrl?.origin);
+
+    const order = await createGiftOrder({
+      purchaserEmail,
+      purchaserName,
       recipientName,
       recipientEmail,
       message,
       quantity,
       period,
-      // Default expiry handled in DB helper; pass undefined to use default
-      expiresAt: undefined,
+      amountCents,
+      currency: "USD",
+      metadata: {
+        createdBy: session?.user?.email || null,
+        senderFirstName: senderFirstName || null,
+        senderLastName: senderLastName || null,
+      },
     });
 
-    // Delivery email (best-effort; don't fail the creation if email fails)
-    let emailSent = false;
-    let emailError: string | null = null;
-    if (recipientEmail) {
-      try {
-        await sendGiftEmail({
-          toEmail: recipientEmail,
-          recipientName,
-          fromEmail: email,
-          giftCode: promo.code,
-          quantity,
-          period,
-          message,
-        });
-        emailSent = true;
-      } catch (e) {
-        // Capture diagnostics but do not fail gift creation
-        try {
-          const err = e as any;
-          const details = [
-            err?.name && `name=${String(err.name)}`,
-            err?.message && `message=${String(err.message)}`,
-            err?.code && `code=${String(err.code)}`,
-            err?.$metadata?.httpStatusCode && `status=${String(err.$metadata.httpStatusCode)}`,
-          ]
-            .filter(Boolean)
-            .join(" ");
-          console.error("[promo/gift] sendGiftEmail failed:", details || e);
-          emailError = err?.message || "send failed";
-        } catch {
-          emailError = "send failed";
-        }
-      }
-    }
+    const metadata: Record<string, string> = {
+      type: "gift",
+      orderId: order.id,
+      quantity: String(quantity),
+      period,
+    };
+    if (recipientEmail) metadata.recipientEmail = recipientEmail;
+    if (purchaserEmail) metadata.purchaserEmail = purchaserEmail;
 
-    // Do not expose the gift code in the response; only email it to the recipient
-    const { code: _hidden, ...promoSansCode } = promo || {} as any;
-    const isProd = process.env.NODE_ENV === "production";
+    const checkout = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: purchaserEmail || undefined,
+      success_url: `${baseUrl}/subscription?checkout=gift-success&order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/subscription?checkout=gift-cancel&order=${order.id}`,
+      client_reference_id: order.id,
+      metadata,
+      payment_intent_data: {
+        metadata,
+        description: `Snap My Date gift (${quantity} ${period})`,
+      },
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: unitAmount,
+            product_data: {
+              name: `Snap My Date Gift (${period === "years" ? "Year" : "Month"})`,
+              description: `${quantity} ${period === "years" ? "year" : "month"}${quantity === 1 ? "" : "s"} of Snap My Date`.
+                trim(),
+            },
+          },
+          quantity,
+        },
+      ],
+    });
+
+    await updateGiftOrderStripeRefs({
+      orderId: order.id,
+      stripeCheckoutSessionId: checkout.id,
+      stripeCustomerId: typeof checkout.customer === "string" ? checkout.customer : null,
+    });
+
     return NextResponse.json({
       ok: true,
-      promo: promoSansCode,
-      emailSent,
-      ...(isProd ? {} : { emailError }),
+      orderId: order.id,
+      sessionId: checkout.id,
+      checkoutUrl: checkout.url,
+      amountCents,
+      currency: "USD",
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Failed to create gift code" }, { status: 500 });
+    console.error("[promo/gift] error", err);
+    return NextResponse.json({ error: err?.message || "Failed to start gift checkout" }, { status: 500 });
   }
 }
-
 

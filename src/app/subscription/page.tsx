@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GiftSnapModal from "@/components/GiftSnapModal";
 import RedeemPromoModal from "@/components/RedeemPromoModal";
@@ -18,12 +18,31 @@ export default function SubscriptionPage() {
   const [currentPlan, setCurrentPlan] = useState<
     "free" | "monthly" | "yearly" | null
   >(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
+    null
+  );
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(
+    null
+  );
+  const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<
+    string | null
+  >(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState<boolean>(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
+  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [banner, setBanner] = useState<
+    { type: "success" | "error" | "info"; message: string } | null
+  >(null);
+  const [pricing, setPricing] = useState<{ monthly: number; yearly: number }>(
+    { monthly: 299, yearly: 2999 }
+  );
 
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
@@ -31,17 +50,8 @@ export default function SubscriptionPage() {
     const normalized = ["free", "monthly", "yearly"].includes(plan)
       ? plan
       : null;
-    if (!normalized) return;
-    // Save and redirect home after applying preselected plan
-    fetch("/api/user/subscription", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: normalized }),
-      credentials: "include",
-    })
-      .then(() => router.replace("/"))
-      .catch(() => {});
-  }, [params, router]);
+    if (normalized) setSelectedPlan(normalized as any);
+  }, [params]);
 
   useEffect(() => {
     let ignore = false;
@@ -64,10 +74,27 @@ export default function SubscriptionPage() {
             setCurrentPlan("free");
             setSelectedPlan("free");
           }
+          setSubscriptionStatus(planJson?.stripeSubscriptionStatus || null);
+          setStripeCustomerId(planJson?.stripeCustomerId || null);
+          setCancelAtPeriodEnd(Boolean(planJson?.cancelAtPeriodEnd));
+          setCurrentPeriodEnd(planJson?.currentPeriodEnd || null);
+          setSubscriptionExpiresAt(planJson?.subscriptionExpiresAt || null);
+          if (planJson?.pricing) {
+            setPricing({
+              monthly: Number(planJson.pricing.monthly) || 299,
+              yearly: Number(planJson.pricing.yearly) || 2999,
+            });
+          }
         } else {
           // Unauthenticated: do not mark FREE as current; default to Monthly selection
           setCurrentPlan(null);
           setSelectedPlan("monthly");
+          setSubscriptionStatus(null);
+          setStripeCustomerId(null);
+          setStripeSubscriptionId(null);
+          setCancelAtPeriodEnd(false);
+          setCurrentPeriodEnd(null);
+          setSubscriptionExpiresAt(null);
         }
         if (typeof profileJson?.credits === "number")
           setCredits(profileJson.credits);
@@ -78,6 +105,66 @@ export default function SubscriptionPage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    const status = params?.get?.("checkout") ?? null;
+    if (!status) return;
+    let type: "success" | "error" | "info" | null = null;
+    let message: string | null = null;
+    if (status === "success") {
+      type = "success";
+      message = "Subscription confirmed. Thank you for supporting Snap My Date!";
+    } else if (status === "gift-success") {
+      type = "success";
+      message = "Gift purchase complete! We'll email the gift code shortly.";
+    } else if (status === "gift-cancel") {
+      type = "info";
+      message = "Gift checkout was canceled.";
+    } else if (status === "cancel") {
+      type = "info";
+      message = "Checkout canceled.";
+    } else if (status === "portal-return") {
+      type = "info";
+      message = "Returned from billing portal.";
+    }
+    if (type && message) setBanner({ type, message });
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("checkout");
+      url.searchParams.delete("order");
+      url.searchParams.delete("session_id");
+      router.replace(url.pathname + (url.search ? url.search : ""));
+    }
+  }, [params, router]);
+
+  const monthlyPrice = useMemo(() => (pricing.monthly / 100).toFixed(2), [pricing.monthly]);
+  const yearlyPrice = useMemo(() => (pricing.yearly / 100).toFixed(2), [pricing.yearly]);
+
+  const formattedRenewalDate = useMemo(() => {
+    const reference = currentPeriodEnd || subscriptionExpiresAt;
+    if (!reference) return null;
+    const date = new Date(reference);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [currentPeriodEnd, subscriptionExpiresAt]);
+
+  const hasActivePaidPlan = currentPlan === "monthly" || currentPlan === "yearly";
+  const buttonDisabled = loading || (isAuthed && selectedPlan === currentPlan);
+  const buttonLabel = useMemo(() => {
+    if (!isAuthed) return "Subscribe";
+    if (loading) return selectedPlan === "free" ? "Updating..." : "Redirecting...";
+    if (selectedPlan === "free") {
+      if (!hasActivePaidPlan) return currentPlan === "free" ? "Current plan" : "Select Free";
+      return cancelAtPeriodEnd ? "Cancellation scheduled" : "Downgrade to Free";
+    }
+    if (currentPlan === selectedPlan) return "Current plan";
+    if (hasActivePaidPlan && currentPlan && currentPlan !== selectedPlan) return "Switch Plan";
+    return "Subscribe";
+  }, [isAuthed, loading, selectedPlan, hasActivePaidPlan, cancelAtPeriodEnd, currentPlan]);
 
   return (
     <main className="p-10 max-w-4xl mx-auto">
@@ -98,6 +185,20 @@ export default function SubscriptionPage() {
       <h4 className="text-l text-muted-foreground mb-6 text-center">
         Your contribution helps keep the lights on and new features coming.
       </h4>
+
+      {banner && (
+        <div
+          className={`mx-auto mb-6 max-w-xl rounded-xl border px-4 py-3 text-sm transition ${
+            banner.type === "success"
+              ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+              : banner.type === "error"
+              ? "border-rose-400 bg-rose-50 text-rose-700"
+              : "border-slate-300 bg-slate-50 text-slate-700"
+          }`}
+        >
+          {banner.message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
@@ -191,7 +292,7 @@ export default function SubscriptionPage() {
               </div>
             </div>
             <div className="text-right sm:text-center sm:mt-1">
-              <div className="text-3xl font-semibold">$2.99</div>
+              <div className="text-3xl font-semibold">${monthlyPrice}</div>
               <div className="text-xs text-muted-foreground">per month</div>
             </div>
           </div>
@@ -231,7 +332,7 @@ export default function SubscriptionPage() {
               <div className="text-xs text-muted-foreground">One payment</div>
             </div>
             <div className="text-right sm:text-center sm:mt-1">
-              <div className="text-3xl font-semibold">$29.99</div>
+              <div className="text-3xl font-semibold">${yearlyPrice}</div>
               <div className="text-xs text-muted-foreground">2 FREE Months</div>
             </div>
           </div>
@@ -242,36 +343,126 @@ export default function SubscriptionPage() {
           )}
         </div>
       </div>
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
         <button
           type="button"
           className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow select-none"
           onClick={async () => {
-            if (!isAuthed) {
-              setAuthMode("signup");
-              setAuthOpen(true);
-              return;
+          if (!isAuthed) {
+            setAuthMode("signup");
+            setAuthOpen(true);
+            return;
+          }
+          if (loading) return;
+          if (selectedPlan === "free") {
+            if (!hasActivePaidPlan) return;
+            try {
+              setLoading(true);
+              const res = await fetch("/api/user/subscription", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ plan: "free" }),
+              });
+              const json = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                throw new Error(json?.error || "Failed to update subscription");
+              }
+              const newCancelState = Boolean(json?.cancelAtPeriodEnd);
+              setCancelAtPeriodEnd(newCancelState);
+              if (json?.plan) setCurrentPlan(json.plan);
+              setBanner({
+                type: "info",
+                message: newCancelState
+                  ? "We'll cancel your subscription at the end of the current period."
+                  : "Subscription canceled.",
+              });
+              router.refresh();
+            } catch (err: any) {
+              setBanner({
+                type: "error",
+                message: err?.message || "Failed to update subscription",
+              });
+            } finally {
+              setLoading(false);
             }
-            if (currentPlan && selectedPlan === currentPlan) return;
-            await fetch("/api/user/subscription", {
-              method: "PUT",
+            return;
+          }
+          if (isAuthed && selectedPlan === currentPlan) return;
+          try {
+            setLoading(true);
+            const res = await fetch("/api/billing/stripe/checkout", {
+              method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ plan: selectedPlan }),
-              credentials: "include",
             });
-            router.replace("/");
-          }}
-          disabled={isAuthed && !!currentPlan && selectedPlan === currentPlan}
-        >
-          {!isAuthed
-            ? "Subscribe"
-            : currentPlan && selectedPlan === currentPlan
-            ? "Current plan"
-            : selectedPlan === "free"
-            ? "Select Free"
-            : "Upgrade"}
-        </button>
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok || !json?.url) {
+              throw new Error(json?.error || "Failed to start checkout");
+            }
+            if (typeof window !== "undefined") {
+              window.location.href = json.url as string;
+            }
+          } catch (err: any) {
+            setLoading(false);
+            setBanner({
+              type: "error",
+              message: err?.message || "Failed to start checkout",
+            });
+          }
+        }}
+        disabled={buttonDisabled}
+      >
+        {buttonLabel}
+      </button>
+        {isAuthed && stripeCustomerId && (
+          <button
+            type="button"
+            className="px-6 py-2 rounded-2xl border border-border bg-surface text-foreground hover:bg-surface/80 transition select-none disabled:opacity-60"
+            onClick={async () => {
+              if (portalLoading) return;
+              try {
+                setPortalLoading(true);
+                const res = await fetch("/api/billing/stripe/portal", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || !json?.url) {
+                  throw new Error(json?.error || "Billing portal unavailable");
+                }
+                if (typeof window !== "undefined") {
+                  window.location.href = json.url as string;
+                }
+              } catch (err: any) {
+                setBanner({
+                  type: "error",
+                  message: err?.message || "Failed to open billing portal",
+                });
+                setPortalLoading(false);
+              }
+            }}
+            disabled={portalLoading}
+          >
+            {portalLoading ? "Opening..." : "Manage Billing"}
+          </button>
+        )}
       </div>
+      {hasActivePaidPlan && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          {cancelAtPeriodEnd
+            ? formattedRenewalDate
+              ? `Scheduled to end on ${formattedRenewalDate}.`
+              : "Cancellation scheduled at the end of the current period."
+            : formattedRenewalDate
+            ? `Next renewal on ${formattedRenewalDate}.`
+            : "Subscription renews automatically."}
+        </div>
+      )}
+      {subscriptionStatus && (
+        <div className="mt-1 text-center text-[11px] uppercase tracking-wide text-muted-foreground">
+          Status: {subscriptionStatus.replace(/_/g, " ")}
+        </div>
+      )}
       <div className="mt-12 max-w-xl mx-auto w-full">
         <div className="rounded-xl bg-surface p-5 shadow-md">
           <div className="flex items-center justify-center flex-wrap gap-3">

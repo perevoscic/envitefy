@@ -112,14 +112,6 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
     setSubmitting(true);
     setResult(null);
     try {
-      let finalMessage = message.trim();
-      if (!isAuthed) {
-        const fromFull =
-          `${senderFirstName}`.trim() +
-          (senderLastName.trim() ? ` ${senderLastName.trim()}` : "");
-        const fromLine = `From: ${fromFull} <${senderEmail.trim()}>`;
-        finalMessage = `${finalMessage}\n\n${fromLine}`;
-      }
       const res = await fetch("/api/promo/gift", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,34 +120,21 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
           period: "months",
           recipientName: fullName,
           recipientEmail: email.trim(),
-          message: finalMessage,
+          message: message.trim(),
+          senderFirstName: senderFirstName.trim() || null,
+          senderLastName: senderLastName.trim() || null,
+          senderEmail: senderEmail.trim() || null,
         }),
-        credentials: "include",
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setResult(json?.error || "Failed to create gift");
-      } else {
-        const emailSent = !!json?.emailSent;
-        const emailError: string | null | undefined = json?.emailError;
-        setSuccess(true);
-        setSuccessMsg(
-          emailSent
-            ? "Gift sent! The promo code was emailed to the recipient."
-            : emailError
-            ? `Gift created, but email failed: ${emailError}`
-            : "Gift created, but email delivery failed. Please try again later."
-        );
-        if (emailSent) {
-          // Auto-close shortly after showing success state
-          setTimeout(() => {
-            handleClose();
-          }, 1400);
-        }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.checkoutUrl) {
+        throw new Error(json?.error || "Failed to start checkout");
+      }
+      if (typeof window !== "undefined") {
+        window.location.href = json.checkoutUrl as string;
       }
     } catch (err: any) {
-      setResult("Network error. Please try again.");
-    } finally {
+      setResult(err?.message || "Failed to start checkout");
       setSubmitting(false);
     }
   };

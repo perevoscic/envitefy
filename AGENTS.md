@@ -12,13 +12,13 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### Promo Gift Agent — POST `/api/promo/gift`
 
-- **Purpose**: Generate a promo code (gift) for selected plan duration; sends a delivery email to the recipient via SES. The promo code is only delivered via email and is not returned in the API response.
-- **Auth**: Optional (reads NextAuth session to attribute creator email).
-- **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message?: string }`.
-- **Pricing**: Server computes cents using $2.99/month and $29.99/year per unit.
-- **Output**: `{ ok: true, promo: { amount_cents, currency, quantity, period, ... }, emailSent: boolean }` (code omitted by design). In non-production, response also includes `{ emailError?: string }` for diagnostics when SES delivery fails.
-- **Env**: `DATABASE_URL`, `SES_FROM_EMAIL_GIFT`, and AWS creds/region for SES (`AWS_REGION` or `AWS_DEFAULT_REGION`, and standard AWS credentials). Ensure the `SES_FROM_EMAIL_GIFT` identity/domain is verified in the configured region and credentials have `ses:SendEmail` permission.
-  - From address policy: Gift emails always send From `SES_FROM_EMAIL_GIFT` (no fallbacks). The requester's email is used only as Reply-To when available.
+- **Purpose**: Initiate a Stripe Checkout session for gifting subscriptions. The promo code is created and emailed only after payment succeeds (via webhook). UI now redirects the purchaser to Stripe.
+- **Auth**: Optional (reads NextAuth session to prefill purchaser email/name).
+- **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message: string, senderFirstName?: string, senderLastName?: string, senderEmail?: string }`. Non-authenticated purchasers must supply the sender fields.
+- **Pricing**: Server computes cents using Stripe plan pricing (defaults: $2.99/month, $29.99/year). `quantity` multiplies the unit amount.
+- **Output**: `{ ok: true, orderId, sessionId, checkoutUrl, amountCents, currency }`. Clients must redirect the browser to `checkoutUrl` to complete payment.
+- **Fulfillment**: Webhook `payment_intent.succeeded` issues the promo code, attaches it to the `gift_orders` row, and sends the SES email. Refunds revoke the code.
+- **Env**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `APP_URL`, plus `DATABASE_URL`, `SES_FROM_EMAIL_GIFT`, and AWS credentials/region for SES (`AWS_REGION` or `AWS_DEFAULT_REGION`, and standard AWS credentials). Gift emails still send from `SES_FROM_EMAIL_GIFT`; purchaser email is used for Reply-To when provided.
 
 ### Promo Redeem Agent — POST `/api/promo/redeem`
 
@@ -27,6 +27,30 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Input (JSON)**: `{ code: string }`.
 - **Behavior**: Validates code (exists, not expired/redeemed). Converts gift to months using `quantity+period` or amount fallback, extends `users.subscription_expires_at`, and marks code redeemed by the user's email.
 - **Output**: `{ ok: true, months }` or `{ error }`.
+- **Revocation**: Codes flagged as refunded (`revoked_at` set) return `{ error: "Code is no longer valid" }`.
+
+### Stripe Checkout Agent — POST `/api/billing/stripe/checkout`
+
+- **Purpose**: Create a Stripe Checkout session for upgrading to the paid monthly or yearly plan.
+- **Auth**: NextAuth session required.
+- **Input (JSON)**: `{ plan: "monthly" | "yearly" }`.
+- **Behavior**: Ensures the user has a Stripe customer record, provisions or reuses the price (lookup keys `snap-my-date-monthly` / `snap-my-date-yearly`), and returns the hosted checkout URL. Active subscriptions short-circuit with HTTP 409.
+- **Output**: `{ ok: true, sessionId, url }`.
+- **Env**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `APP_URL`.
+
+### Stripe Billing Portal — POST `/api/billing/stripe/portal`
+
+- **Purpose**: Generate a Stripe Billing Portal session so users can update payment methods or cancel directly with Stripe.
+- **Auth**: NextAuth session required and `stripe_customer_id` must exist.
+- **Input**: none.
+- **Output**: `{ ok: true, url }`.
+- **Env**: Same as checkout (Stripe keys + `APP_URL`).
+
+### Stripe Webhook — POST `/api/stripe/webhook`
+
+- **Purpose**: Receive Stripe events (`checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`, `invoice.paid`, `customer.subscription.deleted`).
+- **Behavior**: Stores each event in `stripe_webhook_events` for idempotency, syncs user subscription state, fulfills gift orders (creates promo codes + sends emails), and revokes gifts on refund.
+- **Env**: `STRIPE_WEBHOOK_SECRET` (plus Stripe secret). Route expects raw body (`req.text()`); ensure webhook endpoint in Stripe Dashboard uses the same secret.
 
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
 
@@ -254,9 +278,10 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Read or set the user's subscription plan.
 - **Auth**: NextAuth session required.
-- **GET Output**: `{ plan: "free"|"monthly"|"yearly"|null }`.
-- **PUT Input (JSON)**: `{ plan: "free"|"monthly"|"yearly"|null }`.
-- **PUT Output**: `{ ok: true, plan }`.
+- **GET Output**: `{ plan, stripeSubscriptionStatus, stripeSubscriptionId, stripeCustomerId, stripePriceId, currentPeriodEnd, subscriptionExpiresAt, cancelAtPeriodEnd, pricing: { monthly, yearly } }`.
+- **PUT Input (JSON)**: `{ plan: "free"|null, cancelAtPeriodEnd?: boolean }`. Only downgrades/cancellations are handled here; upgrades must go through Stripe checkout.
+- **PUT Behavior**: Cancels the active Stripe subscription (default `cancel_at_period_end=true`). Response mirrors new `plan` and `cancelAtPeriodEnd` state.
+- **PUT Output**: `{ ok: true, plan, cancelAtPeriodEnd }` or `{ error }`.
 
 ### Debug: NextAuth/Env — GET `/api/debug`
 
@@ -344,6 +369,11 @@ Payload used by the authenticated calendar agents.
   - `SES_FROM_EMAIL_GIFT` e.g. `"Snap My Date Gifts" <gift@snapmydate.com>` (gift delivery emails)
   - `SES_FROM_EMAIL_CONTACT` e.g. `"Snap My Date Support" <contact@snapmydate.com>` (reserved for contact replies)
   - Region: `AWS_REGION` or `AWS_DEFAULT_REGION` and standard AWS credentials
+- **Stripe**
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_WEBHOOK_SECRET`
+  - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+  - `APP_URL` (external base URL used for success/cancel redirects)
 - **Postgres (token and user storage)**
   - `DATABASE_URL` e.g. `postgresql://appuser:pass@host:5432/snapmydate`.
   - SSL configuration: do one of the following (not both):
@@ -369,15 +399,15 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
-- 2025-08-28: Added Forgot/Reset password agents; created `password_resets` table; non-prod returns resetUrl for testing.
-- 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
-- 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
-- 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
-
+- 2025-09-16: Integrated Stripe billing. Added `/api/billing/stripe/checkout`, `/api/billing/stripe/portal`, and `/api/stripe/webhook`; promo gifts now initiate checkout sessions and are fulfilled post-payment. Documented new Stripe env vars and database tables (`gift_orders`, `stripe_webhook_events`, Stripe columns on `users`/`promo_codes`).
 - 2025-09-10: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).
 - 2025-09-11: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.
 - 2025-09-13: Promo Gift Agent no longer returns gift code in response; code is email-only and UI shows in-modal success with auto-close.
 - 2025-09-13: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.
-- 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing. Also switched event times to be preserved as typed (floating) with no cross‑timezone adjustment; ICS supports `floating=1`.
-- 2025-09-14: OCR/ingest: Category detection is words-only (from OCR text). Removed any image-only category influence. If wedding and birthday keywords both appear, neither is preferred (category left unset). Tightened birthday matching (e.g., 'birthday party', 'b‑day', 'turns 5').
-- 2025-09-14: History PATCH now supports updating `data` (shallow merge) or just `category` to fix miscategorized rows post‑creation. Left sidebar adds quick "Mark as <Category>" to re-sync colors.
+- 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing. Also switched event times to be preserved as typed (floating) with no cross-timezone adjustment; ICS supports `floating=1`.
+- 2025-09-14: OCR/ingest: Category detection is words-only (from OCR text). Removed any image-only category influence. If wedding and birthday keywords both appear, neither is preferred (category left unset). Tightened birthday matching (e.g., 'birthday party', 'b-day', 'turns 5').
+- 2025-09-14: History PATCH now supports updating `data` (shallow merge) or just `category` to fix miscategorized rows post-creation. Left sidebar adds quick "Mark as <Category>" to re-sync colors.
+- 2025-08-28: Added Forgot/Reset password agents; created `password_resets` table; non-prod returns resetUrl for testing.
+- 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
+- 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
+- 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.

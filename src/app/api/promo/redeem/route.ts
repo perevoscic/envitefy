@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     const existing = await getPromoCodeByCode(raw);
     if (!existing) return NextResponse.json({ error: "Code not found" }, { status: 404 });
     if (existing.redeemed_at) return NextResponse.json({ error: "Code already redeemed" }, { status: 400 });
+    if (existing.revoked_at) return NextResponse.json({ error: "Code is no longer valid" }, { status: 400 });
     if (existing.expires_at && new Date(existing.expires_at).getTime() < Date.now()) {
       return NextResponse.json({ error: "Code expired" }, { status: 400 });
     }
