@@ -12,7 +12,7 @@ import Logo from "@/assets/logo.png";
 const CATEGORY_OPTIONS = [
   "Birthdays",
   "Weddings",
-  "Doctor Appointments",
+  "DR Appointments",
   "Appointments",
   "Sport Events",
   "General Events",
@@ -31,6 +31,7 @@ export default function LeftSidebar() {
     left: number;
     top: number;
   } | null>(null);
+  const [itemMenuOpensUpward, setItemMenuOpensUpward] = useState(false);
   const [itemMenuCategoryOpenFor, setItemMenuCategoryOpenFor] = useState<
     string | null
   >(null);
@@ -132,12 +133,14 @@ export default function LeftSidebar() {
         }
       } catch {}
       setItemMenuId(null);
+      setItemMenuOpensUpward(false);
       setItemMenuPos(null);
       setItemMenuCategoryOpenFor(null);
     };
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setItemMenuId(null);
+        setItemMenuOpensUpward(false);
         setItemMenuPos(null);
         setItemMenuCategoryOpenFor(null);
       }
@@ -1589,9 +1592,11 @@ export default function LeftSidebar() {
                                 prev === c ? null : c
                               );
                             }}
-                            className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${buttonClass(
-                              c
-                            )}`}
+                            className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
+                              activeCategory === c
+                                ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
+                                : ""
+                            } ${buttonClass(c)}`}
                             aria-pressed={activeCategory === c}
                             title={c}
                           >
@@ -1845,8 +1850,10 @@ export default function LeftSidebar() {
               })()}
             </div>
             <div className="border-t border-border mx-2 my-3" />
-            <div className="px-2 text-xs uppercase tracking-wide text-foreground/60">
-              Recent Snapped
+            <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50 pb-1 mb-2">
+              <div className="px-2 py-1 text-xs uppercase tracking-wide text-foreground/60">
+                Recent Snapped
+              </div>
             </div>
             <nav className="space-y-1">
               {history.length === 0 && (
@@ -1923,15 +1930,28 @@ export default function LeftSidebar() {
                         const target = e.currentTarget as HTMLElement | null;
                         if (itemMenuId === h.id) {
                           setItemMenuId(null);
+                          setItemMenuOpensUpward(false);
                           setItemMenuPos(null);
+                          setItemMenuOpensUpward(false);
                           setItemMenuCategoryOpenFor(null);
                           return;
                         }
                         if (target) {
                           const rect = target.getBoundingClientRect();
+                          const viewportHeight = window.innerHeight;
+                          const menuHeight = 280; // Increased height for expanded menu with categories
+                          const spaceBelow = viewportHeight - rect.top;
+                          const spaceAbove = rect.top;
+
+                          // Open upward if there's not enough space below (with buffer) or if we're in bottom half of screen
+                          const shouldOpenUpward = spaceBelow < menuHeight + 50; // Only open upward if not enough space below
+                          setItemMenuOpensUpward(shouldOpenUpward);
+
                           setItemMenuPos({
                             left: Math.round(rect.right + 8),
-                            top: Math.round(rect.top + rect.height / 2),
+                            top: shouldOpenUpward
+                              ? Math.round(rect.top - 10) // Just 10px above the item
+                              : Math.round(rect.top + rect.height / 2),
                           });
                         }
                         setItemMenuCategoryOpenFor(null);
@@ -1960,7 +1980,9 @@ export default function LeftSidebar() {
                             position: "fixed",
                             left: itemMenuPos.left,
                             top: itemMenuPos.top,
-                            transform: "translateY(-10%)",
+                            transform: itemMenuOpensUpward
+                              ? "translateY(-100%)"
+                              : "translateY(-10%)",
                           }}
                           className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
                         >
@@ -1971,6 +1993,7 @@ export default function LeftSidebar() {
                               e.stopPropagation();
                               setItemMenuCategoryOpenFor(null);
                               setItemMenuId(null);
+                              setItemMenuOpensUpward(false);
                               setItemMenuPos(null);
                               await shareHistoryItem(prettyHref);
                             }}
@@ -2007,6 +2030,7 @@ export default function LeftSidebar() {
                               e.stopPropagation();
                               setItemMenuCategoryOpenFor(null);
                               setItemMenuId(null);
+                              setItemMenuOpensUpward(false);
                               setItemMenuPos(null);
                               await renameHistoryItem(h.id, h.title);
                             }}
@@ -2057,7 +2081,7 @@ export default function LeftSidebar() {
                                 <path d="M7 12h13" />
                                 <path d="M10 18h10" />
                               </svg>
-                              <span className="text-sm">Change category</span>
+                              <span className="text-sm">Change to</span>
                             </span>
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -2076,7 +2100,7 @@ export default function LeftSidebar() {
                             </svg>
                           </button>
                           {categoryMenuOpen && (
-                            <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5">
+                            <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5 min-w-[180px]">
                               {CATEGORY_OPTIONS.map((label) => {
                                 const isActive = category === label;
                                 return (
@@ -2088,6 +2112,7 @@ export default function LeftSidebar() {
                                       e.stopPropagation();
                                       setItemMenuCategoryOpenFor(null);
                                       setItemMenuId(null);
+                                      setItemMenuOpensUpward(false);
                                       setItemMenuPos(null);
                                       try {
                                         await fetch(`/api/history/${h.id}`, {
@@ -2156,9 +2181,7 @@ export default function LeftSidebar() {
                                     >
                                       <path d="M20 6L9 17l-5-5" />
                                     </svg>
-                                    <span className="text-sm">
-                                      Mark as {label}
-                                    </span>
+                                    <span className="text-sm">{label}</span>
                                   </button>
                                 );
                               })}
@@ -2172,6 +2195,7 @@ export default function LeftSidebar() {
                               e.stopPropagation();
                               setItemMenuCategoryOpenFor(null);
                               setItemMenuId(null);
+                              setItemMenuOpensUpward(false);
                               setItemMenuPos(null);
                               await deleteHistoryItem(h.id, h.title);
                             }}
