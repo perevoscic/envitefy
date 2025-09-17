@@ -204,6 +204,11 @@ export default function LeftSidebar() {
       ignore = true;
     };
   }, [status]);
+
+  const showCreditsBadge =
+    subscriptionPlan !== "monthly" && subscriptionPlan !== "yearly";
+  const profileMenuItemClass =
+    "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
   const isDark = theme === "dark";
   const initials = (() => {
     const base =
@@ -2109,13 +2114,13 @@ export default function LeftSidebar() {
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
               aria-expanded={menuOpen}
-              className="w-full inline-flex items-center justify-between gap-3 px-3 py-2 text-foreground/90 hover:text-foreground hover:bg-surface/70 focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-md"
+              className="w-full inline-flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 transition-colors duration-150 hover:text-foreground hover:bg-surface/70 active:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               <div className="min-w-0 flex-1 inline-flex items-center gap-2">
                 <span className="truncate text-sm font-medium">
                   {displayName}
                 </span>
-                {credits >= 0 && (
+                {showCreditsBadge && credits >= 0 && (
                   <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     {credits}
                   </span>

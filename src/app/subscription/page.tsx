@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GiftSnapModal from "@/components/GiftSnapModal";
 import RedeemPromoModal from "@/components/RedeemPromoModal";
@@ -27,6 +27,7 @@ export default function SubscriptionPage() {
   const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<
     string | null
   >(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [credits, setCredits] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
@@ -40,6 +41,7 @@ export default function SubscriptionPage() {
   const [banner, setBanner] = useState<
     { type: "success" | "error" | "info"; message: string } | null
   >(null);
+  const [bannerVisible, setBannerVisible] = useState<boolean>(true);
   const [pricing, setPricing] = useState<{ monthly: number; yearly: number }>(
     { monthly: 299, yearly: 2999 }
   );
@@ -103,10 +105,11 @@ export default function SubscriptionPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     const status = params?.get?.("checkout") ?? null;
+    const sessionId = params?.get?.("session_id") ?? null;
     if (!status) return;
     let type: "success" | "error" | "info" | null = null;
     let message: string | null = null;
@@ -126,30 +129,74 @@ export default function SubscriptionPage() {
       type = "info";
       message = "Returned from billing portal.";
     }
-    if (type && message) setBanner({ type, message });
-    if (typeof window !== "undefined") {
+    if (type && message) {
+      setBanner({ type, message });
+      setBannerVisible(true);
+    }
+    let cancelled = false;
+
+    const cleanup = () => {
+      if (cancelled || typeof window === "undefined") return;
       const url = new URL(window.location.href);
       url.searchParams.delete("checkout");
       url.searchParams.delete("order");
       url.searchParams.delete("session_id");
       router.replace(url.pathname + (url.search ? url.search : ""));
-    }
+    };
+
+    const run = async () => {
+      if (status === "success" && sessionId) {
+        try {
+          const res = await fetch("/api/billing/stripe/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId }),
+          });
+          if (res.ok) {
+            setReloadKey((key) => key + 1);
+          }
+        } catch {}
+      }
+    };
+
+    run().finally(() => {
+      cleanup();
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [params, router]);
 
   const monthlyPrice = useMemo(() => (pricing.monthly / 100).toFixed(2), [pricing.monthly]);
   const yearlyPrice = useMemo(() => (pricing.yearly / 100).toFixed(2), [pricing.yearly]);
 
+  const parseDateValue = useCallback((value: string | Date | null | undefined) => {
+    if (!value) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const isoish = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
+      const date = new Date(isoish);
+      if (!Number.isNaN(date.getTime())) return date;
+      const fallback = new Date(trimmed);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+    return null;
+  }, []);
+
   const formattedRenewalDate = useMemo(() => {
-    const reference = currentPeriodEnd || subscriptionExpiresAt;
+    const reference = parseDateValue(currentPeriodEnd) || parseDateValue(subscriptionExpiresAt);
     if (!reference) return null;
-    const date = new Date(reference);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString(undefined, {
+    return reference.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
       year: "numeric",
     });
-  }, [currentPeriodEnd, subscriptionExpiresAt]);
+  }, [currentPeriodEnd, subscriptionExpiresAt, parseDateValue]);
 
   const hasActivePaidPlan = currentPlan === "monthly" || currentPlan === "yearly";
   const buttonDisabled = loading || (isAuthed && selectedPlan === currentPlan);
@@ -185,17 +232,28 @@ export default function SubscriptionPage() {
         Your contribution helps keep the lights on and new features coming.
       </h4>
 
-      {banner && (
-        <div
-          className={`mx-auto mb-6 max-w-xl rounded-xl border px-4 py-3 text-sm transition ${
-            banner.type === "success"
-              ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-              : banner.type === "error"
-              ? "border-rose-400 bg-rose-50 text-rose-700"
-              : "border-slate-300 bg-slate-50 text-slate-700"
-          }`}
-        >
-          {banner.message}
+      {banner && bannerVisible && (
+        <div className="fixed right-6 top-6 z-50 flex max-w-sm flex-col gap-3 rounded-xl border border-slate-200 bg-white/95 p-4 text-sm text-slate-800 shadow-xl shadow-slate-400/20 backdrop-blur transition-all duration-300">
+          <div className="flex items-start gap-3">
+            <div
+              className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                banner.type === "success"
+                  ? "bg-emerald-500"
+                  : banner.type === "error"
+                  ? "bg-rose-500"
+                  : "bg-slate-400"
+              }`}
+            />
+            <p className="flex-1 leading-relaxed">{banner.message}</p>
+            <button
+              type="button"
+              onClick={() => setBannerVisible(false)}
+              className="text-xs font-medium text-slate-500 transition hover:text-slate-700"
+              aria-label="Dismiss notification"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 
@@ -241,11 +299,13 @@ export default function SubscriptionPage() {
           <div className="flex items-center justify-between gap-6 sm:flex-col sm:items-center sm:justify-center sm:text-center sm:gap-1">
             <div className="text-left sm:text-center">
               <h2 className="text-base font-medium">Trial</h2>
-              <div className="text-xs text-muted-foreground">
-                {typeof credits === "number"
-                  ? `${credits} credits left`
-                  : "3 trial credits"}
-              </div>
+              {!hasActivePaidPlan && (
+                <div className="text-xs text-muted-foreground">
+                  {typeof credits === "number"
+                    ? `${credits} credits left`
+                    : "3 trial credits"}
+                </div>
+              )}
             </div>
             <div className="text-right sm:text-center sm:mt-1">
               <div className="text-3xl font-semibold">FREE</div>
@@ -453,7 +513,7 @@ export default function SubscriptionPage() {
               ? `Scheduled to end on ${formattedRenewalDate}.`
               : "Cancellation scheduled at the end of the current period."
             : formattedRenewalDate
-            ? `Next renewal on ${formattedRenewalDate}.`
+            ? `Subscription renews automatically on ${formattedRenewalDate}.`
             : "Subscription renews automatically."}
         </div>
       )}

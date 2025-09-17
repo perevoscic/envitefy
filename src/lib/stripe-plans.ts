@@ -52,7 +52,12 @@ export function getPlanFromPrice(price?: Stripe.Price | null): StripePlanId | nu
   if (lookup) return lookup;
   const metaPlan = getPlanIdFromLookupKey(price.metadata?.plan || price.nickname || null);
   if (metaPlan) return metaPlan;
-  const amount = price.unit_amount ?? price.unit_amount_decimal ? Number(price.unit_amount_decimal) : null;
+  const amount =
+    typeof price.unit_amount === "number"
+      ? price.unit_amount
+      : price.unit_amount_decimal
+      ? Number(price.unit_amount_decimal)
+      : null;
   const interval = price.recurring?.interval;
   if (amount && interval) {
     for (const [plan, config] of Object.entries(STRIPE_PLAN_CONFIG)) {

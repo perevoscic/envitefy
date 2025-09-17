@@ -622,36 +622,52 @@ export default function CalendarPage() {
       {/* Upcoming (toggle) */}
       <div className="mx-auto max-w-6xl mt-8">
         <h2 className="text-lg font-semibold">Upcoming events</h2>
-        <div className="mt-3">
-          <div className="relative inline-flex w-[220px] select-none rounded-full border border-border bg-surface">
-            <span
-              className={`absolute inset-0 m-1 w-1/2 rounded-full bg-foreground/10 transition-transform ${
-                upcomingView === "week" ? "translate-x-0" : "translate-x-full"
-              }`}
+
+        <div className="mt-3 flex justify-start">
+          {/* Elastic Tabs Toggle */}
+          <nav className="relative flex bg-white dark:bg-surface shadow-md rounded-full px-1 py-1 w-[220px] tabs-elastic">
+            <div
+              className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-sky-400 to-purple-700 z-0"
+              style={{
+                width: '50%',
+                transform: upcomingView === 'week' ? 'translateX(0%)' : 'translateX(100%)',
+              }}
             />
             <button
               type="button"
-              onClick={() => setUpcomingView("week")}
-              className={`relative z-10 flex-1 px-4 py-1.5 text-sm ${
-                upcomingView === "week"
-                  ? "text-foreground"
-                  : "text-foreground/70"
+              className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
+                upcomingView === 'week' ? 'text-white' : 'text-foreground/70'
               }`}
+              onClick={() => setUpcomingView('week')}
             >
-              Week
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M1.25 8C1.25 5.37665 3.37665 3.25 6 3.25H18C20.6234 3.25 22.75 5.37665 22.75 8V18C22.75 20.6234 20.6234 22.75 18 22.75H6C3.37665 22.75 1.25 20.6234 1.25 18V8ZM6 4.75C4.20507 4.75 2.75 6.20507 2.75 8V18C2.75 19.7949 4.20507 21.25 6 21.25H18C19.7949 21.25 21.25 19.7949 21.25 18V8C21.25 6.20507 19.7949 4.75 18 4.75H6Z" fill="currentColor"/>
+                  <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">7</text>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M8 1.25C8.41421 1.25 8.75 1.58579 8.75 2V5.5C8.75 5.91421 8.41421 6.25 8 6.25C7.58579 6.25 7.25 5.91421 7.25 5.5V2C7.25 1.58579 7.58579 1.25 8 1.25Z" fill="currentColor"/>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M16 1.25C16.4142 1.25 16.75 1.58579 16.75 2V5.5C16.75 5.91421 16.4142 6.25 16 6.25C15.5858 6.25 15.25 5.91421 15.25 5.5V2C15.25 1.58579 15.5858 1.25 16 1.25Z" fill="currentColor"/>
+                </svg>
+                <span>Week</span>
+              </div>
             </button>
             <button
               type="button"
-              onClick={() => setUpcomingView("month")}
-              className={`relative z-10 flex-1 px-4 py-1.5 text-sm ${
-                upcomingView === "month"
-                  ? "text-foreground"
-                  : "text-foreground/70"
+              className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
+                upcomingView === 'month' ? 'text-white' : 'text-foreground/70'
               }`}
+              onClick={() => setUpcomingView('month')}
             >
-              Month
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M1.25 8C1.25 5.37665 3.37665 3.25 6 3.25H18C20.6234 3.25 22.75 5.37665 22.75 8V18C22.75 20.6234 20.6234 22.75 18 22.75H6C3.37665 22.75 1.25 20.6234 1.25 18V8ZM6 4.75C4.20507 4.75 2.75 6.20507 2.75 8V18C2.75 19.7949 4.20507 21.25 6 21.25H18C19.7949 21.25 21.25 19.7949 21.25 18V8C21.25 6.20507 19.7949 4.75 18 4.75H6Z" fill="currentColor"/>
+                  <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">31</text>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M8 1.25C8.41421 1.25 8.75 1.58579 8.75 2V5.5C8.75 5.91421 8.41421 6.25 8 6.25C7.58579 6.25 7.25 5.91421 7.25 5.5V2C7.25 1.58579 7.58579 1.25 8 1.25Z" fill="currentColor"/>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M16 1.25C16.4142 1.25 16.75 1.58579 16.75 2V5.5C16.75 5.91421 16.4142 6.25 16 6.25C15.5858 6.25 15.25 5.91421 15.25 5.5V2C15.25 1.58579 15.5858 1.25 16 1.25Z" fill="currentColor"/>
+                </svg>
+                <span>Month</span>
+              </div>
             </button>
-          </div>
+          </nav>
         </div>
 
         {upcomingView === "week" ? (
