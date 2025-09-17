@@ -4,13 +4,16 @@ import { getStripeClient, getStripeWebhookSecret, StripePlanId } from "@/lib/str
 import {
   attachPromoCodeToGiftOrder,
   createGiftPromoCode,
+  extendUserSubscriptionByMonths,
   getGiftOrderByCheckoutSessionId,
   getGiftOrderById,
   getGiftOrderByPaymentIntentId,
+  getUserByEmail,
   getUserIdByEmail,
   getUserByStripeCustomerId,
   getUserByStripeSubscriptionId,
   markGiftOrderStatus,
+  markPromoCodeRedeemed,
   recordStripeWebhookEvent,
   revokePromoCodesByPaymentIntent,
   updateGiftOrderStripeRefs,
@@ -142,6 +145,32 @@ async function fulfillGiftOrderFromIntent(intent: Stripe.PaymentIntent) {
     metadata: { giftOrderId: order.id },
   });
 
+  let autoRedeemed: { applied: boolean; expiresAt?: string | null } = { applied: false };
+  const recipientEmail = order.recipient_email ? String(order.recipient_email).toLowerCase() : null;
+  if (recipientEmail) {
+    try {
+      const recipientUser = await getUserByEmail(recipientEmail);
+      if (recipientUser) {
+        const months = order.period === "years" ? order.quantity * 12 : order.quantity;
+        const extendResult = await extendUserSubscriptionByMonths(recipientEmail, months);
+        await markPromoCodeRedeemed(promo.id, recipientEmail);
+        autoRedeemed = { applied: true, expiresAt: extendResult.expiresAt || null };
+        console.log("[stripe webhook] auto-applied gift", {
+          orderId: order.id,
+          recipientEmail,
+          months,
+          expiresAt: extendResult.expiresAt || null,
+        });
+      }
+    } catch (err: any) {
+      console.error("[stripe webhook] auto-apply failed", {
+        orderId: order.id,
+        recipientEmail,
+        error: err?.message,
+      });
+    }
+  }
+
   console.log("[stripe webhook] promo code created", {
     orderId: order.id,
     promoCodeId: promo.id,
@@ -154,7 +183,12 @@ async function fulfillGiftOrderFromIntent(intent: Stripe.PaymentIntent) {
     orderId: order.id,
     status: "fulfilled",
     stripePaymentIntentId: paymentIntentId,
-    metadataMerge: { promoCode: promo.code },
+    metadataMerge: {
+      promoCode: promo.code,
+      autoRedeemed: autoRedeemed.applied,
+      autoRedeemedAt: autoRedeemed.applied ? new Date().toISOString() : undefined,
+      autoRedeemedExpiresAt: autoRedeemed.applied ? autoRedeemed.expiresAt || null : undefined,
+    },
   });
 
   if (order.recipient_email) {
@@ -170,6 +204,7 @@ async function fulfillGiftOrderFromIntent(intent: Stripe.PaymentIntent) {
       paymentIntentId,
       to: order.recipient_email,
       promoCode: promo.code,
+      autoRedeemed: autoRedeemed.applied,
     });
     await sendGiftEmail({
       toEmail: order.recipient_email,
@@ -179,6 +214,7 @@ async function fulfillGiftOrderFromIntent(intent: Stripe.PaymentIntent) {
       quantity: order.quantity || 0,
       period: order.period === "years" ? "years" : "months",
       message: composedMessage,
+      autoRedeemed,
     });
   } else {
     console.warn("[stripe webhook] gift order missing recipient email", {

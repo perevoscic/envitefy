@@ -91,7 +91,6 @@ export default function SubscriptionPage() {
           setSelectedPlan("monthly");
           setSubscriptionStatus(null);
           setStripeCustomerId(null);
-          setStripeSubscriptionId(null);
           setCancelAtPeriodEnd(false);
           setCurrentPeriodEnd(null);
           setSubscriptionExpiresAt(null);

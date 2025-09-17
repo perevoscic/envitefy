@@ -25,6 +25,7 @@ export async function sendGiftEmail(params: {
   quantity: number;
   period: "months" | "years";
   message?: string | null;
+  autoRedeemed?: { applied: boolean; expiresAt?: string | null };
 }): Promise<void> {
   // Enforce channel-specific sender for gifts; do NOT fall back to other senders
   const fromCandidate = process.env.SES_FROM_EMAIL_GIFT as string | undefined;
@@ -32,19 +33,26 @@ export async function sendGiftEmail(params: {
   const from = fromCandidate as string;
   const to = params.toEmail;
 
-  const subject = `You've received a Snap My Date gift`;
+  const autoRedeemed = params.autoRedeemed?.applied === true;
+  const subject = autoRedeemed ? `Your Snap My Date gift has been added` : `You've received a Snap My Date gift`;
   const months = params.period === "years" ? params.quantity * 12 : params.quantity;
-  const preheader = `You've been gifted ${months} month${months === 1 ? "" : "s"} of Snap My Date.`;
+  const preheader = autoRedeemed
+    ? `We've added ${months} month${months === 1 ? "" : "s"} of Snap My Date to your account.`
+    : `You've been gifted ${months} month${months === 1 ? "" : "s"} of Snap My Date.`;
   const text = [
     `Hi${params.recipientName ? ` ${params.recipientName}` : ""},`,
     "",
     preheader,
     "",
-    `Your gift code: ${params.giftCode}`,
+    autoRedeemed
+      ? `No code needed—your subscription now runs through ${formatExpiresDate(params.autoRedeemed?.expiresAt)}.`
+      : `Your gift code: ${params.giftCode}`,
     "",
     params.message ? `Message: ${params.message}` : "",
     "",
-    "Redeem here: https://snapmydate.com/subscription (Redeem a Snap)",
+    autoRedeemed
+      ? "View your subscription: https://snapmydate.com/subscription"
+      : "Redeem here: https://snapmydate.com/subscription (Redeem a Snap)",
   ]
     .filter(Boolean)
     .join("\n");
@@ -53,9 +61,9 @@ export async function sendGiftEmail(params: {
   <html><body>
   <p>Hi${params.recipientName ? ` ${params.recipientName}` : ""},</p>
   <p>${preheader}</p>
-  <p><strong>Your gift code:</strong> <code>${params.giftCode}</code></p>
+  ${autoRedeemed ? `<p>Your account has already been extended${params.autoRedeemed?.expiresAt ? ` through <strong>${escapeHtml(formatExpiresDate(params.autoRedeemed?.expiresAt))}</strong>` : ""}. No code needed.</p>` : `<p><strong>Your gift code:</strong> <code>${params.giftCode}</code></p>`}
   ${params.message ? `<p><em>Message:</em> ${escapeHtml(params.message)}</p>` : ""}
-  <p><a href="https://snapmydate.com/subscription">Redeem your gift</a> (click "Redeem a Snap").</p>
+  <p><a href="https://snapmydate.com/subscription">${autoRedeemed ? "Manage your subscription" : "Redeem your gift"}</a>${autoRedeemed ? "" : " (click \"Redeem a Snap\")"}.</p>
   </body></html>`;
 
   const cmd = new SendEmailCommand({
@@ -77,6 +85,7 @@ export async function sendGiftEmail(params: {
     hasReplyTo: Boolean(params.fromEmail),
     quantity: params.quantity,
     period: params.period,
+    autoRedeemed,
   });
   try {
     const result = await getSes().send(cmd);
@@ -85,6 +94,7 @@ export async function sendGiftEmail(params: {
       messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
       requestId: (result as any)?.$metadata?.requestId || null,
       statusCode: (result as any)?.$metadata?.httpStatusCode || null,
+      autoRedeemed,
     });
   } catch (err: any) {
     console.error("[email] sendGiftEmail failed", {
@@ -93,6 +103,7 @@ export async function sendGiftEmail(params: {
       name: err?.name,
       statusCode: err?.$metadata?.httpStatusCode || null,
       requestId: err?.$metadata?.requestId || null,
+      autoRedeemed,
     });
     throw err;
   }
@@ -220,6 +231,17 @@ function escapeHtml(s: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function formatExpiresDate(raw: string | null | undefined): string {
+  if (!raw) return "the end of your gifted period";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "the end of your gifted period";
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function maskEmail(email: string): string {
