@@ -29,25 +29,15 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
         <button
           className="btn btn-primary btn-lg"
           onClick={() => {
-            setMode("signup");
             setOpen(true);
           }}
         >
           Get started free
         </button>
-        <button
-          className="btn btn-outline btn-lg"
-          onClick={() => {
-            setMode("login");
-            setOpen(true);
-          }}
-        >
-          Sign in
-        </button>
       </div>
       <AuthModal
         open={open}
-        mode={mode}
+        mode="signup"
         onClose={() => setOpen(false)}
         onModeChange={setMode}
       />
