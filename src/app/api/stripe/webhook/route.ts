@@ -26,6 +26,12 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const preferredRegion = ["iad1", "cle1", "sfo1"];
 
+type PlanResolution = {
+  plan: StripePlanId | null;
+  price: Stripe.Price | null;
+  priceId: string | null;
+};
+
 async function parseEvent(req: NextRequest): Promise<{ event: Stripe.Event; rawBody: string }> {
   const stripe = getStripeClient();
   const webhookSecret = getStripeWebhookSecret();
@@ -71,6 +77,119 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     const nextStatus = session.payment_status === "paid" ? "paid" : "pending";
     await markGiftOrderStatus({ orderId, status: nextStatus, stripePaymentIntentId: paymentIntentId || undefined });
   }
+}
+
+function resolvePlanFromSubscription(
+  subscription: Stripe.Subscription,
+  invoice: Stripe.Invoice | null = null
+): PlanResolution {
+  const subscriptionItems = subscription.items?.data ?? [];
+  const rankedItems = subscriptionItems.filter((item) => !item.deleted && (item.quantity ?? 0) > 0);
+  const scanItems = rankedItems.length > 0 ? rankedItems : subscriptionItems;
+
+  let resolvedPlan: StripePlanId | null = null;
+  let resolvedPrice: Stripe.Price | null = null;
+  let resolvedPriceId: string | null = null;
+
+  const considerPrice = (candidate: Stripe.Price | string | null | undefined) => {
+    if (!candidate || typeof candidate === "string") return;
+    if (!resolvedPrice) {
+      resolvedPrice = candidate;
+      resolvedPriceId = candidate.id || resolvedPriceId;
+    }
+    if (!resolvedPlan) {
+      const candidatePlan = getPlanFromPrice(candidate);
+      if (candidatePlan) {
+        resolvedPlan = candidatePlan;
+        resolvedPrice = candidate;
+        resolvedPriceId = candidate.id || resolvedPriceId;
+      }
+    }
+  };
+
+  for (const item of scanItems) {
+    considerPrice(item.price);
+    if (resolvedPlan) break;
+  }
+
+  if (!resolvedPlan) {
+    for (const item of subscriptionItems) {
+      considerPrice(item.price);
+      if (resolvedPlan) break;
+    }
+  }
+
+  if (!resolvedPlan) {
+    const invoiceLines = invoice?.lines?.data ?? [];
+    for (const line of invoiceLines) {
+      if (line.type && line.type !== "subscription") continue;
+      const priceCandidate = typeof line.price === "string" ? null : line.price;
+      considerPrice(priceCandidate);
+      if (resolvedPlan) break;
+      const interval = line.plan?.interval;
+      if (interval === "year") {
+        resolvedPlan = "yearly";
+        resolvedPriceId = priceCandidate?.id || (typeof line.price === "string" ? line.price : resolvedPriceId);
+        break;
+      }
+      if (interval === "month") {
+        resolvedPlan = "monthly";
+        resolvedPriceId = priceCandidate?.id || (typeof line.price === "string" ? line.price : resolvedPriceId);
+        break;
+      }
+    }
+  }
+
+  if (!resolvedPlan) {
+    const interval = subscription.plan?.interval;
+    if (interval === "year") {
+      resolvedPlan = "yearly";
+      resolvedPriceId = subscription.plan?.id || resolvedPriceId;
+    } else if (interval === "month") {
+      resolvedPlan = "monthly";
+      resolvedPriceId = subscription.plan?.id || resolvedPriceId;
+    }
+  }
+
+  return { plan: resolvedPlan, price: resolvedPrice, priceId: resolvedPriceId };
+}
+
+async function syncSubscriptionState(
+  subscription: Stripe.Subscription,
+  options: { invoice?: Stripe.Invoice | null } = {}
+): Promise<void> {
+  const stripe = getStripeClient();
+  const needsPriceExpansion = !subscription.items?.data?.some((item) => item.price && typeof item.price !== "string");
+  const workingSubscription = needsPriceExpansion
+    ? await stripe.subscriptions.retrieve(subscription.id, { expand: ["items.data.price"] })
+    : subscription;
+
+  const { plan, priceId } = resolvePlanFromSubscription(workingSubscription, options.invoice ?? null);
+
+  const customerId =
+    typeof workingSubscription.customer === "string"
+      ? workingSubscription.customer
+      : workingSubscription.customer?.id || null;
+  const targetUser =
+    (customerId ? await getUserByStripeCustomerId(customerId) : null) ||
+    (workingSubscription.id ? await getUserByStripeSubscriptionId(workingSubscription.id) : null);
+  if (!targetUser) return;
+
+  const periodEnd = new Date(workingSubscription.current_period_end * 1000);
+
+  await updateUserStripeState(
+    { email: targetUser.email },
+    {
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: workingSubscription.id,
+      stripeSubscriptionStatus: workingSubscription.status,
+      stripePriceId: priceId,
+      stripeCurrentPeriodEnd: periodEnd,
+      stripeCancelAtPeriodEnd: workingSubscription.cancel_at_period_end || false,
+      subscriptionPlan: plan || targetUser.subscription_plan || null,
+      subscriptionExpiresAt: periodEnd,
+    }
+  );
 }
 
 async function fulfillGiftOrderFromIntent(intent: Stripe.PaymentIntent) {
@@ -260,95 +379,10 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id || null;
-  const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null;
   if (!subscriptionId) return;
   const stripe = getStripeClient();
   const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["items.data.price"] });
-  const subscriptionItems = subscription.items?.data ?? [];
-
-  const rankedItems = subscriptionItems.filter((item) => !item.deleted && (item.quantity ?? 0) > 0);
-  const scanItems = rankedItems.length > 0 ? rankedItems : subscriptionItems;
-
-  let resolvedPlan: StripePlanId | null = null;
-  let resolvedPrice: Stripe.Price | null = null;
-  let resolvedPriceId: string | null = null;
-  for (const item of scanItems) {
-    const priceCandidate = item.price || null;
-    if (!priceCandidate) continue;
-    const candidatePlan = getPlanFromPrice(priceCandidate);
-    if (!resolvedPrice) {
-      resolvedPrice = priceCandidate;
-      resolvedPriceId = priceCandidate.id || resolvedPriceId;
-    }
-    if (candidatePlan) {
-      resolvedPlan = candidatePlan;
-      resolvedPrice = priceCandidate;
-      resolvedPriceId = priceCandidate.id || resolvedPriceId;
-      break;
-    }
-  }
-
-  if (!resolvedPlan) {
-    for (const item of subscriptionItems) {
-      const priceCandidate = item.price || null;
-      if (!priceCandidate) continue;
-      const candidatePlan = getPlanFromPrice(priceCandidate);
-      if (candidatePlan) {
-        resolvedPlan = candidatePlan;
-        resolvedPrice = priceCandidate;
-        resolvedPriceId = priceCandidate.id || resolvedPriceId;
-        break;
-      }
-    }
-  }
-
-  if (!resolvedPlan) {
-    const invoiceLines = invoice.lines?.data ?? [];
-    for (const line of invoiceLines) {
-      if (line.type && line.type !== "subscription") continue;
-      const priceCandidate = typeof line.price === "string" ? null : line.price;
-      const candidatePlan = getPlanFromPrice(priceCandidate || null);
-      if (candidatePlan) {
-        resolvedPlan = candidatePlan;
-        resolvedPrice = priceCandidate || resolvedPrice;
-        resolvedPriceId = priceCandidate?.id || (typeof line.price === "string" ? line.price : resolvedPriceId);
-        break;
-      }
-      const interval = line.plan?.interval;
-      if (interval === "year") {
-        resolvedPlan = "yearly";
-        resolvedPrice = priceCandidate || resolvedPrice;
-        resolvedPriceId = priceCandidate?.id || (typeof line.price === "string" ? line.price : resolvedPriceId);
-        break;
-      }
-      if (interval === "month") {
-        resolvedPlan = "monthly";
-        resolvedPrice = priceCandidate || resolvedPrice;
-        resolvedPriceId = priceCandidate?.id || (typeof line.price === "string" ? line.price : resolvedPriceId);
-        break;
-      }
-    }
-  }
-
-  const plan = resolvedPlan;
-  const periodEnd = new Date(subscription.current_period_end * 1000);
-  const targetUser =
-    (customerId ? await getUserByStripeCustomerId(customerId) : null) ||
-    (subscriptionId ? await getUserByStripeSubscriptionId(subscriptionId) : null);
-  if (!targetUser) return;
-  await updateUserStripeState(
-    { email: targetUser.email },
-    {
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscription.id,
-      stripeSubscriptionStatus: subscription.status,
-      stripePriceId: resolvedPrice?.id || resolvedPriceId || null,
-      stripeCurrentPeriodEnd: periodEnd,
-      stripeCancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      subscriptionPlan: plan || targetUser.subscription_plan || null,
-      subscriptionExpiresAt: periodEnd,
-    }
-  );
+  await syncSubscriptionState(subscription, { invoice });
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -370,6 +404,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       subscriptionExpiresAt: endedAt,
     }
   );
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  await syncSubscriptionState(subscription);
 }
 
 export async function POST(req: NextRequest) {
@@ -406,6 +444,9 @@ export async function POST(req: NextRequest) {
         break;
       case "invoice.paid":
         await handleInvoicePaid(event.data.object as Stripe.Invoice);
+        break;
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
         break;
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);

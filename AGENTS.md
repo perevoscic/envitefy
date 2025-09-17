@@ -48,8 +48,8 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### Stripe Webhook — POST `/api/stripe/webhook`
 
-- **Purpose**: Receive Stripe events (`checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`, `invoice.paid`, `customer.subscription.deleted`).
-- **Behavior**: Stores each event in `stripe_webhook_events` for idempotency, syncs user subscription state, fulfills gift orders (creates promo codes + sends emails), and revokes gifts on refund. Gift fulfillment now emits structured logs (prefixed `[stripe webhook]`/`[email]`) to trace whether SES accepted each dispatch, persists the sender’s `created_by_user_id` on `promo_codes`, and auto-applies gifts when the recipient email matches an existing user (extending their subscription immediately and marking the promo code redeemed).
+- **Purpose**: Receive Stripe events (`checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`).
+- **Behavior**: Stores each event in `stripe_webhook_events` for idempotency, syncs user subscription state, fulfills gift orders (creates promo codes + sends emails), and revokes gifts on refund. Gift fulfillment now emits structured logs (prefixed `[stripe webhook]`/`[email]`) to trace whether SES accepted each dispatch, persists the sender’s `created_by_user_id` on `promo_codes`, and auto-applies gifts when the recipient email matches an existing user (extending their subscription immediately and marking the promo code redeemed). Subscription upgrades or downgrades now sync immediately via `customer.subscription.updated`, so the `/subscription` page reflects yearly upgrades as soon as Stripe finishes Checkout.
 - **Env**: `STRIPE_WEBHOOK_SECRET` (plus Stripe secret). Route expects raw body (`req.text()`); ensure webhook endpoint in Stripe Dashboard uses the same secret.
 
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
@@ -399,6 +399,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-09-17: Stripe webhook now handles `customer.subscription.updated` to immediately sync plan changes (e.g., monthly to yearly) after Stripe Checkout completes.
 - 2025-09-17: Gift checkout/webhook instrumentation now traces SES email delivery, promo codes store the purchaser’s `created_by_user_id`, and fulfilled gifts auto-extend existing recipients’ subscriptions while marking the promo code redeemed.
 - 2025-09-17: Stripe webhook now scans subscription and invoice items to sync yearly upgrades correctly and updates checkout success URLs to respect localhost origins, preventing dev redirects to production.
 - 2025-09-16: Integrated Stripe billing. Added `/api/billing/stripe/checkout`, `/api/billing/stripe/portal`, and `/api/stripe/webhook`; promo gifts now initiate checkout sessions and are fulfilled post-payment. Documented new Stripe env vars and database tables (`gift_orders`, `stripe_webhook_events`, Stripe columns on `users`/`promo_codes`).
