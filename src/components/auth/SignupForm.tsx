@@ -73,7 +73,7 @@ export default function SignupForm({
         email,
         password,
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl: "/subscription",
       });
       if (result?.ok) {
         try {

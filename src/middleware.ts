@@ -50,7 +50,7 @@ export async function middleware(req: NextRequest) {
   if (pathname === "/") {
     if (hasSession) {
       const url = req.nextUrl.clone();
-      url.pathname = "/snap";
+      url.pathname = "/subscription";
       return NextResponse.redirect(url, 302);
     }
     // Render landing content at "/" without changing the URL

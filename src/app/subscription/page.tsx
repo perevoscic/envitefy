@@ -522,6 +522,9 @@ export default function SubscriptionPage() {
           Status: {subscriptionStatus.replace(/_/g, " ")}
         </div>
       )}
+      <div className="mt-12 text-center text-muted-foreground">
+        <Link  href="/snap">or continue to Snap you first Date</Link>
+      </div>
       <div className="mt-12 max-w-xl mx-auto w-full">
         <div className="rounded-xl bg-surface p-5 shadow-md">
           <div className="flex items-center justify-center flex-wrap gap-3">
