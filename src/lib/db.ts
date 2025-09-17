@@ -530,6 +530,7 @@ export type PromoCodeRow = {
   amount_cents: number;
   currency: string;
   created_by_email?: string | null;
+  created_by_user_id?: string | null;
   recipient_name?: string | null;
   recipient_email?: string | null;
   message?: string | null;
@@ -561,6 +562,7 @@ export async function createGiftPromoCode(params: {
   amountCents: number;
   currency?: string;
   createdByEmail?: string | null;
+  createdByUserId?: string | null;
   recipientName?: string | null;
   recipientEmail?: string | null;
   message?: string | null;
@@ -603,7 +605,21 @@ export async function createGiftPromoCode(params: {
 
   const row = res.rows[0];
   // Attach creator user id when available and column exists. Ignore errors if column is missing.
-  if (params.createdByEmail) {
+  if (params.createdByUserId) {
+    try {
+      await query(
+        `update promo_codes set created_by_user_id = $2 where id = $1`,
+        [row.id, params.createdByUserId]
+      ).catch(() => {});
+      row.created_by_user_id = params.createdByUserId;
+    } catch (err) {
+      console.error("[db] failed to store created_by_user_id on promo code", {
+        promoCodeId: row.id,
+        createdByUserId: params.createdByUserId,
+        error: (err as any)?.message,
+      });
+    }
+  } else if (params.createdByEmail) {
     try {
       const creatorUserId = await getUserIdByEmail(params.createdByEmail);
       if (creatorUserId) {
@@ -611,6 +627,7 @@ export async function createGiftPromoCode(params: {
           `update promo_codes set created_by_user_id = $2 where id = $1`,
           [row.id, creatorUserId]
         ).catch(() => {});
+        row.created_by_user_id = creatorUserId;
       }
     } catch {
       // best-effort only

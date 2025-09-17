@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { authOptions } from "@/lib/auth";
 import {
   createGiftOrder,
+  getUserIdByEmail,
   updateGiftOrderStripeRefs,
 } from "@/lib/db";
 import { getAppBaseUrl, getStripeClient } from "@/lib/stripe";
@@ -59,6 +60,17 @@ export async function POST(req: NextRequest) {
     const stripe = getStripeClient();
     const baseUrl = getAppBaseUrl(req.nextUrl?.origin);
 
+    const purchaserUserId =
+      purchaserEmail && purchaserEmail.length > 0 ? await getUserIdByEmail(purchaserEmail) : null;
+
+    const orderMetadata = {
+      createdBy: session?.user?.email || null,
+      createdByEmail: session?.user?.email || purchaserEmail || null,
+      createdByUserId: purchaserUserId,
+      senderFirstName: senderFirstName || null,
+      senderLastName: senderLastName || null,
+    };
+
     const order = await createGiftOrder({
       purchaserEmail,
       purchaserName,
@@ -69,11 +81,7 @@ export async function POST(req: NextRequest) {
       period,
       amountCents,
       currency: "USD",
-      metadata: {
-        createdBy: session?.user?.email || null,
-        senderFirstName: senderFirstName || null,
-        senderLastName: senderLastName || null,
-      },
+      metadata: orderMetadata,
     });
 
     const metadata: Record<string, string> = {

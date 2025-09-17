@@ -32,7 +32,23 @@ export function getPublishableKey(): string {
 }
 
 export function getAppBaseUrl(fallback?: string): string {
-  const candidates = [process.env.APP_URL, process.env.PUBLIC_BASE_URL, process.env.NEXTAUTH_URL, fallback, "http://localhost:3000"];
+  const normalizedFallback = fallback?.trim().replace(/\/$/, "") || null;
+
+  if (normalizedFallback) {
+    const lower = normalizedFallback.toLowerCase();
+    const isLocalHost =
+      lower.includes("localhost") ||
+      lower.startsWith("http://127.") ||
+      lower.startsWith("https://127.") ||
+      lower.startsWith("http://10.") ||
+      lower.startsWith("http://192.168.");
+
+    if (isLocalHost || process.env.NODE_ENV !== "production") {
+      return normalizedFallback;
+    }
+  }
+
+  const candidates = [process.env.APP_URL, process.env.PUBLIC_BASE_URL, process.env.NEXTAUTH_URL, normalizedFallback, "http://localhost:3000"];
   for (const candidate of candidates) {
     if (!candidate || !candidate.trim()) continue;
     const normalized = candidate.trim().replace(/\/$/, "");
@@ -42,4 +58,3 @@ export function getAppBaseUrl(fallback?: string): string {
 }
 
 export type StripePlanId = "monthly" | "yearly";
-

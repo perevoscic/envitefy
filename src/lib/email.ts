@@ -72,7 +72,30 @@ export async function sendGiftEmail(params: {
     },
     ReplyToAddresses: params.fromEmail ? [params.fromEmail] : undefined,
   });
-  await getSes().send(cmd);
+  console.log("[email] sendGiftEmail dispatch", {
+    to: maskEmail(to),
+    hasReplyTo: Boolean(params.fromEmail),
+    quantity: params.quantity,
+    period: params.period,
+  });
+  try {
+    const result = await getSes().send(cmd);
+    console.log("[email] sendGiftEmail success", {
+      to: maskEmail(to),
+      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+      requestId: (result as any)?.$metadata?.requestId || null,
+      statusCode: (result as any)?.$metadata?.httpStatusCode || null,
+    });
+  } catch (err: any) {
+    console.error("[email] sendGiftEmail failed", {
+      to: maskEmail(to),
+      error: err?.message,
+      name: err?.name,
+      statusCode: err?.$metadata?.httpStatusCode || null,
+      requestId: err?.$metadata?.requestId || null,
+    });
+    throw err;
+  }
 }
 
 export async function sendPasswordResetEmail(params: {
@@ -197,6 +220,17 @@ function escapeHtml(s: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function maskEmail(email: string): string {
+  if (!email || !email.includes("@")) return email;
+  const [user, domain] = email.split("@");
+  if (!user) return email;
+  if (user.length <= 2) {
+    return `${user[0] ?? "*"}*@${domain}`;
+  }
+  const masked = `${user[0]}${"*".repeat(Math.max(1, user.length - 2))}${user[user.length - 1]}`;
+  return `${masked}@${domain}`;
 }
 
 
