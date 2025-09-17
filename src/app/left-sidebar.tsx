@@ -1407,7 +1407,12 @@ export default function LeftSidebar() {
                     <line x1="8" y1="2" x2="8" y2="6" />
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
-                  <span>Calendar</span>
+                  <div className="flex items-center justify-between w-full">
+                    <span>Calendar</span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                      {history.length}
+                    </span>
+                  </div>
                 </div>
               </Link>
               {(() => {
