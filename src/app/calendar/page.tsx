@@ -731,7 +731,7 @@ export default function CalendarPage() {
                 <div className="px-3 py-2 bg-surface/60 text-sm text-foreground/80 border-b border-border">
                   {group.label}
                 </div>
-                <ul className="divide-y divide-border">
+                <ul className="mt-1.5 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:p-3 md:pt-3 md:pb-4">
                   {group.items
                     .slice()
                     .sort(
@@ -748,11 +748,11 @@ export default function CalendarPage() {
                         ? colorTintAndDot(chosenColorName)
                         : { tint: "bg-surface/60", dot: "bg-foreground/40" };
                       return (
-                        <li key={ev.id}>
+                        <li key={ev.id} className="md:h-full">
                           <button
                             type="button"
                             onClick={() => setOpenEvent(ev)}
-                            className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                            className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
                             title={ev.title}
                           >
                             <div className="flex items-center gap-3">
