@@ -659,12 +659,22 @@ export default function SnapPage() {
         category: "Sport Events",
       });
       setCanEditRecurrence(false);
+      // New parse → allow saving again
+      try {
+        hasSavedRef.current = false;
+        setSavedHistoryId(null);
+      } catch {}
     } else {
       setPracticeSchedule(null);
       setSelectedPracticeGroup(null);
       setBulkEvents(normalizedBulk.length > 1 ? normalizedBulk : null);
       setEvent(adjusted);
       setCanEditRecurrence(false);
+      // New parse → allow saving again
+      try {
+        hasSavedRef.current = false;
+        setSavedHistoryId(null);
+      } catch {}
     }
     // Defer history save until user explicitly saves or adds to a calendar
     setOcrText(data.ocrText || "");
@@ -672,7 +682,15 @@ export default function SnapPage() {
   };
 
   const saveHistoryIfNeeded = async () => {
-    if (hasSavedRef.current || !event) return savedHistoryId;
+    if (hasSavedRef.current || !event) {
+      try {
+        console.debug("[snap] skip saveHistoryIfNeeded", {
+          hasSaved: hasSavedRef.current,
+          hasEvent: Boolean(event),
+        });
+      } catch {}
+      return savedHistoryId;
+    }
     try {
       const currentFile = file;
       const createThumbnailDataUrl = async (

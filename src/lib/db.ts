@@ -899,7 +899,7 @@ export async function recordStripeWebhookEvent(params: {
      returning id`,
     [params.eventId, params.type, JSON.stringify(params.payload ?? {})]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 // Subscription expiration helpers
@@ -947,8 +947,8 @@ export async function insertEventHistory(params: {
 }): Promise<EventHistoryRow> {
   const id = randomUUID();
   const res = await query<EventHistoryRow>(
-    `insert into event_history (id, user_id, title, data)
-     values ($1, $2, $3, $4)
+    `insert into event_history (id, user_id, title, data, created_at)
+     values ($1, $2, $3, $4, coalesce(now(), now()))
      returning id, user_id, title, data, created_at`,
     [id, params.userId || null, params.title, JSON.stringify(params.data)]
   );

@@ -597,8 +597,19 @@ export default function LeftSidebar() {
     if (status !== "authenticated") return;
     (async () => {
       try {
-        const res = await fetch("/api/history", { cache: "no-store" });
+        const res = await fetch("/api/history", {
+          cache: "no-store",
+          credentials: "include",
+        });
         const j = await res.json().catch(() => ({ items: [] }));
+        try {
+          const items = Array.isArray(j?.items) ? j.items : [];
+          const top = items?.[0] || null;
+          console.debug("[sidebar] fetched history", {
+            count: items.length,
+            top: top ? { id: top.id, created_at: top.created_at } : null,
+          });
+        } catch {}
         if (!cancelled)
           setHistory(
             sortHistoryRows(
@@ -618,12 +629,14 @@ export default function LeftSidebar() {
   }, [status]);
 
   useEffect(() => {
-    if (status !== "authenticated") return;
     let cancelled = false;
     const onCreated = async (e: Event) => {
       try {
         const anyEvent = e as any;
         const detail = (anyEvent && anyEvent.detail) || null;
+        try {
+          console.debug("[sidebar] history:created event", detail);
+        } catch {}
         if (detail && detail.id) {
           // Optimistically prepend; avoid duplicates
           setHistory((prev) => {
@@ -640,12 +653,23 @@ export default function LeftSidebar() {
               },
             } as { id: string; title: string; created_at?: string; data?: any };
             const next = exists ? prev : [nextItem, ...prev];
-            return sortHistoryRows(next as any).slice(0, 200);
+            const sorted = sortHistoryRows(next as any).slice(0, 200);
+            try {
+              const top = sorted?.[0] || null;
+              console.debug("[sidebar] history updated (optimistic)", {
+                count: sorted.length,
+                top: top ? { id: top.id, created_at: top.created_at } : null,
+              });
+            } catch {}
+            return sorted;
           });
           return;
         }
         // Fallback: full refetch
-        const res = await fetch("/api/history", { cache: "no-store" });
+        const res = await fetch("/api/history", {
+          cache: "no-store",
+          credentials: "include",
+        });
         const j = await res.json().catch(() => ({ items: [] }));
         if (!cancelled)
           setHistory(
@@ -665,7 +689,7 @@ export default function LeftSidebar() {
       cancelled = true;
       window.removeEventListener("history:created", onCreated as any);
     };
-  }, [status]);
+  }, []);
 
   const shareHistoryItem = async (prettyHref: string) => {
     try {
