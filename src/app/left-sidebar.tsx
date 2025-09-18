@@ -575,6 +575,23 @@ export default function LeftSidebar() {
     setColorMenuPos(null);
   };
 
+  const sortHistoryRows = (
+    rows: Array<{
+      id: string;
+      title: string;
+      created_at?: string;
+      data?: any;
+    }>
+  ) => {
+    return [...(rows || [])].sort((a, b) => {
+      const at = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bt = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (bt !== at) return bt - at; // newer first
+      // Tie-breaker to match server: id desc
+      return String(b.id).localeCompare(String(a.id));
+    });
+  };
+
   useEffect(() => {
     let cancelled = false;
     if (status !== "authenticated") return;
@@ -584,12 +601,14 @@ export default function LeftSidebar() {
         const j = await res.json().catch(() => ({ items: [] }));
         if (!cancelled)
           setHistory(
-            (j.items || []).map((r: any) => ({
-              id: r.id,
-              title: r.title,
-              created_at: r.created_at,
-              data: r.data,
-            }))
+            sortHistoryRows(
+              (j.items || []).map((r: any) => ({
+                id: r.id,
+                title: r.title,
+                created_at: r.created_at || undefined,
+                data: r.data,
+              }))
+            )
           );
       } catch {}
     })();
@@ -621,7 +640,7 @@ export default function LeftSidebar() {
               },
             } as { id: string; title: string; created_at?: string; data?: any };
             const next = exists ? prev : [nextItem, ...prev];
-            return next.slice(0, 200);
+            return sortHistoryRows(next as any).slice(0, 200);
           });
           return;
         }
@@ -630,12 +649,14 @@ export default function LeftSidebar() {
         const j = await res.json().catch(() => ({ items: [] }));
         if (!cancelled)
           setHistory(
-            (j.items || []).map((r: any) => ({
-              id: r.id,
-              title: r.title,
-              created_at: r.created_at,
-              data: r.data,
-            }))
+            sortHistoryRows(
+              (j.items || []).map((r: any) => ({
+                id: r.id,
+                title: r.title,
+                created_at: r.created_at || undefined,
+                data: r.data,
+              }))
+            )
           );
       } catch {}
     };

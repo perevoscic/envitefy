@@ -1010,7 +1010,7 @@ export async function getEventHistoryByUserAndSlug(userId: string, slug: string)
     `select id, user_id, title, data, created_at
      from event_history
      where user_id = $1
-     order by created_at desc
+     order by created_at desc nulls last, id desc
      limit 200`,
     [userId]
   );
@@ -1071,7 +1071,7 @@ export async function listEventHistoryByUser(userId: string, limit: number = 50)
     `select id, user_id, title, data, created_at
      from event_history
      where user_id = $1
-     order by created_at desc
+     order by created_at desc nulls last, id desc
      limit $2`,
     [userId, Math.max(1, Math.min(200, limit))]
   );
@@ -1082,7 +1082,7 @@ export async function listRecentEventHistory(limit: number = 20): Promise<EventH
   const res = await query<EventHistoryRow>(
     `select id, user_id, title, data, created_at
      from event_history
-     order by created_at desc
+     order by created_at desc nulls last, id desc
      limit $1`,
     [Math.max(1, Math.min(200, limit))]
   );
