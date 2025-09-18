@@ -2102,12 +2102,9 @@ export default function LeftSidebar() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-              setMenuOpen((v) => {
-                const next = !v;
+                setMenuOpen((prev) => !prev);
                 setSettingsOpen(false);
                 setSettingsOpenFloating(false);
-                return next;
-                });
               }}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
@@ -2142,25 +2139,26 @@ export default function LeftSidebar() {
             </button>
 
             {isOpen && menuOpen && (
-              <div
-                ref={menuRef}
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="absolute bottom-12 left-0 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
-              >
-                <div className="p-2">
-                  <div className="relative">
-                    <button
-                      type="button"
-                    onClick={() => {
-                      setSettingsOpen((v) => {
-                        const next = !v;
-                        return next;
-                      });
-                    }}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                    >
+              <div className="absolute bottom-full right-0 mb-3 z-[1000]">
+                <div
+                  ref={menuRef}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
+                >
+                  <div className="p-2">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSettingsOpen((v) => {
+                            const next = !v;
+                            return next;
+                          });
+                        }}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
                       <div className="flex items-center gap-3">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -2400,6 +2398,7 @@ export default function LeftSidebar() {
                   </button>
                 </div>
               </div>
+            </div>
             )}
           </div>
         </div>
