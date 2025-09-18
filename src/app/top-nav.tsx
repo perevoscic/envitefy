@@ -17,10 +17,15 @@ export default function TopNav() {
         <div className="flex items-center gap-3 min-w-0">
           <Link href="/" className="flex items-center gap-2 min-w-0">
             <Image src={Logo} alt="Snap My Date" className="h-9 w-9" />
-            <span className="text-base text-foreground truncate">
-              <span className="font-pacifico">Snap</span>
-              <span> </span>
-              <span className="font-montserrat font-semibold">My Date</span>
+            <span className="text-base text-foreground truncate leading-tight">
+              <span className="block truncate">
+                <span className="font-pacifico">Snap</span>
+                <span> </span>
+                <span className="font-montserrat font-semibold">My Date</span>
+              </span>
+              <span className="block text-xs text-foreground/60 truncate">
+                Snap it. Save it.
+              </span>
             </span>
           </Link>
         </div>

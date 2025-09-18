@@ -16,7 +16,7 @@ export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
               Ready to snap your next date?
             </h3>
             <p className="mt-2 text-foreground/70 max-w-2xl mx-auto">
-              Try it now—no credit card required.
+              Snap it. Save it. Start in seconds—no credit card needed.
             </p>
             <div className="mt-6 flex justify-center">
               {isAuthed ? (

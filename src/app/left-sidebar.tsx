@@ -1245,11 +1245,16 @@ export default function LeftSidebar() {
         <div className="h-16 border-b border-border flex items-center gap-2 px-4">
           <Link href="/" className="flex items-center gap-2 min-w-0">
             <Image src={Logo} alt="Snap My Date" width={32} height={32} />
-            <span className="text-base text-foreground truncate">
-              <span className="font-pacifico">Snap</span>
-              <span> </span>
-              <span className="font-montserrat font-semibold">My Date</span>
-            </span>
+            <div className="min-w-0 leading-tight">
+              <span className="text-base text-foreground truncate block">
+                <span className="font-pacifico">Snap</span>
+                <span> </span>
+                <span className="font-montserrat font-semibold">My Date</span>
+              </span>
+              <span className="text-xs text-foreground/60 block truncate">
+                Snap it. Save it.
+              </span>
+            </div>
           </Link>
           <div className="ml-auto">
             <button
