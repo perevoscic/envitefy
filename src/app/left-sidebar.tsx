@@ -2102,9 +2102,12 @@ export default function LeftSidebar() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setMenuOpen((prev) => !prev);
-                setSettingsOpen(false);
-                setSettingsOpenFloating(false);
+                setMenuOpen((v) => {
+                  const next = !v;
+                  setSettingsOpen(false);
+                  setSettingsOpenFloating(false);
+                  return next;
+                });
               }}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
@@ -2139,13 +2142,13 @@ export default function LeftSidebar() {
             </button>
 
             {isOpen && menuOpen && (
-              <div className="absolute bottom-full right-0 mb-3 z-[1000]">
+              <div className="pointer-events-none absolute bottom-full right-0 mb-3 z-[1000]">
                 <div
                   ref={menuRef}
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
+                  className="pointer-events-auto w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
                 >
                   <div className="p-2">
                     <div className="relative">
