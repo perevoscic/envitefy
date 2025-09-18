@@ -86,7 +86,14 @@ export default function LoginHero() {
   }, []);
 
   useEffect(() => {
-    if (status === "authenticated") router.replace("/");
+    if (status !== "authenticated") return;
+    try {
+      if (typeof window !== "undefined") {
+        const welcomeFlag = window.localStorage.getItem("welcomeAfterSignup");
+        if (welcomeFlag === "1") return;
+      }
+    } catch {}
+    router.replace("/");
   }, [status, router]);
 
   // Open modal automatically when `?auth=login` or `?auth=signup` is present and respond to query changes

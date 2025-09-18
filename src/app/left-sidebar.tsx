@@ -1823,7 +1823,7 @@ export default function LeftSidebar() {
                         setItemMenuCategoryOpenFor(null);
                         setItemMenuId(h.id);
                       }}
-                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70 z-[8000]"
+                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

@@ -21,9 +21,7 @@ export default function SubscriptionPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
     null
   );
-  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(
-    null
-  );
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
   const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<
     string | null
   >(null);
@@ -38,13 +36,16 @@ export default function SubscriptionPage() {
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [banner, setBanner] = useState<
-    { type: "success" | "error" | "info"; message: string } | null
-  >(null);
+  const [banner, setBanner] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
   const [bannerVisible, setBannerVisible] = useState<boolean>(true);
-  const [pricing, setPricing] = useState<{ monthly: number; yearly: number }>(
-    { monthly: 299, yearly: 2999 }
-  );
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [pricing, setPricing] = useState<{ monthly: number; yearly: number }>({
+    monthly: 299,
+    yearly: 2999,
+  });
 
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
@@ -54,6 +55,17 @@ export default function SubscriptionPage() {
       : null;
     if (normalized) setSelectedPlan(normalized as any);
   }, [params]);
+
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const flag = window.localStorage.getItem("welcomeAfterSignup");
+      if (flag === "1") {
+        setShowWelcome(true);
+        window.localStorage.removeItem("welcomeAfterSignup");
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -115,7 +127,8 @@ export default function SubscriptionPage() {
     let message: string | null = null;
     if (status === "success") {
       type = "success";
-      message = "Subscription confirmed. Thank you for supporting Snap My Date!";
+      message =
+        "Subscription confirmed. Thank you for supporting Snap My Date!";
     } else if (status === "gift-success") {
       type = "success";
       message = "Gift purchase complete! We'll email the gift code shortly.";
@@ -168,28 +181,40 @@ export default function SubscriptionPage() {
     };
   }, [params, router]);
 
-  const monthlyPrice = useMemo(() => (pricing.monthly / 100).toFixed(2), [pricing.monthly]);
-  const yearlyPrice = useMemo(() => (pricing.yearly / 100).toFixed(2), [pricing.yearly]);
+  const monthlyPrice = useMemo(
+    () => (pricing.monthly / 100).toFixed(2),
+    [pricing.monthly]
+  );
+  const yearlyPrice = useMemo(
+    () => (pricing.yearly / 100).toFixed(2),
+    [pricing.yearly]
+  );
 
-  const parseDateValue = useCallback((value: string | Date | null | undefined) => {
-    if (!value) return null;
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return null;
-      const isoish = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
-      const date = new Date(isoish);
-      if (!Number.isNaN(date.getTime())) return date;
-      const fallback = new Date(trimmed);
-      return Number.isNaN(fallback.getTime()) ? null : fallback;
-    }
-    return null;
-  }, []);
+  const parseDateValue = useCallback(
+    (value: string | Date | null | undefined) => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const isoish = trimmed.includes("T")
+          ? trimmed
+          : trimmed.replace(" ", "T");
+        const date = new Date(isoish);
+        if (!Number.isNaN(date.getTime())) return date;
+        const fallback = new Date(trimmed);
+        return Number.isNaN(fallback.getTime()) ? null : fallback;
+      }
+      return null;
+    },
+    []
+  );
 
   const formattedRenewalDate = useMemo(() => {
-    const reference = parseDateValue(currentPeriodEnd) || parseDateValue(subscriptionExpiresAt);
+    const reference =
+      parseDateValue(currentPeriodEnd) || parseDateValue(subscriptionExpiresAt);
     if (!reference) return null;
     return reference.toLocaleDateString(undefined, {
       month: "long",
@@ -198,19 +223,30 @@ export default function SubscriptionPage() {
     });
   }, [currentPeriodEnd, subscriptionExpiresAt, parseDateValue]);
 
-  const hasActivePaidPlan = currentPlan === "monthly" || currentPlan === "yearly";
+  const hasActivePaidPlan =
+    currentPlan === "monthly" || currentPlan === "yearly";
   const buttonDisabled = loading || (isAuthed && selectedPlan === currentPlan);
   const buttonLabel = useMemo(() => {
     if (!isAuthed) return "Subscribe";
-    if (loading) return selectedPlan === "free" ? "Updating..." : "Redirecting...";
+    if (loading)
+      return selectedPlan === "free" ? "Updating..." : "Redirecting...";
     if (selectedPlan === "free") {
-      if (!hasActivePaidPlan) return currentPlan === "free" ? "Current plan" : "Select Free";
+      if (!hasActivePaidPlan)
+        return currentPlan === "free" ? "Current plan" : "Select Free";
       return cancelAtPeriodEnd ? "Cancellation scheduled" : "Downgrade to Free";
     }
     if (currentPlan === selectedPlan) return "Current plan";
-    if (hasActivePaidPlan && currentPlan && currentPlan !== selectedPlan) return "Switch Plan";
+    if (hasActivePaidPlan && currentPlan && currentPlan !== selectedPlan)
+      return "Switch Plan";
     return "Subscribe";
-  }, [isAuthed, loading, selectedPlan, hasActivePaidPlan, cancelAtPeriodEnd, currentPlan]);
+  }, [
+    isAuthed,
+    loading,
+    selectedPlan,
+    hasActivePaidPlan,
+    cancelAtPeriodEnd,
+    currentPlan,
+  ]);
 
   return (
     <main className="p-10 max-w-4xl mx-auto">
@@ -407,72 +443,74 @@ export default function SubscriptionPage() {
           type="button"
           className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow select-none"
           onClick={async () => {
-          if (!isAuthed) {
-            setAuthMode("signup");
-            setAuthOpen(true);
-            return;
-          }
-          if (loading) return;
-          if (selectedPlan === "free") {
-            if (!hasActivePaidPlan) return;
+            if (!isAuthed) {
+              setAuthMode("signup");
+              setAuthOpen(true);
+              return;
+            }
+            if (loading) return;
+            if (selectedPlan === "free") {
+              if (!hasActivePaidPlan) return;
+              try {
+                setLoading(true);
+                const res = await fetch("/api/user/subscription", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ plan: "free" }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  throw new Error(
+                    json?.error || "Failed to update subscription"
+                  );
+                }
+                const newCancelState = Boolean(json?.cancelAtPeriodEnd);
+                setCancelAtPeriodEnd(newCancelState);
+                if (json?.plan) setCurrentPlan(json.plan);
+                setBanner({
+                  type: "info",
+                  message: newCancelState
+                    ? "We'll cancel your subscription at the end of the current period."
+                    : "Subscription canceled.",
+                });
+                router.refresh();
+              } catch (err: any) {
+                setBanner({
+                  type: "error",
+                  message: err?.message || "Failed to update subscription",
+                });
+              } finally {
+                setLoading(false);
+              }
+              return;
+            }
+            if (isAuthed && selectedPlan === currentPlan) return;
             try {
               setLoading(true);
-              const res = await fetch("/api/user/subscription", {
-                method: "PUT",
+              const res = await fetch("/api/billing/stripe/checkout", {
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ plan: "free" }),
+                body: JSON.stringify({ plan: selectedPlan }),
               });
               const json = await res.json().catch(() => ({}));
-              if (!res.ok) {
-                throw new Error(json?.error || "Failed to update subscription");
+              if (!res.ok || !json?.url) {
+                throw new Error(json?.error || "Failed to start checkout");
               }
-              const newCancelState = Boolean(json?.cancelAtPeriodEnd);
-              setCancelAtPeriodEnd(newCancelState);
-              if (json?.plan) setCurrentPlan(json.plan);
-              setBanner({
-                type: "info",
-                message: newCancelState
-                  ? "We'll cancel your subscription at the end of the current period."
-                  : "Subscription canceled.",
-              });
-              router.refresh();
+              if (typeof window !== "undefined") {
+                window.location.href = json.url as string;
+              }
             } catch (err: any) {
+              setLoading(false);
               setBanner({
                 type: "error",
-                message: err?.message || "Failed to update subscription",
+                message: err?.message || "Failed to start checkout",
               });
-            } finally {
-              setLoading(false);
             }
-            return;
-          }
-          if (isAuthed && selectedPlan === currentPlan) return;
-          try {
-            setLoading(true);
-            const res = await fetch("/api/billing/stripe/checkout", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ plan: selectedPlan }),
-            });
-            const json = await res.json().catch(() => ({}));
-            if (!res.ok || !json?.url) {
-              throw new Error(json?.error || "Failed to start checkout");
-            }
-            if (typeof window !== "undefined") {
-              window.location.href = json.url as string;
-            }
-          } catch (err: any) {
-            setLoading(false);
-            setBanner({
-              type: "error",
-              message: err?.message || "Failed to start checkout",
-            });
-          }
-        }}
-        disabled={buttonDisabled}
-      >
-        {buttonLabel}
-      </button>
+          }}
+          disabled={buttonDisabled}
+        >
+          {buttonLabel}
+        </button>
         {isAuthed && stripeCustomerId && (
           <button
             type="button"
@@ -523,7 +561,7 @@ export default function SubscriptionPage() {
         </div>
       )}
       <div className="mt-12 text-center text-muted-foreground">
-        <Link  href="/snap">or continue to Snap you first Date</Link>
+        <Link href="/snap">or continue to Snap your Date</Link>
       </div>
       <div className="mt-12 max-w-xl mx-auto w-full">
         <div className="rounded-xl bg-surface p-5 shadow-md">
@@ -561,6 +599,65 @@ export default function SubscriptionPage() {
         onClose={() => setAuthOpen(false)}
         onModeChange={setAuthMode}
       />
+      {showWelcome && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
+            onClick={() => setShowWelcome(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Welcome to Snap My Date"
+            className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/60"
+            style={{
+              background:
+                "linear-gradient(180deg, color-mix(in oklab, var(--surface) 92%, black 8%), color-mix(in oklab, var(--surface) 84%, black 16%))",
+            }}
+          >
+            <div className="relative p-6 pb-4">
+              <div
+                className="absolute inset-x-0 -top-24 h-32 pointer-events-none select-none"
+                aria-hidden="true"
+              >
+                <div
+                  className="mx-auto h-full w-[80%] rounded-full blur-3xl opacity-40"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, color-mix(in oklab, var(--accent) 45%, transparent), transparent), radial-gradient(closest-side, color-mix(in oklab, var(--secondary) 35%, transparent), transparent)",
+                  }}
+                />
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Welcome to
+                  <span className="block text-3xl md:text-4xl">
+                    <span className="font-pacifico"> Snap</span>
+                    <span> </span>
+                    <span className="font-montserrat">My Date</span>
+                  </span>
+                </h2>
+                <button
+                  aria-label="Close"
+                  className="rounded-xl px-3 py-1.5 border border-border bg-surface/70 hover:bg-surface text-foreground/80 hover:text-foreground transition"
+                  onClick={() => setShowWelcome(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 space-y-4">
+              <p className="text-foreground/80 text-center">
+                You’re all set.
+                <br />
+                Let’s snap your first event and turn it into a reminder!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
