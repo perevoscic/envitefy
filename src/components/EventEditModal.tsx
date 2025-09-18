@@ -24,6 +24,7 @@ export default function EventEditModal({
     description: eventData?.description || "",
     timezone: eventData?.timezone || "",
     category: eventData?.category || "",
+    recurrence: eventData?.recurrence || "",
   });
   const { data: session } = useSession();
   const router = useRouter();
@@ -56,6 +57,8 @@ export default function EventEditModal({
         dataUpdate.timezone = formData.timezone;
       if (formData.category !== eventData?.category)
         dataUpdate.category = formData.category;
+      if (formData.recurrence !== eventData?.recurrence)
+        dataUpdate.recurrence = formData.recurrence || null;
 
       if (Object.keys(dataUpdate).length > 0) {
         await fetch(`/api/history/${eventId}`, {

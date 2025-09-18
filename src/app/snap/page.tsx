@@ -17,6 +17,7 @@ type EventFields = {
   timezone: string;
   category?: string | null;
   reminders?: { minutes: number }[] | null;
+  recurrence?: string | null;
 };
 
 export default function SnapPage() {
@@ -37,6 +38,13 @@ export default function SnapPage() {
   const [credits, setCredits] = useState<number | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [bulkEvents, setBulkEvents] = useState<any[] | null>(null);
+  const [practiceSchedule, setPracticeSchedule] = useState<any | null>(null);
+  const [selectedPracticeGroup, setSelectedPracticeGroup] = useState<
+    number | null
+  >(null);
+  const [canEditRecurrence, setCanEditRecurrence] = useState(false);
+  const hasSavedRef = useRef<boolean>(false);
+  const [savedHistoryId, setSavedHistoryId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -236,6 +244,9 @@ export default function SnapPage() {
     setError(null);
     setFile(null);
     setCategory(null);
+    setPracticeSchedule(null);
+    setSelectedPracticeGroup(null);
+    setCanEditRecurrence(false);
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -248,6 +259,154 @@ export default function SnapPage() {
       }
     } catch {}
     return false;
+  };
+
+  const formatIsoForInput = (iso: string | null, timezone: string) => {
+    if (!iso) return null;
+    try {
+      const dt = new Date(iso);
+      if (isNaN(dt.getTime())) return iso;
+      return new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: timezone,
+      }).format(dt);
+    } catch {
+      return iso;
+    }
+  };
+
+  const normalizeBulkEvents = (list: any[], tzFallback: string) => {
+    return (Array.isArray(list) ? list : [])
+      .map((ev) => {
+        if (!ev || typeof ev !== "object") return null;
+        const start = typeof ev.start === "string" ? ev.start : null;
+        const end = typeof ev.end === "string" ? ev.end : null;
+        if (!start || !end) return null;
+        const timezone =
+          (typeof ev.timezone === "string" && ev.timezone.trim()) || tzFallback;
+        return {
+          title: (ev.title as string) || "Event",
+          start,
+          end,
+          allDay: Boolean(ev.allDay),
+          timezone,
+          location: (ev.location as string) || "",
+          description: (ev.description as string) || "",
+          recurrence:
+            typeof ev.recurrence === "string"
+              ? (ev.recurrence as string)
+              : null,
+          reminders:
+            Array.isArray(ev.reminders) && ev.reminders.length
+              ? (ev.reminders as { minutes: number }[])
+              : [{ minutes: 1440 }],
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const normalizedToEventFields = (
+    ev: any,
+    tzFallback: string
+  ): EventFields => {
+    const timezone =
+      (typeof ev?.timezone === "string" && ev.timezone.trim()) || tzFallback;
+    const startIso = typeof ev?.start === "string" ? ev.start : null;
+    const endIso = typeof ev?.end === "string" ? ev.end : null;
+    const reminders =
+      Array.isArray(ev?.reminders) && ev.reminders.length
+        ? (ev.reminders as { minutes: number }[])
+        : [{ minutes: 1440 }];
+    return {
+      title: (ev?.title as string) || "Event",
+      start: startIso
+        ? formatIsoForInput(startIso, timezone) || startIso
+        : null,
+      end: endIso ? formatIsoForInput(endIso, timezone) || endIso : null,
+      location: (ev?.location as string) || "",
+      description: (ev?.description as string) || "",
+      timezone,
+      reminders,
+      recurrence:
+        typeof ev?.recurrence === "string" ? (ev.recurrence as string) : null,
+      category: (ev?.category as string) || null,
+    };
+  };
+
+  const applyPracticeGroup = (
+    schedule: any,
+    index: number,
+    opts: { updateSelection?: boolean } = {}
+  ) => {
+    if (!schedule || !Array.isArray(schedule.groups)) return;
+    const groups = schedule.groups as any[];
+    const group = groups[index];
+    if (!group) return;
+    const tzFallback =
+      (typeof schedule.timezone === "string" && schedule.timezone.trim()) ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone ||
+      "UTC";
+    const normalized = normalizeBulkEvents(group.events || [], tzFallback);
+    setBulkEvents(normalized.length ? normalized : null);
+    if (normalized.length) {
+      const primary = normalizedToEventFields(normalized[0], tzFallback);
+      primary.category = "Sport Events";
+      setEvent(primary);
+    }
+    if (opts.updateSelection !== false) setSelectedPracticeGroup(index);
+    setCategory("Sport Events");
+    setCanEditRecurrence(true);
+  };
+
+  const dayCodeToLabel: Record<string, string> = {
+    SU: "Sun",
+    MO: "Mon",
+    TU: "Tue",
+    WE: "Wed",
+    TH: "Thu",
+    FR: "Fri",
+    SA: "Sat",
+  };
+
+  const indexToByDay = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+
+  const formatTimeLabel = (time: string) => {
+    const [h, m] = time.split(":").map((v) => Number(v));
+    if (Number.isNaN(h) || Number.isNaN(m)) return time;
+    const hour = ((h + 11) % 12) + 1;
+    const suffix = h >= 12 ? "PM" : "AM";
+    return `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
+  };
+
+  const summarizeRecurrence = (recurrence: string | null | undefined) => {
+    if (!recurrence || typeof recurrence !== "string") return "Does not repeat";
+    const match = recurrence.match(/BYDAY=([^;]+)/i);
+    if (!match) return "Repeats weekly";
+    const days = match[1]
+      .split(",")
+      .map((d) => dayCodeToLabel[d.trim().toUpperCase()] || d.trim())
+      .filter(Boolean);
+    if (!days.length) return "Repeats weekly";
+    if (days.length === 1) return `Weekly on ${days[0]}`;
+    if (days.length === 2) return `Weekly on ${days[0]} & ${days[1]}`;
+    return `Weekly on ${days.slice(0, -1).join(", ")} & ${
+      days[days.length - 1]
+    }`;
+  };
+
+  const computeWeeklyRuleFromEvent = (e: EventFields): string | null => {
+    const timezone =
+      e.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const iso = parseStartToIso(e.start, timezone);
+    if (!iso) return null;
+    const date = new Date(iso);
+    const code = indexToByDay[date.getDay()];
+    return code ? `RRULE:FREQ=WEEKLY;BYDAY=${code}` : "RRULE:FREQ=WEEKLY";
   };
 
   const onFile = async (f: File | null) => {
@@ -373,24 +532,6 @@ export default function SnapPage() {
       }
     };
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-    const formatIsoForInput = (iso: string | null, timezone: string) => {
-      if (!iso) return null;
-      try {
-        const dt = new Date(iso);
-        if (isNaN(dt.getTime())) return iso;
-        return new Intl.DateTimeFormat(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: timezone,
-        }).format(dt);
-      } catch {
-        return iso;
-      }
-    };
     const adjusted = data.fieldsGuess
       ? {
           ...data.fieldsGuess,
@@ -398,96 +539,150 @@ export default function SnapPage() {
           end: formatIsoForInput(data.fieldsGuess.end, tz),
           timezone: tz,
           reminders: [{ minutes: 1440 }],
+          recurrence: null as string | null,
         }
       : null;
     // Prepare bulk events when provided by OCR schedule
-    const normalizedBulk: any[] = Array.isArray((data as any).events)
-      ? ((data as any).events as any[])
-          .map((ev) => {
-            try {
-              const startIso = typeof ev.start === "string" ? ev.start : null;
-              if (!startIso) return null;
-              const endIso =
-                (typeof ev.end === "string" && ev.end) ||
-                new Date(
-                  new Date(startIso).getTime() + 90 * 60 * 1000
-                ).toISOString();
-              return {
-                title:
-                  (ev.title as string) ||
-                  (adjusted?.title as string) ||
-                  "Event",
-                start: startIso,
-                end: endIso,
-                allDay: Boolean(ev.allDay),
-                timezone: (ev.timezone as string) || tz,
-                location: (ev.location as string) || "",
-                description:
-                  (ev.description as string) || (data?.ocrText as string) || "",
-                reminders: [{ minutes: 1440 }],
-              } as any;
-            } catch {
-              return null;
-            }
-          })
-          .filter(Boolean)
-      : [];
-    setBulkEvents(normalizedBulk.length > 1 ? normalizedBulk : null);
-    setEvent(adjusted);
-    // Save history for authenticated users (server will associate user if signed in)
+    const normalizedBulk: any[] = normalizeBulkEvents(
+      ((data as any)?.events as any[]) || [],
+      tz
+    );
+
+    const practice = (data as any)?.practiceSchedule;
+    const practiceDetected =
+      practice &&
+      typeof practice === "object" &&
+      practice.detected &&
+      Array.isArray(practice.groups) &&
+      practice.groups.length > 0;
+
+    if (practiceDetected) {
+      // Show chooser; do not auto-select a group
+      setPracticeSchedule(practice);
+      setSelectedPracticeGroup(null);
+      setBulkEvents(null);
+      setEvent({
+        title: (practice?.title as string) || "Practice Schedule",
+        start: null,
+        end: null,
+        location: "",
+        description:
+          (practice?.timeframe as string) || "Weekly team practice schedule",
+        timezone: tz,
+        recurrence: null,
+        reminders: [{ minutes: 1440 }],
+        category: "Sport Events",
+      });
+      setCanEditRecurrence(false);
+    } else {
+      setPracticeSchedule(null);
+      setSelectedPracticeGroup(null);
+      setBulkEvents(normalizedBulk.length > 1 ? normalizedBulk : null);
+      setEvent(adjusted);
+      setCanEditRecurrence(false);
+    }
+    // Defer history save until user explicitly saves or adds to a calendar
+    setOcrText(data.ocrText || "");
+    setLoading(false);
+  };
+
+  const saveHistoryIfNeeded = async () => {
+    if (hasSavedRef.current || !event) return savedHistoryId;
     try {
-      const thumbnail = await createThumbnailDataUrl(currentFile).catch(
-        () => null
-      );
-      const baseData = adjusted || data?.fieldsGuess || null;
-      const inferredCategory = (data && (data as any).category) || null;
-      const guessedFromText = (() => {
+      const currentFile = file;
+      const createThumbnailDataUrl = async (
+        sourceFile: File,
+        maxSize: number = 1024
+      ): Promise<string | null> => {
         try {
-          const blob = `${(data?.fieldsGuess?.title as string) || ""} ${
-            (data?.ocrText as string) || ""
-          }`;
-          const s = blob.toLowerCase();
-          return /birthday|b-day|turns\s+\d+|party for/.test(s)
-            ? "Birthdays"
-            : /wedding|bridal|ceremony|reception/.test(s)
-            ? "Weddings"
-            : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
-            ? "Doctor Appointments"
-            : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
-                s
-              )
-            ? "Sport Events"
-            : /playdate|play\s*day|kids?\s*play/.test(s)
-            ? "Play Days"
-            : /appointment|meeting|consult/.test(s)
-            ? "Appointments"
-            : null;
+          if (!sourceFile.type.startsWith("image/")) return null;
+          const blobUrl = URL.createObjectURL(sourceFile);
+          const img = document.createElement("img");
+          const loaded: HTMLImageElement = await new Promise(
+            (resolve, reject) => {
+              img.onload = () => resolve(img);
+              img.onerror = reject as any;
+              img.src = blobUrl;
+            }
+          );
+          const { width, height } = loaded;
+          const scale = Math.min(1, maxSize / Math.max(width, height));
+          const w = Math.max(1, Math.round(width * scale));
+          const h = Math.max(1, Math.round(height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return null;
+          ctx.drawImage(loaded, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/webp", 0.82);
+          try {
+            URL.revokeObjectURL(blobUrl);
+          } catch {}
+          return dataUrl;
         } catch {
           return null;
         }
-      })();
-      // IMPORTANT: Avoid using the current `category` state as first priority
-      // because `setCategory(...)` above is async and may still hold the
-      // previous scan's value within this same function call. Use the freshly
-      // detected/guessed category for this scan first.
+      };
+
+      const thumbnail = currentFile
+        ? await createThumbnailDataUrl(currentFile)
+        : null;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const practice = practiceSchedule;
+      const practiceDetected = Boolean(
+        practice &&
+          practice.detected &&
+          Array.isArray(practice.groups) &&
+          practice.groups.length > 0 &&
+          selectedPracticeGroup !== null
+      );
+      const adjusted = event;
+      const recurrenceValue = practiceDetected
+        ? (practice?.groups?.[selectedPracticeGroup!]?.events?.[0]
+            ?.recurrence as string) || null
+        : (event?.recurrence as string | null) || null;
+      let baseData: any = adjusted || null;
+      if (
+        practiceDetected &&
+        practice?.groups?.[selectedPracticeGroup!]?.events?.length
+      ) {
+        const normalized = normalizeBulkEvents(
+          practice.groups[selectedPracticeGroup!].events,
+          (practice.timezone as string) || tz
+        );
+        const first = normalized[0];
+        baseData = first ? first : baseData;
+      }
+
       const selectedCategory =
-        inferredCategory ?? guessedFromText ?? category ?? "General Events";
-      // Also keep original ISO datetimes for future filtering
-      const startISO = (data?.fieldsGuess?.start as string | null) || null;
-      const endISO = (data?.fieldsGuess?.end as string | null) || null;
+        category || (practiceDetected ? "Sport Events" : "General Events");
+      const startISO = null;
+      const endISO = null;
+      const primaryPracticeTitle = practiceDetected
+        ? (practice?.groups?.[selectedPracticeGroup!]?.name as string) ||
+          (practice?.title as string) ||
+          "Practice Schedule"
+        : null;
       const payload = {
-        title:
-          (adjusted && adjusted.title) || data?.fieldsGuess?.title || "Event",
+        title: primaryPracticeTitle || event.title || "Event",
         data: baseData
           ? {
               ...baseData,
               thumbnail,
-              category: selectedCategory,
+              category: practiceDetected ? "Sport Events" : selectedCategory,
               startISO,
               endISO,
+              recurrence: recurrenceValue,
             }
-          : { thumbnail, category: selectedCategory, startISO, endISO },
-      };
+          : {
+              thumbnail,
+              category: practiceDetected ? "Sport Events" : selectedCategory,
+              startISO,
+              endISO,
+              recurrence: recurrenceValue,
+            },
+      } as any;
       const r = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -495,36 +690,35 @@ export default function SnapPage() {
         body: JSON.stringify(payload),
       });
       const j = await r.json().catch(() => ({}));
-      // Optionally expose the new id to enable share link in-session later
-      (window as any).__lastEventId = j?.id;
+      const id = (j as any)?.id as string | undefined;
+      if (id) setSavedHistoryId(id);
+      (window as any).__lastEventId = id;
+      hasSavedRef.current = true;
       try {
-        const createdId = (j as any)?.id;
-        const createdTitle = (j as any)?.title || payload.title;
-        const createdAt = (j as any)?.created_at || new Date().toISOString();
-        const createdStart =
-          (j as any)?.data?.start || (payload as any)?.data?.start || null;
-        const createdCategory =
-          (j as any)?.data?.category ||
-          (payload as any)?.data?.category ||
-          null;
-        if (createdId && typeof window !== "undefined") {
+        if (id && typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("history:created", {
               detail: {
-                id: createdId,
-                title: createdTitle,
-                created_at: createdAt,
-                start: createdStart,
-                category: createdCategory,
+                id,
+                title: (j as any)?.title || payload.title,
+                created_at: (j as any)?.created_at || new Date().toISOString(),
+                start:
+                  (j as any)?.data?.start ||
+                  (payload as any)?.data?.start ||
+                  null,
+                category:
+                  (j as any)?.data?.category ||
+                  (payload as any)?.data?.category ||
+                  null,
               },
             })
           );
-          // (Reverted) category sync via custom event was removed per request
         }
       } catch {}
-    } catch {}
-    setOcrText(data.ocrText || "");
-    setLoading(false);
+      return id || null;
+    } catch {
+      return null;
+    }
   };
 
   const openCamera = () => {
@@ -671,7 +865,7 @@ export default function SnapPage() {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
     if (!ready) return;
-    const q = new URLSearchParams({
+    const params = new URLSearchParams({
       title: ready.title || "Event",
       start: ready.start!,
       end: ready.end!,
@@ -679,10 +873,15 @@ export default function SnapPage() {
       description: ready.description || "",
       timezone: "",
       floating: "1",
-      ...(ready.reminders && ready.reminders.length
-        ? { reminders: ready.reminders.map((r) => String(r.minutes)).join(",") }
-        : {}),
-    }).toString();
+    });
+    if (ready.recurrence) params.set("recurrence", ready.recurrence);
+    if (ready.reminders && ready.reminders.length) {
+      params.set(
+        "reminders",
+        ready.reminders.map((r) => String(r.minutes)).join(",")
+      );
+    }
+    const q = params.toString();
     const path = `/api/ics?${q}`;
     const inlinePath = `${path}${
       path.includes("?") ? "&" : "?"
@@ -694,7 +893,8 @@ export default function SnapPage() {
     const ua = navigator.userAgent || "";
     const isMac = /Macintosh|Mac OS X/i.test(ua);
     const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const isSafari = /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
+    const isSafari =
+      /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
 
     // Apple handling:
     // - iOS: use plain https inline import (avoids subscription prompt)
@@ -1258,6 +1458,8 @@ export default function SnapPage() {
             </div>
           )}
 
+          {/* practice group selection moved to the Review modal */}
+
           {event && (
             <section className="mt-8 space-y-4">
               <div className="flex items-center gap-3 flex-nowrap">
@@ -1432,6 +1634,40 @@ export default function SnapPage() {
                         setEvent({ ...event, end: e.target.value || null })
                       }
                     />
+                  </div>
+                )}
+
+                {canEditRecurrence && (
+                  <div className="space-y-1">
+                    <label className="text-sm text-foreground/70">Repeat</label>
+                    <select
+                      className="w-full border border-border bg-surface text-foreground p-2 rounded"
+                      value={
+                        event.recurrence &&
+                        /FREQ=WEEKLY/i.test(event.recurrence)
+                          ? "weekly"
+                          : "none"
+                      }
+                      onChange={(e) => {
+                        if (e.target.value === "weekly") {
+                          const rule = computeWeeklyRuleFromEvent(event);
+                          setEvent({
+                            ...event,
+                            recurrence: rule || "RRULE:FREQ=WEEKLY",
+                          });
+                        } else {
+                          setEvent({ ...event, recurrence: null });
+                        }
+                      }}
+                    >
+                      <option value="none">Does not repeat</option>
+                      <option value="weekly">Weekly</option>
+                    </select>
+                    {event.recurrence && (
+                      <p className="text-xs text-foreground/60">
+                        {summarizeRecurrence(event.recurrence)}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -1672,9 +1908,57 @@ export default function SnapPage() {
             </div>
 
             <div className="px-6 pb-6 max-h-[70vh] overflow-y-auto no-scrollbar pr-2">
+              {practiceSchedule?.detected &&
+                Array.isArray(practiceSchedule.groups) &&
+                practiceSchedule.groups.length > 0 && (
+                  <section className="mb-6 space-y-3">
+                    <div className="text-sm text-foreground/70">
+                      {practiceSchedule.title || "Practice schedule detected"}
+                      {practiceSchedule.timeframe
+                        ? ` — ${practiceSchedule.timeframe}`
+                        : ""}
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {practiceSchedule.groups.map(
+                        (group: any, idx: number) => {
+                          const isSelected = selectedPracticeGroup === idx;
+                          return (
+                            <button
+                              key={`${group?.name || idx}-practice-group-modal`}
+                              type="button"
+                              onClick={() =>
+                                applyPracticeGroup(practiceSchedule, idx)
+                              }
+                              className={`w-full text-left rounded-2xl border px-4 py-3 bg-surface/80 hover:bg-surface transition-colors ${
+                                isSelected
+                                  ? "border-primary/70 shadow-md shadow-primary/20"
+                                  : "border-border"
+                              }`}
+                            >
+                              <div className="font-semibold text-foreground">
+                                {(group?.name as string) || `Group ${idx + 1}`}
+                              </div>
+                              {(group?.note as string) && (
+                                <div className="text-xs text-foreground/60 mt-0.5">
+                                  {group.note}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                  </section>
+                )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left column: Details */}
-                <div className="space-y-4">
+                <div
+                  className={`space-y-4 ${
+                    practiceSchedule?.detected && selectedPracticeGroup === null
+                      ? "opacity-50 pointer-events-none"
+                      : ""
+                  }`}
+                >
                   <h3 className="text-sm font-semibold text-foreground/80">
                     Details
                   </h3>
@@ -1955,14 +2239,30 @@ export default function SnapPage() {
 
             <div className="mt-6 flex items-center gap-3 flex-nowrap justify-end p-6 pt-4 border-t border-border/60 bg-gradient-to-b from-transparent to-background/30">
               <button
+                className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                onClick={() => setEvent(null)}
+              >
+                <span>Cancel</span>
+              </button>
+              <button
+                className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                onClick={closeAfter(async () => {
+                  await saveHistoryIfNeeded();
+                })}
+              >
+                <span>Save</span>
+              </button>
+              <button
                 className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap hover:opacity-95 active:opacity-90 shadow-md ${
                   connected.google
                     ? "border-primary/60 bg-primary text-on-primary shadow-primary/25"
                     : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
                 }`}
-                onClick={closeAfter(
-                  connected.google ? addGoogle : connectGoogle
-                )}
+                onClick={closeAfter(async () => {
+                  await saveHistoryIfNeeded();
+                  if (connected.google) await addGoogle();
+                  else connectGoogle();
+                })}
               >
                 {connected.google ? (
                   <>
@@ -1983,7 +2283,10 @@ export default function SnapPage() {
                       ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
                       : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
                   }`}
-                  onClick={closeAfter(dlIcs)}
+                  onClick={closeAfter(async () => {
+                    await saveHistoryIfNeeded();
+                    await dlIcs();
+                  })}
                 >
                   {appleLinked ? (
                     <>
@@ -2004,9 +2307,11 @@ export default function SnapPage() {
                     ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
                     : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
                 }`}
-                onClick={closeAfter(
-                  connected.microsoft ? addOutlook : connectOutlook
-                )}
+                onClick={closeAfter(async () => {
+                  await saveHistoryIfNeeded();
+                  if (connected.microsoft) await addOutlook();
+                  else connectOutlook();
+                })}
               >
                 {connected.microsoft ? (
                   <>

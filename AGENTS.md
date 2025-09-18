@@ -70,6 +70,7 @@ This document describes the app’s server-side agents (API routes) that extract
   - `llm=1` or `engine=openai` forces OpenAI image parsing in addition to Google Vision OCR text, useful when Vision misses spelled-out times.
 - **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable.
 - **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets attempt venue lookup via OpenStreetMap.
+- **Practice schedules**: Recognizes weekly team practice tables (groups vs. days). The response adds a `practiceSchedule` object with the detected groups, their weekly sessions, and pre-built normalized events that include `RRULE:FREQ=WEEKLY` recurrences for each day/time block. When multiple groups are present, clients should prompt the user to pick one group before saving events.
 
 ```bash
 curl -X POST \
@@ -90,6 +91,13 @@ curl -X POST \
     "timezone": "America/Chicago"
   },
   "category": "Birthdays",
+  "practiceSchedule": {
+    "detected": false,
+    "title": null,
+    "timeframe": null,
+    "timezone": "America/Chicago",
+    "groups": []
+  },
   "schedule": {
     "detected": false,
     "homeTeam": null,
@@ -110,6 +118,7 @@ curl -X POST \
 - LLM prompt now prioritizes decorative/cursive text (names) on invitation cards and ignores boilerplate like "Invitation"/"Invitation Card" when forming titles. It also classifies wedding/marriage invites and can surface an LLM-provided `category` when present.
 - Wedding rewrite prompt now forbids templated phrases (e.g., "together with their parents", "Dinner and dancing to follow") unless they appear verbatim on the card. It uses only facts present on the invite.
 - Basic timezone inference from U.S. addresses (e.g., "Fresno, CA" → `America/Los_Angeles`). If no hint is found, falls back to the server timezone.
+- Weekly practice schedules map day/time blocks to weekly recurrences. Returned events include `recurrence` strings (`RRULE:FREQ=WEEKLY;BYDAY=...`) and default 1-day-before reminders.
 
 ### OCR Agent (lightweight) — POST `/api/ingest`
 
@@ -351,6 +360,7 @@ Payload used by the authenticated calendar agents.
 }
 ```
 
+- Weekly practice schedules produced by the OCR agent pre-fill `recurrence` with `RRULE:FREQ=WEEKLY;BYDAY=…` so downstream agents can save repeating events without additional parsing.
 - Google mapping: `dateTime/timeZone` or all-day `date` fields; multiple reminder overrides.
 - Microsoft mapping: Graph `subject/body/location/start/end` (UTC), optional `isAllDay`, single `reminderMinutesBeforeStart`.
 
@@ -408,6 +418,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-09-18: OCR practice schedules now capture weekly team tables, return a `practiceSchedule` payload with per-group recurring events, and the Snap UI prompts for group selection while surfacing repeat controls only when a schedule is detected.
 - 2025-09-17: Stripe webhook now handles `customer.subscription.updated` to immediately sync plan changes (e.g., monthly to yearly) after Stripe Checkout completes.
 - 2025-09-17: Added `/api/billing/stripe/sync` and shared subscription sync utilities so the success page can refresh plan changes immediately after Checkout.
 - 2025-09-17: Stripe webhook plan detection falls back to Stripe price intervals so yearly upgrades apply even if lookup keys or metadata are absent.

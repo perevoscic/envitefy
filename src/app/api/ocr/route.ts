@@ -225,6 +225,586 @@ async function llmExtractGymnasticsScheduleFromImage(
   }
 }
 
+type PracticeScheduleLLMGroup = {
+  name?: string;
+  note?: string | null;
+  sessions?: Array<{
+    day?: string;
+    startTime?: string;
+    endTime?: string;
+    note?: string | null;
+  }>;
+};
+
+type PracticeScheduleLLMResponse = {
+  title?: string | null;
+  timeframe?: string | null;
+  timezoneHint?: string | null;
+  groups?: PracticeScheduleLLMGroup[];
+};
+
+async function llmExtractPracticeScheduleFromImage(
+  imageBytes: Buffer,
+  mime: string,
+  timezone: string
+): Promise<PracticeScheduleLLMResponse | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const base64 = imageBytes.toString("base64");
+  const system =
+    "You read team practice schedules laid out as tables (groups vs. days) and return clean JSON describing weekly recurring sessions.";
+  const userText =
+    [
+      "Extract the practice schedule as strict JSON with keys: title (string|null), timeframe (string|null), timezoneHint (string|null), groups (array).",
+      "Each group object must have: name (string), optional note, sessions (array).",
+      "Each session must include: day (three-letter uppercase code MON/TUE/WED/THU/FRI/SAT/SUN), startTime (HH:MM 24-hour), endTime (HH:MM 24-hour), optional note (string).",
+      "Rules:",
+      "- Ignore cells that only say OFF/Closed." ,
+      "- If a cell contains text like '4:15-6:00 rec', parse startTime=04:15, endTime=06:00, note='rec'.",
+      "- Preserve trailing labels such as 'team gym' or 'conditioning' in the session note (lowercase).",
+      "- If a column header or legend indicates the season (e.g., '2025-2026 School Year'), set timeframe to that exact text.",
+      "- If a headline names the gym/team, set title accordingly (e.g., 'Team Practice Schedule').",
+      "- timezoneHint may include any location or timezone clues shown on the flyer; otherwise null.",
+      "Return strict JSON only; omit any keys with unknown values by setting them to null." ,
+    ].join("\n");
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText + `\nTIMEZONE_GUESS: ${timezone}` },
+              { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    try {
+      return JSON.parse(text) as PracticeScheduleLLMResponse;
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+const DAY_NAME_TO_INDEX: Record<string, { index: number; code: string }> = {
+  sunday: { index: 0, code: "SU" },
+  sun: { index: 0, code: "SU" },
+  mon: { index: 1, code: "MO" },
+  monday: { index: 1, code: "MO" },
+  tue: { index: 2, code: "TU" },
+  tues: { index: 2, code: "TU" },
+  tuesday: { index: 2, code: "TU" },
+  wed: { index: 3, code: "WE" },
+  weds: { index: 3, code: "WE" },
+  wednesday: { index: 3, code: "WE" },
+  thu: { index: 4, code: "TH" },
+  thur: { index: 4, code: "TH" },
+  thurs: { index: 4, code: "TH" },
+  thursday: { index: 4, code: "TH" },
+  fri: { index: 5, code: "FR" },
+  friday: { index: 5, code: "FR" },
+  sat: { index: 6, code: "SA" },
+  saturday: { index: 6, code: "SA" },
+};
+
+function parseDayCode(day?: string | null): { index: number; code: string } | null {
+  if (!day) return null;
+  const key = day.trim().toLowerCase();
+  if ((DAY_NAME_TO_INDEX as any)[key]) return DAY_NAME_TO_INDEX[key];
+  const short = key.slice(0, 3);
+  if ((DAY_NAME_TO_INDEX as any)[short]) return DAY_NAME_TO_INDEX[short];
+  const upper = day.trim().toUpperCase();
+  switch (upper) {
+    case "MON":
+      return DAY_NAME_TO_INDEX.mon;
+    case "TUE":
+    case "TUES":
+      return DAY_NAME_TO_INDEX.tue;
+    case "WED":
+      return DAY_NAME_TO_INDEX.wed;
+    case "THU":
+    case "THUR":
+    case "THURS":
+      return DAY_NAME_TO_INDEX.thu;
+    case "FRI":
+      return DAY_NAME_TO_INDEX.fri;
+    case "SAT":
+      return DAY_NAME_TO_INDEX.sat;
+    case "SUN":
+      return DAY_NAME_TO_INDEX.sun;
+  }
+  return null;
+}
+
+function parseTimeTo24h(value?: string | null): { hour: number; minute: number } | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const twelveHour = trimmed.match(
+    /^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?$/i
+  );
+  if (twelveHour) {
+    let hour = Number(twelveHour[1]);
+    const minute = Number(twelveHour[2] || "0");
+    const mer = (twelveHour[3] || "").toLowerCase();
+    if (mer.includes("p") && hour < 12) hour += 12;
+    if (mer.includes("a") && hour === 12) hour = 0;
+    return { hour: hour % 24, minute: minute % 60 };
+  }
+  const twentyFour = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFour) {
+    const hour = Number(twentyFour[1]);
+    const minute = Number(twentyFour[2]);
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
+      return { hour, minute };
+  }
+  return null;
+}
+
+function parseTimeRange(text?: string | null): {
+  start?: { hour: number; minute: number } | null;
+  end?: { hour: number; minute: number } | null;
+} {
+  if (!text) return { start: null, end: null };
+  const cleaned = text.replace(/–|—/g, "-");
+  const rangeMatch = cleaned.match(/(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?)[^\d]{1,4}(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?)/i);
+  if (rangeMatch) {
+    const start = parseTimeTo24h(rangeMatch[1]);
+    const end = parseTimeTo24h(rangeMatch[2]);
+    return { start, end };
+  }
+  return { start: parseTimeTo24h(cleaned), end: null };
+}
+
+function getLocalNowInTimezone(tz: string): Date {
+  const now = new Date();
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).formatToParts(now);
+    const obj: Record<string, string> = {};
+    for (const p of parts) if (p.type !== "literal") obj[p.type] = p.value;
+    return new Date(
+      Number(obj.year || now.getFullYear()),
+      Number(obj.month || now.getMonth() + 1) - 1,
+      Number(obj.day || now.getDate()),
+      Number(obj.hour || now.getHours()),
+      Number(obj.minute || now.getMinutes()),
+      Number(obj.second || now.getSeconds())
+    );
+  } catch {
+    return new Date(now);
+  }
+}
+
+function toLocalFloatingISO(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function buildNextOccurrence(
+  baseTz: string,
+  dayIndex: number,
+  startHour: number,
+  startMinute: number,
+  endHour: number,
+  endMinute: number
+): { start: string; end: string } {
+  const nowLocal = getLocalNowInTimezone(baseTz);
+  const currentDay = nowLocal.getDay();
+  let delta = (dayIndex - currentDay + 7) % 7;
+  const startDate = new Date(nowLocal);
+  startDate.setHours(0, 0, 0, 0);
+  startDate.setDate(startDate.getDate() + delta);
+  startDate.setHours(startHour, startMinute, 0, 0);
+  if (delta === 0 && startDate <= nowLocal) {
+    startDate.setDate(startDate.getDate() + 7);
+  }
+  const endDate = new Date(startDate);
+  endDate.setHours(endHour, endMinute, 0, 0);
+  if (endDate <= startDate) {
+    endDate.setDate(endDate.getDate() + 1);
+  }
+  return { start: toLocalFloatingISO(startDate), end: toLocalFloatingISO(endDate) };
+}
+
+function normalizeDayToken(rawToken: string): string {
+  return rawToken.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+function isDayToken(rawToken: string): boolean {
+  return Boolean(DAY_NAME_TO_INDEX[normalizeDayToken(rawToken)]);
+}
+
+function isOffToken(value: string): boolean {
+  const lower = value.toLowerCase();
+  return /\boff\b|closed|rest/i.test(lower);
+}
+
+function looksLikeGroupName(line: string): boolean {
+  if (!line) return false;
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (isDayToken(trimmed)) return false;
+  const lower = trimmed.toLowerCase();
+  if (isOffToken(lower)) return false;
+  if (/schedule|calendar|mon\b|tue\b|wed\b|thu\b|fri\b|sat\b|sun\b/i.test(lower)) return false;
+  if (/\d/.test(trimmed) && !/(level|group|team|squad|class|academy|session)/i.test(lower)) {
+    // Numbers without a known keyword are likely times, not group names
+    return false;
+  }
+  // Time ranges or standalone times should not be treated as group names
+  if (/\d{1,2}\s*[:\-]/.test(trimmed)) return false;
+  return /[A-Za-z]/.test(trimmed);
+}
+
+function isValueNoteLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (isDayToken(trimmed)) return false;
+  if (looksLikeGroupName(trimmed)) return false;
+  const lower = trimmed.toLowerCase();
+  if (/^off$/i.test(trimmed)) return true;
+  if (/\d/.test(trimmed)) return true;
+  if (/rec|conditioning|gym|team|practice|train|session|open|meet/i.test(lower)) return true;
+  return false;
+}
+
+function parsePracticeTimeRange(value: string): {
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
+  note: string | null;
+} | null {
+  const lower = value.toLowerCase().trim();
+  if (!lower) return null;
+  if (isOffToken(lower)) return null;
+
+  const normalized = lower.replace(/\s+/g, " ");
+  const noteParts: string[] = [];
+  let timePart = normalized;
+  const noteMatch = normalized.match(/(?:\d|:|am|pm|\s|-)+\s*(.*)$/i);
+  if (noteMatch && noteMatch[1]) {
+    const remainder = noteMatch[1].trim();
+    if (remainder && !/^(?:am|pm)$/i.test(remainder)) {
+      noteParts.push(remainder);
+      timePart = normalized.slice(0, noteMatch.index! + noteMatch[0].length - remainder.length).trim();
+    }
+  }
+
+  const range = timePart.match(
+    /(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/
+  );
+  if (!range) {
+    const single = timePart.match(/(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/);
+    if (!single) return null;
+    const startHourRaw = Number(single[1]);
+    const startMinuteRaw = Number(single[2] || 0);
+    const mer = (single[3] || "").toLowerCase();
+    const { hour: startHour, minute: startMinute } = convertTo24Hour(
+      startHourRaw,
+      startMinuteRaw,
+      mer || null
+    );
+    const end = new Date(0, 0, 0, startHour, startMinute + 90);
+    return {
+      startHour,
+      startMinute,
+      endHour: end.getHours(),
+      endMinute: end.getMinutes(),
+      note: noteParts.length ? noteParts.join(" ") : null,
+    };
+  }
+
+  const startHourRaw = Number(range[1]);
+  const startMinuteRaw = Number(range[2] || 0);
+  const startMer = (range[3] || "").toLowerCase();
+  const endHourRaw = Number(range[4]);
+  const endMinuteRaw = Number(range[5] || 0);
+  const endMer = (range[6] || "").toLowerCase();
+
+  const { hour: startHour, minute: startMinute } = convertTo24Hour(
+    startHourRaw,
+    startMinuteRaw,
+    startMer || null
+  );
+  const { hour: endHour, minute: endMinute } = convertTo24Hour(
+    endHourRaw,
+    endMinuteRaw,
+    endMer || null,
+    startHour
+  );
+
+  return {
+    startHour,
+    startMinute,
+    endHour,
+    endMinute,
+    note: noteParts.length ? noteParts.join(" ") : null,
+  };
+}
+
+function convertTo24Hour(
+  hour: number,
+  minute: number,
+  meridiem: string | null,
+  fallbackCompareHour?: number
+): { hour: number; minute: number } {
+  let h = hour % 12;
+  if (meridiem) {
+    if (/p/.test(meridiem) && h < 12) h += 12;
+    if (/a/.test(meridiem) && hour === 12) h = 0;
+  } else {
+    if (typeof fallbackCompareHour === "number") {
+      if (fallbackCompareHour >= 12 && hour < 12 && hour <= 7) {
+        h += 12;
+      }
+    } else if (hour <= 7) {
+      h += 12;
+    }
+  }
+  return { hour: h, minute };
+}
+
+type PracticeHeuristicGroup = {
+  name: string;
+  note: string | null;
+  values: Array<{ label: string; note: string | null }>;
+};
+
+function parsePracticeScheduleHeuristics(
+  lines: string[],
+  timezone: string
+): {
+  title: string | null;
+  timeframe: string | null;
+  groups: Array<{
+    name: string;
+    note: string | null;
+    sessions: Array<{
+      day: string;
+      display: string;
+      hasPractice: boolean;
+      start?: string;
+      end?: string;
+      startTime?: string;
+      endTime?: string;
+      note: string | null;
+    }>;
+    events: any[];
+  }>;
+} | null {
+  const normalizedLines = lines.map((l) => l.trim()).filter(Boolean);
+  if (!normalizedLines.length) return null;
+
+  let headerStart = -1;
+  let headerEnd = -1;
+  const dayOrder: string[] = [];
+  for (let i = 0; i < normalizedLines.length; i++) {
+    const token = normalizedLines[i];
+    if (isDayToken(token)) {
+      if (dayOrder.length === 0) headerStart = i;
+      const mapKey = normalizeDayToken(token);
+      const code = DAY_NAME_TO_INDEX[mapKey]?.code;
+      if (code && dayOrder[dayOrder.length - 1] !== code) {
+        dayOrder.push(code);
+      }
+    } else if (dayOrder.length) {
+      headerEnd = i - 1;
+      break;
+    }
+  }
+
+  if (dayOrder.length < 3) return null;
+  if (headerEnd < headerStart) headerEnd = headerStart + dayOrder.length - 1;
+
+  const groups: PracticeHeuristicGroup[] = [];
+  const groupKeywords = /(group|level|team|squad|class|crew|cohort|practice)/i;
+
+  const collectValue = (startIdx: number): { value: string; consumed: number } => {
+    let combined = normalizedLines[startIdx];
+    let consumed = 1;
+    let idx = startIdx + 1;
+    while (idx < normalizedLines.length) {
+      const next = normalizedLines[idx];
+      if (!next) {
+        idx++;
+        consumed++;
+        continue;
+      }
+      if (isDayToken(next)) break;
+      if (looksLikeGroupName(next) && groupKeywords.test(next.toLowerCase())) break;
+      if (/\d{1,2}:\d{2}/.test(next) && /\d{1,2}:\d{2}/.test(combined)) break;
+      if (/\boff\b/i.test(next) && /\boff\b/i.test(combined)) {
+        combined = "OFF";
+        idx++;
+        consumed++;
+        continue;
+      }
+      if (!/\d/.test(next)) {
+        combined = `${combined} ${next}`.trim();
+        idx++;
+        consumed++;
+        continue;
+      }
+      break;
+    }
+    return { value: combined.trim(), consumed };
+  };
+
+  let idx = headerEnd + 1;
+  while (idx < normalizedLines.length) {
+    const token = normalizedLines[idx];
+    if (!token) {
+      idx++;
+      continue;
+    }
+    if (isDayToken(token)) {
+      idx++;
+      continue;
+    }
+    if (!looksLikeGroupName(token) && !groupKeywords.test(token.toLowerCase())) {
+      idx++;
+      continue;
+    }
+
+    const groupName = token.trim();
+    idx++;
+    const values: Array<{ label: string; note: string | null }> = [];
+    for (let dayIdx = 0; dayIdx < dayOrder.length && idx < normalizedLines.length; ) {
+      const candidate = normalizedLines[idx];
+      if (!candidate) {
+        idx++;
+        continue;
+      }
+      if (looksLikeGroupName(candidate) && groupKeywords.test(candidate.toLowerCase()) && values.length === 0) {
+        break;
+      }
+      if (isDayToken(candidate)) {
+        idx++;
+        continue;
+      }
+      const { value, consumed } = collectValue(idx);
+      idx += consumed;
+      const noteMatch = value.match(/(.*?)(?:\s+(rec|conditioning|team gym|team\s+gym|open gym|weights))$/i);
+      let label = value;
+      let note: string | null = null;
+      if (noteMatch && noteMatch[2]) {
+        label = noteMatch[1].trim();
+        note = noteMatch[2].trim();
+      }
+      values.push({ label: label || "OFF", note });
+      dayIdx++;
+    }
+    if (!values.length) continue;
+    groups.push({ name: groupName, note: null, values });
+  }
+
+  if (!groups.length) return null;
+
+  const practiceTimezone = timezone;
+  const builtGroups = groups.map((group) => {
+    const sessions: Array<{
+      day: string;
+      display: string;
+      hasPractice: boolean;
+      start?: string;
+      end?: string;
+      startTime?: string;
+      endTime?: string;
+      note: string | null;
+    }> = [];
+    const events: any[] = [];
+
+    group.values.forEach((entry, idxValue) => {
+      const dayCode = dayOrder[idxValue] || dayOrder[0];
+      const parsed = parsePracticeTimeRange(entry.label);
+      if (!parsed) {
+        sessions.push({
+          day: dayCode,
+          display: `${dayCode} ${entry.label}`.trim(),
+          hasPractice: false,
+          note: entry.note,
+        });
+        return;
+      }
+      const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(dayCode)] || { index: idxValue, code: dayCode };
+      const occurrence = buildNextOccurrence(
+        practiceTimezone,
+        dayInfo.index,
+        parsed.startHour,
+        parsed.startMinute,
+        parsed.endHour,
+        parsed.endMinute
+      );
+      const pad = (n: number) => String(n).padStart(2, "0");
+      sessions.push({
+        day: dayCode,
+        display: `${dayCode} ${pad(parsed.startHour)}:${pad(parsed.startMinute)}-${pad(parsed.endHour)}:${pad(parsed.endMinute)}`,
+        hasPractice: true,
+        start: occurrence.start,
+        end: occurrence.end,
+        startTime: `${pad(parsed.startHour)}:${pad(parsed.startMinute)}`,
+        endTime: `${pad(parsed.endHour)}:${pad(parsed.endMinute)}`,
+        note: entry.note || parsed.note,
+      });
+      const descriptionParts = [group.name];
+      descriptionParts.push(`${dayCode} ${pad(parsed.startHour)}:${pad(parsed.startMinute)}-${pad(parsed.endHour)}:${pad(parsed.endMinute)}`);
+      if (entry.note || parsed.note) descriptionParts.push(entry.note || parsed.note || "");
+      events.push({
+        title: `${group.name} Practice`,
+        start: occurrence.start,
+        end: occurrence.end,
+        allDay: false,
+        timezone: practiceTimezone,
+        location: "",
+        description: descriptionParts.filter(Boolean).join(" · "),
+        recurrence: `RRULE:FREQ=WEEKLY;BYDAY=${dayCode}`,
+        reminders: [{ minutes: 1440 }],
+        category: "Sport Events",
+      });
+    });
+
+    return {
+      name: group.name,
+      note: group.note,
+      sessions,
+      events,
+    };
+  });
+
+  return {
+    title: normalizedLines.find((l) => /schedule/i.test(l)) || null,
+    timeframe: normalizedLines.find((l) => /\d{4}\s*-\s*\d{4}/.test(l)) || null,
+    groups: builtGroups,
+  };
+}
+
 // Detect spelled-out time phrases like "four o'clock in the afternoon"
 function detectSpelledTime(raw: string): { hour: number; minute: number; meridiem: "am" | "pm" | null } | null {
   const text = (raw || "").toLowerCase();
@@ -1121,10 +1701,268 @@ export async function POST(request: Request) {
       timezone: "", // omit timezone; UI will show times as typed
     };
 
-    // ---------------- Gymnastics schedule extraction ----------------
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+    const practiceSchedule = {
+      detected: false as boolean,
+      title: null as string | null,
+      timeframe: null as string | null,
+      timezone: tz,
+      groups: [] as Array<{
+        name: string;
+        note: string | null;
+        sessions: Array<{
+          day: string;
+          display: string;
+          hasPractice: boolean;
+          start?: string;
+          end?: string;
+          startTime?: string;
+          endTime?: string;
+          note: string | null;
+        }>;
+        events: any[];
+      }>,
+    };
+
+    // ---------------- Gymnastics schedule extraction ----------------
     const schedule = { detected: false as boolean, homeTeam: null as string | null, season: null as string | null, games: [] as any[] };
     let events: any[] = [];
+
+    // ---------------- Weekly practice schedule extraction ----------------
+    const dayMentions = raw.match(/\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi) || [];
+    const hasTimeRange = /\d{1,2}:\d{2}\s*[\-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
+    const hasPracticeKeyword = /(practice|training|schedule|team)/i.test(raw);
+    const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 4;
+
+    if (looksLikePracticeSchedule) {
+      let practiceTz = tz;
+      let practiceTitle: string | null = null;
+      let practiceTimeframe: string | null = null;
+      let practiceGroups: Array<{
+        name: string;
+        note: string | null;
+        sessions: Array<{
+          day: string;
+          display: string;
+          hasPractice: boolean;
+          start?: string;
+          end?: string;
+          startTime?: string;
+          endTime?: string;
+          note: string | null;
+        }>;
+        events: any[];
+      }> = [];
+
+      let llmPractice: PracticeScheduleLLMResponse | null = null;
+      try {
+        llmPractice = await llmExtractPracticeScheduleFromImage(
+          ocrBuffer,
+          mime || "application/octet-stream",
+          tz
+        );
+      } catch {
+        llmPractice = null;
+      }
+
+      if (llmPractice?.groups && llmPractice.groups.length) {
+        const locationHint = llmPractice?.timezoneHint || finalAddress || fieldsGuess.location || "";
+        practiceTz = inferTimezoneFromAddress(locationHint || "") || tz;
+        const builtGroups: typeof practiceGroups = [];
+        for (const group of llmPractice.groups) {
+          const groupName = String(group?.name || "Practice Group").trim() || "Practice Group";
+          const groupNote = (group?.note && String(group.note).trim()) || null;
+          const sessions = Array.isArray(group?.sessions) ? group.sessions : [];
+          const normalizedSessions: Array<{
+            day: string;
+            display: string;
+            hasPractice: boolean;
+            start?: string;
+            end?: string;
+            startTime?: string;
+            endTime?: string;
+            note: string | null;
+          }> = [];
+          const groupEvents: any[] = [];
+
+          for (const session of sessions) {
+            const dayInfo = parseDayCode(session?.day || "");
+            const range = parseTimeRange(`${session?.startTime || ""}-${session?.endTime || ""}`);
+            const startParsed = range.start || parseTimeTo24h(session?.startTime || "");
+            const endParsed = range.end || parseTimeTo24h(session?.endTime || "");
+            if (!dayInfo || !startParsed || !endParsed) continue;
+            const note = (session?.note && String(session.note).trim()) || null;
+            const occurrence = buildNextOccurrence(
+              practiceTz,
+              dayInfo.index,
+              startParsed.hour,
+              startParsed.minute,
+              endParsed.hour,
+              endParsed.minute
+            );
+            const pad = (n: number) => String(n).padStart(2, "0");
+            normalizedSessions.push({
+              day: dayInfo.code,
+              display: `${dayInfo.code} ${pad(startParsed.hour)}:${pad(startParsed.minute)}-${pad(endParsed.hour)}:${pad(endParsed.minute)}`,
+              hasPractice: true,
+              start: occurrence.start,
+              end: occurrence.end,
+              startTime: `${pad(startParsed.hour)}:${pad(startParsed.minute)}`,
+              endTime: `${pad(endParsed.hour)}:${pad(endParsed.minute)}`,
+              note,
+            });
+            const descParts = [
+              llmPractice?.title?.trim() || null,
+              llmPractice?.timeframe?.trim() || null,
+              groupNote,
+              note,
+            ]
+              .filter((p): p is string => Boolean((p || "").trim()))
+              .map((p) => p.trim());
+            const description = Array.from(new Set(descParts)).join("\n");
+            groupEvents.push({
+              title: `${groupName} Practice`,
+              start: occurrence.start,
+              end: occurrence.end,
+              allDay: false,
+              timezone: practiceTz,
+              location: "",
+              description,
+              recurrence: `RRULE:FREQ=WEEKLY;BYDAY=${dayInfo.code}`,
+              reminders: [{ minutes: 1440 }],
+              category: "Sport Events",
+            });
+          }
+
+          if (normalizedSessions.length) {
+            builtGroups.push({
+              name: groupName,
+              note: groupNote,
+              sessions: normalizedSessions,
+              events: groupEvents,
+            });
+          }
+        }
+        practiceGroups = builtGroups;
+        practiceTitle = llmPractice?.title || null;
+        practiceTimeframe = llmPractice?.timeframe || null;
+      }
+
+      // Merge in heuristic groups to fill any that LLM missed
+      const heuristic = parsePracticeScheduleHeuristics(lines, practiceTz);
+      if (heuristic && Array.isArray(heuristic.groups) && heuristic.groups.length) {
+        const seen = new Set(
+          (practiceGroups || []).map((g) => String(g?.name || "").trim().toLowerCase())
+        );
+        for (const hg of heuristic.groups) {
+          const key = String(hg?.name || "").trim().toLowerCase();
+          if (!key) continue;
+          if (!seen.has(key)) {
+            practiceGroups.push(hg);
+            seen.add(key);
+          }
+        }
+        practiceTitle = practiceTitle || heuristic.title || null;
+        practiceTimeframe = practiceTimeframe || heuristic.timeframe || null;
+      }
+
+      if (practiceGroups.length) {
+        practiceSchedule.detected = true;
+        practiceSchedule.groups = practiceGroups;
+        practiceSchedule.title = practiceTitle;
+        practiceSchedule.timeframe = practiceTimeframe;
+        practiceSchedule.timezone = practiceTz;
+      }
+
+      // Fallback: if we still detected too few groups (e.g., only a subset),
+      // run a simple row-based extractor to pick up missing group names and times.
+      if (practiceSchedule.detected && practiceSchedule.groups.length < 7) {
+        try {
+          const groupNameRe = /(\b[A-Z][A-Za-z]+\s+Group\b|\bLevel\s*\d+\b)/;
+          const normalized = lines.map((l: string) => l.trim()).filter(Boolean);
+          // Derive day order again
+          const order: string[] = [];
+          for (const tok of normalized) {
+            if (isDayToken(tok)) {
+              const code = DAY_NAME_TO_INDEX[normalizeDayToken(tok)]?.code;
+              if (code && order[order.length - 1] !== code) order.push(code);
+            } else if (order.length) break;
+          }
+          if (order.length >= 3) {
+            const seen = new Set(
+              (practiceSchedule.groups || []).map((g: any) => String(g?.name || "").trim().toLowerCase())
+            );
+            for (let i = 0; i < normalized.length; i++) {
+              const line = normalized[i];
+              if (!groupNameRe.test(line)) continue;
+              const name = (line.match(groupNameRe)![0] || line).trim();
+              if (seen.has(name.toLowerCase())) continue;
+              // Collect the next order.length value-like tokens
+              const values: string[] = [];
+              let j = i + 1;
+              while (j < normalized.length && values.length < order.length) {
+                const cand = normalized[j];
+                if (!cand) { j++; continue; }
+                if (isDayToken(cand)) { j++; continue; }
+                if (groupNameRe.test(cand)) break; // next group reached
+                values.push(cand);
+                j++;
+              }
+              if (!values.length) continue;
+              const sessions: any[] = [];
+              const groupEvents: any[] = [];
+              for (let k = 0; k < Math.min(values.length, order.length); k++) {
+                const label = values[k];
+                const parsed = parsePracticeTimeRange(label);
+                if (!parsed) continue;
+                const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(order[k])] || { index: k, code: order[k] };
+                const occ = buildNextOccurrence(
+                  practiceTz,
+                  dayInfo.index,
+                  parsed.startHour,
+                  parsed.startMinute,
+                  parsed.endHour,
+                  parsed.endMinute
+                );
+                const pad = (n: number) => String(n).padStart(2, "0");
+                sessions.push({
+                  day: dayInfo.code,
+                  display: `${dayInfo.code} ${pad(parsed.startHour)}:${pad(parsed.startMinute)}-${pad(parsed.endHour)}:${pad(parsed.endMinute)}`,
+                  hasPractice: true,
+                  start: occ.start,
+                  end: occ.end,
+                  startTime: `${pad(parsed.startHour)}:${pad(parsed.startMinute)}`,
+                  endTime: `${pad(parsed.endHour)}:${pad(parsed.endMinute)}`,
+                  note: parsed.note,
+                });
+                groupEvents.push({
+                  title: `${name} Practice`,
+                  start: occ.start,
+                  end: occ.end,
+                  allDay: false,
+                  timezone: practiceTz,
+                  location: "",
+                  description: [practiceTitle, practiceTimeframe, parsed.note].filter(Boolean).join("\n"),
+                  recurrence: `RRULE:FREQ=WEEKLY;BYDAY=${dayInfo.code}`,
+                  reminders: [{ minutes: 1440 }],
+                  category: "Sport Events",
+                });
+              }
+              if (sessions.length) {
+                (practiceSchedule.groups as any[]).push({
+                  name,
+                  note: null,
+                  sessions,
+                  events: groupEvents,
+                });
+                seen.add(name.toLowerCase());
+              }
+            }
+          }
+        } catch {}
+      }
+    }
 
     const monthMap: Record<string, number> = {
       jan: 0, january: 0,
@@ -1341,6 +2179,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // Do not auto-pick a practice group. Let the client prompt the user.
+    // Keep events empty here; the UI will render the group chooser from practiceSchedule.
+
+    if (practiceSchedule.detected) {
+      // For weekly practice schedules, there is typically no single address on the flyer
+      // and no single one-off start/end. Leave them blank so the UI prompts for a group.
+      fieldsGuess.location = "";
+      fieldsGuess.start = null as any;
+      fieldsGuess.end = null as any;
+      const schedLabel = [
+        (practiceSchedule as any).title,
+        (practiceSchedule as any).timeframe,
+      ]
+        .filter((s: string) => (s || "").trim())
+        .join(" — ");
+      if (schedLabel) fieldsGuess.description = schedLabel;
+    }
+
     // --- Category detection ---
     const detectCategory = (fullText: string, sched: any, guess: any): string | null => {
       try {
@@ -1357,8 +2213,11 @@ export async function POST(request: Request) {
         const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
         if (hasWedding && !hasBirthday) return "Weddings";
         if (hasBirthday && !hasWedding) return "Birthdays";
-        // Sports generic (fallback)
-        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
+        // Sports: practice schedules and generic sports
+        if (/(practice\s*schedule|team\s*practice|school\s*year\s*.*practice|group\s+.*\b\d{1,2}:\d{2})/i.test(fullText)) {
+          return "Sport Events";
+        }
+        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball|football)/i.test(fullText)) {
           return "Sport Events";
         }
       } catch {}
@@ -1367,7 +2226,8 @@ export async function POST(request: Request) {
 
     const intakeId: string | null = null;
     // Category is derived strictly from OCR text (words only); ignore any image-only LLM labels
-    const category: string | null = detectCategory(raw, schedule, fieldsGuess);
+    let category: string | null = detectCategory(raw, schedule, fieldsGuess);
+    if (practiceSchedule.detected) category = "Sport Events";
 
     try {
       const session = await getServerSession(authOptions);
@@ -1376,7 +2236,7 @@ export async function POST(request: Request) {
     } catch {}
 
     return NextResponse.json(
-      { intakeId, ocrText: raw, fieldsGuess, schedule, events, category },
+      { intakeId, ocrText: raw, fieldsGuess, practiceSchedule, schedule, events, category },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err: unknown) {
