@@ -30,6 +30,15 @@ export default function EventDeleteModal({
         throw new Error("Failed to delete event");
       }
 
+      // Notify other views (e.g., calendar/sidebar) that this history row was deleted
+      try {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("history:deleted", { detail: { id: eventId } })
+          );
+        }
+      } catch {}
+
       // Redirect to home page after successful deletion
       router.push("/");
     } catch (error) {

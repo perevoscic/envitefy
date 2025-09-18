@@ -1879,7 +1879,7 @@ export async function POST(request: Request) {
       // run a simple row-based extractor to pick up missing group names and times.
       if (practiceSchedule.detected && practiceSchedule.groups.length < 7) {
         try {
-          const groupNameRe = /(\b[A-Z][A-Za-z]+\s+Group\b|\bLevel\s*\d+\b)/;
+          const groupNameRe = /(\b[A-Z][A-Za-z]+\s+Group\b|\bLevel\s*\d+\b)/i;
           const normalized = lines.map((l: string) => l.trim()).filter(Boolean);
           // Derive day order again
           const order: string[] = [];
@@ -1949,15 +1949,14 @@ export async function POST(request: Request) {
                   category: "Sport Events",
                 });
               }
-              if (sessions.length) {
-                (practiceSchedule.groups as any[]).push({
-                  name,
-                  note: null,
-                  sessions,
-                  events: groupEvents,
-                });
-                seen.add(name.toLowerCase());
-              }
+              // Even if no sessions parsed, include the group name so the UI can show it
+              (practiceSchedule.groups as any[]).push({
+                name,
+                note: null,
+                sessions,
+                events: groupEvents,
+              });
+              seen.add(name.toLowerCase());
             }
           }
         } catch {}

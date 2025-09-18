@@ -45,6 +45,34 @@ export default function SnapPage() {
   const [canEditRecurrence, setCanEditRecurrence] = useState(false);
   const hasSavedRef = useRef<boolean>(false);
   const [savedHistoryId, setSavedHistoryId] = useState<string | null>(null);
+  // Auto-open camera/upload based on ?action=camera|upload (e.g., from sidebar shortcuts)
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const params = new URLSearchParams(window.location.search);
+      const action = (params.get("action") || "").toLowerCase();
+      if (action === "camera") {
+        // Delay a tick so refs mount
+        setTimeout(() => {
+          const camEl = cameraInputRef.current;
+          if (camEl) camEl.value = "";
+          camEl?.click();
+        }, 50);
+      } else if (action === "upload") {
+        setTimeout(() => {
+          const fileEl = fileInputRef.current;
+          if (fileEl) fileEl.value = "";
+          fileEl?.click();
+        }, 50);
+      }
+      if (action) {
+        // Clean the URL so refresh/back doesn't retrigger
+        const url = new URL(window.location.href);
+        url.searchParams.delete("action");
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     try {
@@ -356,6 +384,44 @@ export default function SnapPage() {
     if (normalized.length) {
       const primary = normalizedToEventFields(normalized[0], tzFallback);
       primary.category = "Sport Events";
+      // Build BYDAY only from events that share the same time window as the primary
+      const timeKey = (s: string | null, e: string | null) => {
+        try {
+          const toKey = (iso: string | null) => {
+            if (!iso) return "";
+            const d = new Date(iso);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          };
+          return `${toKey(s)}-${toKey(e)}`;
+        } catch {
+          return "";
+        }
+      };
+      const firstItem = normalized[0] || ({} as any);
+      const pStart =
+        typeof firstItem.start === "string" ? firstItem.start : null;
+      const pEnd = typeof firstItem.end === "string" ? firstItem.end : null;
+      const pKey = timeKey(pStart, pEnd);
+      const byDays: string[] = [];
+      for (const ev of normalized) {
+        if (!ev) continue;
+        const s =
+          typeof (ev as any).start === "string" ? (ev as any).start : null;
+        const e = typeof (ev as any).end === "string" ? (ev as any).end : null;
+        if (timeKey(s, e) !== pKey) continue;
+        const list = getByDayList((ev as any).recurrence as string);
+        if (list.length) byDays.push(...list);
+        else {
+          try {
+            if (s) {
+              const code = indexToByDay[new Date(s).getDay()];
+              if (code) byDays.push(code);
+            }
+          } catch {}
+        }
+      }
+      primary.recurrence = weeklyRuleFromDays(byDays);
       setEvent(primary);
     }
     if (opts.updateSelection !== false) setSelectedPracticeGroup(index);
@@ -397,6 +463,25 @@ export default function SnapPage() {
     return `Weekly on ${days.slice(0, -1).join(", ")} & ${
       days[days.length - 1]
     }`;
+  };
+
+  const getByDayList = (recurrence?: string | null) => {
+    if (!recurrence || typeof recurrence !== "string") return [] as string[];
+    const m = recurrence.match(/BYDAY=([^;]+)/i);
+    if (!m) return [] as string[];
+    return m[1]
+      .split(",")
+      .map((d) => d.trim().toUpperCase())
+      .filter(Boolean);
+  };
+
+  const weeklyRuleFromDays = (days: string[]) => {
+    const uniq = Array.from(new Set(days.map((d) => d.toUpperCase()))).filter(
+      Boolean
+    );
+    return uniq.length
+      ? `RRULE:FREQ=WEEKLY;BYDAY=${uniq.join(",")}`
+      : "RRULE:FREQ=WEEKLY";
   };
 
   const computeWeeklyRuleFromEvent = (e: EventFields): string | null => {
@@ -638,10 +723,13 @@ export default function SnapPage() {
           selectedPracticeGroup !== null
       );
       const adjusted = event;
-      const recurrenceValue = practiceDetected
-        ? (practice?.groups?.[selectedPracticeGroup!]?.events?.[0]
-            ?.recurrence as string) || null
-        : (event?.recurrence as string | null) || null;
+      // Use the user's current Repeats selection when present
+      const recurrenceValue =
+        (event?.recurrence as string | null) ||
+        (practiceDetected
+          ? (practice?.groups?.[selectedPracticeGroup!]?.events?.[0]
+              ?.recurrence as string) || null
+          : null);
       let baseData: any = adjusted || null;
       if (
         practiceDetected &&
@@ -2137,6 +2225,7 @@ export default function SnapPage() {
                     <h3 className="text-sm font-semibold text-foreground/80">
                       Reminders
                     </h3>
+                    {/* Repeats moved below. Reminders retains only alert chips. */}
                     <div className="flex flex-wrap gap-2">
                       {[
                         { label: "1 H", minutes: 60 },
@@ -2232,6 +2321,83 @@ export default function SnapPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Repeats section moved below Reminders */}
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground/80">
+                      Repeats
+                    </h3>
+                    <div className="space-y-2">
+                      <label className="inline-flex items-center gap-2 text-sm text-foreground/70">
+                        <input
+                          type="checkbox"
+                          disabled={
+                            practiceSchedule?.detected &&
+                            selectedPracticeGroup === null
+                          }
+                          checked={Boolean(
+                            event.recurrence &&
+                              /FREQ=WEEKLY/i.test(event.recurrence)
+                          )}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const hasDays =
+                                getByDayList(event.recurrence).length > 0;
+                              const rule = hasDays
+                                ? (event.recurrence as string)
+                                : computeWeeklyRuleFromEvent(event) ||
+                                  "RRULE:FREQ=WEEKLY";
+                              setEvent({ ...event, recurrence: rule });
+                            } else {
+                              setEvent({ ...event, recurrence: null });
+                            }
+                          }}
+                        />
+                        <span>Repeats</span>
+                      </label>
+                      {event.recurrence &&
+                        /FREQ=WEEKLY/i.test(event.recurrence) && (
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {indexToByDay.map((code) => {
+                              const selected = getByDayList(
+                                event.recurrence
+                              ).includes(code);
+                              const label = dayCodeToLabel[code] || code;
+                              return (
+                                <button
+                                  key={code}
+                                  type="button"
+                                  className={`px-2.5 py-1 rounded-full border text-xs ${
+                                    selected
+                                      ? "bg-primary text-on-primary border-primary/60"
+                                      : "bg-surface/80 text-foreground/90 border-border/70 hover:bg-surface"
+                                  }`}
+                                  onClick={() => {
+                                    const current = new Set(
+                                      getByDayList(event.recurrence)
+                                    );
+                                    if (current.has(code)) current.delete(code);
+                                    else current.add(code);
+                                    const next = weeklyRuleFromDays(
+                                      Array.from(current)
+                                    );
+                                    setEvent({ ...event, recurrence: next });
+                                  }}
+                                  aria-pressed={selected}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      {event.recurrence && (
+                        <p className="text-xs text-foreground/60">
+                          {summarizeRecurrence(event.recurrence)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

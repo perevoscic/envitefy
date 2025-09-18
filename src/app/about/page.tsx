@@ -1,5 +1,11 @@
-"use client";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About — Snap My Date",
+  description:
+    "Snap My Date turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
+};
 
 export default function AboutPage() {
   return (
@@ -21,39 +27,67 @@ export default function AboutPage() {
                 Snap it. Save it.
               </p>
               <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
-                Snap My Date was created by parents who were tired of digging
+                Snap My Date was built by parents who were tired of digging
                 through backpacks and group chats. Snap a picture of any flyer,
-                invite, practice chart, or appointment card and we brighten it
-                into a polished calendar event with the right title, place, and
-                reminders, no typing and no guesswork.
+                invite, practice chart, or appointment card and we turn it into
+                a clean calendar event with the right title, place, and
+                reminders — no typing and no guesswork.
               </p>
               <p className="mt-6 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
-                From kindergarten concerts to travel tournaments and bridal
-                showers, Snap My Date understands the details that matter. It
+                From kindergarten concerts to travel tournaments and birthday
+                parties, Snap My Date understands the details that matter. It
                 recognizes names written in script, catches spelled-out times
                 like "four in the afternoon," and knows the difference between a
-                home game and an away meet so your calendar always tells the full
-                story.
+                home game and an away meet so your calendar always tells the
+                full story.
               </p>
+              <div className="mt-8 grid gap-5 sm:grid-cols-3 text-left">
+                <div className="rounded-2xl bg-surface/60 border border-border p-5">
+                  <h3 className="text-xl font-semibold text-center">
+                    Built by busy parents
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    Made to cut down the chaos — snap, save, and move on with
+                    the rest of your day.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-surface/60 border border-border p-5">
+                  <h3 className="text-xl font-semibold text-center">
+                    Zero typing. Real details.
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    Names in cursive, spelled-out times, home vs away — we pull
+                    the parts you would type anyway, so you do not have to.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-surface/60 border border-border p-5">
+                  <h3 className="text-xl font-semibold text-center">
+                    Works with your calendar
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    Save to Google or Outlook in a tap, or export an ICS for
+                    Apple Calendar. Share full seasons in one file.
+                  </p>
+                </div>
+              </div>
               <div className="mt-8 grid gap-5 sm:grid-cols-3 text-left">
                 <div className="rounded-2xl bg-surface/60 border border-border p-5">
                   <h3 className="text-xl font-semibold text-center">
                     Snap to Event
                   </h3>
                   <p className="mt-2 text-foreground/70">
-                    We bring over the title, time, location, and notes in one
-                    step, whether it is a school recital, doctor visit, church
-                    gathering, or birthday celebration.
+                    Title, time, location, and notes in one step — whether it is
+                    a school recital, doctor visit, church gathering, or
+                    birthday.
                   </p>
                 </div>
                 <div className="rounded-2xl bg-surface/60 border border-border p-5">
                   <h3 className="text-xl font-semibold text-center">
-                    Works where you plan
+                    Repeat-aware
                   </h3>
                   <p className="mt-2 text-foreground/70">
-                    Save events straight into Google, Apple, or Outlook and keep
-                    gentle reminders across every phone, tablet, and laptop your
-                    family uses.
+                    Weekly practice tables become recurring events. Season
+                    flyers import as a single clean file ready to share.
                   </p>
                 </div>
                 <div className="rounded-2xl bg-surface/60 border border-border p-5">
@@ -61,9 +95,8 @@ export default function AboutPage() {
                     Built for real life
                   </h3>
                   <p className="mt-2 text-foreground/70">
-                    Store a tidy history of every flyer, share whole seasons with
-                    one download, and gift months of peace of mind to another
-                    caregiver in seconds.
+                    Keep a tidy history of every flyer, gift paid months to a
+                    friend, and stay in sync across devices.
                   </p>
                 </div>
               </div>
@@ -98,10 +131,10 @@ export default function AboutPage() {
                     </li>
                     <li>
                       <span className="font-semibold text-foreground">
-                        Safe sharing:
+                        Works with your calendar:
                       </span>{" "}
-                      sign in with the accounts you already use, reset passwords
-                      easily, and choose which calendar receives each event.
+                      save to Google or Outlook, or download an ICS for Apple —
+                      no retyping required.
                     </li>
                     <li>
                       <span className="font-semibold text-foreground">
@@ -110,6 +143,30 @@ export default function AboutPage() {
                       send a friend or coach a bundle of paid months and we will
                       deliver a ready-to-use gift message when their payment
                       clears.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-6 text-left">
+                <div className="rounded-2xl bg-surface/60 border border-border p-6 sm:p-8">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-center">
+                    Our story
+                  </h2>
+                  <ul className="mt-5 space-y-4 text-foreground/75">
+                    <li>
+                      We started Snap My Date as parents juggling concerts,
+                      practices, appointments, and invites across group chats
+                      and crumpled flyers.
+                    </li>
+                    <li>
+                      We obsessed over accuracy — script names, spelled-out
+                      times, home vs. away — so the saved event feels like the
+                      original.
+                    </li>
+                    <li>
+                      Today, families, coaches, and club organizers use Snap My
+                      Date to stay in sync without extra typing.
                     </li>
                   </ul>
                 </div>

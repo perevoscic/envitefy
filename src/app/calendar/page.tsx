@@ -21,6 +21,7 @@ type CalendarEvent = {
   location?: string | null;
   description?: string | null;
   category?: string | null;
+  recurrence?: string | null;
 };
 
 // Mirror the sidebar color logic so calendar tiles match "Recent Snapped"
@@ -89,6 +90,28 @@ function startOfDay(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+function dayKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseEventStartToLocalDate(startIso: string): Date | null {
+  try {
+    // If the string is date-only (YYYY-MM-DD), interpret it as a local date
+    // instead of UTC midnight, which would shift the day for many timezones.
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateOnly.test(startIso)) {
+      const [y, m, d] = startIso.split("-").map((n) => Number(n));
+      return new Date(y, m - 1, d, 0, 0, 0, 0);
+    }
+    return new Date(startIso);
+  } catch {
+    return null;
+  }
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -217,6 +240,8 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
           description:
             (ev.description as string) || (d.description as string) || null,
           category: (ev.category as string) || baseCategory,
+          recurrence:
+            (ev.recurrence as string) || (d.recurrence as string) || null,
         });
       });
       continue;
@@ -238,10 +263,93 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
         location: (single?.location as string) || null,
         description: (single?.description as string) || null,
         category: (single?.category as string) || baseCategory,
+        recurrence: (single?.recurrence as string) || null,
       });
     }
   }
   return events;
+}
+
+// Expand weekly recurring events (BYDAY) across the visible grid (6 weeks)
+function expandRecurringEvents(
+  events: CalendarEvent[],
+  cursor: Date
+): CalendarEvent[] {
+  const { weeks } = getMonthMatrix(cursor);
+  const gridStart = startOfDay(weeks[0][0]);
+  const gridEnd = startOfDay(weeks[5][6]);
+  gridEnd.setHours(23, 59, 59, 999);
+  const dayCodeToIndex: Record<string, number> = {
+    SU: 0,
+    MO: 1,
+    TU: 2,
+    WE: 3,
+    TH: 4,
+    FR: 5,
+    SA: 6,
+  };
+  const out: CalendarEvent[] = [];
+  const seen = new Set<string>();
+  const keyFor = (e: CalendarEvent) =>
+    `${e.historyId}|${e.title}|${e.start}|${e.end || ""}`;
+
+  const pushUnique = (e: CalendarEvent) => {
+    const k = keyFor(e);
+    if (!seen.has(k)) {
+      seen.add(k);
+      out.push(e);
+    }
+  };
+
+  for (const ev of events) {
+    pushUnique(ev);
+    const r = ev.recurrence || "";
+    if (!/FREQ=WEEKLY/i.test(r)) continue;
+    const m = r.match(/BYDAY=([^;]+)/i);
+    const by = m ? m[1].split(",").map((s) => s.trim().toUpperCase()) : [];
+    if (!by.length) continue;
+    try {
+      const start = new Date(ev.start);
+      const end = ev.end
+        ? new Date(ev.end)
+        : new Date(start.getTime() + 90 * 60 * 1000);
+      const duration = end.getTime() - start.getTime();
+      const baseStart = start > gridStart ? start : gridStart;
+      for (const code of by) {
+        const dow = dayCodeToIndex[code];
+        if (typeof dow !== "number") continue;
+        // find first occurrence >= baseStart on this weekday and not before original start
+        const first = new Date(baseStart);
+        const delta = (dow - first.getDay() + 7) % 7;
+        first.setDate(first.getDate() + delta);
+        // Align to event time
+        first.setHours(
+          start.getHours(),
+          start.getMinutes(),
+          start.getSeconds(),
+          0
+        );
+        if (first < start) first.setDate(first.getDate() + 7);
+        // Generate weekly occurrences until gridEnd
+        for (
+          let d = new Date(first);
+          d <= gridEnd;
+          d.setDate(d.getDate() + 7)
+        ) {
+          const sISO = d.toISOString();
+          const eISO = new Date(d.getTime() + duration).toISOString();
+          // Give expanded occurrences unique IDs to avoid React key collisions
+          pushUnique({
+            ...ev,
+            id: `${ev.id}@${sISO}`,
+            start: sISO,
+            end: eISO,
+          });
+        }
+      }
+    } catch {}
+  }
+  return out;
 }
 
 function groupEventsByDay(
@@ -250,8 +358,10 @@ function groupEventsByDay(
   const map = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
     try {
-      const d = startOfDay(new Date(ev.start));
-      const key = d.toISOString();
+      const parsed = parseEventStartToLocalDate(ev.start);
+      if (!parsed || isNaN(parsed.getTime())) continue;
+      const d = startOfDay(parsed);
+      const key = dayKey(d);
       const arr = map.get(key) || [];
       arr.push(ev);
       map.set(key, arr);
@@ -290,7 +400,8 @@ export default function CalendarPage() {
         const items: HistoryItem[] = Array.isArray(json?.items)
           ? json.items
           : [];
-        const evs = normalizeHistoryToEvents(items);
+        const evsRaw = normalizeHistoryToEvents(items);
+        const evs = expandRecurringEvents(evsRaw, cursor);
         // Sort by start time
         evs.sort(
           (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
@@ -306,7 +417,60 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cursor]);
+
+  // Listen for history create/delete events to keep calendar in sync without full refresh
+  useEffect(() => {
+    const onCreated = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail as any;
+        if (!detail || !detail.id) return;
+        // Re-fetch minimal list and rebuild events to ensure recurrence mapping etc.
+        // Keep this lightweight: only refetch when user is on calendar page.
+        (async () => {
+          try {
+            const res = await fetch("/api/history", { cache: "no-store" });
+            const json = await res.json().catch(() => ({ items: [] }));
+            const items: HistoryItem[] = Array.isArray(json?.items)
+              ? json.items
+              : [];
+            const evsRaw = normalizeHistoryToEvents(items);
+            const evs = expandRecurringEvents(evsRaw, cursor);
+            evs.sort(
+              (a, b) =>
+                new Date(a.start).getTime() - new Date(b.start).getTime()
+            );
+            setEvents(evs);
+          } catch {}
+        })();
+      } catch {}
+    };
+    const onDeleted = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail as any;
+        const deletedId: string | undefined = detail?.id;
+        if (!deletedId) return;
+        // Remove any events that came from this history row
+        setEvents((prev) => prev.filter((ev) => ev.historyId !== deletedId));
+      } catch {}
+    };
+    try {
+      window.addEventListener("history:created", onCreated as EventListener);
+      window.addEventListener("history:deleted", onDeleted as EventListener);
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener(
+          "history:created",
+          onCreated as EventListener
+        );
+        window.removeEventListener(
+          "history:deleted",
+          onDeleted as EventListener
+        );
+      } catch {}
+    };
+  }, [cursor]);
 
   // Load stored category color overrides so tiles match sidebar tints
   useEffect(() => {
@@ -454,7 +618,7 @@ export default function CalendarPage() {
   const goToday = () => setCursor(startOfDay(new Date()));
 
   const onDayClick = (date: Date) => {
-    const key = startOfDay(date).toISOString();
+    const key = dayKey(startOfDay(date));
     const items = byDay.get(key) || [];
     if (items.length === 1) {
       setOpenEvent(items[0]);
@@ -474,7 +638,7 @@ export default function CalendarPage() {
       : { tint: "bg-surface/60", dot: "bg-foreground/40" };
     return (
       <button
-        key={ev.id}
+        key={`${ev.id}@${ev.start}`}
         onClick={(e) => {
           e.stopPropagation();
           setOpenEvent(ev);
@@ -496,7 +660,7 @@ export default function CalendarPage() {
       : { tint: "bg-surface/60", dot: "bg-foreground/40" };
     return (
       <span
-        key={ev.id}
+        key={`${ev.id}@${ev.start}`}
         className={`inline-block h-1.5 w-1.5 rounded-full ${tone.dot}`}
       />
     );
@@ -567,7 +731,7 @@ export default function CalendarPage() {
               {week.map((date) => {
                 const isCurrentMonth = date.getMonth() === month;
                 const isToday = isSameDay(date, today);
-                const key = startOfDay(date).toISOString();
+                const key = dayKey(startOfDay(date));
                 const items = byDay.get(key) || [];
                 return (
                   <div
@@ -608,8 +772,8 @@ export default function CalendarPage() {
                       )}
                     </div>
 
-                    {/* Desktop pills (limit to 2 items) */}
-                    <div className="mt-2 hidden md:flex flex-col gap-1.5">
+                    {/* Desktop pills (reserve space for two items) */}
+                    <div className="mt-2 hidden md:flex flex-col gap-1.5 md:min-h-[56px]">
                       {items.slice(0, 2).map((ev) => renderEventPill(ev))}
                     </div>
                   </div>
@@ -630,23 +794,56 @@ export default function CalendarPage() {
             <div
               className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-sky-400 to-purple-700 z-0"
               style={{
-                width: '50%',
-                transform: upcomingView === 'week' ? 'translateX(0%)' : 'translateX(100%)',
+                width: "50%",
+                transform:
+                  upcomingView === "week"
+                    ? "translateX(0%)"
+                    : "translateX(100%)",
               }}
             />
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === 'week' ? 'text-white' : 'text-foreground/70'
+                upcomingView === "week" ? "text-white" : "text-foreground/70"
               }`}
-              onClick={() => setUpcomingView('week')}
+              onClick={() => setUpcomingView("week")}
             >
               <div className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M1.25 8C1.25 5.37665 3.37665 3.25 6 3.25H18C20.6234 3.25 22.75 5.37665 22.75 8V18C22.75 20.6234 20.6234 22.75 18 22.75H6C3.37665 22.75 1.25 20.6234 1.25 18V8ZM6 4.75C4.20507 4.75 2.75 6.20507 2.75 8V18C2.75 19.7949 4.20507 21.25 6 21.25H18C19.7949 21.25 21.25 19.7949 21.25 18V8C21.25 6.20507 19.7949 4.75 18 4.75H6Z" fill="currentColor"/>
-                  <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">7</text>
-                  <path fillRule="evenodd" clipRule="evenodd" d="M8 1.25C8.41421 1.25 8.75 1.58579 8.75 2V5.5C8.75 5.91421 8.41421 6.25 8 6.25C7.58579 6.25 7.25 5.91421 7.25 5.5V2C7.25 1.58579 7.58579 1.25 8 1.25Z" fill="currentColor"/>
-                  <path fillRule="evenodd" clipRule="evenodd" d="M16 1.25C16.4142 1.25 16.75 1.58579 16.75 2V5.5C16.75 5.91421 16.4142 6.25 16 6.25C15.5858 6.25 15.25 5.91421 15.25 5.5V2C15.25 1.58579 15.5858 1.25 16 1.25Z" fill="currentColor"/>
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M1.25 8C1.25 5.37665 3.37665 3.25 6 3.25H18C20.6234 3.25 22.75 5.37665 22.75 8V18C22.75 20.6234 20.6234 22.75 18 22.75H6C3.37665 22.75 1.25 20.6234 1.25 18V8ZM6 4.75C4.20507 4.75 2.75 6.20507 2.75 8V18C2.75 19.7949 4.20507 21.25 6 21.25H18C19.7949 21.25 21.25 19.7949 21.25 18V8C21.25 6.20507 19.7949 4.75 18 4.75H6Z"
+                    fill="currentColor"
+                  />
+                  <text
+                    x="50%"
+                    y="65%"
+                    dominantBaseline="middle"
+                    textAnchor="middle"
+                    fill="currentColor"
+                    fontSize="10"
+                    fontWeight="bold"
+                  >
+                    7
+                  </text>
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M8 1.25C8.41421 1.25 8.75 1.58579 8.75 2V5.5C8.75 5.91421 8.41421 6.25 8 6.25C7.58579 6.25 7.25 5.91421 7.25 5.5V2C7.25 1.58579 7.58579 1.25 8 1.25Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M16 1.25C16.4142 1.25 16.75 1.58579 16.75 2V5.5C16.75 5.91421 16.4142 6.25 16 6.25C15.5858 6.25 15.25 5.91421 15.25 5.5V2C15.25 1.58579 15.5858 1.25 16 1.25Z"
+                    fill="currentColor"
+                  />
                 </svg>
                 <span>Week</span>
               </div>
@@ -654,16 +851,46 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === 'month' ? 'text-white' : 'text-foreground/70'
+                upcomingView === "month" ? "text-white" : "text-foreground/70"
               }`}
-              onClick={() => setUpcomingView('month')}
+              onClick={() => setUpcomingView("month")}
             >
               <div className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M1.25 8C1.25 5.37665 3.37665 3.25 6 3.25H18C20.6234 3.25 22.75 5.37665 22.75 8V18C22.75 20.6234 20.6234 22.75 18 22.75H6C3.37665 22.75 1.25 20.6234 1.25 18V8ZM6 4.75C4.20507 4.75 2.75 6.20507 2.75 8V18C2.75 19.7949 4.20507 21.25 6 21.25H18C19.7949 21.25 21.25 19.7949 21.25 18V8C21.25 6.20507 19.7949 4.75 18 4.75H6Z" fill="currentColor"/>
-                  <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">31</text>
-                  <path fillRule="evenodd" clipRule="evenodd" d="M8 1.25C8.41421 1.25 8.75 1.58579 8.75 2V5.5C8.75 5.91421 8.41421 6.25 8 6.25C7.58579 6.25 7.25 5.91421 7.25 5.5V2C7.25 1.58579 7.58579 1.25 8 1.25Z" fill="currentColor"/>
-                  <path fillRule="evenodd" clipRule="evenodd" d="M16 1.25C16.4142 1.25 16.75 1.58579 16.75 2V5.5C16.75 5.91421 16.4142 6.25 16 6.25C15.5858 6.25 15.25 5.91421 15.25 5.5V2C15.25 1.58579 15.5858 1.25 16 1.25Z" fill="currentColor"/>
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M1.25 8C1.25 5.37665 3.37665 3.25 6 3.25H18C20.6234 3.25 22.75 5.37665 22.75 8V18C22.75 20.6234 20.6234 22.75 18 22.75H6C3.37665 22.75 1.25 20.6234 1.25 18V8ZM6 4.75C4.20507 4.75 2.75 6.20507 2.75 8V18C2.75 19.7949 4.20507 21.25 6 21.25H18C19.7949 21.25 21.25 19.7949 21.25 18V8C21.25 6.20507 19.7949 4.75 18 4.75H6Z"
+                    fill="currentColor"
+                  />
+                  <text
+                    x="50%"
+                    y="65%"
+                    dominantBaseline="middle"
+                    textAnchor="middle"
+                    fill="currentColor"
+                    fontSize="10"
+                    fontWeight="bold"
+                  >
+                    31
+                  </text>
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M8 1.25C8.41421 1.25 8.75 1.58579 8.75 2V5.5C8.75 5.91421 8.41421 6.25 8 6.25C7.58579 6.25 7.25 5.91421 7.25 5.5V2C7.25 1.58579 7.58579 1.25 8 1.25Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M16 1.25C16.4142 1.25 16.75 1.58579 16.75 2V5.5C16.75 5.91421 16.4142 6.25 16 6.25C15.5858 6.25 15.25 5.91421 15.25 5.5V2C15.25 1.58579 15.5858 1.25 16 1.25Z"
+                    fill="currentColor"
+                  />
                 </svg>
                 <span>Month</span>
               </div>
@@ -865,13 +1092,15 @@ export default function CalendarPage() {
                 <div>
                   <dt className="text-foreground/70">Start</dt>
                   <dd className="font-medium break-all">
-                    {openEvent.start || "—"}
+                    {openEvent.start
+                      ? formatEventDateTime(openEvent.start)
+                      : "—"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-foreground/70">End</dt>
                   <dd className="font-medium break-all">
-                    {openEvent.end || "—"}
+                    {openEvent.end ? formatEventDateTime(openEvent.end) : "—"}
                   </dd>
                 </div>
                 <div>
@@ -881,6 +1110,45 @@ export default function CalendarPage() {
                 <div>
                   <dt className="text-foreground/70">Location</dt>
                   <dd className="font-medium">{openEvent.location || "—"}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-foreground/70">Repeats</dt>
+                  <dd className="font-medium">
+                    {(() => {
+                      try {
+                        const r = (openEvent as any).recurrence as
+                          | string
+                          | undefined;
+                        if (!r || !/FREQ=WEEKLY/i.test(r)) return "—";
+                        const m = r.match(/BYDAY=([^;]+)/i);
+                        const map: Record<string, string> = {
+                          SU: "Sun",
+                          MO: "Mon",
+                          TU: "Tue",
+                          WE: "Wed",
+                          TH: "Thu",
+                          FR: "Fri",
+                          SA: "Sat",
+                        };
+                        const list = m
+                          ? m[1]
+                              .split(",")
+                              .map(
+                                (s) => map[s.trim().toUpperCase()] || s.trim()
+                              )
+                          : [];
+                        if (!list.length) return "Weekly";
+                        if (list.length === 1) return `Weekly on ${list[0]}`;
+                        if (list.length === 2)
+                          return `Weekly on ${list[0]} & ${list[1]}`;
+                        return `Weekly on ${list.slice(0, -1).join(", ")} & ${
+                          list[list.length - 1]
+                        }`;
+                      } catch {
+                        return "—";
+                      }
+                    })()}
+                  </dd>
                 </div>
               </dl>
               {openEvent.description && (

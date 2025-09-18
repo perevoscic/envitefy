@@ -14,9 +14,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await context.params;
   const row = await getEventHistoryById(id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(row);
@@ -24,7 +24,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session: any = await getServerSession(authOptions as any);
   const sessionUser: any = (session && (session as any).user) || null;
@@ -34,7 +34,7 @@ export async function PATCH(
   }
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const id = params.id;
+  const { id } = await context.params;
   const body = await req.json().catch(() => ({}));
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -58,7 +58,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session: any = await getServerSession(authOptions as any);
   const sessionUser: any = (session && (session as any).user) || null;
@@ -68,7 +68,7 @@ export async function DELETE(
   }
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const id = params.id;
+  const { id } = await context.params;
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ ok: true });
   if (existing.user_id && existing.user_id !== userId) {
