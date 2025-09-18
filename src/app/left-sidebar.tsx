@@ -1712,7 +1712,229 @@ export default function LeftSidebar() {
                                               })()}
                                             </div>
                                           </Link>
-                                          {/* Options menu removed for category list items */}
+                                          {/* Options menu for category list items (kebab) */}
+                                          <button
+                                            type="button"
+                                            aria-label="Item options"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              const target =
+                                                e.currentTarget as HTMLElement | null;
+                                              if (itemMenuId === h.id) {
+                                                setItemMenuId(null);
+                                                setItemMenuOpensUpward(false);
+                                                setItemMenuPos(null);
+                                                setItemMenuCategoryOpenFor(
+                                                  null
+                                                );
+                                                return;
+                                              }
+                                              if (target) {
+                                                const rect =
+                                                  target.getBoundingClientRect();
+                                                const viewportHeight =
+                                                  window.innerHeight;
+                                                const menuHeight = 200;
+                                                const spaceBelow =
+                                                  viewportHeight - rect.top;
+                                                const shouldOpenUpward =
+                                                  spaceBelow < menuHeight + 50;
+                                                setItemMenuOpensUpward(
+                                                  shouldOpenUpward
+                                                );
+                                                setItemMenuPos({
+                                                  left: Math.round(
+                                                    rect.right + 8
+                                                  ),
+                                                  top: shouldOpenUpward
+                                                    ? Math.round(rect.top - 10)
+                                                    : Math.round(
+                                                        rect.top +
+                                                          rect.height / 2
+                                                      ),
+                                                });
+                                              }
+                                              setItemMenuCategoryOpenFor(null);
+                                              setItemMenuId(h.id);
+                                            }}
+                                            className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
+                                          >
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              viewBox="0 0 24 24"
+                                              fill="currentColor"
+                                              className="h-4 w-4"
+                                              aria-hidden="true"
+                                            >
+                                              <circle cx="5" cy="12" r="1.5" />
+                                              <circle cx="12" cy="12" r="1.5" />
+                                              <circle cx="19" cy="12" r="1.5" />
+                                            </svg>
+                                          </button>
+                                          {itemMenuId === h.id &&
+                                            itemMenuPos &&
+                                            createPortal(
+                                              <div
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                                style={{
+                                                  position: "fixed",
+                                                  left: itemMenuPos.left,
+                                                  top: itemMenuPos.top,
+                                                  transform: itemMenuOpensUpward
+                                                    ? "translateY(-100%)"
+                                                    : "translateY(-10%)",
+                                                }}
+                                                className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
+                                              >
+                                                <button
+                                                  type="button"
+                                                  onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setItemMenuId(null);
+                                                    setItemMenuOpensUpward(
+                                                      false
+                                                    );
+                                                    setItemMenuPos(null);
+                                                    await shareHistoryItem(
+                                                      prettyHref
+                                                    );
+                                                  }}
+                                                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                                >
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-4 w-4"
+                                                    aria-hidden="true"
+                                                  >
+                                                    <circle
+                                                      cx="18"
+                                                      cy="5"
+                                                      r="3"
+                                                    />
+                                                    <circle
+                                                      cx="6"
+                                                      cy="12"
+                                                      r="3"
+                                                    />
+                                                    <circle
+                                                      cx="18"
+                                                      cy="19"
+                                                      r="3"
+                                                    />
+                                                    <line
+                                                      x1="8.59"
+                                                      y1="13.51"
+                                                      x2="15.42"
+                                                      y2="17.49"
+                                                    />
+                                                    <line
+                                                      x1="15.41"
+                                                      y1="6.51"
+                                                      x2="8.59"
+                                                      y2="10.49"
+                                                    />
+                                                  </svg>
+                                                  <span className="text-sm">
+                                                    Share
+                                                  </span>
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setItemMenuId(null);
+                                                    setItemMenuOpensUpward(
+                                                      false
+                                                    );
+                                                    setItemMenuPos(null);
+                                                    await renameHistoryItem(
+                                                      h.id,
+                                                      h.title
+                                                    );
+                                                  }}
+                                                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                                >
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-4 w-4"
+                                                    aria-hidden="true"
+                                                  >
+                                                    <path d="M12 20h9" />
+                                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                  </svg>
+                                                  <span className="text-sm">
+                                                    Rename
+                                                  </span>
+                                                </button>
+                                                <div className="my-1 h-px bg-border" />
+                                                <button
+                                                  type="button"
+                                                  onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setItemMenuId(null);
+                                                    setItemMenuOpensUpward(
+                                                      false
+                                                    );
+                                                    setItemMenuPos(null);
+                                                    await deleteHistoryItem(
+                                                      h.id,
+                                                      h.title
+                                                    );
+                                                  }}
+                                                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-500 hover:bg-red-500/10"
+                                                >
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-4 w-4"
+                                                    aria-hidden="true"
+                                                  >
+                                                    <path d="M3 6h18" />
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    <line
+                                                      x1="10"
+                                                      y1="11"
+                                                      x2="10"
+                                                      y2="17"
+                                                    />
+                                                    <line
+                                                      x1="14"
+                                                      y1="11"
+                                                      x2="14"
+                                                      y2="17"
+                                                    />
+                                                  </svg>
+                                                  <span className="text-sm">
+                                                    Delete
+                                                  </span>
+                                                </button>
+                                              </div>,
+                                              document.body
+                                            )}
                                         </div>
                                       );
                                     })}
