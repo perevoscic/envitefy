@@ -396,170 +396,163 @@ export default function LeftSidebar() {
       case "lime":
         return {
           swatch: "bg-lime-500 border-lime-400",
-          badge: "bg-lime-500/20 text-lime-300 border-lime-400/30",
-          tint: "bg-lime-500/10",
-          hoverTint: "hover:bg-lime-500/15",
+          badge: "bg-lime-500/30 text-lime-300 border-lime-400/40",
+          tint: "bg-lime-500/20",
+          hoverTint: "hover:bg-lime-500/30",
         };
       case "zinc":
         return {
           swatch: "bg-zinc-500 border-zinc-400",
-          badge: "bg-zinc-500/20 text-zinc-300 border-zinc-400/30",
-          tint: "bg-zinc-500/10",
-          hoverTint: "hover:bg-zinc-500/15",
+          badge: "bg-zinc-500/30 text-zinc-300 border-zinc-400/40",
+          tint: "bg-zinc-500/20",
+          hoverTint: "hover:bg-zinc-500/30",
         };
       case "neutral":
         return {
           swatch: "bg-neutral-500 border-neutral-400",
-          badge: "bg-neutral-500/20 text-neutral-300 border-neutral-400/30",
-          tint: "bg-neutral-500/10",
-          hoverTint: "hover:bg-neutral-500/15",
+          badge: "bg-neutral-500/30 text-neutral-300 border-neutral-400/40",
+          tint: "bg-neutral-500/20",
+          hoverTint: "hover:bg-neutral-500/30",
         };
       case "stone":
         return {
           swatch: "bg-stone-500 border-stone-400",
-          badge: "bg-stone-500/20 text-stone-300 border-stone-400/30",
-          tint: "bg-stone-500/10",
-          hoverTint: "hover:bg-stone-500/15",
+          badge: "bg-stone-500/30 text-stone-300 border-stone-400/40",
+          tint: "bg-stone-500/20",
+          hoverTint: "hover:bg-stone-500/30",
         };
       case "gray":
         return {
           swatch: "bg-gray-500 border-gray-400",
-          badge: "bg-gray-500/20 text-gray-300 border-gray-400/30",
-          tint: "bg-gray-500/10",
-          hoverTint: "hover:bg-gray-500/15",
+          badge: "bg-gray-500/30 text-gray-300 border-gray-400/40",
+          tint: "bg-gray-500/20",
+          hoverTint: "hover:bg-gray-500/30",
         };
       case "red":
         return {
           swatch: "bg-red-500 border-red-400",
-          badge: "bg-red-500/20 text-red-300 border-red-400/30",
-          tint: "bg-red-500/10",
-          hoverTint: "hover:bg-red-500/15",
+          badge: "bg-red-500/30 text-red-300 border-red-400/40",
+          tint: "bg-red-500/20",
+          hoverTint: "hover:bg-red-500/30",
         };
       case "pink":
         return {
           swatch: "bg-pink-500 border-pink-400",
-          badge: "bg-pink-500/20 text-pink-300 border-pink-400/30",
-          tint: "bg-pink-500/10",
-          hoverTint: "hover:bg-pink-500/15",
+          badge: "bg-pink-500/30 text-pink-300 border-pink-400/40",
+          tint: "bg-pink-500/20",
+          hoverTint: "hover:bg-pink-500/30",
         };
       case "rose":
         return {
           swatch: "bg-rose-500 border-rose-400",
-          badge: "bg-rose-500/20 text-rose-300 border-rose-400/30",
-          tint: "bg-rose-500/10",
-          hoverTint: "hover:bg-rose-500/15",
+          badge: "bg-rose-500/30 text-rose-300 border-rose-400/40",
+          tint: "bg-rose-500/20",
+          hoverTint: "hover:bg-rose-500/30",
         };
       case "fuchsia":
         return {
           swatch: "bg-fuchsia-500 border-fuchsia-400",
-          badge: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/30",
-          tint: "bg-fuchsia-500/10",
-          hoverTint: "hover:bg-fuchsia-500/15",
+          badge: "bg-fuchsia-500/30 text-fuchsia-300 border-fuchsia-400/40",
+          tint: "bg-fuchsia-500/20",
+          hoverTint: "hover:bg-fuchsia-500/30",
         };
       case "violet":
         return {
           swatch: "bg-violet-500 border-violet-400",
-          badge: "bg-violet-500/20 text-violet-300 border-violet-400/30",
-          tint: "bg-violet-500/10",
-          hoverTint: "hover:bg-violet-500/15",
+          badge: "bg-violet-500/30 text-violet-300 border-violet-400/40",
+          tint: "bg-violet-500/20",
+          hoverTint: "hover:bg-violet-500/30",
         };
       case "purple":
         return {
           swatch: "bg-purple-500 border-purple-400",
-          badge: "bg-purple-500/20 text-purple-300 border-purple-400/30",
-          tint: "bg-purple-500/10",
-          hoverTint: "hover:bg-purple-500/15",
+          badge: "bg-purple-500/30 text-purple-300 border-purple-400/40",
+          tint: "bg-purple-500/20",
+          hoverTint: "hover:bg-purple-500/30",
         };
       case "indigo":
         return {
           swatch: "bg-indigo-500 border-indigo-400",
-          badge: "bg-indigo-500/20 text-indigo-300 border-indigo-400/30",
-          tint: "bg-indigo-500/10",
-          hoverTint: "hover:bg-indigo-500/15",
+          badge: "bg-indigo-500/30 text-indigo-300 border-indigo-400/40",
+          tint: "bg-indigo-500/20",
+          hoverTint: "hover:bg-indigo-500/30",
         };
       case "blue":
         return {
           swatch: "bg-blue-500 border-blue-400",
-          badge: "bg-blue-500/20 text-blue-300 border-blue-400/30",
-          tint: "bg-blue-500/10",
-          hoverTint: "hover:bg-blue-500/15",
+          badge: "bg-blue-500/30 text-blue-300 border-blue-400/40",
+          tint: "bg-blue-500/20",
+          hoverTint: "hover:bg-blue-500/30",
         };
       case "sky":
         return {
           swatch: "bg-sky-500 border-sky-400",
-          badge: "bg-sky-500/20 text-sky-300 border-sky-400/30",
-          tint: "bg-sky-500/10",
-          hoverTint: "hover:bg-sky-500/15",
+          badge: "bg-sky-500/30 text-sky-300 border-sky-400/40",
+          tint: "bg-sky-500/20",
+          hoverTint: "hover:bg-sky-500/30",
         };
       case "cyan":
         return {
           swatch: "bg-cyan-500 border-cyan-400",
-          badge: "bg-cyan-500/20 text-cyan-300 border-cyan-400/30",
-          tint: "bg-cyan-500/10",
-          hoverTint: "hover:bg-cyan-500/15",
+          badge: "bg-cyan-500/30 text-cyan-300 border-cyan-400/40",
+          tint: "bg-cyan-500/20",
+          hoverTint: "hover:bg-cyan-500/30",
         };
       case "teal":
         return {
           swatch: "bg-teal-500 border-teal-400",
-          badge: "bg-teal-500/20 text-teal-300 border-teal-400/30",
-          tint: "bg-teal-500/10",
-          hoverTint: "hover:bg-teal-500/15",
+          badge: "bg-teal-500/30 text-teal-300 border-teal-400/40",
+          tint: "bg-teal-500/20",
+          hoverTint: "hover:bg-teal-500/30",
         };
       case "emerald":
         return {
           swatch: "bg-emerald-500 border-emerald-400",
-          badge: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
-          tint: "bg-emerald-500/10",
-          hoverTint: "hover:bg-emerald-500/15",
+          badge: "bg-emerald-500/30 text-emerald-300 border-emerald-400/40",
+          tint: "bg-emerald-500/20",
+          hoverTint: "hover:bg-emerald-500/30",
         };
       case "green":
         return {
           swatch: "bg-green-500 border-green-400",
-          badge: "bg-green-500/20 text-green-300 border-green-400/30",
-          tint: "bg-green-500/10",
-          hoverTint: "hover:bg-green-500/15",
-        };
-      case "lime":
-        return {
-          swatch: "bg-lime-500 border-lime-400",
-          badge: "bg-lime-500/20 text-lime-300 border-lime-400/30",
-          tint: "bg-lime-500/10",
-          hoverTint: "hover:bg-lime-500/15",
+          badge: "bg-green-500/30 text-green-300 border-green-400/40",
+          tint: "bg-green-500/20",
+          hoverTint: "hover:bg-green-500/30",
         };
       case "yellow":
         return {
           swatch: "bg-yellow-500 border-yellow-400",
-          badge: "bg-yellow-500/20 text-yellow-300 border-yellow-400/30",
-          tint: "bg-yellow-500/10",
-          hoverTint: "hover:bg-yellow-500/15",
+          badge: "bg-yellow-500/30 text-yellow-300 border-yellow-400/40",
+          tint: "bg-yellow-500/20",
+          hoverTint: "hover:bg-yellow-500/30",
         };
       case "amber":
         return {
           swatch: "bg-amber-500 border-amber-400",
-          badge: "bg-amber-500/20 text-amber-300 border-amber-400/30",
-          tint: "bg-amber-500/10",
-          hoverTint: "hover:bg-amber-500/15",
+          badge: "bg-amber-500/30 text-amber-300 border-amber-400/40",
+          tint: "bg-amber-500/20",
+          hoverTint: "hover:bg-amber-500/30",
         };
       case "orange":
         return {
           swatch: "bg-orange-500 border-orange-400",
-          badge: "bg-orange-500/20 text-orange-300 border-orange-400/30",
-          tint: "bg-orange-500/10",
-          hoverTint: "hover:bg-orange-500/15",
+          badge: "bg-orange-500/30 text-orange-300 border-orange-400/40",
+          tint: "bg-orange-500/20",
+          hoverTint: "hover:bg-orange-500/30",
         };
       case "slate":
         return {
           swatch: "bg-slate-500 border-slate-400",
-          badge: "bg-slate-500/20 text-slate-300 border-slate-400/30",
-          tint: "bg-slate-500/10",
-          hoverTint: "hover:bg-slate-500/15",
+          badge: "bg-slate-500/30 text-slate-300 border-slate-400/40",
+          tint: "bg-slate-500/20",
+          hoverTint: "hover:bg-slate-500/30",
         };
       default:
         return {
           swatch: "bg-foreground/40 border-border/60",
-          badge: "bg-surface/70 text-foreground/70 border-border/70",
-          tint: "bg-surface/60",
-          hoverTint: "hover:bg-surface/70",
+          badge: "bg-surface/75 text-foreground/80 border-border/70",
+          tint: "bg-surface/70",
+          hoverTint: "hover:bg-surface/80",
         };
     }
   };

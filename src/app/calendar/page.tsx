@@ -37,50 +37,51 @@ function defaultCategoryColor(c: string): string {
 function colorTintAndDot(color: string): { tint: string; dot: string } {
   switch (color) {
     case "lime":
-      return { tint: "bg-lime-500/10", dot: "bg-lime-500" };
+      return { tint: "bg-lime-500/20", dot: "bg-lime-500" };
     case "zinc":
-      return { tint: "bg-zinc-500/10", dot: "bg-zinc-500" };
+      return { tint: "bg-zinc-500/20", dot: "bg-zinc-500" };
     case "neutral":
-      return { tint: "bg-neutral-500/10", dot: "bg-neutral-500" };
+      return { tint: "bg-neutral-500/20", dot: "bg-neutral-500" };
     case "stone":
-      return { tint: "bg-stone-500/10", dot: "bg-stone-500" };
+      return { tint: "bg-stone-500/20", dot: "bg-stone-500" };
     case "gray":
-      return { tint: "bg-gray-500/10", dot: "bg-gray-500" };
+      return { tint: "bg-gray-500/20", dot: "bg-gray-500" };
     case "red":
-      return { tint: "bg-red-500/10", dot: "bg-red-500" };
+      return { tint: "bg-red-500/20", dot: "bg-red-500" };
     case "pink":
-      return { tint: "bg-pink-500/10", dot: "bg-pink-500" };
+      return { tint: "bg-pink-500/20", dot: "bg-pink-500" };
     case "rose":
-      return { tint: "bg-rose-500/10", dot: "bg-rose-500" };
+      return { tint: "bg-rose-500/20", dot: "bg-rose-500" };
     case "fuchsia":
-      return { tint: "bg-fuchsia-500/10", dot: "bg-fuchsia-500" };
+      return { tint: "bg-fuchsia-500/20", dot: "bg-fuchsia-500" };
     case "violet":
-      return { tint: "bg-violet-500/10", dot: "bg-violet-500" };
+      return { tint: "bg-violet-500/20", dot: "bg-violet-500" };
     case "purple":
-      return { tint: "bg-purple-500/10", dot: "bg-purple-500" };
+      return { tint: "bg-purple-500/20", dot: "bg-purple-500" };
     case "indigo":
-      return { tint: "bg-indigo-500/10", dot: "bg-indigo-500" };
+      return { tint: "bg-indigo-500/20", dot: "bg-indigo-500" };
     case "blue":
-      return { tint: "bg-blue-500/10", dot: "bg-blue-500" };
+      return { tint: "bg-blue-500/20", dot: "bg-blue-500" };
     case "sky":
-      return { tint: "bg-sky-500/10", dot: "bg-sky-500" };
+      return { tint: "bg-sky-500/20", dot: "bg-sky-500" };
     case "cyan":
-      return { tint: "bg-cyan-500/10", dot: "bg-cyan-500" };
+      return { tint: "bg-cyan-500/20", dot: "bg-cyan-500" };
     case "teal":
-      return { tint: "bg-teal-500/10", dot: "bg-teal-500" };
+      return { tint: "bg-teal-500/20", dot: "bg-teal-500" };
     case "emerald":
-      return { tint: "bg-emerald-500/10", dot: "bg-emerald-500" };
+      return { tint: "bg-emerald-500/20", dot: "bg-emerald-500" };
     case "green":
-      return { tint: "bg-green-500/10", dot: "bg-green-500" };
+      return { tint: "bg-green-500/20", dot: "bg-green-500" };
     case "yellow":
-      return { tint: "bg-yellow-500/10", dot: "bg-yellow-500" };
+      return { tint: "bg-yellow-500/20", dot: "bg-yellow-500" };
     case "amber":
-      return { tint: "bg-amber-500/10", dot: "bg-amber-500" };
+      return { tint: "bg-amber-500/20", dot: "bg-amber-500" };
     case "orange":
-      return { tint: "bg-orange-500/10", dot: "bg-orange-500" };
+      return { tint: "bg-orange-500/20", dot: "bg-orange-500" };
     case "slate":
+      return { tint: "bg-slate-500/20", dot: "bg-slate-500" };
     default:
-      return { tint: "bg-surface/60", dot: "bg-foreground/40" };
+      return { tint: "bg-surface/75", dot: "bg-foreground/50" };
   }
 }
 
