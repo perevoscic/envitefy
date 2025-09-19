@@ -53,6 +53,35 @@ export default function EventCreateModal({
   onClose,
   defaultDate,
 }: Props) {
+  // Category color helpers
+  const PALETTE = [
+    "red",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "green",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+  ] as const;
+
+  const DOW = [
+    { code: "SU", label: "Sun" },
+    { code: "MO", label: "Mon" },
+    { code: "TU", label: "Tue" },
+    { code: "WE", label: "Wed" },
+    { code: "TH", label: "Thu" },
+    { code: "FR", label: "Fri" },
+    { code: "SA", label: "Sat" },
+  ] as const;
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
     base.setSeconds(0, 0);
@@ -69,6 +98,7 @@ export default function EventCreateModal({
   }, [initialStart]);
 
   const [submitting, setSubmitting] = useState(false);
+  const todayMin = useMemo(() => toLocalDateValue(new Date()), []);
   const [title, setTitle] = useState("");
   // Date/time inputs
   const [whenDate, setWhenDate] = useState<string>(
@@ -85,7 +115,30 @@ export default function EventCreateModal({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>("");
+  const maybeAssignCategoryColor = (cat: string) => {
+    if (!cat) return;
+    try {
+      const raw = localStorage.getItem("categoryColors");
+      const map = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      if (!map[cat]) {
+        // Prefer an unused color from the palette, else random
+        const used = new Set(Object.values(map));
+        const unused = PALETTE.filter((c) => !used.has(c));
+        const pick = (arr: readonly string[]) =>
+          arr[Math.floor(Math.random() * arr.length)] as string;
+        const chosen = (unused.length ? pick(unused) : pick(PALETTE)) as string;
+        const next = { ...map, [cat]: chosen };
+        localStorage.setItem("categoryColors", JSON.stringify(next));
+        try {
+          window.dispatchEvent(
+            new CustomEvent("categoryColorsUpdated", { detail: next })
+          );
+        } catch {}
+      }
+    } catch {}
+  };
   const [repeat, setRepeat] = useState<boolean>(false);
+  const [repeatDays, setRepeatDays] = useState<string[]>([]);
 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -101,7 +154,19 @@ export default function EventCreateModal({
     setDescription("");
     setCategory("");
     setRepeat(false);
+    setRepeatDays([]);
   }, [open, initialStart, initialEnd]);
+  // When enabling repeat with no selected days, preselect the chosen date's weekday
+  useEffect(() => {
+    try {
+      if (repeat && repeatDays.length === 0 && whenDate) {
+        const d = new Date(`${whenDate}T00:00:00`);
+        const code = DOW[d.getDay()].code;
+        setRepeatDays([code]);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repeat]);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -120,17 +185,41 @@ export default function EventCreateModal({
       if (whenDate) {
         if (fullDay) {
           const start = new Date(`${whenDate}T00:00:00`);
+          const now = new Date();
+          const todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
+          if (start < todayStart) {
+            throw new Error("Start date cannot be in the past");
+          }
           const end = new Date(start);
           end.setDate(end.getDate() + 1);
           startISO = start.toISOString();
           endISO = end.toISOString();
         } else {
           const start = new Date(`${whenDate}T${startTime || "09:00"}:00`);
-          const end = new Date(
-            `${endDate || whenDate}T${endTime || "10:00"}:00`
+          const endBase = endDate || whenDate;
+          const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
+          // Enforce non-past start and end >= start
+          const now = new Date();
+          const todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
           );
-          startISO = start.toISOString();
-          endISO = end.toISOString();
+          if (start < todayStart) {
+            throw new Error("Start date cannot be in the past");
+          }
+          if (end < start) {
+            endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
+            startISO = start.toISOString();
+            // continue
+          } else {
+            startISO = start.toISOString();
+            endISO = end.toISOString();
+          }
         }
       }
       const payload: any = {
@@ -143,6 +232,10 @@ export default function EventCreateModal({
           description: description || undefined,
           allDay: fullDay || undefined,
           repeat: repeat || undefined,
+          recurrence:
+            repeat && repeatDays.length
+              ? `RRULE:FREQ=WEEKLY;BYDAY=${repeatDays.join(",")}`
+              : undefined,
         },
       };
       const r = await fetch("/api/history", {
@@ -169,11 +262,9 @@ export default function EventCreateModal({
         }
       } catch {}
       onClose();
-    } catch (err) {
-      try {
-        console.error("Failed to create event", err);
-      } catch {}
-      alert("Failed to create event. Please try again.");
+    } catch (err: any) {
+      const msg = String(err?.message || err || "Failed to create event");
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
@@ -190,7 +281,7 @@ export default function EventCreateModal({
     >
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative z-50 w-full sm:max-w-md sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
+        className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -219,31 +310,43 @@ export default function EventCreateModal({
               placeholder="Event title"
             />
           </div>
+          {/* Color picker removed; colors derive from category or random assignment */}
           <div>
-            <label className="block text-sm mb-1" htmlFor="evt-when">
-              When
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                id="evt-when"
-                type="date"
-                value={whenDate}
-                onChange={(e) => setWhenDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background"
-              />
-              <div className="col-span-1 sm:col-span-2 flex items-center gap-4">
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={fullDay}
-                    onChange={(e) => setFullDay(e.target.checked)}
-                  />
-                  <span>Full day</span>
-                </label>
-                {!fullDay && (
-                  <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm" htmlFor="evt-when">
+                When
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={fullDay}
+                  onChange={(e) => setFullDay(e.target.checked)}
+                />
+                <span>Full day</span>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+              {fullDay ? (
+                <input
+                  id="evt-when"
+                  type="date"
+                  value={whenDate}
+                  onChange={(e) => setWhenDate(e.target.value)}
+                  min={todayMin}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background min-w-0"
+                />
+              ) : (
+                <div className="col-span-3 grid grid-cols-1 gap-3">
+                  <div>
+                    <div className="text-xs text-foreground/70 mb-1">Start</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-foreground/70">Start</span>
+                      <input
+                        type="date"
+                        value={whenDate}
+                        onChange={(e) => setWhenDate(e.target.value)}
+                        min={todayMin}
+                        className="px-2 py-1 rounded-md border border-border bg-background"
+                      />
                       <input
                         type="time"
                         value={startTime}
@@ -251,12 +354,15 @@ export default function EventCreateModal({
                         className="px-2 py-1 rounded-md border border-border bg-background"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-foreground/70 mb-1">End</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-foreground/70">End</span>
                       <input
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
+                        min={whenDate || todayMin}
                         className="px-2 py-1 rounded-md border border-border bg-background"
                       />
                       <input
@@ -267,8 +373,8 @@ export default function EventCreateModal({
                       />
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
           <div>
@@ -291,7 +397,11 @@ export default function EventCreateModal({
             <select
               id="evt-category"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCategory(v);
+                maybeAssignCategoryColor(v);
+              }}
               className="w-full px-3 py-2 rounded-md border border-border bg-background"
             >
               <option value="">Select category</option>
@@ -320,6 +430,36 @@ export default function EventCreateModal({
               />
             </button>
           </div>
+          {repeat && (
+            <div className="-mt-1">
+              <div className="text-xs text-foreground/70 mb-1">Repeat on</div>
+              <div className="grid grid-cols-7 gap-2">
+                {DOW.map((d) => {
+                  const active = repeatDays.includes(d.code);
+                  return (
+                    <button
+                      key={d.code}
+                      type="button"
+                      onClick={() => {
+                        setRepeatDays((prev) =>
+                          active
+                            ? prev.filter((c) => c !== d.code)
+                            : [...prev, d.code]
+                        );
+                      }}
+                      className={`h-8 rounded-md border text-xs font-medium ${
+                        active
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-background text-foreground border-border"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-sm mb-1" htmlFor="evt-desc">
               Description

@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS event_history (
   created_at timestamptz(6) DEFAULT now()
 );
 
+-- Ensure id default and primary key exist if table pre-existed without them
+ALTER TABLE event_history ALTER COLUMN id SET DEFAULT gen_random_uuid();
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'event_history'::regclass AND contype = 'p'
+  ) THEN
+    ALTER TABLE event_history ADD PRIMARY KEY (id);
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_event_history_user_id_created_at
   ON event_history(user_id, created_at DESC);
 

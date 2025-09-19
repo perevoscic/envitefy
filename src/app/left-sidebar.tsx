@@ -202,21 +202,10 @@ export default function LeftSidebar() {
             typeof json.categoryColors === "object" &&
             json.categoryColors
           ) {
-            setCategoryColors((prev) => {
-              const next = {
-                ...prev,
-                ...(json.categoryColors as Record<string, string>),
-              };
-              try {
-                localStorage.setItem("categoryColors", JSON.stringify(next));
-                try {
-                  window.dispatchEvent(
-                    new CustomEvent("categoryColorsUpdated", { detail: next })
-                  );
-                } catch {}
-              } catch {}
-              return next;
-            });
+            setCategoryColors((prev) => ({
+              ...prev,
+              ...(json.categoryColors as Record<string, string>),
+            }));
           }
         }
       } catch {}
@@ -358,18 +347,10 @@ export default function LeftSidebar() {
       if (categories.length === 0) return;
       setCategoryColors((prev) => {
         const next = { ...prev } as Record<string, string>;
-        let changed = false;
         for (const c of categories)
           if (!next[c]) {
             next[c] = defaultCategoryColor(c);
-            changed = true;
           }
-        if (changed) {
-          try {
-            localStorage.setItem("categoryColors", JSON.stringify(next));
-            persistCategoryColors(next);
-          } catch {}
-        }
         return next;
       });
     } catch {}
@@ -400,15 +381,6 @@ export default function LeftSidebar() {
       const idx = palette.indexOf(current);
       const nextColor = palette[(idx + 1) % palette.length];
       const next = { ...prev, [category]: nextColor };
-      try {
-        localStorage.setItem("categoryColors", JSON.stringify(next));
-        try {
-          window.dispatchEvent(
-            new CustomEvent("categoryColorsUpdated", { detail: next })
-          );
-        } catch {}
-        persistCategoryColors(next);
-      } catch {}
       return next;
     });
   };
@@ -596,22 +568,35 @@ export default function LeftSidebar() {
 
   const setCategoryColor = (category: string, color: string) => {
     if (!category) return;
-    setCategoryColors((prev) => {
-      const next = { ...prev, [category]: color } as Record<string, string>;
-      try {
-        localStorage.setItem("categoryColors", JSON.stringify(next));
-        try {
-          window.dispatchEvent(
-            new CustomEvent("categoryColorsUpdated", { detail: next })
-          );
-        } catch {}
-        persistCategoryColors(next);
-      } catch {}
-      return next;
-    });
+    setCategoryColors(
+      (prev) =>
+        ({
+          ...prev,
+          [category]: color,
+        } as Record<string, string>)
+    );
     setColorMenuFor(null);
     setColorMenuPos(null);
   };
+
+  // Persist and broadcast category colors after commit to avoid cross-component updates during render
+  useEffect(() => {
+    try {
+      if (categoryColors && Object.keys(categoryColors).length > 0) {
+        localStorage.setItem("categoryColors", JSON.stringify(categoryColors));
+      }
+    } catch {}
+    try {
+      window.dispatchEvent(
+        new CustomEvent("categoryColorsUpdated", { detail: categoryColors })
+      );
+    } catch {}
+    try {
+      if (categoryColors && Object.keys(categoryColors).length > 0) {
+        persistCategoryColors(categoryColors);
+      }
+    } catch {}
+  }, [categoryColors]);
 
   const sortHistoryRows = (
     rows: Array<{
@@ -2414,19 +2399,6 @@ export default function LeftSidebar() {
                                           if (!next[label])
                                             next[label] =
                                               defaultCategoryColor(label);
-                                          try {
-                                            localStorage.setItem(
-                                              "categoryColors",
-                                              JSON.stringify(next)
-                                            );
-                                            window.dispatchEvent(
-                                              new CustomEvent(
-                                                "categoryColorsUpdated",
-                                                { detail: next }
-                                              )
-                                            );
-                                            persistCategoryColors(next);
-                                          } catch {}
                                           return next;
                                         });
                                       } catch {}

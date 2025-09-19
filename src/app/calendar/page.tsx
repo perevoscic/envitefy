@@ -685,6 +685,8 @@ export default function CalendarPage() {
   const onDayClick = (date: Date) => {
     const key = dayKey(startOfDay(date));
     const items = byDay.get(key) || [];
+    // Allow viewing past events but block creating new ones on past dates
+    const isPast = startOfDay(date) < today;
     if (items.length === 1) {
       setOpenEvent(items[0]);
       return;
@@ -693,7 +695,8 @@ export default function CalendarPage() {
       setOpenDay({ date, items });
       return;
     }
-    // No items on this day → open create modal with default date prefilled
+    if (isPast) return; // do not allow creating events in the past from the calendar grid
+    // No items on this day (today or future) → open create modal with default date prefilled
     setCreateDefaultDate(date);
     setCreateOpen(true);
   };
@@ -1246,14 +1249,47 @@ export default function CalendarPage() {
               <h2 className="text-base sm:text-lg font-semibold">
                 {monthFormatter.format(openDay.date)} {openDay.date.getDate()}
               </h2>
-              <button
-                type="button"
-                onClick={() => setOpenDay(null)}
-                className="text-foreground/70 hover:text-foreground"
-                aria-label="Close"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {startOfDay(openDay.date) >= today && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenDay(null);
+                      setCreateDefaultDate(startOfDay(openDay.date));
+                      setCreateOpen(true);
+                    }}
+                    className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-foreground/5 inline-flex items-center gap-2"
+                    title="Add event"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="miter"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <rect x="2" y="4" width="20" height="18" rx="0"></rect>
+                      <line x1="7" y1="2" x2="7" y2="6"></line>
+                      <line x1="17" y1="2" x2="17" y2="6"></line>
+                      <line x1="8" y1="13" x2="16" y2="13"></line>
+                      <line x1="12" y1="9" x2="12" y2="17"></line>
+                    </svg>
+                    <span>Add event</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setOpenDay(null)}
+                  className="text-foreground/70 hover:text-foreground"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             <div className="mt-3 space-y-2">
               {openDay.items.map((ev) => {
