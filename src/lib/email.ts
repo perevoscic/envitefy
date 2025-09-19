@@ -234,18 +234,24 @@ export async function sendShareEventEmail(params: {
   const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
   const to = params.toEmail;
   const subject = `An event was shared with you on Snap My Date`;
+  const acceptUrl = `${params.eventUrl}?accept=1`;
   const text = [
     `An event was shared with you by ${params.ownerEmail}.`,
     ``,
     `Title: ${params.eventTitle}`,
     `Link: ${params.eventUrl}`,
+    `Accept: ${acceptUrl}`,
     ``,
-    `Open the link to view the details or add it to your calendar.`,
+    `Open the link to view the details or add it to your calendar. You can also accept directly: ${acceptUrl}`,
   ].join("\n");
   const html = `<!doctype html><html><body>
     <p>An event was shared with you by ${escapeHtml(params.ownerEmail)}.</p>
     <p><strong>Title:</strong> ${escapeHtml(params.eventTitle)}</p>
-    <p><a href="${escapeHtml(params.eventUrl)}">View the event</a></p>
+    <p>
+      <a href="${escapeHtml(params.eventUrl)}">View the event</a>
+      &nbsp;·&nbsp;
+      <a href="${escapeHtml(acceptUrl)}">Accept</a>
+    </p>
   </body></html>`;
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,

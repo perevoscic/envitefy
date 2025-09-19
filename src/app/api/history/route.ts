@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser } from "@/lib/db";
+import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +27,24 @@ export async function GET() {
       return NextResponse.json({ items: [] });
     }
     const own = await listEventHistoryByUser(userId, 100);
+    // Annotate own rows that have outgoing shares (pending or accepted)
+    let ownWithShareOut = own;
+    try {
+      const ids = own.map((r: any) => r.id);
+      const stats = await listSharesByOwnerForEvents(userId, ids);
+      const sharedOutSet = new Set(
+        (stats || [])
+          .filter(
+            (s) => Number(s.accepted_count || 0) + Number(s.pending_count || 0) > 0
+          )
+          .map((s) => s.event_id)
+      );
+      ownWithShareOut = own.map((r: any) =>
+        sharedOutSet.has(r.id)
+          ? { ...r, data: { ...(r.data || {}), sharedOut: true } }
+          : r
+      );
+    } catch {}
     let shared: any[] = [];
     try {
       shared = await listAcceptedSharedEventsForUser(userId);
@@ -45,7 +63,7 @@ export async function GET() {
         category: (r.data && r.data.category) || "Shared events",
       },
     }));
-    const items = [...own, ...annotatedShared].sort((a: any, b: any) => {
+    const items = [...ownWithShareOut, ...annotatedShared].sort((a: any, b: any) => {
       const ta = new Date(a.created_at || 0).getTime();
       const tb = new Date(b.created_at || 0).getTime();
       return tb - ta;

@@ -1278,6 +1278,21 @@ export async function isEventSharedWithUser(eventId: string, userId: string): Pr
   }
 }
 
+export async function isEventSharePendingForUser(eventId: string, userId: string): Promise<boolean | null> {
+  try {
+    const res = await query<{ exists: boolean }>(
+      `select exists(
+         select 1 from event_shares
+         where event_id = $1 and recipient_user_id = $2 and status = 'pending' and revoked_at is null
+       ) as exists`,
+      [eventId, userId]
+    );
+    return Boolean(res.rows[0]?.exists);
+  } catch {
+    return null;
+  }
+}
+
 export type PasswordResetRow = {
   id: string;
   email: string;

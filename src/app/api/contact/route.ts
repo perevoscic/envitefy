@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 
+export const runtime = "nodejs";
+
 type ContactBody = {
   name?: string;
   email?: string;
