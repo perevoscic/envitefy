@@ -3,20 +3,135 @@ export default function UseCases() {
     {
       title: "Parents",
       text: "School events, parties, appointments—all in one place.",
+      badgeClass: "bg-primary/15 text-primary",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <circle cx="9" cy="7" r="3" />
+          <circle cx="17" cy="7" r="3" />
+          <path d="M2 21c0-4 5-6 7-6s7 2 7 6" />
+        </svg>
+      ),
     },
     {
       title: "Coaches",
       text: "Team schedules and practices without manual entry.",
+      badgeClass: "bg-secondary/15 text-secondary",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <path d="M8 21h8" />
+          <path d="M12 17v4" />
+          <path d="M7 4h10v4a5 5 0 0 1-10 0V4z" />
+          <path d="M5 6h2a4 4 0 0 1-4 4V8a2 2 0 0 1 2-2z" />
+          <path d="M19 6h-2a4 4 0 0 0 4 4V8a2 2 0 0 0-2-2z" />
+        </svg>
+      ),
     },
     {
       title: "Teachers",
       text: "Share class events as calendar links in seconds.",
+      badgeClass: "bg-accent/15 text-accent",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a4 4 0 0 0-4-4H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a4 4 0 0 1 4-4h6z" />
+        </svg>
+      ),
     },
     {
-      title: "Office admins",
-      text: "From posted flyers to team calendars instantly.",
+      title: "Weddings",
+      text: "Invites, ceremonies, and receptions—saved with reminders.",
+      badgeClass: "bg-primary/15 text-primary",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21l8.84-8.61a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      ),
     },
-    { title: "Healthcare", text: "Appointment cards to reminders that stick." },
+    {
+      title: "Playdates",
+      text: "Snap invites and save times and locations in one tap.",
+      badgeClass: "bg-secondary/15 text-secondary",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="3" />
+          <circle cx="14" cy="7" r="3" />
+          <path d="M8 11c0 3-2 3-2 5" />
+          <path d="M14 10c0 3-2 3-2 5" />
+        </svg>
+      ),
+    },
+    {
+      title: "Doctor appointments",
+      text: "Appointment cards to calendar with reliable reminders.",
+      badgeClass: "bg-accent/15 text-accent",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <path d="M6 4v4a4 4 0 1 0 8 0V4" />
+          <path d="M10 14c0 3 2 4 4 4h1" />
+          <circle cx="18" cy="18" r="2" />
+        </svg>
+      ),
+    },
   ];
   return (
     <section aria-labelledby="use-cases" className="w-full">
@@ -31,9 +146,16 @@ export default function UseCases() {
           {items.map((i) => (
             <div
               key={i.title}
-              className="rounded-2xl bg-surface/70 border border-border p-6"
+              className="rounded-2xl bg-surface/70 border border-border p-6 shadow"
             >
-              <h3 className="text-lg font-semibold">{i.title}</h3>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${i.badgeClass}`}
+                >
+                  {i.icon}
+                </span>
+                {i.title}
+              </h3>
               <p className="mt-1 text-foreground/70">{i.text}</p>
             </div>
           ))}

@@ -7,10 +7,6 @@ const qs = [
     a: "Snap My Date utilizes advanced OCR to extract event details from clear photos and PDFs with high accuracy. While our system is very robust, you always have the opportunity to review and edit any extracted information before saving it to your calendar.",
   },
   {
-    q: "Can Snap My Date handle complex schedules, like sports or school events?",
-    a: "Absolutely! Our system is designed to detect and parse multi-game or multi-event schedules from a single flyer. When possible, we automatically expand these into individual, ready-to-save calendar events, saving you time and effort.",
-  },
-  {
     q: "Does Snap My Date integrate with Apple Calendar?",
     a: "Yes! We generate universally compatible .ics files, which can be easily imported into Apple Calendar on your iOS devices and macOS. It's a seamless way to get your events into your preferred Apple ecosystem.",
   },

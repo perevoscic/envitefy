@@ -44,6 +44,19 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 302);
   }
 
+  // Protect calendar/subscription pages when not signed in
+  const protectedPrefixes = ["/calendar", "/subscription"];
+  for (const prefix of protectedPrefixes) {
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) {
+      if (!hasSession) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/";
+        return NextResponse.redirect(url, 302);
+      }
+      break;
+    }
+  }
+
   // Public homepage at "/":
   // - authenticated users go to "/snap"
   // - unauthenticated users see landing content (rewrite)
