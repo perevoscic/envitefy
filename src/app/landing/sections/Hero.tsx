@@ -9,16 +9,15 @@ export default async function Hero() {
   const isAuthed = Boolean(session);
   return (
     <section className="w-full">
-      <div className="max-w-7xl mx-auto px-6 pt-16 sm:pt-24 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-6xl mx-auto px-6 pt-16 sm:pt-24 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-75 items-center">
         <div className="text-center lg:text-left">
           <h1 className="text-4xl sm:text-6xl font-extrabold leading-[1.08] tracking-tight">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle">
+            <div className="inline-block w-fit bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle whitespace-nowrap">
               Snap it. Save it.
-            </span>
-            <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle">
+            </div>
+            <div className="inline-block w-fit bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle whitespace-nowrap">
               We handle the rest.
-            </span>
+            </div>
           </h1>
           <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto lg:mx-0">
             Turn flyers, team schedules, invites, and appointment cards into
@@ -75,7 +74,7 @@ export default async function Hero() {
           <Image
             src="/invite.png"
             alt="Invitation being scanned"
-            width={500}
+            width={300}
             height={500}
             priority
             className="show-light"
@@ -83,7 +82,7 @@ export default async function Hero() {
           <Image
             src="/invite_dark.png"
             alt="Invitation being scanned (dark theme)"
-            width={500}
+            width={300}
             height={500}
             priority
             className="show-dark"
