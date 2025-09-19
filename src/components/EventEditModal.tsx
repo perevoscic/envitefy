@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -22,12 +22,20 @@ export default function EventEditModal({
     end: eventData?.end || "",
     location: eventData?.location || "",
     description: eventData?.description || "",
-    timezone: eventData?.timezone || "",
     category: eventData?.category || "",
     recurrence: eventData?.recurrence || "",
   });
   const { data: session } = useSession();
   const router = useRouter();
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    // Auto-size description to fit content
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [isOpen, formData.description]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +61,6 @@ export default function EventEditModal({
         dataUpdate.location = formData.location;
       if (formData.description !== eventData?.description)
         dataUpdate.description = formData.description;
-      if (formData.timezone !== eventData?.timezone)
-        dataUpdate.timezone = formData.timezone;
       if (formData.category !== eventData?.category)
         dataUpdate.category = formData.category;
       if (formData.recurrence !== eventData?.recurrence)
@@ -231,29 +237,6 @@ export default function EventEditModal({
 
                 <div>
                   <label
-                    htmlFor="timezone"
-                    className="block text-sm font-medium text-foreground/80 mb-1"
-                  >
-                    Timezone
-                  </label>
-                  <select
-                    id="timezone"
-                    name="timezone"
-                    value={formData.timezone}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select timezone</option>
-                    <option value="America/New_York">Eastern Time</option>
-                    <option value="America/Chicago">Central Time</option>
-                    <option value="America/Denver">Mountain Time</option>
-                    <option value="America/Los_Angeles">Pacific Time</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
                     htmlFor="category"
                     className="block text-sm font-medium text-foreground/80 mb-1"
                   >
@@ -289,9 +272,18 @@ export default function EventEditModal({
                     id="description"
                     name="description"
                     value={formData.description}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      const el = descriptionRef.current;
+                      if (el) {
+                        el.style.height = "auto";
+                        el.style.height = `${el.scrollHeight}px`;
+                      }
+                    }}
+                    ref={descriptionRef}
                     rows={3}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ overflow: "hidden" }}
                   />
                 </div>
 
