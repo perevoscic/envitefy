@@ -281,9 +281,9 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Read and update user profile, preferred provider, and subscription plan.
 - **Auth**: NextAuth session required.
-- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name }`.
-- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|null }`.
-- **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan }`.
+- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name, categoryColors }`.
+- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|null, categoryColors?: Record<string,string>|null }`.
+- **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan, categoryColors }`.
 
 ### Change Password — POST `/api/user/change-password`
 
@@ -404,6 +404,8 @@ Payload used by the authenticated calendar agents.
 ---
 
 ## Changelog
+
+- 2025-09-19: User profile now supports `categoryColors` so event/category colors sync across devices for signed-in users.
 
 ---
 

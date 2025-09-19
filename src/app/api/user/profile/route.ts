@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail } from "@/lib/db";
+import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail, getCategoryColorsByEmail, updateCategoryColorsByEmail } from "@/lib/db";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -29,6 +29,7 @@ export async function GET() {
     subscriptionPlan: responsePlan,
     credits: Number.isFinite(creditsCount as any) ? creditsCount : 0,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
+    categoryColors: await getCategoryColorsByEmail(email),
   });
 }
 
@@ -52,6 +53,10 @@ export async function PUT(req: Request) {
 
     const updatedNames = await updateUserNamesByEmail({ email, firstName, lastName });
     const updated = await updatePreferredProviderByEmail({ email, preferredProvider });
+    if (typeof body.categoryColors !== "undefined") {
+      const map = body.categoryColors && typeof body.categoryColors === "object" ? (body.categoryColors as Record<string, string>) : null;
+      await updateCategoryColorsByEmail({ email, categoryColors: map });
+    }
     if (typeof body.subscriptionPlan !== "undefined") {
       const rawPlan = body.subscriptionPlan == null ? null : String(body.subscriptionPlan).toLowerCase();
       const normalizedPlan = rawPlan === "free" || rawPlan === "monthly" || rawPlan === "yearly" ? rawPlan : null;
@@ -63,6 +68,7 @@ export async function PUT(req: Request) {
       lastName: updated.last_name,
       preferredProvider: updated.preferred_provider || null,
       subscriptionPlan: (await getSubscriptionPlanByEmail(email)) || null,
+      categoryColors: await getCategoryColorsByEmail(email),
     });
   } catch (err: any) {
     const message = typeof err?.message === "string" ? err.message : "Failed to update profile";

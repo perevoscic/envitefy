@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import EventActions from "@/components/EventActions";
 
 type HistoryItem = {
@@ -371,6 +372,7 @@ function groupEventsByDay(
 }
 
 export default function CalendarPage() {
+  const { status } = useSession();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -482,6 +484,33 @@ export default function CalendarPage() {
       }
     } catch {}
   }, []);
+
+  // Also fetch from server when authenticated to ensure cross-device sync
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/user/profile", { cache: "no-store" });
+        const json = await res.json().catch(() => ({}));
+        if (!cancelled && json && typeof json.categoryColors === "object") {
+          setCategoryColors((prev) => {
+            const next = {
+              ...prev,
+              ...(json.categoryColors as Record<string, string>),
+            };
+            try {
+              localStorage.setItem("categoryColors", JSON.stringify(next));
+            } catch {}
+            return next;
+          });
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
 
   // Listen for cross-component updates when category colors change
   useEffect(() => {

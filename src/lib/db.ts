@@ -133,6 +133,51 @@ export async function getUserByEmail(email: string): Promise<AppUserRow | null> 
   return res.rows[0] || null;
 }
 
+// Category colors (per-user UI preferences)
+async function ensureUsersHasCategoryColorsColumn(): Promise<void> {
+  await query(`alter table users add column if not exists category_colors jsonb`);
+}
+
+export async function getCategoryColorsByEmail(email: string): Promise<Record<string, string> | null> {
+  await ensureUsersHasCategoryColorsColumn();
+  const lower = email.toLowerCase();
+  const res = await query<{ category_colors: any }>(
+    `select category_colors from users where email = $1 limit 1`,
+    [lower]
+  );
+  const v = res.rows[0]?.category_colors;
+  if (!v) return null;
+  try {
+    // If stored as JSONB, pg returns object already; just ensure it's a plain object of strings
+    if (typeof v === "object" && v != null) return v as Record<string, string>;
+    if (typeof v === "string") return JSON.parse(v);
+  } catch {}
+  return null;
+}
+
+export async function updateCategoryColorsByEmail(params: {
+  email: string;
+  categoryColors: Record<string, string> | null;
+}): Promise<void> {
+  await ensureUsersHasCategoryColorsColumn();
+  const lower = params.email.toLowerCase();
+  // Normalize: ensure keys and values are strings; drop empties
+  let payload: Record<string, string> | null = null;
+  if (params.categoryColors && typeof params.categoryColors === "object") {
+    payload = {};
+    for (const [k, v] of Object.entries(params.categoryColors)) {
+      const key = String(k || "").trim();
+      const val = String(v || "").trim();
+      if (!key || !val) continue;
+      payload[key] = val;
+    }
+  }
+  await query(
+    `update users set category_colors = $2 where email = $1`,
+    [lower, payload ? JSON.stringify(payload) : null]
+  );
+}
+
 export async function createUserWithEmailPassword(params: {
   email: string;
   firstName?: string;

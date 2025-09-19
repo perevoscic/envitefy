@@ -175,6 +175,7 @@ export default function LeftSidebar() {
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
     "User";
+  const userEmail = session?.user?.email as string | undefined;
   // Deprecated scanCredits removed; use unified credits state
   const [subscriptionPlan, setSubscriptionPlan] = useState<
     "free" | "monthly" | "yearly" | null
@@ -2377,7 +2378,7 @@ export default function LeftSidebar() {
         </div>
 
         {/* Bottom: User button with dropdown */}
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border py-2 px-3">
           <div className="relative z-[900]">
             <button
               ref={buttonRef}
@@ -2394,12 +2395,19 @@ export default function LeftSidebar() {
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
               aria-expanded={menuOpen}
-              className="w-full inline-flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 transition-colors duration-150 hover:text-foreground hover:bg-surface/70 active:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-foreground/90 transition-colors duration-150 hover:text-foreground hover:bg-surface/70 active:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               <div className="min-w-0 flex-1 inline-flex items-center gap-2">
-                <span className="truncate text-sm font-medium">
-                  {displayName}
-                </span>
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="truncate text-sm font-medium">
+                    {displayName}
+                  </div>
+                  {userEmail && (
+                    <div className="truncate text-xs text-foreground/60">
+                      {userEmail}
+                    </div>
+                  )}
+                </div>
                 {showCreditsBadge && credits >= 0 && (
                   <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     {credits}
