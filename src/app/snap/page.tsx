@@ -36,6 +36,9 @@ export default function SnapPage() {
   });
   const [category, setCategory] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<
+    "free" | "monthly" | "yearly" | null
+  >(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [bulkEvents, setBulkEvents] = useState<any[] | null>(null);
   const [practiceSchedule, setPracticeSchedule] = useState<any | null>(null);
@@ -118,6 +121,12 @@ export default function SnapPage() {
           const j = await res.json().catch(() => ({}));
           if (typeof (j as any)?.credits === "number") {
             setCredits((j as any).credits as number);
+          }
+          const plan = (j as any)?.subscriptionPlan;
+          if (plan === "free" || plan === "monthly" || plan === "yearly") {
+            setSubscriptionPlan(plan);
+          } else {
+            setSubscriptionPlan(null);
           }
         }
       } catch {}
@@ -280,7 +289,8 @@ export default function SnapPage() {
 
   const redirectIfNoCredits = (): boolean => {
     try {
-      if (typeof credits === "number" && credits <= 0) {
+      const isFree = subscriptionPlan == null || subscriptionPlan === "free";
+      if (isFree && typeof credits === "number" && credits <= 0) {
         window.location.href = "/subscription";
         return true;
       }

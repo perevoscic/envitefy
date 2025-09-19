@@ -17,6 +17,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
 
   const onEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,6 +36,8 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         return;
       }
       setMessage("Invalid email or password");
+      setShake(true);
+      setTimeout(() => setShake(false), 320);
     } finally {
       setSubmitting(false);
     }
@@ -55,10 +58,16 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         <input
           id="login-password-input"
           type={showPassword ? "text" : "password"}
-          className="w-full border border-border bg-surface text-foreground p-2 rounded pr-10"
+          className={`w-full border border-border bg-surface text-foreground p-2 rounded pr-10${
+            message ? " input-error" : ""
+          }${shake ? " input-shake" : ""}`}
           placeholder="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (message) setMessage(null);
+          }}
+          aria-invalid={message ? true : false}
           required
         />
         <button
@@ -125,7 +134,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
           Sign up
         </button>
       </p>
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      {message && <p className="text-sm text-error font-medium">{message}</p>}
     </form>
   );
 }

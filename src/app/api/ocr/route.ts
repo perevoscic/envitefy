@@ -952,6 +952,31 @@ function improveJoinUsFor(description: string, title: string, location?: string)
   }
 }
 
+// Pick a short human venue label for sentences like
+// "Please, join us for <Name>'s Birthday Party at <Venue>".
+// Prefers a business/venue name over a numeric street address.
+function pickVenueLabelForSentence(location?: string, description?: string): string {
+  try {
+    const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom)\b/i;
+    // 1) Use a non-numeric first segment of the provided location if it looks like a venue
+    if (location) {
+      const first = cleanAddressLabel(String(location)).split(",")[0].trim();
+      if (first && !/\d/.test(first) && venueKeywords.test(first)) return first;
+    }
+    // 2) Try to extract from description text around an "at <Venue>" phrase
+    const lineWithAt = (description || "")
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => /\bat\s+[^\d].{2,}/i.test(l));
+    if (lineWithAt) {
+      const m = lineWithAt.match(/\bat\s+([^,.\n]+?)(?:\s*[,.]|$)/i);
+      const cand = (m?.[1] || "").replace(/\s{2,}/g, " ").trim();
+      if (cand && !/\d/.test(cand) && venueKeywords.test(cand)) return cand;
+    }
+  } catch {}
+  return "";
+}
+
 // Rewrite birthday descriptions into a single friendly sentence via LLM.
 // Returns null on failure or when the feature is disabled (no OPENAI_API_KEY).
 async function llmRewriteBirthdayDescription(
@@ -967,8 +992,8 @@ async function llmRewriteBirthdayDescription(
   // Give the model explicit guidance so it standardizes the sentence while adapting to available fields
   const user =
     `TITLE: ${title || ""}\nLOCATION: ${location || ""}\nNOTES: ${description || ""}\n\n` +
-    "Task: If this event is a birthday party, write ONE human-friendly sentence using this template when possible: 'Please, join us for <Name>'s Birthday Party at <Location>'. " +
-    "Rules: If the location is missing, omit the 'at …' clause. Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
+    "Task: If this is a birthday party, write ONE friendly sentence like: 'Please, join us for <Name>'s Birthday Party at <Location>'. " +
+    "Rules: Prefer a concise venue/business name (e.g., 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1645,7 +1670,8 @@ export async function POST(request: Request) {
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
       try {
-        const rewritten = await llmRewriteBirthdayDescription(finalTitle, finalAddress, finalDescription);
+        const venueLabel = pickVenueLabelForSentence(finalAddress, finalDescription) || finalAddress;
+        const rewritten = await llmRewriteBirthdayDescription(finalTitle, venueLabel, finalDescription);
         if (rewritten && rewritten.length >= 20) {
           finalDescription = rewritten.slice(0, 300);
         }
@@ -2231,7 +2257,19 @@ export async function POST(request: Request) {
     try {
       const session = await getServerSession(authOptions);
       const email = session?.user?.email as string | undefined;
-      if (email) await incrementCreditsByEmail(email, -1);
+      // Only decrement credits for free-plan users; paid plans are unlimited.
+      if (email) {
+        try {
+          const profileRes = await fetch(`${new URL(request.url).origin}/api/user/profile`, { headers: { cookie: request.headers.get("cookie") || "" } } as any).catch(() => null);
+          const plan = profileRes && profileRes.ok ? (await profileRes.json().catch(() => ({}))).subscriptionPlan : null;
+          if (!plan || plan === "free") {
+            await incrementCreditsByEmail(email, -1);
+          }
+        } catch {
+          // Fallback: if plan is unknown, keep old behavior for safety
+          await incrementCreditsByEmail(email, -1);
+        }
+      }
     } catch {}
 
     return NextResponse.json(

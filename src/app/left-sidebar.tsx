@@ -197,6 +197,27 @@ export default function LeftSidebar() {
             p === "free" || p === "monthly" || p === "yearly" ? p : null
           );
           if (typeof json.credits === "number") setCredits(json.credits);
+          if (
+            json &&
+            typeof json.categoryColors === "object" &&
+            json.categoryColors
+          ) {
+            setCategoryColors((prev) => {
+              const next = {
+                ...prev,
+                ...(json.categoryColors as Record<string, string>),
+              };
+              try {
+                localStorage.setItem("categoryColors", JSON.stringify(next));
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("categoryColorsUpdated", { detail: next })
+                  );
+                } catch {}
+              } catch {}
+              return next;
+            });
+          }
         }
       } catch {}
     }
@@ -346,6 +367,7 @@ export default function LeftSidebar() {
         if (changed) {
           try {
             localStorage.setItem("categoryColors", JSON.stringify(next));
+            persistCategoryColors(next);
           } catch {}
         }
         return next;
@@ -385,6 +407,7 @@ export default function LeftSidebar() {
             new CustomEvent("categoryColorsUpdated", { detail: next })
           );
         } catch {}
+        persistCategoryColors(next);
       } catch {}
       return next;
     });
@@ -558,6 +581,19 @@ export default function LeftSidebar() {
     }
   };
 
+  const persistCategoryColors = async (map: Record<string, string>) => {
+    if (status !== "authenticated") return;
+    try {
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({ categoryColors: map }),
+      });
+    } catch {}
+  };
+
   const setCategoryColor = (category: string, color: string) => {
     if (!category) return;
     setCategoryColors((prev) => {
@@ -569,6 +605,7 @@ export default function LeftSidebar() {
             new CustomEvent("categoryColorsUpdated", { detail: next })
           );
         } catch {}
+        persistCategoryColors(next);
       } catch {}
       return next;
     });
@@ -2349,6 +2386,7 @@ export default function LeftSidebar() {
                                                 { detail: next }
                                               )
                                             );
+                                            persistCategoryColors(next);
                                           } catch {}
                                           return next;
                                         });
