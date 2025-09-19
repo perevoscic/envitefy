@@ -195,8 +195,7 @@ export default function SnapPage() {
         }
         document.body.style.overflow = "hidden";
         if (!modalOpenedRef.current) {
-          // Focus first field when modal opens (do not re-focus on subsequent edits)
-          setTimeout(() => firstFieldRef.current?.focus(), 10);
+          // No initial focus to avoid mobile keyboard popping up
           modalOpenedRef.current = true;
         }
       } else {

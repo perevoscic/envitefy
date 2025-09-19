@@ -67,6 +67,25 @@ export default async function EventPage({
     : null;
   const telHref = rsvpPhone ? `tel:${encodeURIComponent(rsvpPhone)}` : null;
 
+  // Determine whether the event is in the future for conditional rendering
+  const isFutureEvent = (() => {
+    try {
+      const startIso = (data?.startISO as string | undefined) || null;
+      const rawStart = (data?.start as string | undefined) || null;
+      const parsed = startIso
+        ? new Date(startIso)
+        : rawStart
+        ? new Date(rawStart)
+        : null;
+      return parsed ? parsed.getTime() > Date.now() : false;
+    } catch {
+      return false;
+    }
+  })();
+
+  // Compute a right padding to avoid text flowing under the thumbnail overlay
+  const detailsExtraPaddingRight = data?.thumbnail ? " pr-32 sm:pr-40" : "";
+
   return (
     <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
       <div className="space-y-2">
@@ -93,7 +112,9 @@ export default async function EventPage({
               <EventDeleteModal eventId={row.id} eventTitle={title} />
             </div>
           </div>
-          <div className="mt-2 rounded border border-border p-3 bg-surface relative">
+          <div
+            className={`mt-2 rounded border border-border p-3 bg-surface relative${detailsExtraPaddingRight}`}
+          >
             {data?.thumbnail && (
               <ThumbnailModal
                 src={data.thumbnail as string}
@@ -109,10 +130,12 @@ export default async function EventPage({
                 <dt className="text-foreground/70">End</dt>
                 <dd className="font-medium break-all">{data?.end || "—"}</dd>
               </div>
-              <div>
-                <dt className="text-foreground/70">Timezone</dt>
-                <dd className="font-medium">{data?.timezone || "—"}</dd>
-              </div>
+              {!isFutureEvent && (
+                <div>
+                  <dt className="text-foreground/70">Timezone</dt>
+                  <dd className="font-medium">{data?.timezone || "—"}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-foreground/70">Location</dt>
                 <dd className="font-medium">{data?.location || "—"}</dd>

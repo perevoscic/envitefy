@@ -139,8 +139,7 @@ export default function Home() {
         }
         document.body.style.overflow = "hidden";
         if (!modalOpenedRef.current) {
-          // Focus first field when modal opens (do not re-focus on subsequent edits)
-          setTimeout(() => firstFieldRef.current?.focus(), 10);
+          // No initial focus to avoid mobile keyboard popping up
           modalOpenedRef.current = true;
         }
       } else {
@@ -290,22 +289,24 @@ export default function Home() {
           // Lightweight keyword guess aligned with sidebar logic
           const s = blob.toLowerCase();
           const hasWedding = /\b(wedding|bridal|ceremony|reception)\b/.test(s);
-          const hasBirthday = /\b(birthday\s*party|b-?day|turns\s+\d+|birthday)\b/.test(s);
-          const guessed = hasWedding && !hasBirthday
-            ? "Weddings"
-            : hasBirthday && !hasWedding
-            ? "Birthdays"
-            : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
-            ? "Doctor Appointments"
-            : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
-                s
-              )
-            ? "Sport Events"
-            : /playdate|play\s*day|kids?\s*play/.test(s)
-            ? "Play Days"
-            : /appointment|meeting|consult/.test(s)
-            ? "Appointments"
-            : "General Events";
+          const hasBirthday =
+            /\b(birthday\s*party|b-?day|turns\s+\d+|birthday)\b/.test(s);
+          const guessed =
+            hasWedding && !hasBirthday
+              ? "Weddings"
+              : hasBirthday && !hasWedding
+              ? "Birthdays"
+              : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
+              ? "Doctor Appointments"
+              : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
+                  s
+                )
+              ? "Sport Events"
+              : /playdate|play\s*day|kids?\s*play/.test(s)
+              ? "Play Days"
+              : /appointment|meeting|consult/.test(s)
+              ? "Appointments"
+              : "General Events";
           setCategory(guessed);
         } catch {}
       }
@@ -647,7 +648,8 @@ export default function Home() {
     const ua = navigator.userAgent || "";
     const isMac = /Macintosh|Mac OS X/i.test(ua);
     const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const isSafari = /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
+    const isSafari =
+      /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua);
 
     // Apple handling:
     // - iOS: use plain https inline import (avoids subscription prompt)
