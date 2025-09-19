@@ -55,6 +55,8 @@ export default function EventActions({
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
+  const [shareFirstName, setShareFirstName] = useState("");
+  const [shareLastName, setShareLastName] = useState("");
   const [shareState, setShareState] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -361,6 +363,10 @@ export default function EventActions({
                     body: JSON.stringify({
                       eventId: historyId,
                       recipientEmail: email,
+                      recipientFirstName:
+                        (shareFirstName || "").trim() || undefined,
+                      recipientLastName:
+                        (shareLastName || "").trim() || undefined,
                     }),
                     credentials: "include",
                   });
@@ -386,6 +392,20 @@ export default function EventActions({
                 value={shareEmail}
                 onChange={(e) => setShareEmail(e.target.value)}
                 className="border border-border bg-surface rounded px-2 py-1 text-sm flex-1 min-w-0"
+              />
+              <input
+                type="text"
+                placeholder="First name (optional)"
+                value={shareFirstName}
+                onChange={(e) => setShareFirstName(e.target.value)}
+                className="border border-border bg-surface rounded px-2 py-1 text-sm w-40"
+              />
+              <input
+                type="text"
+                placeholder="Last name (optional)"
+                value={shareLastName}
+                onChange={(e) => setShareLastName(e.target.value)}
+                className="border border-border bg-surface rounded px-2 py-1 text-sm w-40"
               />
               <button
                 type="submit"

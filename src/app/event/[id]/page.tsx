@@ -8,11 +8,15 @@ import {
   listSharesByOwnerForEvents,
   isEventSharedWithUser,
   isEventSharePendingForUser,
+  listShareRecipientsForEvent,
+  revokeShareByOwner,
 } from "@/lib/db";
 import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import ClientOpenShare from "../ClientOpenShare";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +43,8 @@ export default async function EventPage({
   });
   if (!row) return notFound();
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  let recipientAccepted = false;
+  let recipientPending = false;
   const isShared = Boolean((row.data as any)?.shared);
   const isSharedOut = Boolean((row.data as any)?.sharedOut);
   if (!isOwner) {
@@ -46,9 +52,11 @@ export default async function EventPage({
     const access = await isEventSharedWithUser(row.id, userId);
     if (access === true) {
       // ok
+      recipientAccepted = true;
     } else if (access === false) {
       const pending = await isEventSharePendingForUser(row.id, userId);
       if (!pending) return notFound();
+      recipientPending = true;
       if (autoAccept) {
         try {
           await fetch(`/api/events/share/accept`, {
@@ -258,22 +266,78 @@ export default async function EventPage({
       <div className="mt-6 flex flex-col gap-3">
         {isOwner && (
           <section className="rounded border border-border p-3 bg-surface">
-            <h3 className="text-sm font-semibold text-foreground/80">
-              Share with
-            </h3>
-            <div className="mt-2 text-sm text-foreground/80 flex flex-wrap items-center gap-3">
-              <span>
-                {(shareStats?.accepted_count || 0) +
-                  (shareStats?.pending_count || 0)}{" "}
-                total
-                {shareStats
-                  ? ` · ${shareStats.accepted_count} accepted · ${shareStats.pending_count} pending`
-                  : ""}
-              </span>
-              <span className="text-xs text-foreground/70">
-                Use the “Share event” button below to add or remove recipients.
-              </span>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground/80">
+                Shared with:
+              </h3>
+              <ClientOpenShare
+                historyId={row.id}
+                className="text-xs rounded border border-border bg-surface px-2 py-1 hover:bg-foreground/5"
+              />
             </div>
+            {/* Recipient list (server-rendered) */}
+            {(() => {
+              const List = () => null; // noop placeholder for JSX lints
+              return null;
+            })()}
+            {shareStats ? (
+              <div className="mt-2">
+                {/* Detailed list with remove buttons */}
+                <ul className="space-y-1">
+                  {(
+                    await (async () => {
+                      try {
+                        return await listShareRecipientsForEvent(
+                          userId!,
+                          row.id
+                        );
+                      } catch {
+                        return [] as any[];
+                      }
+                    })()
+                  ).map((r) => (
+                    <li
+                      key={r.id}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="truncate">
+                        {r.name} —{" "}
+                        {r.status === "accepted" ? "Accepted" : "Pending"}
+                      </span>
+                      <form
+                        action={async () => {
+                          "use server";
+                          try {
+                            await revokeShareByOwner(r.id, userId!);
+                          } catch {}
+                          try {
+                            revalidatePath(canonical);
+                          } catch {}
+                          redirect(canonical);
+                        }}
+                      >
+                        <button
+                          type="submit"
+                          className="text-xs text-red-500 rounded border border-red-500/40 bg-red-500/10 px-2 py-0.5 hover:bg-red-500/20"
+                          title="Remove access"
+                        >
+                          🗑
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                  <li className="pt-1">
+                    <span className="text-xs text-foreground/70">
+                      Use the “Share event” button below to add more recipients.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <div className="mt-2 text-xs text-foreground/70">
+                Not shared yet. Use the “+Add” button to add recipients.
+              </div>
+            )}
           </section>
         )}
         <EventActions
@@ -282,9 +346,10 @@ export default async function EventPage({
           className=""
           historyId={row.id}
         />
+        {/* +Add has been moved to the Shared with box header */}
         {isOwner ? null : (
           <div className="flex items-center gap-3">
-            {isShared ? (
+            {isShared || recipientAccepted ? (
               <form
                 action={async () => {
                   "use server";
@@ -305,7 +370,7 @@ export default async function EventPage({
                   Remove from my calendar
                 </button>
               </form>
-            ) : (
+            ) : recipientPending ? (
               <form
                 action={async () => {
                   "use server";
@@ -325,7 +390,7 @@ export default async function EventPage({
                   Add to my calendar
                 </button>
               </form>
-            )}
+            ) : null}
           </div>
         )}
       </div>

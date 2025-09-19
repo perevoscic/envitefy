@@ -229,12 +229,20 @@ export async function sendShareEventEmail(params: {
   ownerEmail: string;
   eventTitle: string;
   eventUrl: string;
+  recipientFirstName?: string | null;
+  recipientLastName?: string | null;
 }): Promise<void> {
   assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
   const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
   const to = params.toEmail;
   const subject = `An event was shared with you on Snap My Date`;
   const acceptUrl = `${params.eventUrl}?accept=1`;
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXTAUTH_URL ||
+    process.env.PUBLIC_BASE_URL ||
+    "https://snapmydate.com";
+  const signupUrl = `${baseUrl}/?auth=signup`;
   const text = [
     `An event was shared with you by ${params.ownerEmail}.`,
     ``,
@@ -243,8 +251,13 @@ export async function sendShareEventEmail(params: {
     `Accept: ${acceptUrl}`,
     ``,
     `Open the link to view the details or add it to your calendar. You can also accept directly: ${acceptUrl}`,
+    ``,
+    `Don't have an account? Sign up: ${signupUrl}`,
   ].join("\n");
+  const greetName = `${params.recipientFirstName || ""} ${params.recipientLastName || ""}`.trim();
+  const greeting = greetName ? `Hi ${escapeHtml(greetName)},` : "Hello,";
   const html = `<!doctype html><html><body>
+    <p>${greeting}</p>
     <p>An event was shared with you by ${escapeHtml(params.ownerEmail)}.</p>
     <p><strong>Title:</strong> ${escapeHtml(params.eventTitle)}</p>
     <p>
@@ -252,6 +265,7 @@ export async function sendShareEventEmail(params: {
       &nbsp;·&nbsp;
       <a href="${escapeHtml(acceptUrl)}">Accept</a>
     </p>
+    <p>Don't have an account? <a href="${escapeHtml(signupUrl)}">Sign up now</a>.</p>
   </body></html>`;
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,

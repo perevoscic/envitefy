@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const eventId = String(body.eventId || "").trim();
     const recipientEmail = String(body.recipientEmail || "").trim().toLowerCase();
+    const recipientFirstName = (String(body.recipientFirstName || "").trim() || null) as string | null;
+    const recipientLastName = (String(body.recipientLastName || "").trim() || null) as string | null;
     if (!eventId || !recipientEmail) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     const existing = await getEventHistoryById(eventId);
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
       const slugTitle = (await getEventHistoryById(eventId))?.title || "Event";
       const slug = (slugTitle || "event").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       const eventUrl = `${base}/event/${slug}-${eventId}`;
-      await sendShareEventEmail({ toEmail: recipientEmail, ownerEmail, eventTitle: slugTitle, eventUrl });
+      await sendShareEventEmail({ toEmail: recipientEmail, ownerEmail, eventTitle: slugTitle, eventUrl, recipientFirstName, recipientLastName });
     } catch (e) {
       try { console.error("[share] email send failed", e); } catch {}
     }

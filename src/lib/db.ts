@@ -133,6 +133,14 @@ export async function getUserByEmail(email: string): Promise<AppUserRow | null> 
   return res.rows[0] || null;
 }
 
+export async function getUserById(id: string): Promise<AppUserRow | null> {
+  const res = await query<AppUserRow>(
+    `select ${USER_SELECT_COLUMNS} from users where id = $1 limit 1`,
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
 // Category colors (per-user UI preferences)
 async function ensureUsersHasCategoryColorsColumn(): Promise<void> {
   await query(`alter table users add column if not exists category_colors jsonb`);
@@ -1291,6 +1299,38 @@ export async function isEventSharePendingForUser(eventId: string, userId: string
   } catch {
     return null;
   }
+}
+
+export async function listShareRecipientsForEvent(ownerUserId: string, eventId: string): Promise<Array<{ id: string; name: string; email: string; status: "pending"|"accepted" }>> {
+  const res = await query<{ id: string; recipient_user_id: string; status: string }>(
+    `select id, recipient_user_id, status
+     from event_shares
+     where owner_user_id = $1 and event_id = $2 and revoked_at is null
+     order by created_at asc`,
+    [ownerUserId, eventId]
+  );
+  const rows = res.rows || [];
+  const out: Array<{ id: string; name: string; email: string; status: "pending"|"accepted" }> = [];
+  for (const r of rows) {
+    try {
+      const u = await getUserByEmail(r.recipient_user_id);
+      const name = [u?.first_name, u?.last_name].filter(Boolean).join(" ") || (u?.email || "Unknown");
+      out.push({ id: r.id, name, email: u?.email || "", status: (r.status === "accepted" ? "accepted" : "pending") });
+    } catch {
+      out.push({ id: r.id, name: "Unknown", email: "", status: (r.status === "accepted" ? "accepted" : "pending") });
+    }
+  }
+  return out;
+}
+
+export async function revokeShareByOwner(eventShareId: string, ownerUserId: string): Promise<boolean> {
+  const res = await query<{ id: string }>(
+    `update event_shares set revoked_at = now()
+     where id = $1 and owner_user_id = $2 and revoked_at is null
+     returning id`,
+    [eventShareId, ownerUserId]
+  );
+  return Boolean(res.rows?.[0]?.id);
 }
 
 export type PasswordResetRow = {
