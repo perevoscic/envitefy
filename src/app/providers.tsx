@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { SidebarProvider } from "./sidebar-context";
+import GlobalEventCreate from "./GlobalEventCreate";
 
 type Theme = "light" | "dark";
 
@@ -135,7 +136,10 @@ export default function Providers({
   return (
     <SessionProvider session={session}>
       <SidebarProvider>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <GlobalEventCreate />
+        </ThemeProvider>
       </SidebarProvider>
     </SessionProvider>
   );

@@ -54,13 +54,13 @@ export async function GET() {
       } catch {}
       shared = [];
     }
-    // Annotate shared items with marker for UI and default category
+    // Annotate shared items with marker for UI and force category to Shared events
     const annotatedShared = (shared || []).map((r) => ({
       ...r,
       data: {
         ...(r.data || {}),
         shared: true,
-        category: (r.data && r.data.category) || "Shared events",
+        category: "Shared events",
       },
     }));
     const items = [...ownWithShareOut, ...annotatedShared].sort((a: any, b: any) => {
