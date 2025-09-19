@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import EventActions from "@/components/EventActions";
+import EventCreateModal from "@/components/EventCreateModal";
 
 type HistoryItem = {
   id: string;
@@ -391,6 +392,10 @@ export default function CalendarPage() {
     date: Date;
     items: CalendarEvent[];
   } | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDefaultDate, setCreateDefaultDate] = useState<Date | undefined>(
+    undefined
+  );
   const [upcomingView, setUpcomingView] = useState<"week" | "month" | "shared">(
     "week"
   );
@@ -662,6 +667,21 @@ export default function CalendarPage() {
   const goNext = () => setCursor((d) => addMonths(d, 1));
   const goToday = () => setCursor(startOfDay(new Date()));
 
+  // Expose a global hook so the sidebar plus button can open the modal
+  useEffect(() => {
+    (window as any).__openCreateEvent = () => {
+      try {
+        setCreateDefaultDate(startOfDay(new Date()));
+        setCreateOpen(true);
+      } catch {}
+    };
+    return () => {
+      try {
+        delete (window as any).__openCreateEvent;
+      } catch {}
+    };
+  }, []);
+
   const onDayClick = (date: Date) => {
     const key = dayKey(startOfDay(date));
     const items = byDay.get(key) || [];
@@ -671,7 +691,11 @@ export default function CalendarPage() {
     }
     if (items.length > 1) {
       setOpenDay({ date, items });
+      return;
     }
+    // No items on this day → open create modal with default date prefilled
+    setCreateDefaultDate(date);
+    setCreateOpen(true);
   };
 
   const renderEventPill = (ev: CalendarEvent) => {
@@ -771,6 +795,34 @@ export default function CalendarPage() {
               className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm hover:bg-foreground/5"
             >
               →
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreateDefaultDate(startOfDay(new Date()));
+                setCreateOpen(true);
+              }}
+              title="New event"
+              className="ml-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-foreground/5 inline-flex items-center gap-2"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="miter"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <rect x="2" y="4" width="20" height="18" rx="0"></rect>
+                <line x1="7" y1="2" x2="7" y2="6"></line>
+                <line x1="17" y1="2" x2="17" y2="6"></line>
+                <line x1="8" y1="13" x2="16" y2="13"></line>
+                <line x1="12" y1="9" x2="12" y2="17"></line>
+              </svg>
+              <span>Add event</span>
             </button>
           </div>
           <h1 className="text-xl sm:text-2xl font-semibold">
@@ -1350,6 +1402,13 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
+
+      {/* Create new event modal */}
+      <EventCreateModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        defaultDate={createDefaultDate}
+      />
     </div>
   );
 }

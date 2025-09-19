@@ -1510,8 +1510,47 @@ export default function LeftSidebar() {
                   </svg>
                   <span className="flex items-center justify-between w-full">
                     <span>Calendar</span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                      {history.length}
+                    <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                        {history.length}
+                      </span>
+                      <button
+                        type="button"
+                        title="New event"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            (window as any).__openCreateEvent?.();
+                          } catch {}
+                        }}
+                        className="ml-1 p-1 rounded hover:bg-surface/50"
+                        aria-label="New event"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                          strokeLinejoin="miter"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            x="2"
+                            y="4"
+                            width="20"
+                            height="18"
+                            rx="0"
+                          ></rect>
+                          <line x1="7" y1="2" x2="7" y2="6"></line>
+                          <line x1="17" y1="2" x2="17" y2="6"></line>
+                          <line x1="8" y1="13" x2="16" y2="13"></line>
+                          <line x1="12" y1="9" x2="12" y2="17"></line>
+                        </svg>
+                      </button>
                     </span>
                   </span>
                 </div>
