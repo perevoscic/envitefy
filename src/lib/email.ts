@@ -224,6 +224,37 @@ export async function sendPasswordResetEmail(params: {
   await getSes().send(cmd);
 }
 
+export async function sendShareEventEmail(params: {
+  toEmail: string;
+  ownerEmail: string;
+  eventTitle: string;
+  eventUrl: string;
+}): Promise<void> {
+  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
+  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const to = params.toEmail;
+  const subject = `An event was shared with you on Snap My Date`;
+  const text = [
+    `An event was shared with you by ${params.ownerEmail}.`,
+    ``,
+    `Title: ${params.eventTitle}`,
+    `Link: ${params.eventUrl}`,
+    ``,
+    `Open the link to view the details or add it to your calendar.`,
+  ].join("\n");
+  const html = `<!doctype html><html><body>
+    <p>An event was shared with you by ${escapeHtml(params.ownerEmail)}.</p>
+    <p><strong>Title:</strong> ${escapeHtml(params.eventTitle)}</p>
+    <p><a href="${escapeHtml(params.eventUrl)}">View the event</a></p>
+  </body></html>`;
+  const cmd = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+  });
+  await getSes().send(cmd);
+}
+
 function escapeHtml(s: string): string {
   return s
     .replaceAll("&", "&amp;")

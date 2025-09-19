@@ -1262,6 +1262,22 @@ export async function listSharesByOwnerForEvents(ownerUserId: string, eventIds: 
   }));
 }
 
+export async function isEventSharedWithUser(eventId: string, userId: string): Promise<boolean | null> {
+  try {
+    const res = await query<{ exists: boolean }>(
+      `select exists(
+         select 1 from event_shares
+         where event_id = $1 and recipient_user_id = $2 and status = 'accepted' and revoked_at is null
+       ) as exists`,
+      [eventId, userId]
+    );
+    return Boolean(res.rows[0]?.exists);
+  } catch {
+    // If the shares table does not exist, return null so callers can decide a fallback behavior (e.g., dev email-only shares)
+    return null;
+  }
+}
+
 export type PasswordResetRow = {
   id: string;
   email: string;

@@ -4,7 +4,7 @@ import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
-import { listSharesByOwnerForEvents } from "@/lib/db";
+import { listSharesByOwnerForEvents, isEventSharedWithUser } from "@/lib/db";
 import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -30,6 +30,13 @@ export default async function EventPage({
   if (!row) return notFound();
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   const isShared = Boolean((row.data as any)?.shared);
+  if (!isOwner) {
+    if (!userId) return notFound();
+    const access = await isEventSharedWithUser(row.id, userId);
+    // access === true → allow; false → deny; null (no shares table) → allow only if link owner emailed and category says Shared events
+    if (access === false) return notFound();
+    if (access === null && !isShared) return notFound();
+  }
   let shareStats: { accepted_count: number; pending_count: number } | null =
     null;
   if (isOwner) {
@@ -211,48 +218,7 @@ export default async function EventPage({
           className=""
           historyId={row.id}
         />
-        {isOwner ? (
-          <form
-            className="flex items-center gap-2"
-            action={async (formData: FormData) => {
-              "use server";
-              const email = String(formData.get("email") || "").trim();
-              if (!email) return;
-              try {
-                await fetch(`/api/events/share`, {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({
-                    eventId: row.id,
-                    recipientEmail: email,
-                  }),
-                });
-              } catch {}
-            }}
-          >
-            <input
-              type="email"
-              name="email"
-              placeholder="Share with email"
-              required
-              className="border border-border bg-surface rounded px-2 py-1 text-sm w-64"
-            />
-            <button
-              type="submit"
-              className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5"
-            >
-              Share
-            </button>
-            {shareStats && (
-              <span className="text-xs text-foreground/60 ml-2">
-                {shareStats.accepted_count} accepted
-                {shareStats.pending_count
-                  ? `, ${shareStats.pending_count} pending`
-                  : ""}
-              </span>
-            )}
-          </form>
-        ) : (
+        {isOwner ? null : (
           <div className="flex items-center gap-3">
             {isShared ? (
               <form

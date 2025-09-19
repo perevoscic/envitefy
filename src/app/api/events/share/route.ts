@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createOrUpdateEventShare, getEventHistoryById, getUserIdByEmail } from "@/lib/db";
+import { sendShareEventEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const share = await createOrUpdateEventShare({ eventId, ownerUserId, recipientEmail });
+    let share: any = null;
+    try {
+      share = await createOrUpdateEventShare({ eventId, ownerUserId, recipientEmail });
+    } catch (err: any) {
+      // If event_shares table is not present yet, bypass DB share and still email the recipient
+      try { console.warn("[share] falling back to email only:", err?.message || err); } catch {}
+    }
+
+    // Email notification to recipient (from no-reply)
+    try {
+      const ownerEmail = email;
+      const base = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL || "";
+      const slugTitle = (await getEventHistoryById(eventId))?.title || "Event";
+      const slug = (slugTitle || "event").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const eventUrl = `${base}/event/${slug}-${eventId}`;
+      await sendShareEventEmail({ toEmail: recipientEmail, ownerEmail, eventTitle: slugTitle, eventUrl });
+    } catch (e) {
+      try { console.error("[share] email send failed", e); } catch {}
+    }
+
     return NextResponse.json({ ok: true, share });
   } catch (err: any) {
     try { console.error("[share] POST error", err); } catch {}
