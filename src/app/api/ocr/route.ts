@@ -1760,16 +1760,10 @@ export async function POST(request: Request) {
     // Enrich generic "Join us for" line with the birthday person's name from title
     finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
 
-    // Preserve compact RSVP when detected: append on a new line below the single-sentence description
+    // Extract compact RSVP now, but defer appending until after all rewrites
+    let deferredRsvp: string | null = null;
     try {
-      const rsvpCompact = extractRsvpCompact(raw, finalDescription);
-      if (rsvpCompact) {
-        // If description looks like a single sentence, append RSVP on a new line; otherwise keep original
-        const isSingleLine = !/\n/.test(finalDescription) && finalDescription.trim().length > 0;
-        if (isSingleLine && !finalDescription.toLowerCase().includes("rsvp")) {
-          finalDescription = `${finalDescription}\n${rsvpCompact}`.trim();
-        }
-      }
+      deferredRsvp = extractRsvpCompact(raw, finalDescription);
     } catch {}
 
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
@@ -1825,6 +1819,14 @@ export async function POST(request: Request) {
           finalDescription = cleaned;
         }
       } catch {}
+    }
+
+    // Append RSVP at the very end, after any rewrites
+    if (deferredRsvp) {
+      const isSingleLine = !/\n/.test(finalDescription) && finalDescription.trim().length > 0;
+      if (isSingleLine && !finalDescription.toLowerCase().includes("rsvp")) {
+        finalDescription = `${finalDescription}\n${deferredRsvp}`.trim();
+      }
     }
 
     const descriptionHasTitle =
