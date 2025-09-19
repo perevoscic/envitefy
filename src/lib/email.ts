@@ -252,7 +252,30 @@ export async function sendShareEventEmail(params: {
     Destination: { ToAddresses: [to] },
     Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
   });
-  await getSes().send(cmd);
+  // Lightweight instrumentation to surface SES delivery outcomes in logs
+  try {
+    console.log("[email] sendShareEventEmail dispatch", {
+      to: maskEmail(to),
+      hasOwnerEmail: Boolean(params.ownerEmail),
+      hasEventUrl: Boolean(params.eventUrl),
+    });
+    const result = await getSes().send(cmd);
+    console.log("[email] sendShareEventEmail success", {
+      to: maskEmail(to),
+      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+      requestId: (result as any)?.$metadata?.requestId || null,
+      statusCode: (result as any)?.$metadata?.httpStatusCode || null,
+    });
+  } catch (err: any) {
+    console.error("[email] sendShareEventEmail failed", {
+      to: maskEmail(to),
+      error: err?.message,
+      name: err?.name,
+      statusCode: err?.$metadata?.httpStatusCode || null,
+      requestId: err?.$metadata?.requestId || null,
+    });
+    throw err;
+  }
 }
 
 function escapeHtml(s: string): string {
