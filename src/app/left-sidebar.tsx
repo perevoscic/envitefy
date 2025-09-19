@@ -1488,9 +1488,12 @@ export default function LeftSidebar() {
                   )
                 );
                 // Sort categories A → Z for consistent display
-                const sortedCategories = [...categories].sort((a, b) =>
-                  a.localeCompare(b)
-                );
+                const sortedCategories = [...categories].sort((a, b) => {
+                  // Pin Shared events to the top, then A→Z for the rest
+                  if (a === "Shared events" && b !== "Shared events") return -1;
+                  if (b === "Shared events" && a !== "Shared events") return 1;
+                  return a.localeCompare(b);
+                });
                 if (categories.length === 0) return null;
                 const buttonClass = (_c: string) => {
                   return `hover:bg-surface/70`;
@@ -1738,6 +1741,50 @@ export default function LeftSidebar() {
                                             title={h.title}
                                           >
                                             <div className="truncate flex items-center gap-2">
+                                              {Boolean(
+                                                (h as any)?.data &&
+                                                  (h as any).data.shared
+                                              ) ? (
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth="2"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  className="h-3.5 w-3.5 opacity-70"
+                                                  aria-hidden="true"
+                                                >
+                                                  <circle
+                                                    cx="18"
+                                                    cy="5"
+                                                    r="3"
+                                                  />
+                                                  <circle
+                                                    cx="6"
+                                                    cy="12"
+                                                    r="3"
+                                                  />
+                                                  <circle
+                                                    cx="18"
+                                                    cy="19"
+                                                    r="3"
+                                                  />
+                                                  <line
+                                                    x1="8.59"
+                                                    y1="13.51"
+                                                    x2="15.42"
+                                                    y2="17.49"
+                                                  />
+                                                  <line
+                                                    x1="15.41"
+                                                    y1="6.51"
+                                                    x2="8.59"
+                                                    y2="10.49"
+                                                  />
+                                                </svg>
+                                              ) : null}
                                               <span className="truncate">
                                                 {h.title || "Untitled event"}
                                               </span>

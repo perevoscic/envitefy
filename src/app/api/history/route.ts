@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser } from "@/lib/db";
+import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +26,30 @@ export async function GET() {
       } catch {}
       return NextResponse.json({ items: [] });
     }
-    const items = await listEventHistoryByUser(userId, 100);
+    const own = await listEventHistoryByUser(userId, 100);
+    let shared: any[] = [];
+    try {
+      shared = await listAcceptedSharedEventsForUser(userId);
+    } catch (e: any) {
+      try {
+        console.warn("[history] GET: shared events unavailable (likely no event_shares table yet)", String(e?.message || e));
+      } catch {}
+      shared = [];
+    }
+    // Annotate shared items with marker for UI and default category
+    const annotatedShared = (shared || []).map((r) => ({
+      ...r,
+      data: {
+        ...(r.data || {}),
+        shared: true,
+        category: (r.data && r.data.category) || "Shared events",
+      },
+    }));
+    const items = [...own, ...annotatedShared].sort((a: any, b: any) => {
+      const ta = new Date(a.created_at || 0).getTime();
+      const tb = new Date(b.created_at || 0).getTime();
+      return tb - ta;
+    });
     try {
       console.log(
         "[history] GET: returning items",

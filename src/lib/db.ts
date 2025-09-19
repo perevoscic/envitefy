@@ -1134,6 +1134,134 @@ export async function listRecentEventHistory(limit: number = 20): Promise<EventH
   return res.rows || [];
 }
 
+// Shared events
+export type EventShareRow = {
+  id: string;
+  event_id: string;
+  owner_user_id: string;
+  recipient_user_id: string;
+  status: "pending" | "accepted" | "revoked";
+  invite_code?: string | null;
+  created_at?: string;
+  accepted_at?: string | null;
+  revoked_at?: string | null;
+};
+
+export async function createOrUpdateEventShare(params: {
+  eventId: string;
+  ownerUserId: string;
+  recipientEmail: string;
+}): Promise<EventShareRow> {
+  const recipientId = await getUserIdByEmail(params.recipientEmail);
+  if (!recipientId) throw new Error("Recipient user not found");
+  if (recipientId === params.ownerUserId) throw new Error("Cannot share to yourself");
+  const invite = randomUUID();
+  const res = await query<EventShareRow>(
+    `insert into event_shares (event_id, owner_user_id, recipient_user_id, status, invite_code)
+     values ($1, $2, $3, 'pending', $4)
+     on conflict (event_id, recipient_user_id) where revoked_at is null
+     do update set status = excluded.status,
+                   invite_code = excluded.invite_code,
+                   created_at = now(),
+                   accepted_at = null
+     returning id, event_id, owner_user_id, recipient_user_id, status, invite_code, created_at, accepted_at, revoked_at`,
+    [params.eventId, params.ownerUserId, recipientId, invite]
+  );
+  return res.rows[0];
+}
+
+export async function acceptEventShare(params: {
+  eventId: string;
+  recipientUserId: string;
+}): Promise<EventShareRow | null> {
+  const res = await query<EventShareRow>(
+    `update event_shares
+     set status = 'accepted', accepted_at = now()
+     where event_id = $1 and recipient_user_id = $2 and status = 'pending' and revoked_at is null
+     returning id, event_id, owner_user_id, recipient_user_id, status, invite_code, created_at, accepted_at, revoked_at`,
+    [params.eventId, params.recipientUserId]
+  );
+  return res.rows[0] || null;
+}
+
+export async function revokeEventShare(params: {
+  eventId: string;
+  byUserId: string;
+  recipientUserId?: string | null;
+}): Promise<number> {
+  // Allow owner to revoke specific recipient or all; allow recipient to revoke their own
+  if (params.recipientUserId) {
+    const res = await query<{ count: string }>(
+      `with target as (
+         select * from event_shares
+         where event_id = $1
+           and revoked_at is null
+           and (owner_user_id = $2 or recipient_user_id = $2)
+           and recipient_user_id = $3
+       )
+       update event_shares es
+       set status = 'revoked', revoked_at = now()
+       from target t
+       where es.id = t.id
+       returning es.id`,
+      [params.eventId, params.byUserId, params.recipientUserId]
+    );
+    return res.rowCount || 0;
+  }
+  // If recipientUserId not provided, attempt recipient self-revoke first
+  const asRecipient = await query<{ id: string }>(
+    `update event_shares
+     set status = 'revoked', revoked_at = now()
+     where event_id = $1 and recipient_user_id = $2 and revoked_at is null`,
+    [params.eventId, params.byUserId]
+  );
+  if ((asRecipient.rowCount || 0) > 0) return asRecipient.rowCount || 0;
+  // Otherwise, allow owner to revoke all
+  const asOwner = await query<{ id: string }>(
+    `update event_shares
+     set status = 'revoked', revoked_at = now()
+     where event_id = $1 and owner_user_id = $2 and revoked_at is null`,
+    [params.eventId, params.byUserId]
+  );
+  return asOwner.rowCount || 0;
+}
+
+export async function listAcceptedSharedEventsForUser(userId: string): Promise<EventHistoryRow[]> {
+  const res = await query<EventHistoryRow>(
+    `select eh.id, eh.user_id, eh.title, eh.data, eh.created_at
+     from event_shares es
+     join event_history eh on eh.id = es.event_id
+     where es.recipient_user_id = $1
+       and es.status = 'accepted'
+       and es.revoked_at is null
+     order by eh.created_at desc nulls last, eh.id desc` ,
+    [userId]
+  );
+  return res.rows || [];
+}
+
+export async function listSharesByOwnerForEvents(ownerUserId: string, eventIds: string[]): Promise<{
+  event_id: string;
+  accepted_count: number;
+  pending_count: number;
+}[]> {
+  if (eventIds.length === 0) return [];
+  const res = await query<{ event_id: string; accepted_count: string; pending_count: string }>(
+    `select event_id,
+            count(*) filter (where status = 'accepted' and revoked_at is null) as accepted_count,
+            count(*) filter (where status = 'pending' and revoked_at is null)  as pending_count
+     from event_shares
+     where owner_user_id = $1 and event_id = any($2::uuid[])
+     group by event_id`,
+    [ownerUserId, eventIds]
+  );
+  return (res.rows || []).map((r) => ({
+    event_id: r.event_id,
+    accepted_count: Number(r.accepted_count || 0),
+    pending_count: Number(r.pending_count || 0),
+  }));
+}
+
 export type PasswordResetRow = {
   id: string;
   email: string;

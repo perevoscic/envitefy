@@ -4,6 +4,7 @@ import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import { listSharesByOwnerForEvents } from "@/lib/db";
 import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -27,6 +28,21 @@ export default async function EventPage({
     userId,
   });
   if (!row) return notFound();
+  const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  const isShared = Boolean((row.data as any)?.shared);
+  let shareStats: { accepted_count: number; pending_count: number } | null =
+    null;
+  if (isOwner) {
+    try {
+      const stats = await listSharesByOwnerForEvents(userId!, [row.id]);
+      const s = stats.find((x) => x.event_id === row.id);
+      if (s)
+        shareStats = {
+          accepted_count: s.accepted_count,
+          pending_count: s.pending_count,
+        };
+    } catch {}
+  }
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
@@ -104,12 +120,16 @@ export default async function EventPage({
               Details
             </h2>
             <div className="flex items-center gap-2">
-              <EventEditModal
-                eventId={row.id}
-                eventData={data}
-                eventTitle={title}
-              />
-              <EventDeleteModal eventId={row.id} eventTitle={title} />
+              {isOwner && (
+                <EventEditModal
+                  eventId={row.id}
+                  eventData={data}
+                  eventTitle={title}
+                />
+              )}
+              {isOwner ? (
+                <EventDeleteModal eventId={row.id} eventTitle={title} />
+              ) : null}
             </div>
           </div>
           <div
@@ -184,7 +204,101 @@ export default async function EventPage({
         </div>
       </section>
 
-      <EventActions shareUrl={shareUrl} event={data as any} className="mt-6" />
+      <div className="mt-6 flex flex-col gap-3">
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          className=""
+          historyId={row.id}
+        />
+        {isOwner ? (
+          <form
+            className="flex items-center gap-2"
+            action={async (formData: FormData) => {
+              "use server";
+              const email = String(formData.get("email") || "").trim();
+              if (!email) return;
+              try {
+                await fetch(`/api/events/share`, {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({
+                    eventId: row.id,
+                    recipientEmail: email,
+                  }),
+                });
+              } catch {}
+            }}
+          >
+            <input
+              type="email"
+              name="email"
+              placeholder="Share with email"
+              required
+              className="border border-border bg-surface rounded px-2 py-1 text-sm w-64"
+            />
+            <button
+              type="submit"
+              className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5"
+            >
+              Share
+            </button>
+            {shareStats && (
+              <span className="text-xs text-foreground/60 ml-2">
+                {shareStats.accepted_count} accepted
+                {shareStats.pending_count
+                  ? `, ${shareStats.pending_count} pending`
+                  : ""}
+              </span>
+            )}
+          </form>
+        ) : (
+          <div className="flex items-center gap-3">
+            {isShared ? (
+              <form
+                action={async () => {
+                  "use server";
+                  try {
+                    await fetch(`/api/events/share/remove`, {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({ eventId: row.id }),
+                    });
+                  } catch {}
+                }}
+              >
+                <button
+                  type="submit"
+                  className="text-sm text-red-500 rounded border border-red-500/40 bg-red-500/10 px-3 py-1 hover:bg-red-500/20"
+                  title="Remove this shared event from my calendar"
+                >
+                  Remove from my calendar
+                </button>
+              </form>
+            ) : (
+              <form
+                action={async () => {
+                  "use server";
+                  try {
+                    await fetch(`/api/events/share/accept`, {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({ eventId: row.id }),
+                    });
+                  } catch {}
+                }}
+              >
+                <button
+                  type="submit"
+                  className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5"
+                >
+                  Add to my calendar
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

@@ -71,6 +71,29 @@ CREATE TABLE IF NOT EXISTS event_history (
 CREATE INDEX IF NOT EXISTS idx_event_history_user_id_created_at
   ON event_history(user_id, created_at DESC);
 
+-- Event shares (owner shares an event_history row with another user)
+CREATE TABLE IF NOT EXISTS event_shares (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES event_history(id) ON DELETE CASCADE,
+  owner_user_id uuid NOT NULL REFERENCES users(id),
+  recipient_user_id uuid NOT NULL REFERENCES users(id),
+  status varchar(16) NOT NULL DEFAULT 'pending', -- pending | accepted | revoked
+  invite_code text UNIQUE,
+  created_at timestamptz(6) DEFAULT now(),
+  accepted_at timestamptz(6),
+  revoked_at timestamptz(6)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_event_shares_event_recipient
+  ON event_shares(event_id, recipient_user_id)
+  WHERE revoked_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_event_shares_recipient_status
+  ON event_shares(recipient_user_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_event_shares_owner_event
+  ON event_shares(owner_user_id, event_id);
+
 -- Promo codes (gift codes for subscriptions or credits)
 CREATE TABLE IF NOT EXISTS promo_codes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

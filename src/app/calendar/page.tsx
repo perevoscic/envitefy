@@ -23,6 +23,7 @@ type CalendarEvent = {
   description?: string | null;
   category?: string | null;
   recurrence?: string | null;
+  shared?: boolean;
 };
 
 // Mirror the sidebar color logic so calendar tiles match "Recent Snapped"
@@ -243,6 +244,7 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
           category: (ev.category as string) || baseCategory,
           recurrence:
             (ev.recurrence as string) || (d.recurrence as string) || null,
+          shared: Boolean(d?.shared),
         });
       });
       continue;
@@ -265,6 +267,7 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
         description: (single?.description as string) || null,
         category: (single?.category as string) || baseCategory,
         recurrence: (single?.recurrence as string) || null,
+        shared: Boolean(d?.shared),
       });
     }
   }
@@ -388,7 +391,9 @@ export default function CalendarPage() {
     date: Date;
     items: CalendarEvent[];
   } | null>(null);
-  const [upcomingView, setUpcomingView] = useState<"week" | "month">("week");
+  const [upcomingView, setUpcomingView] = useState<"week" | "month" | "shared">(
+    "week"
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -632,6 +637,17 @@ export default function CalendarPage() {
       .map(([, v]) => v);
   }, [upcoming]);
 
+  const upcomingShared = useMemo(() => {
+    try {
+      const now = new Date();
+      return upcoming.filter(
+        (e) => (e as any).shared && new Date(e.start) >= now
+      );
+    } catch {
+      return [] as CalendarEvent[];
+    }
+  }, [upcoming]);
+
   const monthFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }),
@@ -675,7 +691,28 @@ export default function CalendarPage() {
         className={`hidden md:flex flex-col rounded-md ${tone.tint} text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
         title={ev.title}
       >
-        <span className="truncate max-w-[10rem]">{ev.title}</span>
+        <span className="truncate max-w-[10rem] inline-flex items-center gap-1">
+          {ev.shared && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3 w-3 opacity-70"
+              aria-hidden="true"
+            >
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+          )}
+          {ev.title}
+        </span>
       </button>
     );
   };
@@ -687,6 +724,20 @@ export default function CalendarPage() {
     const tone = chosenColorName
       ? colorTintAndDot(chosenColorName)
       : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+    if (ev.shared) {
+      return (
+        <svg
+          key={`${ev.id}@${ev.start}`}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="h-2 w-2 opacity-80"
+          aria-hidden="true"
+        >
+          <path d="M18 8a3 3 0 1 0-2.83-4H15a3 3 0 0 0 0 6h.17A3 3 0 0 0 18 8Zm-12 7a3 3 0 1 0 2.83 4H6a3 3 0 0 0 0-6h-.17A3 3 0 0 0 6 15Zm12 0a3 3 0 1 0 2.83 4H18a3 3 0 0 0 0-6h-.17A3 3 0 0 0 18 15ZM8.59 13.51l6.83 3.98m0-10.98L8.59 10.49" />
+        </svg>
+      );
+    }
     return (
       <span
         key={`${ev.id}@${ev.start}`}
@@ -819,15 +870,17 @@ export default function CalendarPage() {
 
         <div className="mt-3 flex justify-start">
           {/* Elastic Tabs Toggle */}
-          <nav className="relative flex bg-white dark:bg-surface shadow-md rounded-full px-1 py-1 w-[220px] tabs-elastic">
+          <nav className="relative flex bg-white dark:bg-surface shadow-md rounded-full px-1 py-1 w-[330px] tabs-elastic">
             <div
               className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-sky-400 to-purple-700 z-0"
               style={{
-                width: "50%",
+                width: "33.3333%",
                 transform:
                   upcomingView === "week"
                     ? "translateX(0%)"
-                    : "translateX(100%)",
+                    : upcomingView === "month"
+                    ? "translateX(100%)"
+                    : "translateX(200%)",
               }}
             />
             <button
@@ -924,6 +977,34 @@ export default function CalendarPage() {
                 <span>Month</span>
               </div>
             </button>
+            <button
+              type="button"
+              className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
+                upcomingView === "shared" ? "text-white" : "text-foreground/70"
+              }`}
+              onClick={() => setUpcomingView("shared")}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                >
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                <span>Shared</span>
+              </div>
+            </button>
           </nav>
         </div>
 
@@ -972,7 +1053,7 @@ export default function CalendarPage() {
                 );
               })}
           </div>
-        ) : (
+        ) : upcomingView === "month" ? (
           <div className="mt-4 space-y-4">
             {groupedByMonth.length === 0 && (
               <div className="text-sm text-foreground/70">
@@ -1030,6 +1111,68 @@ export default function CalendarPage() {
                 </ul>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {upcomingShared.length === 0 && (
+              <div className="text-sm text-foreground/70">
+                No upcoming shared events.
+              </div>
+            )}
+            {upcomingShared
+              .slice()
+              .sort(
+                (a, b) =>
+                  new Date(a.start).getTime() - new Date(b.start).getTime()
+              )
+              .map((ev) => {
+                const chosenColorName = ev.category
+                  ? categoryColors[ev.category] ||
+                    defaultCategoryColor(ev.category)
+                  : "";
+                const tone = chosenColorName
+                  ? colorTintAndDot(chosenColorName)
+                  : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+                return (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => setOpenEvent(ev)}
+                    className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    title={ev.title}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="truncate font-medium text-foreground inline-flex items-center gap-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-3.5 w-3.5 opacity-70"
+                          aria-hidden="true"
+                        >
+                          <circle cx="18" cy="5" r="3" />
+                          <circle cx="6" cy="12" r="3" />
+                          <circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                        {ev.title}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-xs text-foreground/70 truncate">
+                      {ev.location
+                        ? `${formatEventDateTime(
+                            ev.start
+                          )} at ${pickLocationName(ev.location)}`
+                        : formatEventDateTime(ev.start)}
+                    </div>
+                  </button>
+                );
+              })}
           </div>
         )}
       </div>
@@ -1193,6 +1336,7 @@ export default function CalendarPage() {
                 shareUrl={`/event/${slugify(openEvent.title)}-${
                   openEvent.historyId
                 }`}
+                historyId={openEvent.historyId}
                 event={{
                   title: openEvent.title,
                   start: openEvent.start,

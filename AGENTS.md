@@ -10,6 +10,27 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ## Agent catalog
 
+### Event Share — POST `/api/events/share`
+
+- **Purpose**: Share an event with another existing user by email. Creates or updates a pending share.
+- **Auth**: NextAuth session required; caller must be the event owner.
+- **Input (JSON)**: `{ eventId: string, recipientEmail: string }`.
+- **Output**: `{ ok: true, share }`.
+
+### Event Share Accept — POST `/api/events/share/accept`
+
+- **Purpose**: Recipient accepts a pending share.
+- **Auth**: NextAuth session required.
+- **Input (JSON)**: `{ eventId: string }`.
+- **Output**: `{ ok: true }`.
+
+### Event Share Remove — POST `/api/events/share/remove`
+
+- **Purpose**: Remove share access. If called by recipient, removes from their calendar only. If called by owner with `recipientUserId`, revokes that recipient; if without, revokes all recipients.
+- **Auth**: NextAuth session required.
+- **Input (JSON)**: `{ eventId: string, recipientUserId?: string }`.
+- **Output**: `{ ok: true, revoked: number }`.
+
 ### Promo Gift Agent — POST `/api/promo/gift`
 
 - **Purpose**: Initiate a Stripe Checkout session for gifting subscriptions. The promo code is created and emailed only after payment succeeds (via webhook). UI now redirects the purchaser to Stripe.
@@ -266,6 +287,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - PATCH `/api/history/[id]`: Either `{ title: string }` or `{ category: string }` or `{ data: object }` to shallow-merge into the JSON `data` (e.g., to fix the saved `category`).
 - **Output**:
   - GET list: `{ items: Array<HistoryRow> }`.
+    - Includes accepted shared events for the user (annotated with `data.shared=true` and default category `Shared events`).
   - GET single: `HistoryRow` or `{ error }` with 404.
   - POST: created `HistoryRow` `{ status: 201 }`.
   - PATCH: updated `HistoryRow`.
@@ -406,6 +428,7 @@ Payload used by the authenticated calendar agents.
 ## Changelog
 
 - 2025-09-19: User profile now supports `categoryColors` so event/category colors sync across devices for signed-in users.
+- 2025-09-19: Shared events: added `/api/events/share`, `/api/events/share/accept`, `/api/events/share/remove`. `/api/history` includes accepted shares; UI marks shared items and adds a hidden-until-used `Shared events` category above Birthdays.
 
 ---
 

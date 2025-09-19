@@ -17,10 +17,12 @@ export default function EventActions({
   shareUrl,
   event,
   className,
+  historyId,
 }: {
   shareUrl: string;
   event: EventFields | null;
   className?: string;
+  historyId?: string;
 }) {
   // No visible inputs; infer contact targets from event details
   const { data: session } = useSession();
@@ -51,8 +53,22 @@ export default function EventActions({
     } as EventFields;
   }, [event]);
 
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareState, setShareState] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
+  const [shareError, setShareError] = useState<string | null>(null);
+
   const onShare = async () => {
     try {
+      if (historyId) {
+        setShareError(null);
+        setShareState("idle");
+        setShareEmail("");
+        setShareOpen(true);
+        return;
+      }
       const url =
         absoluteUrl ||
         (typeof window !== "undefined" ? window.location.href : "");
@@ -292,6 +308,104 @@ export default function EventActions({
           </a>
         )}
       </div>
+
+      {shareOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          onClick={() => {
+            if (shareState !== "submitting") setShareOpen(false);
+          }}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative z-50 w-full sm:max-w-md sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-semibold">
+                Share this event
+              </h3>
+              <button
+                type="button"
+                onClick={() =>
+                  shareState !== "submitting" && setShareOpen(false)
+                }
+                className="text-foreground/70 hover:text-foreground"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-foreground/70">
+              Enter the email of an existing user to share this event.
+            </p>
+            <form
+              className="mt-3 flex items-center gap-2"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!historyId) {
+                  setShareError("This event cannot be shared right now.");
+                  setShareState("error");
+                  return;
+                }
+                const email = (shareEmail || "").trim();
+                if (!email) return;
+                setShareState("submitting");
+                setShareError(null);
+                try {
+                  const res = await fetch(`/api/events/share`, {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                      eventId: historyId,
+                      recipientEmail: email,
+                    }),
+                    credentials: "include",
+                  });
+                  const j = await res.json().catch(() => ({}));
+                  if (!res.ok || j?.error) {
+                    throw new Error(
+                      String(j?.error || `Failed: ${res.status}`)
+                    );
+                  }
+                  setShareState("success");
+                  // close shortly after success
+                  setTimeout(() => setShareOpen(false), 800);
+                } catch (err: any) {
+                  setShareState("error");
+                  setShareError(String(err?.message || err || "Failed"));
+                }
+              }}
+            >
+              <input
+                type="email"
+                required
+                placeholder="recipient@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                className="border border-border bg-surface rounded px-2 py-1 text-sm flex-1 min-w-0"
+              />
+              <button
+                type="submit"
+                disabled={shareState === "submitting"}
+                className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5 disabled:opacity-50"
+              >
+                {shareState === "submitting" ? "Sharing…" : "Share"}
+              </button>
+            </form>
+            {shareState === "success" && (
+              <div className="mt-2 text-xs text-emerald-600">
+                Invitation sent.
+              </div>
+            )}
+            {shareState === "error" && shareError && (
+              <div className="mt-2 text-xs text-red-500">{shareError}</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
