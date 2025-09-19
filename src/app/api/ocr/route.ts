@@ -977,6 +977,52 @@ function pickVenueLabelForSentence(location?: string, description?: string): str
   return "";
 }
 
+function buildFriendlyBirthdaySentence(title: string, location?: string): string {
+  const extractPossessive = (t: string): string | null => {
+    const m = (t || "").match(/\b([A-Z][A-Za-z\-]+(?:\s+[A-Z][A-Za-z\-]+){0,2})[’']s\b/);
+    if (m && m[1]) return `${m[1]}'s`;
+    const first = (t || "").match(/\b([A-Z][A-Za-z\-]+)\b/);
+    return first ? `${first[1]}'s` : null;
+  };
+  const who = extractPossessive(title) || "our";
+  const venue = (location || "").trim();
+  const atPart = venue ? ` at ${venue}` : "";
+  return `Please, join us for ${who} Birthday Party${atPart}.`;
+}
+
+// Extract a compact RSVP string from raw OCR/description text, e.g.,
+// "RSVP: Veronica 850-960-1214". Returns null when not found.
+function extractRsvpCompact(rawText: string, fallbackText?: string): string | null {
+  try {
+    const text = [rawText || "", fallbackText || ""].join("\n");
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const phoneRe = /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
+    // Prefer explicit RSVP line
+    const rsvpLine = lines.find((l) => /\brsvp\b/i.test(l));
+    if (rsvpLine) {
+      const nameMatch = rsvpLine.match(/rsvp[^a-z0-9]*to\s+([^,|]+?)(?:\s+at|\s*[-:,.]|$)/i);
+      const phoneMatch = rsvpLine.match(phoneRe);
+      const name = (nameMatch?.[1] || "").replace(/\s{2,}/g, " ").trim();
+      if (name && phoneMatch) return `RSVP: ${name} ${phoneMatch[0]}`.trim();
+      if (phoneMatch) return `RSVP: ${phoneMatch[0]}`;
+    }
+    // Otherwise, scan any line that has a phone + contact verb
+    for (const l of lines) {
+      const phone = l.match(phoneRe)?.[0] || null;
+      if (!phone) continue;
+      if (/\b(call|text|contact|rsvp)\b/i.test(l)) {
+        const name = (l.match(/\bwith\s+([A-Z][A-Za-z'\-]+)\b/i)?.[1]
+          || l.match(/\bto\s+([A-Z][A-Za-z'\-]+)\b/i)?.[1]
+          || "").trim();
+        return `RSVP: ${name ? name + " " : ""}${phone}`.trim();
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Rewrite birthday descriptions into a single friendly sentence via LLM.
 // Returns null on failure or when the feature is disabled (no OPENAI_API_KEY).
 async function llmRewriteBirthdayDescription(
@@ -1066,6 +1112,53 @@ async function llmRewriteWedding(
     }
     if (!t || !d) return null;
     return { title: t.slice(0, 120), description: d.slice(0, 600) };
+  } catch {
+    return null;
+  }
+}
+
+// Generic one-line description rewriter for any flyer type.
+// Uses raw OCR text + current fields to produce a compact, human sentence.
+async function llmRewriteSmartDescription(
+  rawText: string,
+  title: string,
+  location: string,
+  category: string | null,
+  baseline: string
+): Promise<string | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const system =
+    "You summarize event flyers into ONE friendly calendar sentence, using only facts present. Output plain text only, single line, under 160 characters.";
+  const user =
+    `OCR TEXT:\n${rawText}\n\n` +
+    `TITLE: ${title || ""}\n` +
+    `CATEGORY: ${category || ""}\n` +
+    `LOCATION: ${location || ""}\n` +
+    `BASELINE: ${baseline || ""}\n\n` +
+    "Rules: Prefer venue/business names over street addresses. Skip RSVP/phone/email/URLs/prices. Don't invent times or places. Keep it natural and concise. Use a straightforward style like 'Please, join us for …', 'You're invited to …', 'Don't miss …', or '<Team> vs <Team> at <Venue>' depending on context. Return only the sentence.";
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json().catch(() => null);
+    const text = (j?.choices?.[0]?.message?.content || "").replace(/\s+/g, " ").trim();
+    if (!text) return null;
+    if (text.length > 200) return null;
+    // Ensure one sentence ending
+    return /\.$/.test(text) ? text : `${text}.`;
   } catch {
     return null;
   }
@@ -1667,13 +1760,30 @@ export async function POST(request: Request) {
     // Enrich generic "Join us for" line with the birthday person's name from title
     finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
 
+    // Preserve compact RSVP when detected: append on a new line below the single-sentence description
+    try {
+      const rsvpCompact = extractRsvpCompact(raw, finalDescription);
+      if (rsvpCompact) {
+        // If description looks like a single sentence, append RSVP on a new line; otherwise keep original
+        const isSingleLine = !/\n/.test(finalDescription) && finalDescription.trim().length > 0;
+        if (isSingleLine && !finalDescription.toLowerCase().includes("rsvp")) {
+          finalDescription = `${finalDescription}\n${rsvpCompact}`.trim();
+        }
+      }
+    } catch {}
+
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
       try {
         const venueLabel = pickVenueLabelForSentence(finalAddress, finalDescription) || finalAddress;
-        const rewritten = await llmRewriteBirthdayDescription(finalTitle, venueLabel, finalDescription);
-        if (rewritten && rewritten.length >= 20) {
-          finalDescription = rewritten.slice(0, 300);
+        // First attempt: deterministic human sentence without LLM.
+        const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueLabel);
+        finalDescription = deterministic;
+        // Second attempt: let LLM refine; fall back to deterministic if LLM returns weird multiline text
+        const rewritten = await llmRewriteBirthdayDescription(finalTitle, venueLabel, deterministic);
+        const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
+        if (cleaned && /\.$/.test(cleaned) && cleaned.length >= 20 && cleaned.length <= 200) {
+          finalDescription = cleaned;
         }
       } catch {}
     }
@@ -1693,6 +1803,26 @@ export async function POST(request: Request) {
             } catch {}
           }
           finalDescription = desc;
+        }
+      } catch {}
+    }
+
+    // Generic rewrite for non-birthday/wedding flyers or when current description is long/multiline
+    const isBirthday = /(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle);
+    const isWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
+    if (!isBirthday && !isWedding) {
+      try {
+        const looksMultiline = /\n/.test(finalDescription) || (finalDescription || "").length > 180;
+        const refined = await llmRewriteSmartDescription(
+          raw,
+          finalTitle,
+          pickVenueLabelForSentence(finalAddress, finalDescription) || finalAddress,
+          null,
+          looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription
+        );
+        const cleaned = (refined || "").replace(/\s+/g, " ").trim();
+        if (cleaned && cleaned.length >= 20 && cleaned.length <= 200) {
+          finalDescription = cleaned;
         }
       } catch {}
     }

@@ -2430,94 +2430,101 @@ export default function SnapPage() {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 flex-nowrap justify-end p-6 pt-4 border-t border-border/60 bg-gradient-to-b from-transparent to-background/30">
-              <button
-                className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                onClick={() => setEvent(null)}
-              >
-                <span>Cancel</span>
-              </button>
-              <button
-                className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                onClick={closeAfter(async () => {
-                  await saveHistoryIfNeeded();
-                })}
-              >
-                <span>Save</span>
-              </button>
-              <button
-                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap hover:opacity-95 active:opacity-90 shadow-md ${
-                  connected.google
-                    ? "border-primary/60 bg-primary text-on-primary shadow-primary/25"
-                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                }`}
-                onClick={closeAfter(async () => {
-                  await saveHistoryIfNeeded();
-                  if (connected.google) await addGoogle();
-                  else connectGoogle();
-                })}
-              >
-                {connected.google ? (
-                  <>
-                    <span>Add to </span>
-                    <IconGoogleMono className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Connect to </span>
-                    <IconGoogleMono className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-              {!isAndroid && !isWindows && (
-                <button
-                  className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                    appleLinked
-                      ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                      : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                  }`}
-                  onClick={closeAfter(async () => {
-                    await saveHistoryIfNeeded();
-                    await dlIcs();
-                  })}
-                >
-                  {appleLinked ? (
-                    <>
-                      <span>Add to </span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Connect to </span>
-                      <IconAppleMono className="h-4 w-4" />
-                    </>
+            <div className="mt-6 p-6 pt-4 border-t border-border/60 bg-gradient-to-b from-transparent to-background/30">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex w-full items-center gap-3 flex-wrap justify-end sm:justify-start">
+                  <button
+                    className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap hover:opacity-95 active:opacity-90 shadow-md ${
+                      connected.google
+                        ? "border-primary/60 bg-primary text-on-primary shadow-primary/25"
+                        : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                    }`}
+                    onClick={closeAfter(async () => {
+                      await saveHistoryIfNeeded();
+                      if (connected.google) await addGoogle();
+                      else connectGoogle();
+                    })}
+                  >
+                    {connected.google ? (
+                      <>
+                        <span>Add to </span>
+                        <IconGoogleMono className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Connect to </span>
+                        <IconGoogleMono className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                  {!isAndroid && !isWindows && (
+                    <button
+                      className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                        appleLinked
+                          ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                          : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                      }`}
+                      onClick={closeAfter(async () => {
+                        await saveHistoryIfNeeded();
+                        await dlIcs();
+                      })}
+                    >
+                      {appleLinked ? (
+                        <>
+                          <span>Add to </span>
+                          <IconAppleMono className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          <span>Connect to </span>
+                          <IconAppleMono className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
-              )}
-              <button
-                className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
-                  connected.microsoft
-                    ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                    : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
-                }`}
-                onClick={closeAfter(async () => {
-                  await saveHistoryIfNeeded();
-                  if (connected.microsoft) await addOutlook();
-                  else connectOutlook();
-                })}
-              >
-                {connected.microsoft ? (
-                  <>
-                    <span>Add to </span>
-                    <IconMicrosoftMono className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Connect to </span>
-                    <IconMicrosoftMono className="h-4 w-4" />
-                  </>
-                )}
-              </button>
+                  <button
+                    className={`inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap ${
+                      connected.microsoft
+                        ? "border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                        : "border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                    }`}
+                    onClick={closeAfter(async () => {
+                      await saveHistoryIfNeeded();
+                      if (connected.microsoft) await addOutlook();
+                      else connectOutlook();
+                    })}
+                  >
+                    {connected.microsoft ? (
+                      <>
+                        <span>Add to </span>
+                        <IconMicrosoftMono className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Connect to </span>
+                        <IconMicrosoftMono className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 justify-end self-end sm:self-auto">
+                  <button
+                    className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-border/70 bg-surface/80 text-foreground/90 hover:bg-surface"
+                    onClick={() => setEvent(null)}
+                  >
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
+                    onClick={closeAfter(async () => {
+                      await saveHistoryIfNeeded();
+                    })}
+                  >
+                    <span>Save</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
