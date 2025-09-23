@@ -71,7 +71,7 @@ export default async function Hero() {
           </div>
         </div>
 
-        <div className="hidden lg:block relative mx-auto lg:mx-0">
+        <div className="hidden lg:block relative mx-auto lg:mx-0 lg:scale-[1.5] lg:origin-left lg:-translate-x-20">
           <Image
             src="/invite.png"
             alt="Invitation being scanned"
