@@ -9,9 +9,9 @@ export default async function Hero() {
   const isAuthed = Boolean(session);
   return (
     <section className="w-full">
-      <div className="max-w-6xl mx-auto px-6 pt-16 sm:pt-24 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-75 items-center">
+      <div className="max-w-7xl mx-auto px-6 pt-16 sm:pt-24 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-75 items-center">
         <div className="text-center lg:text-left">
-          <h1 className="visually-hidden">Snap My Date</h1>
+          <h1 className="sr-only">Snap My Date</h1>
           <h1 className="text-4xl sm:text-6xl font-extrabold leading-[1.08] tracking-tight">
             <div className="inline-block w-fit bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle whitespace-nowrap">
               Snap it. Save it.
@@ -75,15 +75,15 @@ export default async function Hero() {
           <Image
             src="/invite.png"
             alt="Invitation being scanned"
-            width={300}
-            height={500}
+            width={900}
+            height={700}
             priority
             className="show-light"
           />
           <Image
             src="/invite_dark.png"
             alt="Invitation being scanned (dark theme)"
-            width={300}
+            width={500}
             height={500}
             priority
             className="show-dark"
