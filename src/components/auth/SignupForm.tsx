@@ -28,6 +28,7 @@ export default function SignupForm({
   const [toastOpen, setToastOpen] = useState(false);
   const [toastText, setToastText] = useState("");
   const toastTimerRef = useRef<number | undefined>(undefined);
+  const [agreeTerms, setAgreeTerms] = useState(true);
 
   const onEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -238,6 +239,26 @@ export default function SignupForm({
             </svg>
           </button>
         </div>
+        <label className="flex items-start gap-2 text-sm text-foreground/80 select-none">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            checked={agreeTerms}
+            onChange={(e) => setAgreeTerms(e.target.checked)}
+          />
+          <span>
+            I agree to the{" "}
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-secondary hover:underline"
+            >
+              Terms of Use
+            </a>
+            .
+          </span>
+        </label>
         <button
           type="submit"
           disabled={submitting}

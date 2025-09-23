@@ -37,7 +37,7 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
       </div>
       <AuthModal
         open={open}
-        mode="signup"
+        mode={mode}
         onClose={() => setOpen(false)}
         onModeChange={setMode}
       />

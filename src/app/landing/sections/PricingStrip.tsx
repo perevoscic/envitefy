@@ -5,8 +5,9 @@ import AuthModal from "@/components/auth/AuthModal";
 
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("signup");
   const primaryHref = "/subscription";
-  
+
   return (
     <section className="w-full">
       <div className="max-w-7xl mx-auto px-6 pb-16">
@@ -41,8 +42,9 @@ export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
       </div>
       <AuthModal
         open={open}
-        mode="signup"
+        mode={mode}
         onClose={() => setOpen(false)}
+        onModeChange={setMode}
       />
     </section>
   );
