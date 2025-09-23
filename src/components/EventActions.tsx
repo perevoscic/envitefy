@@ -263,7 +263,7 @@ export default function EventActions({
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-          <span>Share event</span>
+          <span>Share</span>
         </button>
 
         <button
@@ -285,7 +285,7 @@ export default function EventActions({
             <rect x="3" y="5" width="18" height="14" rx="2" />
             <polyline points="22,7 12,13 2,7" />
           </svg>
-          <span>Email event</span>
+          <span>Email</span>
         </button>
 
         {/* RSVP removed for practice events */}
@@ -315,14 +315,14 @@ export default function EventActions({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center"
           onClick={() => {
             if (shareState !== "submitting") setShareOpen(false);
           }}
         >
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative z-50 w-full sm:max-w-md sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
+            className="relative z-50 w-[360px] max-w-[92vw] sm:w-auto sm:max-w-md sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -344,7 +344,7 @@ export default function EventActions({
               Enter the email of an existing user to share this event.
             </p>
             <form
-              className="mt-3 flex items-center gap-2"
+              className="mt-3"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!historyId) {
@@ -385,35 +385,41 @@ export default function EventActions({
                 }
               }}
             >
-              <input
-                type="email"
-                required
-                placeholder="recipient@example.com"
-                value={shareEmail}
-                onChange={(e) => setShareEmail(e.target.value)}
-                className="border border-border bg-surface rounded px-2 py-1 text-sm flex-1 min-w-0"
-              />
-              <input
-                type="text"
-                placeholder="First name (optional)"
-                value={shareFirstName}
-                onChange={(e) => setShareFirstName(e.target.value)}
-                className="border border-border bg-surface rounded px-2 py-1 text-sm w-40"
-              />
-              <input
-                type="text"
-                placeholder="Last name (optional)"
-                value={shareLastName}
-                onChange={(e) => setShareLastName(e.target.value)}
-                className="border border-border bg-surface rounded px-2 py-1 text-sm w-40"
-              />
-              <button
-                type="submit"
-                disabled={shareState === "submitting"}
-                className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5 disabled:opacity-50"
-              >
-                {shareState === "submitting" ? "Sharing…" : "Share"}
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="First name"
+                  value={shareFirstName}
+                  onChange={(e) => setShareFirstName(e.target.value)}
+                  className="border border-border bg-surface rounded px-2 py-1 text-sm flex-1 min-w-0"
+                />
+                <input
+                  type="text"
+                  placeholder="Last name"
+                  value={shareLastName}
+                  onChange={(e) => setShareLastName(e.target.value)}
+                  className="border border-border bg-surface rounded px-2 py-1 text-sm flex-1 min-w-0"
+                />
+              </div>
+              <div className="mt-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="recipient@example.com"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  className="border border-border bg-surface rounded px-2 py-1 text-sm w-full"
+                />
+              </div>
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={shareState === "submitting"}
+                  className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5 disabled:opacity-50"
+                >
+                  {shareState === "submitting" ? "Sharing…" : "Share"}
+                </button>
+              </div>
             </form>
             {shareState === "success" && (
               <div className="mt-2 text-xs text-emerald-600">

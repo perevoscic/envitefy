@@ -16,7 +16,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import ClientOpenShare from "../ClientOpenShare";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 
 export const dynamic = "force-dynamic";
@@ -270,10 +269,6 @@ export default async function EventPage({
               <h3 className="text-sm font-semibold text-foreground/80">
                 Shared with:
               </h3>
-              <ClientOpenShare
-                historyId={row.id}
-                className="text-xs rounded border border-border bg-surface px-2 py-1 hover:bg-foreground/5"
-              />
             </div>
             {/* Recipient list (server-rendered) */}
             {(() => {
@@ -328,14 +323,16 @@ export default async function EventPage({
                   ))}
                   <li className="pt-1">
                     <span className="text-xs text-foreground/70">
-                      Use the “Share event” button below to add more recipients.
+                      Use the “Share” button below to add more participants.
                     </span>
                   </li>
                 </ul>
               </div>
             ) : (
               <div className="mt-2 text-xs text-foreground/70">
-                Not shared yet. Use the “+Add” button to add recipients.
+                Not shared yet.
+                <br />
+                Use the “Share” button below to add participants.
               </div>
             )}
           </section>

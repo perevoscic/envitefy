@@ -1394,7 +1394,7 @@ export default function LeftSidebar() {
                         ></path>
                       </g>
                     </svg>
-                    <span>New snap</span>
+                    <span>New Snap</span>
                   </Link>
                   <div className="flex items-center gap-1">
                     <Link
