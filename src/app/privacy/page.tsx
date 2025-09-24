@@ -30,13 +30,13 @@ export default function PrivacyPage() {
                       and manage your account.
                     </li>
                     <li>
-                      Content you upload: images/PDFs for OCR, extracted text,
-                      and events/history you save in the app.
+                      Content you upload: images/PDFs to be analyzed, along with
+                      extracted text, and events/history you save in the app.
                     </li>
                     <li>
-                      Connected accounts: if you link Google or Microsoft, we
-                      store the tokens needed to create calendar events on your
-                      behalf.
+                      Connected accounts: if you link with your favorite
+                      calendar service, we store the tokens needed to create
+                      calendar events on your behalf.
                     </li>
                     <li>
                       Payments: subscriptions are handled by Stripe; we
@@ -55,8 +55,8 @@ export default function PrivacyPage() {
                   </h2>
                   <ul className="mt-2 list-disc pl-6 space-y-1">
                     <li>
-                      Provide OCR and event extraction and generate `.ics`
-                      files.
+                      Provide recognition and event extraction and generate
+                      `.ics` files.
                     </li>
                     <li>
                       Create calendar events in Google/Outlook when you ask us
@@ -74,14 +74,12 @@ export default function PrivacyPage() {
 
                 <section>
                   <h2 className="text-xl font-semibold text-foreground">
-                    OCR &amp; optional AI
+                    Event recognition and extraction
                   </h2>
                   <p className="mt-2">
-                    We use Google Cloud Vision to extract text from images. If
-                    you opt in (for example by enabling an LLM option), we may
-                    send the image/text to an LLM provider to improve parsing.
-                    We only use providers you choose or enable, and solely to
-                    provide the requested feature.
+                    We use event recognition to extract text from images and PDF
+                    files. The output is then processed to extract event
+                    details.
                   </p>
                 </section>
 
@@ -91,19 +89,15 @@ export default function PrivacyPage() {
                   </h2>
                   <ul className="mt-2 list-disc pl-6 space-y-1">
                     <li>
-                      Calendar providers: Google/Microsoft when you connect and
-                      ask us to create events.
+                      Calendar providers: your favorite calendar service when
+                      you connect and ask us to create events.
                     </li>
                     <li>
                       Payments: Stripe for checkout, billing, and receipts.
                     </li>
                     <li>
-                      Email: our email provider for password resets and gift
-                      emails.
-                    </li>
-                    <li>
                       Service providers: hosting and infrastructure to run the
-                      app.
+                      service. app.
                     </li>
                     <li>
                       Legal/safety: if required by law or to protect users and
@@ -133,7 +127,7 @@ export default function PrivacyPage() {
                   <p className="mt-2">
                     We keep data for as long as needed to provide the service
                     and comply with legal obligations. You can request deletion
-                    of your account data and disconnect Google/Microsoft at any
+                    of your account data and disconnect calendar service at any
                     time. Events created in your calendars via providers remain
                     in your calendars unless you remove them there.
                   </p>
@@ -163,12 +157,11 @@ export default function PrivacyPage() {
 
                 <section>
                   <h2 className="text-xl font-semibold text-foreground">
-                    International transfers
+                    Storage and processing
                   </h2>
                   <p className="mt-2">
                     We may process and store information in the United States
-                    and other countries where we or our providers operate, which
-                    may have different data-protection laws than your country.
+                    only.
                   </p>
                 </section>
 
@@ -181,7 +174,7 @@ export default function PrivacyPage() {
                       Access, correct, or delete your data where applicable.
                     </li>
                     <li>
-                      Disconnect Google/Microsoft and revoke provider access.
+                      Disconnect calendar service and revoke provider access.
                     </li>
                     <li>Manage emails via in-message links or settings.</li>
                     <li>Contact us to make a request or ask a question.</li>
@@ -196,9 +189,6 @@ export default function PrivacyPage() {
                     We may update this policy by posting a new version here. If
                     changes are material, we&apos;ll take reasonable steps to
                     notify you.
-                  </p>
-                  <p className="mt-2 text-sm text-foreground/60">
-                    Last updated: 2025-09-23
                   </p>
                 </section>
               </div>

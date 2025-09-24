@@ -25,10 +25,10 @@ export default function TermsPage() {
                     What we do
                   </h2>
                   <p className="mt-2">
-                    Snap My Date helps you extract event details from images and
-                    create calendar events (including `.ics` files) and
-                    optionally save them to Google Calendar or Microsoft Outlook
-                    via integrations.
+                    Snap My Date helps you extract event details from
+                    images/photos/pdfs and create calendar events (including
+                    `.ics` files) and optionally save them to your favorite
+                    calendar service via integrations.
                   </p>
                 </section>
 
@@ -73,11 +73,11 @@ export default function TermsPage() {
                     Calendar integrations
                   </h2>
                   <p className="mt-2">
-                    If you connect Google or Microsoft, you authorize us to
-                    create events on your behalf using their APIs. You can
-                    disconnect at any time in settings or with the providers
-                    directly. We are not affiliated with Google, Microsoft,
-                    Apple, or Stripe.
+                    If you connect with your favorite calendar service, you
+                    authorize us to create events on your behalf using their
+                    APIs. You can disconnect at any time in settings or with the
+                    providers directly. We are not affiliated with Google,
+                    Microsoft, Apple, or Stripe.
                   </p>
                 </section>
 
@@ -138,8 +138,9 @@ export default function TermsPage() {
                   </h2>
                   <p className="mt-2">
                     The service is provided &quot;as is&quot; without warranties
-                    of any kind. OCR and parsing may be inaccurate; always
-                    review event details before saving or sharing.
+                    of any kind. Event recognition and extraction may be
+                    inaccurate; always review event details before saving or
+                    sharing.
                   </p>
                 </section>
 
@@ -182,9 +183,6 @@ export default function TermsPage() {
                       contact page
                     </Link>
                     .
-                  </p>
-                  <p className="mt-2 text-sm text-foreground/60">
-                    Last updated: 2025-09-23
                   </p>
                 </section>
               </div>
