@@ -90,6 +90,50 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
   }
 }
 
+// Shared Events gradient options (mirrors sidebar)
+const SHARED_GRADIENTS: { id: string; row: string }[] = [
+  {
+    id: "shared-g1",
+    row: "bg-gradient-to-br from-cyan-300/20 via-sky-300/15 to-fuchsia-300/20",
+  },
+  {
+    id: "shared-g2",
+    row: "bg-gradient-to-br from-rose-400/20 via-fuchsia-400/15 to-indigo-400/20",
+  },
+  {
+    id: "shared-g3",
+    row: "bg-gradient-to-br from-emerald-400/20 via-teal-400/15 to-sky-400/20",
+  },
+  {
+    id: "shared-g4",
+    row: "bg-gradient-to-br from-amber-400/20 via-orange-400/15 to-pink-400/20",
+  },
+  {
+    id: "shared-g5",
+    row: "bg-gradient-to-br from-indigo-400/20 via-blue-400/15 to-cyan-400/20",
+  },
+  {
+    id: "shared-g6",
+    row: "bg-gradient-to-br from-lime-400/20 via-green-400/15 to-emerald-400/20",
+  },
+  {
+    id: "shared-g7",
+    row: "bg-gradient-to-br from-purple-400/20 via-fuchsia-400/15 to-pink-400/20",
+  },
+  {
+    id: "shared-g8",
+    row: "bg-gradient-to-br from-slate-400/20 via-zinc-400/10 to-sky-400/20",
+  },
+];
+
+function sharedGradientRowClass(
+  categoryColors: Record<string, string>
+): string {
+  const id = categoryColors["Shared events"];
+  const found = SHARED_GRADIENTS.find((g) => g.id === id);
+  return found?.row || SHARED_GRADIENTS[0].row;
+}
+
 function startOfDay(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -706,10 +750,13 @@ export default function CalendarPage() {
   };
 
   const renderEventPill = (ev: CalendarEvent) => {
+    const isShared = (ev as any).shared || (ev as any).sharedOut;
     const chosenColorName = ev.category
       ? categoryColors[ev.category] || defaultCategoryColor(ev.category)
       : "";
-    const tone = chosenColorName
+    const tone = isShared
+      ? { tint: sharedGradientRowClass(categoryColors), dot: "" }
+      : chosenColorName
       ? colorTintAndDot(chosenColorName)
       : { tint: "bg-surface/60", dot: "bg-foreground/40" };
     return (
@@ -1065,11 +1112,14 @@ export default function CalendarPage() {
                   new Date(a.start).getTime() - new Date(b.start).getTime()
               )
               .map((ev) => {
+                const isShared = (ev as any).shared || (ev as any).sharedOut;
                 const chosenColorName = ev.category
                   ? categoryColors[ev.category] ||
                     defaultCategoryColor(ev.category)
                   : "";
-                const tone = chosenColorName
+                const tone = isShared
+                  ? { tint: sharedGradientRowClass(categoryColors), dot: "" }
+                  : chosenColorName
                   ? colorTintAndDot(chosenColorName)
                   : { tint: "bg-surface/60", dot: "bg-foreground/40" };
                 return (
@@ -1131,11 +1181,18 @@ export default function CalendarPage() {
                         new Date(b.start).getTime()
                     )
                     .map((ev) => {
+                      const isShared =
+                        (ev as any).shared || (ev as any).sharedOut;
                       const chosenColorName = ev.category
                         ? categoryColors[ev.category] ||
                           defaultCategoryColor(ev.category)
                         : "";
-                      const tone = chosenColorName
+                      const tone = isShared
+                        ? {
+                            tint: sharedGradientRowClass(categoryColors),
+                            dot: "",
+                          }
+                        : chosenColorName
                         ? colorTintAndDot(chosenColorName)
                         : { tint: "bg-surface/60", dot: "bg-foreground/40" };
                       return (
@@ -1180,11 +1237,14 @@ export default function CalendarPage() {
                   new Date(a.start).getTime() - new Date(b.start).getTime()
               )
               .map((ev) => {
+                const isShared = (ev as any).shared || (ev as any).sharedOut;
                 const chosenColorName = ev.category
                   ? categoryColors[ev.category] ||
                     defaultCategoryColor(ev.category)
                   : "";
-                const tone = chosenColorName
+                const tone = isShared
+                  ? { tint: sharedGradientRowClass(categoryColors), dot: "" }
+                  : chosenColorName
                   ? colorTintAndDot(chosenColorName)
                   : { tint: "bg-surface/60", dot: "bg-foreground/40" };
                 return (
@@ -1286,11 +1346,14 @@ export default function CalendarPage() {
             </div>
             <div className="mt-3 space-y-2">
               {openDay.items.map((ev) => {
+                const isShared = (ev as any).shared || (ev as any).sharedOut;
                 const chosenColorName = ev.category
                   ? categoryColors[ev.category] ||
                     defaultCategoryColor(ev.category)
                   : "";
-                const tone = chosenColorName
+                const tone = isShared
+                  ? { tint: sharedGradientRowClass(categoryColors), dot: "" }
+                  : chosenColorName
                   ? colorTintAndDot(chosenColorName)
                   : { tint: "bg-surface/60", dot: "bg-foreground/40" };
                 return (
