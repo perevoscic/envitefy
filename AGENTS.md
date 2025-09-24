@@ -10,6 +10,16 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ## Agent catalog
 
+### Contact — POST `/api/contact`
+
+- **Purpose**: Receive messages from the Contact form and deliver them via SES.
+- **Auth**: None.
+- **Input (JSON)**: `{ name?: string, email?: string, title: string, message: string }`.
+- **Behavior**: Sends an email to the contact inbox. The destination address is taken from `CONTACT_TO` when set; otherwise it uses the email portion of `SES_FROM_EMAIL_CONTACT` (display name ignored), falling back to `contact@snapmydate.com`. The message is sent using AWS SES when configured, with `Reply-To` set to the submitter's `email` when provided.
+- **From/Sender**: Uses `SES_FROM_EMAIL_CONTACT` when available; otherwise falls back to `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_NO_REPLY`, then `SMTP_FROM`, then `no-reply@snapmydate.com`.
+- **Output**: `{ ok: true, delivered: boolean }`.
+- **Env**: `SES_FROM_EMAIL_CONTACT` (e.g., `Snap My Date Contact <contact@snapmydate.com>`), optional `CONTACT_TO` to override destination; standard AWS credentials and `AWS_REGION`/`AWS_DEFAULT_REGION`. Optionally supports SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
+
 ### Event Share — POST `/api/events/share`
 
 - **Purpose**: Share an event with another existing user by email. Creates or updates a pending share.

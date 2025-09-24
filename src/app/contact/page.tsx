@@ -1,6 +1,7 @@
 "use client";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import ThankYouModal from "@/components/ThankYouModal";
 
 export default function ContactPage() {
   const { data: session } = useSession();
@@ -8,6 +9,7 @@ export default function ContactPage() {
   const [sent, setSent] = useState<null | { ok: boolean; message: string }>(
     null
   );
+  const [showThankYou, setShowThankYou] = useState(false);
   return (
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-2xl">
@@ -48,11 +50,14 @@ export default function ContactPage() {
                 });
                 const data = await res.json();
                 if (res.ok && data?.ok) {
-                  setSent({ ok: true, message: "Thanks! We'll be in touch." });
+                  // Clear form fields
                   (
                     form.querySelector("#message") as HTMLTextAreaElement
                   ).value = "";
                   (form.querySelector("#title") as HTMLInputElement).value = "";
+                  // Show thank you modal
+                  setShowThankYou(true);
+                  setSent(null);
                 } else {
                   setSent({
                     ok: false,
@@ -123,19 +128,19 @@ export default function ContactPage() {
               >
                 {submitting ? "Sending..." : "Send message"}
               </button>
-              {sent && (
-                <span
-                  className={`text-sm ${
-                    sent.ok ? "text-emerald-500" : "text-rose-500"
-                  }`}
-                >
-                  {sent.message}
-                </span>
+              {sent && !sent.ok && (
+                <span className="text-sm text-rose-500">{sent.message}</span>
               )}
             </div>
           </form>
         </div>
       </section>
+
+      {/* Thank You Modal */}
+      <ThankYouModal
+        open={showThankYou}
+        onClose={() => setShowThankYou(false)}
+      />
     </main>
   );
 }

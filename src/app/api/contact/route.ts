@@ -17,6 +17,17 @@ function getEnv(name: string): string | undefined {
   return undefined;
 }
 
+function extractEmailAddress(input: string | undefined): string | undefined {
+  if (!input) return undefined;
+  const trimmed = input.trim();
+  // Match formats like: Display Name <email@domain>
+  const match = trimmed.match(/<([^>]+)>/);
+  if (match && match[1]) return match[1].trim();
+  // If no angle brackets, assume it's already an email address
+  if (trimmed.includes("@")) return trimmed;
+  return undefined;
+}
+
 async function sendEmail(params: {
   from: string;
   to: string;
@@ -91,9 +102,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing title or message" }, { status: 400 });
     }
 
-    const receiver = getEnv("CONTACT_TO") || "contact@snapmydate.com";
+    const contactSender = getEnv("SES_FROM_EMAIL_CONTACT");
+    const receiver = getEnv("CONTACT_TO") || extractEmailAddress(contactSender) || "contact@snapmydate.com";
     const from =
-      getEnv("SES_FROM_EMAIL_CONTACT") ||
+      contactSender ||
       getEnv("SES_FROM_EMAIL") ||
       getEnv("SES_FROM_EMAIL_NO_REPLY") ||
       getEnv("SMTP_FROM") ||

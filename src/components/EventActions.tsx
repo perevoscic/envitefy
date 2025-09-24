@@ -2,6 +2,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { useSession } from "next-auth/react";
+import EventShareThankYouModal from "./EventShareThankYouModal";
 
 type EventFields = {
   title: string;
@@ -61,6 +62,8 @@ export default function EventActions({
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [shareError, setShareError] = useState<string | null>(null);
+  const [showShareThankYou, setShowShareThankYou] = useState(false);
+  const [sharedRecipientEmail, setSharedRecipientEmail] = useState<string>("");
 
   const onShare = async () => {
     try {
@@ -376,9 +379,15 @@ export default function EventActions({
                       String(j?.error || `Failed: ${res.status}`)
                     );
                   }
+                  // Store the recipient email and show thank you modal
+                  setSharedRecipientEmail(email);
                   setShareState("success");
-                  // close shortly after success
-                  setTimeout(() => setShareOpen(false), 800);
+                  setShareOpen(false);
+                  setShowShareThankYou(true);
+                  // Reset form
+                  setShareEmail("");
+                  setShareFirstName("");
+                  setShareLastName("");
                 } catch (err: any) {
                   setShareState("error");
                   setShareError(String(err?.message || err || "Failed"));
@@ -421,17 +430,19 @@ export default function EventActions({
                 </button>
               </div>
             </form>
-            {shareState === "success" && (
-              <div className="mt-2 text-xs text-emerald-600">
-                Invitation sent.
-              </div>
-            )}
             {shareState === "error" && shareError && (
               <div className="mt-2 text-xs text-red-500">{shareError}</div>
             )}
           </div>
         </div>
       )}
+
+      {/* Event Share Thank You Modal */}
+      <EventShareThankYouModal
+        open={showShareThankYou}
+        onClose={() => setShowShareThankYou(false)}
+        recipientEmail={sharedRecipientEmail}
+      />
     </div>
   );
 }

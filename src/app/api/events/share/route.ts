@@ -29,7 +29,13 @@ export async function POST(request: NextRequest) {
 
     let share: any = null;
     try {
-      share = await createOrUpdateEventShare({ eventId, ownerUserId, recipientEmail });
+      share = await createOrUpdateEventShare({ 
+        eventId, 
+        ownerUserId, 
+        recipientEmail, 
+        recipientFirstName,
+        recipientLastName 
+      });
     } catch (err: any) {
       // If event_shares table is not present yet, bypass DB share and still email the recipient
       try { console.warn("[share] falling back to email only:", err?.message || err); } catch {}
