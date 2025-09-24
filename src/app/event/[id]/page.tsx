@@ -10,6 +10,8 @@ import {
   isEventSharePendingForUser,
   listShareRecipientsForEvent,
   revokeShareByOwner,
+  acceptEventShare,
+  revokeEventShare,
 } from "@/lib/db";
 import {
   getEventHistoryBySlugOrId,
@@ -389,13 +391,9 @@ export default async function EventPage({
                   action={async () => {
                     "use server";
                     try {
-                      await fetch(`/api/events/share/remove`, {
-                        method: "POST",
-                        headers: {
-                          "content-type": "application/json",
-                          cookie: cookies().toString(),
-                        },
-                        body: JSON.stringify({ eventId: row.id }),
+                      await revokeEventShare({
+                        eventId: row.id,
+                        byUserId: userId!,
                       });
                     } catch {}
                     try {
@@ -442,13 +440,9 @@ export default async function EventPage({
                     action={async () => {
                       "use server";
                       try {
-                        await fetch(`/api/events/share/accept`, {
-                          method: "POST",
-                          headers: {
-                            "content-type": "application/json",
-                            cookie: cookies().toString(),
-                          },
-                          body: JSON.stringify({ eventId: row.id }),
+                        await acceptEventShare({
+                          eventId: row.id,
+                          recipientUserId: userId!,
                         });
                       } catch {}
                       try {
