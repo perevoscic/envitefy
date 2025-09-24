@@ -11,10 +11,15 @@ import {
   listShareRecipientsForEvent,
   revokeShareByOwner,
 } from "@/lib/db";
-import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
+import {
+  getEventHistoryBySlugOrId,
+  getUserIdByEmail,
+  getUserById,
+} from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 
@@ -42,6 +47,15 @@ export default async function EventPage({
   });
   if (!row) return notFound();
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  const ownerUser =
+    !isOwner && row.user_id ? await getUserById(row.user_id) : null;
+  const ownerDisplayName = (() => {
+    if (!ownerUser) return "Unknown";
+    const full = [ownerUser.first_name || "", ownerUser.last_name || ""]
+      .join(" ")
+      .trim();
+    return full || ownerUser.email || "Unknown";
+  })();
   let recipientAccepted = false;
   let recipientPending = false;
   const isShared = Boolean((row.data as any)?.shared);
@@ -360,50 +374,96 @@ export default async function EventPage({
         />
         {/* +Add has been moved to the Shared with box header */}
         {isOwner ? null : (
-          <div className="flex items-center gap-3">
-            {isShared || recipientAccepted ? (
-              <form
-                action={async () => {
-                  "use server";
-                  try {
-                    await fetch(`/api/events/share/remove`, {
-                      method: "POST",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({ eventId: row.id }),
-                    });
-                  } catch {}
-                }}
-              >
-                <button
-                  type="submit"
-                  className="text-sm text-red-500 rounded border border-red-500/40 bg-red-500/10 px-3 py-1 hover:bg-red-500/20"
-                  title="Remove this shared event from my calendar"
+          <section className="rounded border border-border p-3 bg-surface">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground/80">
+                Shared by:
+              </h3>
+              {(isShared || recipientAccepted) && (
+                <form
+                  action={async () => {
+                    "use server";
+                    try {
+                      await fetch(`/api/events/share/remove`, {
+                        method: "POST",
+                        headers: {
+                          "content-type": "application/json",
+                          cookie: cookies().toString(),
+                        },
+                        body: JSON.stringify({ eventId: row.id }),
+                      });
+                    } catch {}
+                    try {
+                      revalidatePath(canonical);
+                    } catch {}
+                    redirect(canonical);
+                  }}
                 >
-                  Remove from my calendar
-                </button>
-              </form>
-            ) : recipientPending ? (
-              <form
-                action={async () => {
-                  "use server";
-                  try {
-                    await fetch(`/api/events/share/accept`, {
-                      method: "POST",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({ eventId: row.id }),
-                    });
-                  } catch {}
-                }}
-              >
-                <button
-                  type="submit"
-                  className="text-sm rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5"
-                >
-                  Add to my calendar
-                </button>
-              </form>
-            ) : null}
-          </div>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-3 rounded-lg px-3 py-2 text-red-500 hover:bg-red-500/10"
+                    title="Remove this shared event from my calendar"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                    <span className="hidden sm:inline">Delete</span>
+                  </button>
+                </form>
+              )}
+            </div>
+            <ul className="mt-2 space-y-1">
+              <li className="flex items-center justify-between text-sm">
+                <span className="truncate">
+                  {ownerDisplayName} —{" "}
+                  {recipientPending ? "Pending" : "Accepted"}
+                </span>
+                {recipientPending && (
+                  <form
+                    action={async () => {
+                      "use server";
+                      try {
+                        await fetch(`/api/events/share/accept`, {
+                          method: "POST",
+                          headers: {
+                            "content-type": "application/json",
+                            cookie: cookies().toString(),
+                          },
+                          body: JSON.stringify({ eventId: row.id }),
+                        });
+                      } catch {}
+                      try {
+                        revalidatePath(canonical);
+                      } catch {}
+                      redirect(canonical);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="text-xs rounded border border-border bg-surface px-3 py-1 hover:bg-foreground/5"
+                      title="Accept and add to my calendar"
+                    >
+                      Accept
+                    </button>
+                  </form>
+                )}
+              </li>
+            </ul>
+          </section>
         )}
       </div>
     </main>
