@@ -1462,6 +1462,67 @@ export default function LeftSidebar() {
                   </div>
                 </div>
               </div>
+              {(() => {
+                const sharedCount = (() => {
+                  try {
+                    return history.filter((h) =>
+                      Boolean(
+                        (h as any)?.data?.shared ||
+                          (h as any)?.data?.sharedOut ||
+                          (h as any)?.data?.category === "Shared events"
+                      )
+                    ).length;
+                  } catch {
+                    return 0;
+                  }
+                })();
+                if (sharedCount === 0) return null;
+                return (
+                  <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory("Shared events");
+                        try {
+                          categoriesRef.current?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "nearest",
+                          });
+                        } catch {}
+                      }}
+                      className="flex items-center gap-2 pl-0"
+                      title="Shared events"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                        aria-label="Shared events"
+                      >
+                        <title>Shared events</title>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      <span className="flex items-center gap-2">
+                        <span>Shared Events</span>
+                      </span>
+                    </button>
+                    <div className="ml-auto flex items-center">
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                        {sharedCount}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
                 <Link
                   href="/calendar"
