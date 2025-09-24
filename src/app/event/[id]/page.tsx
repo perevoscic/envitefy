@@ -30,10 +30,15 @@ export default async function EventPage({
   searchParams,
 }: {
   params: Promise<{ id: string }> | { id: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?:
+    | Promise<Record<string, string | string[] | undefined>>
+    | Record<string, string | string[] | undefined>;
 }) {
   const awaitedParams = await params;
-  const acceptRaw = String(((searchParams as any)?.accept ?? "") as string)
+  const awaitedSearchParams = await (searchParams as any);
+  const acceptRaw = String(
+    ((awaitedSearchParams as any)?.accept ?? "") as string
+  )
     .trim()
     .toLowerCase();
   const autoAccept = acceptRaw === "1" || acceptRaw === "true";
