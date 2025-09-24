@@ -1,4 +1,5 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+import { getUserByEmail } from "@/lib/db";
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
 
@@ -235,7 +236,16 @@ export async function sendShareEventEmail(params: {
   assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
   const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
   const to = params.toEmail;
-  const subject = `An event was shared with you on Snap My Date`;
+  // Subject includes sender's name when available, falling back to their email
+  let senderName: string | null = null;
+  try {
+    const sender = await getUserByEmail(params.ownerEmail);
+    const full = `${sender?.first_name || ""} ${sender?.last_name || ""}`.trim();
+    senderName = full || null;
+  } catch {}
+  const subject = senderName
+    ? `${senderName} shared an event with you on Snap My Date`
+    : `An event was shared with you on Snap My Date`;
   const acceptUrl = `${params.eventUrl}?accept=1`;
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL ||
@@ -244,7 +254,7 @@ export async function sendShareEventEmail(params: {
     "https://snapmydate.com";
   const signupUrl = `${baseUrl}/?auth=signup`;
   const text = [
-    `An event was shared with you by ${params.ownerEmail}.`,
+    `${senderName || params.ownerEmail} shared an event with you on Snap My Date.`,
     ``,
     `Title: ${params.eventTitle}`,
     `Link: ${params.eventUrl}`,

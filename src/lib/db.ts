@@ -1150,30 +1150,43 @@ export type EventShareRow = {
   recipient_user_id: string;
   status: "pending" | "accepted" | "revoked";
   invite_code?: string | null;
+  recipient_first_name?: string | null;
+  recipient_last_name?: string | null;
   created_at?: string;
   accepted_at?: string | null;
   revoked_at?: string | null;
 };
 
+async function ensureEventSharesHasRecipientNameColumns(): Promise<void> {
+  // Best-effort: add optional display name fields for recipients so owners can see names
+  await query(`alter table event_shares add column if not exists recipient_first_name text`);
+  await query(`alter table event_shares add column if not exists recipient_last_name text`);
+}
+
 export async function createOrUpdateEventShare(params: {
   eventId: string;
   ownerUserId: string;
   recipientEmail: string;
+  recipientFirstName?: string | null;
+  recipientLastName?: string | null;
 }): Promise<EventShareRow> {
+  await ensureEventSharesHasRecipientNameColumns();
   const recipientId = await getUserIdByEmail(params.recipientEmail);
   if (!recipientId) throw new Error("Recipient user not found");
   if (recipientId === params.ownerUserId) throw new Error("Cannot share to yourself");
   const invite = randomUUID();
   const res = await query<EventShareRow>(
-    `insert into event_shares (event_id, owner_user_id, recipient_user_id, status, invite_code)
-     values ($1, $2, $3, 'pending', $4)
+    `insert into event_shares (event_id, owner_user_id, recipient_user_id, status, invite_code, recipient_first_name, recipient_last_name)
+     values ($1, $2, $3, 'pending', $4, $5, $6)
      on conflict (event_id, recipient_user_id) where revoked_at is null
      do update set status = excluded.status,
                    invite_code = excluded.invite_code,
+                   recipient_first_name = excluded.recipient_first_name,
+                   recipient_last_name = excluded.recipient_last_name,
                    created_at = now(),
                    accepted_at = null
-     returning id, event_id, owner_user_id, recipient_user_id, status, invite_code, created_at, accepted_at, revoked_at`,
-    [params.eventId, params.ownerUserId, recipientId, invite]
+     returning id, event_id, owner_user_id, recipient_user_id, status, invite_code, recipient_first_name, recipient_last_name, created_at, accepted_at, revoked_at`,
+    [params.eventId, params.ownerUserId, recipientId, invite, (params.recipientFirstName || null), (params.recipientLastName || null)]
   );
   return res.rows[0];
 }
@@ -1302,8 +1315,9 @@ export async function isEventSharePendingForUser(eventId: string, userId: string
 }
 
 export async function listShareRecipientsForEvent(ownerUserId: string, eventId: string): Promise<Array<{ id: string; name: string; email: string; status: "pending"|"accepted" }>> {
-  const res = await query<{ id: string; recipient_user_id: string; status: string }>(
-    `select id, recipient_user_id, status
+  await ensureEventSharesHasRecipientNameColumns();
+  const res = await query<{ id: string; recipient_user_id: string; status: string; recipient_first_name: string | null; recipient_last_name: string | null }>(
+    `select id, recipient_user_id, status, recipient_first_name, recipient_last_name
      from event_shares
      where owner_user_id = $1 and event_id = $2 and revoked_at is null
      order by created_at asc`,
@@ -1313,11 +1327,20 @@ export async function listShareRecipientsForEvent(ownerUserId: string, eventId: 
   const out: Array<{ id: string; name: string; email: string; status: "pending"|"accepted" }> = [];
   for (const r of rows) {
     try {
-      const u = await getUserByEmail(r.recipient_user_id);
-      const name = [u?.first_name, u?.last_name].filter(Boolean).join(" ") || (u?.email || "Unknown");
-      out.push({ id: r.id, name, email: u?.email || "", status: (r.status === "accepted" ? "accepted" : "pending") });
+      // Prefer the name captured at share-time; otherwise fall back to the recipient user's profile; finally fall back to email/local-part
+      const user = await getUserById(r.recipient_user_id);
+      const shareName = [r.recipient_first_name, r.recipient_last_name].filter(Boolean).join(" ");
+      const profileName = [user?.first_name, user?.last_name].filter(Boolean).join(" ");
+      const emailLocal = (user?.email || "").split("@")[0] || "Unknown";
+      const displayName = (shareName || profileName || emailLocal || "Unknown").trim();
+      out.push({
+        id: r.id,
+        name: displayName,
+        email: user?.email || "",
+        status: r.status === "accepted" ? "accepted" : "pending",
+      });
     } catch {
-      out.push({ id: r.id, name: "Unknown", email: "", status: (r.status === "accepted" ? "accepted" : "pending") });
+      out.push({ id: r.id, name: "Unknown", email: "", status: r.status === "accepted" ? "accepted" : "pending" });
     }
   }
   return out;
