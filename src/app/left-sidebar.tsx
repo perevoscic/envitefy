@@ -562,42 +562,42 @@ export default function LeftSidebar() {
     {
       id: "shared-g1",
       swatch: "bg-gradient-to-br from-cyan-400 to-fuchsia-400",
-      row: "bg-gradient-to-br from-cyan-300/20 via-sky-300/15 to-fuchsia-300/20",
+      row: "bg-cyan-200",
     },
     {
       id: "shared-g2",
       swatch: "bg-gradient-to-br from-rose-400 to-indigo-400",
-      row: "bg-gradient-to-br from-rose-400/20 via-fuchsia-400/15 to-indigo-400/20",
+      row: "bg-rose-200",
     },
     {
       id: "shared-g3",
       swatch: "bg-gradient-to-br from-emerald-400 to-sky-400",
-      row: "bg-gradient-to-br from-emerald-400/20 via-teal-400/15 to-sky-400/20",
+      row: "bg-emerald-200",
     },
     {
       id: "shared-g4",
-      swatch: "bg-gradient-to-r from-amber-400 to-pink-400",
-      row: "bg-gradient-to-r from-amber-400/20 via-orange-400/15 to-pink-400/20",
+      swatch: "bg-gradient-to-br from-amber-400 to-pink-400",
+      row: "bg-amber-200",
     },
     {
       id: "shared-g5",
-      swatch: "bg-gradient-to-r from-indigo-400 to-cyan-400",
-      row: "bg-gradient-to-r from-indigo-400/20 via-blue-400/15 to-cyan-400/20",
+      swatch: "bg-gradient-to-br from-indigo-400 to-cyan-400",
+      row: "bg-indigo-200",
     },
     {
       id: "shared-g6",
       swatch: "bg-gradient-to-r from-lime-400 to-emerald-400",
-      row: "bg-gradient-to-br from-lime-400/20 via-green-400/15 to-emerald-400/20",
+      row: "bg-lime-200",
     },
     {
       id: "shared-g7",
       swatch: "bg-gradient-to-br from-purple-400 to-pink-400",
-      row: "bg-gradient-to-br from-purple-400/20 via-fuchsia-400/15 to-pink-400/20",
+      row: "bg-purple-200",
     },
     {
       id: "shared-g8",
       swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
-      row: "bg-gradient-to-br from-slate-400/20 via-zinc-400/10 to-sky-400/20",
+      row: "bg-slate-200",
     },
   ];
 
@@ -1763,7 +1763,7 @@ export default function LeftSidebar() {
                                   <div
                                     key={h.id}
                                     data-history-item={h.id}
-                                    className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
+                                    className={`relative px-2 py-2 text-sm`}
                                   >
                                     <Link
                                       href={prettyHref}
@@ -1779,7 +1779,7 @@ export default function LeftSidebar() {
                                           if (isTouch) setIsCollapsed(true);
                                         } catch {}
                                       }}
-                                      className="block pr-8"
+                                      className={`block pr-8 rounded-md ${rowAndBadge.row}`}
                                       title={h.title}
                                     >
                                       <div className="truncate flex items-center gap-2">
