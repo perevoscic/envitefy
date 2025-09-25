@@ -12,6 +12,67 @@ export default function PwaInstallButton() {
   );
   const [canInstall, setCanInstall] = useState(false);
 
+  // Hide if already installed or running in standalone
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isStandalone = () => {
+      try {
+        if ((window.navigator as any).standalone === true) return true; // iOS
+        if (
+          window.matchMedia &&
+          window.matchMedia("(display-mode: standalone)").matches
+        )
+          return true;
+        if (
+          window.matchMedia &&
+          window.matchMedia("(display-mode: fullscreen)").matches
+        )
+          return true;
+      } catch {}
+      return false;
+    };
+
+    if (isStandalone()) {
+      setCanInstall(false);
+      return;
+    }
+
+    // Listen for display-mode changes
+    const mql = window.matchMedia
+      ? window.matchMedia("(display-mode: standalone)")
+      : null;
+    const onChange = () => {
+      if (mql && mql.matches) setCanInstall(false);
+    };
+    try {
+      mql?.addEventListener("change", onChange);
+    } catch {
+      (mql as any)?.addListener?.(onChange);
+    }
+
+    // Optional: check for installed related apps (best-effort)
+    const maybeCheckRelated = async () => {
+      try {
+        const anyNav = navigator as any;
+        if (anyNav.getInstalledRelatedApps) {
+          const related = await anyNav.getInstalledRelatedApps();
+          if (Array.isArray(related) && related.length > 0)
+            setCanInstall(false);
+        }
+      } catch {}
+    };
+    maybeCheckRelated();
+
+    return () => {
+      try {
+        mql?.removeEventListener("change", onChange);
+      } catch {
+        (mql as any)?.removeListener?.(onChange);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault?.();
