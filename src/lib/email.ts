@@ -268,7 +268,7 @@ export async function sendShareEventEmail(params: {
   const greeting = greetName ? `Hi ${escapeHtml(greetName)},` : "Hello,";
   const html = `<!doctype html><html><body>
     <p>${greeting}</p>
-    <p>An event was shared with you by ${escapeHtml(params.ownerEmail)}.</p>
+    <p>An event was shared with you by ${escapeHtml(senderName || params.ownerEmail)}.</p>
     <p><strong>Title:</strong> ${escapeHtml(params.eventTitle)}</p>
     <p>
       <a href="${escapeHtml(params.eventUrl)}">View the event</a>
