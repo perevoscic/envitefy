@@ -297,21 +297,35 @@ export async function getGoogleRefreshToken(email: string): Promise<string | nul
 
 export async function updateUserNamesByEmail(params: {
   email: string;
-  firstName?: string | null;
-  lastName?: string | null;
+  firstName?: string | null | undefined;
+  lastName?: string | null | undefined;
 }): Promise<AppUserRow> {
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
   if (!existing) {
     throw new Error("No local account found for this email");
   }
-  const res = await query<AppUserRow>(
-    `update users
-     set first_name = $2, last_name = $3
-     where email = $1
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
-    [lower, params.firstName ?? null, params.lastName ?? null]
-  );
+
+  // Build dynamic SET clause so that undefined means "do not change"
+  const sets: string[] = [];
+  const values: any[] = [lower];
+  let idx = 2;
+  if (Object.prototype.hasOwnProperty.call(params, "firstName")) {
+    sets.push(`first_name = $${idx++}`);
+    values.push(params.firstName ?? null);
+  }
+  if (Object.prototype.hasOwnProperty.call(params, "lastName")) {
+    sets.push(`last_name = $${idx++}`);
+    values.push(params.lastName ?? null);
+  }
+  // If nothing to update, just return current row
+  if (sets.length === 0) {
+    return existing as AppUserRow;
+  }
+
+  const sql = `update users set ${sets.join(", ")} where email = $1
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`;
+  const res = await query<AppUserRow>(sql, values);
   return res.rows[0];
 }
 

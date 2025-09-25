@@ -40,8 +40,19 @@ export async function PUT(req: Request) {
     if (!email) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json().catch(() => ({} as any));
-    const firstName = body.firstName == null || body.firstName === "" ? null : String(body.firstName);
-    const lastName = body.lastName == null || body.lastName === "" ? null : String(body.lastName);
+    // Only include keys that were actually present in the request body.
+    const hasFirst = Object.prototype.hasOwnProperty.call(body, "firstName");
+    const hasLast = Object.prototype.hasOwnProperty.call(body, "lastName");
+    const firstName = hasFirst
+      ? body.firstName === ""
+        ? null
+        : String(body.firstName)
+      : undefined;
+    const lastName = hasLast
+      ? body.lastName === ""
+        ? null
+        : String(body.lastName)
+      : undefined;
     const rawPref =
       body.preferredProvider == null || body.preferredProvider === ""
         ? null
@@ -51,7 +62,10 @@ export async function PUT(req: Request) {
         ? (rawPref as "google" | "microsoft" | "apple")
         : null;
 
-    const updatedNames = await updateUserNamesByEmail({ email, firstName, lastName });
+    const namePayload: any = { email };
+    if (hasFirst) namePayload.firstName = firstName;
+    if (hasLast) namePayload.lastName = lastName;
+    const updatedNames = await updateUserNamesByEmail(namePayload);
     const updated = await updatePreferredProviderByEmail({ email, preferredProvider });
     if (typeof body.categoryColors !== "undefined") {
       const map = body.categoryColors && typeof body.categoryColors === "object" ? (body.categoryColors as Record<string, string>) : null;
