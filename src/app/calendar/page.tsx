@@ -94,35 +94,35 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
 const SHARED_GRADIENTS: { id: string; row: string }[] = [
   {
     id: "shared-g1",
-    row: "bg-cyan-200",
+    row: "bg-gradient-to-br from-cyan-300 via-sky-300 to-fuchsia-300",
   },
   {
     id: "shared-g2",
-    row: "bg-rose-200",
+    row: "bg-gradient-to-br from-rose-300 via-fuchsia-300 to-indigo-300",
   },
   {
     id: "shared-g3",
-    row: "bg-emerald-200",
+    row: "bg-gradient-to-br from-emerald-300 via-teal-300 to-sky-300",
   },
   {
     id: "shared-g4",
-    row: "bg-amber-200",
+    row: "bg-gradient-to-br from-amber-300 via-orange-300 to-pink-300",
   },
   {
     id: "shared-g5",
-    row: "bg-indigo-200",
+    row: "bg-gradient-to-br from-indigo-300 via-blue-300 to-cyan-300",
   },
   {
     id: "shared-g6",
-    row: "bg-lime-200",
+    row: "bg-gradient-to-br from-lime-300 via-green-300 to-emerald-300",
   },
   {
     id: "shared-g7",
-    row: "bg-purple-200",
+    row: "bg-gradient-to-br from-purple-300 via-fuchsia-300 to-pink-300",
   },
   {
     id: "shared-g8",
-    row: "bg-slate-200",
+    row: "bg-gradient-to-br from-slate-300 via-zinc-300 to-sky-300",
   },
 ];
 

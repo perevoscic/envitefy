@@ -272,7 +272,7 @@ export async function sendShareEventEmail(params: {
     <p><strong>Title:</strong> ${escapeHtml(params.eventTitle)}</p>
     <p>
       <a href="${escapeHtml(params.eventUrl)}">View the event</a>
-      &nbsp;·&nbsp;
+      &nbsp;·&nbsp;+
       <a href="${escapeHtml(acceptUrl)}">Accept</a>
     </p>
     <p>Don't have an account? <a href="${escapeHtml(signupUrl)}">Sign up now</a>.</p>

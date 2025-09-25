@@ -562,42 +562,42 @@ export default function LeftSidebar() {
     {
       id: "shared-g1",
       swatch: "bg-gradient-to-br from-cyan-400 to-fuchsia-400",
-      row: "bg-cyan-200",
+      row: "bg-gradient-to-br from-cyan-400 via-sky-400 to-fuchsia-400",
     },
     {
       id: "shared-g2",
       swatch: "bg-gradient-to-br from-rose-400 to-indigo-400",
-      row: "bg-rose-200",
+      row: "bg-gradient-to-br from-rose-400 via-fuchsia-300 to-indigo-400",
     },
     {
       id: "shared-g3",
       swatch: "bg-gradient-to-br from-emerald-400 to-sky-400",
-      row: "bg-emerald-200",
+      row: "bg-gradient-to-br from-emerald-400 via-teal-400 to-sky-400",
     },
     {
       id: "shared-g4",
       swatch: "bg-gradient-to-br from-amber-400 to-pink-400",
-      row: "bg-amber-200",
+      row: "bg-gradient-to-br from-amber-400 via-orange-400 to-pink-400",
     },
     {
       id: "shared-g5",
       swatch: "bg-gradient-to-br from-indigo-400 to-cyan-400",
-      row: "bg-indigo-200",
+      row: "bg-gradient-to-br from-indigo-400 via-blue-400 to-cyan-400",
     },
     {
       id: "shared-g6",
       swatch: "bg-gradient-to-r from-lime-400 to-emerald-400",
-      row: "bg-lime-200",
+      row: "bg-gradient-to-br from-lime-400 via-green-400 to-emerald-400",
     },
     {
       id: "shared-g7",
       swatch: "bg-gradient-to-br from-purple-400 to-pink-400",
-      row: "bg-purple-200",
+      row: "bg-gradient-to-br from-purple-400 via-fuchsia-400 to-pink-400",
     },
     {
       id: "shared-g8",
       swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
-      row: "bg-slate-200",
+      row: "bg-gradient-to-br from-slate-400 via-zinc-400 to-sky-500",
     },
   ];
 
