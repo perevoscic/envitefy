@@ -1,7 +1,7 @@
 {
   "name": "Snap My Date",
   "short_name": "Snap My Date",
-  "start_url": "/",
+  "start_url": "/landing",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
