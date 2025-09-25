@@ -12,6 +12,7 @@ import {
 } from "react";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
+import PwaInstallButton from "@/components/PwaInstallButton";
 
 type Theme = "light" | "dark";
 
@@ -137,10 +138,30 @@ export default function Providers({
     <SessionProvider session={session}>
       <SidebarProvider>
         <ThemeProvider>
+          <RegisterServiceWorker />
           {children}
           <GlobalEventCreate />
+          <PwaInstallButton />
         </ThemeProvider>
       </SidebarProvider>
     </SessionProvider>
   );
+}
+
+function RegisterServiceWorker() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator)) return;
+    const register = async () => {
+      try {
+        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+      } catch (e) {
+        // noop
+      }
+    };
+    const idle =
+      (self as any).requestIdleCallback || ((fn: any) => setTimeout(fn, 100));
+    idle(register);
+  }, []);
+  return null;
 }

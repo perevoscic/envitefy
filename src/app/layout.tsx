@@ -36,6 +36,23 @@ export const metadata: Metadata = {
   title: "Snap My Date",
   description:
     "Snap My Date is an innovative event management tool to scan birthday invites, flyers, wedding invitations, appointment cards instantly adding events to your preferred calendar. Simplify your scheduling with our powerful calendar integration and keep your family events organized.",
+  manifest: "/manifest.webmanifest",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0b0f" },
+  ],
+  icons: {
+    icon: [
+      { url: "/invite.png", sizes: "192x192", type: "image/png" },
+      { url: "/invite.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/invite.png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Snap My Date",
+  },
 };
 
 export const viewport: Viewport = {
