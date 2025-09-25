@@ -43,10 +43,27 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
-      { url: "/invite.png", sizes: "192x192", type: "image/png" },
-      { url: "/invite.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      {
+        url: "/icons/maskable-icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        rel: "mask-icon" as any,
+      },
+      {
+        url: "/icons/maskable-icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        rel: "mask-icon" as any,
+      },
     ],
-    apple: [{ url: "/invite.png" }],
+    apple: [
+      { url: "/icons/apple-touch-icon-120.png", sizes: "120x120" },
+      { url: "/icons/apple-touch-icon-152.png", sizes: "152x152" },
+      { url: "/icons/apple-touch-icon-167.png", sizes: "167x167" },
+      { url: "/icons/apple-touch-icon-180.png", sizes: "180x180" },
+    ],
   },
   appleWebApp: {
     capable: true,

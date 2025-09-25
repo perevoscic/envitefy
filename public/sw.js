@@ -1,5 +1,12 @@
-const CACHE_NAME = "smd-static-v1";
-const APP_SHELL = ["/", "/invite.png", "/manifest.webmanifest"];
+const CACHE_NAME = "smd-static-v2";
+const APP_SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/maskable-icon-192.png",
+  "/icons/maskable-icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
