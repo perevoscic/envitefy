@@ -562,7 +562,7 @@ export default function LeftSidebar() {
     {
       id: "shared-g1",
       swatch: "bg-gradient-to-br from-cyan-400 to-fuchsia-400",
-      row: "bg-gradient-to-br from-cyan-300 via-sky-300 to-fuchsia-300",
+      row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
     },
     {
       id: "shared-g2",
@@ -586,7 +586,7 @@ export default function LeftSidebar() {
     },
     {
       id: "shared-g6",
-      swatch: "bg-gradient-to-r from-lime-400 to-emerald-400",
+      swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
       row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
     },
     {

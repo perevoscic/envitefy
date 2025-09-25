@@ -94,7 +94,7 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
 const SHARED_GRADIENTS: { id: string; row: string }[] = [
   {
     id: "shared-g1",
-    row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
+    row: "bg-gradient-to-br from-cyan-300 via-sky-300 to-fuchsia-300",
   },
   {
     id: "shared-g2",
@@ -430,8 +430,22 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Seed from localStorage immediately to avoid first-render mismatch with sidebar
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
-    {}
+    () => {
+      try {
+        const raw =
+          typeof window !== "undefined"
+            ? localStorage.getItem("categoryColors")
+            : null;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object")
+            return parsed as Record<string, string>;
+        }
+      } catch {}
+      return {} as Record<string, string>;
+    }
   );
 
   const [openEvent, setOpenEvent] = useState<CalendarEvent | null>(null);
