@@ -11,6 +11,7 @@ export default function PwaInstallButton() {
     null
   );
   const [canInstall, setCanInstall] = useState(false);
+  const [allowedDevice, setAllowedDevice] = useState(false);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
@@ -73,6 +74,29 @@ export default function PwaInstallButton() {
     };
   }, []);
 
+  // Only show on iPads and smaller screens; hide on laptops/desktops
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent || (navigator as any).vendor || "";
+    const isiPad =
+      /iPad/.test(ua) || (/\bMacintosh\b/.test(ua) && "ontouchend" in document);
+    const mql = window.matchMedia("(max-width: 1024px)");
+    const update = () => setAllowedDevice(isiPad || mql.matches);
+    update();
+    try {
+      mql.addEventListener("change", update);
+    } catch {
+      (mql as any).addListener?.(update);
+    }
+    return () => {
+      try {
+        mql.removeEventListener("change", update);
+      } catch {
+        (mql as any).removeListener?.(update);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault?.();
@@ -98,7 +122,7 @@ export default function PwaInstallButton() {
     return () => window.removeEventListener("appinstalled", onInstalled);
   }, []);
 
-  if (!canInstall) return null;
+  if (!canInstall || !allowedDevice) return null;
 
   return (
     <button
