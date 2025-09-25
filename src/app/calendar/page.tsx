@@ -766,7 +766,7 @@ export default function CalendarPage() {
           e.stopPropagation();
           setOpenEvent(ev);
         }}
-        className={`hidden md:flex flex-col text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+        className={`hidden md:flex flex-col rounded-md ${tone.tint} text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
         title={ev.title}
       >
         <span className="truncate max-w-[10rem] inline-flex items-center gap-1">

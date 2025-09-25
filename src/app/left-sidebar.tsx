@@ -1763,7 +1763,7 @@ export default function LeftSidebar() {
                                   <div
                                     key={h.id}
                                     data-history-item={h.id}
-                                    className={`relative px-2 py-2 text-sm`}
+                                    className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
                                   >
                                     <Link
                                       href={prettyHref}
@@ -1779,7 +1779,7 @@ export default function LeftSidebar() {
                                           if (isTouch) setIsCollapsed(true);
                                         } catch {}
                                       }}
-                                      className={`block pr-8 rounded-md ${rowAndBadge.row}`}
+                                      className="block pr-8"
                                       title={h.title}
                                     >
                                       <div className="truncate flex items-center gap-2">
