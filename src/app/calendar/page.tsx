@@ -94,35 +94,35 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
 const SHARED_GRADIENTS: { id: string; row: string }[] = [
   {
     id: "shared-g1",
-    row: "bg-gradient-to-br from-cyan-300 via-sky-300 to-fuchsia-300",
+    row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
   },
   {
     id: "shared-g2",
-    row: "bg-gradient-to-br from-rose-300 via-fuchsia-300 to-indigo-300",
+    row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200",
   },
   {
     id: "shared-g3",
-    row: "bg-gradient-to-br from-emerald-300 via-teal-300 to-sky-300",
+    row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200",
   },
   {
     id: "shared-g4",
-    row: "bg-gradient-to-br from-amber-300 via-orange-300 to-pink-300",
+    row: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200",
   },
   {
     id: "shared-g5",
-    row: "bg-gradient-to-br from-indigo-300 via-blue-300 to-cyan-300",
+    row: "bg-gradient-to-br from-indigo-200 via-blue-200 to-cyan-200",
   },
   {
     id: "shared-g6",
-    row: "bg-gradient-to-br from-lime-300 via-green-300 to-emerald-300",
+    row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
   },
   {
     id: "shared-g7",
-    row: "bg-gradient-to-br from-purple-300 via-fuchsia-300 to-pink-300",
+    row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200",
   },
   {
     id: "shared-g8",
-    row: "bg-gradient-to-br from-slate-300 via-zinc-300 to-sky-300",
+    row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
   },
 ];
 
@@ -766,7 +766,7 @@ export default function CalendarPage() {
           e.stopPropagation();
           setOpenEvent(ev);
         }}
-        className={`hidden md:flex flex-col rounded-md ${tone.tint} text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+        className={`hidden md:flex flex-col text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
         title={ev.title}
       >
         <span className="truncate max-w-[10rem] inline-flex items-center gap-1">
