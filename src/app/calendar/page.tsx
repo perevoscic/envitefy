@@ -94,35 +94,35 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
 const SHARED_GRADIENTS: { id: string; row: string }[] = [
   {
     id: "shared-g1",
-    row: "bg-gradient-to-br from-cyan-300 via-sky-300 to-fuchsia-300",
+    row: "bg-gradient-to-br from-cyan-400 via-sky-400 to-fuchsia-400",
   },
   {
     id: "shared-g2",
-    row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200",
+    row: "bg-gradient-to-br from-rose-400 via-fuchsia-400 to-indigo-400",
   },
   {
     id: "shared-g3",
-    row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200",
+    row: "bg-gradient-to-br from-emerald-400 via-teal-400 to-sky-400",
   },
   {
     id: "shared-g4",
-    row: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200",
+    row: "bg-gradient-to-br from-amber-400 via-orange-400 to-pink-400",
   },
   {
     id: "shared-g5",
-    row: "bg-gradient-to-br from-indigo-200 via-blue-200 to-cyan-200",
+    row: "bg-gradient-to-br from-indigo-400 via-blue-400 to-cyan-400",
   },
   {
     id: "shared-g6",
-    row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
+    row: "bg-gradient-to-br from-lime-400 via-green-400 to-emerald-400",
   },
   {
     id: "shared-g7",
-    row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200",
+    row: "bg-gradient-to-br from-purple-400 via-fuchsia-400 to-pink-400",
   },
   {
     id: "shared-g8",
-    row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
+    row: "bg-gradient-to-br from-slate-400 via-zinc-400 to-sky-400",
   },
 ];
 
@@ -132,6 +132,23 @@ function sharedGradientRowClass(
   const id = categoryColors["Shared events"];
   const found = SHARED_GRADIENTS.find((g) => g.id === id);
   return found?.row || SHARED_GRADIENTS[0].row;
+}
+
+function isSharedEvent(
+  ev:
+    | CalendarEvent
+    | {
+        shared?: boolean | null;
+        sharedOut?: boolean | null;
+        category?: string | null;
+      }
+): boolean {
+  if (!ev) return false;
+  return Boolean(
+    (ev as CalendarEvent).shared ||
+      (ev as CalendarEvent).sharedOut ||
+      ((ev as CalendarEvent).category || null) === "Shared events"
+  );
 }
 
 function startOfDay(date: Date): Date {
@@ -269,6 +286,8 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
       : null;
 
     const baseCategory = (d.category as string | undefined) || null;
+    const sharedFlag = Boolean(d?.shared || baseCategory === "Shared events");
+    const sharedOutFlag = Boolean(d?.sharedOut);
 
     if (arr && arr.length > 0) {
       arr.forEach((ev, idx) => {
@@ -290,8 +309,8 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
           category: (ev.category as string) || baseCategory,
           recurrence:
             (ev.recurrence as string) || (d.recurrence as string) || null,
-          shared: Boolean(d?.shared),
-          sharedOut: Boolean(d?.sharedOut),
+          shared: sharedFlag,
+          sharedOut: sharedOutFlag,
         });
       });
       continue;
@@ -314,8 +333,8 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
         description: (single?.description as string) || null,
         category: (single?.category as string) || baseCategory,
         recurrence: (single?.recurrence as string) || null,
-        shared: Boolean(d?.shared),
-        sharedOut: Boolean(d?.sharedOut),
+        shared: sharedFlag,
+        sharedOut: sharedOutFlag,
       });
     }
   }
@@ -707,7 +726,7 @@ export default function CalendarPage() {
     try {
       const now = new Date();
       return upcoming.filter((e) => {
-        const isShared = (e as any).shared || (e as any).sharedOut;
+        const isShared = isSharedEvent(e);
         return isShared && new Date(e.start) >= now;
       });
     } catch {
@@ -764,7 +783,7 @@ export default function CalendarPage() {
   };
 
   const renderEventPill = (ev: CalendarEvent) => {
-    const isShared = (ev as any).shared || (ev as any).sharedOut;
+    const isShared = isSharedEvent(ev);
     const chosenColorName = ev.category
       ? categoryColors[ev.category] || defaultCategoryColor(ev.category)
       : "";
@@ -784,7 +803,7 @@ export default function CalendarPage() {
         title={ev.title}
       >
         <span className="truncate max-w-[10rem] inline-flex items-center gap-1">
-          {(ev.shared || (ev as any).sharedOut) && (
+          {isShared && (
             <svg
               viewBox="0 0 25.274 25.274"
               fill="currentColor"
@@ -808,7 +827,7 @@ export default function CalendarPage() {
     const tone = chosenColorName
       ? colorTintAndDot(chosenColorName)
       : { tint: "bg-surface/60", dot: "bg-foreground/40" };
-    if (ev.shared) {
+    if (isSharedEvent(ev)) {
       return (
         <svg
           key={`${ev.id}@${ev.start}`}
@@ -1126,7 +1145,7 @@ export default function CalendarPage() {
                   new Date(a.start).getTime() - new Date(b.start).getTime()
               )
               .map((ev) => {
-                const isShared = (ev as any).shared || (ev as any).sharedOut;
+                const isShared = isSharedEvent(ev);
                 const chosenColorName = ev.category
                   ? categoryColors[ev.category] ||
                     defaultCategoryColor(ev.category)
@@ -1146,7 +1165,7 @@ export default function CalendarPage() {
                   >
                     <div className="flex items-center gap-3">
                       <span className="truncate font-medium text-foreground inline-flex items-center gap-2">
-                        {(ev.shared || (ev as any).sharedOut) && (
+                        {isShared && (
                           <svg
                             viewBox="0 0 25.274 25.274"
                             fill="currentColor"
@@ -1195,8 +1214,7 @@ export default function CalendarPage() {
                         new Date(b.start).getTime()
                     )
                     .map((ev) => {
-                      const isShared =
-                        (ev as any).shared || (ev as any).sharedOut;
+                      const isShared = isSharedEvent(ev);
                       const chosenColorName = ev.category
                         ? categoryColors[ev.category] ||
                           defaultCategoryColor(ev.category)
@@ -1251,7 +1269,7 @@ export default function CalendarPage() {
                   new Date(a.start).getTime() - new Date(b.start).getTime()
               )
               .map((ev) => {
-                const isShared = (ev as any).shared || (ev as any).sharedOut;
+                const isShared = isSharedEvent(ev);
                 const chosenColorName = ev.category
                   ? categoryColors[ev.category] ||
                     defaultCategoryColor(ev.category)
@@ -1271,7 +1289,7 @@ export default function CalendarPage() {
                   >
                     <div className="flex items-center gap-3">
                       <span className="truncate font-medium text-foreground inline-flex items-center gap-2">
-                        {(ev.shared || (ev as any).sharedOut) && (
+                        {isShared && (
                           <svg
                             viewBox="0 0 25.274 25.274"
                             fill="currentColor"
@@ -1360,7 +1378,7 @@ export default function CalendarPage() {
             </div>
             <div className="mt-3 space-y-2">
               {openDay.items.map((ev) => {
-                const isShared = (ev as any).shared || (ev as any).sharedOut;
+                const isShared = isSharedEvent(ev);
                 const chosenColorName = ev.category
                   ? categoryColors[ev.category] ||
                     defaultCategoryColor(ev.category)
