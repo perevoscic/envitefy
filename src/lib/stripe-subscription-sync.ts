@@ -194,7 +194,9 @@ export async function syncSubscriptionState(
   }
 
   const periodEnd = new Date(workingSubscription.current_period_end * 1000);
-  const nextPlan = plan || metadataPlan || invoicePlan || hintPlan || targetUser.subscription_plan || null;
+  // Preserve FF plan if already assigned to the user (admin/grant plan that never expires)
+  const candidatePlan = plan || metadataPlan || invoicePlan || hintPlan || targetUser.subscription_plan || null;
+  const nextPlan = targetUser.subscription_plan === "FF" ? "FF" : candidatePlan;
 
   debugLog(options.context, "sync target user", {
     email: targetUser.email,
@@ -212,7 +214,7 @@ export async function syncSubscriptionState(
       stripeCurrentPeriodEnd: periodEnd,
       stripeCancelAtPeriodEnd: workingSubscription.cancel_at_period_end || false,
       subscriptionPlan: nextPlan,
-      subscriptionExpiresAt: periodEnd,
+      subscriptionExpiresAt: nextPlan === "FF" ? null : periodEnd,
     }
   );
 

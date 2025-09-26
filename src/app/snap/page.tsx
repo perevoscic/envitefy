@@ -37,7 +37,7 @@ export default function SnapPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<
-    "free" | "monthly" | "yearly" | null
+    "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [bulkEvents, setBulkEvents] = useState<any[] | null>(null);
@@ -123,7 +123,12 @@ export default function SnapPage() {
             setCredits((j as any).credits as number);
           }
           const plan = (j as any)?.subscriptionPlan;
-          if (plan === "free" || plan === "monthly" || plan === "yearly") {
+          if (
+            plan === "free" ||
+            plan === "monthly" ||
+            plan === "yearly" ||
+            plan === "FF"
+          ) {
             setSubscriptionPlan(plan);
           } else {
             setSubscriptionPlan(null);

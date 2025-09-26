@@ -14,18 +14,32 @@ export async function GET() {
   const user = await getUserByEmail(session.user.email as string);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
   const plan =
-    user.subscription_plan === "monthly" || user.subscription_plan === "yearly"
-      ? user.subscription_plan
+    user.subscription_plan === "monthly" ||
+    user.subscription_plan === "yearly" ||
+    user.subscription_plan === "FF"
+      ? (user.subscription_plan as "monthly" | "yearly" | "FF")
       : user.subscription_plan === "free"
       ? "free"
       : null;
+  // Prefer stored current period end; if missing but we have a Stripe subscription, retrieve it as a fallback
+  let currentPeriodEnd: string | Date | null = user.stripe_current_period_end || user.subscription_expires_at || null;
+  if (!currentPeriodEnd && user.stripe_subscription_id) {
+    try {
+      const stripe = getStripeClient();
+      const sub = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
+      const cpe = (sub as any)?.current_period_end;
+      if (typeof cpe === "number" && cpe > 0) {
+        currentPeriodEnd = new Date(cpe * 1000).toISOString();
+      }
+    } catch {}
+  }
   return NextResponse.json({
     plan,
     stripeCustomerId: user.stripe_customer_id || null,
     stripeSubscriptionId: user.stripe_subscription_id || null,
     stripeSubscriptionStatus: user.stripe_subscription_status || null,
     stripePriceId: user.stripe_price_id || null,
-    currentPeriodEnd: user.stripe_current_period_end || user.subscription_expires_at || null,
+    currentPeriodEnd,
     subscriptionExpiresAt: user.subscription_expires_at || null,
     cancelAtPeriodEnd: Boolean(user.stripe_cancel_at_period_end),
     pricing: {
@@ -82,7 +96,7 @@ export async function PUT(req: Request) {
   })();
 
   const currentPeriodEnd = subscription
-    ? new Date(subscription.current_period_end * 1000)
+    ? new Date(((subscription as any)?.current_period_end ?? 0) * 1000)
     : cancelAtPeriodEnd
     ? user.stripe_current_period_end || user.subscription_expires_at || null
     : null;

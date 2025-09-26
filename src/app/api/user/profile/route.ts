@@ -27,7 +27,7 @@ export async function GET() {
     lastName: user?.last_name || null,
     preferredProvider: user?.preferred_provider || null,
     subscriptionPlan: responsePlan,
-    credits: Number.isFinite(creditsCount as any) ? creditsCount : 0,
+    credits: responsePlan === "FF" ? null : Number.isFinite(creditsCount as any) ? creditsCount : 0,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
     categoryColors: await getCategoryColorsByEmail(email),
   });
@@ -72,9 +72,9 @@ export async function PUT(req: Request) {
       await updateCategoryColorsByEmail({ email, categoryColors: map });
     }
     if (typeof body.subscriptionPlan !== "undefined") {
-      const rawPlan = body.subscriptionPlan == null ? null : String(body.subscriptionPlan).toLowerCase();
-      const normalizedPlan = rawPlan === "free" || rawPlan === "monthly" || rawPlan === "yearly" ? rawPlan : null;
-      await updateSubscriptionPlanByEmail({ email, plan: normalizedPlan });
+      const rawPlan = body.subscriptionPlan == null ? null : String(body.subscriptionPlan);
+      const norm = rawPlan && (rawPlan === "free" || rawPlan === "monthly" || rawPlan === "yearly" || rawPlan === "FF") ? (rawPlan as any) : null;
+      await updateSubscriptionPlanByEmail({ email, plan: norm });
     }
     return NextResponse.json({
       email: updated.email,

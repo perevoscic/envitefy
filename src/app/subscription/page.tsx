@@ -13,10 +13,10 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const params = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<
-    "free" | "monthly" | "yearly"
+    "free" | "monthly" | "yearly" | "FF"
   >("monthly");
   const [currentPlan, setCurrentPlan] = useState<
-    "free" | "monthly" | "yearly" | null
+    "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
     null
@@ -50,7 +50,7 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
     if (!plan) return;
-    const normalized = ["free", "monthly", "yearly"].includes(plan)
+    const normalized = ["free", "monthly", "yearly", "FF"].includes(plan)
       ? plan
       : null;
     if (normalized) setSelectedPlan(normalized as any);
@@ -81,7 +81,12 @@ export default function SubscriptionPage() {
         setIsAuthed(planRes.ok);
         const plan = planJson?.plan;
         if (planRes.ok) {
-          if (plan === "free" || plan === "monthly" || plan === "yearly") {
+          if (
+            plan === "free" ||
+            plan === "monthly" ||
+            plan === "yearly" ||
+            plan === "FF"
+          ) {
             setCurrentPlan(plan);
             setSelectedPlan(plan);
           } else {
@@ -216,9 +221,9 @@ export default function SubscriptionPage() {
     const reference =
       parseDateValue(currentPeriodEnd) || parseDateValue(subscriptionExpiresAt);
     if (!reference) return null;
-    return reference.toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
+    return reference.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
       year: "numeric",
     });
   }, [currentPeriodEnd, subscriptionExpiresAt, parseDateValue]);

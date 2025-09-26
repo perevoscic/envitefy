@@ -389,7 +389,7 @@ async function ensureUsersHasStripeBillingColumns(): Promise<void> {
   `);
 }
 
-export type SubscriptionPlan = "free" | "monthly" | "yearly";
+export type SubscriptionPlan = "free" | "monthly" | "yearly" | "FF";
 
 export async function getSubscriptionPlanByEmail(email: string): Promise<string | null> {
   await ensureUsersHasSubscriptionPlanColumn();
@@ -408,7 +408,7 @@ export async function updateSubscriptionPlanByEmail(params: {
   await ensureUsersHasSubscriptionPlanColumn();
   const lower = params.email.toLowerCase();
   // When moving to a paid plan, mark ever_paid = true
-  if (params.plan === "monthly" || params.plan === "yearly") {
+  if (params.plan === "monthly" || params.plan === "yearly" || params.plan === "FF") {
     await query(
       `update users
        set subscription_plan = $2,
@@ -526,7 +526,11 @@ export async function updateUserStripeState(
   }
   if (Object.prototype.hasOwnProperty.call(updates, "subscriptionPlan")) {
     setField("subscription_plan", updates.subscriptionPlan ?? null);
-    if (updates.subscriptionPlan === "monthly" || updates.subscriptionPlan === "yearly") {
+    if (
+      updates.subscriptionPlan === "monthly" ||
+      updates.subscriptionPlan === "yearly" ||
+      updates.subscriptionPlan === "FF"
+    ) {
       setParts.push("ever_paid = true");
     }
   }
@@ -983,10 +987,11 @@ export async function extendUserSubscriptionByMonths(email: string, months: numb
   // Compute new expiry in SQL: if null or past, base is now(); else existing date
   const res = await query<{ subscription_expires_at: string | null }>(
     `update users
-     set subscription_plan = case when subscription_plan in ('monthly','yearly') then subscription_plan else 'monthly' end,
+     set subscription_plan = case when subscription_plan in ('monthly','yearly','FF') then subscription_plan else 'monthly' end,
          ever_paid = true,
          subscription_expires_at = (
            case
+             when subscription_plan = 'FF' then null
              when subscription_expires_at is null or subscription_expires_at < now() then (now() + make_interval(months => $2))
              else (subscription_expires_at + make_interval(months => $2))
            end

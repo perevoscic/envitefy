@@ -178,7 +178,7 @@ export default function LeftSidebar() {
   const userEmail = session?.user?.email as string | undefined;
   // Deprecated scanCredits removed; use unified credits state
   const [subscriptionPlan, setSubscriptionPlan] = useState<
-    "free" | "monthly" | "yearly" | null
+    "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [credits, setCredits] = useState<number>(0);
   useEffect(() => {
@@ -194,7 +194,9 @@ export default function LeftSidebar() {
         if (!ignore) {
           const p = json.subscriptionPlan;
           setSubscriptionPlan(
-            p === "free" || p === "monthly" || p === "yearly" ? p : null
+            p === "free" || p === "monthly" || p === "yearly" || p === "FF"
+              ? p
+              : null
           );
           if (typeof json.credits === "number") setCredits(json.credits);
           if (
@@ -217,7 +219,9 @@ export default function LeftSidebar() {
   }, [status]);
 
   const showCreditsBadge =
-    subscriptionPlan !== "monthly" && subscriptionPlan !== "yearly";
+    subscriptionPlan !== "monthly" &&
+    subscriptionPlan !== "yearly" &&
+    subscriptionPlan !== "FF";
   const profileMenuItemClass =
     "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
   const isDark = theme === "dark";

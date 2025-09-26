@@ -314,7 +314,8 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Read and update user profile, preferred provider, and subscription plan.
 - **Auth**: NextAuth session required.
 - **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name, categoryColors }`.
-- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|null, categoryColors?: Record<string,string>|null }`.
+- Notes: When `subscriptionPlan` is `FF`, `credits` is returned as `null` (unlimited usage).
+- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|"FF"|null, categoryColors?: Record<string,string>|null }`.
 - **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan, categoryColors }`.
 
 ### Change Password — POST `/api/user/change-password`
@@ -329,6 +330,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Read or set the user's subscription plan.
 - **Auth**: NextAuth session required.
 - **GET Output**: `{ plan, stripeSubscriptionStatus, stripeSubscriptionId, stripeCustomerId, stripePriceId, currentPeriodEnd, subscriptionExpiresAt, cancelAtPeriodEnd, pricing: { monthly, yearly } }`.
+- Notes: `plan` may be `FF` for unlimited lifetime access; in that case `subscriptionExpiresAt` is `null` and credits UI should be hidden.
 - **PUT Input (JSON)**: `{ plan: "free"|null, cancelAtPeriodEnd?: boolean }`. Only downgrades/cancellations are handled here; upgrades must go through Stripe checkout.
 - **PUT Behavior**: Cancels the active Stripe subscription (default `cancel_at_period_end=true`). Response mirrors new `plan` and `cancelAtPeriodEnd` state.
 - **PUT Output**: `{ ok: true, plan, cancelAtPeriodEnd }` or `{ error }`.
@@ -436,6 +438,8 @@ Payload used by the authenticated calendar agents.
 ---
 
 ## Changelog
+
+- 2025-09-26: Added `FF` subscription plan (never expires, unlimited). API returns `credits: null` for FF users and preserves FF in Stripe sync.
 
 - 2025-09-19: User profile now supports `categoryColors` so event/category colors sync across devices for signed-in users.
 - 2025-09-19: Shared events: added `/api/events/share`, `/api/events/share/accept`, `/api/events/share/remove`. `/api/history` includes accepted shares; UI marks shared items and adds a hidden-until-used `Shared events` category above Birthdays.
