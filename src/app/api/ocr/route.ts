@@ -39,7 +39,7 @@ async function llmExtractEvent(raw: string): Promise<{
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const system = "You extract calendar events from noisy OCR text. Return strict JSON only.";
-  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- Description may include RSVP or short context.\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If an appointment type is shown (e.g., Annual Visit), use it for title; otherwise 'Doctor Appointment'.\n- Respond with ONLY JSON.`;
+  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- Description may include RSVP or short context.\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If an appointment type is shown (e.g., Annual Visit), use it for title; otherwise 'Doctor Appointment'.\n  * Never repeat invitation phrases like 'Join us for', 'Come celebrate', or similar; use direct clinical language for titles and descriptions.\n- Respond with ONLY JSON.`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -94,7 +94,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
-      "Special cases — MEDICAL APPOINTMENTS: never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Include patient name, DOB, provider and facility in description. Title should be '<Appointment Type> with Dr <Name>' when possible, otherwise 'Doctor Appointment'.",
+      "Special cases — MEDICAL APPOINTMENTS: never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Include patient name, DOB, provider and facility in description. Title should be '<Appointment Type> with Dr <Name>' when possible, otherwise 'Doctor Appointment'. Never echo invitation phrases like 'Join us for' or 'Come celebrate'; keep wording direct and clinical.",
     ].join("\n");
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1717,9 +1717,12 @@ export async function POST(request: Request) {
       }
     }
 
+    const isMedicalAppointment =
+      /(appointment|appt)/i.test(raw) && /(doctor|dr\.|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
+
     // For medical slips, force title to "<Appointment Type> with Dr <Name>" when possible,
     // and keep notes minimal (just the title line)
-    if (/(appointment|appt)/i.test(raw) && /(doctor|dr\.|clinic|hospital|ascension|sacred\s*heart)/i.test(raw)) {
+    if (isMedicalAppointment) {
       // 1) Try to read appointment reason near the "Appointment" label
       const appIdx = lines.findIndex((l: string) => /^\s*appointment\s*$/i.test(l));
       let reasonLine: string | null = null;
@@ -1757,8 +1760,10 @@ export async function POST(request: Request) {
       finalDescription = finalTitle;
     }
 
-    // Enrich generic "Join us for" line with the birthday person's name from title
-    finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
+    // Enrich generic "Join us for" line with the birthday person's name from title (non-medical only)
+    if (!isMedicalAppointment) {
+      finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
+    }
 
     // Extract compact RSVP now, but defer appending until after all rewrites
     let deferredRsvp: string | null = null;
@@ -1804,7 +1809,7 @@ export async function POST(request: Request) {
     // Generic rewrite for non-birthday/wedding flyers or when current description is long/multiline
     const isBirthday = /(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle);
     const isWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
-    if (!isBirthday && !isWedding) {
+    if (!isBirthday && !isWedding && !isMedicalAppointment) {
       try {
         const looksMultiline = /\n/.test(finalDescription) || (finalDescription || "").length > 180;
         const refined = await llmRewriteSmartDescription(

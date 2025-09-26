@@ -447,6 +447,8 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-09-26: OCR medical appointment outputs keep notes strictly clinical—avoiding phrases like "Join us for" and skipping friendly invitation rewrites.
+
 - 2025-09-26: Added `FF` subscription plan (never expires, unlimited). API returns `credits: null` for FF users and preserves FF in Stripe sync.
 
 - 2025-09-19: User profile now supports `categoryColors` so event/category colors sync across devices for signed-in users.
