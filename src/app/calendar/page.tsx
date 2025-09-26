@@ -94,35 +94,35 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
 const SHARED_GRADIENTS: { id: string; row: string }[] = [
   {
     id: "shared-g1",
-    row: "bg-gradient-to-br from-cyan-400 via-sky-400 to-fuchsia-400",
+    row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
   },
   {
     id: "shared-g2",
-    row: "bg-gradient-to-br from-rose-400 via-fuchsia-400 to-indigo-400",
+    row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200",
   },
   {
     id: "shared-g3",
-    row: "bg-gradient-to-br from-emerald-400 via-teal-400 to-sky-400",
+    row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200",
   },
   {
     id: "shared-g4",
-    row: "bg-gradient-to-br from-amber-400 via-orange-400 to-pink-400",
+    row: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200",
   },
   {
     id: "shared-g5",
-    row: "bg-gradient-to-br from-indigo-400 via-blue-400 to-cyan-400",
+    row: "bg-gradient-to-br from-indigo-200 via-blue-200 to-cyan-200",
   },
   {
     id: "shared-g6",
-    row: "bg-gradient-to-br from-lime-400 via-green-400 to-emerald-400",
+    row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
   },
   {
     id: "shared-g7",
-    row: "bg-gradient-to-br from-purple-400 via-fuchsia-400 to-pink-400",
+    row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200",
   },
   {
     id: "shared-g8",
-    row: "bg-gradient-to-br from-slate-400 via-zinc-400 to-sky-400",
+    row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
   },
 ];
 
