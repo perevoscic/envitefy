@@ -1017,7 +1017,7 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === "week" ? "text-white" : "text-foreground/70"
+                upcomingView === "week" ? "text-white" : "text-gray-500"
               }`}
               onClick={() => setUpcomingView("week")}
             >
@@ -1064,7 +1064,7 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === "month" ? "text-white" : "text-foreground/70"
+                upcomingView === "month" ? "text-white" : "text-gray-500"
               }`}
               onClick={() => setUpcomingView("month")}
             >
@@ -1111,7 +1111,7 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === "shared" ? "text-white" : "text-foreground/70"
+                upcomingView === "shared" ? "text-white" : "text-gray-500"
               }`}
               onClick={() => setUpcomingView("shared")}
             >
