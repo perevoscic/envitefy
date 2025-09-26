@@ -16,6 +16,7 @@ const CATEGORY_OPTIONS = [
   "Appointments",
   "Sport Events",
   "General Events",
+  "Car Pool",
 ] as const;
 
 export default function LeftSidebar() {
@@ -257,6 +258,7 @@ export default function LeftSidebar() {
     if (c === "Weddings") return "blue";
     if (c === "Sport Events") return "indigo";
     if (c === "Play Days") return "rose";
+    if (c === "Car Pool") return "cyan";
     return "slate"; // neutral fallback
   };
 
@@ -271,6 +273,12 @@ export default function LeftSidebar() {
     if (/game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(s))
       return "Sport Events";
     if (/playdate|play\s*day|kids?\s*play/.test(s)) return "Play Days";
+    if (
+      /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(
+        s
+      )
+    )
+      return "Car Pool";
     if (/appointment|meeting|consult/.test(s)) return "Appointments";
     return null;
   };
@@ -282,6 +290,7 @@ export default function LeftSidebar() {
     "Weddings",
     "Sport Events",
     "Play Days",
+    "Car Pool",
   ];
 
   useEffect(() => {

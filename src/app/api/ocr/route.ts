@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { incrementCreditsByEmail } from "@/lib/db";
+import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
 import { GoogleAuth } from "google-auth-library";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
@@ -2377,6 +2377,9 @@ export async function POST(request: Request) {
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball|football)/i.test(fullText)) {
           return "Sport Events";
         }
+        if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {
+          return "Car Pool";
+        }
       } catch {}
       return null;
     };
@@ -2401,6 +2404,8 @@ export async function POST(request: Request) {
           // Fallback: if plan is unknown, keep old behavior for safety
           await incrementCreditsByEmail(email, -1);
         }
+        // Increment scan counters for admin metrics
+        try { await incrementUserScanCounters({ email, category }); } catch {}
       }
     } catch {}
 

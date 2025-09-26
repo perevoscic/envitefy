@@ -98,7 +98,12 @@ const USER_SELECT_COLUMNS = `
   ever_paid, credits,
   stripe_customer_id, stripe_subscription_id, stripe_subscription_status,
   stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end,
-  password_hash, created_at
+  password_hash, created_at,
+  is_admin,
+  scans_total, scans_birthdays, scans_weddings,
+  scans_sport_events, scans_appointments, scans_doctor_appointments,
+  scans_play_days, scans_general_events, scans_car_pool,
+  shares_sent
 `;
 
 export type AppUserRow = {
@@ -119,6 +124,17 @@ export type AppUserRow = {
   stripe_cancel_at_period_end?: boolean | null;
   password_hash: string;
   created_at?: string;
+  is_admin?: boolean | null;
+  scans_total?: number | null;
+  scans_birthdays?: number | null;
+  scans_weddings?: number | null;
+  scans_sport_events?: number | null;
+  scans_appointments?: number | null;
+  scans_doctor_appointments?: number | null;
+  scans_play_days?: number | null;
+  scans_general_events?: number | null;
+  scans_car_pool?: number | null;
+  shares_sent?: number | null;
 };
 
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
@@ -139,6 +155,108 @@ export async function getUserById(id: string): Promise<AppUserRow | null> {
     [id]
   );
   return res.rows[0] || null;
+}
+
+// Ensure admin/metrics columns exist for compatibility with older DBs
+async function ensureUsersHasAdminAndMetricsColumns(): Promise<void> {
+  await query(`
+    alter table users add column if not exists is_admin boolean;
+    alter table users alter column is_admin set default false;
+    alter table users add column if not exists scans_total integer;
+    alter table users alter column scans_total set default 0;
+    alter table users add column if not exists scans_birthdays integer;
+    alter table users alter column scans_birthdays set default 0;
+    alter table users add column if not exists scans_weddings integer;
+    alter table users alter column scans_weddings set default 0;
+    alter table users add column if not exists shares_sent integer;
+    alter table users alter column shares_sent set default 0;
+    alter table users add column if not exists scans_sport_events integer;
+    alter table users alter column scans_sport_events set default 0;
+    alter table users add column if not exists scans_appointments integer;
+    alter table users alter column scans_appointments set default 0;
+    alter table users add column if not exists scans_doctor_appointments integer;
+    alter table users alter column scans_doctor_appointments set default 0;
+    alter table users add column if not exists scans_play_days integer;
+    alter table users alter column scans_play_days set default 0;
+    alter table users add column if not exists scans_general_events integer;
+    alter table users alter column scans_general_events set default 0;
+    alter table users add column if not exists scans_car_pool integer;
+    alter table users alter column scans_car_pool set default 0;
+  `);
+}
+
+export async function setUserAdminByEmail(email: string, isAdmin: boolean): Promise<void> {
+  await ensureUsersHasAdminAndMetricsColumns();
+  const lower = email.toLowerCase();
+  await query(`update users set is_admin = $2 where email = $1`, [lower, !!isAdmin]);
+}
+
+export async function getIsAdminByEmail(email: string): Promise<boolean> {
+  await ensureUsersHasAdminAndMetricsColumns();
+  const lower = email.toLowerCase();
+  const res = await query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [lower]);
+  return Boolean(res.rows[0]?.is_admin);
+}
+
+export type AdminOverviewStats = {
+  totalUsers: number;
+  totalEvents: number;
+  totalShares: number;
+  usersPaid: number;
+  usersFF: number;
+};
+
+export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
+  await ensureUsersHasAdminAndMetricsColumns();
+  const [users, events, shares, paid, ff] = await Promise.all([
+    query<{ n: string }>(`select count(*)::text as n from users`),
+    query<{ n: string }>(`select count(*)::text as n from event_history`),
+    query<{ n: string }>(`select count(*)::text as n from event_shares`),
+    query<{ n: string }>(`select count(*)::text as n from users where ever_paid = true`),
+    query<{ n: string }>(`select count(*)::text as n from users where subscription_plan = 'FF'`),
+  ]);
+  return {
+    totalUsers: Number(users.rows[0]?.n || 0),
+    totalEvents: Number(events.rows[0]?.n || 0),
+    totalShares: Number(shares.rows[0]?.n || 0),
+    usersPaid: Number(paid.rows[0]?.n || 0),
+    usersFF: Number(ff.rows[0]?.n || 0),
+  };
+}
+
+export async function getTopUsersByScans(limit: number = 20): Promise<Array<{ email: string; scans: number; shares: number }>> {
+  await ensureUsersHasAdminAndMetricsColumns();
+  const res = await query<{ email: string; scans_total: number | null; shares_sent: number | null }>(
+    `select email, coalesce(scans_total, 0) as scans_total, coalesce(shares_sent, 0) as shares_sent
+     from users
+     order by scans_total desc nulls last, shares_sent desc nulls last
+     limit $1`,
+    [Math.max(1, Math.min(100, Math.floor(limit)))]
+  );
+  return (res.rows || []).map((r) => ({ email: r.email, scans: Number(r.scans_total || 0), shares: Number(r.shares_sent || 0) }));
+}
+
+export async function incrementUserScanCounters(params: { userId?: string | null; email?: string | null; category?: string | null }): Promise<void> {
+  await ensureUsersHasAdminAndMetricsColumns();
+  const where = buildUserWhereClause({ userId: params.userId || null, email: params.email || null }, 1);
+  const updates: string[] = ["scans_total = coalesce(scans_total, 0) + 1"]; 
+  const cat = (params.category || "").toLowerCase();
+  if (cat.includes("birthday")) updates.push("scans_birthdays = coalesce(scans_birthdays, 0) + 1");
+  if (cat.includes("wedding")) updates.push("scans_weddings = coalesce(scans_weddings, 0) + 1");
+  if (cat.includes("sport")) updates.push("scans_sport_events = coalesce(scans_sport_events, 0) + 1");
+  if (cat.includes("doctor") || cat.includes("dr ") || cat.includes("dr.")) updates.push("scans_doctor_appointments = coalesce(scans_doctor_appointments, 0) + 1");
+  if (cat.includes("appointment")) updates.push("scans_appointments = coalesce(scans_appointments, 0) + 1");
+  if (cat.includes("play day") || cat.includes("playday") || cat.includes("playdate")) updates.push("scans_play_days = coalesce(scans_play_days, 0) + 1");
+  if (cat.includes("general")) updates.push("scans_general_events = coalesce(scans_general_events, 0) + 1");
+  if (cat.includes("car pool") || cat.includes("carpool") || cat.includes("ride share") || cat.includes("school pickup") || cat.includes("school drop")) updates.push("scans_car_pool = coalesce(scans_car_pool, 0) + 1");
+  await query(`update users set ${updates.join(", ")} where ${where.clause}`, where.values);
+}
+
+export async function incrementUserSharesSent(params: { userId?: string | null; email?: string | null; delta?: number }): Promise<void> {
+  await ensureUsersHasAdminAndMetricsColumns();
+  const where = buildUserWhereClause({ userId: params.userId || null, email: params.email || null }, 1);
+  const delta = Math.floor(params.delta ?? 1);
+  await query(`update users set shares_sent = coalesce(shares_sent, 0) + $1 where ${where.clause}`, [delta, ...where.values]);
 }
 
 // Category colors (per-user UI preferences)

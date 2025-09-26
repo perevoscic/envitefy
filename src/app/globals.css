@@ -593,6 +593,31 @@ body {
   }
 }
 
+/* Shared gradients utility classes to prevent production purge and unify usage */
+@layer utilities {
+  /* Row/background variants (lighter 200/300 tones) */
+  .shared-row-g1 { @apply bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200; }
+  .shared-row-g2 { @apply bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200; }
+  .shared-row-g3 { @apply bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200; }
+  .shared-row-g4 { @apply bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200; }
+  .shared-row-g5 { @apply bg-gradient-to-br from-indigo-200 via-blue-200 to-cyan-200; }
+  .shared-row-g6 { @apply bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200; }
+  .shared-row-g7 { @apply bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200; }
+  .shared-row-g8 { @apply bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200; }
+  /* Slightly stronger 300 variant used in calendar if configured */
+  .shared-row-g1-300 { @apply bg-gradient-to-br from-cyan-300 via-sky-300 to-fuchsia-300; }
+
+  /* Swatch variants (compact squares, stronger 400 tones) */
+  .shared-swatch-g1 { @apply bg-gradient-to-br from-cyan-400 to-fuchsia-400; }
+  .shared-swatch-g2 { @apply bg-gradient-to-br from-rose-400 to-indigo-400; }
+  .shared-swatch-g3 { @apply bg-gradient-to-br from-emerald-400 to-sky-400; }
+  .shared-swatch-g4 { @apply bg-gradient-to-br from-amber-400 to-pink-400; }
+  .shared-swatch-g5 { @apply bg-gradient-to-br from-indigo-400 to-cyan-400; }
+  .shared-swatch-g6 { @apply bg-gradient-to-br from-lime-400 to-emerald-400; }
+  .shared-swatch-g7 { @apply bg-gradient-to-br from-purple-400 to-pink-400; }
+  .shared-swatch-g8 { @apply bg-gradient-to-br from-slate-400 to-sky-400; }
+}
+
 /* Soft gradient background for landing surfaces (light + dark) */
 .landing-dark-gradient {
   /* Base (light theme): very subtle pastel washes */

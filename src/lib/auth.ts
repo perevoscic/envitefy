@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getUserByEmail, verifyPassword } from "@/lib/db";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail } from "@/lib/db";
 
 export function getAuthOptions(): NextAuthOptions {
   const secret =
@@ -64,7 +64,26 @@ async authorize(credentials) {
     ],
     session: { strategy: "jwt" },
     pages: { signIn: "/", verifyRequest: "/verify-request" },
-    callbacks: {},
+    callbacks: {
+      async jwt({ token, user }) {
+        try {
+          const email = (user?.email as string) || (token?.email as string) || null;
+          if (email) {
+            const isAdmin = await getIsAdminByEmail(email);
+            (token as any).isAdmin = !!isAdmin;
+          }
+        } catch {}
+        return token;
+      },
+      async session({ session, token }) {
+        try {
+          if (session?.user) {
+            (session.user as any).isAdmin = Boolean((token as any)?.isAdmin);
+          }
+        } catch {}
+        return session;
+      },
+    },
   };
 }
 

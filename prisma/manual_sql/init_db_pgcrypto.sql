@@ -146,6 +146,33 @@ ALTER TABLE users ALTER COLUMN stripe_cancel_at_period_end SET DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription_id ON users(stripe_subscription_id);
 
+-- Admin flag and lightweight usage metrics
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean;
+ALTER TABLE users ALTER COLUMN is_admin SET DEFAULT false;
+
+-- Aggregate counters per user to power the admin dashboard quickly
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_total integer;
+ALTER TABLE users ALTER COLUMN scans_total SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_birthdays integer;
+ALTER TABLE users ALTER COLUMN scans_birthdays SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_weddings integer;
+ALTER TABLE users ALTER COLUMN scans_weddings SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS shares_sent integer;
+ALTER TABLE users ALTER COLUMN shares_sent SET DEFAULT 0;
+-- Additional per-category counters used in the app UI
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_sport_events integer;
+ALTER TABLE users ALTER COLUMN scans_sport_events SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_appointments integer;
+ALTER TABLE users ALTER COLUMN scans_appointments SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_doctor_appointments integer;
+ALTER TABLE users ALTER COLUMN scans_doctor_appointments SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_play_days integer;
+ALTER TABLE users ALTER COLUMN scans_play_days SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_general_events integer;
+ALTER TABLE users ALTER COLUMN scans_general_events SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_car_pool integer;
+ALTER TABLE users ALTER COLUMN scans_car_pool SET DEFAULT 0;
+
 -- Ensure promo_codes has new Stripe linkage columns when upgrading
 ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_payment_intent_id text;
 ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_checkout_session_id text;

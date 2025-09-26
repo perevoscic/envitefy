@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createOrUpdateEventShare, getEventHistoryById, getUserIdByEmail } from "@/lib/db";
+import { createOrUpdateEventShare, getEventHistoryById, getUserIdByEmail, incrementUserSharesSent } from "@/lib/db";
 import { sendShareEventEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
         recipientFirstName,
         recipientLastName,
       });
+      // Increment owner's shares_sent counter
+      await incrementUserSharesSent({ userId: ownerUserId, delta: 1 });
     } catch (err: any) {
       // If event_shares table is not present yet, bypass DB share and still email the recipient
       try { console.warn("[share] falling back to email only:", err?.message || err); } catch {}

@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { incrementCreditsByEmail } from "@/lib/db";
+import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -77,6 +77,9 @@ export async function POST(request: Request) {
         if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball)/i.test(fullText)) {
           return "Sport Events";
         }
+        if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {
+          return "Car Pool";
+        }
       } catch {}
       return null;
     };
@@ -85,7 +88,10 @@ export async function POST(request: Request) {
     try {
       const session = await getServerSession(authOptions);
       const email = session?.user?.email as string | undefined;
-      if (email) await incrementCreditsByEmail(email, -1);
+      if (email) {
+        await incrementCreditsByEmail(email, -1);
+        try { await incrementUserScanCounters({ email, category }); } catch {}
+      }
     } catch {}
 
     return NextResponse.json({
