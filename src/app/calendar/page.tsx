@@ -1001,7 +1001,10 @@ export default function CalendarPage() {
 
         <div className="mt-3 flex justify-start">
           {/* Elastic Tabs Toggle */}
-          <nav className="relative flex bg-white dark:bg-surface shadow-md rounded-full px-1 py-1 w-[330px] tabs-elastic">
+          <nav
+            className="relative flex bg-white dark:bg-surface shadow-md rounded-full px-1 py-1 w-[330px] tabs-elastic"
+            suppressHydrationWarning
+          >
             <div
               className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-sky-400 to-purple-700 z-0"
               style={{
@@ -1160,11 +1163,11 @@ export default function CalendarPage() {
                     key={ev.id}
                     type="button"
                     onClick={() => setOpenEvent(ev)}
-                    className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                     title={ev.title}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="truncate font-medium text-foreground inline-flex items-center gap-2">
+                      <span className="truncate font-medium inline-flex items-center gap-2">
                         {isShared && (
                           <svg
                             viewBox="0 0 25.274 25.274"
@@ -1232,11 +1235,11 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setOpenEvent(ev)}
-                            className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
+                            className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
                             title={ev.title}
                           >
                             <div className="flex items-center gap-3">
-                              <span className="truncate font-medium text-foreground">
+                              <span className="truncate font-medium">
                                 {ev.title}
                               </span>
                             </div>
@@ -1284,11 +1287,11 @@ export default function CalendarPage() {
                     key={ev.id}
                     type="button"
                     onClick={() => setOpenEvent(ev)}
-                    className={`w-full text-left rounded-md ${tone.tint} px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                     title={ev.title}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="truncate font-medium text-foreground inline-flex items-center gap-2">
+                      <span className="truncate font-medium inline-flex items-center gap-2">
                         {isShared && (
                           <svg
                             viewBox="0 0 25.274 25.274"

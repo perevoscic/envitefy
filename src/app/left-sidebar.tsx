@@ -626,6 +626,7 @@ export default function LeftSidebar() {
     return found?.row || SHARED_GRADIENTS[0].row;
   };
 
+
   const sharedGradientSwatchClass = (): string => {
     const id = getSharedGradientId();
     const found = SHARED_GRADIENTS.find((g) => g.id === id);
@@ -1794,13 +1795,13 @@ export default function LeftSidebar() {
                                 const category = (h as any)?.data?.category as
                                   | string
                                   | null;
+                                const isShared = Boolean(
+                                  (h as any)?.data?.shared ||
+                                    (h as any)?.data?.sharedOut ||
+                                    (h as any)?.data?.category ===
+                                      "Shared events"
+                                );
                                 const rowAndBadge = (() => {
-                                  const isShared = Boolean(
-                                    (h as any)?.data?.shared ||
-                                      (h as any)?.data?.sharedOut ||
-                                      (h as any)?.data?.category ===
-                                        "Shared events"
-                                  );
                                   if (isShared) {
                                     return {
                                       row: sharedGradientRowClass(),
@@ -1871,7 +1872,7 @@ export default function LeftSidebar() {
                                       <svg
                                         viewBox="0 0 25.274 25.274"
                                         fill="currentColor"
-                                        className="h-3.5 w-3.5 text-black absolute right-2 bottom-2"
+                                        className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
                                         aria-hidden="true"
                                         aria-label="Shared event"
                                         xmlns="http://www.w3.org/2000/svg"
@@ -2288,13 +2289,13 @@ export default function LeftSidebar() {
                                       const prettyHref = `/event/${slug}-${h.id}`;
                                       const category = (h as any)?.data
                                         ?.category as string | null;
+                                      const isShared = Boolean(
+                                        (h as any)?.data?.shared ||
+                                          (h as any)?.data?.sharedOut ||
+                                          (h as any)?.data?.category ===
+                                            "Shared events"
+                                      );
                                       const rowAndBadge = (() => {
-                                        const isShared = Boolean(
-                                          (h as any)?.data?.shared ||
-                                            (h as any)?.data?.sharedOut ||
-                                            (h as any)?.data?.category ===
-                                              "Shared events"
-                                        );
                                         if (isShared) {
                                           return {
                                             row: sharedGradientRowClass(),
@@ -2372,7 +2373,7 @@ export default function LeftSidebar() {
                                             <svg
                                               viewBox="0 0 25.274 25.274"
                                               fill="currentColor"
-                                              className="h-3.5 w-3.5 text-black absolute right-2 bottom-2"
+                                              className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
                                               aria-hidden="true"
                                               aria-label="Shared event"
                                               xmlns="http://www.w3.org/2000/svg"
@@ -2608,12 +2609,12 @@ export default function LeftSidebar() {
                   .replace(/^-+|-+$/g, "");
                 const prettyHref = `/event/${slug}-${h.id}`;
                 const category = (h as any)?.data?.category as string | null;
+                const isShared = Boolean(
+                  (h as any)?.data?.shared ||
+                    (h as any)?.data?.sharedOut ||
+                    (h as any)?.data?.category === "Shared events"
+                );
                 const rowAndBadge = (() => {
-                  const isShared = Boolean(
-                    (h as any)?.data?.shared ||
-                      (h as any)?.data?.sharedOut ||
-                      (h as any)?.data?.category === "Shared events"
-                  );
                   if (isShared) {
                     return {
                       row: sharedGradientRowClass(),
@@ -2970,7 +2971,7 @@ export default function LeftSidebar() {
                       <svg
                         viewBox="0 0 25.274 25.274"
                         fill="currentColor"
-                        className="h-3.5 w-3.5 text-black absolute right-2 bottom-2"
+                        className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
                         aria-hidden="true"
                         aria-label="Shared event"
                         xmlns="http://www.w3.org/2000/svg"
