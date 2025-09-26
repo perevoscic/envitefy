@@ -182,6 +182,9 @@ export default function LeftSidebar() {
     "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [credits, setCredits] = useState<number>(0);
+  const [isAdmin, setIsAdmin] = useState<boolean>(
+    Boolean((session?.user as any)?.isAdmin)
+  );
   useEffect(() => {
     let ignore = false;
     async function loadProfile() {
@@ -200,6 +203,9 @@ export default function LeftSidebar() {
               : null
           );
           if (typeof json.credits === "number") setCredits(json.credits);
+          if (typeof json.isAdmin === "boolean") {
+            setIsAdmin(json.isAdmin);
+          }
           if (
             json &&
             typeof json.categoryColors === "object" &&
@@ -218,6 +224,10 @@ export default function LeftSidebar() {
       ignore = true;
     };
   }, [status]);
+
+  useEffect(() => {
+    setIsAdmin(Boolean((session?.user as any)?.isAdmin));
+  }, [session?.user?.isAdmin]);
 
   const showCreditsBadge =
     subscriptionPlan !== "monthly" &&
@@ -862,8 +872,9 @@ export default function LeftSidebar() {
     isDark: boolean;
     toggleTheme: () => void;
     onCloseMenu: () => void;
+    isAdmin: boolean;
   }) => {
-    const { isDark, toggleTheme, onCloseMenu } = props;
+    const { isDark, toggleTheme, onCloseMenu, isAdmin } = props;
     return (
       <div className="p-2">
         <Link
@@ -1031,7 +1042,7 @@ export default function LeftSidebar() {
           <span className="text-sm">Contact us</span>
         </Link>
 
-        {(session?.user as any)?.isAdmin && (
+        {isAdmin && (
           <Link
             href="/admin"
             onClick={onCloseMenu}
@@ -1383,7 +1394,7 @@ export default function LeftSidebar() {
                   <span className="text-sm">Contact us</span>
                 </Link>
 
-                {(session?.user as any)?.isAdmin && (
+                {isAdmin && (
                   <Link
                     href="/admin"
                     onClick={() => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail, getCategoryColorsByEmail, updateCategoryColorsByEmail } from "@/lib/db";
+import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail, getCategoryColorsByEmail, updateCategoryColorsByEmail, getIsAdminByEmail } from "@/lib/db";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -29,6 +29,7 @@ export async function GET() {
     subscriptionPlan: responsePlan,
     credits: responsePlan === "FF" ? null : Number.isFinite(creditsCount as any) ? creditsCount : 0,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
+    isAdmin: Boolean(user?.is_admin),
     categoryColors: await getCategoryColorsByEmail(email),
   });
 }
@@ -76,12 +77,15 @@ export async function PUT(req: Request) {
       const norm = rawPlan && (rawPlan === "free" || rawPlan === "monthly" || rawPlan === "yearly" || rawPlan === "FF") ? (rawPlan as any) : null;
       await updateSubscriptionPlanByEmail({ email, plan: norm });
     }
+    const nextPlan = (await getSubscriptionPlanByEmail(email)) || null;
+    const isAdmin = await getIsAdminByEmail(email);
     return NextResponse.json({
       email: updated.email,
       firstName: updated.first_name,
       lastName: updated.last_name,
       preferredProvider: updated.preferred_provider || null,
-      subscriptionPlan: (await getSubscriptionPlanByEmail(email)) || null,
+      subscriptionPlan: nextPlan,
+      isAdmin,
       categoryColors: await getCategoryColorsByEmail(email),
     });
   } catch (err: any) {

@@ -317,11 +317,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Auth**: None.
 - **Behavior**: Expires `g_refresh` and `o_refresh` cookies; returns `{ ok: true }`.
 
-### User Profile — GET/PUT `/api/user/profile`
-
-- **Purpose**: Read and update user profile, preferred provider, and subscription plan.
-- **Auth**: NextAuth session required.
-- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name, categoryColors }`.
+- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name, categoryColors, isAdmin }`.
 - Notes: When `subscriptionPlan` is `FF`, `credits` is returned as `null` (unlimited usage).
 - **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|"FF"|null, categoryColors?: Record<string,string>|null }`.
 - **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan, categoryColors }`.
