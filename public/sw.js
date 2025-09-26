@@ -1,4 +1,4 @@
-const CACHE_NAME = "smd-static-v3";
+const CACHE_NAME = "smd-static-v4";
 const APP_SHELL = [
   "/",
   "/landing",
@@ -36,6 +36,13 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+
+  // Never cache API/auth/session requests so login state stays fresh
+  if (url.pathname.startsWith("/api/")) {
+    return; // fall through to network
+  }
 
   // Navigation requests: try network, fallback to cached landing page
   if (req.mode === "navigate") {
