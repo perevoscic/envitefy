@@ -41,6 +41,14 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Input (JSON)**: `{ eventId: string, recipientUserId?: string }`.
 - **Output**: `{ ok: true, revoked: number }`.
 
+### Admin Users Search — GET `/api/admin/users/search`
+
+- **Purpose**: Admin-only, on-demand user lookup without loading all users by default.
+- **Auth**: NextAuth session required and `isAdmin=true`.
+- **Query params**: `q` (string, required to search), optional `limit` (1-50, default 20), optional `cursor` (opaque).
+- **Behavior**: Returns a page of users matching `email` or `first_name` or `last_name` using a contains match. Results are ordered by `created_at desc, id desc`. When more results exist, `nextCursor` is set; pass it back to load subsequent pages. When `q` is empty, returns no results (avoids scanning the table).
+- **Output**: `{ ok: true, items: Array<{ id, email, first_name, last_name, subscription_plan, ever_paid, credits, created_at, scans_total, shares_sent }>, nextCursor: string|null }`.
+
 ### Promo Gift Agent — POST `/api/promo/gift`
 
 - **Purpose**: Initiate a Stripe Checkout session for gifting subscriptions. The promo code is created and emailed only after payment succeeds (via webhook). UI now redirects the purchaser to Stripe.
