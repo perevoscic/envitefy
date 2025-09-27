@@ -1,3 +1,4 @@
 {
-    "chatToCodexCLI.model": "gpt-5-codex"
+    "chatToCodexCLI.model": "gpt-5-codex",
+    "chatToCodexCLI.sandbox": "danger-full-access"
 }

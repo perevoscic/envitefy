@@ -584,43 +584,43 @@ export default function LeftSidebar() {
   }[] = [
     {
       id: "shared-g1",
-      swatch: "bg-gradient-to-br from-cyan-400 to-fuchsia-400",
-      row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
+      swatch: "bg-gradient-to-br from-cyan-300 to-fuchsia-400 dark:from-cyan-600 dark:to-fuchsia-600",
+      row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200 dark:from-cyan-700/70 dark:via-sky-700/60 dark:to-fuchsia-700/70",
     },
     {
       id: "shared-g2",
-      swatch: "bg-gradient-to-br from-rose-400 to-indigo-400",
-      row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200",
+      swatch: "bg-gradient-to-br from-rose-300 to-indigo-400 dark:from-rose-600 dark:to-indigo-600",
+      row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200 dark:from-rose-700/70 dark:via-fuchsia-700/60 dark:to-indigo-700/70",
     },
     {
       id: "shared-g3",
-      swatch: "bg-gradient-to-br from-emerald-400 to-sky-400",
-      row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200",
+      swatch: "bg-gradient-to-br from-emerald-300 to-sky-400 dark:from-emerald-600 dark:to-sky-600",
+      row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200 dark:from-emerald-700/70 dark:via-teal-700/60 dark:to-sky-700/70",
     },
     {
       id: "shared-g4",
-      swatch: "bg-gradient-to-br from-amber-400 to-pink-400",
-      row: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200",
+      swatch: "bg-gradient-to-r from-amber-300 to-pink-400 dark:from-amber-600 dark:to-pink-600",
+      row: "bg-gradient-to-r from-amber-200 via-orange-200 to-pink-200 dark:from-amber-700/70 dark:via-orange-700/60 dark:to-pink-700/70",
     },
     {
       id: "shared-g5",
-      swatch: "bg-gradient-to-br from-indigo-400 to-cyan-400",
-      row: "bg-gradient-to-br from-indigo-200 via-blue-200 to-cyan-200",
+      swatch: "bg-gradient-to-r from-indigo-300 to-cyan-400 dark:from-indigo-600 dark:to-cyan-600",
+      row: "bg-gradient-to-r from-indigo-200 via-blue-200 to-cyan-200 dark:from-indigo-700/70 dark:via-blue-700/60 dark:to-cyan-700/70",
     },
     {
       id: "shared-g6",
-      swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
-      row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
+      swatch: "bg-gradient-to-r from-lime-300 to-emerald-400 dark:from-lime-600 dark:to-emerald-600",
+      row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200 dark:from-lime-700/70 dark:via-green-700/60 dark:to-emerald-700/70",
     },
     {
       id: "shared-g7",
-      swatch: "bg-gradient-to-br from-purple-400 to-pink-400",
-      row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200",
+      swatch: "bg-gradient-to-br from-purple-300 to-pink-400 dark:from-purple-600 dark:to-pink-600",
+      row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200 dark:from-purple-700/70 dark:via-fuchsia-700/60 dark:to-pink-700/70",
     },
     {
       id: "shared-g8",
-      swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
-      row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
+      swatch: "bg-gradient-to-br from-slate-300 to-sky-400 dark:from-slate-600 dark:to-sky-600",
+      row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200 dark:from-slate-700/70 dark:via-zinc-700/60 dark:to-sky-700/70",
     },
   ];
 
@@ -3447,3 +3447,4 @@ export default function LeftSidebar() {
     </>
   );
 }
+

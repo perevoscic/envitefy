@@ -69,7 +69,7 @@ export default function LoginHero() {
       h: "/sliders/horizontal/horizontal-slide-7.jpg",
       v: "/sliders/vertical/vertical-slide-7.jpg",
       title: "Reclaim your space",
-      subtitle: "On your refrigerator.",
+      subtitle: "On refrigerator - snap it and lose it.",
     },
   ];
   const desktopSlides = slidesMeta.map((m) => ({
@@ -195,7 +195,11 @@ export default function LoginHero() {
   const readMorePill = (
     <a
       href="#how-it-works"
-      className={`inline-flex items-center gap-2 text-white text-sm px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 shadow`}
+      className={`inline-flex items-center gap-2 text-white text-sm px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 shadow transition-all duration-500 transform ${
+        showReadMore
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-2 pointer-events-none"
+      }`}
       aria-label="Read more about how it works"
     >
       Read more...
@@ -226,8 +230,8 @@ export default function LoginHero() {
             slides={isDesktop ? desktopSlides : mobileSlides}
             overlay={false}
             paused={modalOpen || authModalOpenCount > 0}
-            peekOnMount={false}
-            peekRepeatCount={0}
+            peekOnMount={!cancelPeek}
+            peekRepeatCount={1}
             onPeekChange={handlePeekChange}
             cancelPeek={cancelPeek}
             bottomCenterSlot={readMorePill}
