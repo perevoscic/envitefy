@@ -580,50 +580,58 @@ export default function LeftSidebar() {
   const SHARED_GRADIENTS: {
     id: string;
     swatch: string; // compact square
-    row: string; // list item background
+    lightRow: string; // list item background when theme = light
+    darkRow: string; // list item background when theme = dark
   }[] = [
     {
       id: "shared-g1",
       swatch: "bg-gradient-to-br from-cyan-400 to-fuchsia-400",
-      row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200 dark:bg-gradient-to-br dark:from-cyan-950 dark:via-slate-900 dark:to-fuchsia-900",
+      lightRow: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
+      darkRow: "bg-gradient-to-br from-cyan-950 via-slate-900 to-fuchsia-900",
     },
     {
       id: "shared-g2",
       swatch: "bg-gradient-to-br from-rose-400 to-indigo-400",
-      row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200 dark:bg-gradient-to-br dark:from-rose-950 dark:via-fuchsia-900 dark:to-indigo-900",
+      lightRow: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200",
+      darkRow: "bg-gradient-to-br from-rose-950 via-fuchsia-900 to-indigo-900",
     },
     {
       id: "shared-g3",
       swatch: "bg-gradient-to-br from-emerald-400 to-sky-400",
-      row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-teal-900 dark:to-sky-900",
+      lightRow: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200",
+      darkRow: "bg-gradient-to-br from-emerald-950 via-teal-900 to-sky-900",
     },
     {
       id: "shared-g4",
       swatch: "bg-gradient-to-br from-amber-400 to-pink-400",
-      row: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200 dark:bg-gradient-to-br dark:from-amber-950 dark:via-rose-900 dark:to-pink-900",
+      lightRow: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200",
+      darkRow: "bg-gradient-to-br from-amber-950 via-rose-900 to-pink-900",
     },
     {
       id: "shared-g5",
       swatch: "bg-gradient-to-r from-indigo-400 to-cyan-400",
-      row: "bg-gradient-to-r from-indigo-200 via-blue-200 to-cyan-200 dark:bg-gradient-to-r dark:from-indigo-950 dark:via-blue-900 dark:to-cyan-900",
+      lightRow: "bg-gradient-to-r from-indigo-200 via-blue-200 to-cyan-200",
+      darkRow: "bg-gradient-to-r from-indigo-950 via-blue-900 to-cyan-900",
     },
     {
       id: "shared-g6",
       swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
-      row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-green-900 dark:to-emerald-800",
+      lightRow: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
+      darkRow: "bg-gradient-to-br from-emerald-950 via-green-900 to-emerald-800",
     },
     {
       id: "shared-g7",
       swatch: "bg-gradient-to-br from-purple-400 to-pink-400",
-      row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200 dark:bg-gradient-to-br dark:from-purple-950 dark:via-fuchsia-900 dark:to-pink-900",
+      lightRow: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200",
+      darkRow: "bg-gradient-to-br from-purple-950 via-fuchsia-900 to-pink-900",
     },
     {
       id: "shared-g8",
       swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
-      row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200 dark:bg-gradient-to-br dark:from-slate-950 dark:via-zinc-900 dark:to-sky-900",
+      lightRow: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
+      darkRow: "bg-gradient-to-br from-slate-950 via-zinc-900 to-sky-900",
     },
   ];
-
   const getSharedGradientId = (): string => {
     const val = categoryColors["Shared events"];
     const exists = SHARED_GRADIENTS.some((g) => g.id === val);
@@ -633,7 +641,12 @@ export default function LeftSidebar() {
   const sharedGradientRowClass = (): string => {
     const id = getSharedGradientId();
     const found = SHARED_GRADIENTS.find((g) => g.id === id);
-    return found?.row || SHARED_GRADIENTS[0].row;
+    if (!found) {
+      return theme === "dark"
+        ? SHARED_GRADIENTS[0].darkRow
+        : SHARED_GRADIENTS[0].lightRow;
+    }
+    return theme === "dark" ? found.darkRow : found.lightRow;
   };
 
   const sharedTextClass = "text-neutral-900 dark:text-foreground";
