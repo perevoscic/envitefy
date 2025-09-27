@@ -91,6 +91,8 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Build a specific, human title without dates, e.g., '<Name> & <Name> Wedding' or " +
         "'<Name>'s Birthday Party'.",
       "- Parse spelled-out times such as 'four o'clock in the afternoon' and combine with any nearby date text.",
+      "- Copy the exact hour/minute markers from the flyer (e.g., '7 p.m.' -> 19:00, '7:00 PM' -> 19:00). Never invent a time or flip AM/PM—only output a time when the flyer clearly shows it.",
+      "- Before finalizing, double-check that the chosen time matches the flyer; if uncertain, leave the time off (set start to the date at 00:00).",
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
