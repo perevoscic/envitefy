@@ -43,6 +43,34 @@ export default function LoginHero() {
       title: "Save to any calendar",
       subtitle: "Google, Apple, Outlook — with reminders included.",
     },
+        {
+      type: "image" as const,
+      h: "/sliders/horizontal/horizontal-slide-4.jpg",
+      v: "/sliders/vertical/vertical-slide-4.jpg",
+      title: "Any Birthday Invites",
+      subtitle: "Are a snap away from your calendar.",
+    },
+  {
+      type: "image" as const,
+      h: "/sliders/horizontal/horizontal-slide-5.jpg",
+      v: "/sliders/vertical/vertical-slide-5.jpg",
+      title: "Wedding Invites",
+      subtitle: "Just got better with Snap My Date.",
+    },
+  {
+      type: "image" as const,
+      h: "/sliders/horizontal/horizontal-slide-6.jpg",
+      v: "/sliders/vertical/vertical-slide-6.jpg",
+      title: "Doctor Appointments",
+      subtitle: "Never miss another one.",
+    },
+  {
+      type: "image" as const,
+      h: "/sliders/horizontal/horizontal-slide-7.jpg",
+      v: "/sliders/vertical/vertical-slide-7.jpg",
+      title: "Reclaim your space",
+      subtitle: "On your refrigerator.",
+    },
   ];
   const desktopSlides = slidesMeta.map((m) => ({
     type: m.type,

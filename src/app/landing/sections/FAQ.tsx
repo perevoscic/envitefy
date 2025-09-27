@@ -4,11 +4,11 @@ import { useState } from "react";
 const qs = [
   {
     q: "How accurate is Snap My Date's OCR technology?",
-    a: "Snap My Date utilizes advanced OCR to extract event details from clear photos and PDFs with high accuracy. While our system is very robust, you always have the opportunity to review and edit any extracted information before saving it to your calendar.",
+    a: "Snap My Date utilizes advanced scanning technology to extract event details from photos and PDFs with high accuracy. While our system is very robust, you always have the opportunity to review and edit any extracted information before saving it to your calendar.",
   },
   {
     q: "Does Snap My Date integrate with Apple Calendar?",
-    a: "Yes! We generate universally compatible .ics files, which can be easily imported into Apple Calendar on your iOS devices and macOS. It's a seamless way to get your events into your preferred Apple ecosystem.",
+    a: "Yes! We generate universally compatible requests, which are easily imported into Apple Calendar on your iOS devices and macOS. It's a seamless way to get your events into your preferred Apple ecosystem.",
   },
   {
     q: "Can I upload PDF files for event extraction?",
