@@ -45,12 +45,28 @@ export default function EventActions({
     const start = event.start || null;
     const end = event.end || null;
     if (!start) return null;
+
+    let computedEnd = end || null;
+    if (!computedEnd) {
+      const parsedStart = new Date(start);
+      const startTime = parsedStart.getTime();
+      if (!Number.isNaN(startTime)) {
+        const fallbackEnd = new Date(startTime + 90 * 60 * 1000);
+        const fallbackTime = fallbackEnd.getTime();
+        if (!Number.isNaN(fallbackTime)) {
+          try {
+            computedEnd = fallbackEnd.toISOString();
+          } catch {
+            computedEnd = null;
+          }
+        }
+      }
+    }
+
     return {
       ...event,
       start,
-      end:
-        end ||
-        new Date(new Date(start).getTime() + 90 * 60 * 1000).toISOString(),
+      end: computedEnd,
     } as EventFields;
   }, [event]);
 
