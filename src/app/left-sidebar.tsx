@@ -636,6 +636,9 @@ export default function LeftSidebar() {
     return found?.row || SHARED_GRADIENTS[0].row;
   };
 
+  const sharedTextClass = "text-neutral-900 dark:text-foreground";
+  const sharedMutedTextClass = "text-neutral-600 dark:text-foreground/70";
+
 
   const sharedGradientSwatchClass = (): string => {
     const id = getSharedGradientId();
@@ -1815,9 +1818,9 @@ export default function LeftSidebar() {
                                 const rowAndBadge = (() => {
                                   if (isShared) {
                                     return {
-                                      row: sharedGradientRowClass(),
+                                      row: `${sharedGradientRowClass()} ${sharedTextClass}`,
                                       badge:
-                                        "bg-surface/60 text-foreground/80 border-border",
+                                        `bg-surface/60 ${sharedMutedTextClass} border-border`,
                                     };
                                   }
                                   if (!category)
@@ -1861,7 +1864,13 @@ export default function LeftSidebar() {
                                           {h.title || "Untitled event"}
                                         </span>
                                       </div>
-                                      <div className="text-xs text-foreground/60">
+                                      <div
+                                        className={`text-xs ${
+                                          isShared
+                                            ? sharedMutedTextClass
+                                            : "text-foreground/60"
+                                        }`}
+                                      >
                                         {(() => {
                                           const start =
                                             (h as any)?.data?.start ||
@@ -2309,9 +2318,9 @@ export default function LeftSidebar() {
                                       const rowAndBadge = (() => {
                                         if (isShared) {
                                           return {
-                                            row: sharedGradientRowClass(),
+                                            row: `${sharedGradientRowClass()} ${sharedTextClass}`,
                                             badge:
-                                              "bg-surface/60 text-foreground/80 border-border",
+                                              `bg-surface/60 ${sharedMutedTextClass} border-border`,
                                           };
                                         }
                                         if (!category)
@@ -2357,7 +2366,13 @@ export default function LeftSidebar() {
                                                 {h.title || "Untitled event"}
                                               </span>
                                             </div>
-                                            <div className="text-xs text-foreground/60">
+                                            <div
+                                              className={`text-xs ${
+                                                isShared
+                                                  ? sharedMutedTextClass
+                                                  : "text-foreground/60"
+                                              }`}
+                                            >
                                               {(() => {
                                                 const start =
                                                   (h as any)?.data?.start ||
@@ -2628,8 +2643,8 @@ export default function LeftSidebar() {
                 const rowAndBadge = (() => {
                   if (isShared) {
                     return {
-                      row: sharedGradientRowClass(),
-                      badge: "bg-surface/60 text-foreground/80 border-border",
+                      row: `${sharedGradientRowClass()} ${sharedTextClass}`,
+                      badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
                     };
                   }
                   if (!category)
@@ -2672,7 +2687,13 @@ export default function LeftSidebar() {
                           {h.title || "Untitled event"}
                         </span>
                       </div>
-                      <div className="text-xs text-foreground/60">
+                      <div
+                        className={`text-xs ${
+                          isShared
+                            ? sharedMutedTextClass
+                            : "text-foreground/60"
+                        }`}
+                      >
                         {(() => {
                           const start =
                             (h as any)?.data?.start ||

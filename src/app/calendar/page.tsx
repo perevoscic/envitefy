@@ -134,6 +134,9 @@ function sharedGradientRowClass(
   return found?.row || SHARED_GRADIENTS[0].row;
 }
 
+const SHARED_TEXT_CLASS = "text-neutral-900 dark:text-foreground";
+const SHARED_MUTED_TEXT_CLASS = "text-neutral-600 dark:text-foreground/70";
+
 function isSharedEvent(
   ev:
     | CalendarEvent
@@ -799,7 +802,9 @@ export default function CalendarPage() {
           e.stopPropagation();
           setOpenEvent(ev);
         }}
-        className={`hidden md:flex flex-col rounded-md ${tone.tint} text-foreground px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+        className={`hidden md:flex flex-col rounded-md ${tone.tint} ${
+          isShared ? SHARED_TEXT_CLASS : "text-foreground"
+        } px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
         title={ev.title}
       >
         <span className="truncate max-w-[10rem] inline-flex items-center gap-1">
@@ -821,26 +826,19 @@ export default function CalendarPage() {
   };
 
   const renderEventDot = (ev: CalendarEvent) => {
+    const isShared = isSharedEvent(ev);
     const chosenColorName = ev.category
       ? categoryColors[ev.category] || defaultCategoryColor(ev.category)
       : "";
-    const tone = chosenColorName
+    const tone = isShared
+      ? {
+          tint: sharedGradientRowClass(categoryColors),
+          dot: "bg-foreground/40",
+        }
+      : chosenColorName
       ? colorTintAndDot(chosenColorName)
       : { tint: "bg-surface/60", dot: "bg-foreground/40" };
-    if (isSharedEvent(ev)) {
-      return (
-        <svg
-          key={`${ev.id}@${ev.start}`}
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="h-2 w-2 opacity-80"
-          aria-hidden="true"
-        >
-          <path d="M18 8a3 3 0 1 0-2.83-4H15a3 3 0 0 0 0 6h.17A3 3 0 0 0 18 8Zm-12 7a3 3 0 1 0 2.83 4H6a3 3 0 0 0 0-6h-.17A3 3 0 0 0 6 15Zm12 0a3 3 0 1 0 2.83 4H18a3 3 0 0 0 0-6h-.17A3 3 0 0 0 18 15ZM8.59 13.51l6.83 3.98m0-10.98L8.59 10.49" />
-        </svg>
-      );
-    }
+    // Always render a circle for all events, shared or not
     return (
       <span
         key={`${ev.id}@${ev.start}`}
@@ -1163,7 +1161,9 @@ export default function CalendarPage() {
                     key={ev.id}
                     type="button"
                     onClick={() => setOpenEvent(ev)}
-                    className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} ${
+                      isShared ? SHARED_TEXT_CLASS : "text-foreground"
+                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                     title={ev.title}
                   >
                     <div className="flex items-center gap-3">
@@ -1182,7 +1182,13 @@ export default function CalendarPage() {
                         {ev.title}
                       </span>
                     </div>
-                    <div className="mt-0.5 text-xs text-foreground/70 truncate">
+                    <div
+                      className={`mt-0.5 text-xs ${
+                        isShared
+                          ? SHARED_MUTED_TEXT_CLASS
+                          : "text-foreground/70"
+                      } truncate`}
+                    >
                       {ev.location
                         ? `${formatEventDateTime(
                             ev.start
@@ -1235,7 +1241,11 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setOpenEvent(ev)}
-                            className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
+                            className={`w-full text-left rounded-md ${tone.tint} ${
+                              isShared
+                                ? SHARED_TEXT_CLASS
+                                : "text-foreground"
+                            } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
                             title={ev.title}
                           >
                             <div className="flex items-center gap-3">
@@ -1243,7 +1253,13 @@ export default function CalendarPage() {
                                 {ev.title}
                               </span>
                             </div>
-                            <div className="mt-0.5 text-xs text-foreground/70 truncate">
+                            <div
+                              className={`mt-0.5 text-xs ${
+                                isShared
+                                  ? SHARED_MUTED_TEXT_CLASS
+                                  : "text-foreground/70"
+                              } truncate`}
+                            >
                               {ev.location
                                 ? `${formatEventDateTime(
                                     ev.start
@@ -1287,7 +1303,9 @@ export default function CalendarPage() {
                     key={ev.id}
                     type="button"
                     onClick={() => setOpenEvent(ev)}
-                    className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} ${
+                      isShared ? SHARED_TEXT_CLASS : "text-foreground"
+                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                     title={ev.title}
                   >
                     <div className="flex items-center gap-3">
@@ -1306,7 +1324,13 @@ export default function CalendarPage() {
                         {ev.title}
                       </span>
                     </div>
-                    <div className="mt-0.5 text-xs text-foreground/70 truncate">
+                    <div
+                      className={`mt-0.5 text-xs ${
+                        isShared
+                          ? SHARED_MUTED_TEXT_CLASS
+                          : "text-foreground/70"
+                      } truncate`}
+                    >
                       {ev.location
                         ? `${formatEventDateTime(
                             ev.start
@@ -1398,7 +1422,9 @@ export default function CalendarPage() {
                       setOpenDay(null);
                       setOpenEvent(ev);
                     }}
-                    className={`w-full text-left rounded-md ${tone.tint} text-foreground px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                    className={`w-full text-left rounded-md ${tone.tint} ${
+                      isShared ? SHARED_TEXT_CLASS : "text-foreground"
+                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
                   >
                     <div className="flex flex-col">
                       <span className="truncate">{ev.title}</span>
