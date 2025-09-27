@@ -227,7 +227,7 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
-  }, [session?.user?.isAdmin]);
+  }, [session?.user]);
 
   const showCreditsBadge =
     subscriptionPlan !== "monthly" &&
