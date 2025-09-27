@@ -62,7 +62,7 @@ export default function LoginHero() {
       h: "/sliders/horizontal/horizontal-slide-6.jpg",
       v: "/sliders/vertical/vertical-slide-6.jpg",
       title: "Doctor Appointments",
-      subtitle: "Never miss another one.",
+      subtitle: "Never miss another one again.",
     },
   {
       type: "image" as const,
