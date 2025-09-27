@@ -83,8 +83,8 @@ export default async function Hero() {
           <Image
             src="/invite_dark.png"
             alt="Invitation being scanned (dark theme)"
-            width={500}
-            height={500}
+            width={900}
+            height={700}
             priority
             className="show-dark"
           />
