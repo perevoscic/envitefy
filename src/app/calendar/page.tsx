@@ -94,35 +94,35 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
 const SHARED_GRADIENTS: { id: string; row: string }[] = [
   {
     id: "shared-g1",
-    row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200 dark:from-cyan-700/70 dark:via-sky-700/60 dark:to-fuchsia-700/70",
+    row: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200 dark:bg-gradient-to-br dark:from-cyan-950 dark:via-slate-900 dark:to-fuchsia-900",
   },
   {
     id: "shared-g2",
-    row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200 dark:from-rose-700/70 dark:via-fuchsia-700/60 dark:to-indigo-700/70",
+    row: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200 dark:bg-gradient-to-br dark:from-rose-950 dark:via-fuchsia-900 dark:to-indigo-900",
   },
   {
     id: "shared-g3",
-    row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200 dark:from-emerald-700/70 dark:via-teal-700/60 dark:to-sky-700/70",
+    row: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-teal-900 dark:to-sky-900",
   },
   {
     id: "shared-g4",
-    row: "bg-gradient-to-r from-amber-200 via-orange-200 to-pink-200 dark:from-amber-700/70 dark:via-orange-700/60 dark:to-pink-700/70",
+    row: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200 dark:bg-gradient-to-br dark:from-amber-950 dark:via-rose-900 dark:to-pink-900",
   },
   {
     id: "shared-g5",
-    row: "bg-gradient-to-r from-indigo-200 via-blue-200 to-cyan-200 dark:from-indigo-700/70 dark:via-blue-700/60 dark:to-cyan-700/70",
+    row: "bg-gradient-to-r from-indigo-200 via-blue-200 to-cyan-200 dark:bg-gradient-to-r dark:from-indigo-950 dark:via-blue-900 dark:to-cyan-900",
   },
   {
     id: "shared-g6",
-    row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200 dark:from-lime-700/70 dark:via-green-700/60 dark:to-emerald-700/70",
+    row: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-green-900 dark:to-emerald-800",
   },
   {
     id: "shared-g7",
-    row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200 dark:from-purple-700/70 dark:via-fuchsia-700/60 dark:to-pink-700/70",
+    row: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200 dark:bg-gradient-to-br dark:from-purple-950 dark:via-fuchsia-900 dark:to-pink-900",
   },
   {
     id: "shared-g8",
-    row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200 dark:from-slate-700/70 dark:via-zinc-700/60 dark:to-sky-700/70",
+    row: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200 dark:bg-gradient-to-br dark:from-slate-950 dark:via-zinc-900 dark:to-sky-900",
   },
 ];
 
@@ -1565,4 +1565,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
 
