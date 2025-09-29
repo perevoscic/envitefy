@@ -93,21 +93,21 @@ export async function ensureStripePriceForPlan(stripe: Stripe, plan: StripePlanI
   const config = getPlanConfig(plan);
   const listed = await stripe.prices.list({
     lookup_keys: [config.lookupKey],
-    active: true,
     limit: 10,
     expand: ["data.product"],
   });
 
   const matching = listed.data.find((price) => priceMatchesConfig(price, config));
   if (matching) {
-    return matching;
-  }
-
-  for (const price of listed.data) {
-    try {
-      await stripe.prices.update(price.id, { active: false });
-    } catch {
-      // Best-effort deactivation; continue even if Stripe rejects (e.g., already inactive)
+    if (!matching.active) {
+      try {
+        const reactivated = await stripe.prices.update(matching.id, { active: true });
+        return reactivated;
+      } catch {
+        // Continue to fallback path when Stripe rejects reactivation.
+      }
+    } else {
+      return matching;
     }
   }
 
@@ -118,6 +118,9 @@ export async function ensureStripePriceForPlan(stripe: Stripe, plan: StripePlanI
     lookup_key: config.lookupKey,
     metadata: { plan },
   };
+  if (listed.data.length > 0) {
+    createParams.transfer_lookup_key = true;
+  }
   if (config.productId) {
     createParams.product = config.productId;
   } else {
@@ -128,6 +131,16 @@ export async function ensureStripePriceForPlan(stripe: Stripe, plan: StripePlanI
   }
 
   const created = await stripe.prices.create(createParams);
+
+  for (const price of listed.data) {
+    if (price.id === created.id) continue;
+    try {
+      await stripe.prices.update(price.id, { active: false });
+    } catch {
+      // Best-effort cleanup; continue even if Stripe rejects (e.g., already inactive)
+    }
+  }
+
   return created;
 }
 
