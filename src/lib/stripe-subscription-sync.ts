@@ -7,6 +7,7 @@ import {
   getUserByStripeSubscriptionId,
   updateUserStripeState,
 } from "@/lib/db";
+import type { SubscriptionPlan } from "@/lib/db";
 
 type PlanResolution = {
   plan: StripePlanId | null;
@@ -24,6 +25,14 @@ export function normalizePlan(value: string | null | undefined): StripePlanId | 
   const lower = value.toLowerCase();
   if (lower === "monthly" || lower === "yearly") {
     return lower as StripePlanId;
+  }
+  return null;
+}
+
+function normalizeSubscriptionPlan(value: string | null | undefined): SubscriptionPlan | null {
+  if (!value) return null;
+  if (value === "monthly" || value === "yearly" || value === "free" || value === "FF") {
+    return value;
   }
   return null;
 }
@@ -106,11 +115,12 @@ export function resolvePlanFromSubscription(
   if (!resolvedPlan) {
     const invoiceLines = invoice?.lines?.data ?? [];
     for (const line of invoiceLines) {
-      if (line.type && line.type !== "subscription") continue;
+      const parentType = line.parent?.type;
+      if (parentType && parentType !== "subscription_item_details") continue;
       const linePrice = extractInvoiceLinePrice(line);
       considerPrice(linePrice);
       if (resolvedPlan) break;
-      const interval = line.plan?.interval;
+      const interval = linePrice?.recurring?.interval;
       if (interval === "year") {
         resolvedPlan = "yearly";
         resolvedPriceId = linePrice?.id || resolvedPriceId;
@@ -121,17 +131,6 @@ export function resolvePlanFromSubscription(
         resolvedPriceId = linePrice?.id || resolvedPriceId;
         break;
       }
-    }
-  }
-
-  if (!resolvedPlan) {
-    const interval = subscription.plan?.interval;
-    if (interval === "year") {
-      resolvedPlan = "yearly";
-      resolvedPriceId = subscription.plan?.id || resolvedPriceId;
-    } else if (interval === "month") {
-      resolvedPlan = "monthly";
-      resolvedPriceId = subscription.plan?.id || resolvedPriceId;
     }
   }
 
@@ -193,9 +192,34 @@ export async function syncSubscriptionState(
     return false;
   }
 
-  const periodEnd = new Date(workingSubscription.current_period_end * 1000);
+  const subscriptionItemPeriodEnds = (workingSubscription.items?.data ?? [])
+    .map((item) => item.current_period_end)
+    .filter((value): value is number => typeof value === "number" && value > 0);
+  const invoicePeriodEnds = (options.invoice?.lines?.data ?? [])
+    .map((line) => line.period?.end)
+    .filter((value): value is number => typeof value === "number" && value > 0);
+  const periodEndEpoch =
+    subscriptionItemPeriodEnds.length > 0
+      ? Math.max(...subscriptionItemPeriodEnds)
+      : invoicePeriodEnds.length > 0
+        ? Math.max(...invoicePeriodEnds)
+        : null;
+  const periodEnd = periodEndEpoch ? new Date(periodEndEpoch * 1000) : null;
   // Preserve FF plan if already assigned to the user (admin/grant plan that never expires)
-  const candidatePlan = plan || metadataPlan || invoicePlan || hintPlan || targetUser.subscription_plan || null;
+  const planCandidates: Array<SubscriptionPlan | null> = [
+    normalizeSubscriptionPlan(plan),
+    normalizeSubscriptionPlan(metadataPlan),
+    normalizeSubscriptionPlan(invoicePlan),
+    normalizeSubscriptionPlan(hintPlan),
+    normalizeSubscriptionPlan(targetUser.subscription_plan),
+  ];
+  let candidatePlan: SubscriptionPlan | null = null;
+  for (const candidate of planCandidates) {
+    if (candidate) {
+      candidatePlan = candidate;
+      break;
+    }
+  }
   const nextPlan = targetUser.subscription_plan === "FF" ? "FF" : candidatePlan;
 
   debugLog(options.context, "sync target user", {

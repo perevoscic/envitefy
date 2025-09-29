@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     else if (existing.period === "years" && typeof existing.quantity === "number") giftedMonths = existing.quantity * 12;
     else if (existing.amount_cents && existing.amount_cents > 0) {
       // Fallback: convert by monthly price
-      giftedMonths = Math.floor(existing.amount_cents / 299);
+      giftedMonths = Math.floor(existing.amount_cents / 99);
     }
     giftedMonths = Math.max(0, Math.floor(giftedMonths));
 
@@ -43,5 +43,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err?.message || "Failed to redeem" }, { status: 500 });
   }
 }
-
 

@@ -10,26 +10,29 @@ export type StripePlanConfig = {
   intervalCount?: number;
   name: string;
   description: string;
+  productId?: string;
 };
 
 export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
   monthly: {
     id: "monthly",
     lookupKey: "snap-my-date-monthly",
-    unitAmount: 299,
+    unitAmount: 99,
     currency: "usd",
     interval: "month",
     name: "Snap My Date Monthly",
     description: "Monthly subscription for Snap My Date",
+    productId: "prod_T93CX7Yaqefp2B",
   },
   yearly: {
     id: "yearly",
     lookupKey: "snap-my-date-yearly",
-    unitAmount: 2999,
+    unitAmount: 1999,
     currency: "usd",
     interval: "year",
     name: "Snap My Date Yearly",
     description: "Yearly subscription for Snap My Date",
+    productId: "prod_T93Df9XcDp26Nm",
   },
 };
 
@@ -67,28 +70,64 @@ export function getPlanFromPrice(price?: Stripe.Price | null): StripePlanId | nu
   return null;
 }
 
+function priceMatchesConfig(price: Stripe.Price, config: StripePlanConfig): boolean {
+  const amount =
+    typeof price.unit_amount === "number"
+      ? price.unit_amount
+      : price.unit_amount_decimal
+      ? Number(price.unit_amount_decimal)
+      : null;
+  if (amount !== config.unitAmount) return false;
+  if (price.currency.toLowerCase() !== config.currency.toLowerCase()) return false;
+  if (price.recurring?.interval !== config.interval) return false;
+  const intervalCount = price.recurring?.interval_count ?? 1;
+  if (intervalCount !== (config.intervalCount ?? 1)) return false;
+  if (config.productId) {
+    const productId = typeof price.product === "string" ? price.product : price.product?.id;
+    if (productId && productId !== config.productId) return false;
+  }
+  return true;
+}
+
 export async function ensureStripePriceForPlan(stripe: Stripe, plan: StripePlanId): Promise<Stripe.Price> {
   const config = getPlanConfig(plan);
   const listed = await stripe.prices.list({
     lookup_keys: [config.lookupKey],
     active: true,
-    limit: 1,
+    limit: 10,
     expand: ["data.product"],
   });
-  if (listed.data.length > 0) {
-    return listed.data[0];
+
+  const matching = listed.data.find((price) => priceMatchesConfig(price, config));
+  if (matching) {
+    return matching;
   }
-  const created = await stripe.prices.create({
+
+  for (const price of listed.data) {
+    try {
+      await stripe.prices.update(price.id, { active: false });
+    } catch {
+      // Best-effort deactivation; continue even if Stripe rejects (e.g., already inactive)
+    }
+  }
+
+  const createParams: Stripe.PriceCreateParams = {
     currency: config.currency,
     unit_amount: config.unitAmount,
     recurring: { interval: config.interval, interval_count: config.intervalCount ?? 1 },
     lookup_key: config.lookupKey,
-    product_data: {
+    metadata: { plan },
+  };
+  if (config.productId) {
+    createParams.product = config.productId;
+  } else {
+    createParams.product_data = {
       name: config.name,
       metadata: { plan },
-    },
-    metadata: { plan },
-  });
+    };
+  }
+
+  const created = await stripe.prices.create(createParams);
   return created;
 }
 

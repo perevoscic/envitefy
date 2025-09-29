@@ -43,8 +43,8 @@ export default function SubscriptionPage() {
   const [bannerVisible, setBannerVisible] = useState<boolean>(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [pricing, setPricing] = useState<{ monthly: number; yearly: number }>({
-    monthly: 299,
-    yearly: 2999,
+    monthly: 99,
+    yearly: 1999,
   });
 
   useEffect(() => {
@@ -100,8 +100,8 @@ export default function SubscriptionPage() {
           setSubscriptionExpiresAt(planJson?.subscriptionExpiresAt || null);
           if (planJson?.pricing) {
             setPricing({
-              monthly: Number(planJson.pricing.monthly) || 299,
-              yearly: Number(planJson.pricing.yearly) || 2999,
+              monthly: Number(planJson.pricing.monthly) || 99,
+              yearly: Number(planJson.pricing.yearly) || 1999,
             });
           }
         } else {
@@ -516,7 +516,7 @@ export default function SubscriptionPage() {
         >
           {buttonLabel}
         </button>
-        {isAuthed && stripeCustomerId && (
+        {isAuthed && hasActivePaidPlan && stripeCustomerId && (
           <button
             type="button"
             className="px-6 py-2 rounded-2xl border border-border bg-surface text-foreground hover:bg-surface/80 transition select-none disabled:opacity-60"
