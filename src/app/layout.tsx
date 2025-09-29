@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
 import "./globals.css";
+import { cookies } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,8 +85,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
+  const cookieStore = cookies();
+  const themeCookie = cookieStore.get("theme")?.value;
+  const initialTheme =
+    themeCookie === "light" || themeCookie === "dark"
+      ? (themeCookie as "light" | "dark")
+      : undefined;
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme={initialTheme}
+      className={initialTheme === "dark" ? "dark" : undefined}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} antialiased`}
       >
@@ -98,12 +110,13 @@ export default async function RootLayout({
                 : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
               document.documentElement.setAttribute('data-theme', theme);
               document.documentElement.classList.toggle('dark', theme === 'dark');
+              document.documentElement.style.colorScheme = theme;
             } catch (e) {
               // noop
             }
           })();
         `}</Script>
-        <Providers session={session}>
+        <Providers session={session} initialTheme={initialTheme}>
           <LeftSidebar />
           <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
             <div className="flex-1 min-w-0">{children}</div>

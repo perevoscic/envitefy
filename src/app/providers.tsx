@@ -4,6 +4,7 @@ import type { Session } from "next-auth";
 import type { ReactNode } from "react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -16,6 +17,8 @@ import PwaInstallButton from "@/components/PwaInstallButton";
 
 type Theme = "light" | "dark";
 
+const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
 type ThemeContextValue = {
   theme: Theme;
   setTheme: (t: Theme) => void;
@@ -24,17 +27,35 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-function ThemeProvider({ children }: { children: ReactNode }) {
-  // Ensure SSR and the first client render match by using a fixed initial value.
-  // We then read the real preference on mount to avoid hydration mismatches.
-  const [theme, setThemeState] = useState<Theme>("light");
+type ThemeProviderProps = {
+  children: ReactNode;
+  initialTheme?: Theme;
+};
+
+function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<Theme>(initialTheme ?? "light");
+  const [isThemeHydrated, setIsThemeHydrated] = useState(
+    initialTheme !== undefined
+  );
   // Track whether the user explicitly chose a theme. If false, we follow system.
-  const [userPrefersExplicitTheme, setUserPrefersExplicitTheme] =
-    useState(false);
+  const [userPrefersExplicitTheme, setUserPrefersExplicitTheme] = useState(
+    initialTheme !== undefined
+  );
   const mediaQueryRef = useRef<MediaQueryList | null>(null);
   const mediaListenerRef = useRef<((e: MediaQueryListEvent) => void) | null>(
     null
   );
+
+  const setThemeCookie = useCallback((value: Theme | null) => {
+    if (typeof document === "undefined") return;
+    try {
+      if (value) {
+        document.cookie = `theme=${value}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`;
+      } else {
+        document.cookie = "theme=; path=/; max-age=0; SameSite=Lax";
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("theme") as Theme | null;
@@ -44,11 +65,20 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     if (stored === "light" || stored === "dark") {
       setUserPrefersExplicitTheme(true);
       setThemeState(stored);
+      setIsThemeHydrated(true);
+      setThemeCookie(stored);
+    } else if (initialTheme === "light" || initialTheme === "dark") {
+      setUserPrefersExplicitTheme(true);
+      setThemeState(initialTheme);
+      setIsThemeHydrated(true);
+      setThemeCookie(initialTheme);
     } else {
       // No explicit user preference → follow system and react to changes.
       setUserPrefersExplicitTheme(false);
+      setThemeCookie(null);
       setThemeState(mql.matches ? "dark" : "light");
       const onChange = (e: MediaQueryListEvent) => {
+        setThemeCookie(null);
         setThemeState(e.matches ? "dark" : "light");
       };
       mediaListenerRef.current = onChange;
@@ -58,6 +88,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
         // Safari <14 fallback
         (mql as any).addListener(onChange);
       }
+      setIsThemeHydrated(true);
     }
 
     return () => {
@@ -73,13 +104,15 @@ function ThemeProvider({ children }: { children: ReactNode }) {
       mediaListenerRef.current = null;
       mediaQueryRef.current = null;
     };
-  }, []);
+  }, [initialTheme, setThemeCookie]);
 
   useEffect(() => {
+    if (!isThemeHydrated) return;
     const root = document.documentElement;
     root.setAttribute("data-theme", theme);
     root.classList.toggle("dark", theme === "dark");
-  }, [theme]);
+    root.style.colorScheme = theme;
+  }, [theme, isThemeHydrated]);
 
   // If we were following system and the user now makes a choice, stop following system.
   useEffect(() => {
@@ -107,6 +140,8 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem("theme", next);
     } catch {}
+    setThemeCookie(next);
+    setIsThemeHydrated(true);
   };
 
   const value = useMemo<ThemeContextValue>(
@@ -132,14 +167,16 @@ export function useTheme() {
 export default function Providers({
   children,
   session,
+  initialTheme,
 }: {
   children: ReactNode;
   session?: Session | null;
+  initialTheme?: Theme;
 }) {
   return (
     <SessionProvider session={session}>
       <SidebarProvider>
-        <ThemeProvider>
+        <ThemeProvider initialTheme={initialTheme}>
           <RegisterServiceWorker />
           {children}
           <GlobalEventCreate />
