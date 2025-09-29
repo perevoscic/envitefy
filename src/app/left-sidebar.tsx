@@ -2097,14 +2097,13 @@ export default function LeftSidebar() {
                       .map((h) => (h as any)?.data?.category as string | null)
                       .filter((c): c is string => Boolean(c))
                   )
-                );
+                ).filter(
+                  (c) => c.trim().toLowerCase() !== "shared events"
+                ); // Shared events section renders above with gradient treatment
                 // Sort categories A → Z for consistent display
-                const sortedCategories = [...categories].sort((a, b) => {
-                  // Pin Shared events to the top, then A→Z for the rest
-                  if (a === "Shared events" && b !== "Shared events") return -1;
-                  if (b === "Shared events" && a !== "Shared events") return 1;
-                  return a.localeCompare(b);
-                });
+                const sortedCategories = [...categories].sort((a, b) =>
+                  a.localeCompare(b)
+                );
                 if (categories.length === 0) return null;
                 const buttonClass = (_c: string) => {
                   return `hover:bg-surface/70`;
@@ -3460,5 +3459,3 @@ export default function LeftSidebar() {
     </>
   );
 }
-
-
