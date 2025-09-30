@@ -57,7 +57,7 @@ export default function LeftSidebar() {
       // Phone mockup is only shown at lg (≥1024px); below that it's hidden
       window.matchMedia("(max-width: 1023px)").matches;
 
-    const onClick = (e: MouseEvent) => {
+    const onClick = (e: Event) => {
       if (!isPhoneHiddenViewport()) return; // Desktop: ignore outside clicks
       const target = e.target as Node | null;
       if (!asideRef.current) return;
@@ -123,7 +123,7 @@ export default function LeftSidebar() {
   }, [menuOpen]);
 
   useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
+    const onDocClick = (e: Event) => {
       try {
         const target = e.target as Element | null;
         const itemEl = target?.closest(
@@ -185,6 +185,7 @@ export default function LeftSidebar() {
   const [isAdmin, setIsAdmin] = useState<boolean>(
     Boolean((session?.user as any)?.isAdmin)
   );
+  const [profileLoaded, setProfileLoaded] = useState(false);
   useEffect(() => {
     let ignore = false;
     async function loadProfile() {
@@ -218,30 +219,38 @@ export default function LeftSidebar() {
             }));
           }
         }
-      } catch {}
+      } catch {
+      } finally {
+        if (!ignore) setProfileLoaded(true);
+      }
     }
-    if (status === "authenticated") loadProfile();
+    if (status === "authenticated") {
+      setProfileLoaded(false);
+      loadProfile();
+    } else if (status === "unauthenticated") {
+      setProfileLoaded(true);
+    }
     return () => {
       ignore = true;
     };
-  }, [status]);
+  }, [status, profileLoaded]);
 
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
   }, [session?.user]);
 
-  const showCreditsBadge =
+  const showCreditsShell =
+    profileLoaded &&
     subscriptionPlan !== "monthly" &&
     subscriptionPlan !== "yearly" &&
     subscriptionPlan !== "FF";
+  const creditsAreKnown =
+    profileLoaded && typeof credits === "number" && credits >= 0;
+  const creditsValue =
+    typeof credits === "number" && credits >= 0 ? credits : 0;
   const shouldBlockNewSnap = () => {
-    const isFreePlan =
-      subscriptionPlan == null || subscriptionPlan === "free";
-    return (
-      isFreePlan &&
-      typeof credits === "number" &&
-      credits <= 0
-    );
+    const isFreePlan = subscriptionPlan == null || subscriptionPlan === "free";
+    return isFreePlan && typeof credits === "number" && credits <= 0;
   };
   const collapseSidebarOnTouch = () => {
     try {
@@ -364,7 +373,7 @@ export default function LeftSidebar() {
   }, [colorMenuFor]);
 
   useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
+    const onDocClick = (e: Event) => {
       if (!activeCategory) return;
       try {
         const target = e.target as Node | null;
@@ -645,7 +654,8 @@ export default function LeftSidebar() {
       id: "shared-g6",
       swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
       lightRow: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
-      darkRow: "bg-gradient-to-br from-emerald-950 via-green-900 to-emerald-800",
+      darkRow:
+        "bg-gradient-to-br from-emerald-950 via-green-900 to-emerald-800",
     },
     {
       id: "shared-g7",
@@ -679,7 +689,6 @@ export default function LeftSidebar() {
 
   const sharedTextClass = "text-neutral-900 dark:text-foreground";
   const sharedMutedTextClass = "text-neutral-600 dark:text-foreground/70";
-
 
   const sharedGradientSwatchClass = (): string => {
     const id = getSharedGradientId();
@@ -1831,8 +1840,7 @@ export default function LeftSidebar() {
                                   if (isShared) {
                                     return {
                                       row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                      badge:
-                                        `bg-surface/60 ${sharedMutedTextClass} border-border`,
+                                      badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
                                     };
                                   }
                                   if (!category)
@@ -2096,9 +2104,7 @@ export default function LeftSidebar() {
                       .map((h) => (h as any)?.data?.category as string | null)
                       .filter((c): c is string => Boolean(c))
                   )
-                ).filter(
-                  (c) => c.trim().toLowerCase() !== "shared events"
-                ); // Shared events section renders above with gradient treatment
+                ).filter((c) => c.trim().toLowerCase() !== "shared events"); // Shared events section renders above with gradient treatment
                 // Sort categories A → Z for consistent display
                 const sortedCategories = [...categories].sort((a, b) =>
                   a.localeCompare(b)
@@ -2330,8 +2336,7 @@ export default function LeftSidebar() {
                                         if (isShared) {
                                           return {
                                             row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                            badge:
-                                              `bg-surface/60 ${sharedMutedTextClass} border-border`,
+                                            badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
                                           };
                                         }
                                         if (!category)
@@ -2700,9 +2705,7 @@ export default function LeftSidebar() {
                       </div>
                       <div
                         className={`text-xs ${
-                          isShared
-                            ? sharedMutedTextClass
-                            : "text-foreground/60"
+                          isShared ? sharedMutedTextClass : "text-foreground/60"
                         }`}
                       >
                         {(() => {
@@ -3061,17 +3064,9 @@ export default function LeftSidebar() {
                     </div>
                   )}
                 </div>
-                {showCreditsBadge && (
-                  <span
-                    className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white"
-                    style={{
-                      visibility:
-                        typeof credits === "number" && credits >= 0
-                          ? "visible"
-                          : "hidden",
-                    }}
-                  >
-                    {typeof credits === "number" && credits >= 0 ? credits : 0}
+                {showCreditsShell && creditsAreKnown && (
+                  <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    {creditsValue}
                   </span>
                 )}
               </div>
