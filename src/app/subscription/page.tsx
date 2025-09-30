@@ -2,12 +2,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GiftSnapModal from "@/components/GiftSnapModal";
 import RedeemPromoModal from "@/components/RedeemPromoModal";
 import AuthModal from "@/components/auth/AuthModal";
 import Logo from "@/assets/logo.png";
+
+declare global {
+  // Allow optional GA4/global site tag typings without forcing app-wide declarations
+  interface Window {
+    gtag?: (...args: any[]) => void;
+    dataLayer?: unknown[];
+  }
+}
 
 export default function SubscriptionPage() {
   const router = useRouter();
@@ -46,6 +54,7 @@ export default function SubscriptionPage() {
     monthly: 99,
     yearly: 1999,
   });
+  const purchaseTrackedRef = useRef(false);
 
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
@@ -53,7 +62,9 @@ export default function SubscriptionPage() {
     const normalized = ["free", "monthly", "yearly", "FF"].includes(plan)
       ? plan
       : null;
-    if (normalized) setSelectedPlan(normalized as any);
+    if (normalized) {
+      setSelectedPlan(normalized as "free" | "monthly" | "yearly" | "FF");
+    }
   }, [params]);
 
   useEffect(() => {
@@ -124,9 +135,51 @@ export default function SubscriptionPage() {
     };
   }, [reloadKey]);
 
+  const reportSubscriptionPurchase = useCallback(
+    ({
+      sessionId,
+      plan,
+      value,
+    }: {
+      sessionId: string;
+      plan: "monthly" | "yearly" | "FF" | "free" | null;
+      value: number;
+    }) => {
+      if (typeof window === "undefined") return;
+      const label =
+        plan === "yearly"
+          ? "Snap My Date Premium - Yearly"
+          : plan === "monthly"
+            ? "Snap My Date Premium - Monthly"
+            : "Snap My Date Premium";
+
+      const payload = {
+        transaction_id: sessionId,
+        currency: "USD",
+        value,
+        items: [
+          {
+            item_id: plan ?? "unknown-plan",
+            item_name: label,
+            price: value,
+            quantity: 1,
+          },
+        ],
+      };
+
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "purchase", payload);
+      } else if (Array.isArray(window.dataLayer)) {
+        window.dataLayer.push({ event: "purchase", ecommerce: payload });
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     const status = params?.get?.("checkout") ?? null;
     const sessionId = params?.get?.("session_id") ?? null;
+    const planFromParams = params?.get?.("plan") ?? null;
     if (!status) return;
     let type: "success" | "error" | "info" | null = null;
     let message: string | null = null;
@@ -174,6 +227,30 @@ export default function SubscriptionPage() {
             setReloadKey((key) => key + 1);
           }
         } catch {}
+
+        if (!purchaseTrackedRef.current) {
+          const plan =
+            planFromParams === "monthly" || planFromParams === "yearly"
+              ? planFromParams
+              : currentPlan;
+          const normalizedPlan =
+            plan === "monthly" || plan === "yearly" || plan === "FF" || plan === "free"
+              ? plan
+              : null;
+          const cents =
+            normalizedPlan === "yearly"
+              ? pricing.yearly
+              : normalizedPlan === "monthly"
+                ? pricing.monthly
+                : pricing.monthly;
+          const value = Math.max(0, cents / 100);
+          reportSubscriptionPurchase({
+            sessionId,
+            plan: normalizedPlan,
+            value,
+          });
+          purchaseTrackedRef.current = true;
+        }
       }
     };
 
@@ -184,7 +261,7 @@ export default function SubscriptionPage() {
     return () => {
       cancelled = true;
     };
-  }, [params, router]);
+  }, [params, router, pricing, currentPlan, reportSubscriptionPurchase]);
 
   const monthlyPrice = useMemo(
     () => (pricing.monthly / 100).toFixed(2),
