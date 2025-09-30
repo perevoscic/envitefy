@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
@@ -186,6 +186,11 @@ export default function LeftSidebar() {
     Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [isClientLoaded, setIsClientLoaded] = useState(false);
+  useEffect(() => {
+    setIsClientLoaded(true);
+  }, []);
+
   useEffect(() => {
     let ignore = false;
     async function loadProfile() {
@@ -261,7 +266,9 @@ export default function LeftSidebar() {
       if (isTouch) setIsCollapsed(true);
     } catch {}
   };
-  const handleSnapShortcutClick = (event: MouseEvent<HTMLAnchorElement>) => {
+  const handleSnapShortcutClick = (
+    event: React.MouseEvent<HTMLAnchorElement>
+  ) => {
     if (shouldBlockNewSnap()) {
       event.preventDefault();
       router.push("/subscription");
@@ -2559,7 +2566,7 @@ export default function LeftSidebar() {
                                                     aria-hidden="true"
                                                   >
                                                     <path d="M12 20h9" />
-                                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                    <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
                                                   </svg>
                                                   <span className="text-sm">
                                                     Rename
