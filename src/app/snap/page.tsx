@@ -54,28 +54,48 @@ export default function SnapPage() {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
       const action = (params.get("action") || "").toLowerCase();
-      if (action === "camera") {
-        // Delay a tick so refs mount
-        setTimeout(() => {
-          const camEl = cameraInputRef.current;
-          if (camEl) camEl.value = "";
-          camEl?.click();
-        }, 50);
-      } else if (action === "upload") {
-        setTimeout(() => {
-          const fileEl = fileInputRef.current;
-          if (fileEl) fileEl.value = "";
-          fileEl?.click();
-        }, 50);
+      if (!action) return;
+
+      const isFreePlan =
+        subscriptionPlan == null || subscriptionPlan === "free";
+      const creditsKnown = typeof credits === "number";
+      // Wait until credits load for free users so we don't allow a bypass before state sync.
+      if (isFreePlan && !creditsKnown) return;
+
+      const cleanupActionParam = () => {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("action");
+          window.history.replaceState({}, "", url.toString());
+        } catch {}
+      };
+
+      if (isFreePlan && creditsKnown && credits <= 0) {
+        window.location.href = "/subscription";
+        cleanupActionParam();
+        return;
       }
-      if (action) {
-        // Clean the URL so refresh/back doesn't retrigger
-        const url = new URL(window.location.href);
-        url.searchParams.delete("action");
-        window.history.replaceState({}, "", url.toString());
+
+      const targetRef =
+        action === "camera"
+          ? cameraInputRef
+          : action === "upload"
+          ? fileInputRef
+          : null;
+      if (!targetRef) {
+        cleanupActionParam();
+        return;
       }
+
+      const timer = setTimeout(() => {
+        const target = targetRef.current;
+        if (target) target.value = "";
+        target?.click();
+      }, 50);
+      cleanupActionParam();
+      return () => clearTimeout(timer);
     } catch {}
-  }, []);
+  }, [subscriptionPlan, credits]);
 
   useEffect(() => {
     try {

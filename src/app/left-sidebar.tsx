@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
@@ -181,7 +181,7 @@ export default function LeftSidebar() {
   const [subscriptionPlan, setSubscriptionPlan] = useState<
     "free" | "monthly" | "yearly" | "FF" | null
   >(null);
-  const [credits, setCredits] = useState<number>(0);
+  const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
     Boolean((session?.user as any)?.isAdmin)
   );
@@ -203,6 +203,7 @@ export default function LeftSidebar() {
               : null
           );
           if (typeof json.credits === "number") setCredits(json.credits);
+          else setCredits(null);
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
           }
@@ -233,6 +234,33 @@ export default function LeftSidebar() {
     subscriptionPlan !== "monthly" &&
     subscriptionPlan !== "yearly" &&
     subscriptionPlan !== "FF";
+  const shouldBlockNewSnap = () => {
+    const isFreePlan =
+      subscriptionPlan == null || subscriptionPlan === "free";
+    return (
+      isFreePlan &&
+      typeof credits === "number" &&
+      credits <= 0
+    );
+  };
+  const collapseSidebarOnTouch = () => {
+    try {
+      const isTouch =
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: none), (pointer: coarse)").matches;
+      if (isTouch) setIsCollapsed(true);
+    } catch {}
+  };
+  const handleSnapShortcutClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (shouldBlockNewSnap()) {
+      event.preventDefault();
+      router.push("/subscription");
+      collapseSidebarOnTouch();
+      return;
+    }
+    collapseSidebarOnTouch();
+  };
   const profileMenuItemClass =
     "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
   const isDark = theme === "dark";
@@ -1521,16 +1549,7 @@ export default function LeftSidebar() {
                 <div className="flex items-center justify-between pl-0">
                   <Link
                     href="/"
-                    onClick={() => {
-                      try {
-                        const isTouch =
-                          typeof window !== "undefined" &&
-                          typeof window.matchMedia === "function" &&
-                          window.matchMedia("(hover: none), (pointer: coarse)")
-                            .matches;
-                        if (isTouch) setIsCollapsed(true);
-                      } catch {}
-                    }}
+                    onClick={collapseSidebarOnTouch}
                     className="flex items-center gap-2"
                   >
                     <svg
@@ -1555,17 +1574,7 @@ export default function LeftSidebar() {
                   <div className="flex items-center gap-1">
                     <Link
                       href="/snap?action=camera"
-                      onClick={() => {
-                        try {
-                          const isTouch =
-                            typeof window !== "undefined" &&
-                            typeof window.matchMedia === "function" &&
-                            window.matchMedia(
-                              "(hover: none), (pointer: coarse)"
-                            ).matches;
-                          if (isTouch) setIsCollapsed(true);
-                        } catch {}
-                      }}
+                      onClick={handleSnapShortcutClick}
                       className="p-1 rounded hover:bg-surface/50"
                       aria-label="Snap with camera"
                     >
@@ -1586,17 +1595,7 @@ export default function LeftSidebar() {
                     </Link>
                     <Link
                       href="/snap?action=upload"
-                      onClick={() => {
-                        try {
-                          const isTouch =
-                            typeof window !== "undefined" &&
-                            typeof window.matchMedia === "function" &&
-                            window.matchMedia(
-                              "(hover: none), (pointer: coarse)"
-                            ).matches;
-                          if (isTouch) setIsCollapsed(true);
-                        } catch {}
-                      }}
+                      onClick={handleSnapShortcutClick}
                       className="p-1 rounded hover:bg-surface/50"
                       aria-label="Upload file"
                     >
@@ -3062,9 +3061,17 @@ export default function LeftSidebar() {
                     </div>
                   )}
                 </div>
-                {showCreditsBadge && credits >= 0 && (
-                  <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {credits}
+                {showCreditsBadge && (
+                  <span
+                    className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                    style={{
+                      visibility:
+                        typeof credits === "number" && credits >= 0
+                          ? "visible"
+                          : "hidden",
+                    }}
+                  >
+                    {typeof credits === "number" && credits >= 0 ? credits : 0}
                   </span>
                 )}
               </div>
