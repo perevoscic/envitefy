@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useTheme } from "@/app/providers";
 import EventActions from "@/components/EventActions";
 import EventCreateModal from "@/components/EventCreateModal";
 
@@ -140,13 +139,20 @@ const SHARED_GRADIENTS: {
 ];
 
 function sharedGradientRowClass(
-  categoryColors: Record<string, string>,
-  theme: "light" | "dark"
+  categoryColors: Record<string, string>
 ): string {
   const id = categoryColors["Shared events"];
   const found = SHARED_GRADIENTS.find((g) => g.id === id);
   const palette = found ?? SHARED_GRADIENTS[0];
-  return theme === "dark" ? palette.darkRow : palette.lightRow;
+  return `${palette.lightRow} ${prefixDark(palette.darkRow)}`;
+}
+
+function prefixDark(classList: string): string {
+  return classList
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => `dark:${token}`)
+    .join(" ");
 }
 
 const SHARED_TEXT_CLASS = "text-neutral-900 dark:text-foreground";
@@ -461,7 +467,6 @@ function groupEventsByDay(
 
 export default function CalendarPage() {
   const { status } = useSession();
-  const { theme } = useTheme();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -486,8 +491,8 @@ export default function CalendarPage() {
     }
   );
   const sharedGradientTint = useMemo(
-    () => sharedGradientRowClass(categoryColors, theme),
-    [categoryColors, theme]
+    () => sharedGradientRowClass(categoryColors),
+    [categoryColors]
   );
 
   const [openEvent, setOpenEvent] = useState<CalendarEvent | null>(null);
