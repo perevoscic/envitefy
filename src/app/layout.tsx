@@ -85,12 +85,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const themeCookie = cookieStore.get("theme")?.value;
   const initialTheme =
     themeCookie === "light" || themeCookie === "dark"
       ? (themeCookie as "light" | "dark")
       : undefined;
+  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   return (
     <html
       lang="en"
@@ -116,6 +117,20 @@ export default async function RootLayout({
             }
           })();
         `}</Script>
+        {gaMeasurementId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">{`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaMeasurementId}');
+            `}</Script>
+          </>
+        ) : null}
         <Providers session={session} initialTheme={initialTheme}>
           <LeftSidebar />
           <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
