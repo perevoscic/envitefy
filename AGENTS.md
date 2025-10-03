@@ -247,10 +247,32 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Create a user account in Postgres (AWS RDS) using email/password.
 - **Auth**: None.
-- **Input (JSON)**: `{ email: string, password: string, firstName?: string, lastName?: string }`.
-- **Behavior**: New users are created with `subscription_plan = "free"` and `credits = 3`.
+- **Input (JSON)**: `{ email: string, password: string, firstName?: string, lastName?: string, recaptchaToken?: string }`.
+- **Behavior**:
+  - New users are created with `subscription_plan = "free"` and `credits = 3`.
+  - Verifies reCAPTCHA v3 token if provided and `RECAPTCHA_SECRET_KEY` is configured.
+  - Requires score > 0.5 for reCAPTCHA v3.
+  - Falls back gracefully if reCAPTCHA is not configured.
 - **Output**: `{ ok: true }` on success or `{ error }` on failure.
-- **Env**: `DATABASE_URL` (Postgres connection string)
+- **Env**:
+  - `DATABASE_URL` (Postgres connection string)
+  - `RECAPTCHA_SECRET_KEY` (optional, for bot protection)
+  - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` (optional, frontend key)
+
+### Google OAuth Sign In/Up
+
+- **Purpose**: Authenticate users via Google OAuth 2.0 through NextAuth.
+- **Auth**: None (public OAuth flow).
+- **Providers**: NextAuth configured with Google OAuth provider.
+- **Behavior**:
+  - Users can sign in/up using their Google account.
+  - On first Google sign-in, a new user account is created automatically with `subscription_plan = "free"` and `credits = 3`.
+  - Existing users can link their Google account by signing in with Google using the same email.
+  - OAuth users have `password_hash = NULL` in the database (no password required).
+  - User profile (first_name, last_name) is populated from Google profile data.
+- **Callback URL**: Google redirects to NextAuth callback after authentication.
+- **UI**: "Continue with Google" buttons in both login and signup modals.
+- **Env**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (same as calendar OAuth)
 
 ### Forgot Password — POST `/api/auth/forgot`
 
@@ -469,6 +491,8 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-03: Added reCAPTCHA v3 protection to signup form. Verifies tokens server-side with score threshold (>0.5). Optional and gracefully falls back if not configured.
+- 2025-10-03: Added Google OAuth Sign In/Up integration with NextAuth. Users can now authenticate using their Google account. Database schema updated to make `password_hash` nullable for OAuth users.
 - 2025-09-29: Updated Stripe pricing to $0.99/month (`prod_T93CX7Yaqefp2B`) and $19.99/year (`prod_T93Df9XcDp26Nm`); portal button only shows for active paid plans.
 - 2025-09-27: User profile API now returns `isAdmin` so clients can surface admin UI without relying on session-only flags.
 - 2025-09-18: OCR practice schedules now capture weekly team tables, return a `practiceSchedule` payload with per-group recurring events, and the Snap UI prompts for group selection while surfacing repeat controls only when a schedule is detected.

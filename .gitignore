@@ -46,3 +46,5 @@ snap-my-date-406402b828d0.json
 pgssl.key
 
 /src/generated/prisma
+
+/src/prisma/migrations

@@ -122,7 +122,7 @@ export type AppUserRow = {
   stripe_price_id?: string | null;
   stripe_current_period_end?: string | null;
   stripe_cancel_at_period_end?: boolean | null;
-  password_hash: string;
+  password_hash: string | null;
   created_at?: string;
   is_admin?: boolean | null;
   scans_total?: number | null;
@@ -330,7 +330,8 @@ export async function hashPassword(password: string): Promise<string> {
   return `${salt.toString("hex")}:${derivedKey.toString("hex")}`;
 }
 
-export async function verifyPassword(password: string, passwordHash: string): Promise<boolean> {
+export async function verifyPassword(password: string, passwordHash: string | null): Promise<boolean> {
+  if (!passwordHash) return false;
   const [saltHex, keyHex] = passwordHash.split(":");
   if (!saltHex || !keyHex) return false;
   const salt = Buffer.from(saltHex, "hex");
@@ -343,6 +344,30 @@ export async function getUserIdByEmail(email: string): Promise<string | null> {
   const lower = email.toLowerCase();
   const res = await query<{ id: string }>(`select id from users where email = $1 limit 1`, [lower]);
   return res.rows[0]?.id || null;
+}
+
+export async function createOrUpdateOAuthUser(params: {
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  provider: string;
+}): Promise<AppUserRow> {
+  const lower = params.email.toLowerCase();
+  const existing = await getUserByEmail(lower);
+  
+  if (existing) {
+    // User exists, just return them
+    return existing;
+  }
+  
+  // Create new OAuth user with NULL password_hash
+  const res = await query<AppUserRow>(
+    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
+     values ($1, $2, $3, NULL, 'free', false, 3)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
+    [lower, params.firstName || null, params.lastName || null]
+  );
+  return res.rows[0];
 }
 
 // handle-based helpers removed per revert
