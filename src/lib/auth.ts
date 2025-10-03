@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail } from "@/lib/db";
+import GoogleProvider from "next-auth/providers/google";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser } from "@/lib/db";
 
 export function getAuthOptions(): NextAuthOptions {
   const secret =
@@ -14,6 +15,17 @@ export function getAuthOptions(): NextAuthOptions {
     // Secure cookies only in production/HTTPS; localhost (http) must be non-secure
     useSecureCookies: process.env.NODE_ENV === "production",
     providers: [
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        authorization: {
+          params: {
+            prompt: "consent",
+            access_type: "offline",
+            response_type: "code",
+          },
+        },
+      }),
       CredentialsProvider({
         name: "Email and Password",
         credentials: {
@@ -65,12 +77,42 @@ async authorize(credentials) {
     session: { strategy: "jwt" },
     pages: { signIn: "/", verifyRequest: "/verify-request" },
     callbacks: {
-      async jwt({ token, user }) {
+      async signIn({ user, account, profile }) {
+        try {
+          // Handle OAuth sign-ins (Google, etc.)
+          if (account?.provider === "google" && user?.email) {
+            console.log("[auth] Google sign-in", { email: user.email });
+            
+            // Create or update user in database
+            const firstName = (profile as any)?.given_name || user.name?.split(" ")[0] || null;
+            const lastName = (profile as any)?.family_name || user.name?.split(" ").slice(1).join(" ") || null;
+            
+            await createOrUpdateOAuthUser({
+              email: user.email,
+              firstName,
+              lastName,
+              provider: "google",
+            });
+            
+            return true;
+          }
+          return true;
+        } catch (err) {
+          console.error("[auth] signIn callback error", err);
+          return false;
+        }
+      },
+      async jwt({ token, user, account }) {
         try {
           const email = (user?.email as string) || (token?.email as string) || null;
           if (email) {
             const isAdmin = await getIsAdminByEmail(email);
             (token as any).isAdmin = !!isAdmin;
+          }
+          
+          // Store the account provider info in the token
+          if (account?.provider) {
+            (token as any).provider = account.provider;
           }
         } catch {}
         return token;
@@ -79,6 +121,7 @@ async authorize(credentials) {
         try {
           if (session?.user) {
             (session.user as any).isAdmin = Boolean((token as any)?.isAdmin);
+            (session.user as any).provider = (token as any)?.provider || "credentials";
           }
         } catch {}
         return session;
