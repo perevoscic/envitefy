@@ -20,10 +20,6 @@ export default function SignupForm({
   onSuccess,
   onSwitchMode,
 }: SignupFormProps) {
-  console.log(
-    "🚀 SignupForm component RENDERING - v4 with hardcoded reCAPTCHA key - FORCED RELOAD"
-  );
-
   const router = useRouter();
   const params = useSearchParams();
   const [firstName, setFirstName] = useState("");
