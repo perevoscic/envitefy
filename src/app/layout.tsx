@@ -34,7 +34,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Snap My Date",
+  title: "Snap My Date - Snap it. Save it. Done.",
   description:
     "Snap My Date is an innovative event management tool to scan birthday invites, flyers, wedding invitations, appointment cards instantly adding events to your preferred calendar. Simplify your scheduling with our powerful calendar integration and keep your family events organized.",
   manifest: "/manifest.webmanifest",
