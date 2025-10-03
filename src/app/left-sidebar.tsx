@@ -238,7 +238,7 @@ export default function LeftSidebar() {
     return () => {
       ignore = true;
     };
-  }, [status, profileLoaded]);
+  }, [status]);
 
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
