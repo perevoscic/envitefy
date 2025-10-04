@@ -61,6 +61,14 @@ export default function AdminPage() {
     );
   }
 
+  function handleClearSearch() {
+    setQ("");
+    setUsers([]);
+    setUsersCursor(null);
+    setUsersError(null);
+    setHasSearched(false);
+  }
+
   async function handleSearch() {
     if (!q.trim()) {
       setUsers([]);
@@ -251,7 +259,7 @@ export default function AdminPage() {
                       if (e.key === "Enter") handleSearch();
                     }}
                     placeholder="Search by email, first or last name..."
-                    className="w-full pl-11 pr-4 py-3 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all"
+                    className="w-full pl-11 pr-10 py-3 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all"
                     suppressHydrationWarning
                   />
                   <svg
@@ -268,6 +276,27 @@ export default function AdminPage() {
                       d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                     />
                   </svg>
+                  {q && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                      title="Clear search"
+                    >
+                      <svg
+                        className="w-4 h-4 text-slate-400 dark:text-slate-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={handleSearch}
@@ -432,60 +461,63 @@ export default function AdminPage() {
                   </div>
 
                   {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50 dark:bg-slate-900/60">
+                  <div
+                    className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"
+                    suppressHydrationWarning
+                  >
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase tracking-wider font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
                         <tr>
-                          <Th>Email</Th>
-                          <Th>Name</Th>
-                          <Th>Plan</Th>
-                          <Th>Paid</Th>
-                          <Th>Credits</Th>
-                          <Th>Scans</Th>
-                          <Th>Shares</Th>
-                          <Th>Joined</Th>
+                          <th className="px-4 py-3">Email</th>
+                          <th className="px-4 py-3">Name</th>
+                          <th className="px-4 py-3">Plan</th>
+                          <th className="px-4 py-3">Paid</th>
+                          <th className="px-4 py-3 text-right">Credits</th>
+                          <th className="px-4 py-3 text-right">Scans</th>
+                          <th className="px-4 py-3 text-right">Shares</th>
+                          <th className="px-4 py-3">Joined</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/30">
                         {users.map((u) => (
                           <tr
                             key={u.id}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                            className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
                           >
-                            <Td>
-                              <span className="font-medium text-slate-900 dark:text-slate-100">
-                                {u.email}
-                              </span>
-                            </Td>
-                            <Td>
+                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                              {u.email}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                               {[u.first_name, u.last_name]
                                 .filter(Boolean)
                                 .join(" ") || "-"}
-                            </Td>
-                            <Td>
+                            </td>
+                            <td className="px-4 py-3">
                               <PlanBadge plan={u.subscription_plan} />
-                            </Td>
-                            <Td>
+                            </td>
+                            <td className="px-4 py-3">
                               {u.ever_paid ? (
-                                <span className="text-emerald-600 dark:text-emerald-400">
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                                   ✓
                                 </span>
                               ) : (
                                 <span className="text-slate-400 dark:text-slate-600">
-                                  —
+                                  -
                                 </span>
                               )}
-                            </Td>
-                            <Td>{u.credits ?? "—"}</Td>
-                            <Td>
-                              <span className="font-medium">
-                                {u.scans_total ?? 0}
-                              </span>
-                            </Td>
-                            <Td>{u.shares_sent ?? 0}</Td>
-                            <Td className="whitespace-nowrap">
+                            </td>
+                            <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                              {u.credits ?? "—"}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">
+                              {u.scans_total ?? 0}
+                            </td>
+                            <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                              {u.shares_sent ?? 0}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                               {formatDate(u.created_at)}
-                            </Td>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

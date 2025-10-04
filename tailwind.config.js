@@ -1,7 +1,8 @@
 // Tailwind CSS configuration: preserve dynamic gradient classes used for Shared Events
-// so production builds don’t purge them.
+// so production builds don't purge them.
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class', // Enable dark mode with class strategy
   // Tailwind v4 reads content automatically; we only need a safelist here.
   safelist: [
     // Shared gradients (both 200 + 300 sets used in calendar/sidebar)
