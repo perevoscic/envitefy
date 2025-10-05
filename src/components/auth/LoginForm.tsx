@@ -61,7 +61,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         type="button"
         onClick={onGoogleSignIn}
         disabled={submitting}
-        className="w-1/2 block mx-auto flex items-center justify-center gap-3 px-4 py-2 rounded-2xl bg-white dark:bg-surface/50 text-gray-700 dark:text-foreground border border-gray-300 dark:border-border hover:bg-gray-50 dark:hover:bg-surface/70 disabled:opacity-70 transition-colors font-medium"
+        className="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-2xl bg-white dark:bg-surface/50 text-gray-700 dark:text-foreground border border-gray-300 dark:border-border hover:bg-gray-50 dark:hover:bg-surface/70 disabled:opacity-70 transition-colors font-medium"
       >
         <svg
           width="18"
