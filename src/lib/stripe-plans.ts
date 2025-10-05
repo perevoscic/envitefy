@@ -27,7 +27,7 @@ export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
   yearly: {
     id: "yearly",
     lookupKey: "snap-my-date-yearly",
-    unitAmount: 1999,
+    unitAmount: 999,
     currency: "usd",
     interval: "year",
     name: "Snap My Date Yearly",
