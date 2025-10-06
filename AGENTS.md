@@ -160,6 +160,12 @@ curl -X POST \
 - Time parsing improved to detect spelled-out phrases like "four o'clock in the afternoon" and merge with detected dates; afternoon/evening keywords bias to PM.
 - LLM prompt now prioritizes decorative/cursive text (names) on invitation cards and ignores boilerplate like "Invitation"/"Invitation Card" when forming titles. It also classifies wedding/marriage invites and can surface an LLM-provided `category` when present.
 - Wedding rewrite prompt now forbids templated phrases (e.g., "together with their parents", "Dinner and dancing to follow") unless they appear verbatim on the card. It uses only facts present on the invite.
+- **Medical and dental appointments** extract only the clinical information actually visible on the scanned image - no templates, no invented information. The LLM reads the content and outputs only what it sees: appointment type, provider (if shown), facility (if shown), time, or other relevant details. Each fact appears on its own line. Patient name and DOB are excluded. Invitation phrases like "You're invited", "Join", "for his/her", "please" are explicitly forbidden. Example output based on actual content:
+  ```
+  Appointment type: Dental Cleaning.
+  Scheduled for: October 6, 2023 at 10:30 AM.
+  ```
+  (Only includes what's visible on the image)
 - Basic timezone inference from U.S. addresses (e.g., "Fresno, CA" → `America/Los_Angeles`). If no hint is found, falls back to the server timezone.
 - Weekly practice schedules map day/time blocks to weekly recurrences. Returned events include `recurrence` strings (`RRULE:FREQ=WEEKLY;BYDAY=...`) and default 1-day-before reminders.
 
@@ -496,6 +502,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-06: Medical and dental appointment descriptions are now content-based, not template-based. The LLM extracts only the clinical information actually visible on the scanned image (appointment type, provider if shown, facility if shown, time, etc.). No rigid templates, no invented information. Patient name and DOB are excluded. All invitation-style phrases like "You're invited", "Join", "for his/her", "please" are forbidden. Each fact appears on its own line.
 - 2025-10-06: Default LLM model changed from `gpt-4o-mini` to `gpt-4o` for better accuracy with decorative fonts, cursive text, and RSVP extraction. The more powerful model significantly improves OCR quality on invitations.
 - 2025-10-06: **BREAKING**: OCR pipeline flipped to use OpenAI Vision as PRIMARY OCR method, with Google Vision as fallback. OpenAI Vision now runs first for all scans (direct image analysis), Google Vision only used if OpenAI fails. Response includes `ocrSource` field (`"openai"`, `"google-sdk"`, or `"google-rest"`). This improves accuracy for cursive fonts, decorative text, and RSVP extraction.
 - 2025-10-06: OCR agent now extracts RSVP contact info (name + phone) into a separate `rsvp` field in `fieldsGuess` for better structured data access. Event pages display RSVP info with Text/Call links, and signed-in users see an RSVP button in the event actions toolbar when a phone number is detected.

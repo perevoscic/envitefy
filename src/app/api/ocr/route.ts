@@ -39,8 +39,8 @@ async function llmExtractEvent(raw: string): Promise<{
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o";
-  const system = "You extract calendar events from noisy OCR text. Return strict JSON only.";
-  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string), rsvp (string or null).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- CRITICAL: Extract RSVP contact info into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: contact@example.com'. Return null if no RSVP info found.\n- Description should NOT include RSVP contact info (it goes in the separate rsvp field).\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If an appointment type is shown (e.g., Annual Visit), use it for title; otherwise 'Doctor Appointment'.\n  * Never repeat invitation phrases like 'Join us for', 'Come celebrate', or similar; use direct clinical language for titles and descriptions.\n- Respond with ONLY JSON.`;
+  const system = "You extract calendar events from noisy OCR text. For medical/dental appointments, use ONLY clinical factual language - NEVER invitation phrases like 'Please join us', 'You're invited'. Return strict JSON only.";
+  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string), rsvp (string or null).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- CRITICAL: Extract RSVP contact info into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: contact@example.com'. Return null if no RSVP info found.\n- Description should NOT include RSVP contact info (it goes in the separate rsvp field).\n- For MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit').\n  * Description: Read the image and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a MEDICAL/DENTAL appointment, NOT a social event. NEVER EVER write invitation phrases like 'Please join us for', 'You're invited to', 'Join us', 'please', 'welcome'. These are medical appointments, not parties. WRONG: 'Please join us for a Dental Cleaning on...'. CORRECT: 'Dental cleaning appointment.' or 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on what's visible, each fact on its own line. Be strictly factual and clinical.\n- Respond with ONLY JSON.`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -88,7 +88,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   console.log(">>> Using OpenAI model:", model);
   const base64 = imageBytes.toString("base64");
   const system =
-    "You are a careful assistant that reads invitations and appointment slips from images. You transcribe decorative cursive text accurately and return only clean JSON fields for calendar creation.";
+    "You are a careful assistant that reads invitations and appointment slips from images. You transcribe ALL text accurately including decorative cursive, handwritten notes, and printed labels. CRITICAL: For medical/dental appointment cards, use ONLY clinical, factual language. NEVER use invitation phrases like 'Please join us', 'You're invited', 'Join us' for medical appointments. These are appointments, not social events. Carefully read the handwritten appointment type (e.g., 'Dental Cleaning', 'Annual Visit'). Return only clean JSON fields for calendar creation.";
   const userText =
     [
       "Task: From the image, extract a single calendar event as strict JSON with keys {title,start,end,address,description,category,rsvp}.",
@@ -105,7 +105,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
       "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
-      "Special cases — MEDICAL APPOINTMENTS: never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Include patient name, DOB, provider and facility in description. Title should be '<Appointment Type> with Dr <Name>' when possible, otherwise 'Doctor Appointment'. Never echo invitation phrases like 'Join us for' or 'Come celebrate'; keep wording direct and clinical.",
+      "Special cases — MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital): never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit'). For description, read the image carefully and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a medical/dental appointment, NOT a social event. NEVER EVER write invitation-style descriptions like 'Please join us for a Dental Cleaning' or 'You're invited to'. These are MEDICAL appointments, not parties. WRONG examples: 'Please join us for a Dental Cleaning on...', 'You're invited to a dental cleaning appointment...'. CORRECT examples: 'Dental cleaning appointment.', 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on the actual visible content, each fact on its own line. Be strictly factual and clinical.",
     ].join("\n");
   try {
     console.log(">>> Making OpenAI Vision API call...");
@@ -1431,8 +1431,8 @@ export async function POST(request: Request) {
     let startHasClockTime = false; // track if a time-of-day is present
     let parsedText: string | null = null;
 
-    // Prefer explicit medical Appointment Date/Time labels over DOB when detected
-    const isMedical = /(doctor|dr\.|dentist|clinic|hospital|ascension|sacred\s*heart)/i.test(raw) && /(appointment|appt)/i.test(raw);
+    // Prefer explicit medical/dental Appointment Date/Time labels over DOB when detected
+    const isMedical = /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw) && /(appointment|appt)/i.test(raw);
     let medicalStart: Date | null = null;
     let medicalParsedText: string | null = null;
     if (isMedical) {
@@ -1800,46 +1800,106 @@ export async function POST(request: Request) {
     }
 
     const isMedicalAppointment =
-      /(appointment|appt)/i.test(raw) && /(doctor|dr\.|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
+      /(appointment|appt)/i.test(raw) && /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
 
     // For medical slips, force title to "<Appointment Type> with Dr <Name>" when possible,
     // and keep notes minimal (just the title line)
     if (isMedicalAppointment) {
+      // If OpenAI already provided a well-formatted description, preserve it
+      const openAIHasProvider = ocrSource === "openai" && finalDescription && /Provider:.*Dr/i.test(finalDescription);
       // 1) Try to read appointment reason near the "Appointment" label
       const appIdx = lines.findIndex((l: string) => /^\s*appointment\s*$/i.test(l));
       let reasonLine: string | null = null;
       if (appIdx >= 0) {
         reasonLine = lines[appIdx + 1] || null;
       }
-      // 2) Fallback regexes for common reasons
-      const reasonMatch = (raw.match(/\b(annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?))\b/i) || [])[0];
+      // 2) Fallback regexes for common reasons (including dental)
+      const reasonMatch = (raw.match(/\b(dental\s+cleaning|teeth\s+cleaning|annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?)|cleaning)\b/i) || [])[0];
       let apptTypeRaw = (reasonLine && reasonLine.trim()) || reasonMatch || "Doctor Appointment";
       // Clean trailing codes (e.g., "Annual Visit 20")
       apptTypeRaw = apptTypeRaw.replace(/\b\d+\b/g, "").replace(/\s{2,}/g, " ").trim();
       const apptType = apptTypeRaw;
 
-      // Provider detection:
-      // a) Prefixed with Dr./Doctor
+      // Provider detection (enhanced for hyphenated and multi-part names):
       let provider: string | null = null;
-      const provA = raw.match(/\b(?:dr\.?\s*|doctor\s+)([A-Z][A-Za-z\-']+(?:\s+[A-Z][A-Za-z\-']+)*)\b/);
+      
+      // a) Prefixed with Dr./Doctor (handles hyphenated last names like Parris-Ramie)
+      const provA = raw.match(/\b(?:dr\.?\s*|doctor\s+)([A-Z][A-Za-z\-']+(?:\s+[A-Z][A-Za-z\-']+)*(?:\s*-\s*[A-Z][A-Za-z]+)?)\b/i);
       if (provA) provider = (provA[1] || "").trim();
-      // b) NAME , MD|DO|NP... (uppercase or titlecase)
+      
+      // b) "Provider:" or "Physician:" label followed by name
+      if (!provider) {
+        const provLabel = raw.match(/(?:Provider|Physician|Doctor):\s*([A-Z][A-Za-z\-'\s]+(?:-[A-Z][A-Za-z]+)?)/i);
+        if (provLabel) provider = (provLabel[1] || "").replace(/\s*,?\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD).*/i, "").trim();
+      }
+      
+      // c) NAME , MD|DO|NP... (uppercase or titlecase, handles hyphens)
       if (!provider) {
         const provB = raw.match(/\b([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4})\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD)\b/i);
         if (provB) provider = (provB[1] || "").trim();
       }
-      // c) The line immediately after reason (often provider)
+      
+      // d) The line immediately after reason (often provider)
       if (!provider && reasonLine) {
         const cand = (lines[appIdx + 2] || "").trim();
-        if (/^[A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(cand)) provider = cand.replace(/\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C)$/i, "").trim();
+        if (/^[A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(cand)) {
+          provider = cand.replace(/\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C)$/i, "").trim();
+        }
       }
 
+      // Debug logging for provider extraction
+      console.log(">>> Medical appointment detected");
+      console.log(">>> Raw OCR excerpt (first 500 chars):", raw.substring(0, 500));
+      console.log(">>> Extracted provider:", provider || "NOT FOUND");
+      console.log(">>> Heuristic appointment type:", apptType);
+      console.log(">>> Current title before override:", finalTitle);
+      
       // Title-case helper
       const toTitle = (s: string) => s.replace(/\s+/g, " ").trim().replace(/\b\w/g, (m: string) => m.toUpperCase());
-      if (provider) finalTitle = `${toTitle(apptType)} with Dr ${toTitle(provider)}`;
-      else finalTitle = toTitle(apptType);
-      // Notes should be just the title to avoid clutter as requested
-      finalDescription = finalTitle;
+      
+      // Only override title if OpenAI didn't already extract a good one
+      const openAIHasGoodTitle = ocrSource === "openai" && finalTitle && finalTitle !== "Doctor Appointment" && !/^\s*appointment\s*$/i.test(finalTitle);
+      
+      if (!openAIHasGoodTitle) {
+        // Use heuristic extraction
+        if (provider) finalTitle = `${toTitle(apptType)} with Dr ${toTitle(provider)}`;
+        else finalTitle = toTitle(apptType);
+        console.log(">>> Using heuristic title:", finalTitle);
+      } else {
+        console.log(">>> Preserving OpenAI title:", finalTitle);
+      }
+      
+      // Build clinical description from ONLY what we found (no rigid template)
+      // Add facts only if they were extracted
+      const descParts: string[] = [];
+      
+      // Only add what we actually found
+      if (apptType && apptType !== "Doctor Appointment") {
+        descParts.push(`Appointment type: ${toTitle(apptType)}`);
+      }
+      if (provider) {
+        descParts.push(`Provider: Dr ${toTitle(provider)}`);
+      }
+      const facilityMatch = raw.match(/(?:Ascension|Sacred\s*Heart)[^.\n]*/i);
+      if (facilityMatch) {
+        descParts.push(`Location: ${facilityMatch[0].trim()}`);
+      }
+      
+      // Use factual description with line breaks, or fallback to title if no details extracted
+      // UNLESS OpenAI already provided a good description
+      const openAIHasGoodDesc = ocrSource === "openai" && finalDescription && finalDescription !== "Doctor Appointment." && finalDescription.length > 20;
+      
+      if (!openAIHasGoodDesc) {
+        // If we found specific details, use them; otherwise just use a simple message
+        if (descParts.length > 0) {
+          finalDescription = descParts.map(p => p.endsWith('.') ? p : p + '.').join("\n");
+        } else {
+          finalDescription = `${toTitle(apptType)}.`;
+        }
+        console.log(">>> Using heuristic description:", finalDescription);
+      } else {
+        console.log(">>> Preserving OpenAI description:", finalDescription);
+      }
     }
 
     // Enrich generic "Join us for" line with the birthday person's name from title (non-medical only)
@@ -2443,7 +2503,7 @@ export async function POST(request: Request) {
         const text = (fullText || "").toLowerCase();
         // Football handling removed
         // Doctor/Dentist/Clinic appointments
-        const isDoctorLike = /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(fullText);
+        const isDoctorLike = /(doctor|dr\.|dentist|dental|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(fullText);
         const hasAppt = /(appointment|appt)/i.test(fullText);
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
