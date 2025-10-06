@@ -142,6 +142,15 @@ export default async function EventPage({
     (data?.description as string | undefined) || ""
   } ${(data?.location as string | undefined) || ""}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
+
+  // Extract just the name from RSVP field (remove "RSVP:" prefix and phone number)
+  const rsvpName = rsvpField
+    ? rsvpField
+        .replace(/^RSVP:?\s*/i, "") // Remove "RSVP:" or "RSVP" prefix
+        .replace(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/g, "") // Remove phone number
+        .replace(/\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/g, "") // Remove (555) 123-4567 format
+        .trim()
+    : "";
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const smsIntroParts = [
     "Hi, there,",
@@ -258,9 +267,9 @@ export default async function EventPage({
               <div>
                 <dt className="text-foreground/70">RSVP</dt>
                 <dd className="font-medium">
-                  {rsvpField || rsvpPhone ? (
+                  {rsvpName || rsvpPhone ? (
                     <div className="flex flex-col gap-2">
-                      {rsvpField && <div>{rsvpField}</div>}
+                      {rsvpName && <div>{rsvpName}</div>}
                       {rsvpPhone && (
                         <div className="flex flex-wrap items-center gap-3">
                           {smsHref && (

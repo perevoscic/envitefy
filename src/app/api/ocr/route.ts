@@ -1909,13 +1909,7 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    // Append RSVP at the very end, after any rewrites
-    if (deferredRsvp) {
-      const isSingleLine = !/\n/.test(finalDescription) && finalDescription.trim().length > 0;
-      if (isSingleLine && !finalDescription.toLowerCase().includes("rsvp")) {
-        finalDescription = `${finalDescription}\n${deferredRsvp}`.trim();
-      }
-    }
+    // RSVP is now stored in a separate field, no longer appended to description
 
     const descriptionHasTitle =
       (finalTitle || "").trim().length > 0 &&
