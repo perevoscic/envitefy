@@ -122,12 +122,13 @@ curl -X POST \
   "intakeId": null,
   "ocrText": "...",
   "fieldsGuess": {
-    "title": "Alice’s Birthday Party",
+    "title": "Alice's Birthday Party",
     "start": "2025-06-23T14:00:00.000Z",
     "end": null,
     "location": "123 Main St, Chicago, IL",
-    "description": "Alice’s Birthday Party...",
-    "timezone": "America/Chicago"
+    "description": "Alice's Birthday Party...",
+    "timezone": "America/Chicago",
+    "rsvp": "RSVP: Jennifer 555-895-9741"
   },
   "category": "Birthdays",
   "practiceSchedule": {
@@ -492,6 +493,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-06: OCR agent now extracts RSVP contact info (name + phone) into a separate `rsvp` field in `fieldsGuess` for better structured data access. Event pages display RSVP info with Text/Call links, and signed-in users see an RSVP button in the event actions toolbar when a phone number is detected.
 - 2025-10-03: Added reCAPTCHA v3 protection to signup form. Verifies tokens server-side with score threshold (>0.5). Optional and gracefully falls back if not configured.
 - 2025-10-03: Added Google OAuth Sign In/Up integration with NextAuth. Users can now authenticate using their Google account. Database schema updated to make `password_hash` nullable for OAuth users.
 - 2025-10-05: Updated yearly Stripe pricing to $9.99 (`prod_T93Df9XcDp26Nm`).

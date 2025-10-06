@@ -34,12 +34,13 @@ async function llmExtractEvent(raw: string): Promise<{
   end?: string | null;
   address?: string;
   description?: string;
+  rsvp?: string | null;
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
   const system = "You extract calendar events from noisy OCR text. Return strict JSON only.";
-  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- Description may include RSVP or short context.\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If an appointment type is shown (e.g., Annual Visit), use it for title; otherwise 'Doctor Appointment'.\n  * Never repeat invitation phrases like 'Join us for', 'Come celebrate', or similar; use direct clinical language for titles and descriptions.\n- Respond with ONLY JSON.`;
+  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string), rsvp (string or null).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- CRITICAL: Extract RSVP contact info into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: contact@example.com'. Return null if no RSVP info found.\n- Description should NOT include RSVP contact info (it goes in the separate rsvp field).\n- For MEDICAL APPOINTMENT slips (doctor/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Include patient name, DOB, provider/doctor name, and clinic/facility in description.\n  * If an appointment type is shown (e.g., Annual Visit), use it for title; otherwise 'Doctor Appointment'.\n  * Never repeat invitation phrases like 'Join us for', 'Come celebrate', or similar; use direct clinical language for titles and descriptions.\n- Respond with ONLY JSON.`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -75,6 +76,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   address?: string;
   description?: string;
   category?: string;
+  rsvp?: string | null;
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -84,7 +86,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     "You are a careful assistant that reads invitations and appointment slips from images. You transcribe decorative cursive text accurately and return only clean JSON fields for calendar creation.";
   const userText =
     [
-      "Task: From the image, extract a single calendar event as strict JSON with keys {title,start,end,address,description,category}.",
+      "Task: From the image, extract a single calendar event as strict JSON with keys {title,start,end,address,description,category,rsvp}.",
       "General rules:",
       "- Read ornate/cursive fonts carefully (names often appear in large script).",
       "- Treat boilerplate headers like 'Invitation', 'Invitation Card', 'You're Invited' as NOT the title.",
@@ -95,6 +97,8 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Before finalizing, double-check that the chosen time matches the flyer; if uncertain, leave the time off (set start to the date at 00:00).",
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
+      "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
+      "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
       "Special cases — MEDICAL APPOINTMENTS: never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Include patient name, DOB, provider and facility in description. Title should be '<Appointment Type> with Dr <Name>' when possible, otherwise 'Doctor Appointment'. Never echo invitation phrases like 'Join us for' or 'Come celebrate'; keep wording direct and clinical.",
     ].join("\n");
@@ -1689,6 +1693,12 @@ export async function POST(request: Request) {
     let finalEnd = end;
     let finalAddress = addressOnly;
     let finalDescription = cleanDescription;
+    
+    // Extract compact RSVP early so LLM can override it
+    let deferredRsvp: string | null = null;
+    try {
+      deferredRsvp = extractRsvpCompact(raw, cleanDescription);
+    } catch {}
 
     if (llmImage) {
       const safeDate = (s?: string | null) => {
@@ -1699,6 +1709,10 @@ export async function POST(request: Request) {
       if (typeof llmImage.title === "string" && llmImage.title.trim()) finalTitle = llmImage.title.trim();
       if (typeof llmImage.address === "string" && llmImage.address.trim()) finalAddress = cleanAddressLabel(llmImage.address);
       if (typeof llmImage.description === "string" && llmImage.description.trim()) finalDescription = llmImage.description.trim();
+      if (typeof llmImage.rsvp === "string" && llmImage.rsvp.trim()) {
+        // Use LLM-extracted RSVP if available
+        deferredRsvp = llmImage.rsvp.trim();
+      }
       finalStart = safeDate(llmImage.start) ?? finalStart;
       finalEnd = safeDate(llmImage.end) ?? finalEnd;
     }
@@ -1709,6 +1723,7 @@ export async function POST(request: Request) {
         if (llm.title?.trim()) finalTitle = llm.title.trim();
         if (llm.address?.trim()) finalAddress = cleanAddressLabel(llm.address);
         if (llm.description?.trim()) finalDescription = llm.description.trim();
+        if (llm.rsvp?.trim()) deferredRsvp = llm.rsvp.trim();
         const safeDate = (s?: string | null) => {
           if (!s) return null;
           const d = new Date(s);
@@ -1767,11 +1782,12 @@ export async function POST(request: Request) {
       finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
     }
 
-    // Extract compact RSVP now, but defer appending until after all rewrites
-    let deferredRsvp: string | null = null;
-    try {
-      deferredRsvp = extractRsvpCompact(raw, finalDescription);
-    } catch {}
+    // Re-extract RSVP from updated description if not already set by LLM
+    if (!deferredRsvp) {
+      try {
+        deferredRsvp = extractRsvpCompact(raw, finalDescription);
+      } catch {}
+    }
 
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
@@ -1864,6 +1880,7 @@ export async function POST(request: Request) {
       location: finalAddress,
       description: descriptionWithTitle,
       timezone: "", // omit timezone; UI will show times as typed
+      rsvp: deferredRsvp || null, // Store RSVP separately
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

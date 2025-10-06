@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import ReadOnlyBanner from "./ReadOnlyBanner";
 import {
   listSharesByOwnerForEvents,
   isEventSharedWithUser,
@@ -65,31 +65,40 @@ export default async function EventPage({
   })();
   let recipientAccepted = false;
   let recipientPending = false;
+  let isReadOnly = false; // Read-only mode for non-authenticated users
   const isShared = Boolean((row.data as any)?.shared);
   const isSharedOut = Boolean((row.data as any)?.sharedOut);
   if (!isOwner) {
-    if (!userId) return notFound();
-    const access = await isEventSharedWithUser(row.id, userId);
-    if (access === true) {
-      // ok
-      recipientAccepted = true;
-    } else if (access === false) {
-      const pending = await isEventSharePendingForUser(row.id, userId);
-      if (!pending) return notFound();
-      recipientPending = true;
-      if (autoAccept) {
-        try {
-          await fetch(`/api/events/share/accept`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ eventId: row.id }),
-            cache: "no-store",
-          });
-        } catch {}
+    if (!userId) {
+      // Allow viewing in read-only mode for non-authenticated users
+      isReadOnly = true;
+    } else {
+      const access = await isEventSharedWithUser(row.id, userId);
+      if (access === true) {
+        // ok
+        recipientAccepted = true;
+      } else if (access === false) {
+        const pending = await isEventSharePendingForUser(row.id, userId);
+        if (pending) {
+          recipientPending = true;
+          if (autoAccept) {
+            try {
+              await fetch(`/api/events/share/accept`, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ eventId: row.id }),
+                cache: "no-store",
+              });
+            } catch {}
+          }
+        } else {
+          // Not shared with this user, allow read-only access
+          isReadOnly = true;
+        }
+      } else if (access === null) {
+        // No shares table → allow read-only access
+        isReadOnly = true;
       }
-    } else if (access === null) {
-      // No shares table → require shared marker
-      if (!isShared) return notFound();
     }
   }
   let shareStats: { accepted_count: number; pending_count: number } | null =
@@ -127,7 +136,9 @@ export default async function EventPage({
   }
 
   // Detect RSVP phone and build SMS/Call links
-  const aggregateContactText = `${(data?.rsvp as string | undefined) || ""} ${
+  // First try the rsvp field, then fall back to searching description/location
+  const rsvpField = (data?.rsvp as string | undefined) || "";
+  const aggregateContactText = `${rsvpField} ${
     (data?.description as string | undefined) || ""
   } ${(data?.location as string | undefined) || ""}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
@@ -169,6 +180,7 @@ export default async function EventPage({
 
   return (
     <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+      {isReadOnly && <ReadOnlyBanner />}
       <div className="space-y-2">
         <h1 className="text-2xl font-bold inline-flex items-center gap-2">
           {title}
@@ -199,14 +211,14 @@ export default async function EventPage({
               Details
             </h2>
             <div className="flex items-center gap-2">
-              {isOwner && (
+              {!isReadOnly && isOwner && (
                 <EventEditModal
                   eventId={row.id}
                   eventData={data}
                   eventTitle={title}
                 />
               )}
-              {isOwner ? (
+              {!isReadOnly && isOwner ? (
                 <EventDeleteModal eventId={row.id} eventTitle={title} />
               ) : null}
             </div>
@@ -246,23 +258,28 @@ export default async function EventPage({
               <div>
                 <dt className="text-foreground/70">RSVP</dt>
                 <dd className="font-medium">
-                  {rsvpPhone ? (
-                    <div className="flex flex-wrap items-center gap-3">
-                      {smsHref && (
-                        <a
-                          href={smsHref}
-                          className="underline hover:no-underline"
-                        >
-                          Text {rsvpPhone}
-                        </a>
-                      )}
-                      {telHref && (
-                        <a
-                          href={telHref}
-                          className="underline hover:no-underline"
-                        >
-                          Call
-                        </a>
+                  {rsvpField || rsvpPhone ? (
+                    <div className="flex flex-col gap-2">
+                      {rsvpField && <div>{rsvpField}</div>}
+                      {rsvpPhone && (
+                        <div className="flex flex-wrap items-center gap-3">
+                          {smsHref && (
+                            <a
+                              href={smsHref}
+                              className="underline hover:no-underline"
+                            >
+                              Text {rsvpPhone}
+                            </a>
+                          )}
+                          {telHref && (
+                            <a
+                              href={telHref}
+                              className="underline hover:no-underline"
+                            >
+                              Call
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -284,7 +301,7 @@ export default async function EventPage({
       </section>
 
       <div className="mt-6 flex flex-col gap-3">
-        {isOwner && (
+        {!isReadOnly && isOwner && (
           <section className="rounded border border-border p-3 bg-surface">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground/80">
@@ -359,7 +376,7 @@ export default async function EventPage({
                   ))}
                   <li className="pt-1">
                     <span className="text-xs text-foreground/70">
-                      Use the “Share” button below to add more participants.
+                      Use the "Invite" button below to add more participants.
                     </span>
                   </li>
                 </ul>
@@ -368,7 +385,7 @@ export default async function EventPage({
               <div className="mt-2 text-xs text-foreground/70">
                 Not shared yet.
                 <br />
-                Use the “Share” button below to add participants.
+                Use the "Invite" button below to add participants.
               </div>
             )}
           </section>
@@ -377,10 +394,10 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           className=""
-          historyId={row.id}
+          historyId={!isReadOnly ? row.id : undefined}
         />
         {/* +Add has been moved to the Shared with box header */}
-        {isOwner ? null : (
+        {!isReadOnly && !isOwner ? (
           <section className="rounded border border-border p-3 bg-surface">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground/80">
@@ -463,7 +480,7 @@ export default async function EventPage({
               </li>
             </ul>
           </section>
-        )}
+        ) : null}
       </div>
     </main>
   );
