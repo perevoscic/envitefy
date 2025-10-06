@@ -102,12 +102,14 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
 
-- **Purpose**: OCR event flyers/images, parse title/date/time/location/description with heuristics and LLM fallback (optimized for invitations and appointments).
+- **Purpose**: OCR event flyers/images, parse title/date/time/location/description with OpenAI Vision as primary OCR, Google Vision as fallback (optimized for invitations and appointments).
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
-- **Query options**:
-  - `llm=1` or `engine=openai` forces OpenAI image parsing in addition to Google Vision OCR text, useful when Vision misses spelled-out times.
-- **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable.
+- **OCR Pipeline**:
+  1. **Primary**: OpenAI Vision API (direct image analysis, best for cursive/decorative fonts)
+  2. **Fallback**: Google Cloud Vision API (used only if OpenAI fails or returns no results)
+  3. **Enhancement**: Heuristic parsing and text-based LLM cleanup as needed
+- **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable, plus `ocrSource` indicating which OCR method was used (`"openai"`, `"google-sdk"`, or `"google-rest"`).
 - **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets attempt venue lookup via OpenStreetMap.
 - **Practice schedules**: Recognizes weekly team practice tables (groups vs. days). The response adds a `practiceSchedule` object with the detected groups, their weekly sessions, and pre-built normalized events that include `RRULE:FREQ=WEEKLY` recurrences for each day/time block. When multiple groups are present, clients should prompt the user to pick one group before saving events.
 
@@ -131,6 +133,7 @@ curl -X POST \
     "rsvp": "RSVP: Jennifer 555-895-9741"
   },
   "category": "Birthdays",
+  "ocrSource": "openai",
   "practiceSchedule": {
     "detected": false,
     "title": null,
@@ -149,8 +152,8 @@ curl -X POST \
 ```
 
 - **Env**:
-  - `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Vision.
-  - Optional LLM fallback: `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
+  - **Required**: `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o`) - Primary OCR via OpenAI Vision
+  - **Optional fallback**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Google Vision fallback.
 
 #### Notes
 
@@ -493,6 +496,8 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-06: Default LLM model changed from `gpt-4o-mini` to `gpt-4o` for better accuracy with decorative fonts, cursive text, and RSVP extraction. The more powerful model significantly improves OCR quality on invitations.
+- 2025-10-06: **BREAKING**: OCR pipeline flipped to use OpenAI Vision as PRIMARY OCR method, with Google Vision as fallback. OpenAI Vision now runs first for all scans (direct image analysis), Google Vision only used if OpenAI fails. Response includes `ocrSource` field (`"openai"`, `"google-sdk"`, or `"google-rest"`). This improves accuracy for cursive fonts, decorative text, and RSVP extraction.
 - 2025-10-06: OCR agent now extracts RSVP contact info (name + phone) into a separate `rsvp` field in `fieldsGuess` for better structured data access. Event pages display RSVP info with Text/Call links, and signed-in users see an RSVP button in the event actions toolbar when a phone number is detected.
 - 2025-10-03: Added reCAPTCHA v3 protection to signup form. Verifies tokens server-side with score threshold (>0.5). Optional and gracefully falls back if not configured.
 - 2025-10-03: Added Google OAuth Sign In/Up integration with NextAuth. Users can now authenticate using their Google account. Database schema updated to make `password_hash` nullable for OAuth users.

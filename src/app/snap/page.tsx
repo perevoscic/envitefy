@@ -16,6 +16,7 @@ type EventFields = {
   description: string;
   timezone: string;
   category?: string | null;
+  rsvp?: string | null;
   reminders?: { minutes: number }[] | null;
   recurrence?: string | null;
 };
@@ -651,16 +652,25 @@ export default function SnapPage() {
       }
     };
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+    // Debug: Log OCR extraction results
+    console.log(">>> OCR fieldsGuess:", data.fieldsGuess);
+    console.log(">>> OCR RSVP field:", data.fieldsGuess?.rsvp);
+    console.log(">>> OCR source:", (data as any)?.ocrSource);
+
     const adjusted = data.fieldsGuess
       ? {
           ...data.fieldsGuess,
           start: formatIsoForInput(data.fieldsGuess.start, tz),
           end: formatIsoForInput(data.fieldsGuess.end, tz),
           timezone: tz,
+          rsvp: data.fieldsGuess.rsvp || null,
           reminders: [{ minutes: 1440 }],
           recurrence: null as string | null,
         }
       : null;
+
+    console.log(">>> Adjusted event (with RSVP):", adjusted);
     // Prepare bulk events when provided by OCR schedule
     const normalizedBulk: any[] = normalizeBulkEvents(
       ((data as any)?.events as any[]) || [],
@@ -2239,6 +2249,25 @@ export default function SnapPage() {
                         />
                       </div>
                     )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="event-rsvp"
+                      className="text-sm text-foreground/70 flex items-center gap-2"
+                    >
+                      <span aria-hidden>📞</span>
+                      <span>RSVP</span>
+                    </label>
+                    <input
+                      id="event-rsvp"
+                      className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
+                      placeholder="RSVP: Name 555-123-4567"
+                      value={event.rsvp || ""}
+                      onChange={(e) =>
+                        setEvent({ ...event, rsvp: e.target.value || null })
+                      }
+                    />
                   </div>
                 </div>
 

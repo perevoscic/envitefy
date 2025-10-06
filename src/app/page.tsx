@@ -16,6 +16,7 @@ type EventFields = {
   description: string;
   timezone: string;
   category?: string | null;
+  rsvp?: string | null;
   reminders?: { minutes: number }[] | null;
 };
 
@@ -364,15 +365,23 @@ export default function Home() {
         return iso;
       }
     };
+    // Debug: Log OCR extraction results
+    console.log(">>> OCR fieldsGuess:", data.fieldsGuess);
+    console.log(">>> OCR RSVP field:", data.fieldsGuess?.rsvp);
+    console.log(">>> OCR source:", (data as any)?.ocrSource);
+
     const adjusted = data.fieldsGuess
       ? {
           ...data.fieldsGuess,
           start: formatIsoForInput(data.fieldsGuess.start, tz),
           end: formatIsoForInput(data.fieldsGuess.end, tz),
           timezone: tz, // use viewer timezone; we do not adjust cross-zone
+          rsvp: data.fieldsGuess.rsvp || null,
           reminders: [{ minutes: 1440 }],
         }
       : null;
+
+    console.log(">>> Adjusted event (with RSVP):", adjusted);
     setEvent(adjusted);
     // Save history for authenticated users (server will associate user if signed in)
     try {
@@ -1508,6 +1517,25 @@ export default function Home() {
                         />
                       </div>
                     )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="event-rsvp"
+                      className="text-sm text-foreground/70 flex items-center gap-2"
+                    >
+                      <span aria-hidden>📞</span>
+                      <span>RSVP</span>
+                    </label>
+                    <input
+                      id="event-rsvp"
+                      className="w-full border border-border/80 bg-surface/90 text-foreground p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition"
+                      placeholder="RSVP: Name 555-123-4567"
+                      value={event.rsvp || ""}
+                      onChange={(e) =>
+                        setEvent({ ...event, rsvp: e.target.value || null })
+                      }
+                    />
                   </div>
                 </div>
 
