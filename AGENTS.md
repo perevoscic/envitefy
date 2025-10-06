@@ -152,7 +152,7 @@ curl -X POST \
 ```
 
 - **Env**:
-  - **Required**: `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o`) - Primary OCR via OpenAI Vision
+  - **Required**: `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o` for best accuracy with cursive/decorative fonts; use `gpt-4o-mini` for faster processing at lower cost) - Primary OCR via OpenAI Vision
   - **Optional fallback**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Google Vision fallback.
 
 #### Notes
@@ -502,8 +502,10 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-06: **UI Enhancement**: Event creation modal now supports custom categories with automatic icon assignment. Users can select from preset categories (with emoji icons) or add their own custom category via "➕ Add your own..." option. Icons are intelligently assigned based on category keywords (e.g., 🎂 for birthdays, 💍 for weddings, 🩺 for medical appointments).
+- 2025-10-06: Default LLM model set to `gpt-4o` for best OCR accuracy with cursive/decorative fonts. Users can override with `LLM_MODEL=gpt-4o-mini` for faster, lower-cost processing when high accuracy is not critical.
+- 2025-10-06: **New feature**: Event creation modal now detects connected calendars (Google, Microsoft, Apple) and shows checkboxes to add events to multiple calendars simultaneously. All connected calendars are pre-selected by default.
 - 2025-10-06: Medical and dental appointment descriptions are now content-based, not template-based. The LLM extracts only the clinical information actually visible on the scanned image (appointment type, provider if shown, facility if shown, time, etc.). No rigid templates, no invented information. Patient name and DOB are excluded. All invitation-style phrases like "You're invited", "Join", "for his/her", "please" are forbidden. Each fact appears on its own line.
-- 2025-10-06: Default LLM model changed from `gpt-4o-mini` to `gpt-4o` for better accuracy with decorative fonts, cursive text, and RSVP extraction. The more powerful model significantly improves OCR quality on invitations.
 - 2025-10-06: **BREAKING**: OCR pipeline flipped to use OpenAI Vision as PRIMARY OCR method, with Google Vision as fallback. OpenAI Vision now runs first for all scans (direct image analysis), Google Vision only used if OpenAI fails. Response includes `ocrSource` field (`"openai"`, `"google-sdk"`, or `"google-rest"`). This improves accuracy for cursive fonts, decorative text, and RSVP extraction.
 - 2025-10-06: OCR agent now extracts RSVP contact info (name + phone) into a separate `rsvp` field in `fieldsGuess` for better structured data access. Event pages display RSVP info with Text/Call links, and signed-in users see an RSVP button in the event actions toolbar when a phone number is detected.
 - 2025-10-03: Added reCAPTCHA v3 protection to signup form. Verifies tokens server-side with score threshold (>0.5). Optional and gracefully falls back if not configured.

@@ -1266,10 +1266,10 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setOpenEvent(ev)}
-                            className={`w-full text-left rounded-md ${tone.tint} ${
-                              isShared
-                                ? SHARED_TEXT_CLASS
-                                : "text-foreground"
+                            className={`w-full text-left rounded-md ${
+                              tone.tint
+                            } ${
+                              isShared ? SHARED_TEXT_CLASS : "text-foreground"
                             } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
                             title={ev.title}
                           >
@@ -1491,24 +1491,28 @@ export default function CalendarPage() {
 
             <div className="mt-3 text-sm">
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <dt className="text-foreground/70">Start</dt>
-                  <dd className="font-medium break-all">
-                    {openEvent.start
-                      ? formatEventDateTime(openEvent.start)
-                      : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-foreground/70">End</dt>
-                  <dd className="font-medium break-all">
-                    {openEvent.end ? formatEventDateTime(openEvent.end) : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-foreground/70">Timezone</dt>
-                  <dd className="font-medium">{openEvent.timezone || "—"}</dd>
-                </div>
+                {openEvent.allDay && (
+                  <div className="sm:col-span-2">
+                    <dt className="text-foreground/70">When</dt>
+                    <dd className="font-medium">All day event</dd>
+                  </div>
+                )}
+                {openEvent.start && (
+                  <div>
+                    <dt className="text-foreground/70">Start</dt>
+                    <dd className="font-medium break-all">
+                      {formatEventDateTime(openEvent.start)}
+                    </dd>
+                  </div>
+                )}
+                {openEvent.end && (
+                  <div>
+                    <dt className="text-foreground/70">End</dt>
+                    <dd className="font-medium break-all">
+                      {formatEventDateTime(openEvent.end)}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-foreground/70">Location</dt>
                   <dd className="font-medium">{openEvent.location || "—"}</dd>

@@ -106,4 +106,40 @@ export function getColorByCategory(category?: string | null): EventColor {
   return getEventColor(category || "");
 }
 
+// Category icon mapping
+export function getCategoryIcon(category: string): string {
+  const lower = category.toLowerCase();
+  if (lower.includes("birthday")) return "🎂";
+  if (lower.includes("wedding")) return "💍";
+  if (
+    lower.includes("doctor") ||
+    lower.includes("dental") ||
+    lower.includes("medical")
+  )
+    return "🩺";
+  if (lower.includes("appointment")) return "📅";
+  if (
+    lower.includes("running") || 
+    lower.includes("run") ||
+    lower.includes("jog")
+  )
+    return "🏃";
+  if (lower.includes("sport") || lower.includes("game")) return "⚽";
+  if (lower.includes("meeting")) return "💼";
+  if (lower.includes("vacation") || lower.includes("travel")) return "✈️";
+  if (lower.includes("concert") || lower.includes("music")) return "🎵";
+  if (lower.includes("movie") || lower.includes("film")) return "🎬";
+  if (
+    lower.includes("dinner") ||
+    lower.includes("lunch") ||
+    lower.includes("food")
+  )
+    return "🍽️";
+  if (lower.includes("graduation")) return "🎓";
+  if (lower.includes("conference")) return "🎤";
+  if (lower.includes("holiday")) return "🎄";
+  if (lower.includes("anniversary")) return "💐";
+  if (lower.includes("party")) return "🎉";
+  return "📌"; // Default icon
+}
 

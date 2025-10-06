@@ -242,18 +242,22 @@ export default async function EventPage({
               />
             )}
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="text-foreground/70">Start</dt>
-                <dd className="font-medium break-all">{data?.start || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-foreground/70">End</dt>
-                <dd className="font-medium break-all">{data?.end || "—"}</dd>
-              </div>
-              {!isFutureEvent && (
+              {data?.allDay && (
+                <div className="sm:col-span-2">
+                  <dt className="text-foreground/70">When</dt>
+                  <dd className="font-medium">All day event</dd>
+                </div>
+              )}
+              {data?.start && (
                 <div>
-                  <dt className="text-foreground/70">Timezone</dt>
-                  <dd className="font-medium">{data?.timezone || "—"}</dd>
+                  <dt className="text-foreground/70">Start</dt>
+                  <dd className="font-medium break-all">{data.start}</dd>
+                </div>
+              )}
+              {data?.end && (
+                <div>
+                  <dt className="text-foreground/70">End</dt>
+                  <dd className="font-medium break-all">{data.end}</dd>
                 </div>
               )}
               <div>
@@ -264,10 +268,10 @@ export default async function EventPage({
                 <dt className="text-foreground/70">Category</dt>
                 <dd className="font-medium">{data?.category || "—"}</dd>
               </div>
-              <div>
-                <dt className="text-foreground/70">RSVP</dt>
-                <dd className="font-medium">
-                  {rsvpName || rsvpPhone ? (
+              {(rsvpName || rsvpPhone) && (
+                <div>
+                  <dt className="text-foreground/70">RSVP</dt>
+                  <dd className="font-medium">
                     <div className="flex flex-col gap-2">
                       {rsvpName && <div>{rsvpName}</div>}
                       {rsvpPhone && (
@@ -291,11 +295,9 @@ export default async function EventPage({
                         </div>
                       )}
                     </div>
-                  ) : (
-                    "—"
-                  )}
-                </dd>
-              </div>
+                  </dd>
+                </div>
+              )}
             </dl>
             {data?.description && (
               <div className="mt-3">

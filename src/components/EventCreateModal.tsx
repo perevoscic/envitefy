@@ -1,11 +1,18 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { NormalizedEvent } from "@/lib/mappers";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   defaultDate?: Date;
+};
+
+type ConnectedCalendars = {
+  google: boolean;
+  microsoft: boolean;
+  apple: boolean;
 };
 
 function toLocalInputValue(d: Date | null): string {
@@ -115,6 +122,25 @@ export default function EventCreateModal({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>("");
+  const [customCategory, setCustomCategory] = useState<string>("");
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+
+  // Connected calendars state
+  const [connectedCalendars, setConnectedCalendars] =
+    useState<ConnectedCalendars>({
+      google: false,
+      microsoft: false,
+      apple: false,
+    });
+  const [selectedCalendars, setSelectedCalendars] = useState<{
+    google: boolean;
+    microsoft: boolean;
+    apple: boolean;
+  }>({
+    google: false,
+    microsoft: false,
+    apple: false,
+  });
   const maybeAssignCategoryColor = (cat: string) => {
     if (!cat) return;
     try {
@@ -142,6 +168,39 @@ export default function EventCreateModal({
 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Fetch connected calendars when modal opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchConnected = async () => {
+      try {
+        const res = await fetch("/api/calendars", { credentials: "include" });
+        const data = await res.json();
+        console.log("[EventCreateModal] Connected calendars:", data);
+        setConnectedCalendars({
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+          apple: Boolean(data?.apple),
+        });
+        // Auto-select all connected calendars
+        setSelectedCalendars({
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+          apple: Boolean(data?.apple),
+        });
+        console.log("[EventCreateModal] Set connected calendars:", {
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+          apple: Boolean(data?.apple),
+        });
+      } catch (err) {
+        console.error("Failed to fetch connected calendars:", err);
+      }
+    };
+
+    fetchConnected();
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     setTitle("");
@@ -153,6 +212,8 @@ export default function EventCreateModal({
     setLocation("");
     setDescription("");
     setCategory("");
+    setCustomCategory("");
+    setShowCustomCategory(false);
     setRepeat(false);
     setRepeatDays([]);
   }, [open, initialStart, initialEnd]);
@@ -222,10 +283,13 @@ export default function EventCreateModal({
           }
         }
       }
+      // Use custom category if it was entered but not saved yet
+      const finalCategory = customCategory.trim() || category || undefined;
+
       const payload: any = {
         title: title || "Event",
         data: {
-          category: category || undefined,
+          category: finalCategory,
           startISO,
           endISO,
           location: location || undefined,
@@ -246,6 +310,66 @@ export default function EventCreateModal({
       });
       const j = await r.json().catch(() => ({}));
       const id = (j as any)?.id as string | undefined;
+
+      // Add to selected calendars
+      const timezone =
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const normalizedEvent: NormalizedEvent = {
+        title: title || "Event",
+        start: startISO || new Date().toISOString(),
+        end: endISO || new Date().toISOString(),
+        allDay: fullDay,
+        timezone,
+        location: location || undefined,
+        description: description || undefined,
+        recurrence:
+          repeat && repeatDays.length
+            ? `RRULE:FREQ=WEEKLY;BYDAY=${repeatDays.join(",")}`
+            : null,
+        reminders: [{ minutes: 30 }],
+      };
+
+      const calendarPromises: Promise<any>[] = [];
+
+      if (selectedCalendars.google) {
+        calendarPromises.push(
+          fetch("/api/events/google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(normalizedEvent),
+          }).catch((err) => {
+            console.error("Failed to add to Google Calendar:", err);
+            return { ok: false };
+          })
+        );
+      }
+
+      if (selectedCalendars.microsoft) {
+        calendarPromises.push(
+          fetch("/api/events/outlook", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(normalizedEvent),
+          }).catch((err) => {
+            console.error("Failed to add to Microsoft Calendar:", err);
+            return { ok: false };
+          })
+        );
+      }
+
+      // Apple calendar would be handled similarly when the API is available
+      if (selectedCalendars.apple) {
+        // TODO: Implement Apple Calendar API when available
+        console.log("Apple Calendar integration not yet implemented");
+      }
+
+      // Wait for all calendar operations to complete
+      if (calendarPromises.length > 0) {
+        await Promise.allSettled(calendarPromises);
+      }
+
       try {
         if (id && typeof window !== "undefined") {
           window.dispatchEvent(
@@ -394,25 +518,138 @@ export default function EventCreateModal({
             <label className="block text-sm mb-1" htmlFor="evt-category">
               Category
             </label>
-            <select
-              id="evt-category"
-              value={category}
-              onChange={(e) => {
-                const v = e.target.value;
-                setCategory(v);
-                maybeAssignCategoryColor(v);
-              }}
-              className="w-full px-3 py-2 rounded-md border border-border bg-background"
-            >
-              <option value="">Select category</option>
-              <option value="Birthdays">Birthdays</option>
-              <option value="Weddings">Weddings</option>
-              <option value="Appointments">Appointments</option>
-              <option value="Doctor Appointments">Doctor Appointments</option>
-              <option value="Sport Events">Sport Events</option>
-              <option value="General Events">General Events</option>
-            </select>
+            {!showCustomCategory ? (
+              <select
+                id="evt-category"
+                value={category}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "__custom__") {
+                    setShowCustomCategory(true);
+                    setCategory("");
+                  } else {
+                    setCategory(v);
+                    maybeAssignCategoryColor(v);
+                  }
+                }}
+                className="w-full px-3 py-2 rounded-md border border-border bg-background"
+              >
+                <option value="">Select category</option>
+                <option value="Birthdays">Birthdays</option>
+                <option value="Weddings">Weddings</option>
+                <option value="Appointments">Appointments</option>
+                <option value="Doctor Appointments">Doctor Appointments</option>
+                <option value="Sport Events">Sport Events</option>
+                <option value="General Events">General Events</option>
+                <option value="__custom__">+ Add your own...</option>
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  onBlur={() => {
+                    if (customCategory.trim()) {
+                      setCategory(customCategory.trim());
+                      maybeAssignCategoryColor(customCategory.trim());
+                    }
+                  }}
+                  placeholder="Enter category name"
+                  className="flex-1 px-3 py-2 rounded-md border border-border bg-background"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customCategory.trim()) {
+                      setCategory(customCategory.trim());
+                      maybeAssignCategoryColor(customCategory.trim());
+                      setShowCustomCategory(false);
+                    }
+                  }}
+                  className="px-3 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomCategory(false);
+                    setCustomCategory("");
+                  }}
+                  className="px-3 py-2 text-sm rounded-md border border-border hover:bg-surface"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {category && !showCustomCategory && (
+              <div className="mt-2 text-sm text-foreground/70">
+                <span>Selected: {category}</span>
+              </div>
+            )}
           </div>
+
+          {/* Connected Calendars Checkboxes */}
+          {(connectedCalendars.google ||
+            connectedCalendars.microsoft ||
+            connectedCalendars.apple) && (
+            <div>
+              <label className="block text-sm mb-2">Add to Calendar</label>
+              <div className="space-y-2">
+                {connectedCalendars.google && (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCalendars.google}
+                      onChange={(e) =>
+                        setSelectedCalendars((prev) => ({
+                          ...prev,
+                          google: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <span>Google Calendar</span>
+                  </label>
+                )}
+                {connectedCalendars.microsoft && (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCalendars.microsoft}
+                      onChange={(e) =>
+                        setSelectedCalendars((prev) => ({
+                          ...prev,
+                          microsoft: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <span>Outlook Calendar</span>
+                  </label>
+                )}
+                {connectedCalendars.apple && (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCalendars.apple}
+                      onChange={(e) =>
+                        setSelectedCalendars((prev) => ({
+                          ...prev,
+                          apple: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <span>Apple Calendar</span>
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             <span className="text-sm">Repeat</span>
             <button
