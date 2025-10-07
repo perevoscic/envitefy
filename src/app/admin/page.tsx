@@ -242,7 +242,7 @@ export default function AdminPage() {
                 isActive={activeStatView === "scans"}
               />
               <StatCard
-                label="Invites Shared"
+                label="Invites Send"
                 value={overview.totalShares}
                 icon="🔗"
                 gradient="from-orange-500 to-rose-500"
