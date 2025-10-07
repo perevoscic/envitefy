@@ -142,7 +142,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-background text-foreground transition-colors"
+      className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -157,10 +157,7 @@ export default function AdminPage() {
           >
             Admin Dashboard
           </h1>
-          <p
-            className="text-sm text-muted-foreground"
-            suppressHydrationWarning
-          >
+          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
             Platform insights, user analytics, and administrative tools
           </p>
         </div>
@@ -534,9 +531,7 @@ export default function AdminPage() {
                               ✓ Yes
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">
-                              No
-                            </span>
+                            <span className="text-muted-foreground">No</span>
                           )}
                         </div>
                       </div>
@@ -584,9 +579,7 @@ export default function AdminPage() {
                                   ✓
                                 </span>
                               ) : (
-                                <span className="text-muted-foreground">
-                                  -
-                                </span>
+                                <span className="text-muted-foreground">-</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-right text-foreground/80">
@@ -696,15 +689,12 @@ function StatCard({
 }
 
 function PlanBadge({ plan }: { plan?: string | null }) {
-  if (!plan)
-    return <span className="text-muted-foreground">—</span>;
+  if (!plan) return <span className="text-muted-foreground">—</span>;
 
   const styles: Record<string, string> = {
     free: "bg-surface/80 text-foreground/80 border border-border",
-    monthly:
-      "bg-blue-500/15 text-blue-600 border border-blue-500/30",
-    yearly:
-      "bg-purple-500/15 text-purple-600 border border-purple-500/30",
+    monthly: "bg-blue-500/15 text-blue-600 border border-blue-500/30",
+    yearly: "bg-purple-500/15 text-purple-600 border border-purple-500/30",
     FF: "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg shadow-amber-500/20",
   };
 
@@ -729,11 +719,7 @@ function Th({ children }: { children: any }) {
 
 function Td({ children, className }: { children: any; className?: string }) {
   return (
-    <td
-      className={`px-4 py-3 text-muted-foreground ${
-        className || ""
-      }`}
-    >
+    <td className={`px-4 py-3 text-muted-foreground ${className || ""}`}>
       {children}
     </td>
   );
@@ -779,4 +765,3 @@ async function fetchStatUsers(view: StatView, cursor?: string | null) {
     nextCursor: string | null;
   };
 }
-
