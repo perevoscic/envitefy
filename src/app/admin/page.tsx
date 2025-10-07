@@ -142,7 +142,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 dark:bg-slate-950"
+      className="min-h-[100dvh] bg-background text-foreground transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -152,13 +152,13 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col gap-2 pt-8" suppressHydrationWarning>
           <h1
-            className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent"
+            className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
             suppressHydrationWarning
           >
             Admin Dashboard
           </h1>
           <p
-            className="text-slate-600 dark:text-slate-400 text-sm"
+            className="text-sm text-muted-foreground"
             suppressHydrationWarning
           >
             Platform insights, user analytics, and administrative tools
@@ -167,7 +167,7 @@ export default function AdminPage() {
 
         {error && (
           <div
-            className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-4"
+            className="rounded-lg border border-error/30 bg-error/10 text-error p-4"
             suppressHydrationWarning
           >
             <div className="flex items-start gap-3">
@@ -190,7 +190,7 @@ export default function AdminPage() {
         {/* Overview Stats */}
         <section suppressHydrationWarning>
           <h2
-            className="text-xl font-semibold mb-3 text-slate-800 dark:text-slate-200"
+            className="text-xl font-semibold mb-3 text-foreground"
             suppressHydrationWarning
           >
             Platform Overview
@@ -198,7 +198,7 @@ export default function AdminPage() {
           {!overview ? (
             <div className="flex items-center justify-center py-12">
               <div
-                className="flex items-center gap-3 text-slate-600 dark:text-slate-400"
+                className="flex items-center gap-3 text-muted-foreground"
                 suppressHydrationWarning
               >
                 <svg
@@ -272,21 +272,21 @@ export default function AdminPage() {
         {/* User Search */}
         <section suppressHydrationWarning>
           <div
-            className="bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm"
+            className="bg-surface rounded-xl ring-1 ring-border/60 overflow-hidden shadow-sm"
             suppressHydrationWarning
           >
             <div
-              className="px-6 py-4 border-b border-slate-200 dark:border-slate-800"
+              className="px-6 py-4 border-b border-border"
               suppressHydrationWarning
             >
               <h2
-                className="text-lg font-semibold text-slate-800 dark:text-slate-200"
+                className="text-lg font-semibold text-foreground"
                 suppressHydrationWarning
               >
                 {getActiveViewTitle()}
               </h2>
               <p
-                className="text-sm text-slate-600 dark:text-slate-400 mt-1"
+                className="text-sm text-muted-foreground mt-1"
                 suppressHydrationWarning
               >
                 {activeStatView
@@ -306,13 +306,13 @@ export default function AdminPage() {
             </div>
             <div className="p-6">
               {activeStatView && (
-                <div className="mb-4 flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-4 py-3">
-                  <span className="text-sm text-indigo-900 dark:text-indigo-200 font-medium">
+                <div className="mb-4 flex items-center justify-between rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3">
+                  <span className="text-sm text-secondary font-medium">
                     Active Filter: {getActiveViewTitle()}
                   </span>
                   <button
                     onClick={handleClearSearch}
-                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold flex items-center gap-1"
+                    className="text-sm text-secondary hover:text-secondary/80 font-semibold flex items-center gap-1"
                   >
                     <svg
                       className="w-4 h-4"
@@ -342,11 +342,11 @@ export default function AdminPage() {
                     }}
                     placeholder="Search by email, first or last name..."
                     disabled={!!activeStatView}
-                    className="w-full pl-11 pr-10 py-3 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full pl-11 pr-10 py-3 text-sm rounded-lg border border-border bg-surface/85 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     suppressHydrationWarning
                   />
                   <svg
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -362,11 +362,11 @@ export default function AdminPage() {
                   {q && (
                     <button
                       onClick={handleClearSearch}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-surface/80"
                       title="Clear search"
                     >
                       <svg
-                        className="w-4 h-4 text-slate-400 dark:text-slate-500"
+                        className="w-4 h-4 text-muted-foreground"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -431,13 +431,13 @@ export default function AdminPage() {
               </div>
 
               {usersError && (
-                <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-3 text-sm mb-4">
+                <div className="rounded-lg border border-error/30 bg-error/10 text-error p-3 text-sm mb-4">
                   {usersError}
                 </div>
               )}
 
               {hasSearched && users.length === 0 && !usersLoading && (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                <div className="text-center py-8 text-muted-foreground">
                   <svg
                     className="mx-auto h-12 w-12 mb-3"
                     fill="none"
@@ -463,14 +463,14 @@ export default function AdminPage() {
                     {users.map((u) => (
                       <div
                         key={u.id}
-                        className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 p-4 space-y-3"
+                        className="rounded-lg border border-border bg-surface/85 p-4 space-y-3"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                               Email
                             </p>
-                            <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                            <p className="font-medium text-foreground truncate">
                               {u.email}
                             </p>
                           </div>
@@ -479,10 +479,10 @@ export default function AdminPage() {
 
                         {(u.first_name || u.last_name) && (
                           <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                               Name
                             </p>
-                            <p className="text-slate-700 dark:text-slate-300">
+                            <p className="text-foreground/80">
                               {[u.first_name, u.last_name]
                                 .filter(Boolean)
                                 .join(" ")}
@@ -490,51 +490,51 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
                           <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                               Scans
                             </p>
-                            <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            <p className="font-semibold text-foreground">
                               {u.scans_total ?? 0}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                               Shares
                             </p>
-                            <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            <p className="font-semibold text-foreground">
                               {u.shares_sent ?? 0}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                               Credits
                             </p>
-                            <p className="text-slate-700 dark:text-slate-300">
+                            <p className="text-foreground/80">
                               {u.credits ?? "—"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                               Joined
                             </p>
-                            <p className="text-slate-700 dark:text-slate-300 text-sm">
+                            <p className="text-foreground/80 text-sm">
                               {formatDate(u.created_at)}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2 pt-2 border-t border-border">
+                          <span className="text-xs uppercase tracking-wide text-muted-foreground">
                             Paid:
                           </span>
                           {u.ever_paid ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            <span className="text-success font-medium">
                               ✓ Yes
                             </span>
                           ) : (
-                            <span className="text-slate-400 dark:text-slate-600">
+                            <span className="text-muted-foreground">
                               No
                             </span>
                           )}
@@ -545,11 +545,11 @@ export default function AdminPage() {
 
                   {/* Desktop Table View */}
                   <div
-                    className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"
+                    className="hidden md:block overflow-x-auto rounded-lg border border-border"
                     suppressHydrationWarning
                   >
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase tracking-wider font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
+                      <thead className="bg-surface/80 text-xs uppercase tracking-wider font-semibold text-foreground/80 border-b border-border">
                         <tr>
                           <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3">Name</th>
@@ -561,16 +561,16 @@ export default function AdminPage() {
                           <th className="px-4 py-3">Joined</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/30">
+                      <tbody className="divide-y divide-border bg-surface/85">
                         {users.map((u) => (
                           <tr
                             key={u.id}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+                            className="hover:bg-surface/75 transition-colors"
                           >
-                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                            <td className="px-4 py-3 font-medium text-foreground">
                               {u.email}
                             </td>
-                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                            <td className="px-4 py-3 text-foreground/80">
                               {[u.first_name, u.last_name]
                                 .filter(Boolean)
                                 .join(" ") || "-"}
@@ -580,25 +580,25 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3">
                               {u.ever_paid ? (
-                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                <span className="text-success font-medium">
                                   ✓
                                 </span>
                               ) : (
-                                <span className="text-slate-400 dark:text-slate-600">
+                                <span className="text-muted-foreground">
                                   -
                                 </span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                            <td className="px-4 py-3 text-right text-foreground/80">
                               {u.credits ?? "—"}
                             </td>
-                            <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">
+                            <td className="px-4 py-3 text-right font-semibold text-foreground">
                               {u.scans_total ?? 0}
                             </td>
-                            <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                            <td className="px-4 py-3 text-right text-foreground/80">
                               {u.shares_sent ?? 0}
                             </td>
-                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
                               {formatDate(u.created_at)}
                             </td>
                           </tr>
@@ -607,7 +607,7 @@ export default function AdminPage() {
                     </table>
                   </div>
                   <div className="mt-4 flex items-center justify-between">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                       Showing {users.length} result
                       {users.length !== 1 ? "s" : ""}
                     </p>
@@ -615,7 +615,7 @@ export default function AdminPage() {
                       <button
                         onClick={handleLoadMore}
                         disabled={usersLoading}
-                        className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm font-medium rounded-lg border border-border bg-surface/85 text-foreground/80 hover:bg-surface/80 hover:border-foreground/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {usersLoading ? "Loading…" : "Load more"}
                       </button>
@@ -658,28 +658,28 @@ function StatCard({
       : gradient.includes("amber")
       ? "border-2 border-amber-500 shadow-lg"
       : "border-2 border-indigo-500 shadow-lg"
-    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700";
+    : "border-border hover:border-foreground/40";
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all shadow-sm cursor-pointer ${activeBorderClass} ${
-        onClick ? "hover:shadow-md hover:scale-[1.02]" : ""
+      className={`relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm cursor-pointer ring-1 ring-border/50 ${activeBorderClass} ${
+        onClick ? "hover:shadow-md hover:scale-[1.02] hover:ring-border/80" : ""
       }`}
       onClick={onClick}
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
               {label}
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+            <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
               {value.toLocaleString()}
             </p>
           </div>
           <div
             className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0 ${
-              isActive ? "ring-2 ring-white dark:ring-slate-800" : ""
+              isActive ? "ring-2 ring-background" : ""
             }`}
           >
             {icon}
@@ -697,14 +697,14 @@ function StatCard({
 
 function PlanBadge({ plan }: { plan?: string | null }) {
   if (!plan)
-    return <span className="text-slate-400 dark:text-slate-500">—</span>;
+    return <span className="text-muted-foreground">—</span>;
 
   const styles: Record<string, string> = {
-    free: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700",
+    free: "bg-surface/80 text-foreground/80 border border-border",
     monthly:
-      "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50",
+      "bg-blue-500/15 text-blue-600 border border-blue-500/30",
     yearly:
-      "bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50",
+      "bg-purple-500/15 text-purple-600 border border-purple-500/30",
     FF: "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg shadow-amber-500/20",
   };
 
@@ -721,7 +721,7 @@ function PlanBadge({ plan }: { plan?: string | null }) {
 
 function Th({ children }: { children: any }) {
   return (
-    <th className="text-left font-semibold px-4 py-3 text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider">
+    <th className="text-left font-semibold px-4 py-3 text-foreground/80 text-xs uppercase tracking-wider">
       {children}
     </th>
   );
@@ -730,7 +730,7 @@ function Th({ children }: { children: any }) {
 function Td({ children, className }: { children: any; className?: string }) {
   return (
     <td
-      className={`px-4 py-3 text-slate-600 dark:text-slate-400 ${
+      className={`px-4 py-3 text-muted-foreground ${
         className || ""
       }`}
     >
@@ -779,3 +779,4 @@ async function fetchStatUsers(view: StatView, cursor?: string | null) {
     nextCursor: string | null;
   };
 }
+
