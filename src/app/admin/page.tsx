@@ -198,13 +198,13 @@ export default function AdminPage() {
                 gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
-                label="Events"
+                label="Total Scans"
                 value={overview.totalEvents}
                 icon="📅"
                 gradient="from-emerald-500 to-teal-500"
               />
               <StatCard
-                label="Event Shares"
+                label="Invites Shared"
                 value={overview.totalShares}
                 icon="🔗"
                 gradient="from-orange-500 to-rose-500"
@@ -572,7 +572,7 @@ function StatCard({
             </p>
           </div>
           <div
-            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-xl sm:text-2xl shadow-lg flex-shrink-0`}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0`}
           >
             {icon}
           </div>
