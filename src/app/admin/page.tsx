@@ -11,6 +11,8 @@ type Overview = {
   usersFF: number;
 };
 
+type StatView = "all" | "paid" | "ff" | "scans" | "shares" | null;
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -21,6 +23,7 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [activeStatView, setActiveStatView] = useState<StatView>(null);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -67,6 +70,7 @@ export default function AdminPage() {
     setUsersCursor(null);
     setUsersError(null);
     setHasSearched(false);
+    setActiveStatView(null);
   }
 
   async function handleSearch() {
@@ -80,6 +84,7 @@ export default function AdminPage() {
     setUsersLoading(true);
     setUsersError(null);
     setHasSearched(true);
+    setActiveStatView(null);
     try {
       const res = await fetchUsers(q.trim());
       setUsers(res.items || []);
@@ -91,12 +96,32 @@ export default function AdminPage() {
     }
   }
 
+  async function handleStatClick(view: StatView) {
+    setActiveStatView(view);
+    setQ("");
+    setHasSearched(true);
+    setUsersLoading(true);
+    setUsersError(null);
+
+    try {
+      const res = await fetchStatUsers(view);
+      setUsers(res.items || []);
+      setUsersCursor(res.nextCursor || null);
+    } catch (e: any) {
+      setUsersError(e?.message || String(e));
+    } finally {
+      setUsersLoading(false);
+    }
+  }
+
   async function handleLoadMore() {
-    if (!q.trim() || !usersCursor) return;
+    if ((!q.trim() && !activeStatView) || !usersCursor) return;
     setUsersLoading(true);
     setUsersError(null);
     try {
-      const res = await fetchUsers(q.trim(), usersCursor);
+      const res = activeStatView
+        ? await fetchStatUsers(activeStatView, usersCursor)
+        : await fetchUsers(q.trim(), usersCursor);
       setUsers((prev) => [...prev, ...(res.items || [])]);
       setUsersCursor(res.nextCursor || null);
     } catch (e: any) {
@@ -104,6 +129,15 @@ export default function AdminPage() {
     } finally {
       setUsersLoading(false);
     }
+  }
+
+  function getActiveViewTitle(): string {
+    if (activeStatView === "all") return "All Users";
+    if (activeStatView === "paid") return "Paid Users";
+    if (activeStatView === "ff") return "FF Lifetime Users";
+    if (activeStatView === "scans") return "Users by Total Scans";
+    if (activeStatView === "shares") return "Users by Shares Sent";
+    return "User Search";
   }
 
   return (
@@ -196,30 +230,40 @@ export default function AdminPage() {
                 value={overview.totalUsers}
                 icon="👥"
                 gradient="from-blue-500 to-cyan-500"
+                onClick={() => handleStatClick("all")}
+                isActive={activeStatView === "all"}
               />
               <StatCard
                 label="Total Scans"
                 value={overview.totalEvents}
                 icon="📅"
                 gradient="from-emerald-500 to-teal-500"
+                onClick={() => handleStatClick("scans")}
+                isActive={activeStatView === "scans"}
               />
               <StatCard
                 label="Invites Shared"
                 value={overview.totalShares}
                 icon="🔗"
                 gradient="from-orange-500 to-rose-500"
+                onClick={() => handleStatClick("shares")}
+                isActive={activeStatView === "shares"}
               />
               <StatCard
                 label="Paid Users"
                 value={overview.usersPaid}
                 icon="💳"
                 gradient="from-purple-500 to-pink-500"
+                onClick={() => handleStatClick("paid")}
+                isActive={activeStatView === "paid"}
               />
               <StatCard
                 label="FF Lifetime"
                 value={overview.usersFF}
                 icon="⭐"
                 gradient="from-amber-500 to-yellow-500"
+                onClick={() => handleStatClick("ff")}
+                isActive={activeStatView === "ff"}
               />
             </div>
           )}
@@ -239,16 +283,54 @@ export default function AdminPage() {
                 className="text-lg font-semibold text-slate-800 dark:text-slate-200"
                 suppressHydrationWarning
               >
-                User Search
+                {getActiveViewTitle()}
               </h2>
               <p
                 className="text-sm text-slate-600 dark:text-slate-400 mt-1"
                 suppressHydrationWarning
               >
-                Search for users by email, first name, or last name
+                {activeStatView
+                  ? `Showing ${
+                      activeStatView === "all"
+                        ? "all users"
+                        : activeStatView === "paid"
+                        ? "paid users"
+                        : activeStatView === "ff"
+                        ? "FF lifetime users"
+                        : activeStatView === "scans"
+                        ? "users sorted by total scans"
+                        : "users sorted by shares sent"
+                    }`
+                  : "Search for users by email, first name, or last name"}
               </p>
             </div>
             <div className="p-6">
+              {activeStatView && (
+                <div className="mb-4 flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-4 py-3">
+                  <span className="text-sm text-indigo-900 dark:text-indigo-200 font-medium">
+                    Active Filter: {getActiveViewTitle()}
+                  </span>
+                  <button
+                    onClick={handleClearSearch}
+                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold flex items-center gap-1"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                    Clear Filter
+                  </button>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
                 <div className="flex-1 relative">
                   <input
@@ -259,7 +341,8 @@ export default function AdminPage() {
                       if (e.key === "Enter") handleSearch();
                     }}
                     placeholder="Search by email, first or last name..."
-                    className="w-full pl-11 pr-10 py-3 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all"
+                    disabled={!!activeStatView}
+                    className="w-full pl-11 pr-10 py-3 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     suppressHydrationWarning
                   />
                   <svg
@@ -300,7 +383,7 @@ export default function AdminPage() {
                 </div>
                 <button
                   onClick={handleSearch}
-                  disabled={usersLoading}
+                  disabled={usersLoading || !!activeStatView}
                   className="px-6 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {usersLoading ? (
@@ -553,14 +636,37 @@ function StatCard({
   value,
   icon,
   gradient,
+  onClick,
+  isActive,
 }: {
   label: string;
   value: number;
   icon: string;
   gradient: string;
+  onClick?: () => void;
+  isActive?: boolean;
 }) {
+  const activeBorderClass = isActive
+    ? gradient.includes("blue")
+      ? "border-2 border-blue-500 shadow-lg"
+      : gradient.includes("emerald")
+      ? "border-2 border-emerald-500 shadow-lg"
+      : gradient.includes("orange")
+      ? "border-2 border-orange-500 shadow-lg"
+      : gradient.includes("purple")
+      ? "border-2 border-purple-500 shadow-lg"
+      : gradient.includes("amber")
+      ? "border-2 border-amber-500 shadow-lg"
+      : "border-2 border-indigo-500 shadow-lg"
+    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700";
+
   return (
-    <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-sm">
+    <div
+      className={`relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all shadow-sm cursor-pointer ${activeBorderClass} ${
+        onClick ? "hover:shadow-md hover:scale-[1.02]" : ""
+      }`}
+      onClick={onClick}
+    >
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -572,13 +678,19 @@ function StatCard({
             </p>
           </div>
           <div
-            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0`}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0 ${
+              isActive ? "ring-2 ring-white dark:ring-slate-800" : ""
+            }`}
           >
             {icon}
           </div>
         </div>
       </div>
-      <div className={`h-1 bg-gradient-to-r ${gradient} opacity-60`} />
+      <div
+        className={`h-1 bg-gradient-to-r ${gradient} ${
+          isActive ? "opacity-100" : "opacity-60"
+        }`}
+      />
     </div>
   );
 }
@@ -646,6 +758,21 @@ async function fetchUsers(q: string, cursor?: string | null) {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  return (await res.json()) as {
+    ok: boolean;
+    items: any[];
+    nextCursor: string | null;
+  };
+}
+
+async function fetchStatUsers(view: StatView, cursor?: string | null) {
+  const params = new URLSearchParams();
+  if (view) params.set("view", view);
+  if (cursor) params.set("cursor", cursor);
+  const res = await fetch(`/api/admin/users/filter?${params.toString()}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Failed to fetch ${view} users: ${res.status}`);
   return (await res.json()) as {
     ok: boolean;
     items: any[];
