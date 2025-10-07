@@ -3468,6 +3468,13 @@ export default function LeftSidebar() {
             >
               <div className="min-w-0 flex-1 inline-flex items-center gap-2">
                 <div className="min-w-0 flex-1 text-left">
+                  {subscriptionPlan === "FF" && (
+                    <div className="mb-1">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-yellow-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        ⭐ Lifetime
+                      </span>
+                    </div>
+                  )}
                   <div className="truncate text-sm font-medium">
                     {displayName}
                   </div>
