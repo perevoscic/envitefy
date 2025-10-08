@@ -462,30 +462,28 @@ export default function AdminPage() {
                         key={u.id}
                         className="rounded-lg border border-border bg-surface/85 p-4 space-y-3"
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 mb-0">
                           <div className="flex-1 min-w-0">
                             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Email
+                              Name:{" "}
+                              <span className="text-foreground/80 font-bold">
+                                {[u.first_name, u.last_name]
+                                  .filter(Boolean)
+                                  .join(" ") || "-"}
+                              </span>
                             </p>
-                            <p className="font-medium text-foreground truncate">
-                              {u.email}
-                            </p>
+                            <p className="font-medium text-foreground truncate"></p>
                           </div>
                           <PlanBadge plan={u.subscription_plan} />
                         </div>
-
-                        {(u.first_name || u.last_name) && (
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Name
-                            </p>
-                            <p className="text-foreground/80">
-                              {[u.first_name, u.last_name]
-                                .filter(Boolean)
-                                .join(" ")}
-                            </p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                            Email:{" "}
+                            <span className="text-foreground/80 font-bold">
+                              {u.email}
+                            </span>
+                          </p>
+                        </div>
 
                         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
                           <div>
@@ -546,8 +544,8 @@ export default function AdminPage() {
                     <table className="w-full text-left text-sm">
                       <thead className="bg-surface/80 text-xs uppercase tracking-wider font-semibold text-foreground/80 border-b border-border">
                         <tr>
-                          <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3">Name</th>
+                          <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3">Plan</th>
                           <th className="px-4 py-3">Paid</th>
                           <th className="px-4 py-3 text-right">Credits</th>
@@ -562,13 +560,13 @@ export default function AdminPage() {
                             key={u.id}
                             className="hover:bg-surface/75 transition-colors"
                           >
-                            <td className="px-4 py-3 font-medium text-foreground">
-                              {u.email}
-                            </td>
                             <td className="px-4 py-3 text-foreground/80">
                               {[u.first_name, u.last_name]
                                 .filter(Boolean)
                                 .join(" ") || "-"}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-foreground">
+                              {u.email}
                             </td>
                             <td className="px-4 py-3">
                               <PlanBadge plan={u.subscription_plan} />
