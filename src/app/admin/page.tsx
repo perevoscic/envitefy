@@ -162,6 +162,55 @@ export default function AdminPage() {
           </p>
         </div>
 
+        {/* Quick Actions */}
+        <section suppressHydrationWarning>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Link
+              href="/admin/campaigns"
+              className="group relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 hover:shadow-md hover:scale-[1.02] hover:ring-border/80 cursor-pointer"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Email Campaigns
+                    </p>
+                    <p className="text-sm text-foreground/80">
+                      Send bulk emails to users
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl shadow-lg flex-shrink-0">
+                    ✉️
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+            </Link>
+
+            <Link
+              href="/admin/emails"
+              className="group relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 hover:shadow-md hover:scale-[1.02] hover:ring-border/80 cursor-pointer"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Email Templates
+                    </p>
+                    <p className="text-sm text-foreground/80">
+                      Preview email designs
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xl shadow-lg flex-shrink-0">
+                    📧
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-pink-500 to-rose-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          </div>
+        </section>
+
         {error && (
           <div
             className="rounded-lg border border-error/30 bg-error/10 text-error p-4"

@@ -49,6 +49,22 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Behavior**: Returns a page of users matching `email` or `first_name` or `last_name` using a contains match. Results are ordered by `created_at desc, id desc`. When more results exist, `nextCursor` is set; pass it back to load subsequent pages. When `q` is empty, returns no results (avoids scanning the table).
 - **Output**: `{ ok: true, items: Array<{ id, email, first_name, last_name, subscription_plan, ever_paid, credits, created_at, scans_total, shares_sent }>, nextCursor: string|null }`.
 
+### Admin Campaigns Send — POST `/api/admin/campaigns/send`
+
+- **Purpose**: Create and send a bulk email campaign to users filtered by subscription plan or other criteria.
+- **Auth**: NextAuth session required and `isAdmin=true`.
+- **Input (JSON)**: `{ subject: string, body: string, fromEmail?: string, audienceFilter: { plans?: string[], minScans?: number, maxScans?: number, lastActiveAfter?: string, lastActiveBefore?: string }, buttonText?: string, buttonUrl?: string }`.
+- **Behavior**: Queries users matching the audience filter, creates a campaign record in `email_campaigns` table, sends emails in batches of 100 via Resend, and updates campaign stats (sent/failed counts). The body supports a `{{greeting}}` placeholder for personalized greetings. Emails use the standard Snap My Date template wrapper.
+- **Output**: `{ ok: true, campaignId: string, sent: number, failed: number, errors: Array<{ email: string, error: string }> }`.
+- **Env**: `RESEND_API_KEY` (required), `SES_FROM_EMAIL_NO_REPLY` (default sender), `DATABASE_URL`.
+
+### Admin Campaigns List — GET `/api/admin/campaigns`
+
+- **Purpose**: List all email campaigns with stats and creator info (admin only).
+- **Auth**: NextAuth session required and `isAdmin=true`.
+- **Query params**: `status` (optional: filter by status), `limit` (default 50), `offset` (default 0).
+- **Output**: `{ ok: true, campaigns: Array<{ id, subject, bodyHtml, fromEmail, audienceFilter, recipientCount, sentCount, failedCount, status, errorMessage, sentAt, createdAt, updatedAt, creator: { email, firstName, lastName } }>, total: number, limit: number, offset: number }`.
+
 ### Promo Gift Agent — POST `/api/promo/gift`
 
 - **Purpose**: Initiate a Stripe Checkout session for gifting subscriptions. The promo code is created and emailed only after payment succeeds (via webhook). UI now redirects the purchaser to Stripe.
@@ -452,6 +468,8 @@ Payload used by the authenticated calendar agents.
 - **Microsoft OAuth/Graph**
   - `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_REDIRECT_URI`, `OUTLOOK_TENANT_ID` (default `common`).
   - Token refresh requests include scopes: `offline_access https://graph.microsoft.com/Calendars.ReadWrite`.
+- **Resend (email campaigns)**
+  - `RESEND_API_KEY`: Required for admin bulk email campaigns via `/api/admin/campaigns/send`.
 - **GCP Vision**
   - Prefer inline: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
   - Or ADC file path: `GOOGLE_APPLICATION_CREDENTIALS`.
@@ -479,6 +497,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-10: Added admin email campaigns system with Resend integration. New endpoints: `POST /api/admin/campaigns/send`, `GET /api/admin/campaigns`. New database table: `email_campaigns`. Admin UI at `/admin/campaigns` for composing and sending bulk marketing emails to users filtered by subscription tier.
 - 2025-10-05: Updated yearly Stripe pricing to $9.99 (`prod_T93Df9XcDp26Nm`).
 - 2025-09-29: Updated Stripe pricing to $0.99/month (`prod_T93CX7Yaqefp2B`) and $19.99/year (`prod_T93Df9XcDp26Nm`); portal button only shows for active paid plans.
 - 2025-09-27: User profile API now returns `isAdmin` so clients can surface admin UI without relying on session-only flags.
