@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail, getCategoryColorsByEmail, updateCategoryColorsByEmail, getIsAdminByEmail } from "@/lib/db";
+import { sendSubscriptionChangeEmail } from "@/lib/email";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -72,12 +73,33 @@ export async function PUT(req: Request) {
       const map = body.categoryColors && typeof body.categoryColors === "object" ? (body.categoryColors as Record<string, string>) : null;
       await updateCategoryColorsByEmail({ email, categoryColors: map });
     }
+    
+    // Track subscription plan changes for email notification
+    const oldPlan = typeof body.subscriptionPlan !== "undefined" ? (await getSubscriptionPlanByEmail(email)) || "free" : null;
+    
     if (typeof body.subscriptionPlan !== "undefined") {
       const rawPlan = body.subscriptionPlan == null ? null : String(body.subscriptionPlan);
       const norm = rawPlan && (rawPlan === "free" || rawPlan === "monthly" || rawPlan === "yearly" || rawPlan === "FF") ? (rawPlan as any) : null;
       await updateSubscriptionPlanByEmail({ email, plan: norm });
     }
     const nextPlan = (await getSubscriptionPlanByEmail(email)) || null;
+    
+    // Send subscription change email if plan changed
+    if (oldPlan && nextPlan && oldPlan !== nextPlan) {
+      try {
+        const user = await getUserByEmail(email);
+        const userName = user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || null : null;
+        await sendSubscriptionChangeEmail({
+          toEmail: email,
+          userName,
+          oldPlan,
+          newPlan: nextPlan,
+        });
+      } catch (emailErr) {
+        // Log but don't fail the request if email fails
+        console.error("[profile] Failed to send subscription change email:", emailErr);
+      }
+    }
     const isAdmin = await getIsAdminByEmail(email);
     return NextResponse.json({
       email: updated.email,

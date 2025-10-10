@@ -1,5 +1,6 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { getUserByEmail } from "@/lib/db";
+import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
 
@@ -8,6 +9,9 @@ function assertEnv(name: string, value: string | undefined): asserts value is No
     throw new Error(`${name} is not set`);
   }
 }
+
+// Re-export for backwards compatibility
+export { createEmailTemplate, escapeHtml };
 
 let sesClient: any = null;
 function getSes(): any {
@@ -58,14 +62,59 @@ export async function sendGiftEmail(params: {
     .filter(Boolean)
     .join("\n");
 
-  const html = `<!doctype html>
-  <html><body>
-  <p>Hi${params.recipientName ? ` ${params.recipientName}` : ""},</p>
-  <p>${preheader}</p>
-  ${autoRedeemed ? `<p>Your account has already been extended${params.autoRedeemed?.expiresAt ? ` through <strong>${escapeHtml(formatExpiresDate(params.autoRedeemed?.expiresAt))}</strong>` : ""}. No code needed.</p>` : `<p><strong>Your gift code:</strong> <code>${params.giftCode}</code></p>`}
-  ${params.message ? `<p><em>Message:</em> ${escapeHtml(params.message)}</p>` : ""}
-  <p><a href="https://snapmydate.com/subscription">${autoRedeemed ? "Manage your subscription" : "Redeem your gift"}</a>${autoRedeemed ? "" : " (click \"Redeem a Snap\")"}.</p>
-  </body></html>`;
+  const greeting = params.recipientName ? `Hi ${escapeHtml(params.recipientName)}` : "Hello";
+  
+  const body = autoRedeemed
+    ? `
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        🎉 Great news! You've received a gift subscription to Snap My Date, and we've already added it to your account.
+      </p>
+      <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">✓ Gift Applied</p>
+        <p style="margin: 0; font-size: 15px; color: #047857;">
+          Your subscription now includes <strong>${months} additional month${months === 1 ? "" : "s"}</strong> 
+          ${params.autoRedeemed?.expiresAt ? `and runs through <strong>${escapeHtml(formatExpiresDate(params.autoRedeemed?.expiresAt))}</strong>` : ""}.
+        </p>
+      </div>
+      ${params.message ? `<div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; font-weight: 600; color: #737373;">💌 Message from sender:</p>
+        <p style="margin: 0; font-size: 15px; color: #4E4E50; font-style: italic;">${escapeHtml(params.message)}</p>
+      </div>` : ""}
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        No action needed—just keep snapping and saving your dates!
+      </p>
+    `
+    : `
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        🎁 Exciting news! Someone has gifted you <strong>${months} month${months === 1 ? "" : "s"}</strong> of Snap My Date premium access!
+      </p>
+      ${params.message ? `<div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; font-weight: 600; color: #737373;">💌 Message from sender:</p>
+        <p style="margin: 0; font-size: 15px; color: #4E4E50; font-style: italic;">${escapeHtml(params.message)}</p>
+      </div>` : ""}
+      <div style="background: #FFFBEB; border: 1px solid #FCD34D; padding: 16px; margin: 20px 0; border-radius: 8px; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #92400E;">Your Gift Code:</p>
+        <p style="margin: 0; font-size: 20px; font-weight: 700; font-family: 'Courier New', monospace; color: #78350F; letter-spacing: 2px;">
+          ${params.giftCode}
+        </p>
+      </div>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        Click the button below to redeem your gift and start enjoying premium features.
+      </p>
+    `;
+
+  const html = createEmailTemplate({
+    preheader,
+    title: autoRedeemed ? "Your gift has been added" : "You've received a gift",
+    body,
+    buttonText: autoRedeemed ? "View My Subscription" : "Redeem My Gift",
+    buttonUrl: "https://snapmydate.com/subscription",
+    footerText: autoRedeemed 
+      ? undefined 
+      : `Having trouble? Copy and paste this code on the subscription page: <strong>${params.giftCode}</strong>`,
+  });
 
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,
@@ -126,88 +175,24 @@ export async function sendPasswordResetEmail(params: {
     ``,
     `If you didn't request this, you can ignore this email.`,
   ].join("\n");
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL || "https://snapmydate.com";
-  const logoUrl = `${baseUrl}/_next/image?url=%2Fassets%2Flogo.png&w=256&q=90`;
-  const safeResetUrl = escapeHtml(params.resetUrl);
-  const html = `<!doctype html>
-  <html lang="en">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta name="x-apple-disable-message-reformatting" />
-      <title>Reset your password</title>
-      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Pacifico&display=swap" rel="stylesheet" />
-      <style>
-        /* Reset (kept minimal for email client compatibility) */
-        body,table,td,a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-        table,td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-        img { -ms-interpolation-mode: bicubic; border: 0; outline: 0; text-decoration: none; display: block; }
-        a { text-decoration: none; }
-        body { margin: 0; padding: 0; background: #FFFBF7; }
-        .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; overflow: hidden; mso-hide: all; }
-        /* Typography */
-        .montserrat { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; }
-        .pacifico { font-family: 'Pacifico', 'Brush Script MT', cursive; }
-        /* Colors */
-        .bg-surface { background: #FFFFFF; }
-        .text-fore { color: #4E4E50; }
-        .muted { color: #737373; }
-        .border { border: 1px solid #E0E0E0; }
-        .btn { background: #2DD4BF; color: #FFFFFF !important; border-radius: 12px; padding: 14px 22px; font-weight: 700; display: inline-block; }
-        .btn:hover { opacity: 0.95; }
-        .container { width: 100%; max-width: 600px; margin: 0 auto; }
-        .card { border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-      </style>
-    </head>
-    <body>
-      <div class="preheader">${preheader}</div>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="background:#FFFBF7; padding: 24px 12px;">
-        <tr>
-          <td>
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="container">
-              <tr>
-                <td align="center" style="padding: 8px 0 18px 0;">
-                  <a href="${escapeHtml(baseUrl)}" target="_blank" style="display:inline-block;">
-                    <img src="${logoUrl}" width="120" height="auto" alt="Snap My Date" style="display:block; margin: 0 auto;" />
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="bg-surface card border" style="border-radius:16px;">
-                    <tr>
-                      <td style="padding: 28px 28px 8px 28px;" class="montserrat text-fore">
-                        <h1 class="pacifico" style="margin:0 0 8px 0; font-size: 28px; line-height: 1.2; color:#2E2C2D;">Snap My Date</h1>
-                        <p style="margin: 0; font-size: 16px; color:#4E4E50;">We received a request to reset your password.</p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="center" style="padding: 18px 28px 8px 28px;" class="montserrat">
-                        <a href="${safeResetUrl}" class="btn" target="_blank">Reset your password</a>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 12px 28px 24px 28px;" class="montserrat">
-                        <p class="muted" style="margin: 0; font-size: 13px; line-height: 1.6; color:#737373;">This link will expire soon for your security. If the button doesn't work, copy and paste this URL into your browser:</p>
-                        <p style="word-break: break-all; font-size: 13px; margin: 6px 0 0 0;">
-                          <a href="${safeResetUrl}" target="_blank" style="color:#2DD4BF;">${safeResetUrl}</a>
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" class="montserrat" style="padding: 18px 8px 8px 8px;">
-                  <p class="muted" style="margin:0; font-size: 12px; line-height: 1.6; color:#737373;">If you didn't request this, you can safely ignore this email.</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-  </html>`;
+  
+  const body = `
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">We received a request to reset your password for your Snap My Date account.</p>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">Click the button below to create a new password:</p>
+  `;
+  
+  const footerText = `This link will expire soon for your security. If the button doesn't work, copy and paste this URL into your browser:<br/><br/>
+    <a href="${escapeHtml(params.resetUrl)}" target="_blank" style="color:#2DD4BF; word-break: break-all;">${escapeHtml(params.resetUrl)}</a><br/><br/>
+    If you didn't request this password reset, you can safely ignore this email.`;
+  
+  const html = createEmailTemplate({
+    preheader,
+    title: "Reset your password",
+    body,
+    buttonText: "Reset Your Password",
+    buttonUrl: params.resetUrl,
+    footerText,
+  });
 
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,
@@ -265,18 +250,37 @@ export async function sendShareEventEmail(params: {
     `Don't have an account? Sign up: ${signupUrl}`,
   ].join("\n");
   const greetName = `${params.recipientFirstName || ""} ${params.recipientLastName || ""}`.trim();
-  const greeting = greetName ? `Hi ${escapeHtml(greetName)},` : "Hello,";
-  const html = `<!doctype html><html><body>
-    <p>${greeting}</p>
-    <p>An event was shared with you by ${escapeHtml(senderName || params.ownerEmail)}.</p>
-    <p><strong>Title:</strong> ${escapeHtml(params.eventTitle)}</p>
-    <p>
-      <a href="${escapeHtml(params.eventUrl)}">View the event</a>
-      &nbsp;·&nbsp;+
-      <a href="${escapeHtml(acceptUrl)}">Accept</a>
+  const greeting = greetName ? `Hi ${escapeHtml(greetName)}` : "Hello";
+  const preheader = `${senderName || params.ownerEmail} shared "${params.eventTitle}" with you`;
+  
+  const body = `
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+      <strong>${escapeHtml(senderName || params.ownerEmail)}</strong> has shared an event with you on Snap My Date.
     </p>
-    <p>Don't have an account? <a href="${escapeHtml(signupUrl)}">Sign up now</a>.</p>
-  </body></html>`;
+    <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
+      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #2E2C2D;">📅 ${escapeHtml(params.eventTitle)}</p>
+    </div>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+      View the event details and add it to your calendar.
+    </p>
+  `;
+  
+  const footerText = `
+    Don't have a Snap My Date account yet? 
+    <a href="${escapeHtml(signupUrl)}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Sign up now</a> 
+    to manage all your events in one place.
+  `;
+  
+  const html = createEmailTemplate({
+    preheader,
+    title: "Event shared with you",
+    body,
+    buttonText: "View & Accept Event",
+    buttonUrl: acceptUrl,
+    footerText,
+  });
+
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,
     Destination: { ToAddresses: [to] },
@@ -308,14 +312,222 @@ export async function sendShareEventEmail(params: {
   }
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+export async function sendSubscriptionChangeEmail(params: {
+  toEmail: string;
+  userName?: string | null;
+  oldPlan: string;
+  newPlan: string;
+}): Promise<void> {
+  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
+  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const to = params.toEmail;
+  
+  const planLabels: Record<string, string> = {
+    free: "Free Trial",
+    monthly: "Monthly Plan",
+    yearly: "Yearly Plan",
+    FF: "Lifetime Access",
+  };
+  
+  const oldPlanLabel = planLabels[params.oldPlan] || params.oldPlan;
+  const newPlanLabel = planLabels[params.newPlan] || params.newPlan;
+  
+  // Determine email type based on plan changes
+  // Upgrade: free → paid, or any → FF
+  const isUpgrade = (params.oldPlan === "free" && params.newPlan !== "free") || params.newPlan === "FF";
+  // Plan switch: monthly ↔ yearly
+  const isPlanSwitch = (params.oldPlan === "monthly" && params.newPlan === "yearly") || 
+                       (params.oldPlan === "yearly" && params.newPlan === "monthly");
+  
+  const subject = isUpgrade
+    ? `Welcome to ${newPlanLabel} - Snap My Date`
+    : `Your Snap My Date plan has been updated`;
+    
+  const preheader = isUpgrade 
+    ? `You've upgraded from ${oldPlanLabel} to ${newPlanLabel}.`
+    : `Your plan has been updated from ${oldPlanLabel} to ${newPlanLabel}.`;
+  
+  const greeting = params.userName ? `Hi ${escapeHtml(params.userName)}` : "Hello";
+  
+  const body = isUpgrade && params.newPlan === "FF"
+    ? `
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+      <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; font-weight: 600; color: #2E2C2D;">
+        🎊 Welcome to Snap My Date Family and Friends Club!
+      </p>
+      <div style="text-align: center; margin: 24px 0;">
+        <span style="display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 8px; background: linear-gradient(to right, #f59e0b, #f97316); color: white; font-weight: 600; font-size: 14px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2);">
+          ⭐ Lifetime Access
+        </span>
+      </div>
+      <p style="margin: 20px 0 16px 0; font-size: 16px; line-height: 1.6;">
+        You've been granted exclusive lifetime access to Snap My Date! This special membership gives you unlimited scans, unlimited storage, and all premium features—forever.
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        Start snapping and saving all your important dates with no limits!
+      </p>
+    `
+    : isUpgrade
+    ? `
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        🎉 Great news! Your Snap My Date subscription has been upgraded.
+      </p>
+      <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">Subscription Upgraded</p>
+        <p style="margin: 0 0 8px 0; font-size: 15px; color: #047857;">
+          <span style="text-decoration: line-through; opacity: 0.6;">${escapeHtml(oldPlanLabel)}</span> 
+          <span style="font-weight: 700; margin: 0 8px;">→</span> 
+          <strong>${escapeHtml(newPlanLabel)}</strong>
+        </p>
+      </div>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        You now have unlimited access to all premium features. Start snapping and saving all your important dates!
+      </p>
+    `
+    : `
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        Your Snap My Date plan has been updated.
+      </p>
+      <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #737373;">Plan Updated</p>
+        <p style="margin: 0 0 8px 0; font-size: 15px; color: #4E4E50;">
+          <span style="text-decoration: line-through; opacity: 0.6;">${escapeHtml(oldPlanLabel)}</span> 
+          <span style="font-weight: 700; margin: 0 8px;">→</span> 
+          <strong>${escapeHtml(newPlanLabel)}</strong>
+        </p>
+      </div>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+        ${isPlanSwitch ? "Your billing cycle has been updated. You'll continue to enjoy unlimited access to all premium features." : "Your plan has been successfully updated."}
+      </p>
+    `;
+  
+  const text = [
+    `${greeting},`,
+    ``,
+    `Your Snap My Date ${isUpgrade ? "subscription has been upgraded" : "plan has been updated"}.`,
+    ``,
+    `Previous: ${oldPlanLabel}`,
+    `New: ${newPlanLabel}`,
+    ``,
+    `View your subscription: https://snapmydate.com/subscription`,
+  ].join("\n");
+
+  const html = createEmailTemplate({
+    preheader,
+    title: isUpgrade ? "Subscription Upgraded!" : "Subscription Updated",
+    body,
+    buttonText: "View My Subscription",
+    buttonUrl: "https://snapmydate.com/subscription",
+  });
+
+  const cmd = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+  });
+
+  try {
+    console.log("[email] sendSubscriptionChangeEmail dispatch", {
+      to: maskEmail(to),
+      oldPlan: params.oldPlan,
+      newPlan: params.newPlan,
+    });
+    const result = await getSes().send(cmd);
+    console.log("[email] sendSubscriptionChangeEmail success", {
+      to: maskEmail(to),
+      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+    });
+  } catch (err: any) {
+    console.error("[email] sendSubscriptionChangeEmail failed", {
+      to: maskEmail(to),
+      error: err?.message,
+    });
+    throw err;
+  }
 }
+
+export async function sendPasswordChangeConfirmationEmail(params: {
+  toEmail: string;
+  userName?: string | null;
+}): Promise<void> {
+  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
+  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const to = params.toEmail;
+  const subject = `Your Snap My Date password was changed`;
+  const preheader = `Your password was successfully changed.`;
+  const greeting = params.userName ? `Hi ${escapeHtml(params.userName)}` : "Hello";
+  
+  const timestamp = new Date().toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  
+  const body = `
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+      Your Snap My Date password was successfully changed.
+    </p>
+    <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
+      <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">✓ Password Changed</p>
+      <p style="margin: 0; font-size: 13px; color: #047857;">
+        <strong>Date:</strong> ${escapeHtml(timestamp)}
+      </p>
+    </div>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
+      If you didn't make this change, please contact us immediately to secure your account.
+    </p>
+  `;
+  
+  const footerText = `If you didn't change your password, please reset it immediately or contact our support team.`;
+  
+  const text = [
+    `${greeting},`,
+    ``,
+    `Your Snap My Date password was successfully changed on ${timestamp}.`,
+    ``,
+    `If you didn't make this change, please contact us immediately.`,
+  ].join("\n");
+
+  const html = createEmailTemplate({
+    preheader,
+    title: "Password Changed",
+    body,
+    buttonText: "View My Account",
+    buttonUrl: "https://snapmydate.com/settings/profile",
+    footerText,
+  });
+
+  const cmd = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+  });
+
+  try {
+    console.log("[email] sendPasswordChangeConfirmationEmail dispatch", {
+      to: maskEmail(to),
+    });
+    const result = await getSes().send(cmd);
+    console.log("[email] sendPasswordChangeConfirmationEmail success", {
+      to: maskEmail(to),
+      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+    });
+  } catch (err: any) {
+    console.error("[email] sendPasswordChangeConfirmationEmail failed", {
+      to: maskEmail(to),
+      error: err?.message,
+    });
+    throw err;
+  }
+}
+
+// escapeHtml is now imported from email-template.ts
 
 function formatExpiresDate(raw: string | null | undefined): string {
   if (!raw) return "the end of your gifted period";
