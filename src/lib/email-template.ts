@@ -105,13 +105,51 @@ export function createEmailTemplate(params: {
                       </div>
                       ` : ""}
                       ${params.footerText ? `<p class="muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 1.6; color:#737373;">${params.footerText}</p>` : ""}
-                      <p class="signature" style="font-style: italic; color: #737373; margin-top: 24px; font-size: 14px; line-height: 1.5;">
+                      <p class="signature" style="font-style: italic; color: #737373; margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.5;">
                         Sincerely,<br/>
                         <strong>Snap My Date Team</strong>
                       </p>
-                      <p style="margin: 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
+                      <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
                         SNAP IT. SAVE IT. DONE.
                       </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Social Media Links -->
+            <tr>
+              <td align="center" style="padding: 32px 0 16px 0;">
+                <p class="muted" style="margin: 0 0 16px 0; font-size: 14px; color: #737373;">
+                  Connect with us
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                  <tr>
+                    <td style="padding: 0 12px;">
+                      <a href="https://www.instagram.com/snapmydate/" target="_blank" title="Instagram" style="display: inline-block;">
+                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
+                          <path d="M35.38,10.46a2.19,2.19,0,1,0,2.16,2.22v-.06A2.18,2.18,0,0,0,35.38,10.46Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M40.55,5.5H7.45a2,2,0,0,0-1.95,2v33.1a2,2,0,0,0,2,2h33.1a2,2,0,0,0,2-2V7.45A2,2,0,0,0,40.55,5.5Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M24,15.72A8.28,8.28,0,1,0,32.28,24h0A8.28,8.28,0,0,0,24,15.72Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </a>
+                    </td>
+                    <td style="padding: 0 12px;">
+                      <a href="https://www.facebook.com/snapmydate/" target="_blank" title="Facebook" style="display: inline-block;">
+                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
+                          <path d="M24,42.5V18.57a5.07,5.07,0,0,1,5.08-5.07h0c2.49,0,4.05.74,5.12,2.12" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <line x1="19.7" y1="23.29" x2="29.85" y2="23.29" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M7.48,5.5a2,2,0,0,0-2,2h0v33a2,2,0,0,0,2,2H40.52a2,2,0,0,0,2-2h0v-33a2,2,0,0,0-2-2H7.48Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </a>
+                    </td>
+                    <td style="padding: 0 12px;">
+                      <a href="https://www.youtube.com/@snapmydate" target="_blank" title="YouTube" style="display: inline-block;">
+                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
+                          <path d="M40.5,5.5H7.5a2,2,0,0,0-2,2v33a2,2,0,0,0,2,2h33a2,2,0,0,0,2-2v-33A2,2,0,0,0,40.5,5.5Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M19,17v14l12-7Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                      </a>
                     </td>
                   </tr>
                 </table>

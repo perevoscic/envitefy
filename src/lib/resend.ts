@@ -84,66 +84,62 @@ export async function sendBulkEmail(
     process.env.SES_FROM_EMAIL_NO_REPLY ||
     "Snap My Date <onboarding@resend.dev>";
 
-  const BATCH_SIZE = 100;
-  const batches: typeof params.recipients[] = [];
-  for (let i = 0; i < params.recipients.length; i += BATCH_SIZE) {
-    batches.push(params.recipients.slice(i, i + BATCH_SIZE));
-  }
+  // Resend free tier: 2 requests/second. We'll send 1 at a time with 550ms delay to be safe.
+  const RATE_LIMIT_BATCH = 1;
+  const RATE_LIMIT_DELAY = 550; // ms between emails (just over 500ms minimum)
 
   const result: BulkEmailResult = { sent: 0, failed: 0, errors: [] };
 
-  for (const batch of batches) {
-    try {
-      const emailPromises = batch.map(async (recipient) => {
-        try {
-          const userName = recipient.firstName || null;
-          const greeting = userName ? `Hi ${userName}` : "Hello";
-          const firstName = recipient.firstName || "";
-          const lastName = recipient.lastName || "";
+  // Process recipients in small batches to respect rate limits
+  for (let i = 0; i < params.recipients.length; i += RATE_LIMIT_BATCH) {
+    const batch = params.recipients.slice(i, i + RATE_LIMIT_BATCH);
 
-          let personalizedBody = params.body
-            .replace(/\{\{greeting\}\}/g, greeting)
-            .replace(/\{\{firstName\}\}/g, firstName)
-            .replace(/\{\{lastName\}\}/g, lastName);
+    // Send this batch in parallel (up to 2 at a time)
+    const emailPromises = batch.map(async (recipient) => {
+      try {
+        const userName = recipient.firstName || null;
+        const greeting = userName ? `Hi ${userName}` : "Hello";
+        const firstName = recipient.firstName || "";
+        const lastName = recipient.lastName || "";
 
-          const html = createEmailTemplate({
-            title: params.subject,
-            body: personalizedBody,
-            buttonText: params.buttonText,
-            buttonUrl: params.buttonUrl,
-            footerText:
-              "You're receiving this because you have a Snap My Date account.",
-          });
+        let personalizedBody = params.body
+          .replace(/\{\{greeting\}\}/g, greeting)
+          .replace(/\{\{firstName\}\}/g, firstName)
+          .replace(/\{\{lastName\}\}/g, lastName);
 
-          await resendHttpSend({
-            from: fromEmail,
-            to: recipient.email,
-            subject: params.subject,
-            html,
-          });
+        const html = createEmailTemplate({
+          title: params.subject,
+          body: personalizedBody,
+          buttonText: params.buttonText,
+          buttonUrl: params.buttonUrl,
+          footerText:
+            "You're receiving this because you have a Snap My Date account.",
+        });
 
-          result.sent++;
-        } catch (error: any) {
-          result.failed++;
-          result.errors.push({
-            email: recipient.email,
-            error: error?.message || "Unknown error",
-          });
-        }
-      });
+        await resendHttpSend({
+          from: fromEmail,
+          to: recipient.email,
+          subject: params.subject,
+          html,
+        });
 
-      await Promise.all(emailPromises);
-      if (batches.length > 1) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
-    } catch (error: any) {
-      batch.forEach((recipient) => {
+        result.sent++;
+        console.log(`[resend] ✓ Sent to ${recipient.email} (${result.sent}/${params.recipients.length})`);
+      } catch (error: any) {
         result.failed++;
         result.errors.push({
           email: recipient.email,
-          error: error?.message || "Batch send failed",
+          error: error?.message || "Unknown error",
         });
-      });
+        console.error(`[resend] ✗ Failed to send to ${recipient.email}:`, error?.message);
+      }
+    });
+
+    await Promise.all(emailPromises);
+
+    // Delay before next batch (except for the last batch)
+    if (i + RATE_LIMIT_BATCH < params.recipients.length) {
+      await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY));
     }
   }
 

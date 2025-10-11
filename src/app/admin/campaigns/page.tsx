@@ -39,6 +39,7 @@ export default function CampaignsPage() {
   const [sending, setSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [testEmail, setTestEmail] = useState("");
+  const [htmlMode, setHtmlMode] = useState(false);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Rich text editor functions
@@ -122,6 +123,10 @@ export default function CampaignsPage() {
     }, 0);
   };
 
+  const toggleHtmlMode = () => {
+    setHtmlMode(!htmlMode);
+  };
+
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
   }
@@ -182,8 +187,8 @@ export default function CampaignsPage() {
     // Handle test and all modes
     const isTest = selectedPlans.includes("test");
     const isAll = selectedPlans.includes("all");
-    if (isTest && (!testEmail || !testEmail.includes("@"))) {
-      alert("Please enter a valid test email address");
+    if (isTest && (!testEmail || !testEmail.trim())) {
+      alert("Please enter at least one recipient email address");
       return;
     }
 
@@ -209,9 +214,24 @@ export default function CampaignsPage() {
       const data = await res.json();
 
       if (data.ok) {
-        alert(
-          `Campaign sent!\n✅ Sent: ${data.sent}\n❌ Failed: ${data.failed}`
-        );
+        let message = `Campaign sent!\n✅ Sent: ${data.sent}\n❌ Failed: ${data.failed}`;
+
+        // Show failed recipients
+        if (data.errors && data.errors.length > 0) {
+          message += `\n\n❌ Failed recipients:\n`;
+          data.errors.slice(0, 10).forEach((err: any) => {
+            const shortError =
+              err.error.length > 80
+                ? err.error.substring(0, 80) + "..."
+                : err.error;
+            message += `• ${err.email}\n  ${shortError}\n`;
+          });
+          if (data.errors.length > 10) {
+            message += `\n... and ${data.errors.length - 10} more failures`;
+          }
+        }
+
+        alert(message);
         // Reset form
         setSubject("");
         setBody("");
@@ -241,7 +261,7 @@ export default function CampaignsPage() {
   const generatePreviewHtml = () => {
     const baseUrl = window.location.origin;
     const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
-    const greeting = "Hi Taylor"; // Sample greeting for preview
+    const greeting = "Hi, "; // Sample greeting for preview
     const firstName = "Taylor";
     const lastName = "Smith";
     const previewBody = body
@@ -297,13 +317,58 @@ export default function CampaignsPage() {
             <!-- Footer -->
             <tr>
               <td style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E5E5;">
-                <p style="margin: 0 0 8px 0; font-size: 14px; color: #737373; line-height: 1.5;">
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #737373; line-height: 1.5; font-style: italic;">
                   Sincerely,<br>
                   <strong style="color: #2E2C2D;">Snap My Date Team</strong>
+                </p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
+                  SNAP IT. SAVE IT. DONE.
                 </p>
                 <p style="margin: 16px 0 0 0; font-size: 12px; color: #A3A3A3; line-height: 1.5;">
                   You're receiving this because you have a Snap My Date account.
                 </p>
+              </td>
+            </tr>
+          </table>
+          <!-- Social Media Links -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 32px auto 16px auto;">
+            <tr>
+              <td style="text-align: center; padding-bottom: 16px;">
+                <p style="margin: 0; font-size: 14px; color: #737373;">Connect with us</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: center;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                  <tr>
+                    <td style="padding: 0 12px;">
+                      <a href="https://www.instagram.com/snapmydate/" target="_blank" title="Instagram" style="display: inline-block;">
+                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
+                          <path d="M35.38,10.46a2.19,2.19,0,1,0,2.16,2.22v-.06A2.18,2.18,0,0,0,35.38,10.46Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M40.55,5.5H7.45a2,2,0,0,0-1.95,2v33.1a2,2,0,0,0,2,2h33.1a2,2,0,0,0,2-2V7.45A2,2,0,0,0,40.55,5.5Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M24,15.72A8.28,8.28,0,1,0,32.28,24h0A8.28,8.28,0,0,0,24,15.72Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </a>
+                    </td>
+                    <td style="padding: 0 12px;">
+                      <a href="https://www.facebook.com/snapmydate/" target="_blank" title="Facebook" style="display: inline-block;">
+                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
+                          <path d="M24,42.5V18.57a5.07,5.07,0,0,1,5.08-5.07h0c2.49,0,4.05.74,5.12,2.12" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <line x1="19.7" y1="23.29" x2="29.85" y2="23.29" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M7.48,5.5a2,2,0,0,0-2,2h0v33a2,2,0,0,0,2,2H40.52a2,2,0,0,0,2-2h0v-33a2,2,0,0,0-2-2H7.48Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </a>
+                    </td>
+                    <td style="padding: 0 12px;">
+                      <a href="https://www.youtube.com/@snapmydate" target="_blank" title="YouTube" style="display: inline-block;">
+                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
+                          <path d="M40.5,5.5H7.5a2,2,0,0,0-2,2v33a2,2,0,0,0,2,2h33a2,2,0,0,0,2-2v-33A2,2,0,0,0,40.5,5.5Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M19,17v14l12-7Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                      </a>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
@@ -500,15 +565,50 @@ export default function CampaignsPage() {
                 >
                   👤 Name
                 </button>
+                <div className="w-px h-6 bg-border my-auto mx-1" />
+                <button
+                  type="button"
+                  onClick={toggleHtmlMode}
+                  className={`px-3 py-1.5 text-sm rounded transition-colors border border-border/50 font-mono ${
+                    htmlMode
+                      ? "bg-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/30"
+                      : "hover:bg-surface"
+                  }`}
+                  title={
+                    htmlMode ? "Switch to visual editor" : "View HTML source"
+                  }
+                >
+                  &lt;/&gt;
+                </button>
               </div>
+
+              {htmlMode && (
+                <div className="mb-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/30 rounded-lg">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                    <span className="font-semibold">💡 HTML Mode:</span>
+                    <span>
+                      Write raw HTML code. Use inline styles for best email
+                      compatibility.
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <textarea
                 ref={bodyTextareaRef}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder={`{{greeting}},\n\nWe're excited to share...\n\nYour content here (HTML supported).`}
+                placeholder={
+                  htmlMode
+                    ? `<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">{{greeting}},</p>\n\n<p style="margin: 0 0 16px 0;">Your HTML content here...</p>`
+                    : `{{greeting}},\n\nWe're excited to share...\n\nYour content here (HTML supported).`
+                }
                 rows={5}
-                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm md:min-h-[300px] resize-y"
+                className={`w-full px-4 py-2 bg-background border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 font-mono text-sm md:min-h-[300px] resize-y ${
+                  htmlMode
+                    ? "border-purple-500/50 focus:ring-purple-500/50 bg-purple-50/5"
+                    : "border-border focus:ring-primary"
+                }`}
                 required
               />
             </div>
@@ -564,7 +664,7 @@ export default function CampaignsPage() {
                       }`}
                     >
                       {plan === "test"
-                        ? "🧪 Test"
+                        ? "📧 Individual"
                         : plan === "all"
                         ? "All users"
                         : plan === "free"
@@ -579,23 +679,25 @@ export default function CampaignsPage() {
                 )}
               </div>
 
-              {/* Test Email Input */}
+              {/* Individual Recipients Email Input */}
               {selectedPlans.includes("test") && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Test Email Address <span className="text-red-500">*</span>
+                    Recipient Email Addresses{" "}
+                    <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="email"
+                  <textarea
                     value={testEmail}
                     onChange={(e) => setTestEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="email1@example.com, email2@example.com, email3@example.com"
+                    rows={3}
+                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                     required={selectedPlans.includes("test")}
                   />
                   <p className="text-xs text-muted-foreground mt-2">
-                    📧 Test email will be sent to this address only (not counted
-                    in campaign stats)
+                    📧 Enter one or more email addresses (comma-separated).
+                    Great for sending to specific recipients or testing before
+                    full campaign launch.
                   </p>
                 </div>
               )}
@@ -762,12 +864,40 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {campaign.sentAt
-                      ? `Sent ${new Date(campaign.sentAt).toLocaleString()}`
-                      : `Created ${new Date(
-                          campaign.createdAt
-                        ).toLocaleString()}`}
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="text-xs text-muted-foreground">
+                      {campaign.sentAt
+                        ? `Sent ${new Date(campaign.sentAt).toLocaleString()}`
+                        : `Created ${new Date(
+                            campaign.createdAt
+                          ).toLocaleString()}`}
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Copy campaign content to form
+                        setSubject(campaign.subject);
+                        setBody(campaign.bodyHtml);
+                        setShowComposer(true);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface hover:bg-surface-alt border border-border transition-colors flex items-center gap-1.5"
+                      title="Copy this campaign to create a new one"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Copy & Reuse
+                    </button>
                   </div>
                 </div>
               ))}

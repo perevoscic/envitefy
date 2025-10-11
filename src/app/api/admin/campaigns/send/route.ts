@@ -67,12 +67,24 @@ export async function POST(req: NextRequest) {
     let recipients: Array<{ email: string; firstName: string | null; lastName: string | null }>;
     
     if (audienceFilter.testEmail) {
-      // Test mode: send to single test email
-      recipients = [{
-        email: audienceFilter.testEmail,
-        firstName: "Test",
-        lastName: "User",
-      }];
+      // Individual recipients mode: send to specified email addresses (comma-separated)
+      const emails = audienceFilter.testEmail
+        .split(',')
+        .map(e => e.trim())
+        .filter(e => e.includes('@'));
+      
+      recipients = emails.map(email => ({
+        email,
+        firstName: null,
+        lastName: null,
+      }));
+
+      if (recipients.length === 0) {
+        return NextResponse.json(
+          { error: "No valid email addresses provided" },
+          { status: 400 }
+        );
+      }
     } else {
       // Build SQL query to find recipients based on audience filter
       let whereConditions: string[] = ["email IS NOT NULL"];
@@ -171,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     // Send emails
     console.log(
-      `[campaigns] ${isTestMode ? "Sending test email" : `Sending campaign ${campaignId}`} to ${recipients.length} recipient(s)...`
+      `[campaigns] ${isTestMode ? `Sending to ${recipients.length} individual recipient(s)` : `Sending campaign ${campaignId} to ${recipients.length} recipient(s)`}...`
     );
 
     const result = await sendBulkEmail({
@@ -219,7 +231,7 @@ export async function POST(req: NextRequest) {
       );
     } else {
       console.log(
-        `[campaigns] Test email completed: ${result.sent} sent, ${result.failed} failed`
+        `[campaigns] Individual send completed: ${result.sent} sent, ${result.failed} failed`
       );
     }
 
