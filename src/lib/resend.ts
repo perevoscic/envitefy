@@ -5,11 +5,18 @@
 import { Resend } from "resend";
 import { createEmailTemplate } from "./email-template";
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error("RESEND_API_KEY is required");
+// Lazy initialize the Resend client so builds don't fail when the key
+// is not present at compile time (e.g., CI build step without secrets).
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (_resend) return _resend;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is required to send emails");
+  }
+  _resend = new Resend(apiKey);
+  return _resend;
 }
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface BulkEmailParams {
   subject: string;
@@ -83,7 +90,7 @@ export async function sendBulkEmail(
           });
 
           // Send individual email
-          await resend.emails.send({
+          await getResend().emails.send({
             from: fromEmail,
             to: recipient.email,
             subject: params.subject,
@@ -137,7 +144,7 @@ export async function sendTestEmail(toEmail: string): Promise<boolean> {
       footerText: "This is a test email from Snap My Date admin.",
     });
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: process.env.SES_FROM_EMAIL_NO_REPLY || "Snap My Date <no-reply@snapmydate.com>",
       to: toEmail,
       subject: "Resend Test Email",
