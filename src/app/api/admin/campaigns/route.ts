@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserByEmail } from "@/lib/db";
-import { Pool } from "pg";
+import { getUserByEmail, query } from "@/lib/db";
 
 /**
  * GET /api/admin/campaigns
@@ -23,9 +22,6 @@ export async function GET(req: NextRequest) {
         { status: 403 }
       );
     }
-
-    // Get pool from environment
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
     // Get query params for filtering
     const { searchParams } = new URL(req.url);
@@ -71,11 +67,11 @@ export async function GET(req: NextRequest) {
 
     queryParams.push(limit, offset);
 
-    const campaignsResult = await pool.query(campaignsQuery, queryParams);
+    const campaignsResult = await query(campaignsQuery, queryParams);
 
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM email_campaigns ${whereClause}`;
-    const countResult = await pool.query(
+    const countResult = await query(
       countQuery,
       whereClause ? [status] : []
     );

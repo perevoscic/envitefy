@@ -88,7 +88,7 @@ async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Prom
   }
 }
 
-async function query<T extends QueryResultRow = QueryResultRow>(text: string, params: any[] = []): Promise<QueryResult<T>> {
+export async function query<T extends QueryResultRow = QueryResultRow>(text: string, params: any[] = []): Promise<QueryResult<T>> {
   return withClient((client) => client.query<T>(text, params));
 }
 

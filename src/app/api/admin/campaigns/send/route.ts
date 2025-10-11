@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserByEmail } from "@/lib/db";
+import { getUserByEmail, query } from "@/lib/db";
 import { sendBulkEmail } from "@/lib/resend";
-import { Pool } from "pg";
 
 interface AudienceFilter {
   plans?: string[]; // ["free", "monthly", "yearly", "FF"]
@@ -35,9 +34,6 @@ export async function POST(req: NextRequest) {
     }
 
     const adminUserId = user.id;
-
-    // Get pool from environment
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
     // Parse request body
     const body = await req.json();
@@ -123,7 +119,7 @@ export async function POST(req: NextRequest) {
         ORDER BY created_at DESC
       `;
 
-      const recipientsResult = await pool.query(recipientsQuery, queryParams);
+      const recipientsResult = await query(recipientsQuery, queryParams);
       recipients = recipientsResult.rows.map((row: any) => ({
         email: row.email,
         firstName: row.first_name,
@@ -143,7 +139,7 @@ export async function POST(req: NextRequest) {
     const isTestMode = !!audienceFilter.testEmail;
 
     if (!isTestMode) {
-      const campaignResult = await pool.query(
+      const campaignResult = await query(
         `
         INSERT INTO email_campaigns (
           created_by_user_id,
@@ -192,7 +188,7 @@ export async function POST(req: NextRequest) {
           ? "failed"
           : "sent"; // partial success still counts as sent
 
-      await pool.query(
+      await query(
         `
         UPDATE email_campaigns
         SET 
