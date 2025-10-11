@@ -259,8 +259,53 @@ export default function CampaignsPage() {
 
   // Generate email preview HTML (client-side version of createEmailTemplate)
   const generatePreviewHtml = () => {
-    const baseUrl = window.location.origin;
+    const origin = window.location.origin || "";
+    let baseUrl = origin;
+    try {
+      const url = new URL(baseUrl || "https://snapmydate.com");
+      const host = (url.hostname || "").toLowerCase();
+      if (
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.endsWith(".local") ||
+        !url.protocol.startsWith("http")
+      ) {
+        baseUrl = "https://snapmydate.com";
+      } else {
+        baseUrl = `${url.protocol}//${url.host}`;
+      }
+    } catch {
+      baseUrl = "https://snapmydate.com";
+    }
     const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
+    const socialIcons = [
+      {
+        href: "https://www.instagram.com/snapmydate/",
+        title: "Instagram",
+        src: `${baseUrl}/email/social-instagram.png`,
+      },
+      {
+        href: "https://www.facebook.com/snapmydate/",
+        title: "Facebook",
+        src: `${baseUrl}/email/social-facebook.png`,
+      },
+      {
+        href: "https://www.youtube.com/@snapmydate",
+        title: "YouTube",
+        src: `${baseUrl}/email/social-youtube.png`,
+      },
+    ];
+    const socialIconsHtml = socialIcons
+      .map(
+        (link) => `
+                    <td style=\"padding: 0 12px;\">
+                      <a href=\"${link.href}\" target=\"_blank\" title=\"${link.title}\" style=\"display: inline-block;\">
+                        <img src=\"${link.src}\" width=\"36\" height=\"36\" alt=\"${link.title}\" style=\"display: block;\" />
+                      </a>
+                    </td>`
+      )
+      .join("");
+    const currentYear = new Date().getFullYear();
     const greeting = "Hi, "; // Sample greeting for preview
     const firstName = "Taylor";
     const lastName = "Smith";
@@ -348,39 +393,14 @@ export default function CampaignsPage() {
               <td style="text-align: center;">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                   <tr>
-                    <td style="padding: 0 12px;">
-                      <a href="https://www.instagram.com/snapmydate/" target="_blank" title="Instagram" style="display: inline-block;">
-                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
-                          <path d="M35.38,10.46a2.19,2.19,0,1,0,2.16,2.22v-.06A2.18,2.18,0,0,0,35.38,10.46Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M40.55,5.5H7.45a2,2,0,0,0-1.95,2v33.1a2,2,0,0,0,2,2h33.1a2,2,0,0,0,2-2V7.45A2,2,0,0,0,40.55,5.5Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M24,15.72A8.28,8.28,0,1,0,32.28,24h0A8.28,8.28,0,0,0,24,15.72Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </a>
-                    </td>
-                    <td style="padding: 0 12px;">
-                      <a href="https://www.facebook.com/snapmydate/" target="_blank" title="Facebook" style="display: inline-block;">
-                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
-                          <path d="M24,42.5V18.57a5.07,5.07,0,0,1,5.08-5.07h0c2.49,0,4.05.74,5.12,2.12" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <line x1="19.7" y1="23.29" x2="29.85" y2="23.29" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M7.48,5.5a2,2,0,0,0-2,2h0v33a2,2,0,0,0,2,2H40.52a2,2,0,0,0,2-2h0v-33a2,2,0,0,0-2-2H7.48Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </a>
-                    </td>
-                    <td style="padding: 0 12px;">
-                      <a href="https://www.youtube.com/@snapmydate" target="_blank" title="YouTube" style="display: inline-block;">
-                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
-                          <path d="M40.5,5.5H7.5a2,2,0,0,0-2,2v33a2,2,0,0,0,2,2h33a2,2,0,0,0,2-2v-33A2,2,0,0,0,40.5,5.5Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M19,17v14l12-7Z" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                        </svg>
-                      </a>
-                    </td>
+${socialIconsHtml}
                   </tr>
                 </table>
               </td>
             </tr>
           </table>
           <p style="margin: 24px 0 0 0; font-size: 12px; color: #737373; text-align: center;">
-            © ${new Date().getFullYear()} Snap My Date. All rights reserved.
+            &copy; ${currentYear} Snap My Date. All rights reserved.
           </p>
         </td>
       </tr>

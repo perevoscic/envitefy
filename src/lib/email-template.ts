@@ -46,6 +46,34 @@ export function createEmailTemplate(params: {
     baseUrl = "https://snapmydate.com";
   }
   const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
+  const currentYear = new Date().getFullYear();
+  const socialIcons = [
+    {
+      href: "https://www.instagram.com/snapmydate/",
+      title: "Instagram",
+      src: `${baseUrl}/email/social-instagram.png`,
+    },
+    {
+      href: "https://www.facebook.com/snapmydate/",
+      title: "Facebook",
+      src: `${baseUrl}/email/social-facebook.png`,
+    },
+    {
+      href: "https://www.youtube.com/@snapmydate",
+      title: "YouTube",
+      src: `${baseUrl}/email/social-youtube.png`,
+    },
+  ];
+  const socialIconsRow = socialIcons
+    .map(
+      (link) => `
+                    <td style=\"padding: 0 12px;\">
+                      <a href=\"${link.href}\" target=\"_blank\" title=\"${link.title}\" style=\"display: inline-block;\">
+                        <img src=\"${link.src}\" width=\"36\" height=\"36\" alt=\"${link.title}\" style=\"display: block;\" />
+                      </a>
+                    </td>`
+    )
+    .join("\n");
   
   return `<!doctype html>
 <html lang="en">
@@ -132,34 +160,12 @@ export function createEmailTemplate(params: {
                 </p>
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                   <tr>
-                    <td style="padding: 0 12px;">
-                      <a href="https://www.instagram.com/snapmydate/" target="_blank" title="Instagram" style="display: inline-block;">
-                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
-                          <path d="M35.38,10.46a2.19,2.19,0,1,0,2.16,2.22v-.06A2.18,2.18,0,0,0,35.38,10.46Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M40.55,5.5H7.45a2,2,0,0,0-1.95,2v33.1a2,2,0,0,0,2,2h33.1a2,2,0,0,0,2-2V7.45A2,2,0,0,0,40.55,5.5Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M24,15.72A8.28,8.28,0,1,0,32.28,24h0A8.28,8.28,0,0,0,24,15.72Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </a>
-                    </td>
-                    <td style="padding: 0 12px;">
-                      <a href="https://www.facebook.com/snapmydate/" target="_blank" title="Facebook" style="display: inline-block;">
-                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
-                          <path d="M24,42.5V18.57a5.07,5.07,0,0,1,5.08-5.07h0c2.49,0,4.05.74,5.12,2.12" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <line x1="19.7" y1="23.29" x2="29.85" y2="23.29" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M7.48,5.5a2,2,0,0,0-2,2h0v33a2,2,0,0,0,2,2H40.52a2,2,0,0,0,2-2h0v-33a2,2,0,0,0-2-2H7.48Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </a>
-                    </td>
-                    <td style="padding: 0 12px;">
-                      <a href="https://www.youtube.com/@snapmydate" target="_blank" title="YouTube" style="display: inline-block;">
-                        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" style="display: block;">
-                          <path d="M43.1124,14.394a5.0056,5.0056,0,0,0-3.5332-3.5332c-2.3145-.8936-24.7326-1.3314-31.2358.0256A5.0059,5.0059,0,0,0,4.81,14.42c-1.0446,4.583-1.1239,14.4914.0256,19.1767A5.006,5.006,0,0,0,8.369,37.13c4.5829,1.0548,26.3712,1.2033,31.2358,0a5.0057,5.0057,0,0,0,3.5332-3.5333C44.2518,28.6037,44.3311,19.31,43.1124,14.394Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                          <path d="M30.5669,23.9952,20.1208,18.004V29.9863Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                        </svg>
-                      </a>
-                    </td>
+${socialIconsRow}
                   </tr>
                 </table>
+                <p style="margin: 24px 0 0 0; font-size: 12px; color: #9CA3AF; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  &copy; ${currentYear} Snap My Date. All rights reserved.
+                </p>
               </td>
             </tr>
           </table>
