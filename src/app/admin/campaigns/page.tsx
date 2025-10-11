@@ -275,22 +275,29 @@ export default function CampaignsPage() {
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light" />
     <title>${subject || "Campaign Preview"}</title>
+    <style>
+      /* Prevent dark mode */
+      :root { color-scheme: light only !important; }
+      @media (prefers-color-scheme: dark) {
+        body, table, td, a { background-color: #FFFBF7 !important; }
+      }
+    </style>
   </head>
-  <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 40px 20px;">
+  <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #FFFBF7 !important; color-scheme: light !important;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FFFBF7 !important; padding: 40px 20px; color-scheme: light !important;" bgcolor="#FFFBF7">
       <tr>
-        <td align="center">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <!-- Logo Header -->
-            <tr>
-              <td style="padding: 32px 32px 24px 32px; text-align: center; background: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);">
-                <img src="${logoUrl}" alt="Snap My Date" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
-              </td>
-            </tr>
+        <td align="center" style="background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
+          <!-- Logo on beige background -->
+          <div style="padding: 0 0 24px 0; background-color: #FFFBF7 !important; text-align: center;" bgcolor="#FFFBF7">
+            <img src="${logoUrl}" alt="Snap My Date" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
+          </div>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #FFFFFF !important; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" bgcolor="#FFFFFF">
             <!-- Content -->
             <tr>
-              <td style="padding: 32px 32px 24px 32px;">
+              <td style="padding: 32px 32px 24px 32px; background-color: #FFFFFF;" bgcolor="#FFFFFF">
                 <h1 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 700; color: #2E2C2D; line-height: 1.3;">
                   ${subject || "Subject Preview"}
                 </h1>
@@ -302,8 +309,8 @@ export default function CampaignsPage() {
                     ? `
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0 0 0;">
                   <tr>
-                    <td style="border-radius: 8px; background: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);">
-                      <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                    <td style="border-radius: 12px; background-color: #2DD4BF !important;" bgcolor="#2DD4BF">
+                      <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 16px; background-color: #2DD4BF;">
                         ${buttonText}
                       </a>
                     </td>
@@ -316,7 +323,7 @@ export default function CampaignsPage() {
             </tr>
             <!-- Footer -->
             <tr>
-              <td style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E5E5;">
+              <td style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E5E5; background-color: #FFFFFF;" bgcolor="#FFFFFF">
                 <p style="margin: 0 0 8px 0; font-size: 14px; color: #737373; line-height: 1.5; font-style: italic;">
                   Sincerely,<br>
                   <strong style="color: #2E2C2D;">Snap My Date Team</strong>
@@ -331,9 +338,9 @@ export default function CampaignsPage() {
             </tr>
           </table>
           <!-- Social Media Links -->
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 32px auto 16px auto;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 32px auto 16px auto; background-color: #FFFBF7;" bgcolor="#FFFBF7">
             <tr>
-              <td style="text-align: center; padding-bottom: 16px;">
+              <td style="text-align: center; padding-bottom: 16px; background-color: #FFFBF7;" bgcolor="#FFFBF7">
                 <p style="margin: 0; font-size: 14px; color: #737373;">Connect with us</p>
               </td>
             </tr>

@@ -53,9 +53,16 @@ export function createEmailTemplate(params: {
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light" />
     <title>${escapeHtml(params.title)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Pacifico&display=swap" rel="stylesheet" />
     <style>
+      /* Prevent dark mode */
+      :root { color-scheme: light only !important; }
+      @media (prefers-color-scheme: dark) {
+        body, table, td, a { background-color: #FFFBF7 !important; }
+      }
       /* Reset */
       body,table,td,a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
       table,td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
@@ -78,30 +85,30 @@ export function createEmailTemplate(params: {
       .signature { font-style: italic; color: #737373; margin-top: 24px; font-size: 14px; }
     </style>
   </head>
-  <body>
+  <body style="margin: 0; padding: 0; background-color: #FFFBF7 !important; color-scheme: light !important;">
     ${params.preheader ? `<div class="preheader">${escapeHtml(params.preheader)}</div>` : ""}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="background:#FFFBF7; padding: 32px 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="background-color: #FFFBF7 !important; padding: 32px 16px; margin: 0; color-scheme: light !important;" bgcolor="#FFFBF7">
       <tr>
-        <td>
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="container">
+        <td style="background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="container" style="max-width: 600px; margin: 0 auto;">
             <!-- Logo -->
             <tr>
-              <td align="center" style="padding: 0 0 24px 0;">
-                <a href="${escapeHtml(baseUrl)}" target="_blank" style="display:inline-block;">
-                  <img src="${logoUrl}" width="280" height="auto" alt="Snap My Date" style="display:block; margin: 0 auto;" />
+              <td align="center" style="padding: 0 0 24px 0; background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
+                <a href="${escapeHtml(baseUrl)}" target="_blank" style="display:inline-block; background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
+                  <img src="${logoUrl}" width="280" height="auto" alt="Snap My Date" style="display:block; margin: 0 auto; max-width: 100%;" />
                 </a>
               </td>
             </tr>
             <!-- Main Card -->
             <tr>
               <td>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="bg-surface card border" style="border-radius:16px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FFFFFF !important; border-radius: 16px; border: 1px solid #E0E0E0; box-shadow: 0 10px 30px rgba(0,0,0,0.08);" bgcolor="#FFFFFF">
                   <tr>
-                    <td style="padding: 32px 28px;" class="montserrat text-fore">
+                    <td style="padding: 32px 28px; background-color: #FFFFFF; color: #4E4E50; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" bgcolor="#FFFFFF">
                       ${params.body}
                       ${params.buttonText && params.buttonUrl ? `
                       <div style="text-align: center; margin: 28px 0 20px 0;">
-                        <a href="${escapeHtml(params.buttonUrl)}" class="btn" target="_blank">${escapeHtml(params.buttonText)}</a>
+                        <a href="${escapeHtml(params.buttonUrl)}" style="background-color: #2DD4BF !important; color: #FFFFFF !important; border-radius: 12px; padding: 14px 28px; font-weight: 700; display: inline-block; text-decoration: none; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" target="_blank">${escapeHtml(params.buttonText)}</a>
                       </div>
                       ` : ""}
                       ${params.footerText ? `<p class="muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 1.6; color:#737373;">${params.footerText}</p>` : ""}
@@ -119,8 +126,8 @@ export function createEmailTemplate(params: {
             </tr>
             <!-- Social Media Links -->
             <tr>
-              <td align="center" style="padding: 32px 0 16px 0;">
-                <p class="muted" style="margin: 0 0 16px 0; font-size: 14px; color: #737373;">
+              <td align="center" style="padding: 32px 0 16px 0; background-color: #FFFBF7;" bgcolor="#FFFBF7">
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: #737373; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                   Connect with us
                 </p>
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
