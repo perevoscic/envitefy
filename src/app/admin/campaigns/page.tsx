@@ -591,13 +591,33 @@ export default function CampaignsPage() {
 
               {htmlMode && (
                 <div className="mb-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/30 rounded-lg">
-                  <p className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                    <span className="font-semibold">💡 HTML Mode:</span>
-                    <span>
-                      Write raw HTML code. Use inline styles for best email
-                      compatibility.
-                    </span>
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                    <span className="font-semibold">💡 HTML Mode Tips:</span>
                   </p>
+                  <ul className="text-xs text-purple-700 dark:text-purple-300 space-y-1 ml-4 list-disc">
+                    <li>Use inline styles for best compatibility</li>
+                    <li>
+                      Add{" "}
+                      <code className="bg-purple-100 dark:bg-purple-800 px-1 rounded">
+                        !important
+                      </code>{" "}
+                      to colors & backgrounds for dark mode
+                    </li>
+                    <li>
+                      Add{" "}
+                      <code className="bg-purple-100 dark:bg-purple-800 px-1 rounded">
+                        bgcolor="#FFFFFF"
+                      </code>{" "}
+                      attributes to elements with white backgrounds
+                    </li>
+                    <li>
+                      Example:{" "}
+                      <code className="bg-purple-100 dark:bg-purple-800 px-1 rounded">
+                        style="background-color: #F59E0B !important; color:
+                        white !important;"
+                      </code>
+                    </li>
+                  </ul>
                 </div>
               )}
 
