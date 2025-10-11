@@ -1543,42 +1543,44 @@ export default function SnapPage() {
               </p>
 
               {/* Credits pill */}
-              <div className="mt-6 flex justify-center">
-                <Link
-                  href="/subscription"
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 text-foreground/90 text-xs px-3 py-1.5 hover:bg-surface"
-                >
-                  <span aria-hidden>🎟️</span>
-                  {isSignedIn ? (
-                    isLifetime ? (
-                      <span className="font-semibold tracking-tight">∞ Lifetime Access</span>
-                    ) : typeof credits === "number" ? (
-                      credits <= 0 ? (
-                        <>
-                          <span className="font-semibold text-error">Out of credits</span>
-                          <span>— Upgrade to keep scanning</span>
-                        </>
+              {(!isSignedIn || !isLifetime) && (
+                <div className="mt-6 flex justify-center">
+                  <Link
+                    href="/subscription"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 text-foreground/90 text-xs px-3 py-1.5 hover:bg-surface"
+                  >
+                    <span aria-hidden>🎟️</span>
+                    {isSignedIn ? (
+                      isLifetime ? (
+                        <span className="font-semibold tracking-tight">∞ Lifetime Access</span>
+                      ) : typeof credits === "number" ? (
+                        credits <= 0 ? (
+                          <>
+                            <span className="font-semibold text-error">Out of credits</span>
+                            <span>— Upgrade to keep scanning</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-semibold">{credits}</span>
+                            <span>credits left. Subscribe</span>
+                          </>
+                        )
+                      ) : creditsError ? (
+                        <span>Credits unavailable</span>
                       ) : (
-                        <>
-                          <span className="font-semibold">{credits}</span>
-                          <span>credits left. Subscribe</span>
-                        </>
+                        <span>Checking credits…</span>
                       )
-                    ) : creditsError ? (
-                      <span>Credits unavailable</span>
                     ) : (
-                      <span>Checking credits…</span>
-                    )
-                  ) : (
-                    <>
-                      <span>Free trial:</span>
-                      <span className="font-semibold">3</span>
-                      <span>credits</span>
-                    </>
-                  )}
-                  <span aria-hidden>↗</span>
-                </Link>
-              </div>
+                      <>
+                        <span>Free trial:</span>
+                        <span className="font-semibold">3</span>
+                        <span>credits</span>
+                      </>
+                    )}
+                    <span aria-hidden>↗</span>
+                  </Link>
+                </div>
+              )}
 
               {showCreditsBanner && (
                 <p className={creditsBannerClasses}>
