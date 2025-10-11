@@ -4,10 +4,22 @@ import Link from "next/link";
 import { useState } from "react";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 
+type Plan = "free" | "monthly" | "yearly" | "FF";
+interface Scenario {
+  oldPlan: Exclude<Plan, "FF">; // old plan can't be FF in these previews
+  newPlan: Exclude<Plan, "free">; // new plan is one of paid or FF
+  oldPlanLabel: string;
+  newPlanLabel: string;
+}
+
 export default function SubscriptionChangePreviewPage() {
   const { data: session, status } = useSession();
   const [viewType, setViewType] = useState<
-    "upgradeMonthly" | "upgradeYearly" | "planSwitch" | "lifetime"
+    | "upgradeMonthly"
+    | "upgradeYearly"
+    | "planSwitch"
+    | "planSwitchDown"
+    | "lifetime"
   >("upgradeMonthly");
 
   if (status === "loading") {
@@ -34,7 +46,14 @@ export default function SubscriptionChangePreviewPage() {
 
   // Generate sample email based on view type
   const userName = "Taylor";
-  const scenarios = {
+  const scenarios: Record<
+    | "upgradeMonthly"
+    | "upgradeYearly"
+    | "planSwitch"
+    | "planSwitchDown"
+    | "lifetime",
+    Scenario
+  > = {
     upgradeMonthly: {
       oldPlan: "free",
       newPlan: "monthly",
@@ -53,6 +72,12 @@ export default function SubscriptionChangePreviewPage() {
       oldPlanLabel: "Monthly Plan",
       newPlanLabel: "Yearly Plan",
     },
+    planSwitchDown: {
+      oldPlan: "yearly",
+      newPlan: "monthly",
+      oldPlanLabel: "Yearly Plan",
+      newPlanLabel: "Monthly Plan",
+    },
     lifetime: {
       oldPlan: "monthly",
       newPlan: "FF",
@@ -62,9 +87,7 @@ export default function SubscriptionChangePreviewPage() {
   };
 
   const scenario = scenarios[viewType];
-  const isUpgrade =
-    (scenario.oldPlan === "free" && scenario.newPlan !== "free") ||
-    scenario.newPlan === "FF";
+  const isUpgrade = scenario.oldPlan === "free" || scenario.newPlan === "FF";
   const isPlanSwitch =
     (scenario.oldPlan === "monthly" && scenario.newPlan === "yearly") ||
     (scenario.oldPlan === "yearly" && scenario.newPlan === "monthly");
@@ -202,7 +225,7 @@ export default function SubscriptionChangePreviewPage() {
             <h2 className="text-lg font-semibold text-foreground mb-3">
               Preview Type
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" suppressHydrationWarning>
               <button
                 onClick={() => setViewType("upgradeMonthly")}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -210,7 +233,6 @@ export default function SubscriptionChangePreviewPage() {
                     ? "bg-green-500 text-white shadow-lg"
                     : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
                 }`}
-                suppressHydrationWarning
               >
                 ✨ Upgrade (Trial → Monthly)
               </button>
@@ -221,7 +243,6 @@ export default function SubscriptionChangePreviewPage() {
                     ? "bg-green-500 text-white shadow-lg"
                     : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
                 }`}
-                suppressHydrationWarning
               >
                 ✨ Upgrade (Trial → Yearly)
               </button>
@@ -232,9 +253,18 @@ export default function SubscriptionChangePreviewPage() {
                     ? "bg-indigo-500 text-white shadow-lg"
                     : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
                 }`}
-                suppressHydrationWarning
               >
                 🔄 Plan Switch (Monthly ↔ Yearly)
+              </button>
+              <button
+                onClick={() => setViewType("planSwitchDown")}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  viewType === "planSwitchDown"
+                    ? "bg-indigo-500 text-white shadow-lg"
+                    : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
+                }`}
+              >
+                🔁 Plan Switch (Yearly → Monthly)
               </button>
               <button
                 onClick={() => setViewType("lifetime")}
@@ -243,7 +273,6 @@ export default function SubscriptionChangePreviewPage() {
                     ? "bg-amber-500 text-white shadow-lg"
                     : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
                 }`}
-                suppressHydrationWarning
               >
                 ⭐ Lifetime (Admin Grant)
               </button>

@@ -1,27 +1,62 @@
 /**
- * Resend integration for bulk/marketing emails
+ * Resend integration for bulk/marketing emails (REST-only)
+ * Uses direct HTTP calls to avoid optional peer deps in the SDK.
  */
 
-import { Resend } from "resend";
 import { createEmailTemplate } from "./email-template";
 
-// Lazy initialize the Resend client so builds don't fail when the key
-// is not present at compile time (e.g., CI build step without secrets).
-let _resend: Resend | null = null;
-function getResend(): Resend {
-  if (_resend) return _resend;
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is required to send emails");
+function assertApiKey(): string {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_API_KEY is required to send emails");
+  return key;
+}
+
+async function resendHttpSend(params: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const apiKey = assertApiKey();
+
+  const doSend = async (fromValue: string) => {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromValue,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+      }),
+    });
+    const text = await res.text().catch(() => "");
+    return { ok: res.ok, status: res.status, text } as const;
+  };
+
+  // First try with provided From
+  const first = await doSend(params.from);
+  if (first.ok) return;
+
+  // If domain not verified, Resend returns 400/422. Retry with onboarding.
+  const maybeDomainError = /domain|from address|verified/i.test(first.text || "");
+  if (maybeDomainError || first.status === 400 || first.status === 422) {
+    const fallbackFrom = process.env.RESEND_FROM_EMAIL || "Snap My Date <onboarding@resend.dev>";
+    const second = await doSend(fallbackFrom);
+    if (second.ok) return;
+    throw new Error(`Resend HTTP ${second.status}: ${second.text || "send failed"}`);
   }
-  _resend = new Resend(apiKey);
-  return _resend;
+
+  throw new Error(`Resend HTTP ${first.status}: ${first.text || "send failed"}`);
 }
 
 export interface BulkEmailParams {
   subject: string;
   body: string; // HTML content for email body
-  fromEmail?: string; // defaults to SES_FROM_EMAIL_NO_REPLY
+  fromEmail?: string; // defaults to SES_FROM_EMAIL_NO_REPLY or RESEND_FROM_EMAIL
   recipients: Array<{
     email: string;
     firstName?: string | null;
@@ -39,43 +74,33 @@ export interface BulkEmailResult {
 
 /**
  * Send bulk emails using Resend with batching
- * Resend has a batch limit of 100 emails per request
  */
 export async function sendBulkEmail(
   params: BulkEmailParams
 ): Promise<BulkEmailResult> {
   const fromEmail =
     params.fromEmail ||
+    process.env.RESEND_FROM_EMAIL ||
     process.env.SES_FROM_EMAIL_NO_REPLY ||
-    "Snap My Date <no-reply@snapmydate.com>";
+    "Snap My Date <onboarding@resend.dev>";
 
   const BATCH_SIZE = 100;
   const batches: typeof params.recipients[] = [];
-
-  // Split recipients into batches
   for (let i = 0; i < params.recipients.length; i += BATCH_SIZE) {
     batches.push(params.recipients.slice(i, i + BATCH_SIZE));
   }
 
-  const result: BulkEmailResult = {
-    sent: 0,
-    failed: 0,
-    errors: [],
-  };
+  const result: BulkEmailResult = { sent: 0, failed: 0, errors: [] };
 
-  // Process batches sequentially to respect rate limits
   for (const batch of batches) {
     try {
-      // Resend batch API expects an array of email objects
       const emailPromises = batch.map(async (recipient) => {
         try {
-          // Generate personalized email content
           const userName = recipient.firstName || null;
           const greeting = userName ? `Hi ${userName}` : "Hello";
           const firstName = recipient.firstName || "";
           const lastName = recipient.lastName || "";
 
-          // Replace all placeholders
           let personalizedBody = params.body
             .replace(/\{\{greeting\}\}/g, greeting)
             .replace(/\{\{firstName\}\}/g, firstName)
@@ -86,11 +111,11 @@ export async function sendBulkEmail(
             body: personalizedBody,
             buttonText: params.buttonText,
             buttonUrl: params.buttonUrl,
-            footerText: "You're receiving this because you have a Snap My Date account.",
+            footerText:
+              "You're receiving this because you have a Snap My Date account.",
           });
 
-          // Send individual email
-          await getResend().emails.send({
+          await resendHttpSend({
             from: fromEmail,
             to: recipient.email,
             subject: params.subject,
@@ -102,25 +127,21 @@ export async function sendBulkEmail(
           result.failed++;
           result.errors.push({
             email: recipient.email,
-            error: error.message || "Unknown error",
+            error: error?.message || "Unknown error",
           });
         }
       });
 
-      // Wait for all emails in this batch
       await Promise.all(emailPromises);
-
-      // Small delay between batches to avoid rate limiting
       if (batches.length > 1) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((r) => setTimeout(r, 100));
       }
     } catch (error: any) {
-      // Batch-level error
       batch.forEach((recipient) => {
         result.failed++;
         result.errors.push({
           email: recipient.email,
-          error: error.message || "Batch send failed",
+          error: error?.message || "Batch send failed",
         });
       });
     }
@@ -129,9 +150,6 @@ export async function sendBulkEmail(
   return result;
 }
 
-/**
- * Send a test email to verify Resend configuration
- */
 export async function sendTestEmail(toEmail: string): Promise<boolean> {
   try {
     const html = createEmailTemplate({
@@ -144,8 +162,11 @@ export async function sendTestEmail(toEmail: string): Promise<boolean> {
       footerText: "This is a test email from Snap My Date admin.",
     });
 
-    await getResend().emails.send({
-      from: process.env.SES_FROM_EMAIL_NO_REPLY || "Snap My Date <no-reply@snapmydate.com>",
+    await resendHttpSend({
+      from:
+        process.env.RESEND_FROM_EMAIL ||
+        process.env.SES_FROM_EMAIL_NO_REPLY ||
+        "Snap My Date <onboarding@resend.dev>",
       to: toEmail,
       subject: "Resend Test Email",
       html,

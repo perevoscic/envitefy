@@ -23,7 +23,28 @@ export function createEmailTemplate(params: {
   buttonUrl?: string;
   footerText?: string;
 }): string {
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL || "https://snapmydate.com";
+  // Resolve a public, absolute base URL for images/links used in emails.
+  // Avoid localhost values which are not reachable by email clients.
+  const candidate =
+    process.env.PUBLIC_BASE_URL ||
+    process.env.APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "";
+  let baseUrl = candidate || "https://snapmydate.com";
+  try {
+    const u = new URL(baseUrl);
+    const host = (u.hostname || "").toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".local") ||
+      u.protocol.startsWith("http") === false
+    ) {
+      baseUrl = "https://snapmydate.com";
+    }
+  } catch {
+    baseUrl = "https://snapmydate.com";
+  }
   const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
   
   return `<!doctype html>
@@ -87,6 +108,9 @@ export function createEmailTemplate(params: {
                       <p class="signature" style="font-style: italic; color: #737373; margin-top: 24px; font-size: 14px; line-height: 1.5;">
                         Sincerely,<br/>
                         <strong>Snap My Date Team</strong>
+                      </p>
+                      <p style="margin: 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
+                        SNAP IT. SAVE IT. DONE.
                       </p>
                     </td>
                   </tr>

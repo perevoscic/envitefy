@@ -179,12 +179,12 @@ export default function CampaignsPage() {
       return;
     }
 
-    // Handle test mode
-    if (selectedPlans.includes("test")) {
-      if (!testEmail || !testEmail.includes("@")) {
-        alert("Please enter a valid test email address");
-        return;
-      }
+    // Handle test and all modes
+    const isTest = selectedPlans.includes("test");
+    const isAll = selectedPlans.includes("all");
+    if (isTest && (!testEmail || !testEmail.includes("@"))) {
+      alert("Please enter a valid test email address");
+      return;
     }
 
     setSending(true);
@@ -199,8 +199,9 @@ export default function CampaignsPage() {
           buttonText: buttonText || undefined,
           buttonUrl: buttonUrl || undefined,
           audienceFilter: {
-            plans: selectedPlans.includes("test") ? [] : selectedPlans,
-            testEmail: selectedPlans.includes("test") ? testEmail : undefined,
+            // Test mode has priority; next is All users; else specific plans
+            plans: isTest ? [] : isAll ? undefined : selectedPlans,
+            testEmail: isTest ? testEmail : undefined,
           },
         }),
       });
@@ -546,30 +547,36 @@ export default function CampaignsPage() {
                 Audience <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
-                {["test", "free", "monthly", "yearly", "FF"].map((plan) => (
-                  <button
-                    key={plan}
-                    type="button"
-                    onClick={() => handlePlanToggle(plan)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      selectedPlans.includes(plan)
-                        ? plan === "test"
-                          ? "bg-blue-500 text-white shadow-lg"
-                          : "bg-primary text-white shadow-lg"
-                        : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
-                    }`}
-                  >
-                    {plan === "test"
-                      ? "🧪 Test"
-                      : plan === "free"
-                      ? "Free Trial"
-                      : plan === "monthly"
-                      ? "Monthly Plan"
-                      : plan === "yearly"
-                      ? "Yearly Plan"
-                      : "Lifetime (FF)"}
-                  </button>
-                ))}
+                {["test", "all", "free", "monthly", "yearly", "FF"].map(
+                  (plan) => (
+                    <button
+                      key={plan}
+                      type="button"
+                      onClick={() => handlePlanToggle(plan)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        selectedPlans.includes(plan)
+                          ? plan === "test"
+                            ? "bg-blue-500 text-white shadow-lg"
+                            : plan === "all"
+                            ? "bg-indigo-600 text-white shadow-lg"
+                            : "bg-primary text-white shadow-lg"
+                          : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
+                      }`}
+                    >
+                      {plan === "test"
+                        ? "🧪 Test"
+                        : plan === "all"
+                        ? "All users"
+                        : plan === "free"
+                        ? "Free Trial"
+                        : plan === "monthly"
+                        ? "Monthly Plan"
+                        : plan === "yearly"
+                        ? "Yearly Plan"
+                        : "Lifetime (FF)"}
+                    </button>
+                  )
+                )}
               </div>
 
               {/* Test Email Input */}
@@ -605,13 +612,6 @@ export default function CampaignsPage() {
                 👁️ Preview Email
               </button>
               <button
-                type="submit"
-                disabled={sending}
-                className="px-6 py-2 bg-green-500 text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50"
-              >
-                {sending ? "Sending..." : "🚀 Send Campaign"}
-              </button>
-              <button
                 type="button"
                 onClick={() => setShowComposer(false)}
                 className="px-6 py-2 bg-surface-alt text-foreground rounded-lg font-medium hover:bg-surface-alt/80 transition-all"
@@ -635,8 +635,11 @@ export default function CampaignsPage() {
                   <p className="text-sm text-muted-foreground mt-1">
                     Review your campaign before sending to{" "}
                     {selectedPlans
+                      .filter((p) => p !== "test")
                       .map((p) =>
-                        p === "free"
+                        p === "all"
+                          ? "All users"
+                          : p === "free"
                           ? "Free Trial"
                           : p === "monthly"
                           ? "Monthly"
@@ -644,8 +647,7 @@ export default function CampaignsPage() {
                           ? "Yearly"
                           : "Lifetime"
                       )
-                      .join(", ")}{" "}
-                    users
+                      .join(", ") || "your selection"}
                   </p>
                 </div>
                 <button

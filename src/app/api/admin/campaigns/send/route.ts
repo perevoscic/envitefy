@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -5,7 +8,7 @@ import { getUserByEmail, query } from "@/lib/db";
 import { sendBulkEmail } from "@/lib/resend";
 
 interface AudienceFilter {
-  plans?: string[]; // ["free", "monthly", "yearly", "FF"]
+  plans?: string[] | undefined; // ["free", "monthly", "yearly", "FF"] or undefined for ALL
   minScans?: number | null;
   maxScans?: number | null;
   lastActiveAfter?: string | null; // ISO date
@@ -76,7 +79,8 @@ export async function POST(req: NextRequest) {
       const queryParams: any[] = [];
       let paramIndex = 1;
 
-      if (audienceFilter.plans && audienceFilter.plans.length > 0) {
+      // If plans is provided and non-empty, filter by plans; otherwise, ALL users
+      if (Array.isArray(audienceFilter.plans) && audienceFilter.plans.length > 0) {
         whereConditions.push(`subscription_plan = ANY($${paramIndex})`);
         queryParams.push(audienceFilter.plans);
         paramIndex++;

@@ -28,6 +28,7 @@ export default function LeftSidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsOpenFloating, setSettingsOpenFloating] = useState(false);
+  const [adminOpenFloating, setAdminOpenFloating] = useState(false);
   const [itemMenuId, setItemMenuId] = useState<string | null>(null);
   const [itemMenuPos, setItemMenuPos] = useState<{
     left: number;
@@ -1199,6 +1200,7 @@ export default function LeftSidebar() {
                 const next = !v;
                 setSettingsOpen(false);
                 setSettingsOpenFloating(false);
+                setAdminOpenFloating(false);
                 return next;
               });
             }}
@@ -1409,6 +1411,7 @@ export default function LeftSidebar() {
                   onClick={() => {
                     setMenuOpen(false);
                     setSettingsOpenFloating(false);
+                    setAdminOpenFloating(false);
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                 >
@@ -1435,6 +1438,7 @@ export default function LeftSidebar() {
                   onClick={() => {
                     setMenuOpen(false);
                     setSettingsOpenFloating(false);
+                    setAdminOpenFloating(false);
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                 >
@@ -1456,29 +1460,81 @@ export default function LeftSidebar() {
                 </Link>
 
                 {isAdmin && (
-                  <Link
-                    href="/admin"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setSettingsOpenFloating(false);
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminOpenFloating((v) => !v);
+                      }}
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                     >
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                    <span className="text-sm">Admin</span>
-                  </Link>
+                      <div className="flex items-center gap-3">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        <span className="text-sm">Admin</span>
+                      </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-4 w-4 transition-transform ${
+                          adminOpenFloating ? "rotate-0" : "rotate-90"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                    {adminOpenFloating && (
+                      <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
+                        <Link
+                          href="/admin"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setAdminOpenFloating(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <span className="text-sm">Dashboard</span>
+                        </Link>
+                        <Link
+                          href="/admin/emails"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setAdminOpenFloating(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <span className="text-sm">Emails</span>
+                        </Link>
+                        <Link
+                          href="/admin/campaigns"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setAdminOpenFloating(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <span className="text-sm">Campaigns</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <button
