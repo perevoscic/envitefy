@@ -37,6 +37,7 @@ export default function SnapPage() {
   });
   const [category, setCategory] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
+  const [creditsError, setCreditsError] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<
     "free" | "monthly" | "yearly" | "FF" | null
   >(null);
@@ -135,28 +136,61 @@ export default function SnapPage() {
   // Load remaining credits (signed-in users)
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    if (!session?.user) {
+      setCredits(null);
+      setSubscriptionPlan(null);
+      setCreditsError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadProfile = async () => {
       try {
         const res = await fetch("/api/user/profile", { cache: "no-store" });
-        if (!cancelled && res.ok) {
-          const j = await res.json().catch(() => ({}));
-          if (typeof (j as any)?.credits === "number") {
-            setCredits((j as any).credits as number);
-          }
-          const plan = (j as any)?.subscriptionPlan;
-          if (
-            plan === "free" ||
-            plan === "monthly" ||
-            plan === "yearly" ||
-            plan === "FF"
-          ) {
-            setSubscriptionPlan(plan);
-          } else {
-            setSubscriptionPlan(null);
-          }
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setCredits(null);
+          setCreditsError("We couldn't load your credits. Try again in a few seconds.");
+          return;
         }
-      } catch {}
-    })();
+
+        const j = await res.json().catch(() => ({}));
+        if (cancelled) return;
+
+        const rawPlan = (j as any)?.subscriptionPlan ?? null;
+        const plan =
+          rawPlan === "free" ||
+          rawPlan === "monthly" ||
+          rawPlan === "yearly" ||
+          rawPlan === "FF"
+            ? rawPlan
+            : null;
+
+        const rawCredits = (j as any)?.credits;
+        const nextCredits =
+          plan === "FF"
+            ? Infinity
+            : typeof rawCredits === "number"
+            ? (rawCredits as number)
+            : null;
+
+        setSubscriptionPlan(plan);
+        setCredits(nextCredits);
+        setCreditsError(null);
+      } catch {
+        if (!cancelled) {
+          setCredits(null);
+          setCreditsError("We couldn't load your credits. Try again in a few seconds.");
+        }
+      }
+    };
+
+    setCreditsError(null);
+    loadProfile();
+
     return () => {
       cancelled = true;
     };
@@ -299,6 +333,26 @@ export default function SnapPage() {
     return toSmartApostrophes(base);
   };
 
+  const isSignedIn = Boolean(session?.user);
+  const isLifetime = subscriptionPlan === "FF" || credits === Infinity;
+  const creditsLoading = isSignedIn && !isLifetime && creditsError === null && credits === null;
+  const isOutOfCredits =
+    isSignedIn &&
+    !isLifetime &&
+    typeof credits === "number" &&
+    credits <= 0;
+  const actionButtonsDisabled = Boolean(creditsError) || creditsLoading || isOutOfCredits;
+  const disabledReason = actionButtonsDisabled
+    ? creditsError ?? (creditsLoading
+        ? "Hang tight — checking your credits…"
+        : "You're out of credits. Upgrade to keep scanning.")
+    : undefined;
+  const showCreditsBanner = Boolean(creditsError || creditsLoading || isOutOfCredits);
+  const creditsBannerClasses = [
+    "mt-4 text-sm text-center",
+    creditsError || isOutOfCredits ? "text-error" : "text-muted-foreground",
+  ].join(" ");
+
   const resetForm = () => {
     setEvent(null);
     setBulkEvents(null);
@@ -315,9 +369,12 @@ export default function SnapPage() {
 
   const redirectIfNoCredits = (): boolean => {
     try {
-      const isFree = subscriptionPlan == null || subscriptionPlan === "free";
-      if (isFree && typeof credits === "number" && credits <= 0) {
-        window.location.href = "/subscription";
+      if (!isSignedIn) return false;
+      if (isLifetime) return false;
+      if (credits === null) {
+        return true;
+      }
+      if (typeof credits === "number" && credits <= 0) {
         return true;
       }
     } catch {}
@@ -1492,15 +1549,26 @@ export default function SnapPage() {
                   className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 text-foreground/90 text-xs px-3 py-1.5 hover:bg-surface"
                 >
                   <span aria-hidden>🎟️</span>
-                  {typeof credits === "number" ? (
-                    <>
-                      <span className="font-semibold">{credits}</span>
-                      <span>credits left. Subscribe</span>
-                    </>
-                  ) : session?.user ? (
-                    <>
+                  {isSignedIn ? (
+                    isLifetime ? (
+                      <span className="font-semibold tracking-tight">∞ Lifetime Access</span>
+                    ) : typeof credits === "number" ? (
+                      credits <= 0 ? (
+                        <>
+                          <span className="font-semibold text-error">Out of credits</span>
+                          <span>— Upgrade to keep scanning</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-semibold">{credits}</span>
+                          <span>credits left. Subscribe</span>
+                        </>
+                      )
+                    ) : creditsError ? (
+                      <span>Credits unavailable</span>
+                    ) : (
                       <span>Checking credits…</span>
-                    </>
+                    )
                   ) : (
                     <>
                       <span>Free trial:</span>
@@ -1508,16 +1576,35 @@ export default function SnapPage() {
                       <span>credits</span>
                     </>
                   )}
-                  <span aria-hidden>→</span>
+                  <span aria-hidden>↗</span>
                 </Link>
               </div>
+
+              {showCreditsBanner && (
+                <p className={creditsBannerClasses}>
+                  {creditsError ? (
+                    creditsError
+                  ) : isOutOfCredits ? (
+                    <>
+                      You're out of credits.{" "}
+                      <Link href="/subscription" className="font-medium underline">
+                        Upgrade
+                      </Link>{" "}
+                      to keep scanning.
+                    </>
+                  ) : (
+                    "Hang tight — checking your credits…"
+                  )}
+                </p>
+              )}
 
               <div className="mt-8 flex flex-row gap-3 justify-center lg:justify-center">
                 <button
                   onClick={openCamera}
-                  disabled={Boolean(session?.user) && credits === null}
+                  disabled={actionButtonsDisabled}
+                  title={disabledReason ?? undefined}
                   aria-label="Open camera to snap a flyer"
-                  className="btn btn-primary inline-flex items-center gap-2 whitespace-nowrap appearance-none px-3 py-2 rounded-2xl font-semibold text-sm bg-primary text-on-primary shadow-md shadow-primary/25"
+                  className="btn btn-primary"
                 >
                   <svg
                     className="h-4 w-4"
@@ -1546,9 +1633,10 @@ export default function SnapPage() {
 
                 <button
                   onClick={openUpload}
-                  disabled={Boolean(session?.user) && credits === null}
+                  disabled={actionButtonsDisabled}
+                  title={disabledReason ?? undefined}
                   aria-label="Upload a flyer or card image from your device"
-                  className="btn btn-outline inline-flex items-center gap-2 whitespace-nowrap appearance-none px-3 py-2 rounded-2xl font-semibold text-sm border border-border bg-surface/80 text-foreground"
+                  className="btn btn-outline"
                 >
                   <svg
                     className="h-4 w-4"
@@ -2690,3 +2778,4 @@ function IconAppleMono({ className }: { className?: string }) {
     </svg>
   );
 }
+
