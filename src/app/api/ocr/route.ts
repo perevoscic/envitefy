@@ -914,6 +914,7 @@ function stripInvitePhrases(s: string): string {
 // When the flyer has a standalone line "Join us for", enrich it with the
 // birthday person's name if the title contains a possessive (e.g., "Livia’s"),
 // and append a short venue label (e.g., "at US Gold Gymnastics") when available.
+// The rewrite avoids invitation phrasing like "Join us" in the final output.
 function improveJoinUsFor(description: string, title: string, location?: string): string {
   try {
     const lines = (description || "").split("\n").map((l) => l.trim()).filter(Boolean);
@@ -957,7 +958,7 @@ function improveJoinUsFor(description: string, title: string, location?: string)
       }
     }
 
-    const replacement = `Join us for ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}${venue ? ` at ${venue}` : ""}`
+    const replacement = `Celebrating ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}${venue ? ` at ${venue}` : ""}`
       .replace(/\s+/g, " ")
       .trim();
 
@@ -978,7 +979,7 @@ function improveJoinUsFor(description: string, title: string, location?: string)
 }
 
 // Pick a short human venue label for sentences like
-// "Please, join us for <Name>'s Birthday Party at <Venue>".
+// "<Name>'s Birthday Party at <Venue>".
 // Prefers a business/venue name over a numeric street address.
 function pickVenueLabelForSentence(location?: string, description?: string): string {
   try {
@@ -1009,10 +1010,10 @@ function buildFriendlyBirthdaySentence(title: string, location?: string): string
     const first = (t || "").match(/\b([A-Z][A-Za-z\-]+)\b/);
     return first ? `${first[1]}'s` : null;
   };
-  const who = extractPossessive(title) || "our";
+  const who = extractPossessive(title) || "Our";
   const venue = (location || "").trim();
   const atPart = venue ? ` at ${venue}` : "";
-  return `Please, join us for ${who} Birthday Party${atPart}.`;
+  return `${who} Birthday Party${atPart}.`;
 }
 
 // Extract a compact RSVP string from raw OCR/description text, e.g.,
@@ -1063,8 +1064,8 @@ async function llmRewriteBirthdayDescription(
   // Give the model explicit guidance so it standardizes the sentence while adapting to available fields
   const user =
     `TITLE: ${title || ""}\nLOCATION: ${location || ""}\nNOTES: ${description || ""}\n\n` +
-    "Task: If this is a birthday party, write ONE friendly sentence like: 'Please, join us for <Name>'s Birthday Party at <Location>'. " +
-    "Rules: Prefer a concise venue/business name (e.g., 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
+    "Task: If this is a birthday party, write ONE friendly sentence like: '<Name>'s Birthday Party at <Location>'. " +
+    "Rules: Prefer a concise venue/business name (e.g., 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. Avoid phrases such as 'Join us' or 'You're invited'. Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1162,7 +1163,7 @@ async function llmRewriteSmartDescription(
     `CATEGORY: ${category || ""}\n` +
     `LOCATION: ${location || ""}\n` +
     `BASELINE: ${baseline || ""}\n\n` +
-    "Rules: Prefer venue/business names over street addresses. Skip RSVP/phone/email/URLs/prices. Don't invent times or places. Keep it natural and concise. Use a straightforward style like 'Please, join us for …', 'You're invited to …', 'Don't miss …', or '<Team> vs <Team> at <Venue>' depending on context. Return only the sentence.";
+    "Rules: Prefer venue/business names over street addresses. Skip RSVP/phone/email/URLs/prices. Don't invent times or places. Keep it natural and concise. Use a straightforward style like '<Team> vs <Team> at <Venue>', 'Don't miss …', or a simple declarative sentence. Avoid phrases like 'Join us' or 'You're invited'. Return only the sentence.";
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1353,23 +1354,30 @@ export async function POST(request: Request) {
     let llmImage: any = null;
     let raw = "";
     let ocrSource = "none";
+    let openAiSucceeded = false;
     
     try {
       console.log(">>> OCR: Trying OpenAI Vision (primary)...");
       llmImage = await llmExtractEventFromImage(ocrBuffer, mime || "application/octet-stream");
-      if (llmImage && (llmImage.title || llmImage.description)) {
-        // OpenAI succeeded - use it as the source
-        console.log(">>> OCR: OpenAI Vision succeeded ✓");
-        ocrSource = "openai";
-        // Build raw text from OpenAI results for heuristic fallbacks
-        raw = [
-          llmImage.title || "",
-          llmImage.start || "",
-          llmImage.end || "",
-          llmImage.address || "",
-          llmImage.description || "",
-          llmImage.rsvp || ""
-        ].filter(Boolean).join("\n").trim();
+      if (llmImage) {
+        const parts: string[] = [];
+        if (typeof llmImage.title === "string" && llmImage.title.trim()) parts.push(llmImage.title.trim());
+        if (typeof llmImage.start === "string" && llmImage.start.trim()) parts.push(llmImage.start.trim());
+        if (typeof llmImage.end === "string" && llmImage.end.trim()) parts.push(llmImage.end.trim());
+        if (typeof llmImage.address === "string" && llmImage.address.trim()) parts.push(llmImage.address.trim());
+        if (typeof llmImage.description === "string" && llmImage.description.trim())
+          parts.push(llmImage.description.trim());
+        if (typeof llmImage.rsvp === "string" && llmImage.rsvp.trim()) parts.push(llmImage.rsvp.trim());
+
+        if (parts.length) {
+          // OpenAI produced meaningful data; treat this as the authoritative OCR result.
+          console.log(">>> OCR: OpenAI Vision succeeded ✓");
+          raw = parts.join("\n");
+          ocrSource = "openai";
+          openAiSucceeded = true;
+        } else {
+          console.warn(">>> OCR: OpenAI returned an object without usable fields", llmImage);
+        }
       } else {
         console.warn(">>> OCR: OpenAI returned empty/null result:", llmImage);
       }
@@ -1385,7 +1393,8 @@ export async function POST(request: Request) {
     // =============================================================================
     // STEP 2: Fallback to Google Vision if OpenAI failed
     // =============================================================================
-    if (!llmImage || !raw) {
+    if (!openAiSucceeded) {
+      llmImage = null; // avoid mixing Google fallback with partial OpenAI fields
       console.log(">>> OCR: Falling back to Google Vision...");
       const vision = getVisionClient();
       let result: any;
@@ -1967,6 +1976,30 @@ export async function POST(request: Request) {
           finalDescription = cleaned;
         }
       } catch {}
+    }
+
+    const containsExplicitYear = /\b(19|20)\d{2}\b/.test(raw);
+    if (!containsExplicitYear && finalStart instanceof Date) {
+      const now = new Date();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const sixtyDaysMs = 60 * dayMs;
+      const duration = finalEnd instanceof Date ? finalEnd.getTime() - finalStart.getTime() : null;
+      const adjustedStart = new Date(finalStart);
+      let shifts = 0;
+      while (adjustedStart.getTime() < now.getTime() - sixtyDaysMs && shifts < 3) {
+        adjustedStart.setFullYear(adjustedStart.getFullYear() + 1);
+        shifts += 1;
+      }
+      if (shifts > 0 && adjustedStart.getTime() > finalStart.getTime()) {
+        finalStart = adjustedStart;
+        if (duration !== null) {
+          finalEnd = new Date(adjustedStart.getTime() + duration);
+        } else if (finalEnd instanceof Date) {
+          const endAdjusted = new Date(finalEnd);
+          endAdjusted.setFullYear(endAdjusted.getFullYear() + shifts);
+          finalEnd = endAdjusted;
+        }
+      }
     }
 
     // RSVP is now stored in a separate field, no longer appended to description
