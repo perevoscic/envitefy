@@ -566,26 +566,64 @@ export default function Home() {
       e.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     const startIso = parseStartToIso(e.start, timezone);
     if (!startIso) return null;
-    const endIso = e.end
-      ? parseStartToIso(e.end, timezone) ||
-        (() => {
-          const d = new Date(startIso);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}-${String(d.getDate()).padStart(2, "0")}T${String(
-            (d.getHours() + 1) % 24
-          ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00`;
-        })()
-      : (() => {
-          const d = new Date(startIso);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}-${String(d.getDate()).padStart(2, "0")}T${String(
-            (d.getHours() + 1) % 24
-          ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00`;
-        })();
+
+    const toFloating = (date: Date) => {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
+    const isWedding = (() => {
+      const candidates = [e.category, e.title, e.description];
+      return candidates.some((value) =>
+        typeof value === "string" && /wedding|marriage|nupti/iu.test(value)
+      );
+    })();
+
+    const startDate = new Date(startIso);
+    const startTime = startDate.getTime();
+    const defaultEndIso = (() => {
+      if (e.allDay && !Number.isNaN(startTime)) {
+        const end = new Date(startDate);
+        end.setDate(end.getDate() + 1);
+        end.setHours(0, 0, 0, 0);
+        return toFloating(end);
+      }
+      if (isWedding && !Number.isNaN(startTime)) {
+        const end = new Date(startDate);
+        end.setHours(end.getHours() + 5);
+        return toFloating(end);
+      }
+      return startIso;
+    })();
+
+    let endIso = defaultEndIso;
+    if (e.end) {
+      const parsedEnd = parseStartToIso(e.end, timezone);
+      if (parsedEnd) {
+        endIso = parsedEnd;
+      }
+    }
+
+    let endDate = new Date(endIso);
+    let endTime = endDate.getTime();
+    const startValid = !Number.isNaN(startTime);
+    let endValid = !Number.isNaN(endTime);
+
+    if (!endValid && startValid) {
+      endIso = defaultEndIso;
+      endDate = new Date(endIso);
+      endTime = endDate.getTime();
+      endValid = !Number.isNaN(endTime);
+    }
+
+    if (startValid) {
+      if (!e.allDay && (!endValid || endTime < startTime)) {
+        endIso = startIso;
+      } else if (e.allDay && (!endValid || endTime <= startTime)) {
+        endIso = defaultEndIso;
+      }
+    }
+
     const location = normalizeAddress(e.location || "");
     return {
       ...e,

@@ -2027,6 +2027,34 @@ export async function POST(request: Request) {
       }
     }
 
+    if (finalEnd instanceof Date && finalStart instanceof Date) {
+      const durationMs = finalEnd.getTime() - finalStart.getTime();
+      const dashRangeRe =
+        /\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?\s*[-\u2013\u2014]\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?/i;
+      const fromToRangeRe =
+        /\bfrom\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?\s+(?:to|until|through|till|til)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?/i;
+      const hasExplicitRange = dashRangeRe.test(raw) || fromToRangeRe.test(raw);
+      const hasRangeVerb = /(?:\buntil\b|\btill?\b|\bthrough\b)/i.test(raw);
+      const timeTokenSet = new Set<string>();
+      const time12hMatches =
+        raw.match(/\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi) || [];
+      for (const token of time12hMatches) {
+        const normalized = token.toLowerCase().replace(/\s+/g, "").replace(/\./g, "");
+        timeTokenSet.add(normalized);
+      }
+      const time24hMatches = raw.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g) || [];
+      for (const token of time24hMatches) {
+        timeTokenSet.add(token.trim());
+      }
+      const spelledMatches =
+        raw.match(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi) || [];
+      const totalTimeMentions = timeTokenSet.size + spelledMatches.length;
+      const looksLikeSingleTime = !hasExplicitRange && !hasRangeVerb && totalTimeMentions <= 1;
+      if (durationMs <= 0 || looksLikeSingleTime) {
+        finalEnd = null;
+      }
+    }
+
     // RSVP is now stored in a separate field, no longer appended to description
 
     if (typeof finalDescription === "string" && finalDescription.trim()) {
