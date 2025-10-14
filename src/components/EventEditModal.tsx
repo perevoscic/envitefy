@@ -24,6 +24,7 @@ export default function EventEditModal({
     description: eventData?.description || "",
     category: eventData?.category || "",
     recurrence: eventData?.recurrence || "",
+    rsvp: eventData?.rsvp || "",
   });
   const { data: session } = useSession();
   const router = useRouter();
@@ -65,6 +66,9 @@ export default function EventEditModal({
         dataUpdate.category = formData.category;
       if (formData.recurrence !== eventData?.recurrence)
         dataUpdate.recurrence = formData.recurrence || null;
+      const nextRsvp = trimmedRsvp ? trimmedRsvp : null;
+      const prevRsvp = eventData?.rsvp ? String(eventData.rsvp).trim() : null;
+      if (nextRsvp !== prevRsvp) dataUpdate.rsvp = nextRsvp;
 
       if (Object.keys(dataUpdate).length > 0) {
         await fetch(`/api/history/${eventId}`, {
@@ -92,6 +96,13 @@ export default function EventEditModal({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const trimmedRsvp = formData.rsvp.trim();
+  const normalizedCategory = (formData.category || "").toLowerCase();
+  const showRsvpField =
+    normalizedCategory.includes("birthday") ||
+    normalizedCategory.includes("wedding") ||
+    Boolean(trimmedRsvp);
 
   if (!session) return null;
 
@@ -261,6 +272,25 @@ export default function EventEditModal({
                   </select>
                 </div>
 
+                {showRsvpField && (
+                  <div>
+                    <label
+                      htmlFor="rsvp"
+                      className="block text-sm font-medium text-foreground/80 mb-1"
+                    >
+                      RSVP
+                    </label>
+                    <textarea
+                      id="rsvp"
+                      name="rsvp"
+                      value={formData.rsvp}
+                      onChange={handleInputChange}
+                      rows={1}
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label
                     htmlFor="description"
@@ -311,3 +341,5 @@ export default function EventEditModal({
     </>
   );
 }
+
+

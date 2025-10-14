@@ -121,6 +121,7 @@ export default function EventCreateModal({
   const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
+  const [rsvp, setRsvp] = useState("");
   const [category, setCategory] = useState<string>("");
   const [customCategory, setCustomCategory] = useState<string>("");
   const [showCustomCategory, setShowCustomCategory] = useState(false);
@@ -211,12 +212,18 @@ export default function EventCreateModal({
     setEndTime(toLocalTimeValue(initialEnd));
     setLocation("");
     setDescription("");
+    setRsvp("");
     setCategory("");
     setCustomCategory("");
     setShowCustomCategory(false);
     setRepeat(false);
     setRepeatDays([]);
   }, [open, initialStart, initialEnd]);
+  useEffect(() => {
+    if (category === "Birthdays" || category === "Weddings") return;
+    if (rsvp) setRsvp("");
+  }, [category]);
+
   // When enabling repeat with no selected days, preselect the chosen date's weekday
   useEffect(() => {
     try {
@@ -294,6 +301,7 @@ export default function EventCreateModal({
           endISO,
           location: location || undefined,
           description: description || undefined,
+          rsvp: trimmedRsvp || undefined,
           allDay: fullDay || undefined,
           repeat: repeat || undefined,
           recurrence:
@@ -314,6 +322,9 @@ export default function EventCreateModal({
       // Add to selected calendars
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const normalizedDescription = trimmedRsvp
+        ? [description, trimmedRsvp].filter(Boolean).join("\n\n")
+        : description;
       const normalizedEvent: NormalizedEvent = {
         title: title || "Event",
         start: startISO || new Date().toISOString(),
@@ -321,7 +332,7 @@ export default function EventCreateModal({
         allDay: fullDay,
         timezone,
         location: location || undefined,
-        description: description || undefined,
+        description: normalizedDescription || undefined,
         recurrence:
           repeat && repeatDays.length
             ? `RRULE:FREQ=WEEKLY;BYDAY=${repeatDays.join(",")}`
@@ -393,6 +404,13 @@ export default function EventCreateModal({
       setSubmitting(false);
     }
   };
+
+  const trimmedRsvp = rsvp.trim();
+  const normalizedCategory = (category || "").toLowerCase();
+  const showRsvpField =
+    normalizedCategory.includes("birthday") ||
+    normalizedCategory.includes("wedding") ||
+    Boolean(trimmedRsvp);
 
   if (!open) return null;
 
@@ -591,6 +609,21 @@ export default function EventCreateModal({
             )}
           </div>
 
+          {showRsvpField && (
+            <div>
+              <label className="block text-sm mb-1" htmlFor="evt-rsvp">
+                RSVP
+              </label>
+              <textarea
+                id="evt-rsvp"
+                value={rsvp}
+                onChange={(e) => setRsvp(e.target.value)}
+                rows={1}
+                className="w-full px-3 py-2 rounded-md border border-border bg-background"
+              />
+            </div>
+          )}
+
           {/* Connected Calendars Checkboxes */}
           {(connectedCalendars.google ||
             connectedCalendars.microsoft ||
@@ -731,3 +764,7 @@ export default function EventCreateModal({
     </div>
   );
 }
+
+
+
+
