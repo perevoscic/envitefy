@@ -77,6 +77,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   description?: string;
   category?: string;
   rsvp?: string | null;
+  yearVisible?: boolean | null;
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -89,6 +90,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   const base64 = imageBytes.toString("base64");
   const system =
     "You are a careful assistant that reads invitations and appointment slips from images. You transcribe ALL text accurately including decorative cursive, handwritten notes, and printed labels. CRITICAL: For medical/dental appointment cards, use ONLY clinical, factual language. NEVER use invitation phrases like 'Please join us', 'You're invited', 'Join us' for medical appointments. These are appointments, not social events. Carefully read the handwritten appointment type (e.g., 'Dental Cleaning', 'Annual Visit'). Return only clean JSON fields for calendar creation.";
+  const todayIso = new Date().toISOString().slice(0, 10);
   const userText =
     [
       "Task: From the image, extract a single calendar event as strict JSON with keys {title,start,end,address,description,category,rsvp}.",
@@ -105,6 +107,8 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
       "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
+      `- Today's date is ${todayIso}. If the flyer does NOT display the event year, choose the next occurrence on or after today and set start accordingly. Do NOT reuse a past year like 2023 unless the flyer explicitly shows it.`,
+      "- Add a boolean field yearVisible. Set yearVisible=true only when the flyer explicitly prints a 4-digit year next to the event date. When the year is missing and you infer it, set yearVisible=false.",
       "Special cases — MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital): never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit'). For description, read the image carefully and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a medical/dental appointment, NOT a social event. NEVER EVER write invitation-style descriptions like 'Please join us for a Dental Cleaning' or 'You're invited to'. These are MEDICAL appointments, not parties. WRONG examples: 'Please join us for a Dental Cleaning on...', 'You're invited to a dental cleaning appointment...'. CORRECT examples: 'Dental cleaning appointment.', 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on the actual visible content, each fact on its own line. Be strictly factual and clinical.",
     ].join("\n");
   try {
@@ -908,7 +912,20 @@ function stripInvitePhrases(s: string): string {
     .replace(/^\s*(you'?re\s+invited\s+to[:\s-]*)/i, "")
     .replace(/^\s*(you\s+are\s+invited[:\s-]*)/i, "")
     .replace(/^\s*(you'?re\s+invited[:\s-]*)/i, "")
+    .replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,\-]*/i, "")
     .trim();
+}
+
+function stripJoinUsLanguage(description: string): string {
+  if (!description) return description;
+  const cleanedLines = description
+    .split("\n")
+    .map((line) => stripInvitePhrases(line))
+    .map((line) => line.replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,\-]*/i, ""))
+    .map((line) => line.replace(/^\s*(let's\s+)?celebrate\s+with\s+us[:\s,\-]*/i, ""))
+    .map((line) => line.trim())
+    .filter((line, idx, arr) => line.length > 0 || (idx < arr.length - 1 && arr[idx + 1].length > 0));
+  return cleanedLines.join("\n");
 }
 
 // When the flyer has a standalone line "Join us for", enrich it with the
@@ -1978,7 +1995,15 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    const containsExplicitYear = /\b(19|20)\d{2}\b/.test(raw);
+    const rawHasYearDigits = /\b(19|20)\d{2}\b/.test(raw);
+    let containsExplicitYear = rawHasYearDigits;
+    if (ocrSource === "openai") {
+      if (typeof (llmImage as any)?.yearVisible === "boolean") {
+        containsExplicitYear = Boolean((llmImage as any).yearVisible);
+      } else {
+        containsExplicitYear = rawHasYearDigits;
+      }
+    }
     if (!containsExplicitYear && finalStart instanceof Date) {
       const now = new Date();
       const dayMs = 24 * 60 * 60 * 1000;
@@ -2003,6 +2028,10 @@ export async function POST(request: Request) {
     }
 
     // RSVP is now stored in a separate field, no longer appended to description
+
+    if (typeof finalDescription === "string" && finalDescription.trim()) {
+      finalDescription = stripJoinUsLanguage(finalDescription.trim());
+    }
 
     const descriptionHasTitle =
       (finalTitle || "").trim().length > 0 &&
