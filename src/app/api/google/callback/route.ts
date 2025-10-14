@@ -1,14 +1,62 @@
 import { google } from "googleapis";
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
-import { saveGoogleRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
+import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
 
+function readCookie(header: string | null, name: string): string | null {
+  if (!header) return null;
+  const pairs = header.split(";");
+  for (const part of pairs) {
+    const [rawKey, ...rest] = part.trim().split("=");
+    if (!rawKey) continue;
+    if (rawKey === name) {
+      const value = rest.join("=");
+      try {
+        return decodeURIComponent(value || "");
+      } catch {
+        return value || "";
+      }
+    }
+  }
+  return null;
+}
+
+function emailFromIdToken(idToken?: string | null): string | undefined {
+  if (!idToken) return undefined;
+  const parts = idToken.split(".");
+  if (parts.length < 2) return undefined;
+  const segment = parts[1];
+  const paddingLength = (4 - (segment.length % 4)) % 4;
+  const padded = segment + "=".repeat(paddingLength);
+  try {
+    const json = Buffer.from(padded.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    const payload = JSON.parse(json);
+    const email = payload?.email;
+    return typeof email === "string" && email.trim().length ? email.toLowerCase() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function emailFromGoogle(accessToken?: string | null): Promise<string | undefined> {
+  if (!accessToken) return undefined;
+  try {
+    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) return undefined;
+    const data = await response.json();
+    const email = data?.email;
+    return typeof email === "string" && email.trim().length ? email.toLowerCase() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function GET(request: Request) {
   try {
-    const nextRequest = NextRequest.from(request);
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
     const state = searchParams.get("state");
@@ -21,7 +69,6 @@ export async function GET(request: Request) {
     );
     const { tokens } = await oAuth2Client.getToken(code);
 
-    // Compute external base URL to avoid 0.0.0.0:8080 redirects behind proxies
     const deriveBaseUrl = (req: Request): string => {
       const configured = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL;
       if (configured) return configured;
@@ -41,33 +88,32 @@ export async function GET(request: Request) {
     };
     const baseUrl = deriveBaseUrl(request);
 
-    let refresh = tokens.refresh_token;
-    let sessionEmail: string | undefined;
+    let refresh = tokens.refresh_token || undefined;
+    const cookieRefresh = readCookie(request.headers.get("cookie"), "g_refresh");
+    if (!refresh && cookieRefresh) {
+      refresh = cookieRefresh;
+    }
+
+    let sessionEmail = emailFromIdToken(tokens.id_token);
+    if (!sessionEmail && tokens.access_token) {
+      sessionEmail = await emailFromGoogle(tokens.access_token);
+    }
 
     try {
-      const secret =
-        process.env.AUTH_SECRET ??
-        process.env.NEXTAUTH_SECRET ??
-        (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
-      const tokenData = await getToken({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        req: nextRequest as any,
-        secret,
-      });
-      sessionEmail = (tokenData as any)?.email as string | undefined;
-      const storedRefresh = (tokenData as any)?.providers?.google?.refreshToken as string | undefined;
-      if (!refresh && storedRefresh) {
-        refresh = storedRefresh;
+      if (!refresh && sessionEmail) {
+        const storedRefresh = await getGoogleRefreshToken(sessionEmail);
+        if (storedRefresh) {
+          refresh = storedRefresh;
+        }
       }
       if (refresh && sessionEmail) {
         await saveGoogleRefreshToken(sessionEmail, refresh);
         await updatePreferredProviderByEmail({ email: sessionEmail, preferredProvider: "google" });
       }
     } catch {
-      // Ignore persistence failures; cookie below still enables server-side use
+      // Persistence is best-effort; continue even if storage fails.
     }
 
-    // If we carried an event in state, create the event now and redirect to it
     if (state) {
       try {
         const json = Buffer.from(state, "base64").toString("utf8");
