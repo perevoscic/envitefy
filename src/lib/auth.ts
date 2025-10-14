@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser } from "@/lib/db";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken } from "@/lib/db";
 
 export function getAuthOptions(): NextAuthOptions {
   const secret =
@@ -109,12 +109,42 @@ async authorize(credentials) {
             const isAdmin = await getIsAdminByEmail(email);
             (token as any).isAdmin = !!isAdmin;
           }
-          
-          // Store the account provider info in the token
+
+          const tokenAny = token as any;
+          tokenAny.providers = tokenAny.providers || {};
+
           if (account?.provider) {
-            (token as any).provider = account.provider;
+            tokenAny.provider = account.provider;
+            const prev = tokenAny.providers[account.provider] || {};
+            const accessToken = (account as any)?.access_token ?? prev.accessToken;
+            const refreshToken = (account as any)?.refresh_token ?? prev.refreshToken;
+            const expiresAtSeconds =
+              typeof (account as any)?.expires_at === 'number'
+                ? (account as any).expires_at
+                : undefined;
+            const expiresAt =
+              typeof expiresAtSeconds === 'number'
+                ? expiresAtSeconds * 1000
+                : prev.expiresAt;
+
+            tokenAny.providers[account.provider] = {
+              ...prev,
+              accessToken,
+              refreshToken,
+              expiresAt,
+            };
+
+            if (account.provider === 'google' && email && (account as any)?.refresh_token) {
+              try {
+                await saveGoogleRefreshToken(email, (account as any).refresh_token as string);
+              } catch (err) {
+                console.error('[auth] saveGoogleRefreshToken failed', err);
+              }
+            }
           }
-        } catch {}
+        } catch (err) {
+          console.error('[auth] jwt callback error', err);
+        }
         return token;
       },
       async session({ session, token }) {
