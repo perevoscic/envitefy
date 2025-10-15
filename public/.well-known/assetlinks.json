@@ -1,0 +1,13 @@
+[
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.snapmydate.twa",
+        "sha256_cert_fingerprints": [
+          "18:66:CC:9E:C7:2C:35:55:B8:25:36:6A:60:AA:A6:27:A2:9A:55:FF:B1:1F:AF:5B:5F:39:88:65:FF:A6:25:08"
+        ]
+      }
+    }
+  ]
+  
