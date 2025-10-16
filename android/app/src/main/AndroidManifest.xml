@@ -1,9 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.snapmydate.twa">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:label="Snap My Date"
         android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.SnapMyDate"
         android:usesCleartextTraffic="false">
 
         <!-- Launcher that opens your website in a Trusted Web Activity -->
@@ -20,7 +20,7 @@
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
                 android:value="https://snapmydate.com/" />
 
-            <!-- Optional splash (uses your launcher icon by default) -->
+            <!-- Optional splash -->
             <meta-data
                 android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
                 android:resource="@mipmap/ic_launcher" />
@@ -30,4 +30,5 @@
         </activity>
 
     </application>
+
 </manifest>
