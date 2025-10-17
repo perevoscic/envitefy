@@ -3541,7 +3541,7 @@ export default function LeftSidebar() {
                               <line x1="10" y1="11" x2="10" y2="17" />
                               <line x1="14" y1="11" x2="14" y2="17" />
                             </svg>
-                            <span className="text-sm">Delete</span>
+                            <span className="hidden sm:inline text-sm">Delete</span>
                           </button>
                         </div>,
                         document.body

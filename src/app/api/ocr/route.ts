@@ -998,13 +998,17 @@ function improveJoinUsFor(description: string, title: string, location?: string)
 // Pick a short human venue label for sentences like
 // "<Name>'s Birthday Party at <Venue>".
 // Prefers a business/venue name over a numeric street address.
-function pickVenueLabelForSentence(location?: string, description?: string): string {
+function pickVenueLabelForSentence(
+  location?: string,
+  description?: string,
+  rawText?: string
+): string {
   try {
-    const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom)\b/i;
+    const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre)\b/i;
     // 1) Use a non-numeric first segment of the provided location if it looks like a venue
     if (location) {
       const first = cleanAddressLabel(String(location)).split(",")[0].trim();
-      if (first && !/\d/.test(first) && venueKeywords.test(first)) return first;
+      if (first && (!/\d/.test(first) || venueKeywords.test(first))) return first;
     }
     // 2) Try to extract from description text around an "at <Venue>" phrase
     const lineWithAt = (description || "")
@@ -1014,7 +1018,21 @@ function pickVenueLabelForSentence(location?: string, description?: string): str
     if (lineWithAt) {
       const m = lineWithAt.match(/\bat\s+([^,.\n]+?)(?:\s*[,.]|$)/i);
       const cand = (m?.[1] || "").replace(/\s{2,}/g, " ").trim();
-      if (cand && !/\d/.test(cand) && venueKeywords.test(cand)) return cand;
+      if (cand && (!/\d/.test(cand) || venueKeywords.test(cand))) return cand;
+    }
+    // 3) As a fallback, scan raw OCR text for prominent venue-like lines
+    if (rawText) {
+      const lines = rawText
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      for (const line of lines) {
+        if (line.length < 4 || line.length > 80) continue;
+        if (!venueKeywords.test(line)) continue;
+        const alphaCount = line.replace(/[^A-Za-z\s]/g, "").length;
+        if (alphaCount / line.length < 0.6) continue;
+        return line.replace(/\s{2,}/g, " ");
+      }
     }
   } catch {}
   return "";
@@ -1943,7 +1961,9 @@ export async function POST(request: Request) {
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
       try {
-        const venueLabel = pickVenueLabelForSentence(finalAddress, finalDescription) || finalAddress;
+        const venueLabel =
+          pickVenueLabelForSentence(finalAddress, finalDescription, raw) ||
+          finalAddress;
         // First attempt: deterministic human sentence without LLM.
         const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueLabel);
         finalDescription = deterministic;
@@ -1984,7 +2004,7 @@ export async function POST(request: Request) {
         const refined = await llmRewriteSmartDescription(
           raw,
           finalTitle,
-          pickVenueLabelForSentence(finalAddress, finalDescription) || finalAddress,
+          pickVenueLabelForSentence(finalAddress, finalDescription, raw) || finalAddress,
           null,
           looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription
         );

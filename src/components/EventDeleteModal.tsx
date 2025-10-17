@@ -74,7 +74,7 @@ export default function EventDeleteModal({
           <line x1="10" y1="11" x2="10" y2="17" />
           <line x1="14" y1="11" x2="14" y2="17" />
         </svg>
-        Delete
+        <span className="hidden sm:inline">Delete</span>
       </button>
 
       {isOpen && (

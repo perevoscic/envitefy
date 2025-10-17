@@ -1189,6 +1189,32 @@ export default function SnapPage() {
     };
   };
 
+  const slugify = (t: string): string =>
+    (t || "event")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "event";
+
+  const navigateToEventPage = (
+    id: string | null | undefined,
+    title?: string | null
+  ) => {
+    if (!id) return;
+    try {
+      const slug = slugify(title || "");
+      window.location.href = `/event/${slug}-${id}`;
+    } catch {}
+  };
+
+  const handleSaveAndOpen = async () => {
+    const id = await saveHistoryIfNeeded();
+    const targetId = id || savedHistoryId;
+    const titleSnapshot = event?.title || "";
+    resetForm();
+    navigateToEventPage(targetId, titleSnapshot);
+  };
+
   const addGoogle = async () => {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
@@ -2699,9 +2725,7 @@ export default function SnapPage() {
                   </button>
                   <button
                     className="inline-flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 text-sm sm:text-base whitespace-nowrap border-primary/60 bg-primary text-on-primary hover:opacity-95 active:opacity-90 shadow-md shadow-primary/25"
-                    onClick={closeAfter(async () => {
-                      await saveHistoryIfNeeded();
-                    })}
+                    onClick={handleSaveAndOpen}
                   >
                     <span>Save</span>
                   </button>
