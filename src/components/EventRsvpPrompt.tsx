@@ -18,6 +18,16 @@ type EventRsvpPromptProps = {
   shareUrl?: string | null;
 };
 
+const RSVP_OPTIONS: Array<{
+  intent: NonNullable<ResponseIntent>;
+  icon: string;
+  label: string;
+}> = [
+  { intent: "attend", icon: "✅", label: "Yes" },
+  { intent: "decline", icon: "❌", label: "No" },
+  { intent: "maybe", icon: "🤔", label: "Maybe" },
+];
+
 const STORAGE_KEY = "snapmydate:rsvp-sender";
 
 const initialSender: StoredSender = {
@@ -128,27 +138,17 @@ export default function EventRsvpPrompt({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => openModalFor("attend")}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-surface/90"
-        >
-          ✅ Will attend
-        </button>
-        <button
-          type="button"
-          onClick={() => openModalFor("decline")}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-surface/90"
-        >
-          ❌ Will not attend
-        </button>
-        <button
-          type="button"
-          onClick={() => openModalFor("maybe")}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-surface/90"
-        >
-          🤔 Possibly
-        </button>
+        {RSVP_OPTIONS.map((option) => (
+          <button
+            key={option.intent}
+            type="button"
+            onClick={() => openModalFor(option.intent)}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-surface/90"
+          >
+            <span aria-hidden="true">{option.icon}</span>
+            <span suppressHydrationWarning>{option.label}</span>
+          </button>
+        ))}
       </div>
 
       {modalOpen && intent && (
