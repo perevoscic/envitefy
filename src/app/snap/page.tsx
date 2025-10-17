@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/assets/logo.png";
 import { preparePickedImage } from "@/utils/pickImage";
+import { readProfileCache, writeProfileCache, clearProfileCache, PROFILE_CACHE_TTL_MS } from "@/utils/profileCache";
 
 type EventFields = {
   title: string;
@@ -134,6 +135,14 @@ export default function SnapPage() {
     };
   }, [session]);
   // Load remaining credits (signed-in users)
+  const profileEmail = session?.user?.email?.toLowerCase() ?? null;
+  const profileEmailRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (profileEmail) {
+      profileEmailRef.current = profileEmail;
+    }
+  }, [profileEmail]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -141,9 +150,25 @@ export default function SnapPage() {
       setCredits(null);
       setSubscriptionPlan(null);
       setCreditsError(null);
+      if (profileEmailRef.current) {
+        clearProfileCache(profileEmailRef.current);
+        profileEmailRef.current = null;
+      }
       return () => {
         cancelled = true;
       };
+    }
+
+    const cached = readProfileCache(profileEmailRef.current || profileEmail);
+    if (cached) {
+      setSubscriptionPlan(cached.plan);
+      setCredits(cached.credits === null ? null : cached.credits);
+      setCreditsError(null);
+      if (Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS) {
+        return () => {
+          cancelled = true;
+        };
+      }
     }
 
     const loadProfile = async () => {
@@ -180,6 +205,7 @@ export default function SnapPage() {
         setSubscriptionPlan(plan);
         setCredits(nextCredits);
         setCreditsError(null);
+        writeProfileCache(profileEmailRef.current || profileEmail, plan, nextCredits);
       } catch {
         if (!cancelled) {
           setCredits(null);
@@ -194,7 +220,7 @@ export default function SnapPage() {
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, profileEmail]);
   const [appleLinked, setAppleLinked] = useState(false);
   const [showPhoneMockup, setShowPhoneMockup] = useState(true);
   const [isIOS, setIsIOS] = useState(false);
@@ -901,6 +927,18 @@ export default function SnapPage() {
       if (id) setSavedHistoryId(id);
       (window as any).__lastEventId = id;
       hasSavedRef.current = true;
+      if (subscriptionPlan === "free") {
+        setCredits((prev) => {
+          if (typeof prev === "number") {
+            const next = Math.max(prev - 1, 0);
+            writeProfileCache(profileEmailRef.current || profileEmail, "free", next);
+            return next;
+          }
+          return prev;
+        });
+      } else if (subscriptionPlan) {
+        writeProfileCache(profileEmailRef.current || profileEmail, subscriptionPlan, credits);
+      }
       try {
         if (id && typeof window !== "undefined") {
           window.dispatchEvent(
@@ -2780,4 +2818,5 @@ function IconAppleMono({ className }: { className?: string }) {
     </svg>
   );
 }
+
 

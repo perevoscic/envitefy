@@ -1566,3 +1566,98 @@ export async function getValidPasswordResetByToken(token: string): Promise<Passw
 export async function markPasswordResetUsed(id: string): Promise<void> {
   await query(`update password_resets set used_at = now() where id = $1`, [id]);
 }
+
+export type ThemeOverrideRow = {
+  user_id: string;
+  theme_key: string;
+  variant: string;
+  expires_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+function isTableMissingError(err: unknown): boolean {
+  return Boolean((err as any)?.code === '42P01');
+}
+
+export async function getThemeOverrideByUserId(userId: string): Promise<ThemeOverrideRow | null> {
+  if (!userId) return null;
+  try {
+    const res = await query<ThemeOverrideRow>(
+      `select user_id, theme_key, variant, expires_at, created_at, updated_at
+       from theme_overrides
+       where user_id = $1
+       limit 1`,
+      [userId]
+    );
+    return res.rows[0] ?? null;
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function getThemeOverrideByEmail(email: string): Promise<ThemeOverrideRow | null> {
+  const lower = email?.toLowerCase?.() ?? email;
+  if (!lower) return null;
+  try {
+    const res = await query<ThemeOverrideRow>(
+      `select t.user_id, t.theme_key, t.variant, t.expires_at, t.created_at, t.updated_at
+       from theme_overrides t
+       join users u on u.id = t.user_id
+       where lower(u.email) = lower($1)
+       limit 1`,
+      [lower]
+    );
+    return res.rows[0] ?? null;
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function upsertThemeOverrideForUser(
+  userId: string,
+  themeKey: string,
+  variant: string,
+  expiresAt: Date | string | null = null
+): Promise<ThemeOverrideRow | null> {
+  if (!userId) return null;
+  const normalizedKey = themeKey.toLowerCase();
+  const normalizedVariant = variant === 'dark' ? 'dark' : 'light';
+  const expiresValue = expiresAt ? new Date(expiresAt) : null;
+  const expiresParam = expiresValue && !Number.isNaN(expiresValue.getTime()) ? expiresValue.toISOString() : null;
+  try {
+    const res = await query<ThemeOverrideRow>(
+      `insert into theme_overrides (user_id, theme_key, variant, expires_at)
+       values ($1, $2, $3, $4)
+       on conflict (user_id)
+       do update set theme_key = excluded.theme_key,
+                   variant = excluded.variant,
+                   expires_at = excluded.expires_at,
+                   updated_at = now()
+       returning user_id, theme_key, variant, expires_at, created_at, updated_at`,
+      [userId, normalizedKey, normalizedVariant, expiresParam]
+    );
+    return res.rows[0] ?? null;
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function deleteThemeOverrideForUser(userId: string): Promise<boolean> {
+  if (!userId) return false;
+  try {
+    const res = await query(
+      `delete from theme_overrides where user_id = $1`,
+      [userId]
+    );
+    return (res.rowCount ?? 0) > 0;
+  } catch (err) {
+    if (isTableMissingError(err)) return false;
+    throw err;
+  }
+}
+
+

@@ -1,0 +1,30 @@
+<svg width="240" height="160" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="160" rx="32" fill="#0B1120"/>
+  <g stroke-linecap="round" stroke-width="5">
+    <path d="M84 54l-12-12" stroke="#F97316"/>
+    <path d="M84 54l12-12" stroke="#F97316"/>
+    <path d="M84 54l-12 12" stroke="#F97316"/>
+    <path d="M84 54l12 12" stroke="#F97316"/>
+    <path d="M84 54v18" stroke="#F97316"/>
+    <path d="M84 54H66" stroke="#F97316"/>
+  </g>
+  <g stroke-linecap="round" stroke-width="5">
+    <path d="M164 38l-10-10" stroke="#A855F7"/>
+    <path d="M164 38l10-10" stroke="#A855F7"/>
+    <path d="M164 38l-10 10" stroke="#A855F7"/>
+    <path d="M164 38l10 10" stroke="#A855F7"/>
+    <path d="M164 38v16" stroke="#A855F7"/>
+    <path d="M164 38h-16" stroke="#A855F7"/>
+  </g>
+  <g stroke-linecap="round" stroke-width="4">
+    <path d="M130 102l-8-8" stroke="#FACC15"/>
+    <path d="M130 102l8-8" stroke="#FACC15"/>
+    <path d="M130 102l-8 8" stroke="#FACC15"/>
+    <path d="M130 102l8 8" stroke="#FACC15"/>
+    <path d="M130 102v14" stroke="#FACC15"/>
+    <path d="M130 102h-14" stroke="#FACC15"/>
+  </g>
+  <circle cx="60" cy="112" r="10" fill="#FBBF24" opacity="0.4"/>
+  <circle cx="196" cy="112" r="14" fill="#6366F1" opacity="0.3"/>
+  <circle cx="54" cy="42" r="12" fill="#38BDF8" opacity="0.3"/>
+</svg>

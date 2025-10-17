@@ -1,39 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  /* Light theme (maternal palette) */
-  --background: #FFFBF7; /* Cream */
-  --surface: #FFFFFF; /* White */
-  --foreground: #4E4E50; /* Dark Gray */
-  --muted-foreground: #737373; /* Gray */
-  --border: #E0E0E0; /* Light Gray */
-
-  --primary: #2DD4BF; /* Teal 400 */
-  --secondary: #6366F1; /* Indigo 500 */
-  --accent: #A855F7; /* Violet 500 */
-
-  --success: #10B981; /* Emerald 500 */
-  --info: #60A5FA; /* Blue 400 */
-  --warning: #F59E0B; /* Amber 500 */
-  --error: #EF4444; /* Red 500 */
-
-  /* On-color text for high contrast on bright buttons */
-  --on-primary: #FFFFFF; /* White for strong contrast */
-  --on-secondary: #FFFFFF; /* White for strong contrast */
-  --on-accent: #FFFFFF; /* White for strong contrast */
+  --background: #FFFBF7;
+  --surface: #FFFFFF;
+  --surface-alt: #F8F5F1;
+  --foreground: #3F3C3C;
+  --muted-foreground: #6F6C69;
+  --border: #E4DED4;
+  --primary: #2DD4BF;
+  --secondary: #6366F1;
+  --accent: #A855F7;
+  --success: #22C55E;
+  --info: #3B82F6;
+  --warning: #F97316;
+  --error: #EF4444;
+  --on-primary: #FFFFFF;
+  --on-secondary: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --theme-overlay: rgba(45, 212, 191, 0.12);
+  --theme-overlay-secondary: rgba(99, 102, 241, 0.10);
+  --theme-card-glow: rgba(168, 85, 247, 0.16);
+  --theme-hero-gradient: radial-gradient(120% 120% at 10% -10%, rgba(99, 102, 241, 0.12), transparent 60%), radial-gradient(80% 60% at 80% 0%, rgba(45, 212, 191, 0.18), transparent 70%);
+  --theme-illustration: url('/themes/general/confetti.svg');
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
-
   --color-success: var(--success);
   --color-info: var(--info);
   --color-warning: var(--warning);
@@ -47,30 +47,6 @@
   --font-montserrat: var(--font-montserrat);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark theme (warm neutrals) */
-    --background: #1C1B1A; /* Charcoal */
-    --surface: #2E2C2D; /* Dark Gray */
-    --foreground: #F5F5F7; /* Near White */
-    --muted-foreground: #CCCCCC; /* Gray */
-    --border: #3A3A3A; /* Deep Graphite */
-
-    --primary: #2DD4BF; /* Teal 400 */
-    --secondary: #6366F1; /* Indigo 500 */
-    --accent: #A855F7; /* Violet 500 */
-
-    --success: #22C55E; /* Emerald 600 */
-    --info: #60A5FA; /* Blue 400 */
-    --warning: #F59E0B; /* Amber 500 */
-    --error: #F43F5E; /* Rose 500 */
-
-    /* On-color text on bright buttons (remain dark for contrast) */
-    --on-primary: #FFFFFF;
-    --on-secondary: #FFFFFF;
-    --on-accent: #FFFFFF;
-  }
-}
 
 /* Desktop cursor + press effects for interactive elements */
 @media (hover: hover) and (pointer: fine) {
@@ -330,19 +306,14 @@ body {
 .show-light { display: inline-block; }
 .show-dark { display: none; }
 
-@media (prefers-color-scheme: dark) {
-  .show-light { display: none; }
-  .show-dark { display: inline-block; }
-}
-
 /* Attribute overrides for theme show/hide */
-:root[data-theme="dark"] .show-light { display: none !important; }
-:root[data-theme="dark"] .show-dark { display: inline-block !important; }
-:root[data-theme="light"] .show-light { display: inline-block !important; }
-:root[data-theme="light"] .show-dark { display: none !important; }
+:root[data-theme$="-dark"] .show-light { display: none !important; }
+:root[data-theme$="-dark"] .show-dark { display: inline-block !important; }
+:root[data-theme$="-light"] .show-light { display: inline-block !important; }
+:root[data-theme$="-light"] .show-dark { display: none !important; }
 
 /* Attribute-based theme override: wins over prefers-color-scheme */
-:root[data-theme="light"] {
+:root[data-theme$="-light"] {
   --background: #FFFBF7;
   --surface: #FFFFFF;
   --foreground: #4E4E50;
@@ -360,10 +331,10 @@ body {
 }
 
 /* Ensure high contrast over dark scan overlay in light theme */
-:root[data-theme="light"] .scan-title { color: #FFFFFF; }
-:root[data-theme="light"] .login-hero-heading { color: #FFFFFF; }
+:root[data-theme$="-light"] .scan-title { color: #FFFFFF; }
+:root[data-theme$="-light"] .login-hero-heading { color: #FFFFFF; }
 
-:root[data-theme="dark"] {
+:root[data-theme$="-dark"] {
   --background: #1C1B1A;
   --surface: #2E2C2D;
   --foreground: #F5F5F7;
@@ -584,7 +555,7 @@ body {
       0 8px 24px rgba(0, 0, 0, 0.40),
       0 0 18px rgba(255, 255, 255, 0.08);
   }
-  :root[data-theme="dark"] .phone-shell {
+  :root[data-theme$="-dark"] .phone-shell {
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.28),
       0 10px 28px rgba(0, 0, 0, 0.50),
@@ -620,45 +591,28 @@ body {
 
 /* Soft gradient background for landing surfaces (light + dark) */
 .landing-dark-gradient {
-  /* Base (light theme): very subtle pastel washes */
-  background-image:
-    radial-gradient(140% 120% at 3% -4%, color-mix(in oklab, var(--accent) 22%, transparent) 0%, transparent 50%),
-    radial-gradient(55% 45% at 85% -10%, color-mix(in oklab, var(--secondary) 9%, transparent) 0%, transparent 62%),
-    radial-gradient(70% 60% at 50% 100%, color-mix(in oklab, var(--primary) 7%, transparent) 0%, transparent 72%),
-    radial-gradient(42% 42% at 100% 100%, color-mix(in oklab, var(--accent) 8%, transparent) 0%, transparent 70%);
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  background-color: var(--background);
+  background-image: var(--theme-hero-gradient);
   background-repeat: no-repeat;
-  background-size: 120% 60%, 120% 60%, 120% 80%, 90% 90%;
-  background-position: left top, right top, center bottom, right bottom;
+  background-size: cover;
+  background-position: center;
   background-attachment: fixed;
 }
-
-/* Dark-only: stronger washes override the base */
-@media (prefers-color-scheme: dark) {
-  .landing-dark-gradient {
-    /* Layered radial washes that sit behind content via transparency */
-    background-image:
-      radial-gradient(160% 130% at 3% -4%, color-mix(in oklab, var(--accent) 34%, transparent) 0%, transparent 52%),
-      radial-gradient(85% 75% at 85% -10%, color-mix(in oklab, var(--secondary) 16%, transparent) 0%, transparent 62%),
-      radial-gradient(70% 80% at 50% 100%, color-mix(in oklab, var(--primary) 12%, transparent) 0%, transparent 72%),
-      radial-gradient(62% 62% at 100% 100%, color-mix(in oklab, var(--accent) 14%, transparent) 0%, transparent 70%);
-  }
-}
-
-/* Extra-strong variant removed */
-
-/* Attribute-driven dark theme override */
-:root[data-theme="dark"] .landing-dark-gradient {
-  background-image:
-    radial-gradient(140% 120% at 3% -4%, color-mix(in oklab, var(--accent) 34%, transparent) 0%, transparent 50%),
-    radial-gradient(55% 45% at 85% -10%, color-mix(in oklab, var(--secondary) 16%, transparent) 0%, transparent 62%),
-    radial-gradient(70% 60% at 50% 100%, color-mix(in oklab, var(--primary) 12%, transparent) 0%, transparent 72%),
-    radial-gradient(42% 42% at 100% 100%, color-mix(in oklab, var(--accent) 14%, transparent) 0%, transparent 70%);
+.landing-dark-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--theme-illustration);
   background-repeat: no-repeat;
-  background-size: 120% 60%, 120% 60%, 120% 80%, 90% 90%;
-  background-position: left top, right top, center bottom, right bottom;
-  background-attachment: fixed;
+  background-position: right 8% bottom 6%;
+  background-size: min(360px, 42vw);
+  opacity: 0.28;
+  z-index: -1;
 }
-
 /* Hide phone mockup on tablet/iPad portrait */
 @media only screen and (orientation: portrait) and (min-width: 768px) and (max-width: 1366px),
        only screen and (orientation: portrait) and (min-device-width: 768px) and (max-device-width: 1366px) {
@@ -680,3 +634,10 @@ body {
     }
   }
 }
+
+
+
+
+
+
+

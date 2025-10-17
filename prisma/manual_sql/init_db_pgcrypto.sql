@@ -44,6 +44,23 @@ ALTER TABLE oauth_tokens ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
 CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user_id ON oauth_tokens(user_id);
 
+-- Theme overrides for per-user holiday previews
+CREATE TABLE IF NOT EXISTS theme_overrides (
+  user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  theme_key varchar(64) NOT NULL,
+  variant varchar(16) NOT NULL DEFAULT 'light',
+  expires_at timestamptz(6),
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+ALTER TABLE theme_overrides ADD COLUMN IF NOT EXISTS theme_key varchar(64);
+ALTER TABLE theme_overrides ADD COLUMN IF NOT EXISTS variant varchar(16);
+ALTER TABLE theme_overrides ADD COLUMN IF NOT EXISTS expires_at timestamptz(6);
+ALTER TABLE theme_overrides ADD COLUMN IF NOT EXISTS created_at timestamptz(6);
+ALTER TABLE theme_overrides ADD COLUMN IF NOT EXISTS updated_at timestamptz(6);
+ALTER TABLE theme_overrides ALTER COLUMN updated_at SET DEFAULT now();
+CREATE INDEX IF NOT EXISTS idx_theme_overrides_expires_at ON theme_overrides(expires_at);
 -- Password reset tokens table
 CREATE TABLE IF NOT EXISTS password_resets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -58,7 +75,6 @@ CREATE TABLE IF NOT EXISTS password_resets (
 ALTER TABLE password_resets ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email);
-
 -- Event history (stores normalized event payloads for quick retrieval/share)
 CREATE TABLE IF NOT EXISTS event_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -220,3 +236,7 @@ CREATE TABLE IF NOT EXISTS stripe_webhook_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_stripe_webhook_events_created_at ON stripe_webhook_events(created_at DESC);
+
+
+
+

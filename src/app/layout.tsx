@@ -8,6 +8,17 @@ import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
 import "./globals.css";
 import { cookies } from "next/headers";
+import {
+  resolveThemeForDate,
+  resolveThemeCssVariables,
+  isValidThemeKey,
+  isValidVariant,
+  ThemeKey,
+  ThemeVariant,
+  ThemeOverride,
+} from "@/themes";
+import { getThemeOverrideByEmail } from "@/lib/db";
+import type { CSSProperties } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -87,16 +98,45 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get("theme")?.value;
-  const initialTheme =
+  const cookieVariant: ThemeVariant | undefined =
     themeCookie === "light" || themeCookie === "dark"
-      ? (themeCookie as "light" | "dark")
+      ? (themeCookie as ThemeVariant)
       : undefined;
+
+  const now = new Date();
+  const scheduledThemeKey = resolveThemeForDate(now);
+  const isAdmin = Boolean((session?.user as any)?.isAdmin);
+
+  let initialOverride: ThemeOverride | null = null;
+  if (isAdmin && session?.user?.email) {
+    const row = await getThemeOverrideByEmail(session.user.email);
+    if (row && isValidThemeKey(row.theme_key) && isValidVariant(row.variant)) {
+      initialOverride = {
+        themeKey: row.theme_key as ThemeKey,
+        variant: row.variant as ThemeVariant,
+        expiresAt: row.expires_at ?? null,
+      };
+    }
+  }
+
+  const initialThemeKey: ThemeKey = initialOverride?.themeKey ?? scheduledThemeKey;
+  const overrideVariant = initialOverride?.variant;
+  const initialThemeVariant: ThemeVariant | undefined = overrideVariant ?? cookieVariant;
+  const htmlVariant: ThemeVariant = overrideVariant ?? cookieVariant ?? "light";
+  const cssVariables = resolveThemeCssVariables(initialThemeKey, htmlVariant);
+  const htmlStyle = Object.fromEntries(
+    Object.entries(cssVariables).map(([key, value]) => [key, value])
+  ) as CSSProperties;
+
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   return (
     <html
       lang="en"
-      data-theme={initialTheme}
-      className={initialTheme === "dark" ? "dark" : undefined}
+      data-theme={`${initialThemeKey}-${htmlVariant}`}
+      data-theme-key={initialThemeKey}
+      className={htmlVariant === "dark" ? "dark" : undefined}
+      style={htmlStyle}
       suppressHydrationWarning
     >
       <body
@@ -105,13 +145,15 @@ export default async function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">{`
           (function(){
             try {
+              var root = document.documentElement;
+              var key = root.getAttribute('data-theme-key') || 'general';
               var stored = localStorage.getItem('theme');
               var theme = (stored === 'light' || stored === 'dark')
                 ? stored
                 : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-              document.documentElement.setAttribute('data-theme', theme);
-              document.documentElement.classList.toggle('dark', theme === 'dark');
-              document.documentElement.style.colorScheme = theme;
+              root.setAttribute('data-theme', key + '-' + theme);
+              root.classList.toggle('dark', theme === 'dark');
+              root.style.colorScheme = theme;
             } catch (e) {
               // noop
             }
@@ -131,7 +173,13 @@ export default async function RootLayout({
             `}</Script>
           </>
         ) : null}
-        <Providers session={session} initialTheme={initialTheme}>
+        <Providers
+          session={session}
+          initialTheme={initialThemeVariant}
+          initialThemeKey={initialThemeKey}
+          scheduledThemeKey={scheduledThemeKey}
+          initialOverride={initialOverride}
+        >
           <LeftSidebar />
           <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
             <div className="flex-1 min-w-0">{children}</div>
@@ -164,3 +212,7 @@ export default async function RootLayout({
     </html>
   );
 }
+
+
+
+

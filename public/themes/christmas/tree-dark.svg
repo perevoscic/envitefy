@@ -1,0 +1,20 @@
+<svg width="240" height="160" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="160" rx="32" fill="#0C172A"/>
+  <g filter="url(#glow)" opacity="0.9">
+    <path d="M120 20l18 28h-12l15 23h-11l18 27h-14l20 30H86l20-30H92l18-27H99l15-23H102l18-28h0z" fill="#1FB980"/>
+  </g>
+  <path d="M120 118c14 0 24-6 24-6l-24-38-24 38s10 6 24 6z" fill="#16A34A"/>
+  <path d="M110 118h20v16h-20z" fill="#B45309"/>
+  <path d="M120 10l6 10h-12l6-10z" fill="#FCD34D"/>
+  <circle cx="120" cy="64" r="6" fill="#FDBA74"/>
+  <circle cx="102" cy="80" r="6" fill="#F472B6"/>
+  <circle cx="138" cy="78" r="6" fill="#60A5FA"/>
+  <circle cx="112" cy="96" r="5" fill="#FACC15"/>
+  <circle cx="128" cy="96" r="5" fill="#FB7185"/>
+  <defs>
+    <filter id="glow" x="46" y="8" width="148" height="140" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feBlend mode="screen" in="SourceGraphic" in2="blur"/>
+    </filter>
+  </defs>
+</svg>

@@ -65,6 +65,16 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Query params**: `status` (optional: filter by status), `limit` (default 50), `offset` (default 0).
 - **Output**: `{ ok: true, campaigns: Array<{ id, subject, bodyHtml, fromEmail, audienceFilter, recipientCount, sentCount, failedCount, status, errorMessage, sentAt, createdAt, updatedAt, creator: { email, firstName, lastName } }>, total: number, limit: number, offset: number }`.
 
+### Admin Theme Override — GET/POST/DELETE `/api/admin/theme-override`
+
+- **Purpose**: Allow administrators to preview holiday themes on their own accounts without changing the global schedule.
+- **Auth**: NextAuth session required and `isAdmin=true`.
+- **GET Output**: `{ override: { themeKey, variant, expiresAt }, schedule: { themeKey, window: { key, start, end } } }`.
+- **POST Input (JSON)**: `{ themeKey: string, variant: "light"|"dark", expiresAt?: string|null }`.
+- **POST Output**: `{ override: { themeKey, variant, expiresAt } }`.
+- **DELETE Output**: `{ ok: true }` (clears the personal override).
+- **Notes**: Overrides only apply to the requesting admin and fall back to the automated schedule when cleared or expired.
+
 ### Promo Gift Agent — POST `/api/promo/gift`
 
 - **Purpose**: Initiate a Stripe Checkout session for gifting subscriptions. The promo code is created and emailed only after payment succeeds (via webhook). UI now redirects the purchaser to Stripe.

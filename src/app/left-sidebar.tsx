@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { readProfileCache, writeProfileCache, clearProfileCache, PROFILE_CACHE_TTL_MS } from "@/utils/profileCache";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +23,13 @@ const CATEGORY_OPTIONS = [
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
+  const profileEmail = (session?.user as any)?.email?.toLowerCase?.() ?? null;
+  const profileEmailRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (profileEmail) {
+      profileEmailRef.current = profileEmail;
+    }
+  }, [profileEmail]);
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -195,6 +203,12 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     let ignore = false;
+
+    const applyProfile = (plan: typeof subscriptionPlan, creditsValue: number | null) => {
+      setSubscriptionPlan(plan);
+      setCredits(plan === "FF" ? Infinity : creditsValue);
+    };
+
     async function loadProfile() {
       try {
         const res = await fetch("/api/user/profile", {
@@ -205,13 +219,15 @@ export default function LeftSidebar() {
         if (!res.ok) return;
         if (!ignore) {
           const p = json.subscriptionPlan;
-          setSubscriptionPlan(
-            p === "free" || p === "monthly" || p === "yearly" || p === "FF"
-              ? p
-              : null
-          );
-          if (typeof json.credits === "number") setCredits(json.credits);
-          else setCredits(null);
+          const plan = p === "free" || p === "monthly" || p === "yearly" || p === "FF" ? p : null;
+          const nextCredits =
+            plan === "FF"
+              ? Infinity
+              : typeof json.credits === "number"
+              ? (json.credits as number)
+              : null;
+          applyProfile(plan, nextCredits === Infinity ? null : nextCredits);
+          writeProfileCache(profileEmailRef.current || profileEmail, plan, nextCredits);
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
           }
@@ -231,16 +247,34 @@ export default function LeftSidebar() {
         if (!ignore) setProfileLoaded(true);
       }
     }
+
     if (status === "authenticated") {
-      setProfileLoaded(false);
+      const cached = readProfileCache(profileEmailRef.current || profileEmail);
+      const hasFreshCache = cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS;
+      if (cached) {
+        applyProfile(cached.plan, cached.credits);
+        setIsAdmin(Boolean((session?.user as any)?.isAdmin));
+        setProfileLoaded(true);
+        if (hasFreshCache) {
+          return () => {
+            ignore = true;
+          };
+        }
+      } else {
+        setProfileLoaded(false);
+      }
       loadProfile();
     } else if (status === "unauthenticated") {
+      clearProfileCache(profileEmailRef.current || profileEmail);
+      profileEmailRef.current = null;
       setProfileLoaded(true);
+      setSubscriptionPlan(null);
+      setCredits(null);
     }
     return () => {
       ignore = true;
     };
-  }, [status]);
+  }, [status, profileEmail, session?.user]);
 
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
@@ -1105,26 +1139,49 @@ export default function LeftSidebar() {
         </Link>
 
         {isAdmin && (
-          <Link
-            href="/admin"
-            onClick={onCloseMenu}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4"
-              aria-hidden="true"
+          <>
+            <Link
+              href="/admin"
+              onClick={onCloseMenu}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
             >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            <span className="text-sm">Admin</span>
-          </Link>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <span className="text-sm">Admin</span>
+            </Link>
+            <Link
+              href="/admin/theme-toggle"
+              onClick={onCloseMenu}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              <span className="text-sm">Theme Toggle</span>
+            </Link>
+          </>
         )}
 
         <button
@@ -1532,6 +1589,17 @@ export default function LeftSidebar() {
                         >
                           <span className="text-sm">Campaigns</span>
                         </Link>
+                        <Link
+                          href="/admin/theme-toggle"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setAdminOpenFloating(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                        >
+                          <span className="text-sm">Theme Toggle</span>
+                        </Link>
+
                       </div>
                     )}
                   </div>
@@ -3937,3 +4005,4 @@ export default function LeftSidebar() {
     </>
   );
 }
+

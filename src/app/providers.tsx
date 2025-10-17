@@ -1,4 +1,5 @@
 "use client";
+
 import { SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
 import type { ReactNode } from "react";
@@ -14,39 +15,86 @@ import {
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import PwaInstallButton from "@/components/PwaInstallButton";
-
-type Theme = "light" | "dark";
+import {
+  ThemeKey,
+  ThemeVariant,
+  ThemeOverride,
+  resolveThemeCssVariables,
+  resolveThemeForDate,
+  isValidThemeKey,
+  isValidVariant,
+} from "@/themes";
 
 const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
+type SetThemeOptions = {
+  persist?: boolean;
+  persistOverride?: boolean;
+};
+
+type SetThemeKeyOptions = {
+  persist?: boolean;
+  variant?: ThemeVariant;
+  expiresAt?: string | null;
+};
+
 type ThemeContextValue = {
-  theme: Theme;
-  setTheme: (t: Theme) => void;
+  theme: ThemeVariant;
+  themeKey: ThemeKey;
+  setTheme: (variant: ThemeVariant, options?: SetThemeOptions) => void;
   toggleTheme: () => void;
+  setThemeKey: (key: ThemeKey, options?: SetThemeKeyOptions) => Promise<void>;
+  isOverrideActive: boolean;
+  override: ThemeOverride | null;
+  clearOverride: () => Promise<void>;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 type ThemeProviderProps = {
   children: ReactNode;
-  initialTheme?: Theme;
+  initialTheme?: ThemeVariant;
+  initialThemeKey: ThemeKey;
+  scheduledThemeKey: ThemeKey;
+  initialOverride?: ThemeOverride | null;
 };
 
-function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(initialTheme ?? "light");
-  const [isThemeHydrated, setIsThemeHydrated] = useState(
-    initialTheme !== undefined
-  );
-  // Track whether the user explicitly chose a theme. If false, we follow system.
+function applyCssVariables(themeKey: ThemeKey, variant: ThemeVariant) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  const tokens = resolveThemeCssVariables(themeKey, variant);
+  for (const [cssVar, value] of Object.entries(tokens)) {
+    root.style.setProperty(cssVar, value);
+  }
+  root.setAttribute("data-theme", `${themeKey}-${variant}`);
+  root.setAttribute("data-theme-key", themeKey);
+  root.classList.toggle("dark", variant === "dark");
+  root.style.colorScheme = variant;
+}
+
+function ThemeProvider({
+  children,
+  initialTheme,
+  initialThemeKey,
+  scheduledThemeKey,
+  initialOverride,
+}: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<ThemeVariant>(initialTheme ?? "light");
+  const [isThemeHydrated, setIsThemeHydrated] = useState(initialTheme !== undefined);
   const [userPrefersExplicitTheme, setUserPrefersExplicitTheme] = useState(
     initialTheme !== undefined
   );
-  const mediaQueryRef = useRef<MediaQueryList | null>(null);
-  const mediaListenerRef = useRef<((e: MediaQueryListEvent) => void) | null>(
-    null
+  const [themeKey, setThemeKeyState] = useState<ThemeKey>(
+    initialOverride?.themeKey ?? initialThemeKey
   );
+  const [override, setOverride] = useState<ThemeOverride | null>(initialOverride ?? null);
 
-  const setThemeCookie = useCallback((value: Theme | null) => {
+  const scheduledThemeKeyRef = useRef<ThemeKey>(scheduledThemeKey);
+  const mediaQueryRef = useRef<MediaQueryList | null>(null);
+  const mediaListenerRef = useRef<((e: MediaQueryListEvent) => void) | null>(null);
+  const scheduleIntervalRef = useRef<number | null>(null);
+
+  const setThemeCookie = useCallback((value: ThemeVariant | null) => {
     if (typeof document === "undefined") return;
     try {
       if (value) {
@@ -57,8 +105,57 @@ function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
     } catch {}
   }, []);
 
+  const persistOverrideSelection = useCallback(
+    async (
+      payload: ThemeOverride & { expiresAt?: string | null }
+    ): Promise<ThemeOverride | null> => {
+      try {
+        const res = await fetch("/api/admin/theme-override", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            themeKey: payload.themeKey,
+            variant: payload.variant,
+            expiresAt: payload.expiresAt ?? null,
+          }),
+        });
+        if (!res.ok) return null;
+        const json = (await res.json().catch(() => ({}))) as {
+          override?: { themeKey?: string; variant?: string; expiresAt?: string | null };
+        };
+        const next = json?.override;
+        if (!next) return payload;
+        const parsedKey = isValidThemeKey(next.themeKey) ? next.themeKey : payload.themeKey;
+        const parsedVariant = isValidVariant(next.variant) ? next.variant : payload.variant;
+        return {
+          themeKey: parsedKey,
+          variant: parsedVariant,
+          expiresAt: next.expiresAt ?? null,
+        };
+      } catch {
+        return null;
+      }
+    },
+    []
+  );
+
+  const deleteOverrideOnServer = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/theme-override", {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+
   useEffect(() => {
-    const stored = window.localStorage.getItem("theme") as Theme | null;
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("theme") as ThemeVariant | null;
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
     mediaQueryRef.current = mql;
 
@@ -73,7 +170,6 @@ function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
       setIsThemeHydrated(true);
       setThemeCookie(initialTheme);
     } else {
-      // No explicit user preference → follow system and react to changes.
       setUserPrefersExplicitTheme(false);
       setThemeCookie(null);
       setThemeState(mql.matches ? "dark" : "light");
@@ -85,7 +181,6 @@ function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
       try {
         mql.addEventListener("change", onChange);
       } catch {
-        // Safari <14 fallback
         (mql as any).addListener(onChange);
       }
       setIsThemeHydrated(true);
@@ -94,10 +189,7 @@ function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
     return () => {
       if (!mediaQueryRef.current || !mediaListenerRef.current) return;
       try {
-        mediaQueryRef.current.removeEventListener(
-          "change",
-          mediaListenerRef.current
-        );
+        mediaQueryRef.current.removeEventListener("change", mediaListenerRef.current);
       } catch {
         (mediaQueryRef.current as any).removeListener(mediaListenerRef.current);
       }
@@ -108,54 +200,143 @@ function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
 
   useEffect(() => {
     if (!isThemeHydrated) return;
-    const root = document.documentElement;
-    root.setAttribute("data-theme", theme);
-    root.classList.toggle("dark", theme === "dark");
-    root.style.colorScheme = theme;
-  }, [theme, isThemeHydrated]);
+    applyCssVariables(themeKey, theme);
+  }, [themeKey, theme, isThemeHydrated]);
 
-  // If we were following system and the user now makes a choice, stop following system.
   useEffect(() => {
-    if (userPrefersExplicitTheme) {
-      // Remove system listener if attached
-      if (mediaQueryRef.current && mediaListenerRef.current) {
-        try {
-          mediaQueryRef.current.removeEventListener(
-            "change",
-            mediaListenerRef.current
-          );
-        } catch {
-          (mediaQueryRef.current as any).removeListener(
-            mediaListenerRef.current
-          );
-        }
-        mediaListenerRef.current = null;
+    if (!userPrefersExplicitTheme) return;
+    if (mediaQueryRef.current && mediaListenerRef.current) {
+      try {
+        mediaQueryRef.current.removeEventListener("change", mediaListenerRef.current);
+      } catch {
+        (mediaQueryRef.current as any).removeListener(mediaListenerRef.current);
       }
+      mediaListenerRef.current = null;
     }
   }, [userPrefersExplicitTheme]);
 
-  const applyUserTheme = (next: Theme) => {
-    setUserPrefersExplicitTheme(true);
-    setThemeState(next);
-    try {
-      window.localStorage.setItem("theme", next);
-    } catch {}
-    setThemeCookie(next);
-    setIsThemeHydrated(true);
-  };
+  useEffect(() => {
+    scheduledThemeKeyRef.current = scheduledThemeKey;
+    if (!override) {
+      setThemeKeyState(scheduledThemeKey);
+    }
+  }, [scheduledThemeKey, override]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (override) return;
+    const updateSchedule = () => {
+      const nextKey = resolveThemeForDate(new Date());
+      scheduledThemeKeyRef.current = nextKey;
+      setThemeKeyState(nextKey);
+    };
+    updateSchedule();
+    const id = window.setInterval(updateSchedule, 1000 * 60 * 30);
+    scheduleIntervalRef.current = id;
+    return () => {
+      if (scheduleIntervalRef.current !== null) {
+        window.clearInterval(scheduleIntervalRef.current);
+      }
+      scheduleIntervalRef.current = null;
+    };
+  }, [override]);
+
+  const setTheme = useCallback(
+    (variant: ThemeVariant, options?: SetThemeOptions) => {
+      const persist = options?.persist ?? true;
+      const persistOverride = options?.persistOverride ?? true;
+      setUserPrefersExplicitTheme(true);
+      setThemeState(variant);
+      if (persist) {
+        try {
+          window.localStorage.setItem("theme", variant);
+        } catch {}
+        setThemeCookie(variant);
+      } else {
+        try {
+          window.localStorage.removeItem("theme");
+        } catch {}
+        setThemeCookie(null);
+      }
+      setIsThemeHydrated(true);
+
+      if (override && persistOverride) {
+        const payload: ThemeOverride = {
+          themeKey: override.themeKey,
+          variant,
+          expiresAt: override.expiresAt ?? null,
+        };
+        void persistOverrideSelection(payload).then((result) => {
+          if (result) setOverride(result);
+        });
+      }
+    },
+    [override, persistOverrideSelection, setThemeCookie]
+  );
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "light" ? "dark" : "light");
+  }, [theme, setTheme]);
+
+  const setThemeKey = useCallback(
+    async (nextKey: ThemeKey, options?: SetThemeKeyOptions) => {
+      const previousKey = themeKey;
+      const previousOverride = override;
+      setThemeKeyState(nextKey);
+
+      if (options?.variant && options.variant !== theme) {
+        setTheme(options.variant, { persist: options.persist ?? false, persistOverride: false });
+      }
+
+      if (options?.persist) {
+        const payload: ThemeOverride = {
+          themeKey: nextKey,
+          variant: options.variant ?? theme,
+          expiresAt: options.expiresAt ?? override?.expiresAt ?? null,
+        };
+        setOverride(payload);
+        const result = await persistOverrideSelection(payload);
+        if (result) {
+          setOverride(result);
+          setThemeKeyState(result.themeKey);
+          if (result.variant !== theme) {
+            setTheme(result.variant, { persist: true, persistOverride: false });
+          }
+        } else {
+          setOverride(previousOverride ?? null);
+          setThemeKeyState(previousKey);
+        }
+      } else if (!override) {
+        scheduledThemeKeyRef.current = nextKey;
+      }
+    },
+    [override, persistOverrideSelection, theme, themeKey, setTheme]
+  );
+
+  const clearOverride = useCallback(async () => {
+    const success = await deleteOverrideOnServer();
+    if (success) {
+      setOverride(null);
+      const next = scheduledThemeKeyRef.current ?? resolveThemeForDate(new Date());
+      setThemeKeyState(next);
+    }
+  }, [deleteOverrideOnServer]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
-      setTheme: applyUserTheme,
-      toggleTheme: () => applyUserTheme(theme === "light" ? "dark" : "light"),
+      themeKey,
+      setTheme,
+      toggleTheme,
+      setThemeKey,
+      isOverrideActive: Boolean(override),
+      override,
+      clearOverride,
     }),
-    [theme]
+    [theme, themeKey, setTheme, toggleTheme, setThemeKey, override, clearOverride]
   );
 
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
@@ -168,15 +349,26 @@ export default function Providers({
   children,
   session,
   initialTheme,
+  initialThemeKey,
+  scheduledThemeKey,
+  initialOverride,
 }: {
   children: ReactNode;
   session?: Session | null;
-  initialTheme?: Theme;
+  initialTheme?: ThemeVariant;
+  initialThemeKey: ThemeKey;
+  scheduledThemeKey: ThemeKey;
+  initialOverride?: ThemeOverride | null;
 }) {
   return (
     <SessionProvider session={session}>
       <SidebarProvider>
-        <ThemeProvider initialTheme={initialTheme}>
+        <ThemeProvider
+          initialTheme={initialTheme}
+          initialThemeKey={initialThemeKey}
+          scheduledThemeKey={scheduledThemeKey}
+          initialOverride={initialOverride}
+        >
           <RegisterServiceWorker />
           {children}
           <GlobalEventCreate />
@@ -204,3 +396,4 @@ function RegisterServiceWorker() {
   }, []);
   return null;
 }
+
