@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import EventActions from "@/components/EventActions";
 import EventCreateModal from "@/components/EventCreateModal";
+import { getEventTheme } from "@/lib/event-theme";
 
 type HistoryItem = {
   id: string;
@@ -496,6 +497,27 @@ export default function CalendarPage() {
   );
 
   const [openEvent, setOpenEvent] = useState<CalendarEvent | null>(null);
+  const openEventTheme = useMemo(() => {
+    if (!openEvent) return null;
+    return getEventTheme(openEvent.category);
+  }, [openEvent?.category]);
+  const openEventStyleVars = useMemo(() => {
+    if (!openEventTheme) return undefined;
+    return {
+      "--event-header-gradient-light": openEventTheme.headerLight,
+      "--event-header-gradient-dark": openEventTheme.headerDark,
+      "--event-card-bg-light": openEventTheme.cardLight,
+      "--event-card-bg-dark": openEventTheme.cardDark,
+      "--event-border-light": openEventTheme.borderLight,
+      "--event-border-dark": openEventTheme.borderDark,
+      "--event-chip-light": openEventTheme.chipLight,
+      "--event-chip-dark": openEventTheme.chipDark,
+      "--event-text-light": openEventTheme.textLight,
+      "--event-text-dark": openEventTheme.textDark,
+    } as React.CSSProperties;
+  }, [openEventTheme]);
+  const openEventIcon = openEventTheme?.icon ?? "📌";
+  const openEventCategoryLabel = openEventTheme?.categoryLabel ?? openEvent?.category ?? "General Events";
   const [openDay, setOpenDay] = useState<{
     date: Date;
     items: CalendarEvent[];
@@ -1472,54 +1494,78 @@ export default function CalendarPage() {
         >
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative z-50 w-full sm:max-w-xl sm:rounded-xl bg-surface border border-border p-4 sm:p-6 shadow-xl sm:mx-auto"
+            className="relative z-50 w-full sm:max-w-xl sm:rounded-xl border border-border bg-surface p-4 sm:p-6 shadow-xl sm:mx-auto space-y-4 event-theme-scope"
+            style={openEventStyleVars}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold truncate">
-                {openEvent.title}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setOpenEvent(null)}
-                className="text-foreground/70 hover:text-foreground"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
+            <section className="event-theme-header rounded-xl border px-4 py-4 sm:px-5 sm:py-5 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="event-theme-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                    <span aria-hidden="true">{openEventIcon}</span>
+                    <span className="sr-only">{openEventCategoryLabel} icon</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                      {openEventCategoryLabel}
+                    </p>
+                    <h2 className="text-lg font-semibold leading-tight sm:text-xl">
+                      {openEvent.title}
+                    </h2>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpenEvent(null)}
+                  className="text-foreground/70 hover:text-foreground"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+            </section>
 
-            <div className="mt-3 text-sm">
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <section className="event-theme-card rounded-xl border px-4 py-4 text-sm shadow-sm">
+              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {openEvent.allDay && (
                   <div className="sm:col-span-2">
-                    <dt className="text-foreground/70">When</dt>
-                    <dd className="font-medium">All day event</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      When
+                    </dt>
+                    <dd className="mt-1 font-semibold">All day event</dd>
                   </div>
                 )}
                 {openEvent.start && (
                   <div>
-                    <dt className="text-foreground/70">Start</dt>
-                    <dd className="font-medium break-all">
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      Start
+                    </dt>
+                    <dd className="mt-1 break-all font-semibold">
                       {formatEventDateTime(openEvent.start)}
                     </dd>
                   </div>
                 )}
                 {openEvent.end && (
                   <div>
-                    <dt className="text-foreground/70">End</dt>
-                    <dd className="font-medium break-all">
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      End
+                    </dt>
+                    <dd className="mt-1 break-all font-semibold">
                       {formatEventDateTime(openEvent.end)}
                     </dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-foreground/70">Location</dt>
-                  <dd className="font-medium">{openEvent.location || "—"}</dd>
+                  <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                    Location
+                  </dt>
+                  <dd className="mt-1 font-semibold">{openEvent.location || "—"}</dd>
                 </div>
                 <div className="sm:col-span-2">
-                  <dt className="text-foreground/70">Repeats</dt>
-                  <dd className="font-medium">
+                  <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                    Repeats
+                  </dt>
+                  <dd className="mt-1 font-semibold">
                     {(() => {
                       try {
                         const r = (openEvent as any).recurrence as
@@ -1557,15 +1603,20 @@ export default function CalendarPage() {
                   </dd>
                 </div>
               </dl>
-              {openEvent.description && (
-                <div className="mt-3">
-                  <dt className="text-foreground/70 text-sm">Description</dt>
-                  <p className="whitespace-pre-wrap">{openEvent.description}</p>
-                </div>
-              )}
-            </div>
+            </section>
 
-            <div className="mt-5">
+            {openEvent.description && (
+              <section className="event-theme-card rounded-xl border px-4 py-4 text-sm shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  Description
+                </p>
+                <p className="mt-2 whitespace-pre-wrap leading-relaxed">
+                  {openEvent.description}
+                </p>
+              </section>
+            )}
+
+            <div className="pt-4 border-t border-border">
               <EventActions
                 shareUrl={`/event/${slugify(openEvent.title)}-${
                   openEvent.historyId

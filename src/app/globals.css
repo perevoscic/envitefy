@@ -270,6 +270,53 @@ body {
   .auth-card-gradient > * { position: relative; z-index: 1; }
 }
 
+/* Event theme helpers */
+.event-theme-scope {
+  --event-header-gradient-light: var(--event-header-gradient-light, var(--theme-hero-gradient));
+  --event-header-gradient-dark: var(--event-header-gradient-dark, var(--theme-hero-gradient));
+  --event-card-bg-light: var(--event-card-bg-light, var(--surface));
+  --event-card-bg-dark: var(--event-card-bg-dark, var(--surface));
+  --event-border-light: var(--event-border-light, var(--border));
+  --event-border-dark: var(--event-border-dark, var(--border));
+  --event-chip-light: var(--event-chip-light, rgba(255, 255, 255, 0.85));
+  --event-chip-dark: var(--event-chip-dark, rgba(18, 18, 18, 0.85));
+  --event-text-light: var(--event-text-light, var(--foreground));
+  --event-text-dark: var(--event-text-dark, var(--foreground));
+}
+
+.event-theme-header {
+  background-image: var(--event-header-gradient-light);
+  color: var(--event-text-light);
+}
+
+.dark .event-theme-header {
+  background-image: var(--event-header-gradient-dark);
+  color: var(--event-text-dark);
+}
+
+.event-theme-card {
+  background: var(--event-card-bg-light);
+  border-color: var(--event-border-light);
+  color: var(--event-text-light);
+}
+
+.dark .event-theme-card {
+  background: var(--event-card-bg-dark);
+  border-color: var(--event-border-dark);
+  color: var(--event-text-dark);
+}
+
+.event-theme-chip {
+  background: var(--event-chip-light);
+  color: var(--event-text-light);
+}
+
+.dark .event-theme-chip {
+  background: var(--event-chip-dark);
+  color: var(--event-text-dark);
+}
+
+
 /* Consistent responsive horizontal gutters for layouts */
 @layer utilities {
   /* Applies symmetric horizontal padding that adapts with breakpoints */

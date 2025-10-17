@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useTheme } from "@/app/providers";
@@ -33,13 +33,12 @@ export default function ThemeTogglePage() {
   const [message, setMessage] = useState<Message>(null);
   const initialVariantRef = useRef<ThemeVariant>(theme);
 
-  const themes = useMemo(() => listThemesSorted(), []);
-  const scheduleInfo = useMemo(() => {
-    const now = new Date();
-    const scheduledKey = resolveThemeForDate(now);
-    const window = findActiveThemeWindow(now);
-    return { key: scheduledKey as ThemeKey, window };
-  }, []);
+  const themes = listThemesSorted();
+  const now = new Date();
+  const scheduleInfo = {
+    key: resolveThemeForDate(now) as ThemeKey,
+    window: findActiveThemeWindow(now),
+  };
 
   const scheduleKey = scheduleInfo.key;
   const scheduleWindow = scheduleInfo.window;
