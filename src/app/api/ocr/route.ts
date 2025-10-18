@@ -13,6 +13,12 @@ export const dynamic = "force-dynamic";
 /** Give the route more time for large images + Vision */
 export const maxDuration = 60;
 
+const DEFAULT_OCR_MODEL = "gpt-4o";
+
+function resolveOcrModel(): string {
+  return process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || DEFAULT_OCR_MODEL;
+}
+
 /* ------------------------------ helpers ------------------------------ */
 
 // Basic low-confidence heuristic for titles
@@ -38,7 +44,7 @@ async function llmExtractEvent(raw: string): Promise<{
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   const system = "You extract calendar events from noisy OCR text. For medical/dental appointments, use ONLY clinical factual language - NEVER invitation phrases like 'Please join us', 'You're invited'. Return strict JSON only.";
   const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string), rsvp (string or null).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- CRITICAL: Extract RSVP contact info into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: contact@example.com'. Return null if no RSVP info found.\n- Description should NOT include RSVP contact info (it goes in the separate rsvp field).\n- For MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit').\n  * Description: Read the image and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a MEDICAL/DENTAL appointment, NOT a social event. NEVER EVER write invitation phrases like 'Please join us for', 'You're invited to', 'Join us', 'please', 'welcome'. These are medical appointments, not parties. WRONG: 'Please join us for a Dental Cleaning on...'. CORRECT: 'Dental cleaning appointment.' or 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on what's visible, each fact on its own line. Be strictly factual and clinical.\n- Respond with ONLY JSON.`;
 
@@ -85,7 +91,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     return null;
   }
   console.log(">>> OpenAI API key found:", apiKey ? `${apiKey.substring(0, 10)}...` : "missing");
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   console.log(">>> Using OpenAI model:", model);
   const base64 = imageBytes.toString("base64");
   const system =
@@ -104,6 +110,10 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Before finalizing, double-check that the chosen time matches the flyer; if uncertain, leave the time off (set start to the date at 00:00).",
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
+      "- ALWAYS separate the physical venue from activities or course names. Build the address from the block that includes the venue label or street/city/state (e.g., 'US Gold Gym, 12432 Emerald Coast Pkwy, Miramar Beach, FL 32550').",
+      "- If activity phrases like 'Ninja Warrior Course', 'STEM Lab', or 'Birthday Pavilion' appear outside the address block, keep them in the title or description only. Do NOT place those activity names in the address unless they literally appear inside the labeled address/venue line.",
+      "- When both a venue name and an address line are shown, include the venue first, followed by the street/city/state. Avoid duplicating the activity wording in the venue portion.",
+      "- Description must mention standout features or activity areas printed on the flyer (e.g., 'Ninja Warrior Course', 'Splash Pad', 'STEM Lab') when they exist, in addition to the title.",
       "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
       "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
@@ -180,7 +190,7 @@ async function llmExtractGymnasticsScheduleFromImage(
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   const base64 = imageBytes.toString("base64");
   const system =
     "You read gymnastics season schedule posters and output clean JSON with a list of meets as calendar events. Use visual cues (colors, legends, 'VS' vs 'AT') to determine home vs away. Do not hallucinate dates.";
@@ -279,7 +289,7 @@ async function llmExtractPracticeScheduleFromImage(
 ): Promise<PracticeScheduleLLMResponse | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   const base64 = imageBytes.toString("base64");
   const system =
     "You read team practice schedules laid out as tables (groups vs. days) and return clean JSON describing weekly recurring sessions.";
@@ -874,9 +884,103 @@ function cleanAddressLabel(input: string): string {
   let s = input.trim();
   s = s.replace(/^\s*(location|address|venue|where)\s*[:\-]?\s*/i, "");
   s = s.replace(/^\s*at\s+/i, "");
-  if (/\d/.test(s)) s = s.replace(/^[^\d]*?(?=\d)/, "");
-  s = s.replace(/\s{2,}/g, " ").replace(/[\s,\-]+$/g, "");
+  s = s.replace(/[\r\n]+/g, ", ");
+  s = s.replace(/\s*,\s*/g, ", ");
+  s = s.replace(/\s{2,}/g, " ");
+  s = s.replace(/,\s*,+/g, ", ");
+  s = s.replace(/^[,\s-]+/, "");
+  s = s.replace(/[,\s-]+$/g, "");
   return s.trim();
+}
+
+function splitVenueFromAddress(
+  input: string,
+  description?: string,
+  rawText?: string
+): { venue: string | null; address: string } {
+  const cleaned = cleanAddressLabel(input || "");
+  if (!cleaned) return { venue: null, address: "" };
+  const segments = cleaned
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (!segments.length) return { venue: null, address: "" };
+
+  const venueKeywords =
+    /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre|Complex|Ballpark|Ball Field)\b/i;
+  const suiteKeywords = /\b(suite|ste|apt|unit|floor|fl|room|rm|bldg|building|wing|hallway|level|lot)\b/i;
+  const candidateRaw = (
+    pickVenueLabelForSentence(cleaned, description, rawText) || ""
+  ).trim();
+  const candidateParts = candidateRaw
+    ? candidateRaw
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean)
+    : [];
+  const candidateSet = new Set(
+    candidateParts.map((part) => part.toLowerCase())
+  );
+
+  let streetIdx = segments.findIndex((segment) => /\d/.test(segment));
+  if (streetIdx === -1) streetIdx = 0;
+  const stateRe =
+    /\b(?:A[KLRZ]|C[AOT]|D[EC]|F[LM]|G[AU]|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]|N[CDEHJMVY]|O[HKR]|P[AE]|RI|S[CD]|T[NX]|UT|V[AIT]|W[AIVY])\b/;
+  const zipRe = /\b\d{5}(?:-\d{4})?\b/;
+  let cityIdx = -1;
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segment = segments[i];
+    if (zipRe.test(segment) || stateRe.test(segment)) {
+      cityIdx = i;
+      break;
+    }
+  }
+  if (cityIdx === -1 && segments.length > streetIdx + 1) {
+    cityIdx = segments.length - 1;
+  }
+
+  const venueParts: string[] = [];
+  const addressParts: string[] = [];
+
+  segments.forEach((segment, idx) => {
+    const lower = segment.toLowerCase();
+    const betweenStreetAndCity =
+      idx > streetIdx && (cityIdx === -1 || idx < cityIdx);
+    const matchesCandidate =
+      candidateSet.has(lower) ||
+      (candidateRaw &&
+        !/\d/.test(segment) &&
+        candidateRaw.toLowerCase().includes(lower) &&
+        lower.length >= 3);
+    const looksVenue =
+      !/\d/.test(segment) && venueKeywords.test(segment);
+    const isSuite = suiteKeywords.test(segment);
+    if (!isSuite && (matchesCandidate || (betweenStreetAndCity && looksVenue))) {
+      if (!venueParts.some((part) => part.toLowerCase() === lower)) {
+        venueParts.push(segment);
+      }
+      return;
+    }
+    addressParts.push(segment);
+  });
+
+  let venue = venueParts.join(", ");
+  if (!venue && candidateRaw) {
+    venue = candidateRaw;
+  } else if (venue && candidateRaw) {
+    const lowerVenue = venue.toLowerCase();
+    if (!lowerVenue.includes(candidateRaw.toLowerCase())) {
+      venue = `${venue}, ${candidateRaw}`.replace(/,\s*,+/g, ", ");
+    }
+  }
+  let address = addressParts.join(", ").replace(/,\s*,+/g, ", ").trim();
+  if (!address && cleaned) {
+    address = cleaned;
+  }
+  return {
+    venue: venue ? venue.trim() : null,
+    address,
+  };
 }
 
 // Lightweight U.S. timezone guesser from address text (best-effort, no network)
@@ -1007,8 +1111,21 @@ function pickVenueLabelForSentence(
     const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre)\b/i;
     // 1) Use a non-numeric first segment of the provided location if it looks like a venue
     if (location) {
-      const first = cleanAddressLabel(String(location)).split(",")[0].trim();
-      if (first && (!/\d/.test(first) || venueKeywords.test(first))) return first;
+      const parts = cleanAddressLabel(String(location))
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (parts.length) {
+        const first = parts[0];
+        if (parts.length >= 2) {
+          const second = parts[1];
+          const secondLooksVenue = second && !/\d/.test(second) && venueKeywords.test(second);
+          if (secondLooksVenue && first && !/\d/.test(first)) {
+            return `${first}, ${second}`;
+          }
+        }
+        if (first && (!/\d/.test(first) || venueKeywords.test(first))) return first;
+      }
     }
     // 2) Try to extract from description text around an "at <Venue>" phrase
     const lineWithAt = (description || "")
@@ -1794,6 +1911,7 @@ export async function POST(request: Request) {
     let finalStart = start;
     let finalEnd = end;
     let finalAddress = addressOnly;
+    let finalVenue = "";
     let finalDescription = cleanDescription;
 
     if (ocrSource === "openai" && llmImage) {
@@ -1951,6 +2069,17 @@ export async function POST(request: Request) {
       finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
     }
 
+    const addressWithVenue = finalAddress;
+    const splitLocation = splitVenueFromAddress(finalAddress, finalDescription, raw);
+    if (splitLocation) {
+      finalAddress = splitLocation.address;
+      if (splitLocation.venue) finalVenue = splitLocation.venue;
+    }
+    if (!finalVenue) {
+      const fallbackVenue = pickVenueLabelForSentence(addressWithVenue, finalDescription, raw);
+      if (fallbackVenue) finalVenue = fallbackVenue;
+    }
+
     // Re-extract RSVP from updated description if not already set by LLM
     if (!deferredRsvp) {
       try {
@@ -1958,17 +2087,28 @@ export async function POST(request: Request) {
       } catch {}
     }
 
+    const locationForNarrative = finalVenue
+      ? `${finalVenue}${finalAddress ? `, ${finalAddress}` : ""}`
+      : addressWithVenue || finalAddress;
+
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
       try {
         const venueLabel =
+          finalVenue ||
+          pickVenueLabelForSentence(addressWithVenue, finalDescription, raw) ||
           pickVenueLabelForSentence(finalAddress, finalDescription, raw) ||
-          finalAddress;
+          "";
+        const venueForSentence = venueLabel || locationForNarrative || finalAddress;
         // First attempt: deterministic human sentence without LLM.
-        const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueLabel);
+        const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueForSentence);
         finalDescription = deterministic;
         // Second attempt: let LLM refine; fall back to deterministic if LLM returns weird multiline text
-        const rewritten = await llmRewriteBirthdayDescription(finalTitle, venueLabel, deterministic);
+        const rewritten = await llmRewriteBirthdayDescription(
+          finalTitle,
+          venueForSentence,
+          deterministic
+        );
         const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
         if (cleaned && /\.$/.test(cleaned) && cleaned.length >= 20 && cleaned.length <= 200) {
           finalDescription = cleaned;
@@ -1979,7 +2119,7 @@ export async function POST(request: Request) {
     // If this looks like a wedding/marriage invite, produce a clean title and short human sentence
     if (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) || /(wedding|marriage)/i.test(finalTitle)) {
       try {
-        const wr = await llmRewriteWedding(raw, finalTitle, finalAddress);
+        const wr = await llmRewriteWedding(raw, finalTitle, locationForNarrative || finalAddress);
         if (wr?.title) finalTitle = wr.title;
         if (wr?.description) {
           let desc = wr.description;
@@ -2004,7 +2144,10 @@ export async function POST(request: Request) {
         const refined = await llmRewriteSmartDescription(
           raw,
           finalTitle,
-          pickVenueLabelForSentence(finalAddress, finalDescription, raw) || finalAddress,
+          finalVenue ||
+            pickVenueLabelForSentence(addressWithVenue, finalDescription, raw) ||
+            finalAddress ||
+            locationForNarrative,
           null,
           looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription
         );
@@ -2107,6 +2250,7 @@ export async function POST(request: Request) {
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
       location: finalAddress,
+      venue: finalVenue || null,
       description: descriptionWithTitle,
       timezone: "", // omit timezone; UI will show times as typed
       rsvp: deferredRsvp || null, // Store RSVP separately

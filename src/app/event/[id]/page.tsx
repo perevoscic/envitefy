@@ -4,7 +4,10 @@ import ThumbnailModal from "@/components/ThumbnailModal";
 import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
+import LocationLink from "@/components/LocationLink";
 import ReadOnlyBanner from "./ReadOnlyBanner";
+import ReadOnlyEventLogo from "@/components/ReadOnlyEventLogo";
+import { combineVenueAndLocation } from "@/lib/mappers";
 import {
   listSharesByOwnerForEvents,
   isEventSharedWithUser,
@@ -56,6 +59,89 @@ const cleanRsvpContactLabel = (raw: string): string => {
   working = working.replace(/[:;,.-]+$/, "").trim();
   return working;
 };
+
+function formatEventRangeDisplay(
+  startInput: string | null | undefined,
+  endInput: string | null | undefined,
+  options?: { timeZone?: string | null; allDay?: boolean }
+): string | null {
+  const { timeZone, allDay } = options || {};
+  if (!startInput) return null;
+  try {
+    const start = new Date(startInput);
+    if (Number.isNaN(start.getTime())) throw new Error("invalid start");
+    const end = endInput ? new Date(endInput) : null;
+    const sameDay =
+      !!end &&
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate();
+    const tz = timeZone || undefined;
+    if (allDay) {
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: tz,
+      });
+      const label =
+        end && !sameDay
+          ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+          : dateFmt.format(start);
+      return `${label} (all day)`;
+    }
+    const dateFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: tz,
+    });
+    const timeFmt = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+    if (end) {
+      if (sameDay) {
+        return `${dateFmt.format(start)}, ${timeFmt.format(
+          start
+        )} – ${timeFmt.format(end)}`;
+      }
+      const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: tz,
+      });
+      return `${dateTimeFmt.format(start)} – ${dateTimeFmt.format(end)}`;
+    }
+    const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+    return dateTimeFmt.format(start);
+  } catch {
+    const startStr = (startInput || "").toString();
+    if (!endInput) return startStr || null;
+    const startPrefix = startStr.split(",")[0]?.trim?.() ?? startStr;
+    const endStr = (endInput || "").toString();
+    if (startPrefix && endStr.startsWith(startPrefix)) {
+      const suffix = endStr.slice(startPrefix.length).replace(/^\s*,\s*/g, "");
+      return suffix ? `${startStr} – ${suffix}` : startStr;
+    }
+    return endStr ? `${startStr} – ${endStr}` : startStr;
+  }
+}
 
 export default async function EventPage({
   params,
@@ -147,6 +233,19 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+  const startForDisplay =
+    (typeof data?.startISO === "string" && data.startISO) ||
+    (typeof data?.start === "string" && data.start) ||
+    null;
+  const endForDisplay =
+    (typeof data?.endISO === "string" && data.endISO) ||
+    (typeof data?.end === "string" && data.end) ||
+    null;
+  const whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
+    timeZone:
+      (typeof data?.timezone === "string" && data.timezone) || undefined,
+    allDay: Boolean(data?.allDay),
+  });
   const slugify = (t: string) =>
     (t || "event")
       .toLowerCase()
@@ -224,7 +323,7 @@ export default async function EventPage({
   })();
 
   // Compute a right padding to avoid text flowing under the thumbnail overlay
-  const detailsExtraPaddingRight = data?.thumbnail ? " pr-32 sm:pr-40" : "";
+  const detailsExtraPaddingRight = data?.thumbnail ? " pr-40 sm:pr-48" : "";
 
   const calendarStartIso = normalizeIso(
     (data?.startISO as string | undefined) ||
@@ -264,20 +363,7 @@ export default async function EventPage({
 
   return (
     <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
-      {isReadOnly && (
-        <div className="mb-6 flex justify-center">
-          <img
-            src="/SnapMyDateSnapItSaveitDone_Black_vertical.png"
-            alt="Snap My Date tag line"
-            className="block h-24 w-auto dark:hidden"
-          />
-          <img
-            src="/SnapMyDateSnapItSaveitDone_White_vertical.png"
-            alt="Snap My Date tag line"
-            className="hidden h-24 w-auto dark:block"
-          />
-        </div>
-      )}
+      {isReadOnly && <ReadOnlyEventLogo />}
       <div
         className="event-theme-scope space-y-6"
         style={themeStyleVars as CSSProperties}
@@ -345,58 +431,69 @@ export default async function EventPage({
                 <dd className="mt-1 text-base font-semibold">All day event</dd>
               </div>
             )}
-            {data?.start && (
-              <div>
+            {whenLabel ? (
+              <div className="sm:col-span-2">
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  Start
+                  When
                 </dt>
                 <dd className="mt-1 break-all text-base font-semibold">
-                  {data.start}
+                  {whenLabel}
                 </dd>
               </div>
+            ) : (
+              <>
+                {data?.start && (
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      Start
+                    </dt>
+                    <dd className="mt-1 break-all text-base font-semibold">
+                      {data.start}
+                    </dd>
+                  </div>
+                )}
+                {data?.end && (
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      End
+                    </dt>
+                    <dd className="mt-1 break-all text-base font-semibold">
+                      {data.end}
+                    </dd>
+                  </div>
+                )}
+              </>
             )}
-            {data?.end && (
+            {data?.venue && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  End
+                  Venue
                 </dt>
-                <dd className="mt-1 break-all text-base font-semibold">
-                  {data.end}
-                </dd>
+                <dd className="mt-1 text-base font-semibold">{data.venue}</dd>
               </div>
             )}
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                Location
+                {data?.venue ? "Address" : "Location"}
               </dt>
-              <dd className="mt-1 text-base font-semibold">
-                {data?.location || "—"}
+              <dd className="mt-1">
+                <LocationLink
+                  location={data?.location}
+                  query={combineVenueAndLocation(
+                    (typeof data?.venue === "string" && data.venue) || null,
+                    (typeof data?.location === "string" && data.location) ||
+                      null
+                  )}
+                  className="text-base font-semibold"
+                />
               </dd>
             </div>
-            {(rsvpName || rsvpPhone) && (
-              <div className="sm:col-start-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  RSVP
-                </dt>
-                <dd className="mt-1">
-                  {rsvpName && (
-                    <p className="text-sm font-medium">{rsvpName}</p>
-                  )}
-                  <EventRsvpPrompt
-                    rsvpName={rsvpName}
-                    rsvpPhone={rsvpPhone}
-                    eventTitle={title}
-                    shareUrl={shareUrl}
-                  />
-                </dd>
-              </div>
-            )}{" "}
             {calendarLinks && (
-              <div className="sm:col-start-2">
+              <div className="sm:col-start-1">
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                   Add to calendar
                 </dt>
-                <dd className="mt-1  space-y-2">
+                <dd className="mt-1  space-y-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <a
                       href={calendarLinks.appleInline}
@@ -427,6 +524,21 @@ export default async function EventPage({
                       <CalendarIconOutlook className="h-5 w-5" />
                     </a>
                   </div>
+                </dd>
+              </div>
+            )}
+            {(rsvpName || rsvpPhone) && (
+              <div className="sm:col-start-2">
+                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  RSVP
+                </dt>
+                <dd className="mt-1">
+                  <EventRsvpPrompt
+                    rsvpName={rsvpName}
+                    rsvpPhone={rsvpPhone}
+                    eventTitle={title}
+                    shareUrl={shareUrl}
+                  />
                 </dd>
               </div>
             )}
@@ -493,7 +605,7 @@ export default async function EventPage({
                       className="flex items-center justify-between text-sm"
                     >
                       <span className="truncate">
-                        {r.name} —{" "}
+                        {r.name} —{"\u00a0"}
                         {r.status === "accepted" ? "Accepted" : "Pending"}
                       </span>
                       <form
@@ -542,9 +654,8 @@ export default async function EventPage({
               </div>
             ) : (
               <div className="mt-2 text-xs text-foreground/70">
-                No guests invited yet.
-                <br />
-                Use the "Invite" button above to add guests.
+                No guests invited yet. Use the "Invite" button above to add
+                guests.
               </div>
             )}
           </section>
@@ -602,7 +713,7 @@ export default async function EventPage({
             <ul className="mt-2 space-y-1">
               <li className="flex items-center justify-between text-sm">
                 <span className="truncate">
-                  {ownerDisplayName} —{" "}
+                  {ownerDisplayName} —{"\u00a0"}
                   {recipientPending ? "Pending" : "Accepted"}
                 </span>
                 {recipientPending && (

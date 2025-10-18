@@ -650,15 +650,27 @@ body {
 }
 .landing-dark-gradient::after {
   content: "";
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
   background-image: var(--theme-illustration);
   background-repeat: no-repeat;
   background-position: right 8% bottom 6%;
   background-size: min(360px, 42vw);
+  background-attachment: fixed;
   opacity: 0.28;
+  transform: translateZ(0);
   z-index: -1;
+}
+
+/* Floating illustration override for specific pages */
+.landing-dark-gradient[data-illustration-floating="true"]::after {
+  position: absolute;
+  background-attachment: scroll;
+  transform: none;
 }
 /* Hide phone mockup on tablet/iPad portrait */
 @media only screen and (orientation: portrait) and (min-width: 768px) and (max-width: 1366px),
@@ -681,10 +693,4 @@ body {
     }
   }
 }
-
-
-
-
-
-
 

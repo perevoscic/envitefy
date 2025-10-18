@@ -22,7 +22,9 @@ type CalendarEvent = {
   allDay?: boolean;
   timezone?: string | null;
   location?: string | null;
+  venue?: string | null;
   description?: string | null;
+  rsvp?: string | null;
   category?: string | null;
   recurrence?: string | null;
   shared?: boolean;
@@ -286,7 +288,88 @@ function formatEventDateTime(iso: string): string {
   }
 }
 
-function pickLocationName(location: string): string {
+function formatEventRangeLabel(
+  startIso: string,
+  endIso?: string | null,
+  options?: { timeZone?: string | null; allDay?: boolean }
+): string {
+  const { timeZone, allDay } = options || {};
+  try {
+    const start = new Date(startIso);
+    if (Number.isNaN(start.getTime())) return startIso;
+    const end = endIso ? new Date(endIso) : null;
+    const sameDay =
+      !!end &&
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate();
+    const tz = timeZone || undefined;
+    if (allDay) {
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: tz,
+      });
+      const label = end && !sameDay
+        ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+        : dateFmt.format(start);
+      return `${label} (all day)`;
+    }
+    const dateFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: tz,
+    });
+    const timeFmt = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+    if (end) {
+      if (sameDay) {
+        return `${dateFmt.format(start)}, ${timeFmt.format(start)} – ${timeFmt.format(
+          end
+        )}`;
+      }
+      const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: tz,
+      });
+      return `${dateTimeFmt.format(start)} – ${dateTimeFmt.format(end)}`;
+    }
+    const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+    return dateTimeFmt.format(start);
+  } catch {
+    return startIso;
+  }
+}
+
+function pickLocationLabel(
+  venue?: string | null,
+  location?: string | null
+): string {
+  const venueTrimmed = String(venue || "").trim();
+  if (venueTrimmed) {
+    const first = venueTrimmed.split(/[,\n]/)[0].trim();
+    return first || venueTrimmed;
+  }
   const s = String(location || "").trim();
   if (!s) return s;
   const first = s.split(/[,\n\-]/)[0].trim();
@@ -328,9 +411,11 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
           end: (ev.end as string) || (ev.endISO as string) || null,
           allDay: Boolean(ev.allDay),
           timezone: (ev.timezone as string) || (d.timezone as string) || null,
+          venue: (ev.venue as string) || (d.venue as string) || null,
           location: (ev.location as string) || (d.location as string) || null,
           description:
             (ev.description as string) || (d.description as string) || null,
+          rsvp: (ev.rsvp as string) || (d.rsvp as string) || null,
           category: (ev.category as string) || baseCategory,
           recurrence:
             (ev.recurrence as string) || (d.recurrence as string) || null,
@@ -354,8 +439,10 @@ function normalizeHistoryToEvents(items: HistoryItem[]): CalendarEvent[] {
         end: (single?.end as string) || (single?.endISO as string) || null,
         allDay: Boolean(single?.allDay),
         timezone: (single?.timezone as string) || null,
+        venue: (single?.venue as string) || (d.venue as string) || null,
         location: (single?.location as string) || null,
         description: (single?.description as string) || null,
+        rsvp: (single?.rsvp as string) || (d.rsvp as string) || null,
         category: (single?.category as string) || baseCategory,
         recurrence: (single?.recurrence as string) || null,
         shared: sharedFlag,
@@ -1236,10 +1323,10 @@ export default function CalendarPage() {
                           : "text-foreground/70"
                       } truncate`}
                     >
-                      {ev.location
+                      {ev.venue || ev.location
                         ? `${formatEventDateTime(
                             ev.start
-                          )} at ${pickLocationName(ev.location)}`
+                          )} at ${pickLocationLabel(ev.venue, ev.location)}`
                         : formatEventDateTime(ev.start)}
                     </div>
                   </button>
@@ -1307,10 +1394,10 @@ export default function CalendarPage() {
                                   : "text-foreground/70"
                               } truncate`}
                             >
-                              {ev.location
+                              {ev.venue || ev.location
                                 ? `${formatEventDateTime(
                                     ev.start
-                                  )} at ${pickLocationName(ev.location)}`
+                                  )} at ${pickLocationLabel(ev.venue, ev.location)}`
                                 : formatEventDateTime(ev.start)}
                             </div>
                           </button>
@@ -1378,10 +1465,10 @@ export default function CalendarPage() {
                           : "text-foreground/70"
                       } truncate`}
                     >
-                      {ev.location
+                      {ev.venue || ev.location
                         ? `${formatEventDateTime(
                             ev.start
-                          )} at ${pickLocationName(ev.location)}`
+                          )} at ${pickLocationLabel(ev.venue, ev.location)}`
                         : formatEventDateTime(ev.start)}
                     </div>
                   </button>
@@ -1527,37 +1614,30 @@ export default function CalendarPage() {
 
             <section className="event-theme-card rounded-xl border px-4 py-4 text-sm shadow-sm">
               <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {openEvent.allDay && (
+                {openEvent.start && (
                   <div className="sm:col-span-2">
                     <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                       When
                     </dt>
-                    <dd className="mt-1 font-semibold">All day event</dd>
-                  </div>
-                )}
-                {openEvent.start && (
-                  <div>
-                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      Start
-                    </dt>
                     <dd className="mt-1 break-all font-semibold">
-                      {formatEventDateTime(openEvent.start)}
+                      {formatEventRangeLabel(openEvent.start, openEvent.end, {
+                        timeZone: openEvent.timezone,
+                        allDay: openEvent.allDay,
+                      })}
                     </dd>
                   </div>
                 )}
-                {openEvent.end && (
+                {openEvent.venue && (
                   <div>
                     <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      End
+                      Venue
                     </dt>
-                    <dd className="mt-1 break-all font-semibold">
-                      {formatEventDateTime(openEvent.end)}
-                    </dd>
+                    <dd className="mt-1 font-semibold">{openEvent.venue}</dd>
                   </div>
                 )}
                 <div>
                   <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                    Location
+                    {openEvent.venue ? "Address" : "Location"}
                   </dt>
                   <dd className="mt-1 font-semibold">{openEvent.location || "—"}</dd>
                 </div>
@@ -1627,8 +1707,10 @@ export default function CalendarPage() {
                   start: openEvent.start,
                   end: openEvent.end || null,
                   location: openEvent.location || "",
+                  venue: openEvent.venue || null,
                   description: openEvent.description || "",
                   timezone: openEvent.timezone || "",
+                  rsvp: (openEvent as any)?.rsvp || null,
                 }}
               />
             </div>

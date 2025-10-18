@@ -4,11 +4,42 @@ export type NormalizedEvent = {
   end: string; // ISO string
   allDay?: boolean;
   timezone: string; // IANA
+  venue?: string;
   location?: string;
   description?: string;
   recurrence?: string | null; // RRULE:...
   reminders?: { minutes: number }[] | null;
 };
+
+const splitParts = (value?: string | null): string[] =>
+  (value || "")
+    .split(/[,，\n]/)
+    .map((part) => part.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+export function combineVenueAndLocation(
+  venue?: string | null,
+  location?: string | null
+): string {
+  const venueParts = splitParts(venue);
+  let locationParts = splitParts(location);
+  if (venueParts.length) {
+    const venueSet = new Set(venueParts.map((part) => part.toLowerCase()));
+    locationParts = locationParts.filter((part) => {
+      const lower = part.toLowerCase();
+      return !venueSet.has(lower);
+    });
+  }
+  const allParts = [...venueParts, ...locationParts];
+  if (!allParts.length) return "";
+  const deduped: string[] = [];
+  for (const part of allParts) {
+    const lower = part.toLowerCase();
+    if (deduped.some((existing) => existing.toLowerCase() === lower)) continue;
+    deduped.push(part);
+  }
+  return deduped.join(", ");
+}
 
 export function toGoogleEvent(event: NormalizedEvent) {
   const isAllDay = Boolean(event.allDay);
@@ -31,7 +62,7 @@ export function toGoogleEvent(event: NormalizedEvent) {
   const requestBody: any = {
     summary: event.title,
     description: event.description || "",
-    location: event.location || "",
+    location: combineVenueAndLocation(event.venue, event.location),
     start,
     end,
   };
@@ -46,7 +77,9 @@ export function toMicrosoftEvent(event: NormalizedEvent) {
   const graphEvent: any = {
     subject: event.title || "Event",
     body: { contentType: "HTML", content: bodyContent },
-    location: { displayName: event.location || "" },
+    location: {
+      displayName: combineVenueAndLocation(event.venue, event.location),
+    },
     // Preserve local clock time exactly as typed using the user's timezone
     start: { dateTime: toGraphLocal(event.start), timeZone: event.timezone || "UTC" },
     end: { dateTime: toGraphLocal(event.end), timeZone: event.timezone || "UTC" },
@@ -73,7 +106,7 @@ export function toIcsFields(event: NormalizedEvent) {
     title: event.title,
     start: event.start,
     end: event.end,
-    location: event.location || "",
+    location: combineVenueAndLocation(event.venue, event.location),
     description: event.description || "",
     timezone: event.timezone,
     allDay: Boolean(event.allDay),
@@ -81,4 +114,3 @@ export function toIcsFields(event: NormalizedEvent) {
     reminders: event.reminders || null,
   };
 }
-

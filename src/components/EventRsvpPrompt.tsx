@@ -47,8 +47,14 @@ export default function EventRsvpPrompt({
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [sender, setSender] = useState<StoredSender>(initialSender);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [declineModalOpen, setDeclineModalOpen] = useState(false);
+  const [declineLines, setDeclineLines] = useState<string[]>([]);
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    setMounted(true);
+  }, []);
+  useEffect(() => {
+    if (!mounted) return;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
@@ -62,11 +68,41 @@ export default function EventRsvpPrompt({
         });
       }
     } catch {}
-  }, []);
+  }, [mounted]);
 
   if (!rsvpPhone) {
     return null;
   }
+  if (!mounted) {
+    return null;
+  }
+
+  const handleDecline = () => {
+    setModalOpen(false);
+    const eventLabel = eventTitle?.trim() || "the event";
+    const guest = sender.forWho.trim();
+    const declineParts: string[] = [
+      guest
+        ? `We're sorry ${guest} can't make it to ${eventLabel}.`
+        : `We're sorry you can't make it to ${eventLabel}.`,
+    ];
+    if (rsvpName && rsvpPhone) {
+      declineParts.push(
+        `If plans change, you can reach out to ${rsvpName.trim()} at ${rsvpPhone}.`
+      );
+    } else if (rsvpPhone) {
+      declineParts.push(
+        `If plans change, you can let the host know at ${rsvpPhone}.`
+      );
+    } else if (rsvpName) {
+      declineParts.push(`If plans change, you can let ${rsvpName.trim()} know.`);
+    }
+    declineParts.push("Thank you for letting us know.");
+    setDeclineLines(declineParts);
+    setDeclineModalOpen(true);
+    setIntent(null);
+    setError(null);
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -86,25 +122,20 @@ export default function EventRsvpPrompt({
       }
     } catch {}
 
+    const eventLabel = eventTitle?.trim() || "the event";
     const salutation = rsvpName?.trim() || "there";
     const senderName = `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
     const guest = sender.forWho.trim();
     const guestPhraseAttend = guest
       ? `${guest} will attend`
       : "I will attend";
-    const guestPhraseDecline = guest
-      ? `${guest} will not be able to attend`
-      : "I won't be able to attend";
     const guestPhraseMaybe = guest
       ? `${guest} might be able to attend`
       : "I might be able to attend";
 
-    const eventLabel = eventTitle?.trim() || "the event";
     let bodyCore = "";
     if (intent === "attend") {
       bodyCore = `${guestPhraseAttend} ${eventLabel}! Looking forward to it.`;
-    } else if (intent === "decline") {
-      bodyCore = `${guestPhraseDecline} ${eventLabel}. Thank you for the invitation!`;
     } else if (intent === "maybe") {
       bodyCore = `${guestPhraseMaybe} ${eventLabel}, but we're not sure yet. We'll confirm soon!`;
     }
@@ -130,9 +161,18 @@ export default function EventRsvpPrompt({
   };
 
   const openModalFor = (nextIntent: ResponseIntent) => {
+    if (nextIntent === "decline") {
+      handleDecline();
+      return;
+    }
     setIntent(nextIntent);
     setError(null);
     setModalOpen(true);
+  };
+
+  const closeDeclineModal = () => {
+    setDeclineModalOpen(false);
+    setDeclineLines([]);
   };
 
   return (
@@ -150,6 +190,30 @@ export default function EventRsvpPrompt({
           </button>
         ))}
       </div>
+
+      {declineModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl dark:bg-neutral-900">
+            <h3 className="text-lg font-semibold text-foreground">
+              Thanks for the RSVP
+            </h3>
+            <div className="mt-3 space-y-2 text-sm text-foreground/80">
+              {declineLines.map((line, index) => (
+                <p key={index}>{line}</p>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={closeDeclineModal}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalOpen && intent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

@@ -178,13 +178,19 @@ curl -X POST \
 ```
 
 - **Env**:
-  - **Required**: `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o` for best accuracy with cursive/decorative fonts; use `gpt-4o-mini` for faster processing at lower cost) - Primary OCR via OpenAI Vision
+  - **Required**: `OPENAI_API_KEY` (Primary OCR via OpenAI Vision).
+  - **Optional**: `OPENAI_OCR_MODEL` to override the dedicated OCR model (defaults to `gpt-4o`; falls back to `LLM_MODEL` when set).
   - **Optional fallback**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Google Vision fallback.
+
+#### Common OCR Errors
+
+- **Venue/Activity Misinterpretation**: The OCR agent may sometimes misinterpret the event activity as the venue, especially when they are closely related. For example, "Ninja Warrior Course" might be identified as the venue when it is actually an activity held at a venue like "US Gold Gym". Clients should verify and correct these distinctions.
 
 #### Notes
 
 - Time parsing improved to detect spelled-out phrases like "four o'clock in the afternoon" and merge with detected dates; afternoon/evening keywords bias to PM.
 - LLM prompt now prioritizes decorative/cursive text (names) on invitation cards and ignores boilerplate like "Invitation"/"Invitation Card" when forming titles. It also classifies wedding/marriage invites and can surface an LLM-provided `category` when present.
+- Prompt enforces contextual reading of the flyer: venue values must come from the section labelled as venue/address (e.g., `US Gold Gym` in the attached example), while repeated activity strings (e.g., `Ninja Warrior Course, the Ninja Warrior Course`) stay in the event title/description. When venue and activity names conflict, prefer the location text paired with the address block, and only duplicate the activity wording if it actually appears inside that block.
 - Wedding rewrite prompt now forbids templated phrases (e.g., "together with their parents", "Dinner and dancing to follow") unless they appear verbatim on the card. It uses only facts present on the invite.
 - **Medical and dental appointments** extract only the clinical information actually visible on the scanned image - no templates, no invented information. The LLM reads the content and outputs only what it sees: appointment type, provider (if shown), facility (if shown), time, or other relevant details. Each fact appears on its own line. Patient name and DOB are excluded. Invitation phrases like "You're invited", "Join", "for his/her", "please" are explicitly forbidden. Example output based on actual content:
   ```
@@ -453,6 +459,7 @@ Payload used by the authenticated calendar agents.
   "end": "ISO string",
   "allDay": false,
   "timezone": "IANA tz e.g. America/Chicago",
+  "venue": "string (optional)",
   "location": "string",
   "description": "string",
   "recurrence": "RRULE:... | null",
@@ -461,6 +468,7 @@ Payload used by the authenticated calendar agents.
 ```
 
 - Weekly practice schedules produced by the OCR agent pre-fill `recurrence` with `RRULE:FREQ=WEEKLY;BYDAY=…` so downstream agents can save repeating events without additional parsing.
+- `venue` allows clients to surface a human-friendly place name separately from the street address; calendar agents combine `venue` + `location` while deduplicating repeated venue segments inside the address field automatically.
 - Google mapping: `dateTime/timeZone` or all-day `date` fields; multiple reminder overrides.
 - Microsoft mapping: Graph `subject/body/location/start/end` (UTC), optional `isAllDay`, single `reminderMinutesBeforeStart`.
 
@@ -507,6 +515,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-18: Added optional `venue` to NormalizedEvent, updated calendar and event UIs to surface venues separately from addresses, and deduplicated venue names when composing Google/Microsoft/ICS locations. Same-day time ranges now display as a single "start – end" string.
 - 2025-10-10: Added admin email campaigns system with Resend integration. New endpoints: `POST /api/admin/campaigns/send`, `GET /api/admin/campaigns`. New database table: `email_campaigns`. Admin UI at `/admin/campaigns` for composing and sending bulk marketing emails to users filtered by subscription tier.
 - 2025-10-05: Updated yearly Stripe pricing to $9.99 (`prod_T93Df9XcDp26Nm`).
 - 2025-09-29: Updated Stripe pricing to $0.99/month (`prod_T93CX7Yaqefp2B`) and $19.99/year (`prod_T93Df9XcDp26Nm`); portal button only shows for active paid plans.
