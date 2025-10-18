@@ -667,7 +667,8 @@ body {
 }
 
 /* Floating illustration override for specific pages */
-.landing-dark-gradient[data-illustration-floating="true"]::after {
+.landing-dark-gradient[data-illustration-floating="true"]::after,
+.landing-dark-gradient--floating::after {
   position: absolute;
   background-attachment: scroll;
   transform: none;

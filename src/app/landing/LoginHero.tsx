@@ -241,8 +241,7 @@ export default function LoginHero() {
       </div>
       {/* Static gradient layer between slider and foreground */}
       <div
-        className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient"
-        data-illustration-floating="true"
+        className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient landing-dark-gradient--floating"
         aria-hidden
       />
       {/* Welcome stack above buttons */}

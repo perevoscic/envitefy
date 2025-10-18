@@ -37,6 +37,7 @@ function defaultCategoryColor(c: string): string {
   if (c === "Doctor Appointments") return "red";
   if (c === "Appointments") return "amber";
   if (c === "Weddings") return "blue";
+  if (c === "Baby Showers") return "pink";
   if (c === "Sport Events") return "indigo";
   if (c === "Play Days") return "rose";
   return "slate";
@@ -1014,7 +1015,7 @@ export default function CalendarPage() {
                 setCreateOpen(true);
               }}
               title="New event"
-              className="ml-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-foreground/5 inline-flex items-center gap-2"
+              className="ml-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-3 py-1.5 text-sm font-medium text-white shadow transition hover:opacity-90 focus:outline-none"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -1024,7 +1025,7 @@ export default function CalendarPage() {
                 strokeWidth="1.7"
                 strokeLinecap="round"
                 strokeLinejoin="miter"
-                className="h-4 w-4"
+                className="h-4 w-4 text-white"
                 aria-hidden="true"
               >
                 <rect x="2" y="4" width="20" height="18" rx="0"></rect>

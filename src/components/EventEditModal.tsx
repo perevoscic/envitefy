@@ -1,13 +1,56 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import RegistryLinksEditor, {
+  RegistryFormEntry,
+} from "@/components/RegistryLinksEditor";
+import {
+  MAX_REGISTRY_LINKS,
+  normalizeRegistryLinks,
+  validateRegistryUrl,
+} from "@/utils/registry-links";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 
 interface EventEditModalProps {
   eventId: string;
   eventData: any;
   eventTitle: string;
 }
+
+const createRegistryFormEntry = (): RegistryFormEntry => ({
+  key: `registry-${Math.random().toString(36).slice(2, 10)}`,
+  label: "",
+  url: "",
+  error: null,
+  detectedLabel: null,
+});
+
+const createRegistryEntryFromLink = (
+  label: string,
+  url: string
+): RegistryFormEntry => {
+  const trimmedLabel = (label || "").slice(0, 60);
+  const validation = validateRegistryUrl(url);
+  const detectedLabel =
+    validation.ok && validation.brand ? validation.brand.defaultLabel : null;
+  const effectiveLabel = trimmedLabel.trim()
+    ? trimmedLabel.trim()
+    : detectedLabel || trimmedLabel;
+  return {
+    key: `registry-${Math.random().toString(36).slice(2, 10)}`,
+    label: effectiveLabel || "",
+    url,
+    error: validation.ok ? null : validation.error || null,
+    detectedLabel,
+  };
+};
+
+const REGISTRY_CATEGORY_KEYS = new Set([
+  "birthdays",
+  "weddings",
+  "baby showers",
+]);
 
 export default function EventEditModal({
   eventId,
@@ -27,9 +70,158 @@ export default function EventEditModal({
     recurrence: eventData?.recurrence || "",
     rsvp: eventData?.rsvp || "",
   });
+  const buildInitialRegistries = useCallback((): RegistryFormEntry[] => {
+    if (!Array.isArray(eventData?.registries)) return [];
+    const base = normalizeRegistryLinks(
+      (eventData.registries as any[]).map((item: any) => ({
+        label: typeof item?.label === "string" ? item.label : "",
+        url: typeof item?.url === "string" ? item.url : "",
+      }))
+    );
+    return base.map((link) => createRegistryEntryFromLink(link.label, link.url));
+  }, [eventData]);
+  const [registryEntries, setRegistryEntries] = useState<RegistryFormEntry[]>(
+    buildInitialRegistries
+  );
   const { data: session } = useSession();
   const router = useRouter();
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const initialAttachment = useMemo(() => {
+    const raw = eventData?.attachment;
+    if (
+      raw &&
+      typeof raw === "object" &&
+      typeof raw.name === "string" &&
+      typeof raw.type === "string" &&
+      typeof raw.dataUrl === "string"
+    ) {
+      return {
+        name: raw.name,
+        type: raw.type,
+        dataUrl: raw.dataUrl,
+      } as {
+        name: string;
+        type: string;
+        dataUrl: string;
+      };
+    }
+    return null;
+  }, [eventData?.attachment]);
+  const initialPreview = useMemo(() => {
+    if (initialAttachment?.type.startsWith("image/")) {
+      if (typeof eventData?.thumbnail === "string") return eventData.thumbnail;
+      return initialAttachment.dataUrl;
+    }
+    return null;
+  }, [initialAttachment, eventData?.thumbnail]);
+  const [attachment, setAttachment] = useState(initialAttachment);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(
+    initialPreview
+  );
+  const [attachmentDirty, setAttachmentDirty] = useState(false);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const flyerInputRef = useRef<HTMLInputElement | null>(null);
+
+  const addRegistryLink = () => {
+    setRegistryEntries((prev) => {
+      if (prev.length >= MAX_REGISTRY_LINKS) return prev;
+      return [...prev, createRegistryFormEntry()];
+    });
+  };
+
+  const removeRegistryLink = (key: string) => {
+    setRegistryEntries((prev) => prev.filter((entry) => entry.key !== key));
+  };
+
+  const handleRegistryFieldChange = (
+    key: string,
+    field: "label" | "url",
+    value: string
+  ) => {
+    const trimmed = field === "label" ? value.slice(0, 60) : value;
+    setRegistryEntries((prev) =>
+      prev.map((entry) => {
+        if (entry.key !== key) return entry;
+        const next: RegistryFormEntry = {
+          ...entry,
+          [field]: trimmed,
+        };
+        if (field === "url") {
+          if (!trimmed.trim()) {
+            next.error = null;
+            next.detectedLabel = null;
+          } else {
+            const validation = validateRegistryUrl(trimmed);
+            next.error = validation.ok ? null : validation.error || null;
+            next.detectedLabel =
+              validation.ok && validation.brand
+                ? validation.brand.defaultLabel
+                : null;
+            if (
+              validation.ok &&
+              validation.brand &&
+              (!entry.label || !entry.label.trim())
+            ) {
+              next.label = validation.brand.defaultLabel;
+            }
+          }
+        }
+        if (field === "label" && !trimmed.trim() && entry.detectedLabel) {
+          next.label = "";
+        }
+        return next;
+      })
+    );
+  };
+
+  const handleFlyerChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setAttachment(null);
+      setAttachmentPreviewUrl(null);
+      setAttachmentDirty(true);
+      setAttachmentError(null);
+      return;
+    }
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      setAttachmentError("Upload an image or PDF file");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachmentError("File must be 10 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+    setAttachmentError(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      let previewUrl: string | null = null;
+      if (isImage) {
+        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      }
+      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentPreviewUrl(previewUrl);
+      setAttachmentDirty(true);
+    } catch {
+      setAttachmentError("Could not process the file");
+      setAttachment(null);
+      setAttachmentPreviewUrl(null);
+      event.target.value = "";
+    }
+  };
+
+  const clearFlyer = () => {
+    setAttachment(null);
+    setAttachmentPreviewUrl(null);
+    setAttachmentDirty(true);
+    setAttachmentError(null);
+    if (flyerInputRef.current) flyerInputRef.current.value = "";
+  };
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -39,9 +231,66 @@ export default function EventEditModal({
     el.style.height = `${el.scrollHeight}px`;
   }, [isOpen, formData.description]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setRegistryEntries(buildInitialRegistries());
+    setAttachment(initialAttachment);
+    setAttachmentPreviewUrl(initialPreview);
+    setAttachmentDirty(false);
+    setAttachmentError(null);
+    if (flyerInputRef.current) flyerInputRef.current.value = "";
+  }, [isOpen, buildInitialRegistries, initialAttachment, initialPreview]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
+
+    const invalidRegistries = registryEntries.filter((entry) => {
+      const trimmedUrl = entry.url.trim();
+      if (!trimmedUrl) return false;
+      return !validateRegistryUrl(trimmedUrl).ok;
+    });
+    if (invalidRegistries.length > 0) {
+      setRegistryEntries((prev) =>
+        prev.map((entry) => {
+          const trimmedUrl = entry.url.trim();
+          if (!trimmedUrl) {
+            return { ...entry, error: null };
+          }
+          const validation = validateRegistryUrl(trimmedUrl);
+          return {
+            ...entry,
+            error: validation.ok ? null : validation.error || "Enter a valid https:// link",
+            detectedLabel:
+              validation.ok && validation.brand
+                ? validation.brand.defaultLabel
+                : entry.detectedLabel,
+          };
+        })
+      );
+      alert("Fix the highlighted registry links before saving.");
+      return;
+    }
+
+    const normalizedCategoryForSubmit = (formData.category || "").toLowerCase();
+    const allowsRegistriesForSubmit =
+      REGISTRY_CATEGORY_KEYS.has(normalizedCategoryForSubmit);
+    const sanitizedRegistries = allowsRegistriesForSubmit
+      ? normalizeRegistryLinks(
+          registryEntries.map((entry) => ({
+            label: entry.label,
+            url: entry.url,
+          }))
+        )
+      : [];
+    const previousRegistries = normalizeRegistryLinks(
+      Array.isArray(eventData?.registries)
+        ? (eventData.registries as any[]).map((item: any) => ({
+            label: typeof item?.label === "string" ? item.label : "",
+            url: typeof item?.url === "string" ? item.url : "",
+          }))
+        : []
+    );
 
     setIsLoading(true);
     try {
@@ -72,6 +321,30 @@ export default function EventEditModal({
       const nextRsvp = trimmedRsvp ? trimmedRsvp : null;
       const prevRsvp = eventData?.rsvp ? String(eventData.rsvp).trim() : null;
       if (nextRsvp !== prevRsvp) dataUpdate.rsvp = nextRsvp;
+      const registriesChanged = (() => {
+        if (sanitizedRegistries.length !== previousRegistries.length) return true;
+        return (
+          JSON.stringify(sanitizedRegistries) !==
+          JSON.stringify(previousRegistries)
+        );
+      })();
+      if (registriesChanged) {
+        dataUpdate.registries = sanitizedRegistries.length
+          ? sanitizedRegistries
+          : null;
+      }
+      if (attachmentDirty) {
+        dataUpdate.attachment = attachment
+          ? {
+              name: attachment.name,
+              type: attachment.type,
+              dataUrl: attachment.dataUrl,
+            }
+          : null;
+        dataUpdate.thumbnail = attachment?.type.startsWith("image/")
+          ? attachmentPreviewUrl || attachment?.dataUrl || null
+          : null;
+      }
 
       if (Object.keys(dataUpdate).length > 0) {
         await fetch(`/api/history/${eventId}`, {
@@ -102,9 +375,13 @@ export default function EventEditModal({
 
   const trimmedRsvp = formData.rsvp.trim();
   const normalizedCategory = (formData.category || "").toLowerCase();
+  const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
+  const allowsRegistrySection = isRegistryCategory;
   const showRsvpField =
+    isRegistryCategory ||
     normalizedCategory.includes("birthday") ||
     normalizedCategory.includes("wedding") ||
+    normalizedCategory.includes("baby shower") ||
     Boolean(trimmedRsvp);
 
   if (!session) return null;
@@ -283,6 +560,7 @@ export default function EventEditModal({
                     <option value="">Select category</option>
                     <option value="Birthdays">Birthdays</option>
                     <option value="Weddings">Weddings</option>
+                    <option value="Baby Showers">Baby Showers</option>
                     <option value="Meetings">Meetings</option>
                     <option value="Appointments">Appointments</option>
                     <option value="Social">Social</option>
@@ -291,6 +569,16 @@ export default function EventEditModal({
                     <option value="Other">Other</option>
                   </select>
                 </div>
+
+                {allowsRegistrySection && (
+                  <RegistryLinksEditor
+                    entries={registryEntries}
+                    onAdd={addRegistryLink}
+                    onRemove={removeRegistryLink}
+                    onChange={handleRegistryFieldChange}
+                    maxLinks={MAX_REGISTRY_LINKS}
+                  />
+                )}
 
                 {showRsvpField && (
                   <div>
@@ -337,6 +625,64 @@ export default function EventEditModal({
                   />
                 </div>
 
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span>Upload a file (optional)</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => flyerInputRef.current?.click()}
+                        className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground/80 hover:bg-surface"
+                      >
+                        {attachment ? "Replace file" : "Upload file"}
+                      </button>
+                      {attachment && (
+                        <button
+                          type="button"
+                          onClick={clearFlyer}
+                          className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    id="edit-flyer"
+                    ref={flyerInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleFlyerChange}
+                    className="hidden"
+                  />
+                  {attachmentError && (
+                    <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
+                  )}
+                  {attachment && (
+                    <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
+                      {attachmentPreviewUrl ? (
+                        <img
+                          src={attachmentPreviewUrl}
+                          alt={attachment.name}
+                          className="h-16 w-16 rounded border border-border object-cover"
+                        />
+                      ) : (
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-foreground/70">
+                          📄
+                        </span>
+                      )}
+                      <span className="truncate" title={attachment.name}>
+                        {attachment.name}
+                      </span>
+                    </div>
+                  )}
+                  {!attachment && !attachmentError && (
+                    <p className="mt-2 text-xs text-foreground/60">
+                      Images or PDFs up to 10 MB.
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-3 pt-4">
                   <button
                     type="button"
@@ -348,7 +694,7 @@ export default function EventEditModal({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow transition hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Saving..." : "Save Changes"}
                   </button>

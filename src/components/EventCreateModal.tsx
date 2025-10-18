@@ -1,7 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import RegistryLinksEditor, {
+  RegistryFormEntry,
+} from "@/components/RegistryLinksEditor";
 import type { NormalizedEvent } from "@/lib/mappers";
+import {
+  MAX_REGISTRY_LINKS,
+  normalizeRegistryLinks,
+  validateRegistryUrl,
+} from "@/utils/registry-links";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 
 type Props = {
   open: boolean;
@@ -14,6 +24,20 @@ type ConnectedCalendars = {
   microsoft: boolean;
   apple: boolean;
 };
+
+const REGISTRY_CATEGORY_KEYS = new Set([
+  "birthdays",
+  "weddings",
+  "baby showers",
+]);
+
+const createRegistryEntry = (): RegistryFormEntry => ({
+  key: `registry-${Math.random().toString(36).slice(2, 10)}`,
+  label: "",
+  url: "",
+  error: null,
+  detectedLabel: null,
+});
 
 function toLocalInputValue(d: Date | null): string {
   if (!d) return "";
@@ -60,6 +84,7 @@ export default function EventCreateModal({
   onClose,
   defaultDate,
 }: Props) {
+  const router = useRouter();
   // Category color helpers
   const PALETTE = [
     "red",
@@ -88,6 +113,11 @@ export default function EventCreateModal({
     { code: "TH", label: "Thu" },
     { code: "FR", label: "Fri" },
     { code: "SA", label: "Sat" },
+  ] as const;
+  const REPEAT_FREQUENCIES = [
+    { key: "weekly", label: "Week" },
+    { key: "monthly", label: "Month" },
+    { key: "yearly", label: "Year" },
   ] as const;
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
@@ -126,6 +156,17 @@ export default function EventCreateModal({
   const [category, setCategory] = useState<string>("");
   const [customCategory, setCustomCategory] = useState<string>("");
   const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [registryLinks, setRegistryLinks] = useState<RegistryFormEntry[]>([]);
+  const [attachment, setAttachment] = useState<{
+    name: string;
+    type: string;
+    dataUrl: string;
+  } | null>(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
+    string | null
+  >(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const flyerInputRef = useRef<HTMLInputElement | null>(null);
 
   // Connected calendars state
   const [connectedCalendars, setConnectedCalendars] =
@@ -143,6 +184,103 @@ export default function EventCreateModal({
     microsoft: false,
     apple: false,
   });
+
+  const addRegistryLink = () => {
+    setRegistryLinks((prev) => {
+      if (prev.length >= MAX_REGISTRY_LINKS) return prev;
+      return [...prev, createRegistryEntry()];
+    });
+  };
+
+  const removeRegistryLink = (key: string) => {
+    setRegistryLinks((prev) => prev.filter((entry) => entry.key !== key));
+  };
+
+  const handleRegistryFieldChange = (
+    key: string,
+    field: "label" | "url",
+    value: string
+  ) => {
+    const trimmed = field === "label" ? value.slice(0, 60) : value;
+    setRegistryLinks((prev) =>
+      prev.map((entry) => {
+        if (entry.key !== key) return entry;
+        const next: RegistryFormEntry = {
+          ...entry,
+          [field]: trimmed,
+        };
+        if (field === "url") {
+          if (!trimmed.trim()) {
+            next.error = null;
+            next.detectedLabel = null;
+          } else {
+            const validation = validateRegistryUrl(trimmed);
+            next.error = validation.ok ? null : validation.error || null;
+            next.detectedLabel =
+              validation.ok && validation.brand
+                ? validation.brand.defaultLabel
+                : null;
+            if (
+              validation.ok &&
+              validation.brand &&
+              (!entry.label || !entry.label.trim())
+            ) {
+              next.label = validation.brand.defaultLabel;
+            }
+          }
+        }
+        if (field === "label" && !trimmed.trim() && entry.detectedLabel) {
+          next.label = "";
+        }
+        return next;
+      })
+    );
+  };
+  const handleFlyerChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setAttachment(null);
+      setAttachmentPreviewUrl(null);
+      setAttachmentError(null);
+      return;
+    }
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      setAttachmentError("Upload an image or PDF file");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachmentError("File must be 10 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+    setAttachmentError(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      let previewUrl: string | null = null;
+      if (isImage) {
+        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      }
+      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentPreviewUrl(previewUrl);
+    } catch {
+      setAttachment(null);
+      setAttachmentPreviewUrl(null);
+      setAttachmentError("Could not process the file");
+      event.target.value = "";
+    }
+  };
+
+  const clearFlyer = () => {
+    setAttachment(null);
+    setAttachmentPreviewUrl(null);
+    setAttachmentError(null);
+    if (flyerInputRef.current) flyerInputRef.current.value = "";
+  };
   const maybeAssignCategoryColor = (cat: string) => {
     if (!cat) return;
     try {
@@ -166,6 +304,9 @@ export default function EventCreateModal({
     } catch {}
   };
   const [repeat, setRepeat] = useState<boolean>(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<
+    "weekly" | "monthly" | "yearly"
+  >("weekly");
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
@@ -219,24 +360,43 @@ export default function EventCreateModal({
     setCustomCategory("");
     setShowCustomCategory(false);
     setRepeat(false);
+    setRepeatFrequency("weekly");
     setRepeatDays([]);
+    setRegistryLinks([]);
+    setAttachment(null);
+    setAttachmentPreviewUrl(null);
+    setAttachmentError(null);
+    if (flyerInputRef.current) flyerInputRef.current.value = "";
   }, [open, initialStart, initialEnd]);
   useEffect(() => {
-    if (category === "Birthdays" || category === "Weddings") return;
+    if (
+      category === "Birthdays" ||
+      category === "Weddings" ||
+      category === "Baby Showers"
+    )
+      return;
     if (rsvp) setRsvp("");
   }, [category]);
 
   // When enabling repeat with no selected days, preselect the chosen date's weekday
   useEffect(() => {
     try {
-      if (repeat && repeatDays.length === 0 && whenDate) {
+      if (
+        repeat &&
+        repeatFrequency === "weekly" &&
+        repeatDays.length === 0 &&
+        whenDate
+      ) {
         const d = new Date(`${whenDate}T00:00:00`);
         const code = DOW[d.getDay()].code;
         setRepeatDays([code]);
       }
+      if (repeatFrequency !== "weekly") {
+        setRepeatDays([]);
+      }
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repeat]);
+  }, [repeat, repeatFrequency]);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -248,6 +408,48 @@ export default function EventCreateModal({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+
+    const invalidRegistries = registryLinks.filter((entry) => {
+      const trimmedUrl = entry.url.trim();
+      if (!trimmedUrl) return false;
+      return !validateRegistryUrl(trimmedUrl).ok;
+    });
+    if (invalidRegistries.length > 0) {
+      setRegistryLinks((prev) =>
+        prev.map((entry) => {
+          const trimmedUrl = entry.url.trim();
+          if (!trimmedUrl) {
+            return { ...entry, error: null };
+          }
+          const validation = validateRegistryUrl(trimmedUrl);
+          return {
+            ...entry,
+            error: validation.ok
+              ? null
+              : validation.error || "Enter a valid https:// link",
+            detectedLabel:
+              validation.ok && validation.brand
+                ? validation.brand.defaultLabel
+                : entry.detectedLabel,
+          };
+        })
+      );
+      alert("Fix the highlighted registry links before saving.");
+      return;
+    }
+
+    const normalizedCategoryForSubmit = (category || "").toLowerCase();
+    const allowsRegistriesForSubmit =
+      REGISTRY_CATEGORY_KEYS.has(normalizedCategoryForSubmit);
+    const sanitizedRegistries = allowsRegistriesForSubmit
+      ? normalizeRegistryLinks(
+          registryLinks.map((entry) => ({
+            label: entry.label,
+            url: entry.url,
+          }))
+        )
+      : [];
+
     setSubmitting(true);
     try {
       let startISO: string | null = null;
@@ -295,6 +497,50 @@ export default function EventCreateModal({
       // Use custom category if it was entered but not saved yet
       const finalCategory = customCategory.trim() || category || undefined;
 
+      const deriveWeeklyDays = (): string[] => {
+        if (repeatDays.length) return repeatDays;
+        if (!whenDate) return [];
+        try {
+          const d = new Date(`${whenDate}T00:00:00`);
+          return [DOW[d.getDay()].code];
+        } catch {
+          return [];
+        }
+      };
+
+      const recurrenceSourceIso = startISO
+        ? startISO
+        : whenDate
+        ? new Date(`${whenDate}T00:00:00`).toISOString()
+        : null;
+
+      let recurrenceRule: string | null = null;
+      if (repeat) {
+        if (repeatFrequency === "weekly") {
+          const days = deriveWeeklyDays();
+          if (days.length)
+            recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`;
+          else recurrenceRule = "RRULE:FREQ=WEEKLY";
+        } else if (repeatFrequency === "monthly") {
+          if (recurrenceSourceIso) {
+            const d = new Date(recurrenceSourceIso);
+            const day = d.getUTCDate();
+            if (!Number.isNaN(day)) {
+              recurrenceRule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`;
+            }
+          }
+        } else if (repeatFrequency === "yearly") {
+          if (recurrenceSourceIso) {
+            const d = new Date(recurrenceSourceIso);
+            const month = d.getUTCMonth() + 1;
+            const day = d.getUTCDate();
+            if (!Number.isNaN(month) && !Number.isNaN(day)) {
+              recurrenceRule = `RRULE:FREQ=YEARLY;BYMONTH=${month};BYMONTHDAY=${day}`;
+            }
+          }
+        }
+      }
+
       const payload: any = {
         title: title || "Event",
         data: {
@@ -307,10 +553,21 @@ export default function EventCreateModal({
           rsvp: trimmedRsvp || undefined,
           allDay: fullDay || undefined,
           repeat: repeat || undefined,
-          recurrence:
-            repeat && repeatDays.length
-              ? `RRULE:FREQ=WEEKLY;BYDAY=${repeatDays.join(",")}`
+          repeatFrequency: repeat ? repeatFrequency : undefined,
+          recurrence: recurrenceRule || undefined,
+          thumbnail:
+            attachmentPreviewUrl && attachment?.type.startsWith("image/")
+              ? attachmentPreviewUrl
               : undefined,
+          attachment: attachment
+            ? {
+                name: attachment.name,
+                type: attachment.type,
+                dataUrl: attachment.dataUrl,
+              }
+            : undefined,
+          registries:
+            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
         },
       };
       const r = await fetch("/api/history", {
@@ -337,11 +594,16 @@ export default function EventCreateModal({
         venue: venue || undefined,
         location: location || undefined,
         description: normalizedDescription || undefined,
-        recurrence:
-          repeat && repeatDays.length
-            ? `RRULE:FREQ=WEEKLY;BYDAY=${repeatDays.join(",")}`
-            : null,
+        recurrence: recurrenceRule,
         reminders: [{ minutes: 30 }],
+        registries: sanitizedRegistries.length ? sanitizedRegistries : null,
+        attachment: attachment
+          ? {
+              name: attachment.name,
+              type: attachment.type,
+              dataUrl: attachment.dataUrl,
+            }
+          : null,
       };
 
       const calendarPromises: Promise<any>[] = [];
@@ -400,6 +662,9 @@ export default function EventCreateModal({
           );
         }
       } catch {}
+      if (id) {
+        router.push(`/event/${id}`);
+      }
       onClose();
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
@@ -411,9 +676,13 @@ export default function EventCreateModal({
 
   const trimmedRsvp = rsvp.trim();
   const normalizedCategory = (category || "").toLowerCase();
+  const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
+  const allowsRegistrySection = isRegistryCategory;
   const showRsvpField =
+    isRegistryCategory ||
     normalizedCategory.includes("birthday") ||
     normalizedCategory.includes("wedding") ||
+    normalizedCategory.includes("baby shower") ||
     Boolean(trimmedRsvp);
 
   if (!open) return null;
@@ -427,10 +696,10 @@ export default function EventCreateModal({
     >
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
+        className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border shadow-xl sm:mx-auto max-h-[calc(100vh-2rem)] flex flex-col min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
           <h3 className="text-base sm:text-lg font-semibold">New event</h3>
           <button
             type="button"
@@ -441,7 +710,10 @@ export default function EventCreateModal({
             ✕
           </button>
         </div>
-        <form className="mt-3 space-y-3" onSubmit={submit}>
+        <form
+          className="flex-1 px-4 sm:px-5 pb-4 sm:pb-5 pt-1 space-y-3 overflow-y-auto min-h-0"
+          onSubmit={submit}
+        >
           <div>
             <label className="block text-sm mb-1" htmlFor="evt-title">
               Title
@@ -572,6 +844,7 @@ export default function EventCreateModal({
                 <option value="">Select category</option>
                 <option value="Birthdays">Birthdays</option>
                 <option value="Weddings">Weddings</option>
+                <option value="Baby Showers">Baby Showers</option>
                 <option value="Appointments">Appointments</option>
                 <option value="Doctor Appointments">Doctor Appointments</option>
                 <option value="Sport Events">Sport Events</option>
@@ -625,6 +898,16 @@ export default function EventCreateModal({
               </div>
             )}
           </div>
+
+          {allowsRegistrySection && (
+            <RegistryLinksEditor
+              entries={registryLinks}
+              onAdd={addRegistryLink}
+              onRemove={removeRegistryLink}
+              onChange={handleRegistryFieldChange}
+              maxLinks={MAX_REGISTRY_LINKS}
+            />
+          )}
 
           {showRsvpField && (
             <div>
@@ -701,50 +984,95 @@ export default function EventCreateModal({
           )}
 
           <div className="flex items-center gap-3">
-            <span className="text-sm">Repeat</span>
-            <button
-              type="button"
-              onClick={() => setRepeat((v) => !v)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                repeat ? "bg-blue-600" : "bg-foreground/30"
-              }`}
-              aria-pressed={repeat}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  repeat ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+            <span className="text-sm">Repeats</span>
+            <label className="flex items-center cursor-pointer select-none text-foreground dark:text-white">
+              <span className="sr-only">Toggle repeats</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={repeat}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setRepeat(next);
+                    if (!next) {
+                      setRepeatDays([]);
+                    } else {
+                      setRepeatFrequency((prev) => (prev ? prev : "weekly"));
+                    }
+                  }}
+                />
+                <div className="block h-8 w-14 rounded-full bg-foreground/15 transition-colors duration-200 ease-out dark:bg-surface/60 peer-checked:bg-primary/60" />
+                <div className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-all duration-200 ease-out peer-checked:translate-x-full peer-checked:bg-primary peer-checked:shadow-md dark:bg-surface" />
+              </div>
+            </label>
           </div>
           {repeat && (
-            <div className="-mt-1">
-              <div className="text-xs text-foreground/70 mb-1">Repeat on</div>
-              <div className="grid grid-cols-7 gap-2">
-                {DOW.map((d) => {
-                  const active = repeatDays.includes(d.code);
-                  return (
-                    <button
-                      key={d.code}
-                      type="button"
-                      onClick={() => {
-                        setRepeatDays((prev) =>
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs text-foreground/70 mb-1">Every</div>
+                <div className="flex gap-2">
+                  {REPEAT_FREQUENCIES.map(({ key, label }) => {
+                    const active = repeatFrequency === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setRepeatFrequency(key)}
+                        className={`rounded-md border px-3 py-1 text-xs font-medium transition ${
                           active
-                            ? prev.filter((c) => c !== d.code)
-                            : [...prev, d.code]
-                        );
-                      }}
-                      className={`h-8 rounded-md border text-xs font-medium ${
-                        active
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-background text-foreground border-border"
-                      }`}
-                    >
-                      {d.label}
-                    </button>
-                  );
-                })}
+                            ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                            : "border-border bg-background text-foreground"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+              {repeatFrequency === "weekly" && (
+                <div>
+                  <div className="text-xs text-foreground/70 mb-1">
+                    Repeat on
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                    {DOW.map((d) => {
+                      const active = repeatDays.includes(d.code);
+                      return (
+                        <button
+                          key={d.code}
+                          type="button"
+                          onClick={() => {
+                            setRepeatDays((prev) =>
+                              active
+                                ? prev.filter((c) => c !== d.code)
+                                : [...prev, d.code]
+                            );
+                          }}
+                          className={`h-8 rounded-md border text-xs font-medium transition ${
+                            active
+                              ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                              : "bg-background text-foreground border-border"
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {repeatFrequency === "monthly" && (
+                <p className="text-xs text-foreground/60">
+                  Repeats each month on the event start date.
+                </p>
+              )}
+              {repeatFrequency === "yearly" && (
+                <p className="text-xs text-foreground/60">
+                  Repeats every year on the event start date.
+                </p>
+              )}
             </div>
           )}
           <div>
@@ -760,6 +1088,63 @@ export default function EventCreateModal({
               className="w-full px-3 py-2 rounded-md border border-border bg-background"
             />
           </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span>Upload a file (optional)</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => flyerInputRef.current?.click()}
+                  className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground/80 hover:bg-surface"
+                >
+                  {attachment ? "Replace file" : "Upload file"}
+                </button>
+                {attachment && (
+                  <button
+                    type="button"
+                    onClick={clearFlyer}
+                    className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            <input
+              id="evt-flyer"
+              ref={flyerInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleFlyerChange}
+              className="hidden"
+            />
+            {attachmentError && (
+              <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
+            )}
+            {attachment && (
+              <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
+                {attachmentPreviewUrl ? (
+                  <img
+                    src={attachmentPreviewUrl}
+                    alt={attachment.name}
+                    className="h-16 w-16 rounded border border-border object-cover"
+                  />
+                ) : (
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-foreground/70">
+                    📄
+                  </span>
+                )}
+                <span className="truncate" title={attachment.name}>
+                  {attachment.name}
+                </span>
+              </div>
+            )}
+            {!attachment && !attachmentError && (
+              <p className="mt-2 text-xs text-foreground/60">
+                Images or PDFs up to 10 MB.
+              </p>
+            )}
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
@@ -771,7 +1156,7 @@ export default function EventCreateModal({
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? "Saving…" : "Create event"}
             </button>

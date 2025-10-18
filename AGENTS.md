@@ -463,12 +463,16 @@ Payload used by the authenticated calendar agents.
   "location": "string",
   "description": "string",
   "recurrence": "RRULE:... | null",
-  "reminders": [{ "minutes": 30 }]
+  "reminders": [{ "minutes": 30 }],
+  "registries": [{ "label": "Amazon", "url": "https://www.amazon.com/..." }],
+  "attachment": { "name": "invite.pdf", "type": "application/pdf", "dataUrl": "data:application/pdf;base64,..." }
 }
 ```
 
 - Weekly practice schedules produced by the OCR agent pre-fill `recurrence` with `RRULE:FREQ=WEEKLY;BYDAY=…` so downstream agents can save repeating events without additional parsing.
 - `venue` allows clients to surface a human-friendly place name separately from the street address; calendar agents combine `venue` + `location` while deduplicating repeated venue segments inside the address field automatically.
+- `registries` holds up to three shareable retailer links (`amazon.com`, `target.com`, `walmart.com`, `babylist.com`, `myregistry.com`). Each entry includes a `label` for display and the HTTPS URL guests can open in a new tab. The UI only surfaces registry inputs/cards when the event category is **Birthdays**, **Weddings**, or **Baby Showers**.
+- `attachment` stores an optional flyer/document upload (images or PDFs up to 10 MB). Event details render a preview for images and a download link for other file types.
 - Google mapping: `dateTime/timeZone` or all-day `date` fields; multiple reminder overrides.
 - Microsoft mapping: Graph `subject/body/location/start/end` (UTC), optional `isAllDay`, single `reminderMinutesBeforeStart`.
 
@@ -515,7 +519,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
-- 2025-10-18: Added optional `venue` to NormalizedEvent, updated calendar and event UIs to surface venues separately from addresses, and deduplicated venue names when composing Google/Microsoft/ICS locations. Same-day time ranges now display as a single "start – end" string.
+- 2025-10-18: Added optional `registries` (Amazon/Target/Walmart/Babylist/MyRegistry links), file `attachment`, and `venue` to NormalizedEvent. Event create/edit flows capture up to three shareable registries for **Birthdays**, **Weddings**, and **Baby Showers**, support image/PDF uploads for all categories, the event detail page renders branded registry cards plus attachment downloads, and calendar mappers still deduplicate venues while keeping same-day ranges formatted as "start – end". Added Baby Showers as a top-level category with registry + RSVP support and sidebar icon.
 - 2025-10-10: Added admin email campaigns system with Resend integration. New endpoints: `POST /api/admin/campaigns/send`, `GET /api/admin/campaigns`. New database table: `email_campaigns`. Admin UI at `/admin/campaigns` for composing and sending bulk marketing emails to users filtered by subscription tier.
 - 2025-10-05: Updated yearly Stripe pricing to $9.99 (`prod_T93Df9XcDp26Nm`).
 - 2025-09-29: Updated Stripe pricing to $0.99/month (`prod_T93CX7Yaqefp2B`) and $19.99/year (`prod_T93Df9XcDp26Nm`); portal button only shows for active paid plans.

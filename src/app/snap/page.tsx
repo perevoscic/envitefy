@@ -685,6 +685,8 @@ export default function SnapPage() {
             ? "Birthdays"
             : /wedding|bridal|ceremony|reception/.test(s)
             ? "Weddings"
+            : /\b(baby[-\s]?shower|sprinkle)\b/.test(s)
+            ? "Baby Showers"
             : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
             ? "Doctor Appointments"
             : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
@@ -2102,8 +2104,7 @@ export default function SnapPage() {
       {showWelcome && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
-            data-illustration-floating="true"
+            className="absolute inset-0 landing-dark-gradient landing-dark-gradient--floating bg-background/70 backdrop-blur-sm"
             onClick={() => setShowWelcome(false)}
           />
           <div
@@ -2163,8 +2164,7 @@ export default function SnapPage() {
       {event && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
-            data-illustration-floating="true"
+            className="absolute inset-0 landing-dark-gradient landing-dark-gradient--floating bg-background/70 backdrop-blur-sm"
             onClick={() => setEvent(null)}
           />
           <div
@@ -2312,6 +2312,7 @@ export default function SnapPage() {
                       <option value="">All</option>
                       <option value="Birthdays">Birthdays</option>
                       <option value="Weddings">Weddings</option>
+                      <option value="Baby Showers">Baby Showers</option>
                       <option value="Doctor Appointments">
                         Dr Appointments
                       </option>

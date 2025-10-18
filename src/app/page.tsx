@@ -292,11 +292,15 @@ export default function Home() {
           const hasWedding = /\b(wedding|bridal|ceremony|reception)\b/.test(s);
           const hasBirthday =
             /\b(birthday\s*party|b-?day|turns\s+\d+|birthday)\b/.test(s);
+          const hasBabyShower =
+            /\b(baby[-\s]?shower|sprinkle)\b/.test(s);
           const guessed =
-            hasWedding && !hasBirthday
+            hasWedding && !hasBirthday && !hasBabyShower
               ? "Weddings"
-              : hasBirthday && !hasWedding
+              : hasBirthday && !hasWedding && !hasBabyShower
               ? "Birthdays"
+              : hasBabyShower && !hasWedding && !hasBirthday
+              ? "Baby Showers"
               : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
               ? "Doctor Appointments"
               : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
@@ -400,6 +404,8 @@ export default function Home() {
             ? "Birthdays"
             : /wedding|bridal|ceremony|reception/.test(s)
             ? "Weddings"
+            : /\b(baby[-\s]?shower|sprinkle)\b/.test(s)
+            ? "Baby Showers"
             : /doctor|dentist|appointment|check[- ]?up|clinic/.test(s)
             ? "Doctor Appointments"
             : /game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(
@@ -1302,8 +1308,7 @@ export default function Home() {
       {showWelcome && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
-            data-illustration-floating="true"
+            className="absolute inset-0 landing-dark-gradient landing-dark-gradient--floating bg-background/70 backdrop-blur-sm"
             onClick={() => setShowWelcome(false)}
           />
           <div
@@ -1363,8 +1368,7 @@ export default function Home() {
       {event && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
-            data-illustration-floating="true"
+            className="absolute inset-0 landing-dark-gradient landing-dark-gradient--floating bg-background/70 backdrop-blur-sm"
             onClick={() => setEvent(null)}
           />
           <div
@@ -1464,6 +1468,7 @@ export default function Home() {
                       <option value="">All</option>
                       <option value="Birthdays">Birthdays</option>
                       <option value="Weddings">Weddings</option>
+                      <option value="Baby Showers">Baby Showers</option>
                       <option value="Doctor Appointments">
                         Dr Appointments
                       </option>
