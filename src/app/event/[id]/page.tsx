@@ -373,30 +373,12 @@ export default async function EventPage({
                 {data?.location || "—"}
               </dd>
             </div>
-            {(rsvpName || rsvpPhone) && (
-              <div className="sm:col-start-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  RSVP
-                </dt>
-                <dd className="mt-1">
-                  {rsvpName && (
-                    <p className="text-sm font-medium">{rsvpName}</p>
-                  )}
-                  <EventRsvpPrompt
-                    rsvpName={rsvpName}
-                    rsvpPhone={rsvpPhone}
-                    eventTitle={title}
-                    shareUrl={shareUrl}
-                  />
-                </dd>
-              </div>
-            )}{" "}
             {calendarLinks && (
-              <div className="sm:col-start-2">
+              <div className="sm:col-start-1">
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                   Add to calendar
                 </dt>
-                <dd className="mt-1  space-y-2">
+                <dd className="mt-1  space-y-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <a
                       href={calendarLinks.appleInline}
@@ -427,6 +409,24 @@ export default async function EventPage({
                       <CalendarIconOutlook className="h-5 w-5" />
                     </a>
                   </div>
+                </dd>
+              </div>
+            )}
+            {(rsvpName || rsvpPhone) && (
+              <div className="sm:col-start-2">
+                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  RSVP
+                </dt>
+                <dd className="mt-1 space-y-2">
+                  {rsvpName && (
+                    <p className="text-sm font-medium">{rsvpName}</p>
+                  )}
+                  <EventRsvpPrompt
+                    rsvpName={rsvpName}
+                    rsvpPhone={rsvpPhone}
+                    eventTitle={title}
+                    shareUrl={shareUrl}
+                  />
                 </dd>
               </div>
             )}
@@ -493,7 +493,7 @@ export default async function EventPage({
                       className="flex items-center justify-between text-sm"
                     >
                       <span className="truncate">
-                        {r.name} —{" "}
+                        {r.name} —{"\u00a0"}
                         {r.status === "accepted" ? "Accepted" : "Pending"}
                       </span>
                       <form
@@ -602,7 +602,7 @@ export default async function EventPage({
             <ul className="mt-2 space-y-1">
               <li className="flex items-center justify-between text-sm">
                 <span className="truncate">
-                  {ownerDisplayName} —{" "}
+                  {ownerDisplayName} —{"\u00a0"}
                   {recipientPending ? "Pending" : "Accepted"}
                 </span>
                 {recipientPending && (
