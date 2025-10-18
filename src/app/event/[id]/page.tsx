@@ -7,6 +7,7 @@ import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import LocationLink from "@/components/LocationLink";
 import ReadOnlyBanner from "./ReadOnlyBanner";
 import ReadOnlyEventLogo from "@/components/ReadOnlyEventLogo";
+import { combineVenueAndLocation } from "@/lib/mappers";
 import {
   listSharesByOwnerForEvents,
   isEventSharedWithUser,
@@ -58,6 +59,89 @@ const cleanRsvpContactLabel = (raw: string): string => {
   working = working.replace(/[:;,.-]+$/, "").trim();
   return working;
 };
+
+function formatEventRangeDisplay(
+  startInput: string | null | undefined,
+  endInput: string | null | undefined,
+  options?: { timeZone?: string | null; allDay?: boolean }
+): string | null {
+  const { timeZone, allDay } = options || {};
+  if (!startInput) return null;
+  try {
+    const start = new Date(startInput);
+    if (Number.isNaN(start.getTime())) throw new Error("invalid start");
+    const end = endInput ? new Date(endInput) : null;
+    const sameDay =
+      !!end &&
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate();
+    const tz = timeZone || undefined;
+    if (allDay) {
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: tz,
+      });
+      const label =
+        end && !sameDay
+          ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+          : dateFmt.format(start);
+      return `${label} (all day)`;
+    }
+    const dateFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: tz,
+    });
+    const timeFmt = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+    if (end) {
+      if (sameDay) {
+        return `${dateFmt.format(start)}, ${timeFmt.format(
+          start
+        )} – ${timeFmt.format(end)}`;
+      }
+      const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: tz,
+      });
+      return `${dateTimeFmt.format(start)} – ${dateTimeFmt.format(end)}`;
+    }
+    const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+    return dateTimeFmt.format(start);
+  } catch {
+    const startStr = (startInput || "").toString();
+    if (!endInput) return startStr || null;
+    const startPrefix = startStr.split(",")[0]?.trim?.() ?? startStr;
+    const endStr = (endInput || "").toString();
+    if (startPrefix && endStr.startsWith(startPrefix)) {
+      const suffix = endStr.slice(startPrefix.length).replace(/^\s*,\s*/g, "");
+      return suffix ? `${startStr} – ${suffix}` : startStr;
+    }
+    return endStr ? `${startStr} – ${endStr}` : startStr;
+  }
+}
 
 export default async function EventPage({
   params,
@@ -149,6 +233,19 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+  const startForDisplay =
+    (typeof data?.startISO === "string" && data.startISO) ||
+    (typeof data?.start === "string" && data.start) ||
+    null;
+  const endForDisplay =
+    (typeof data?.endISO === "string" && data.endISO) ||
+    (typeof data?.end === "string" && data.end) ||
+    null;
+  const whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
+    timeZone:
+      (typeof data?.timezone === "string" && data.timezone) || undefined,
+    allDay: Boolean(data?.allDay),
+  });
   const slugify = (t: string) =>
     (t || "event")
       .toLowerCase()
@@ -226,7 +323,7 @@ export default async function EventPage({
   })();
 
   // Compute a right padding to avoid text flowing under the thumbnail overlay
-  const detailsExtraPaddingRight = data?.thumbnail ? " pr-32 sm:pr-40" : "";
+  const detailsExtraPaddingRight = data?.thumbnail ? " pr-40 sm:pr-48" : "";
 
   const calendarStartIso = normalizeIso(
     (data?.startISO as string | undefined) ||
@@ -334,33 +431,59 @@ export default async function EventPage({
                 <dd className="mt-1 text-base font-semibold">All day event</dd>
               </div>
             )}
-            {data?.start && (
-              <div>
+            {whenLabel ? (
+              <div className="sm:col-span-2">
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  Start
+                  When
                 </dt>
                 <dd className="mt-1 break-all text-base font-semibold">
-                  {data.start}
+                  {whenLabel}
                 </dd>
               </div>
+            ) : (
+              <>
+                {data?.start && (
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      Start
+                    </dt>
+                    <dd className="mt-1 break-all text-base font-semibold">
+                      {data.start}
+                    </dd>
+                  </div>
+                )}
+                {data?.end && (
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      End
+                    </dt>
+                    <dd className="mt-1 break-all text-base font-semibold">
+                      {data.end}
+                    </dd>
+                  </div>
+                )}
+              </>
             )}
-            {data?.end && (
+            {data?.venue && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  End
+                  Venue
                 </dt>
-                <dd className="mt-1 break-all text-base font-semibold">
-                  {data.end}
-                </dd>
+                <dd className="mt-1 text-base font-semibold">{data.venue}</dd>
               </div>
             )}
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                Location
+                {data?.venue ? "Address" : "Location"}
               </dt>
               <dd className="mt-1">
                 <LocationLink
                   location={data?.location}
+                  query={combineVenueAndLocation(
+                    (typeof data?.venue === "string" && data.venue) || null,
+                    (typeof data?.location === "string" && data.location) ||
+                      null
+                  )}
                   className="text-base font-semibold"
                 />
               </dd>

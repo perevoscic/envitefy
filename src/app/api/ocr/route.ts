@@ -13,6 +13,12 @@ export const dynamic = "force-dynamic";
 /** Give the route more time for large images + Vision */
 export const maxDuration = 60;
 
+const DEFAULT_OCR_MODEL = "gpt-4o";
+
+function resolveOcrModel(): string {
+  return process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || DEFAULT_OCR_MODEL;
+}
+
 /* ------------------------------ helpers ------------------------------ */
 
 // Basic low-confidence heuristic for titles
@@ -38,7 +44,7 @@ async function llmExtractEvent(raw: string): Promise<{
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   const system = "You extract calendar events from noisy OCR text. For medical/dental appointments, use ONLY clinical factual language - NEVER invitation phrases like 'Please join us', 'You're invited'. Return strict JSON only.";
   const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string), rsvp (string or null).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- CRITICAL: Extract RSVP contact info into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: contact@example.com'. Return null if no RSVP info found.\n- Description should NOT include RSVP contact info (it goes in the separate rsvp field).\n- For MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit').\n  * Description: Read the image and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a MEDICAL/DENTAL appointment, NOT a social event. NEVER EVER write invitation phrases like 'Please join us for', 'You're invited to', 'Join us', 'please', 'welcome'. These are medical appointments, not parties. WRONG: 'Please join us for a Dental Cleaning on...'. CORRECT: 'Dental cleaning appointment.' or 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on what's visible, each fact on its own line. Be strictly factual and clinical.\n- Respond with ONLY JSON.`;
 
@@ -85,7 +91,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     return null;
   }
   console.log(">>> OpenAI API key found:", apiKey ? `${apiKey.substring(0, 10)}...` : "missing");
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   console.log(">>> Using OpenAI model:", model);
   const base64 = imageBytes.toString("base64");
   const system =
@@ -104,7 +110,9 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Before finalizing, double-check that the chosen time matches the flyer; if uncertain, leave the time off (set start to the date at 00:00).",
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
-      "- When venue descriptors (e.g., 'Ninja Warrior Course', 'STEM Lab', 'Birthday Pavilion') appear near the venue name, keep them in the address (comma-separated) and surface them in the description so guests know the specific area inside the venue.",
+      "- ALWAYS separate the physical venue from activities or course names. Build the address from the block that includes the venue label or street/city/state (e.g., 'US Gold Gym, 12432 Emerald Coast Pkwy, Miramar Beach, FL 32550').",
+      "- If activity phrases like 'Ninja Warrior Course', 'STEM Lab', or 'Birthday Pavilion' appear outside the address block, keep them in the title or description only. Do NOT place those activity names in the address unless they literally appear inside the labeled address/venue line.",
+      "- When both a venue name and an address line are shown, include the venue first, followed by the street/city/state. Avoid duplicating the activity wording in the venue portion.",
       "- Description must mention standout features or activity areas printed on the flyer (e.g., 'Ninja Warrior Course', 'Splash Pad', 'STEM Lab') when they exist, in addition to the title.",
       "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
       "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
@@ -182,7 +190,7 @@ async function llmExtractGymnasticsScheduleFromImage(
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   const base64 = imageBytes.toString("base64");
   const system =
     "You read gymnastics season schedule posters and output clean JSON with a list of meets as calendar events. Use visual cues (colors, legends, 'VS' vs 'AT') to determine home vs away. Do not hallucinate dates.";
@@ -281,7 +289,7 @@ async function llmExtractPracticeScheduleFromImage(
 ): Promise<PracticeScheduleLLMResponse | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o";
+  const model = resolveOcrModel();
   const base64 = imageBytes.toString("base64");
   const system =
     "You read team practice schedules laid out as tables (groups vs. days) and return clean JSON describing weekly recurring sessions.";

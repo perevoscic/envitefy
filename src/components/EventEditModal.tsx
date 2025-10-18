@@ -20,6 +20,7 @@ export default function EventEditModal({
     title: eventTitle,
     start: eventData?.start || "",
     end: eventData?.end || "",
+    venue: eventData?.venue || "",
     location: eventData?.location || "",
     description: eventData?.description || "",
     category: eventData?.category || "",
@@ -58,6 +59,8 @@ export default function EventEditModal({
       if (formData.start !== eventData?.start)
         dataUpdate.start = formData.start;
       if (formData.end !== eventData?.end) dataUpdate.end = formData.end;
+      if (formData.venue !== eventData?.venue)
+        dataUpdate.venue = formData.venue;
       if (formData.location !== eventData?.location)
         dataUpdate.location = formData.location;
       if (formData.description !== eventData?.description)
@@ -231,6 +234,23 @@ export default function EventEditModal({
 
                 <div>
                   <label
+                    htmlFor="venue"
+                    className="block text-sm font-medium text-foreground/80 mb-1"
+                  >
+                    Venue
+                  </label>
+                  <input
+                    type="text"
+                    id="venue"
+                    name="venue"
+                    value={formData.venue}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label
                     htmlFor="location"
                     className="block text-sm font-medium text-foreground/80 mb-1"
                   >
@@ -341,5 +361,3 @@ export default function EventEditModal({
     </>
   );
 }
-
-

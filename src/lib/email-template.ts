@@ -63,6 +63,11 @@ export function createEmailTemplate(params: {
       title: "YouTube",
       src: `${baseUrl}/email/social-youtube.png`,
     },
+    {
+      href: "https://www.tiktok.com/@snapemydate",
+      title: "TikTok",
+      src: `${baseUrl}/email/social-tiktok.png`,
+    },
   ];
   const socialIconsRow = socialIcons
     .map(

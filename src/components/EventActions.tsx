@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
+import { combineVenueAndLocation } from "@/lib/mappers";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { useSession } from "next-auth/react";
 import EventShareThankYouModal from "./EventShareThankYouModal";
@@ -21,10 +22,12 @@ type EventFields = {
   title: string;
   start: string | null;
   end: string | null;
-  location: string;
-  description: string;
-  timezone: string;
+  location?: string | null;
+  venue?: string | null;
+  description?: string | null;
+  timezone?: string | null;
   reminders?: { minutes: number }[] | null;
+  rsvp?: string | null;
 };
 
 export default function EventActions({
@@ -53,6 +56,10 @@ export default function EventActions({
     }
   }, [shareUrl]);
 
+  const combinedLocation = useMemo(() => {
+    return combineVenueAndLocation(event?.venue ?? null, event?.location ?? null);
+  }, [event?.venue, event?.location]);
+
   const safeEvent = useMemo(() => {
     if (!event) return null;
     const start = event.start || null;
@@ -80,8 +87,9 @@ export default function EventActions({
       ...event,
       start,
       end: computedEnd,
+      location: combinedLocation,
     } as EventFields;
-  }, [event]);
+  }, [combinedLocation, event]);
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
@@ -123,10 +131,10 @@ export default function EventActions({
   };
 
   const rsvpPhone = useMemo(() => {
-    const rsvp = (event as any)?.rsvp || "";
-    const text = `${rsvp} ${event?.description || ""} ${event?.location || ""}`;
+    const rsvp = event?.rsvp || "";
+    const text = `${rsvp} ${event?.description || ""} ${combinedLocation || ""}`;
     return extractFirstPhoneNumber(text);
-  }, [event]);
+  }, [combinedLocation, event]);
 
   // Legacy RSVP logic used a phone lookup helper. Keep a stub so any stale bundles
   // referencing `findPhone` during hot reloads keep working without throwing.
@@ -219,11 +227,12 @@ export default function EventActions({
       safeEvent?.end || null,
       event?.timezone
     );
+    const locationLine = combinedLocation;
     const parts = [
       `${title}`,
       "",
       whenLine ? `Date: ${whenLine}` : undefined,
-      event?.location ? `Location: ${event.location}` : undefined,
+      locationLine ? `Location: ${locationLine}` : undefined,
       event?.description ? "" : undefined,
       event?.description ? `${event.description}` : undefined,
       "",
@@ -270,12 +279,12 @@ export default function EventActions({
   };
 
   const mapsHref = useMemo(() => {
-    const q = (safeEvent?.location || "").trim();
+    const q = (safeEvent?.location || combinedLocation || "").trim();
     if (!q) return null;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
       q
     )}`;
-  }, [safeEvent?.location]);
+  }, [combinedLocation, safeEvent?.location]);
 
   const onShareLink = async () => {
     try {

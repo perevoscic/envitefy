@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type LocationLinkProps = {
   location?: string | null;
+  query?: string | null;
   className?: string;
 };
 
@@ -15,36 +16,43 @@ const buildAppleHref = (location: string) =>
 
 export default function LocationLink({
   location,
+  query,
   className,
 }: LocationLinkProps) {
-  const trimmed = useMemo(() => location?.trim() ?? "", [location]);
+  const displayText = useMemo(() => (location ?? "").trim(), [location]);
+  const resolvedQuery = useMemo(() => {
+    const fromQuery = (query ?? "").toString().trim();
+    if (fromQuery) return fromQuery;
+    return displayText;
+  }, [displayText, query]);
   const [href, setHref] = useState<string | null>(() =>
-    trimmed ? buildGoogleHref(trimmed) : null
+    resolvedQuery ? buildGoogleHref(resolvedQuery) : null
   );
 
   useEffect(() => {
-    if (!trimmed) {
-      setHref(null);
+    if (!resolvedQuery) {
+      setHref((prev) => (prev === null ? prev : null));
       return;
     }
-    if (typeof window === "undefined") {
-      setHref(buildGoogleHref(trimmed));
-      return;
-    }
-    const ua = window.navigator.userAgent || "";
-    if (/iP(hone|ad|od)|Macintosh/.test(ua) && !/Android/.test(ua)) {
-      setHref(buildAppleHref(trimmed));
-      return;
-    }
-    setHref(buildGoogleHref(trimmed));
-  }, [trimmed]);
+    const nextHref =
+      typeof window === "undefined"
+        ? buildGoogleHref(resolvedQuery)
+        : (() => {
+            const ua = window.navigator.userAgent || "";
+            if (/iP(hone|ad|od)|Macintosh/.test(ua) && !/Android/.test(ua)) {
+              return buildAppleHref(resolvedQuery);
+            }
+            return buildGoogleHref(resolvedQuery);
+          })();
+    setHref((prev) => (prev === nextHref ? prev : nextHref));
+  }, [resolvedQuery]);
 
-  if (!trimmed) {
+  if (!displayText) {
     return <span className={className}>—</span>;
   }
 
   if (!href) {
-    return <span className={className}>{trimmed}</span>;
+    return <span className={className}>{displayText}</span>;
   }
 
   const combinedClassName = [className, "underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"]
@@ -53,8 +61,7 @@ export default function LocationLink({
 
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={combinedClassName}>
-      {trimmed}
+      {displayText}
     </a>
   );
 }
-

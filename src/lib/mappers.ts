@@ -11,19 +11,32 @@ export type NormalizedEvent = {
   reminders?: { minutes: number }[] | null;
 };
 
-function combineVenueAndLocation(
+const splitParts = (value?: string | null): string[] =>
+  (value || "")
+    .split(/[,，\n]/)
+    .map((part) => part.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+export function combineVenueAndLocation(
   venue?: string | null,
   location?: string | null
 ): string {
-  const pieces = [venue, location]
-    .map((part) => (part || "").trim())
-    .filter(Boolean);
-  if (!pieces.length) return "";
+  const venueParts = splitParts(venue);
+  let locationParts = splitParts(location);
+  if (venueParts.length) {
+    const venueSet = new Set(venueParts.map((part) => part.toLowerCase()));
+    locationParts = locationParts.filter((part) => {
+      const lower = part.toLowerCase();
+      return !venueSet.has(lower);
+    });
+  }
+  const allParts = [...venueParts, ...locationParts];
+  if (!allParts.length) return "";
   const deduped: string[] = [];
-  for (const piece of pieces) {
-    const lower = piece.toLowerCase();
+  for (const part of allParts) {
+    const lower = part.toLowerCase();
     if (deduped.some((existing) => existing.toLowerCase() === lower)) continue;
-    deduped.push(piece);
+    deduped.push(part);
   }
   return deduped.join(", ");
 }
