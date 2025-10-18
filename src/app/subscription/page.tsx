@@ -684,8 +684,7 @@ export default function SubscriptionPage() {
       {showWelcome && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
-            data-illustration-floating="true"
+            className="absolute inset-0 landing-dark-gradient landing-dark-gradient--floating bg-background/70 backdrop-blur-sm"
             onClick={() => setShowWelcome(false)}
           />
           <div

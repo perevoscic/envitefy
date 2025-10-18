@@ -29,6 +29,10 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { getEventTheme } from "@/lib/event-theme";
+import {
+  getRegistryBrandByUrl,
+  normalizeRegistryLinks,
+} from "@/utils/registry-links";
 import type { CSSProperties } from "react";
 
 export const dynamic = "force-dynamic";
@@ -380,6 +384,63 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+  const attachmentInfo = (() => {
+    const raw = data?.attachment;
+    if (
+      raw &&
+      typeof raw === "object" &&
+      typeof raw.dataUrl === "string"
+    ) {
+      return {
+        name:
+          typeof raw.name === "string" && raw.name.trim()
+            ? raw.name
+            : "Attachment",
+        type:
+          typeof raw.type === "string" && raw.type.trim()
+            ? raw.type
+            : "application/octet-stream",
+        dataUrl: raw.dataUrl as string,
+      };
+    }
+    return null;
+  })();
+  const categoryRaw = typeof data?.category === "string" ? data.category : "";
+  const categoryNormalized = categoryRaw.toLowerCase();
+  const registriesAllowed =
+    categoryNormalized === "birthdays" || categoryNormalized === "weddings";
+  const registryLinksRaw = Array.isArray(data?.registries)
+    ? (data.registries as any[])
+    : [];
+  const registryLinks = registriesAllowed
+    ? normalizeRegistryLinks(
+        registryLinksRaw.map((item: any) => ({
+          label: typeof item?.label === "string" ? item.label : "",
+          url: typeof item?.url === "string" ? item.url : "",
+        }))
+      )
+    : [];
+  const registryCards = registryLinks.map((link) => {
+    const brand = getRegistryBrandByUrl(link.url);
+    let host = "";
+    try {
+      host = new URL(link.url).hostname.replace(/^www\./, "");
+    } catch {
+      host = link.url;
+    }
+    const badgeText = (brand?.defaultLabel || link.label || host || "R")
+      .trim()
+      .slice(0, 1)
+      .toUpperCase();
+    return {
+      ...link,
+      host,
+      badgeText,
+      accentColor: brand?.accentColor || "#334155",
+      textColor: brand?.foregroundColor || "#FFFFFF",
+      brandLabel: brand?.defaultLabel || null,
+    };
+  });
   const startForDisplay =
     (typeof data?.startISO === "string" && data.startISO) ||
     (typeof data?.start === "string" && data.start) ||
@@ -722,12 +783,83 @@ export default async function EventPage({
               </div>
             )}
           </dl>
+          {attachmentInfo && false && (
+            <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                Attachment
+              </p>
+              <a
+                href={attachmentInfo.dataUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={attachmentInfo.name}
+                className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:border-foreground/50 hover:bg-surface/80"
+              >
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-xs">
+                  {attachmentInfo.type.startsWith("image/") ? "🖼" : "📄"}
+                </span>
+                <span className="truncate" title={attachmentInfo.name}>
+                  {attachmentInfo.name}
+                </span>
+              </a>
+            </div>
+          )}
           {data?.description && (
             <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 Description
               </p>
               <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
+            </div>
+          )}
+          {registriesAllowed && registryCards.length > 0 && (
+            <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                Registries
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {registryCards.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-foreground/40 hover:bg-surface/80"
+                  >
+                    <span
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                      style={{ backgroundColor: link.accentColor, color: link.textColor }}
+                      aria-hidden="true"
+                    >
+                      {link.badgeText}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-foreground">
+                        {link.label}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-90"
+                          aria-hidden="true"
+                        >
+                          <path d="M8.5 5.5L12.5 10l-4 4.5" />
+                        </svg>
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                        {link.host}
+                      </span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-foreground/60">
+                These links open in a new tab. Registries must stay public or shareable so guests can view them.
+              </p>
             </div>
           )}
 
@@ -1223,3 +1355,4 @@ function CalendarIconApple({ className }: { className?: string }) {
     </svg>
   );
 }
+

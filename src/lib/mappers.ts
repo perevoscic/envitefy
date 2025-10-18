@@ -9,6 +9,8 @@ export type NormalizedEvent = {
   description?: string;
   recurrence?: string | null; // RRULE:...
   reminders?: { minutes: number }[] | null;
+  registries?: { label: string; url: string }[] | null;
+  attachment?: { name: string; type: string; dataUrl: string } | null;
 };
 
 const splitParts = (value?: string | null): string[] =>
