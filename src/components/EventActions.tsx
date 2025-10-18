@@ -431,7 +431,7 @@ export default function EventActions({
           >
             <div className="flex items-center justify-between">
               <h3 className="text-base sm:text-lg font-semibold">
-                Invite to this event
+                Invite guests to this event
               </h3>
               <button
                 type="button"
@@ -445,7 +445,7 @@ export default function EventActions({
               </button>
             </div>
             <p className="mt-2 text-sm text-foreground/70">
-              Enter the email of an existing user to invite them to this event.
+              Enter an email address to invite someone to this event.
             </p>
             <form
               className="mt-3"

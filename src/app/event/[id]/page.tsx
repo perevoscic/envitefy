@@ -4,7 +4,9 @@ import ThumbnailModal from "@/components/ThumbnailModal";
 import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
+import LocationLink from "@/components/LocationLink";
 import ReadOnlyBanner from "./ReadOnlyBanner";
+import ReadOnlyEventLogo from "@/components/ReadOnlyEventLogo";
 import {
   listSharesByOwnerForEvents,
   isEventSharedWithUser,
@@ -264,20 +266,7 @@ export default async function EventPage({
 
   return (
     <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
-      {isReadOnly && (
-        <div className="mb-6 flex justify-center">
-          <img
-            src="/SnapMyDateSnapItSaveitDone_Black_vertical.png"
-            alt="Snap My Date tag line"
-            className="block h-24 w-auto dark:hidden"
-          />
-          <img
-            src="/SnapMyDateSnapItSaveitDone_White_vertical.png"
-            alt="Snap My Date tag line"
-            className="hidden h-24 w-auto dark:block"
-          />
-        </div>
-      )}
+      {isReadOnly && <ReadOnlyEventLogo />}
       <div
         className="event-theme-scope space-y-6"
         style={themeStyleVars as CSSProperties}
@@ -369,8 +358,11 @@ export default async function EventPage({
               <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 Location
               </dt>
-              <dd className="mt-1 text-base font-semibold">
-                {data?.location || "—"}
+              <dd className="mt-1">
+                <LocationLink
+                  location={data?.location}
+                  className="text-base font-semibold"
+                />
               </dd>
             </div>
             {calendarLinks && (
@@ -417,10 +409,7 @@ export default async function EventPage({
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                   RSVP
                 </dt>
-                <dd className="mt-1 space-y-2">
-                  {rsvpName && (
-                    <p className="text-sm font-medium">{rsvpName}</p>
-                  )}
+                <dd className="mt-1">
                   <EventRsvpPrompt
                     rsvpName={rsvpName}
                     rsvpPhone={rsvpPhone}
