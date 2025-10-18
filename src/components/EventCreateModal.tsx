@@ -120,6 +120,7 @@ export default function EventCreateModal({
   );
   const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
   const [location, setLocation] = useState("");
+  const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
   const [rsvp, setRsvp] = useState("");
   const [category, setCategory] = useState<string>("");
@@ -211,6 +212,7 @@ export default function EventCreateModal({
     setEndDate(toLocalDateValue(new Date(initialEnd)));
     setEndTime(toLocalTimeValue(initialEnd));
     setLocation("");
+    setVenue("");
     setDescription("");
     setRsvp("");
     setCategory("");
@@ -299,6 +301,7 @@ export default function EventCreateModal({
           category: finalCategory,
           startISO,
           endISO,
+          venue: venue || undefined,
           location: location || undefined,
           description: description || undefined,
           rsvp: trimmedRsvp || undefined,
@@ -331,6 +334,7 @@ export default function EventCreateModal({
         end: endISO || new Date().toISOString(),
         allDay: fullDay,
         timezone,
+        venue: venue || undefined,
         location: location || undefined,
         description: normalizedDescription || undefined,
         recurrence:
@@ -520,8 +524,21 @@ export default function EventCreateModal({
             </div>
           </div>
           <div>
+            <label className="block text-sm mb-1" htmlFor="evt-venue">
+              Venue
+            </label>
+            <input
+              id="evt-venue"
+              type="text"
+              value={venue}
+              onChange={(e) => setVenue(e.target.value)}
+              className="w-full px-3 py-2 rounded-md border border-border bg-background"
+              placeholder="Venue name"
+            />
+          </div>
+          <div>
             <label className="block text-sm mb-1" htmlFor="evt-location">
-              Location
+              Address
             </label>
             <input
               id="evt-location"
@@ -764,7 +781,3 @@ export default function EventCreateModal({
     </div>
   );
 }
-
-
-
-

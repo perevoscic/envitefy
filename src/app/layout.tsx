@@ -119,9 +119,11 @@ export default async function RootLayout({
     }
   }
 
-  const initialThemeKey: ThemeKey = initialOverride?.themeKey ?? scheduledThemeKey;
+  const initialThemeKey: ThemeKey =
+    initialOverride?.themeKey ?? scheduledThemeKey;
   const overrideVariant = initialOverride?.variant;
-  const initialThemeVariant: ThemeVariant | undefined = overrideVariant ?? cookieVariant;
+  const initialThemeVariant: ThemeVariant | undefined =
+    overrideVariant ?? cookieVariant;
   const htmlVariant: ThemeVariant = overrideVariant ?? cookieVariant ?? "light";
   const cssVariables = resolveThemeCssVariables(initialThemeKey, htmlVariant);
   const htmlStyle = Object.fromEntries(
@@ -181,7 +183,10 @@ export default async function RootLayout({
           initialOverride={initialOverride}
         >
           <LeftSidebar />
-          <div className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground flex flex-col">
+          <div
+            className="min-h-[100dvh] bg-background text-foreground flex flex-col"
+            data-static-illustration="true"
+          >
             <div className="flex-1 min-w-0">{children}</div>
             <footer>
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
@@ -212,7 +217,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-
-
-

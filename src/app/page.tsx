@@ -1303,6 +1303,7 @@ export default function Home() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
+            data-illustration-floating="true"
             onClick={() => setShowWelcome(false)}
           />
           <div
@@ -1363,6 +1364,7 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 landing-dark-gradient bg-background/70 backdrop-blur-sm"
+            data-illustration-floating="true"
             onClick={() => setEvent(null)}
           />
           <div

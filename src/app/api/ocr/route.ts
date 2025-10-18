@@ -104,6 +104,8 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
       "- Before finalizing, double-check that the chosen time matches the flyer; if uncertain, leave the time off (set start to the date at 00:00).",
       "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
       "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
+      "- When venue descriptors (e.g., 'Ninja Warrior Course', 'STEM Lab', 'Birthday Pavilion') appear near the venue name, keep them in the address (comma-separated) and surface them in the description so guests know the specific area inside the venue.",
+      "- Description must mention standout features or activity areas printed on the flyer (e.g., 'Ninja Warrior Course', 'Splash Pad', 'STEM Lab') when they exist, in addition to the title.",
       "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
       "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
       "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
@@ -874,9 +876,103 @@ function cleanAddressLabel(input: string): string {
   let s = input.trim();
   s = s.replace(/^\s*(location|address|venue|where)\s*[:\-]?\s*/i, "");
   s = s.replace(/^\s*at\s+/i, "");
-  if (/\d/.test(s)) s = s.replace(/^[^\d]*?(?=\d)/, "");
-  s = s.replace(/\s{2,}/g, " ").replace(/[\s,\-]+$/g, "");
+  s = s.replace(/[\r\n]+/g, ", ");
+  s = s.replace(/\s*,\s*/g, ", ");
+  s = s.replace(/\s{2,}/g, " ");
+  s = s.replace(/,\s*,+/g, ", ");
+  s = s.replace(/^[,\s-]+/, "");
+  s = s.replace(/[,\s-]+$/g, "");
   return s.trim();
+}
+
+function splitVenueFromAddress(
+  input: string,
+  description?: string,
+  rawText?: string
+): { venue: string | null; address: string } {
+  const cleaned = cleanAddressLabel(input || "");
+  if (!cleaned) return { venue: null, address: "" };
+  const segments = cleaned
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (!segments.length) return { venue: null, address: "" };
+
+  const venueKeywords =
+    /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre|Complex|Ballpark|Ball Field)\b/i;
+  const suiteKeywords = /\b(suite|ste|apt|unit|floor|fl|room|rm|bldg|building|wing|hallway|level|lot)\b/i;
+  const candidateRaw = (
+    pickVenueLabelForSentence(cleaned, description, rawText) || ""
+  ).trim();
+  const candidateParts = candidateRaw
+    ? candidateRaw
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean)
+    : [];
+  const candidateSet = new Set(
+    candidateParts.map((part) => part.toLowerCase())
+  );
+
+  let streetIdx = segments.findIndex((segment) => /\d/.test(segment));
+  if (streetIdx === -1) streetIdx = 0;
+  const stateRe =
+    /\b(?:A[KLRZ]|C[AOT]|D[EC]|F[LM]|G[AU]|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]|N[CDEHJMVY]|O[HKR]|P[AE]|RI|S[CD]|T[NX]|UT|V[AIT]|W[AIVY])\b/;
+  const zipRe = /\b\d{5}(?:-\d{4})?\b/;
+  let cityIdx = -1;
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segment = segments[i];
+    if (zipRe.test(segment) || stateRe.test(segment)) {
+      cityIdx = i;
+      break;
+    }
+  }
+  if (cityIdx === -1 && segments.length > streetIdx + 1) {
+    cityIdx = segments.length - 1;
+  }
+
+  const venueParts: string[] = [];
+  const addressParts: string[] = [];
+
+  segments.forEach((segment, idx) => {
+    const lower = segment.toLowerCase();
+    const betweenStreetAndCity =
+      idx > streetIdx && (cityIdx === -1 || idx < cityIdx);
+    const matchesCandidate =
+      candidateSet.has(lower) ||
+      (candidateRaw &&
+        !/\d/.test(segment) &&
+        candidateRaw.toLowerCase().includes(lower) &&
+        lower.length >= 3);
+    const looksVenue =
+      !/\d/.test(segment) && venueKeywords.test(segment);
+    const isSuite = suiteKeywords.test(segment);
+    if (!isSuite && (matchesCandidate || (betweenStreetAndCity && looksVenue))) {
+      if (!venueParts.some((part) => part.toLowerCase() === lower)) {
+        venueParts.push(segment);
+      }
+      return;
+    }
+    addressParts.push(segment);
+  });
+
+  let venue = venueParts.join(", ");
+  if (!venue && candidateRaw) {
+    venue = candidateRaw;
+  } else if (venue && candidateRaw) {
+    const lowerVenue = venue.toLowerCase();
+    if (!lowerVenue.includes(candidateRaw.toLowerCase())) {
+      venue = `${venue}, ${candidateRaw}`.replace(/,\s*,+/g, ", ");
+    }
+  }
+  let address = addressParts.join(", ").replace(/,\s*,+/g, ", ").trim();
+  if (!address && cleaned) {
+    address = cleaned;
+  }
+  return {
+    venue: venue ? venue.trim() : null,
+    address,
+  };
 }
 
 // Lightweight U.S. timezone guesser from address text (best-effort, no network)
@@ -1007,8 +1103,21 @@ function pickVenueLabelForSentence(
     const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre)\b/i;
     // 1) Use a non-numeric first segment of the provided location if it looks like a venue
     if (location) {
-      const first = cleanAddressLabel(String(location)).split(",")[0].trim();
-      if (first && (!/\d/.test(first) || venueKeywords.test(first))) return first;
+      const parts = cleanAddressLabel(String(location))
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (parts.length) {
+        const first = parts[0];
+        if (parts.length >= 2) {
+          const second = parts[1];
+          const secondLooksVenue = second && !/\d/.test(second) && venueKeywords.test(second);
+          if (secondLooksVenue && first && !/\d/.test(first)) {
+            return `${first}, ${second}`;
+          }
+        }
+        if (first && (!/\d/.test(first) || venueKeywords.test(first))) return first;
+      }
     }
     // 2) Try to extract from description text around an "at <Venue>" phrase
     const lineWithAt = (description || "")
@@ -1794,6 +1903,7 @@ export async function POST(request: Request) {
     let finalStart = start;
     let finalEnd = end;
     let finalAddress = addressOnly;
+    let finalVenue = "";
     let finalDescription = cleanDescription;
 
     if (ocrSource === "openai" && llmImage) {
@@ -1951,6 +2061,17 @@ export async function POST(request: Request) {
       finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
     }
 
+    const addressWithVenue = finalAddress;
+    const splitLocation = splitVenueFromAddress(finalAddress, finalDescription, raw);
+    if (splitLocation) {
+      finalAddress = splitLocation.address;
+      if (splitLocation.venue) finalVenue = splitLocation.venue;
+    }
+    if (!finalVenue) {
+      const fallbackVenue = pickVenueLabelForSentence(addressWithVenue, finalDescription, raw);
+      if (fallbackVenue) finalVenue = fallbackVenue;
+    }
+
     // Re-extract RSVP from updated description if not already set by LLM
     if (!deferredRsvp) {
       try {
@@ -1958,17 +2079,28 @@ export async function POST(request: Request) {
       } catch {}
     }
 
+    const locationForNarrative = finalVenue
+      ? `${finalVenue}${finalAddress ? `, ${finalAddress}` : ""}`
+      : addressWithVenue || finalAddress;
+
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
       try {
         const venueLabel =
+          finalVenue ||
+          pickVenueLabelForSentence(addressWithVenue, finalDescription, raw) ||
           pickVenueLabelForSentence(finalAddress, finalDescription, raw) ||
-          finalAddress;
+          "";
+        const venueForSentence = venueLabel || locationForNarrative || finalAddress;
         // First attempt: deterministic human sentence without LLM.
-        const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueLabel);
+        const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueForSentence);
         finalDescription = deterministic;
         // Second attempt: let LLM refine; fall back to deterministic if LLM returns weird multiline text
-        const rewritten = await llmRewriteBirthdayDescription(finalTitle, venueLabel, deterministic);
+        const rewritten = await llmRewriteBirthdayDescription(
+          finalTitle,
+          venueForSentence,
+          deterministic
+        );
         const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
         if (cleaned && /\.$/.test(cleaned) && cleaned.length >= 20 && cleaned.length <= 200) {
           finalDescription = cleaned;
@@ -1979,7 +2111,7 @@ export async function POST(request: Request) {
     // If this looks like a wedding/marriage invite, produce a clean title and short human sentence
     if (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) || /(wedding|marriage)/i.test(finalTitle)) {
       try {
-        const wr = await llmRewriteWedding(raw, finalTitle, finalAddress);
+        const wr = await llmRewriteWedding(raw, finalTitle, locationForNarrative || finalAddress);
         if (wr?.title) finalTitle = wr.title;
         if (wr?.description) {
           let desc = wr.description;
@@ -2004,7 +2136,10 @@ export async function POST(request: Request) {
         const refined = await llmRewriteSmartDescription(
           raw,
           finalTitle,
-          pickVenueLabelForSentence(finalAddress, finalDescription, raw) || finalAddress,
+          finalVenue ||
+            pickVenueLabelForSentence(addressWithVenue, finalDescription, raw) ||
+            finalAddress ||
+            locationForNarrative,
           null,
           looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription
         );
@@ -2107,6 +2242,7 @@ export async function POST(request: Request) {
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
       location: finalAddress,
+      venue: finalVenue || null,
       description: descriptionWithTitle,
       timezone: "", // omit timezone; UI will show times as typed
       rsvp: deferredRsvp || null, // Store RSVP separately

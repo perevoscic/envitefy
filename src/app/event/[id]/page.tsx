@@ -531,9 +531,8 @@ export default async function EventPage({
               </div>
             ) : (
               <div className="mt-2 text-xs text-foreground/70">
-                No guests invited yet.
-                <br />
-                Use the "Invite" button above to add guests.
+                No guests invited yet. Use the "Invite" button above to add
+                guests.
               </div>
             )}
           </section>

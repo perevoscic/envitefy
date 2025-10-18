@@ -4,11 +4,29 @@ export type NormalizedEvent = {
   end: string; // ISO string
   allDay?: boolean;
   timezone: string; // IANA
+  venue?: string;
   location?: string;
   description?: string;
   recurrence?: string | null; // RRULE:...
   reminders?: { minutes: number }[] | null;
 };
+
+function combineVenueAndLocation(
+  venue?: string | null,
+  location?: string | null
+): string {
+  const pieces = [venue, location]
+    .map((part) => (part || "").trim())
+    .filter(Boolean);
+  if (!pieces.length) return "";
+  const deduped: string[] = [];
+  for (const piece of pieces) {
+    const lower = piece.toLowerCase();
+    if (deduped.some((existing) => existing.toLowerCase() === lower)) continue;
+    deduped.push(piece);
+  }
+  return deduped.join(", ");
+}
 
 export function toGoogleEvent(event: NormalizedEvent) {
   const isAllDay = Boolean(event.allDay);
@@ -31,7 +49,7 @@ export function toGoogleEvent(event: NormalizedEvent) {
   const requestBody: any = {
     summary: event.title,
     description: event.description || "",
-    location: event.location || "",
+    location: combineVenueAndLocation(event.venue, event.location),
     start,
     end,
   };
@@ -46,7 +64,9 @@ export function toMicrosoftEvent(event: NormalizedEvent) {
   const graphEvent: any = {
     subject: event.title || "Event",
     body: { contentType: "HTML", content: bodyContent },
-    location: { displayName: event.location || "" },
+    location: {
+      displayName: combineVenueAndLocation(event.venue, event.location),
+    },
     // Preserve local clock time exactly as typed using the user's timezone
     start: { dateTime: toGraphLocal(event.start), timeZone: event.timezone || "UTC" },
     end: { dateTime: toGraphLocal(event.end), timeZone: event.timezone || "UTC" },
@@ -73,7 +93,7 @@ export function toIcsFields(event: NormalizedEvent) {
     title: event.title,
     start: event.start,
     end: event.end,
-    location: event.location || "",
+    location: combineVenueAndLocation(event.venue, event.location),
     description: event.description || "",
     timezone: event.timezone,
     allDay: Boolean(event.allDay),
@@ -81,4 +101,3 @@ export function toIcsFields(event: NormalizedEvent) {
     reminders: event.reminders || null,
   };
 }
-
