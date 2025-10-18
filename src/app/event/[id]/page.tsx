@@ -60,6 +60,148 @@ const cleanRsvpContactLabel = (raw: string): string => {
   return working;
 };
 
+const FLOATING_ISO_REGEX =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
+
+const parseDatePreserveFloating = (
+  input: string
+): { date: Date; floating: boolean } => {
+  const floatingMatch = FLOATING_ISO_REGEX.exec(input);
+  if (floatingMatch) {
+    const [, y, m, d, hh, mm, ss] = floatingMatch;
+    const date = new Date(
+      Date.UTC(
+        Number(y),
+        Number(m) - 1,
+        Number(d),
+        Number(hh),
+        Number(mm),
+        Number(ss || "0")
+      )
+    );
+    return { date, floating: true };
+  }
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("invalid date");
+  }
+  return { date: parsed, floating: false };
+};
+
+const TIME_TOKEN_GLOBAL_REGEX =
+  /\b(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)\b|\b([01]?\d|2[0-3]):([0-5]\d)\b/gi;
+
+const extractTimeTokens = (value?: string | null): string[] => {
+  if (!value) return [];
+  const tokens: string[] = [];
+  TIME_TOKEN_GLOBAL_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = TIME_TOKEN_GLOBAL_REGEX.exec(value))) {
+    tokens.push(match[0]);
+  }
+  return tokens;
+};
+
+const normalizeTimeToken = (token: string | null | undefined): number | null => {
+  if (!token) return null;
+  const trimmed = token.trim().toLowerCase().replace(/\s+/g, " ");
+  const ampmMatch =
+    trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)$/i) || null;
+  if (ampmMatch) {
+    let hour = Number.parseInt(ampmMatch[1], 10);
+    if (Number.isNaN(hour)) return null;
+    const minute = Number.parseInt(ampmMatch[2] ?? "0", 10);
+    if (Number.isNaN(minute)) return null;
+    const suffix = (ampmMatch[3] || "").toLowerCase();
+    hour %= 12;
+    if (suffix.startsWith("p")) hour += 12;
+    return hour * 60 + minute;
+  }
+  const militaryMatch =
+    trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/) || null;
+  if (militaryMatch) {
+    const hour = Number.parseInt(militaryMatch[1], 10);
+    const minute = Number.parseInt(militaryMatch[2], 10);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+    return hour * 60 + minute;
+  }
+  return null;
+};
+
+const timeTokensEquivalent = (
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean => {
+  if (!a || !b) return false;
+  const m1 = normalizeTimeToken(a);
+  const m2 = normalizeTimeToken(b);
+  if (m1 !== null && m2 !== null) {
+    return Math.abs(m1 - m2) <= 1;
+  }
+  const normalize = (s: string) =>
+    s.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
+  return normalize(a) === normalize(b);
+};
+
+const buildFallbackRangeLabel = (
+  startLabel?: string | null,
+  endLabel?: string | null
+): string | null => {
+  if (!startLabel) return null;
+  const trimmedStart = startLabel.trim();
+  if (!trimmedStart) return null;
+  if (!endLabel) return trimmedStart;
+  const trimmedEnd = endLabel.trim();
+  if (!trimmedEnd) return trimmedStart;
+
+  const startTokens = extractTimeTokens(trimmedStart);
+  const endTokens = extractTimeTokens(trimmedEnd);
+  const startTime = startTokens[0] || null;
+  const endTime = endTokens[0] || null;
+
+  if (startTime && endTime) {
+    const startParts = trimmedStart
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (
+      startParts.length &&
+      extractTimeTokens(startParts[startParts.length - 1]).length > 0
+    ) {
+      startParts.pop();
+    }
+    const datePart = startParts.join(", ");
+    const endRemainder = trimmedEnd
+      .replace(endTime, "")
+      .replace(/,\s*$/, "")
+      .trim();
+    if (endRemainder && endRemainder !== datePart) {
+      const prefix = datePart ? `${datePart}, ${startTime}` : startTime;
+      return `${prefix} – ${trimmedEnd}`;
+    }
+    const prefix = datePart ? `${datePart}, ` : "";
+    return `${prefix}${startTime} – ${endTime}`;
+  }
+
+  if (startTime && !endTime) {
+    const startParts = trimmedStart
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (
+      startParts.length &&
+      extractTimeTokens(startParts[startParts.length - 1]).length > 0
+    ) {
+      startParts.pop();
+    }
+    const datePart = startParts.join(", ");
+    const prefix = datePart ? `${datePart}, ` : "";
+    return `${prefix}${startTime}`;
+  }
+
+  return `${trimmedStart} – ${trimmedEnd}`;
+};
+
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
@@ -68,15 +210,20 @@ function formatEventRangeDisplay(
   const { timeZone, allDay } = options || {};
   if (!startInput) return null;
   try {
-    const start = new Date(startInput);
+    const startParsed = parseDatePreserveFloating(startInput);
+    const start = startParsed.date;
+    const startFloating = startParsed.floating;
     if (Number.isNaN(start.getTime())) throw new Error("invalid start");
-    const end = endInput ? new Date(endInput) : null;
+    const endParsed = endInput ? parseDatePreserveFloating(endInput) : null;
+    const end = endParsed ? endParsed.date : null;
+    const endFloating = endParsed ? endParsed.floating : false;
     const sameDay =
       !!end &&
       start.getFullYear() === end.getFullYear() &&
       start.getMonth() === end.getMonth() &&
       start.getDate() === end.getDate();
-    const tz = timeZone || undefined;
+    const useFloatingTz = startFloating || endFloating;
+    const tz = useFloatingTz ? "UTC" : timeZone || undefined;
     if (allDay) {
       const dateFmt = new Intl.DateTimeFormat(undefined, {
         weekday: "short",
@@ -241,11 +388,43 @@ export default async function EventPage({
     (typeof data?.endISO === "string" && data.endISO) ||
     (typeof data?.end === "string" && data.end) ||
     null;
-  const whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
+  let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
     timeZone:
       (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
   });
+  const rawStartLabel =
+    typeof data?.start === "string" ? (data.start as string) : null;
+  const rawEndLabel =
+    typeof data?.end === "string" ? (data.end as string) : null;
+  const fallbackRangeLabel = buildFallbackRangeLabel(
+    rawStartLabel,
+    rawEndLabel
+  );
+  if (fallbackRangeLabel) {
+    if (!whenLabel) {
+      whenLabel = fallbackRangeLabel;
+    } else {
+      const computedTokens = extractTimeTokens(whenLabel);
+      const computedStartToken = computedTokens[0] || null;
+      const computedEndToken =
+        computedTokens.length > 1
+          ? computedTokens[computedTokens.length - 1]
+          : computedTokens[0] || null;
+      const rawStartToken = extractTimeTokens(rawStartLabel)[0] || null;
+      const rawEndToken = extractTimeTokens(rawEndLabel)[0] || null;
+      const mismatch =
+        (rawStartToken &&
+          (!computedStartToken ||
+            !timeTokensEquivalent(rawStartToken, computedStartToken))) ||
+        (rawEndToken &&
+          (!computedEndToken ||
+            !timeTokensEquivalent(rawEndToken, computedEndToken)));
+      if (mismatch) {
+        whenLabel = fallbackRangeLabel;
+      }
+    }
+  }
   const slugify = (t: string) =>
     (t || "event")
       .toLowerCase()
