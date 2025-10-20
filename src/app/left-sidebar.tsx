@@ -1,9 +1,14 @@
 "use client";
 import Link from "next/link";
-import { readProfileCache, writeProfileCache, clearProfileCache, PROFILE_CACHE_TTL_MS } from "@/utils/profileCache";
+import {
+  readProfileCache,
+  writeProfileCache,
+  clearProfileCache,
+  PROFILE_CACHE_TTL_MS,
+} from "@/utils/profileCache";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
@@ -205,7 +210,10 @@ export default function LeftSidebar() {
   useEffect(() => {
     let ignore = false;
 
-    const applyProfile = (plan: typeof subscriptionPlan, creditsValue: number | null) => {
+    const applyProfile = (
+      plan: typeof subscriptionPlan,
+      creditsValue: number | null
+    ) => {
       setSubscriptionPlan(plan);
       setCredits(plan === "FF" ? Infinity : creditsValue);
     };
@@ -220,7 +228,10 @@ export default function LeftSidebar() {
         if (!res.ok) return;
         if (!ignore) {
           const p = json.subscriptionPlan;
-          const plan = p === "free" || p === "monthly" || p === "yearly" || p === "FF" ? p : null;
+          const plan =
+            p === "free" || p === "monthly" || p === "yearly" || p === "FF"
+              ? p
+              : null;
           const nextCredits =
             plan === "FF"
               ? Infinity
@@ -228,7 +239,11 @@ export default function LeftSidebar() {
               ? (json.credits as number)
               : null;
           applyProfile(plan, nextCredits === Infinity ? null : nextCredits);
-          writeProfileCache(profileEmailRef.current || profileEmail, plan, nextCredits);
+          writeProfileCache(
+            profileEmailRef.current || profileEmail,
+            plan,
+            nextCredits
+          );
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
           }
@@ -251,7 +266,8 @@ export default function LeftSidebar() {
 
     if (status === "authenticated") {
       const cached = readProfileCache(profileEmailRef.current || profileEmail);
-      const hasFreshCache = cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS;
+      const hasFreshCache =
+        cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS;
       if (cached) {
         applyProfile(cached.plan, cached.credits);
         setIsAdmin(Boolean((session?.user as any)?.isAdmin));
@@ -303,6 +319,12 @@ export default function LeftSidebar() {
       if (isTouch) setIsCollapsed(true);
     } catch {}
   };
+  const triggerCreateEvent = () => {
+    collapseSidebarOnTouch();
+    try {
+      (window as any).__openCreateEvent?.();
+    } catch {}
+  };
   const handleSnapShortcutClick = (
     event: React.MouseEvent<HTMLAnchorElement>
   ) => {
@@ -331,6 +353,47 @@ export default function LeftSidebar() {
   const [history, setHistory] = useState<
     { id: string; title: string; created_at?: string; data?: any }[]
   >([]);
+  const createdEventsCount = useMemo(() => {
+    return history.reduce((acc, row) => {
+      if (!row || typeof row !== "object") return acc;
+      const data: any = row?.data;
+      if (!data || typeof data !== "object") return acc;
+      if (data.shared) return acc;
+
+      const manualFlag =
+        data.createdVia === "manual" ||
+        data.createdManually === true ||
+        data.manual === true ||
+        data.savedVia === "manual";
+
+      const hasManualFields =
+        typeof data.startISO === "string" ||
+        typeof data.endISO === "string" ||
+        typeof data.recurrence === "string";
+
+      const hasOcrSignature =
+        Boolean(data.ocrText || data.fieldsGuess || data.ocrSource) ||
+        (Array.isArray(data.events) && data.events.length > 0) ||
+        Boolean(
+          data.practiceSchedule &&
+            (data.practiceSchedule.detected ||
+              (Array.isArray(data.practiceSchedule.groups) &&
+                data.practiceSchedule.groups.length > 0))
+        ) ||
+        Boolean(
+          data.schedule &&
+            (data.schedule.detected ||
+              (Array.isArray(data.schedule?.games) &&
+                data.schedule.games.length > 0))
+        );
+
+      if (manualFlag || (hasManualFields && !hasOcrSignature)) {
+        return acc + 1;
+      }
+
+      return acc;
+    }, 0);
+  }, [history]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
     {}
@@ -854,11 +917,16 @@ export default function LeftSidebar() {
           // Optimistically prepend; avoid duplicates
           setHistory((prev) => {
             const exists = prev.some((r) => r.id === detail.id);
+            const detailData =
+              detail.data && typeof detail.data === "object"
+                ? detail.data
+                : {};
             const nextItem = {
               id: String(detail.id),
               title: String(detail.title || "Event"),
               created_at: String(detail.created_at || new Date().toISOString()),
               data: {
+                ...detailData,
                 ...(detail.start ? { start: String(detail.start) } : {}),
                 ...(detail.category
                   ? { category: String(detail.category) }
@@ -1603,7 +1671,6 @@ export default function LeftSidebar() {
                         >
                           <span className="text-sm">Theme Toggle</span>
                         </Link>
-
                       </div>
                     )}
                   </div>
@@ -1657,7 +1724,7 @@ export default function LeftSidebar() {
                 <span className="font-montserrat font-semibold">My Date</span>
               </span>
               <span className="text-xs text-foreground/60 block truncate">
-                Snap it. Save it.
+                Snap it. Save it. Done.
               </span>
             </div>
           </Link>
@@ -1760,6 +1827,62 @@ export default function LeftSidebar() {
                       </svg>
                     </Link>
                   </div>
+                </div>
+              </div>
+              <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    triggerCreateEvent();
+                  }}
+                  className="flex flex-1 items-center gap-2 pl-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <svg
+                    viewBox="0 0 32 32"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 31h2v-2a1.0006 1.0006 0 0 1 1-1h6a1.0006 1.0006 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
+                    <path d="M24 25a4 4 0 1 1 4-4 4.0039 4.0039 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0027 2.0027 0 0 0-2-2Z" />
+                    <path d="M2 31h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
+                    <path d="M8 25a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0023 2.0023 0 0 0-2-2Z" />
+                    <path d="M18 16h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
+                    <path d="M24 10a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.0023 2.0023 0 0 0 24 4Z" />
+                    <path d="M2 16h2v-2a1.0013 1.0013 0 0 1 1-1h6a1.0013 1.0013 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
+                    <path d="M8 10a4 4 0 1 1 4-4 4.0045 4.0045 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.002 2.002 0 0 0 8 4Z" />
+                  </svg>
+                  <span>Create Event</span>
+                </button>
+                <div className="ml-auto flex items-center gap-1">
+                  <span className="inline-flex items-center rounded-full border border-border bg-surface/60 px-1.5 py-0.5 text-[10px] text-foreground/80">
+                    {createdEventsCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      triggerCreateEvent();
+                    }}
+                    className="p-1 rounded hover:bg-surface/50"
+                    aria-label="Create event"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 13.9999L5.57465 20.2985C5.61893 20.4756 5.64107 20.5642 5.66727 20.6415C5.92317 21.397 6.60352 21.9282 7.39852 21.9933C7.4799 21.9999 7.5712 21.9999 7.75379 21.9999C7.98244 21.9999 8.09677 21.9999 8.19308 21.9906C9.145 21.8982 9.89834 21.1449 9.99066 20.193C10 20.0967 10 19.9823 10 19.7537V5.49991M18.5 13.4999C20.433 13.4999 22 11.9329 22 9.99991C22 8.06691 20.433 6.49991 18.5 6.49991M10.25 5.49991H6.5C4.01472 5.49991 2 7.51463 2 9.99991C2 12.4852 4.01472 14.4999 6.5 14.4999H10.25C12.0164 14.4999 14.1772 15.4468 15.8443 16.3556C16.8168 16.8857 17.3031 17.1508 17.6216 17.1118C17.9169 17.0756 18.1402 16.943 18.3133 16.701C18.5 16.4401 18.5 15.9179 18.5 14.8736V5.1262C18.5 4.08191 18.5 3.55976 18.3133 3.2988C18.1402 3.05681 17.9169 2.92421 17.6216 2.88804C17.3031 2.84903 16.8168 3.11411 15.8443 3.64427C14.1772 4.55302 12.0164 5.49991 10.25 5.49991Z" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
@@ -3573,7 +3696,9 @@ export default function LeftSidebar() {
                               <line x1="10" y1="11" x2="10" y2="17" />
                               <line x1="14" y1="11" x2="14" y2="17" />
                             </svg>
-                            <span className="hidden sm:inline text-sm">Delete</span>
+                            <span className="hidden sm:inline text-sm">
+                              Delete
+                            </span>
                           </button>
                         </div>,
                         document.body

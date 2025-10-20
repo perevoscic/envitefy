@@ -439,8 +439,9 @@ export default function EventCreateModal({
     }
 
     const normalizedCategoryForSubmit = (category || "").toLowerCase();
-    const allowsRegistriesForSubmit =
-      REGISTRY_CATEGORY_KEYS.has(normalizedCategoryForSubmit);
+    const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
+      normalizedCategoryForSubmit
+    );
     const sanitizedRegistries = allowsRegistriesForSubmit
       ? normalizeRegistryLinks(
           registryLinks.map((entry) => ({
@@ -545,6 +546,8 @@ export default function EventCreateModal({
         title: title || "Event",
         data: {
           category: finalCategory,
+          createdVia: "manual",
+          createdManually: true,
           startISO,
           endISO,
           venue: venue || undefined,
@@ -649,14 +652,26 @@ export default function EventCreateModal({
 
       try {
         if (id && typeof window !== "undefined") {
+          const serverData =
+            (j as any)?.data && typeof (j as any)?.data === "object"
+              ? (j as any).data
+              : null;
+          const mergedData = {
+            ...payload.data,
+            ...(serverData || {}),
+          };
           window.dispatchEvent(
             new CustomEvent("history:created", {
               detail: {
                 id,
                 title: (j as any)?.title || payload.title,
                 created_at: (j as any)?.created_at || new Date().toISOString(),
-                start: (j as any)?.data?.start || startISO,
-                category: (j as any)?.data?.category || payload.data.category,
+                start:
+                  (serverData && serverData.start) ||
+                  (serverData && serverData.startISO) ||
+                  startISO,
+                category: mergedData.category || null,
+                data: mergedData,
               },
             })
           );
@@ -920,6 +935,7 @@ export default function EventCreateModal({
                 onChange={(e) => setRsvp(e.target.value)}
                 rows={1}
                 className="w-full px-3 py-2 rounded-md border border-border bg-background"
+                placeholder="Phone number or email address"
               />
             </div>
           )}
