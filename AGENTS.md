@@ -49,6 +49,22 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Behavior**: Returns a page of users matching `email` or `first_name` or `last_name` using a contains match. Results are ordered by `created_at desc, id desc`. When more results exist, `nextCursor` is set; pass it back to load subsequent pages. When `q` is empty, returns no results (avoids scanning the table).
 - **Output**: `{ ok: true, items: Array<{ id, email, first_name, last_name, subscription_plan, ever_paid, credits, created_at, scans_total, shares_sent }>, nextCursor: string|null }`.
 
+### Admin Users Filter — GET `/api/admin/users/filter`
+
+- **Purpose**: Provide paginated admin views of user segments (all users, paid, FF lifetime, top scanners, top sharers) without needing a search query.
+- **Auth**: NextAuth session required and `isAdmin=true`.
+- **Query params**: `view` (required; one of `"all"|"paid"|"ff"|"scans"|"shares"`), optional `limit` (1-50, default 20), optional `cursor` (base64 checkpoint from the previous response).
+- **Behavior**: Returns users sorted by `created_at desc, id desc` for most views, `scans_total desc, id desc` when `view="scans"`, and `shares_sent desc, id desc` when `view="shares"`. Cursor encodes the tuple used for pagination (created_at/id or scans_total/id or shares_sent/id). If `view` is missing, the endpoint returns `{ ok: true, items: [], nextCursor: null }`.
+- **Output**: `{ ok: true, items: Array<{ id, email, first_name, last_name, subscription_plan, ever_paid, credits, created_at, scans_total, shares_sent }>, nextCursor: string|null }`.
+- **Env**: `DATABASE_URL` (required). Optional SSL helpers: `PGSSL_DISABLE_VERIFY=true` or `PGSSL_CA_BASE64` (CA bundle). Connection strips any `sslmode` query params automatically.
+
+### Admin Stats — GET `/api/admin/stats`
+
+- **Purpose**: Fetch headline metrics and top performers for the admin dashboard.
+- **Auth**: NextAuth session required and `isAdmin=true`.
+- **Output**: `{ ok: true, overview: { totalUsers, totalEvents, totalShares, usersPaid, usersFF }, topUsers: Array<{ email, scans, shares }> }`. `topUsers` returns up to 20 rows ordered by scans (ties broken by shares).
+- **Env**: `DATABASE_URL` (required) plus optional `PGSSL_DISABLE_VERIFY` or `PGSSL_CA_BASE64` for Postgres SSL.
+
 ### Admin Campaigns Send — POST `/api/admin/campaigns/send`
 
 - **Purpose**: Create and send a bulk email campaign to users filtered by subscription plan or other criteria.
@@ -438,14 +454,20 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Test Postgres connectivity using `DATABASE_URL`.
 - **Output**: `{ ok, ms, now }` or `{ ok: false, error }`.
 
-### Egress test — GET `/api/net`
-
-- ### Debug: History — GET `/api/debug/history`
+### Debug: History — GET `/api/debug/history`
 
 - **Purpose**: Inspect recent `event_history` inserts and whether the current session has user-linked rows.
 - **Output**: `{ user: { id, email }|null, mineCount, recentCount, mine: HistoryRow[], recent: HistoryRow[] }`.
 
-- **Purpose**: Check outbound network access (HEAD to Google Vision endpoint).
+### Debug: Egress — GET `/api/debug-egress`
+
+- **Purpose**: Run several outbound HTTP checks (Google 204, Vision root, Vision v1) and report reachability for each host.
+- **Output**: `{ ok: true, results: { google_204: { ok, status|error }, vision_root: {...}, vision_metadata: {...} } }`.
+- **Notes**: Each probe times out after ~8 seconds and the handler disables caching so console checks reflect live network status.
+
+### Egress test — GET `/api/net`
+
+- **Purpose**: Quick HEAD request to `https://vision.googleapis.com` to confirm outbound network access.
 - **Output**: `{ ok, status }` or `{ ok: false, error }`.
 
 ## NormalizedEvent schema
@@ -519,6 +541,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-20: Added admin dashboard endpoints `GET /api/admin/users/filter` (segmented user views) and `GET /api/admin/stats` (overview metrics + top scanners), plus `/api/debug-egress` for richer outbound network diagnostics.
 - 2025-10-18: Added optional `registries` (Amazon/Target/Walmart/Babylist/MyRegistry links), file `attachment`, and `venue` to NormalizedEvent. Event create/edit flows capture up to three shareable registries for **Birthdays**, **Weddings**, and **Baby Showers**, support image/PDF uploads for all categories, the event detail page renders branded registry cards plus attachment downloads, and calendar mappers still deduplicate venues while keeping same-day ranges formatted as "start – end". Added Baby Showers as a top-level category with registry + RSVP support and sidebar icon.
 - 2025-10-10: Added admin email campaigns system with Resend integration. New endpoints: `POST /api/admin/campaigns/send`, `GET /api/admin/campaigns`. New database table: `email_campaigns`. Admin UI at `/admin/campaigns` for composing and sending bulk marketing emails to users filtered by subscription tier.
 - 2025-10-05: Updated yearly Stripe pricing to $9.99 (`prod_T93Df9XcDp26Nm`).

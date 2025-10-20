@@ -313,9 +313,10 @@ function formatEventRangeLabel(
         year: "numeric",
         timeZone: tz,
       });
-      const label = end && !sameDay
-        ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
-        : dateFmt.format(start);
+      const label =
+        end && !sameDay
+          ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+          : dateFmt.format(start);
       return `${label} (all day)`;
     }
     const dateFmt = new Intl.DateTimeFormat(undefined, {
@@ -332,9 +333,9 @@ function formatEventRangeLabel(
     });
     if (end) {
       if (sameDay) {
-        return `${dateFmt.format(start)}, ${timeFmt.format(start)} – ${timeFmt.format(
-          end
-        )}`;
+        return `${dateFmt.format(start)}, ${timeFmt.format(
+          start
+        )} – ${timeFmt.format(end)}`;
       }
       const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
         month: "short",
@@ -605,7 +606,8 @@ export default function CalendarPage() {
     } as React.CSSProperties;
   }, [openEventTheme]);
   const openEventIcon = openEventTheme?.icon ?? "📌";
-  const openEventCategoryLabel = openEventTheme?.categoryLabel ?? openEvent?.category ?? "General Events";
+  const openEventCategoryLabel =
+    openEventTheme?.categoryLabel ?? openEvent?.category ?? "General Events";
   const [openDay, setOpenDay] = useState<{
     date: Date;
     items: CalendarEvent[];
@@ -1049,82 +1051,84 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div
-          className="mt-4 grid grid-cols-7 text-center text-xs sm:text-sm text-foreground/70"
-          style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
-        >
-          {Array.from({ length: 7 }).map((_, i) => {
-            const d = new Date(2024, 7, 4 + i); // Sun..Sat reference
-            return (
-              <div key={i} className="py-2">
-                {weekdayFormatter.format(d)}
-              </div>
-            );
-          })}
-        </div>
+        <div className="mt-4 rounded-xl border border-border calendar-festive p-2 sm:p-3 shadow-sm">
+          <div
+            className="grid grid-cols-7 text-center text-xs sm:text-sm text-foreground/70"
+            style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
+          >
+            {Array.from({ length: 7 }).map((_, i) => {
+              const d = new Date(2024, 7, 4 + i); // Sun..Sat reference
+              return (
+                <div key={i} className="py-2">
+                  {weekdayFormatter.format(d)}
+                </div>
+              );
+            })}
+          </div>
 
-        <div
-          className="grid grid-cols-7 grid-rows-6 gap-px rounded-md border border-border bg-border w-full max-w-full shadow-md sm:shadow-lg transition-shadow"
-          style={{
-            gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-            gridTemplateRows: "repeat(6, minmax(0, 1fr))",
-          }}
-        >
-          {weeks.map((week, wi) => (
-            <React.Fragment key={wi}>
-              {week.map((date) => {
-                const isCurrentMonth = date.getMonth() === month;
-                const isToday = isSameDay(date, today);
-                const key = dayKey(startOfDay(date));
-                const items = byDay.get(key) || [];
-                return (
-                  <div
-                    key={date.toISOString()}
-                    onClick={() => onDayClick(date)}
-                    className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[32px] sm:min-h-[40px] md:min-h-[48px] ${
-                      isCurrentMonth ? "" : "bg-foreground/[.02]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`h-5 w-5 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[10px] ${
-                          isToday
-                            ? "bg-foreground text-background"
-                            : isCurrentMonth
-                            ? "text-foreground/80"
-                            : "text-foreground/40"
-                        }`}
-                      >
-                        {date.getDate()}
-                      </div>
-                      {items.length > 0 && (
-                        <div className="ml-1 flex items-center gap-1">
-                          {items.slice(0, 8).map((ev) => renderEventDot(ev))}
-                          {items.length > 8 && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenDay({ date, items });
-                              }}
-                              className="text-[10px] text-foreground/60 hover:text-foreground/80"
-                            >
-                              +{items.length - 8}
-                            </button>
-                          )}
+          <div
+            className="mt-2 grid grid-cols-7 grid-rows-6 gap-px rounded-md border border-border bg-border w-full max-w-full shadow-md sm:shadow-lg transition-shadow"
+            style={{
+              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+              gridTemplateRows: "repeat(6, minmax(0, 1fr))",
+            }}
+          >
+            {weeks.map((week, wi) => (
+              <React.Fragment key={wi}>
+                {week.map((date) => {
+                  const isCurrentMonth = date.getMonth() === month;
+                  const isToday = isSameDay(date, today);
+                  const key = dayKey(startOfDay(date));
+                  const items = byDay.get(key) || [];
+                  return (
+                    <div
+                      key={date.toISOString()}
+                      onClick={() => onDayClick(date)}
+                      className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[32px] sm:min-h-[40px] md:min-h-[48px] ${
+                        isCurrentMonth ? "" : "bg-foreground/[.02]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`h-5 w-5 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[10px] ${
+                            isToday
+                              ? "bg-foreground text-background"
+                              : isCurrentMonth
+                              ? "text-foreground/80"
+                              : "text-foreground/40"
+                          }`}
+                        >
+                          {date.getDate()}
                         </div>
-                      )}
-                    </div>
+                        {items.length > 0 && (
+                          <div className="ml-1 flex items-center gap-1">
+                            {items.slice(0, 8).map((ev) => renderEventDot(ev))}
+                            {items.length > 8 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDay({ date, items });
+                                }}
+                                className="text-[10px] text-foreground/60 hover:text-foreground/80"
+                              >
+                                +{items.length - 8}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Desktop pills (reserve space for two items) */}
-                    <div className="mt-2 hidden md:flex flex-col gap-1.5 md:min-h-[56px]">
-                      {items.slice(0, 2).map((ev) => renderEventPill(ev))}
+                      {/* Desktop pills (reserve space for two items) */}
+                      <div className="mt-2 hidden md:flex flex-col gap-1.5 md:min-h-[56px]">
+                        {items.slice(0, 2).map((ev) => renderEventPill(ev))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1398,7 +1402,10 @@ export default function CalendarPage() {
                               {ev.venue || ev.location
                                 ? `${formatEventDateTime(
                                     ev.start
-                                  )} at ${pickLocationLabel(ev.venue, ev.location)}`
+                                  )} at ${pickLocationLabel(
+                                    ev.venue,
+                                    ev.location
+                                  )}`
                                 : formatEventDateTime(ev.start)}
                             </div>
                           </button>
@@ -1591,7 +1598,9 @@ export default function CalendarPage() {
                 <div className="flex items-start gap-3">
                   <div className="event-theme-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10">
                     <span aria-hidden="true">{openEventIcon}</span>
-                    <span className="sr-only">{openEventCategoryLabel} icon</span>
+                    <span className="sr-only">
+                      {openEventCategoryLabel} icon
+                    </span>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
@@ -1640,7 +1649,9 @@ export default function CalendarPage() {
                   <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                     {openEvent.venue ? "Address" : "Location"}
                   </dt>
-                  <dd className="mt-1 font-semibold">{openEvent.location || "—"}</dd>
+                  <dd className="mt-1 font-semibold">
+                    {openEvent.location || "—"}
+                  </dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
