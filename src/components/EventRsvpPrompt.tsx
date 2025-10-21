@@ -14,6 +14,7 @@ type StoredSender = {
 type EventRsvpPromptProps = {
   rsvpName?: string | null;
   rsvpPhone?: string | null;
+  rsvpEmail?: string | null;
   eventTitle: string;
   shareUrl?: string | null;
 };
@@ -40,6 +41,7 @@ const initialSender: StoredSender = {
 export default function EventRsvpPrompt({
   rsvpName,
   rsvpPhone,
+  rsvpEmail,
   eventTitle,
   shareUrl,
 }: EventRsvpPromptProps) {
@@ -70,12 +72,16 @@ export default function EventRsvpPrompt({
     } catch {}
   }, [mounted]);
 
-  if (!rsvpPhone) {
+  const hasPhone = Boolean(rsvpPhone);
+  const hasEmail = Boolean(rsvpEmail);
+  if (!hasPhone && !hasEmail) {
     return null;
   }
   if (!mounted) {
     return null;
   }
+
+  const contactMode: "sms" | "email" = hasPhone ? "sms" : "email";
 
   const handleDecline = () => {
     setModalOpen(false);
@@ -111,7 +117,7 @@ export default function EventRsvpPrompt({
       setError("Please enter both first and last name.");
       return;
     }
-    if (!sender.phone.trim()) {
+    if (contactMode === "sms" && !sender.phone.trim()) {
       setError("Please enter a phone number we can share with the host.");
       return;
     }
@@ -145,13 +151,39 @@ export default function EventRsvpPrompt({
     const footer = shareUrl ? `\n${shareUrl}` : "";
     const smsMessage = `${intro} ${bodyCore} ${contactLine}`.trim();
     const fullMessage = `${smsMessage}${footer}`.trim();
-    const href = `sms:${encodeURIComponent(rsvpPhone)}?&body=${encodeURIComponent(
+    const href = `sms:${encodeURIComponent(rsvpPhone || "")}?&body=${encodeURIComponent(
       fullMessage
     )}`;
     window.location.href = href;
 
     setModalOpen(false);
     setIntent(null);
+  };
+
+  const handleEmailIntent = (nextIntent: ResponseIntent) => {
+    if (!rsvpEmail || !nextIntent) return;
+    const eventLabel = eventTitle?.trim() || "the event";
+    const salutation = rsvpName?.trim() || "there";
+    let bodyCore = "";
+    if (nextIntent === "attend") {
+      bodyCore = `I'm excited to attend ${eventLabel}.`;
+    } else if (nextIntent === "maybe") {
+      bodyCore = `I might be able to attend ${eventLabel}, and I'll confirm soon.`;
+    } else if (nextIntent === "decline") {
+      bodyCore = `Unfortunately, I won't be able to attend ${eventLabel}.`;
+    } else {
+      return;
+    }
+    const lines = [`Hi ${salutation},`, "", bodyCore];
+    if (shareUrl) {
+      lines.push("", `Event link: ${shareUrl}`);
+    }
+    lines.push("", "Sent via SnapMyDate · snapmydate.com");
+    const subject = `RSVP for ${eventTitle?.trim() || "your event"}`;
+    const href = `mailto:${encodeURIComponent(rsvpEmail)}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+    window.location.href = href;
   };
 
   const clearAndClose = () => {
@@ -161,6 +193,11 @@ export default function EventRsvpPrompt({
   };
 
   const openModalFor = (nextIntent: ResponseIntent) => {
+    if (!nextIntent) return;
+    if (contactMode === "email") {
+      handleEmailIntent(nextIntent);
+      return;
+    }
     if (nextIntent === "decline") {
       handleDecline();
       return;

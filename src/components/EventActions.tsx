@@ -1,6 +1,7 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { combineVenueAndLocation } from "@/lib/mappers";
+import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { useSession } from "next-auth/react";
 import EventShareThankYouModal from "./EventShareThankYouModal";
@@ -124,17 +125,41 @@ export default function EventActions({
     } catch {}
   };
 
-  const findEmail = (): string | null => {
-    const text = `${event?.description || ""}`;
-    const m = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-    return m ? m[0] : null;
-  };
+  const rsvpEmail = useMemo(() => {
+    const candidates: unknown[] = [
+      event?.rsvp ?? null,
+      event?.description ?? null,
+      event?.location ?? null,
+      combinedLocation || null,
+    ];
+    for (const candidate of candidates) {
+      const found = findFirstEmail(candidate);
+      if (found) return found;
+    }
+    return findFirstEmail(event);
+  }, [combinedLocation, event]);
 
   const rsvpPhone = useMemo(() => {
     const rsvp = event?.rsvp || "";
     const text = `${rsvp} ${event?.description || ""} ${combinedLocation || ""}`;
     return extractFirstPhoneNumber(text);
   }, [combinedLocation, event]);
+  const hasRsvpContact = useMemo(
+    () => Boolean(rsvpPhone || rsvpEmail),
+    [rsvpPhone, rsvpEmail]
+  );
+
+  useEffect(() => {
+    if (!event) return;
+    // Provide diagnostics while we trace email RSVP detection issues.
+    console.debug("[EventActions] RSVP detection", {
+      eventId: historyId,
+      rsvpField: event?.rsvp,
+      descriptionHasEmail: Boolean(findFirstEmail(event?.description ?? null)),
+      detectedEmail: rsvpEmail,
+      detectedPhone: rsvpPhone,
+    });
+  }, [event, historyId, rsvpEmail, rsvpPhone]);
 
   // Legacy RSVP logic used a phone lookup helper. Keep a stub so any stale bundles
   // referencing `findPhone` during hot reloads keep working without throwing.
@@ -220,7 +245,7 @@ export default function EventActions({
   }, [session]);
 
   const onEmail = () => {
-    const to = findEmail() || "";
+    const to = rsvpEmail || "";
     const title = event?.title || "Event";
     const whenLine = formatDateRange(
       safeEvent?.start || null,
@@ -250,19 +275,16 @@ export default function EventActions({
 
   const onRsvp = () => {
     const rsvpTarget = extractRsvpSubject(event?.title);
-    const intro = [
-      "Hi, there,",
-      userFullName ? `this is ${userFullName},` : undefined,
-      "parent of ______,",
-      `RSVP-ing for ${rsvpTarget}`,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    const message = [intro, absoluteUrl ? `\n${absoluteUrl}` : undefined]
+    const introParts = [
+      "Hi there,",
+      userFullName ? `this is ${userFullName}.` : undefined,
+      `I'm reaching out to RSVP for ${rsvpTarget}.`,
+    ].filter(Boolean);
+    const message = [introParts.join(" "), absoluteUrl ? `\n${absoluteUrl}` : undefined]
       .filter(Boolean)
       .join("");
     const phone = rsvpPhone;
-    const email = findEmail();
+    const email = rsvpEmail;
     if (phone) {
       const smsUrl = `sms:${encodeURIComponent(
         phone
@@ -272,9 +294,10 @@ export default function EventActions({
         return;
       } catch {}
     }
+    if (!email) return;
     const subject = encodeURIComponent(event?.title || "Event RSVP");
     window.location.href = `mailto:${encodeURIComponent(
-      email || ""
+      email
     )}?subject=${subject}&body=${encodeURIComponent(message)}`;
   };
 
@@ -374,7 +397,7 @@ export default function EventActions({
           <span className="hidden sm:inline">Email</span>
         </button>
 
-        {session && rsvpPhone && (
+        {hasRsvpContact && (
           <button
             type="button"
             onClick={onRsvp}
