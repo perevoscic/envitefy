@@ -126,6 +126,8 @@ export default async function RootLayout({
     overrideVariant ?? cookieVariant;
   const htmlVariant: ThemeVariant = overrideVariant ?? cookieVariant ?? "light";
   const cssVariables = resolveThemeCssVariables(initialThemeKey, htmlVariant);
+  const cssVariablesLight = resolveThemeCssVariables(initialThemeKey, "light");
+  const cssVariablesDark = resolveThemeCssVariables(initialThemeKey, "dark");
   const htmlStyle = Object.fromEntries(
     Object.entries(cssVariables).map(([key, value]) => [key, value])
   ) as CSSProperties;
@@ -137,6 +139,9 @@ export default async function RootLayout({
       lang="en"
       data-theme={`${initialThemeKey}-${htmlVariant}`}
       data-theme-key={initialThemeKey}
+      data-override-variant={overrideVariant ?? undefined}
+      data-vars-light={JSON.stringify(cssVariablesLight)}
+      data-vars-dark={JSON.stringify(cssVariablesDark)}
       className={htmlVariant === "dark" ? "dark" : undefined}
       style={htmlStyle}
       suppressHydrationWarning
@@ -149,13 +154,23 @@ export default async function RootLayout({
             try {
               var root = document.documentElement;
               var key = root.getAttribute('data-theme-key') || 'general';
+              var override = root.getAttribute('data-override-variant');
               var stored = localStorage.getItem('theme');
-              var theme = (stored === 'light' || stored === 'dark')
-                ? stored
-                : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-              root.setAttribute('data-theme', key + '-' + theme);
-              root.classList.toggle('dark', theme === 'dark');
-              root.style.colorScheme = theme;
+              var resolved = (override === 'light' || override === 'dark')
+                ? override
+                : ((stored === 'light' || stored === 'dark')
+                    ? stored
+                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+              // Apply CSS variables immediately to avoid flash
+              var varsAttr = resolved === 'dark' ? 'data-vars-dark' : 'data-vars-light';
+              var raw = root.getAttribute(varsAttr) || '{}';
+              try {
+                var tokens = JSON.parse(raw);
+                for (var k in tokens) { if (Object.prototype.hasOwnProperty.call(tokens, k)) { root.style.setProperty(k, tokens[k]); } }
+              } catch {}
+              root.setAttribute('data-theme', key + '-' + resolved);
+              root.classList.toggle('dark', resolved === 'dark');
+              root.style.colorScheme = resolved;
             } catch (e) {
               // noop
             }

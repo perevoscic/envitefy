@@ -541,6 +541,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-21: Event detail pages now surface a guided RSVP prompt when a phone number is available. Guests can tap **Yes**, **No**, or **Maybe** to launch an SMS with prefilled copy, after sharing their contact details. We cache the sender info in `localStorage` (`snapmydate:rsvp-sender`) so future RSVPs prefill, and declining shows a confirmation message with the host’s contact.
 - 2025-10-20: Added admin dashboard endpoints `GET /api/admin/users/filter` (segmented user views) and `GET /api/admin/stats` (overview metrics + top scanners), plus `/api/debug-egress` for richer outbound network diagnostics.
 - 2025-10-18: Added optional `registries` (Amazon/Target/Walmart/Babylist/MyRegistry links), file `attachment`, and `venue` to NormalizedEvent. Event create/edit flows capture up to three shareable registries for **Birthdays**, **Weddings**, and **Baby Showers**, support image/PDF uploads for all categories, the event detail page renders branded registry cards plus attachment downloads, and calendar mappers still deduplicate venues while keeping same-day ranges formatted as "start – end". Added Baby Showers as a top-level category with registry + RSVP support and sidebar icon.
 - 2025-10-10: Added admin email campaigns system with Resend integration. New endpoints: `POST /api/admin/campaigns/send`, `GET /api/admin/campaigns`. New database table: `email_campaigns`. Admin UI at `/admin/campaigns` for composing and sending bulk marketing emails to users filtered by subscription tier.

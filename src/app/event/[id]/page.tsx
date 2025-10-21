@@ -27,6 +27,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { getEventTheme } from "@/lib/event-theme";
 import {
@@ -506,15 +507,20 @@ export default async function EventPage({
 
   // Detect RSVP phone and build SMS/Call links
   // First try the rsvp field, then fall back to searching description/location
-  const rsvpField = (data?.rsvp as string | undefined) || "";
+  const rsvpField = typeof data?.rsvp === "string" ? data.rsvp : "";
   const aggregateContactText = `${rsvpField} ${
     (data?.description as string | undefined) || ""
   } ${(data?.location as string | undefined) || ""}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
+  const rsvpEmail =
+    findFirstEmail(rsvpField) ??
+    findFirstEmail(aggregateContactText) ??
+    findFirstEmail(data);
 
+  const rsvpContactSource = rsvpField || rsvpEmail || "";
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)
-  const rsvpNameRaw = rsvpField
-    ? rsvpField
+  const rsvpNameRaw = rsvpContactSource
+    ? rsvpContactSource
         .replace(/^RSVP:?\s*/i, "") // Remove "RSVP:" or "RSVP" prefix
         .replace(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/g, "") // Remove phone number
         .replace(/\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/g, "") // Remove (555) 123-4567 format
@@ -767,7 +773,7 @@ export default async function EventPage({
                 </dd>
               </div>
             )}
-            {(rsvpName || rsvpPhone) && (
+            {(rsvpName || rsvpPhone || rsvpEmail) && (
               <div className="sm:col-start-2">
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                   RSVP
@@ -776,6 +782,7 @@ export default async function EventPage({
                   <EventRsvpPrompt
                     rsvpName={rsvpName}
                     rsvpPhone={rsvpPhone}
+                    rsvpEmail={rsvpEmail}
                     eventTitle={title}
                     shareUrl={shareUrl}
                   />
@@ -1355,4 +1362,3 @@ function CalendarIconApple({ className }: { className?: string }) {
     </svg>
   );
 }
-

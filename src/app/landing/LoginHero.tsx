@@ -43,28 +43,28 @@ export default function LoginHero() {
       title: "Save to any calendar",
       subtitle: "Google, Apple, Outlook — with reminders included.",
     },
-        {
+    {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-4.jpg",
       v: "/sliders/vertical/vertical-slide-4.jpg",
       title: "Any Birthday Invites",
       subtitle: "Are a snap away from your calendar.",
     },
-  {
+    {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-5.jpg",
       v: "/sliders/vertical/vertical-slide-5.jpg",
       title: "Wedding Invites",
       subtitle: "Just got better with Snap My Date.",
     },
-  {
+    {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-6.jpg",
       v: "/sliders/vertical/vertical-slide-6.jpg",
       title: "Doctor Appointments",
       subtitle: "Never miss another one again.",
     },
-  {
+    {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-7.jpg",
       v: "/sliders/vertical/vertical-slide-7.jpg",
@@ -220,7 +220,7 @@ export default function LoginHero() {
   );
 
   return (
-    <section className="relative min-h-[100dvh]">
+    <section id="landing-hero" className="relative min-h-[100dvh]">
       {/* Single background slider instance */}
       <div className="absolute inset-0">
         {isDesktop !== null && (
@@ -240,10 +240,14 @@ export default function LoginHero() {
         )}
       </div>
       {/* Static gradient layer between slider and foreground */}
-      <div
-        className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient landing-dark-gradient--floating"
-        aria-hidden
-      />
+      {typeof window !== "undefined" && (
+        <div
+          className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient"
+          data-illustration-floating="true"
+          aria-hidden={true}
+          suppressHydrationWarning
+        />
+      )}
       {/* Welcome stack above buttons */}
       <div
         className={`absolute inset-x-0 z-10 flex flex-col items-center text-center ${
