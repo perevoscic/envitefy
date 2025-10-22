@@ -18,6 +18,7 @@ export default function LoginHero() {
   const searchParams = useSearchParams();
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   const [authModalOpenCount, setAuthModalOpenCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   // Single source of truth for slide titles/subtitles; only the media src differs by orientation
   const slidesMeta = [
@@ -86,6 +87,10 @@ export default function LoginHero() {
   }));
 
   // Single instance: choose slides by breakpoint (min-width: 768px)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mql = window.matchMedia("(min-width: 768px)");
@@ -223,7 +228,7 @@ export default function LoginHero() {
     <section id="landing-hero" className="relative min-h-[100dvh]">
       {/* Single background slider instance */}
       <div className="absolute inset-0">
-        {isDesktop !== null && (
+        {mounted && isDesktop !== null && (
           <BackgroundSlider
             key={isDesktop ? "desktop" : "mobile"}
             orientation="horizontal"
@@ -239,10 +244,14 @@ export default function LoginHero() {
           />
         )}
       </div>
-      {/* Static gradient layer between slider and foreground */}
+      {/* Gradient layers between slider and foreground text: illustration + top/bottom fade */}
       <div
         className="absolute inset-0 z-[3] pointer-events-none landing-dark-gradient"
         data-illustration-floating="true"
+        aria-hidden={true}
+      />
+      <div
+        className="absolute inset-0 z-[3] pointer-events-none hero-slider-fade"
         aria-hidden={true}
       />
       {/* Welcome stack above buttons */}

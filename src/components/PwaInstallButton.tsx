@@ -6,13 +6,36 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+interface SnapWindow extends Window {
+  __snapInstallDeferredPrompt?: BeforeInstallPromptEvent | null;
+  __snapInstallBridgeReady?: boolean;
+}
+
+const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
+
+if (typeof window !== "undefined") {
+  const w = window as SnapWindow;
+  if (!w.__snapInstallBridgeReady) {
+    w.__snapInstallBridgeReady = true;
+    window.addEventListener("beforeinstallprompt", (event: Event) => {
+      const bip = event as BeforeInstallPromptEvent;
+      bip.preventDefault?.();
+      w.__snapInstallDeferredPrompt = bip;
+      window.dispatchEvent(
+        new CustomEvent<BeforeInstallPromptEvent | null>(BRIDGE_EVENT_NAME, {
+          detail: bip,
+        })
+      );
+    });
+  }
+}
+
 export default function PwaInstallButton() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
   const [canInstall, setCanInstall] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
-  const [showIosOverlay, setShowIosOverlay] = useState(false);
   const [allowedDevice, setAllowedDevice] = useState(false);
   const [maybeInstallable, setMaybeInstallable] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -170,18 +193,24 @@ export default function PwaInstallButton() {
   }, []);
 
   useEffect(() => {
-    const onBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault?.();
-      const bip = e as BeforeInstallPromptEvent;
-      setDeferred(bip);
+    if (typeof window === "undefined") return;
+    const w = window as SnapWindow;
+    const adoptPrompt = (
+      evt: BeforeInstallPromptEvent | null | undefined
+    ) => {
+      if (!evt) return;
+      w.__snapInstallDeferredPrompt = evt;
+      setDeferred(evt);
       setCanInstall(true);
       setShowIosTip(false);
     };
-    window.addEventListener(
-      "beforeinstallprompt",
-      onBeforeInstallPrompt as any
-    );
-
+    adoptPrompt(w.__snapInstallDeferredPrompt ?? null);
+    const onPromptReady = (event: Event) => {
+      const detail =
+        (event as CustomEvent<BeforeInstallPromptEvent | null>).detail ?? null;
+      adoptPrompt(detail ?? w.__snapInstallDeferredPrompt ?? null);
+    };
+    window.addEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
     // iOS/iPadOS Safari never fires beforeinstallprompt; show a clear fallback
     const ua = navigator.userAgent || (navigator as any).vendor || "";
     const isIOS =
@@ -191,20 +220,18 @@ export default function PwaInstallButton() {
       (window.navigator as any).standalone === true ||
       (window.matchMedia &&
         window.matchMedia("(display-mode: standalone)").matches);
-    if (isIOS && !isStandalone && !deferred) {
+    let iosTimeout: number | undefined;
+    if (isIOS && !isStandalone && !w.__snapInstallDeferredPrompt) {
       setShowIosTip(true);
       // Guard in case UA parsing runs before iOS paints toolbar
-      const t = window.setTimeout(() => {
-        if (!deferred) setShowIosTip(true);
+      iosTimeout = window.setTimeout(() => {
+        if (!w.__snapInstallDeferredPrompt) setShowIosTip(true);
       }, 1200);
-      return () => window.clearTimeout(t);
     }
 
     return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        onBeforeInstallPrompt as any
-      );
+      window.removeEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
+      if (iosTimeout) window.clearTimeout(iosTimeout);
     };
   }, []);
 
@@ -212,7 +239,6 @@ export default function PwaInstallButton() {
     const onInstalled = () => {
       setCanInstall(false);
       setShowIosTip(false);
-      setShowIosOverlay(false);
       setMaybeInstallable(false);
       setExpanded(false);
     };
@@ -302,7 +328,9 @@ export default function PwaInstallButton() {
                   {showIosFallback ? "Install to Home Screen" : "Install app"}
                 </div>
                 <div className="text-xs opacity-70">
-                  Keep Snap My Date handy on your device.
+                  {showIosFallback
+                    ? "Follow these steps to add Snap My Date to your iOS home screen."
+                    : "Keep Snap My Date handy on your device."}
                 </div>
               </div>
               <button
@@ -338,6 +366,9 @@ export default function PwaInstallButton() {
                     setDeferred(null);
                     setCanInstall(false);
                     setShowIosTip(false);
+                    try {
+                      (window as SnapWindow).__snapInstallDeferredPrompt = null;
+                    } catch {}
                   }
                 }}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
@@ -346,16 +377,47 @@ export default function PwaInstallButton() {
               </button>
             )}
             {showIosFallback && (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowIosOverlay(true)}
-                  className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
-                >
-                  Install to Home Screen
-                </button>
-                <div className="text-sm opacity-80">
-                  Follow the guided steps to add Snap My Date to your iOS home
-                  screen.
+              <div className="rounded-xl border border-border bg-surface/80 p-3 text-sm shadow-inner">
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M12 16V3" />
+                      <path d="M7 8l5-5 5 5" />
+                      <rect x="4" y="12" width="16" height="8" rx="2" ry="2" />
+                    </svg>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="font-medium">
+                      Add Snap My Date to your Home Screen
+                    </div>
+                    <ol className="list-decimal ml-5 space-y-1">
+                      <li>
+                        Tap the Share button in Safari (square with arrow).
+                      </li>
+                      <li>
+                        Choose{" "}
+                        <span className="font-semibold">Add to Home Screen</span>.
+                      </li>
+                      <li>
+                        Tap <span className="font-semibold">Add</span> to
+                        confirm.
+                      </li>
+                    </ol>
+                    <div className="text-xs opacity-70">
+                      Tip: If you opened this in another browser on iOS, open in
+                      Safari to install.
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -368,63 +430,6 @@ export default function PwaInstallButton() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-      {showIosOverlay && (
-        <div className="fixed inset-0 z-[1100] flex items-end sm:items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowIosOverlay(false)}
-            aria-hidden
-          />
-          <div className="relative z-[1101] w-full sm:w-auto max-w-[92vw] sm:max-w-md rounded-2xl bg-surface text-foreground border border-border shadow-2xl p-4 sm:p-5 m-3">
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M12 16V3" />
-                  <path d="M7 8l5-5 5 5" />
-                  <rect x="4" y="12" width="16" height="8" rx="2" ry="2" />
-                </svg>
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-base mb-1">
-                  Add to Home Screen
-                </div>
-                <ol className="list-decimal ml-5 space-y-1 text-sm">
-                  <li>Tap the Share button in Safari (square with arrow).</li>
-                  <li>
-                    Choose{" "}
-                    <span className="font-semibold">Add to Home Screen</span>.
-                  </li>
-                  <li>
-                    Tap <span className="font-semibold">Add</span> to confirm.
-                  </li>
-                </ol>
-                <div className="text-xs opacity-70 mt-2">
-                  Tip: If you opened this in another browser on iOS, open in
-                  Safari to install.
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => setShowIosOverlay(false)}
-                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground shadow"
-              >
-                Got it
-              </button>
-            </div>
           </div>
         </div>
       )}

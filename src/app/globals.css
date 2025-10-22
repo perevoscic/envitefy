@@ -673,6 +673,20 @@ body {
   background-attachment: scroll;
   transform: none;
 }
+/* Hero slider readability fade: black at top/bottom, transparent center */
+.hero-slider-fade {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.70) 0%,
+    rgba(0, 0, 0, 0.50) 12%,
+    rgba(0, 0, 0, 0.28) 22%,
+    rgba(0, 0, 0, 0.00) 42%,
+    rgba(0, 0, 0, 0.00) 58%,
+    rgba(0, 0, 0, 0.28) 78%,
+    rgba(0, 0, 0, 0.50) 88%,
+    rgba(0, 0, 0, 0.70) 100%
+  );
+}
 /* Festive theme wrapper for calendar surfaces */
 .calendar-festive {
   position: relative;
