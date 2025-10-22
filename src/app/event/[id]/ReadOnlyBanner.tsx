@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -50,7 +51,14 @@ export default function ReadOnlyBanner() {
             >
               Sign up
             </button>{" "}
-            to access full features.
+            to access full features, or{" "}
+            <Link
+              href="/"
+              className="underline hover:no-underline font-medium"
+            >
+              go home
+            </Link>
+            .
           </p>
         </div>
       </div>

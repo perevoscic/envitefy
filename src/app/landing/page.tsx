@@ -1,5 +1,6 @@
 import LoginHero from "./LoginHero";
 import Hero from "./sections/Hero";
+import CreateShare from "./sections/CreateShare";
 import HowItWorks from "./sections/HowItWorks";
 import FeatureGrid from "./sections/FeatureGrid";
 import Integrations from "./sections/Integrations";
@@ -13,6 +14,7 @@ export default async function LandingPage() {
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient">
       <LoginHero />
       <Hero />
+      <CreateShare />
       <HowItWorks />
       <FeatureGrid />
       <Integrations />

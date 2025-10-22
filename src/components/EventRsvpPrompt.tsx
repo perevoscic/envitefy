@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useTheme } from "@/app/providers";
 
 type ResponseIntent = "attend" | "decline" | "maybe" | null;
 
@@ -45,6 +46,7 @@ export default function EventRsvpPrompt({
   eventTitle,
   shareUrl,
 }: EventRsvpPromptProps) {
+  const { theme } = useTheme();
   const [intent, setIntent] = useState<ResponseIntent>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [sender, setSender] = useState<StoredSender>(initialSender);
@@ -101,7 +103,9 @@ export default function EventRsvpPrompt({
         `If plans change, you can let the host know at ${rsvpPhone}.`
       );
     } else if (rsvpName) {
-      declineParts.push(`If plans change, you can let ${rsvpName.trim()} know.`);
+      declineParts.push(
+        `If plans change, you can let ${rsvpName.trim()} know.`
+      );
     }
     declineParts.push("Thank you for letting us know.");
     setDeclineLines(declineParts);
@@ -130,11 +134,10 @@ export default function EventRsvpPrompt({
 
     const eventLabel = eventTitle?.trim() || "the event";
     const salutation = rsvpName?.trim() || "there";
-    const senderName = `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
+    const senderName =
+      `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
     const guest = sender.forWho.trim();
-    const guestPhraseAttend = guest
-      ? `${guest} will attend`
-      : "I will attend";
+    const guestPhraseAttend = guest ? `${guest} will attend` : "I will attend";
     const guestPhraseMaybe = guest
       ? `${guest} might be able to attend`
       : "I might be able to attend";
@@ -151,9 +154,9 @@ export default function EventRsvpPrompt({
     const footer = shareUrl ? `\n${shareUrl}` : "";
     const smsMessage = `${intro} ${bodyCore} ${contactLine}`.trim();
     const fullMessage = `${smsMessage}${footer}`.trim();
-    const href = `sms:${encodeURIComponent(rsvpPhone || "")}?&body=${encodeURIComponent(
-      fullMessage
-    )}`;
+    const href = `sms:${encodeURIComponent(
+      rsvpPhone || ""
+    )}?&body=${encodeURIComponent(fullMessage)}`;
     window.location.href = href;
 
     setModalOpen(false);
@@ -180,9 +183,11 @@ export default function EventRsvpPrompt({
     }
     lines.push("", "Sent via SnapMyDate · snapmydate.com");
     const subject = `RSVP for ${eventTitle?.trim() || "your event"}`;
-    const href = `mailto:${encodeURIComponent(rsvpEmail)}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+    const href = `mailto:${encodeURIComponent(
+      rsvpEmail
+    )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+      lines.join("\n")
+    )}`;
     window.location.href = href;
   };
 
@@ -230,7 +235,11 @@ export default function EventRsvpPrompt({
 
       {declineModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl dark:bg-neutral-900">
+          {/* Force modal to follow site theme tokens; avoid OS auto-dark */}
+          <div
+            className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
+            style={{ colorScheme: theme }}
+          >
             <h3 className="text-lg font-semibold text-foreground">
               Thanks for the RSVP
             </h3>
@@ -254,7 +263,11 @@ export default function EventRsvpPrompt({
 
       {modalOpen && intent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl dark:bg-neutral-900">
+          {/* Force modal to follow site theme tokens; avoid OS auto-dark */}
+          <div
+            className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
+            style={{ colorScheme: theme }}
+          >
             <h3 className="text-lg font-semibold text-foreground">
               Introduce yourself
             </h3>
@@ -326,7 +339,9 @@ export default function EventRsvpPrompt({
                 />
               </label>
               {error ? (
-                <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p>
+                <p className="text-sm text-rose-600 dark:text-rose-300">
+                  {error}
+                </p>
               ) : null}
               <div className="flex justify-end gap-3 pt-1">
                 <button
