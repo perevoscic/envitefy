@@ -37,6 +37,9 @@ import {
 import type { CSSProperties } from "react";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
+import SignupViewer from "@/components/signup/SignupViewer";
+import type { SignupForm } from "@/types/signup";
+import { sanitizeSignupForm } from "@/utils/signup";
 
 export const dynamic = "force-dynamic";
 
@@ -447,6 +450,25 @@ export default async function EventPage({
       brandLabel: brand?.defaultLabel || null,
     };
   });
+  const signupForm: SignupForm | null = (() => {
+    const raw = data?.signupForm;
+    if (raw && typeof raw === "object") {
+      try {
+        const sanitized = sanitizeSignupForm({
+          ...(raw as SignupForm),
+          enabled: true,
+        });
+        if (sanitized.sections.length > 0) {
+          return sanitized;
+        }
+      } catch (err) {
+        try {
+          console.warn("[event] signup form sanitize error", err);
+        } catch {}
+      }
+    }
+    return null;
+  })();
   const startForDisplay =
     (typeof data?.startISO === "string" && data.startISO) ||
     (typeof data?.start === "string" && data.start) ||
@@ -613,7 +635,11 @@ export default async function EventPage({
         })
       : null;
 
-  const viewerKind = isOwner ? "owner" : "guest";
+  const viewerKind: "owner" | "guest" | "readonly" = isOwner
+    ? "owner"
+    : isReadOnly
+    ? "readonly"
+    : "guest";
 
   return (
     <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
@@ -830,6 +856,20 @@ export default async function EventPage({
               <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
             </div>
           )}
+          {signupForm && (
+            <div className="mt-6">
+              <SignupViewer
+                eventId={row.id}
+                initialForm={signupForm}
+                viewerKind={viewerKind}
+                viewerId={userId}
+                viewerName={
+                  (session?.user?.name as string | undefined) || null
+                }
+                viewerEmail={sessionEmail}
+              />
+            </div>
+          )}
 
           {/* Sponsored supplies block: show to owner right after creation */}
           {!isReadOnly && isOwner && createdParam && (
@@ -837,6 +877,8 @@ export default async function EventPage({
               placement="confirm"
               category={categoryRaw}
               viewer="owner"
+              title={title}
+              description={(data?.description as string | undefined) || null}
             />
           )}
           {/* Sponsored supplies block for guests (always visible to non-owners) */}
@@ -845,6 +887,8 @@ export default async function EventPage({
               placement="confirm"
               category={categoryRaw}
               viewer="guest"
+              title={title}
+              description={(data?.description as string | undefined) || null}
             />
           )}
           {registriesAllowed && registryCards.length > 0 && (
@@ -858,6 +902,7 @@ export default async function EventPage({
                     category: categoryRaw,
                     viewer: viewerKind as any,
                     placement: "registry_card",
+                    strictCategoryOnly: true,
                   });
                   return (
                     <a

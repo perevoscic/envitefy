@@ -1208,6 +1208,20 @@ export async function updateEventHistoryDataMerge(
   return res.rows[0] || null;
 }
 
+export async function updateEventHistoryData(
+  id: string,
+  data: any
+): Promise<EventHistoryRow | null> {
+  const res = await query<EventHistoryRow>(
+    `update event_history
+     set data = $2::jsonb
+     where id = $1
+     returning id, user_id, title, data, created_at`,
+    [id, JSON.stringify(data ?? {})]
+  );
+  return res.rows[0] || null;
+}
+
 export async function deleteEventHistoryById(id: string): Promise<void> {
   await query(`delete from event_history where id = $1`, [id]);
 }
@@ -1659,5 +1673,4 @@ export async function deleteThemeOverrideForUser(userId: string): Promise<boolea
     throw err;
   }
 }
-
 

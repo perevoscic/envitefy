@@ -391,6 +391,20 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - PATCH: updated `HistoryRow`.
   - DELETE: `{ ok: true }`.
 
+### History Signup — POST `/api/history/[id]/signup`
+
+- **Purpose**: Reserve, waitlist, or cancel "Smart sign-up" commitments for an event.
+- **Auth**: NextAuth session required. Caller must be the event owner or an accepted share recipient.
+- **Input (JSON)**:
+  - Reserve: `{ action: "reserve", slots: Array<{ sectionId: string, slotId: string, quantity?: number }>, name: string, email?: string, phone?: string, guests?: number, note?: string, answers?: Array<{ questionId: string, value: string }>, signupId?: string }`.
+  - Cancel: `{ action: "cancel", signupId: string }`.
+- **Behavior**:
+  - Validates slot availability, per-person limits, and required questions based on `data.signupForm.settings`.
+  - Applies automatic waitlisting and promotions: when capacity frees up, earliest waitlisted responses are moved to confirmed.
+  - Persists updates to `event_history.data.signupForm.responses`, recording timestamps and statuses (`confirmed`, `waitlisted`, `cancelled`).
+- **Output**: `{ ok: true, signupForm, response? }` with the normalized form state and (for reserve) the caller's latest response. Errors return `{ error }` with HTTP 4xx/5xx codes.
+- **Notes**: Fails with 400 when the event lacks a sign-up form. Contact fields are optional unless the sign-up settings require them.
+
 ### OAuth disconnect — POST `/api/oauth/disconnect`
 
 - **Purpose**: Clear legacy OAuth cookies for Google and Microsoft.

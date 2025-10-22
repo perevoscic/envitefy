@@ -35,12 +35,30 @@ const isHttpsUrl = (value: string | null | undefined): boolean => {
   }
 };
 
+function inferGenderFromText(text: string): "girl" | "boy" | null {
+  const t = text.toLowerCase();
+  const isGirl = /\b(girl|girls|princess|unicorn|mermaid|pink|her|she)\b/.test(t);
+  const isBoy = /\b(boy|boys|superhero|ninja|dinosaur|blue|his|he)\b/.test(t);
+  if (isGirl && !isBoy) return "girl";
+  if (isBoy && !isGirl) return "boy";
+  return null;
+}
+
 export function getAffiliateLinks(
   placement: AffiliatePlacement,
-  opts?: { category?: string | null; viewer?: "owner" | "guest" }
+  opts?: {
+    category?: string | null;
+    viewer?: "owner" | "guest";
+    title?: string | null;
+    description?: string | null;
+  }
 ): AffiliateLinks {
   const category = (opts?.category || "").trim().toLowerCase();
   const viewer = opts?.viewer || null;
+  const gender = (() => {
+    const base = `${opts?.title || ""} ${opts?.description || ""}`.trim();
+    return base ? inferGenderFromText(base) : null;
+  })();
   // Prefer placement-specific envs; fall back to generic
   const targetSpecific = getEnv(
     placement.startsWith("target_")
@@ -65,9 +83,18 @@ export function getAffiliateLinks(
     if (!category) return null;
     if (category.includes("birthday")) {
       const owner =
-        getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_OWNER") || null;
+        // gender-specific first
+        (gender === "girl"
+          ? getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_OWNER_GIRL")
+          : gender === "boy"
+          ? getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_OWNER_BOY")
+          : null) || getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_OWNER") || null;
       const guest =
-        getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_GUEST") || null;
+        (gender === "girl"
+          ? getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_GUEST_GIRL")
+          : gender === "boy"
+          ? getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_GUEST_BOY")
+          : null) || getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_GUEST") || null;
       const any =
         getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_DEFAULT_BIRTHDAYS") ||
         getEnv("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS") ||
@@ -115,6 +142,7 @@ export function getAffiliateLinks(
 }
 
 export function shouldShowSponsored(): boolean {
+  // if (process.env.NODE_ENV !== "production") return false;
   // Feature flag to enable/disable block globally
   const flag = getEnv("NEXT_PUBLIC_AFFILIATE_ENABLE");
   return flag === "1" || flag === "true";
@@ -147,7 +175,12 @@ export function getAmazonTagFromConfig(opts?: {
 
 export function decorateAmazonUrl(
   originalUrl: string,
-  opts?: { category?: string | null; viewer?: "owner" | "guest"; placement?: string }
+  opts?: {
+    category?: string | null;
+    viewer?: "owner" | "guest";
+    placement?: string;
+    strictCategoryOnly?: boolean;
+  }
 ): string {
   try {
     const u = new URL(originalUrl);
@@ -158,10 +191,53 @@ export function decorateAmazonUrl(
     // Respect existing tag if present
     const existingTag = u.searchParams.get("tag");
     if (!existingTag) {
-      const tag = getAmazonTagFromConfig({
-        category: opts?.category || null,
-        viewer: opts?.viewer,
-      });
+      const tag = (() => {
+        const category = (opts?.category || "").trim().toLowerCase();
+        const viewer = opts?.viewer || null;
+        const get = (k: string) => getEnv(k);
+        const wantStrict = Boolean(opts?.strictCategoryOnly);
+        // Build ordered keys based on category and viewer
+        const keys: string[] = [];
+        if (category.includes("birthday")) {
+          if (viewer === "owner") keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_OWNER");
+          if (viewer === "guest") keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS_GUEST");
+          if (!wantStrict) {
+            keys.push(
+              "NEXT_PUBLIC_AFFILIATE_AMAZON_DEFAULT_BIRTHDAYS",
+              "NEXT_PUBLIC_AFFILIATE_AMAZON_BIRTHDAYS"
+            );
+          }
+        } else if (category.includes("wedding")) {
+          if (viewer === "owner") keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_WEDDINGS_OWNER");
+          if (viewer === "guest") keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_WEDDINGS_GUEST");
+          if (!wantStrict) {
+            keys.push(
+              "NEXT_PUBLIC_AFFILIATE_AMAZON_DEFAULT_WEDDINGS",
+              "NEXT_PUBLIC_AFFILIATE_AMAZON_WEDDINGS"
+            );
+          }
+        } else if (category.includes("baby shower") || category.includes("baby")) {
+          if (viewer === "owner") keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_BABYSHOWERS_OWNER");
+          if (viewer === "guest") keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_BABYSHOWERS_GUEST");
+          if (!wantStrict) {
+            keys.push(
+              "NEXT_PUBLIC_AFFILIATE_AMAZON_DEFAULT_BABYSHOWERS",
+              "NEXT_PUBLIC_AFFILIATE_AMAZON_BABYSHOWERS"
+            );
+          }
+        }
+        if (!wantStrict) {
+          keys.push("NEXT_PUBLIC_AFFILIATE_AMAZON_DEFAULT");
+        }
+        for (const k of keys) {
+          const v = get(k);
+          if (isHttpsUrl(v)) {
+            const t = extractAmazonTagFromUrl(v!);
+            if (t) return t;
+          }
+        }
+        return null;
+      })();
       if (tag) u.searchParams.set("tag", tag);
     }
 
@@ -175,4 +251,89 @@ export function decorateAmazonUrl(
   }
 }
 
+// Curated image cards for the Sponsored block
+// Env value format per key: JSON array of
+//   [{ "src": "https://...jpg", "alt": "Balloons", "href": "https://www.amazon.com/..." }]
+// Keys per category/viewer:
+//   NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_OWNER
+//   NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_GUEST
+//   NEXT_PUBLIC_AFFILIATE_IMAGES_WEDDINGS_OWNER
+//   NEXT_PUBLIC_AFFILIATE_IMAGES_WEDDINGS_GUEST
+//   (optionally BABYSHOWERS_OWNER / _GUEST)
+export type AffiliateImageCard = { src: string; alt: string; href: string };
+
+function parseImageCardsJson(raw: string | null): AffiliateImageCard[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    const out: AffiliateImageCard[] = [];
+    for (const item of arr) {
+      const src = typeof item?.src === "string" ? item.src.trim() : "";
+      const alt = typeof item?.alt === "string" ? item.alt.trim() : "";
+      const href = typeof item?.href === "string" ? item.href.trim() : "";
+      if (isHttpsUrl(src) && isHttpsUrl(href)) {
+        out.push({ src, alt: alt || "", href });
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+export function getAffiliateImageCards(opts?: {
+  category?: string | null;
+  viewer?: "owner" | "guest";
+  title?: string | null;
+  description?: string | null;
+}): AffiliateImageCard[] {
+  const category = (opts?.category || "").trim().toLowerCase();
+  const viewer = (opts?.viewer || "owner").toLowerCase();
+  const gender = (() => {
+    const base = `${opts?.title || ""} ${opts?.description || ""}`.trim();
+    return base ? inferGenderFromText(base) : null;
+  })();
+  const keys: string[] = [];
+  if (category.includes("birthday")) {
+    if (viewer === "guest") {
+      if (gender === "girl") keys.push("NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_GUEST_GIRL");
+      if (gender === "boy") keys.push("NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_GUEST_BOY");
+      keys.push("NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_GUEST");
+    } else {
+      if (gender === "girl") keys.push("NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_OWNER_GIRL");
+      if (gender === "boy") keys.push("NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_OWNER_BOY");
+      keys.push("NEXT_PUBLIC_AFFILIATE_IMAGES_BIRTHDAYS_OWNER");
+    }
+  } else if (category.includes("wedding")) {
+    keys.push(
+      viewer === "guest"
+        ? "NEXT_PUBLIC_AFFILIATE_IMAGES_WEDDINGS_GUEST"
+        : "NEXT_PUBLIC_AFFILIATE_IMAGES_WEDDINGS_OWNER"
+    );
+  } else if (category.includes("baby shower") || category.includes("baby")) {
+    keys.push(
+      viewer === "guest"
+        ? "NEXT_PUBLIC_AFFILIATE_IMAGES_BABYSHOWERS_GUEST"
+        : "NEXT_PUBLIC_AFFILIATE_IMAGES_BABYSHOWERS_OWNER"
+    );
+  }
+  let cards: AffiliateImageCard[] = [];
+  for (const k of keys) {
+    const raw = getEnv(k);
+    cards = parseImageCardsJson(raw);
+    if (cards.length) break;
+  }
+  // Decorate each href with tag if missing and add ascsubtag for image index
+  return cards.map((c, idx) => ({
+    src: c.src,
+    alt: c.alt,
+    href: decorateAmazonUrl(c.href, {
+      category,
+      viewer: viewer as any,
+      placement: `img_${idx}`,
+      strictCategoryOnly: true,
+    }),
+  }));
+}
 
