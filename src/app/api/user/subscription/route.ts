@@ -20,6 +20,8 @@ export async function GET() {
       ? (user.subscription_plan as "monthly" | "yearly" | "FF")
       : user.subscription_plan === "free"
       ? "free"
+      : user.subscription_plan === "freemium"
+      ? "freemium"
       : null;
   // Prefer stored current period end; if missing but we have a Stripe subscription, retrieve it as a fallback
   let currentPeriodEnd: string | Date | null = user.stripe_current_period_end || user.subscription_expires_at || null;
@@ -92,7 +94,9 @@ export async function PUT(req: Request) {
         ? (user.subscription_plan as "monthly" | "yearly")
         : null;
     }
-    return requestedPlan === "free" ? "free" : null;
+    if (requestedPlan === "freemium") return "freemium";
+    if (requestedPlan === "free") return "free";
+    return null;
   })();
 
   const currentPeriodEnd = subscription

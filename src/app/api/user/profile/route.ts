@@ -21,14 +21,24 @@ export async function GET() {
     return current ?? 0;
   })();
   const responsePlan = plan || "free";
-  const creditsCount = typeof init === "number" ? init : (await getCreditsByEmail(email)) ?? 0;
+  const creditsCount =
+    typeof init === "number" ? init : (await getCreditsByEmail(email)) ?? 0;
+  const shouldReturnCredits = responsePlan === "free";
+  const creditsValue =
+    responsePlan === "FF"
+      ? null
+      : shouldReturnCredits
+      ? Number.isFinite(creditsCount as any)
+        ? creditsCount
+        : 0
+      : null;
   return NextResponse.json({
     email: user?.email || email,
     firstName: user?.first_name || null,
     lastName: user?.last_name || null,
     preferredProvider: user?.preferred_provider || null,
     subscriptionPlan: responsePlan,
-    credits: responsePlan === "FF" ? null : Number.isFinite(creditsCount as any) ? creditsCount : 0,
+    credits: creditsValue,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
     isAdmin: Boolean(user?.is_admin),
     categoryColors: await getCategoryColorsByEmail(email),
@@ -79,7 +89,15 @@ export async function PUT(req: Request) {
     
     if (typeof body.subscriptionPlan !== "undefined") {
       const rawPlan = body.subscriptionPlan == null ? null : String(body.subscriptionPlan);
-      const norm = rawPlan && (rawPlan === "free" || rawPlan === "monthly" || rawPlan === "yearly" || rawPlan === "FF") ? (rawPlan as any) : null;
+      const norm =
+        rawPlan &&
+        (rawPlan === "freemium" ||
+          rawPlan === "free" ||
+          rawPlan === "monthly" ||
+          rawPlan === "yearly" ||
+          rawPlan === "FF")
+          ? (rawPlan as any)
+          : null;
       await updateSubscriptionPlanByEmail({ email, plan: norm });
     }
     const nextPlan = (await getSubscriptionPlanByEmail(email)) || null;

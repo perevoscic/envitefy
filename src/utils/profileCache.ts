@@ -1,6 +1,6 @@
 export const PROFILE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
-type Plan = "free" | "monthly" | "yearly" | "FF" | null;
+type Plan = "freemium" | "free" | "monthly" | "yearly" | "FF" | null;
 
 type ProfileCacheRecord = {
   timestamp: number;

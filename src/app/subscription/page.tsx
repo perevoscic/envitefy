@@ -21,10 +21,10 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const params = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<
-    "free" | "monthly" | "yearly" | "FF"
+    "freemium" | "free" | "monthly" | "yearly" | "FF"
   >("monthly");
   const [currentPlan, setCurrentPlan] = useState<
-    "free" | "monthly" | "yearly" | "FF" | null
+    "freemium" | "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
     null
@@ -59,11 +59,15 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
     if (!plan) return;
-    const normalized = ["free", "monthly", "yearly", "FF"].includes(plan)
+    const normalized = ["freemium", "free", "monthly", "yearly", "FF"].includes(
+      plan
+    )
       ? plan
       : null;
     if (normalized) {
-      setSelectedPlan(normalized as "free" | "monthly" | "yearly" | "FF");
+      setSelectedPlan(
+        normalized as "freemium" | "free" | "monthly" | "yearly" | "FF"
+      );
     }
   }, [params]);
 
@@ -93,6 +97,7 @@ export default function SubscriptionPage() {
         const plan = planJson?.plan;
         if (planRes.ok) {
           if (
+            plan === "freemium" ||
             plan === "free" ||
             plan === "monthly" ||
             plan === "yearly" ||
@@ -101,8 +106,8 @@ export default function SubscriptionPage() {
             setCurrentPlan(plan);
             setSelectedPlan(plan);
           } else {
-            setCurrentPlan("free");
-            setSelectedPlan("free");
+            setCurrentPlan("freemium");
+            setSelectedPlan("freemium");
           }
           setSubscriptionStatus(planJson?.stripeSubscriptionStatus || null);
           setStripeCustomerId(planJson?.stripeCustomerId || null);
@@ -305,18 +310,35 @@ export default function SubscriptionPage() {
     });
   }, [currentPeriodEnd, subscriptionExpiresAt, parseDateValue]);
 
+  const isLegacyFreePlan = currentPlan === "free";
+  const isFreemiumPlan = currentPlan === "freemium";
+  const basePlanSelected =
+    selectedPlan === "freemium" || selectedPlan === "free";
+  const basePlanCurrent = isFreemiumPlan || isLegacyFreePlan;
+  const basePlanLocked = !!currentPlan && !basePlanCurrent;
+
   const hasActivePaidPlan =
     currentPlan === "monthly" || currentPlan === "yearly";
   const buttonDisabled = loading || (isAuthed && selectedPlan === currentPlan);
   const buttonLabel = useMemo(() => {
     if (!isAuthed) return "Subscribe";
-    if (loading)
-      return selectedPlan === "free" ? "Updating..." : "Redirecting...";
-    if (selectedPlan === "free") {
-      if (!hasActivePaidPlan)
-        return currentPlan === "free" ? "Current plan" : "Select Free";
-      return cancelAtPeriodEnd ? "Cancellation scheduled" : "Downgrade to Free";
+    if (loading) return basePlanSelected ? "Updating..." : "Redirecting...";
+
+    if (basePlanSelected) {
+      if (!hasActivePaidPlan) {
+        return basePlanCurrent
+          ? "Current plan"
+          : selectedPlan === "free"
+          ? "Select Free"
+          : "Select Freemium";
+      }
+      return cancelAtPeriodEnd
+        ? "Cancellation scheduled"
+        : selectedPlan === "free"
+        ? "Downgrade to Free"
+        : "Downgrade to Freemium";
     }
+
     if (currentPlan === selectedPlan) return "Current plan";
     if (hasActivePaidPlan && currentPlan && currentPlan !== selectedPlan)
       return "Switch Plan";
@@ -324,8 +346,10 @@ export default function SubscriptionPage() {
   }, [
     isAuthed,
     loading,
-    selectedPlan,
+    basePlanSelected,
     hasActivePaidPlan,
+    basePlanCurrent,
+    selectedPlan,
     cancelAtPeriodEnd,
     currentPlan,
   ]);
@@ -378,25 +402,24 @@ export default function SubscriptionPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
           className={`relative rounded-xl bg-surface p-5 pt-7 flex flex-col transition outline-none focus:outline-none focus-visible:outline-none ${
-            selectedPlan === "free" ? "shadow-xl" : "shadow-md"
+            basePlanSelected ? "shadow-xl" : "shadow-md"
           } ${
-            currentPlan && currentPlan !== "free"
-              ? "opacity-60 cursor-not-allowed"
-              : "cursor-pointer"
+            basePlanLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
           }`}
           role="button"
-          aria-disabled={!!currentPlan && currentPlan !== "free"}
-          tabIndex={currentPlan && currentPlan !== "free" ? -1 : 0}
+          aria-disabled={basePlanLocked}
+          tabIndex={basePlanLocked ? -1 : 0}
           onClick={() => {
-            if (currentPlan && currentPlan !== "free") return;
-            setSelectedPlan("free");
+            if (basePlanLocked) return;
+            setSelectedPlan(isLegacyFreePlan ? "free" : "freemium");
           }}
           onKeyDown={(e) => {
-            if (currentPlan && currentPlan !== "free") return;
-            if (e.key === "Enter" || e.key === " ") setSelectedPlan("free");
+            if (basePlanLocked) return;
+            if (e.key === "Enter" || e.key === " ")
+              setSelectedPlan(isLegacyFreePlan ? "free" : "freemium");
           }}
           style={
-            selectedPlan === "free"
+            basePlanSelected
               ? {
                   background:
                     "linear-gradient(135deg, rgba(156,163,175,0.18), rgba(156,163,175,0.08) 60%)",
@@ -405,7 +428,7 @@ export default function SubscriptionPage() {
               : undefined
           }
         >
-          {selectedPlan === "free" && (
+          {basePlanSelected && (
             <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-[#9CA3AF]" />
           )}
           <span
@@ -416,25 +439,31 @@ export default function SubscriptionPage() {
           </span>
           <div className="flex items-center justify-between gap-6 sm:flex-col sm:items-center sm:justify-center sm:text-center sm:gap-1">
             <div className="text-left sm:text-center">
-              <h2 className="text-base font-medium">Trial</h2>
+              <h2 className="text-base font-medium">
+                {isLegacyFreePlan ? "Trial" : "Freemium"}
+              </h2>
               {!hasActivePaidPlan && (
                 <div className="text-xs text-muted-foreground">
-                  {typeof credits === "number"
-                    ? `${credits} credits left`
-                    : "3 trial credits"}
+                  {isLegacyFreePlan
+                    ? typeof credits === "number"
+                      ? `${credits} credits left`
+                      : "3 trial credits"
+                    : "Ad-supported access. Upgrade to remove ads."}
                 </div>
               )}
             </div>
             <div className="text-right sm:text-center sm:mt-1">
               <div className="text-3xl font-semibold">FREE</div>
               <div className="text-xs text-muted-foreground">
-                no credit card required
+                {isLegacyFreePlan
+                  ? "no credit card required"
+                  : "ads required · no credit card needed"}
               </div>
             </div>
           </div>
-          {isAuthed && currentPlan === "free" && (
+          {isAuthed && basePlanCurrent && (
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              Current plan
+              {isLegacyFreePlan ? "Current plan (legacy trial)" : "Current plan"}
             </div>
           )}
         </div>
@@ -531,14 +560,16 @@ export default function SubscriptionPage() {
               return;
             }
             if (loading) return;
-            if (selectedPlan === "free") {
+            if (selectedPlan === "free" || selectedPlan === "freemium") {
               if (!hasActivePaidPlan) return;
               try {
                 setLoading(true);
                 const res = await fetch("/api/user/subscription", {
                   method: "PUT",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ plan: "free" }),
+                  body: JSON.stringify({
+                    plan: selectedPlan === "free" ? "free" : "freemium",
+                  }),
                 });
                 const json = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -553,7 +584,9 @@ export default function SubscriptionPage() {
                   type: "info",
                   message: newCancelState
                     ? "We'll cancel your subscription at the end of the current period."
-                    : "Subscription canceled.",
+                    : selectedPlan === "free"
+                    ? "Subscription canceled. You'll return to the legacy free plan."
+                    : "Subscription canceled. You'll move to the ad-supported Freemium plan.",
                 });
                 router.refresh();
               } catch (err: any) {

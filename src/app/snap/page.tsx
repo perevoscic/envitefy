@@ -40,7 +40,7 @@ export default function SnapPage() {
   const [credits, setCredits] = useState<number | null>(null);
   const [creditsError, setCreditsError] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<
-    "free" | "monthly" | "yearly" | "FF" | null
+    "freemium" | "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [bulkEvents, setBulkEvents] = useState<any[] | null>(null);
@@ -187,6 +187,7 @@ export default function SnapPage() {
 
         const rawPlan = (j as any)?.subscriptionPlan ?? null;
         const plan =
+          rawPlan === "freemium" ||
           rawPlan === "free" ||
           rawPlan === "monthly" ||
           rawPlan === "yearly" ||
