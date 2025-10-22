@@ -3,6 +3,18 @@ import { useState } from "react";
 
 const qs = [
   {
+    q: "Can I share my event without guests downloading an app?",
+    a: "Yes! Guests can open and RSVP via an email or text link - no downloads needed.",
+  },
+  {
+    q: "If I change event details, do guests see the update?",
+    a: "Absolutely. The shared link always reflects the latest info, so everyone stays on the same page.",
+  },
+  {
+    q: "Can I track RSVPs?",
+    a: "Yes. You’ll see who’s attending by receiving email or text notifications when guests reply.",
+  },
+  {
     q: "How accurate is Snap My Date's OCR technology?",
     a: "Snap My Date utilizes advanced scanning technology to extract event details from photos and PDFs with high accuracy. While our system is very robust, you always have the opportunity to review and edit any extracted information before saving it to your calendar.",
   },
@@ -49,7 +61,7 @@ export default function FAQ() {
                 aria-expanded={open === idx}
               >
                 <div className="flex items-center justify-between gap-4">
-                  <span className="font-medium">{item.q}</span>
+                  <span className="font-semibold">{item.q}</span>
                   <span className="text-foreground/60">
                     {open === idx ? "−" : "+"}
                   </span>

@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";
 
@@ -67,17 +68,23 @@ export default function ReadOnlyEventLogo() {
   }, [theme, themeKey]);
 
   return (
-    <div className="mb-6 flex justify-center" aria-hidden="false">
-      <img
-        src="/SnapMyDateSnapItSaveitDone_Black_vertical.png"
-        alt="Snap My Date tag line"
-        className={`h-24 w-auto ${useLightVariant ? "hidden" : "block"}`}
-      />
-      <img
-        src="/SnapMyDateSnapItSaveitDone_White_vertical.png"
-        alt="Snap My Date tag line"
-        className={`h-24 w-auto ${useLightVariant ? "block" : "hidden"}`}
-      />
+    <div className="mb-6 flex justify-center">
+      <Link
+        href="/"
+        aria-label="Snap My Date home"
+        className="inline-flex rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        <img
+          src="/SnapMyDateSnapItSaveitDone_Black_vertical.png"
+          alt="Snap My Date tag line"
+          className={`h-24 w-auto ${useLightVariant ? "hidden" : "block"}`}
+        />
+        <img
+          src="/SnapMyDateSnapItSaveitDone_White_vertical.png"
+          alt="Snap My Date tag line"
+          className={`h-24 w-auto ${useLightVariant ? "block" : "hidden"}`}
+        />
+      </Link>
     </div>
   );
 }

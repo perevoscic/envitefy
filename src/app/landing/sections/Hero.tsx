@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import ClientHeroCtas from "../ClientHeroCtas";
@@ -14,60 +13,48 @@ export default async function Hero() {
           <h1 className="sr-only">Snap My Date - Snap it. Save it. Done.</h1>
           <h1 className="text-4xl sm:text-6xl font-extrabold leading-[1.08] tracking-tight">
             <div className="inline-block w-fit bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle whitespace-nowrap">
-              Snap it. Save it.
-            </div>
-            <div className="inline-block w-fit bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 drop-shadow-fore-subtle text-stroke-subtle whitespace-nowrap">
-              We handle the rest.
+              Snap it. Save it. Done.
             </div>
           </h1>
           <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto lg:mx-0">
-            Turn flyers, team schedules, invites, and appointment cards into
-            ready‑to‑save calendar events. No typing.
+            Turn flyers and invites into calendar events in seconds.
+          </p>
+          <p className="mt-3 text-base sm:text-lg text-foreground/70 max-w-2xl mx-auto lg:mx-0">
+            Now you can create and share your own events, too — no app installs
+            needed.
           </p>
           <ClientHeroCtas isAuthed={isAuthed} />
-          <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-foreground/70">
-            <span className="text-sm">Works with</span>
-            <span
-              className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
-              aria-label="Google"
-            >
+          <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-foreground/70">
+            <span className="text-sm uppercase tracking-wide">Works with</span>
+            <div className="flex items-center gap-3" aria-label="Supported calendars">
               <Image
                 src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
-                alt="Google logo"
-                width={20}
-                height={20}
+                alt="Google Calendar logo"
+                width={24}
+                height={24}
               />
-            </span>
-            <span
-              className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
-              aria-label="Apple"
-            >
               <Image
                 src="/brands/apple-black.svg"
-                alt="Apple logo"
-                width={20}
-                height={20}
+                alt="Apple Calendar logo"
+                width={24}
+                height={24}
                 className="show-light"
               />
               <Image
                 src="/brands/apple-white.svg"
-                alt="Apple logo"
-                width={20}
-                height={20}
+                alt=""
+                width={24}
+                height={24}
                 className="show-dark"
+                aria-hidden="true"
               />
-            </span>
-            <span
-              className="inline-flex items-center justify-center rounded-full border border-border p-1.5 bg-surface/60"
-              aria-label="Microsoft"
-            >
               <Image
                 src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
-                alt="Microsoft logo"
-                width={20}
-                height={20}
+                alt="Outlook Calendar logo"
+                width={24}
+                height={24}
               />
-            </span>
+            </div>
           </div>
         </div>
 

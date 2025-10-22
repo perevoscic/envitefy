@@ -30,10 +30,10 @@ export default function HowItWorks() {
                   <circle cx="12" cy="13" r="4" />
                 </svg>
               </span>
-              Snap or upload
+              Snap or Upload
             </h3>
             <p className="mt-2 text-foreground/70">
-              Take a quick photo of a flyer, invite, or appointment card.
+              Take a quick photo of any flyer, card, or schedule.
             </p>
           </div>
           <div className="rounded-2xl bg-surface/70 border border-border p-6 text-center shadow">
@@ -56,10 +56,10 @@ export default function HowItWorks() {
                   <path d="M3 10h18" />
                 </svg>
               </span>
-              We fill in the details
+              We Fill the Details
             </h3>
             <p className="mt-2 text-foreground/70">
-              We extract the date, time, location, and description for you.
+              Our AI extracts the date, time, and location.
             </p>
           </div>
           <div className="rounded-2xl bg-surface/70 border border-border p-6 text-center shadow">
@@ -80,13 +80,16 @@ export default function HowItWorks() {
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
               </span>
-              Add to your calendar
+              Add or Share
             </h3>
             <p className="mt-2 text-foreground/70">
-              Save to Google, Apple, or Outlook—complete with reminders.
+              Add to your calendar or share the link directly.
             </p>
           </div>
         </div>
+        <p className="mt-6 text-center text-sm text-foreground/60">
+          Or skip the photo — create your own event from scratch, just as fast.
+        </p>
       </div>
     </section>
   );

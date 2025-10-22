@@ -1018,8 +1018,8 @@ export default function EventCreateModal({
                     }
                   }}
                 />
-                <div className="block h-8 w-14 rounded-full bg-foreground/15 transition-colors duration-200 ease-out dark:bg-surface/60 peer-checked:bg-primary/60" />
-                <div className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-all duration-200 ease-out peer-checked:translate-x-full peer-checked:bg-primary peer-checked:shadow-md dark:bg-surface" />
+                <div className="block h-8 w-14 rounded-full bg-foreground/15 transition-colors duration-200 ease-out dark:bg-surface/60 peer-checked:bg-primary/60 border border-border/70 shadow-inner" />
+                <div className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-all duration-200 ease-out peer-checked:translate-x-full peer-checked:bg-primary peer-checked:shadow-md dark:bg-surface dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
               </div>
             </label>
           </div>
