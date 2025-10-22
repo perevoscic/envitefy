@@ -176,6 +176,7 @@ export default async function RootLayout({
             }
           })();
         `}</Script>
+        {/* GoogleAdSense */}
         <Script
           id="adsense"
           strategy="beforeInteractive"
