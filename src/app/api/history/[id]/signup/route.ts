@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import type { NextAuthOptions, Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
   getEventHistoryById,
@@ -96,7 +97,9 @@ const normalizeAnswers = (
   return answers;
 };
 
-const buildDefaultName = (sessionUser: any): string => {
+const buildDefaultName = (
+  sessionUser: Session["user"] | null | undefined
+): string => {
   const baseName =
     (typeof sessionUser?.name === "string" && sessionUser.name.trim()) || "";
   if (baseName) return baseName;
@@ -119,8 +122,8 @@ export async function POST(
 ) {
   try {
     const { id } = await context.params;
-    const session: any = await getServerSession(authOptions as any);
-    const sessionUser = session?.user || null;
+    const session = await getServerSession(authOptions as NextAuthOptions);
+    const sessionUser: Session["user"] | null = session?.user ?? null;
     const sessionEmail = (sessionUser?.email as string | undefined) || null;
     const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
     if (!userId) {
@@ -148,7 +151,8 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const rawForm = (row.data as any)?.signupForm;
+    const existingData = (row.data ?? null) as Record<string, unknown> | null;
+    const rawForm = existingData?.["signupForm"];
     if (!rawForm || typeof rawForm !== "object") {
       return NextResponse.json(
         { error: "Sign-up form is not enabled for this event." },
@@ -317,14 +321,22 @@ export async function POST(
         enabled: true,
       });
 
-      const updated = await updateEventHistoryData(id, {
-        ...(row.data || {}),
+      const mergedData: Record<string, unknown> = {
+        ...(existingData ?? {}),
         signupForm: normalizedNext,
-      });
-      const persistedForm = sanitizeSignupForm(
-        ((updated as any)?.data?.signupForm as SignupForm) ||
-          normalizedNext
-      );
+      };
+      const updatedRow = await updateEventHistoryData(id, mergedData);
+      const updatedData = (updatedRow?.data ?? null) as
+        | Record<string, unknown>
+        | null;
+      const persistedCandidate = updatedData?.["signupForm"];
+      const persistedForm =
+        persistedCandidate && typeof persistedCandidate === "object"
+          ? sanitizeSignupForm({
+              ...(persistedCandidate as SignupForm),
+              enabled: true,
+            })
+          : normalizedNext;
       const latestResponse =
         persistedForm.responses.find(
           (response) => response.id === newResponse.id
@@ -380,14 +392,22 @@ export async function POST(
         enabled: true,
       });
 
-      const updated = await updateEventHistoryData(id, {
-        ...(row.data || {}),
+      const cancelMerged: Record<string, unknown> = {
+        ...(existingData ?? {}),
         signupForm: normalizedNext,
-      });
-      const persistedForm = sanitizeSignupForm(
-        ((updated as any)?.data?.signupForm as SignupForm) ||
-          normalizedNext
-      );
+      };
+      const updatedRow = await updateEventHistoryData(id, cancelMerged);
+      const updatedData = (updatedRow?.data ?? null) as
+        | Record<string, unknown>
+        | null;
+      const persistedCandidate = updatedData?.["signupForm"];
+      const persistedForm =
+        persistedCandidate && typeof persistedCandidate === "object"
+          ? sanitizeSignupForm({
+              ...(persistedCandidate as SignupForm),
+              enabled: true,
+            })
+          : normalizedNext;
       return NextResponse.json({
         ok: true,
         signupForm: persistedForm,
@@ -395,7 +415,7 @@ export async function POST(
     }
 
     return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[signup] API error", error);
     return NextResponse.json(
       { error: "Unexpected error processing signup request." },

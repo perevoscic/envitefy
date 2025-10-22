@@ -12,7 +12,6 @@ import {
   countConfirmedForSlot,
   countWaitlistedForSlot,
   findSignupResponseForUser,
-  findSignupSlot,
   getSlotCapacity,
   normalizeSignupQuantity,
   remainingCapacityForSlot,
@@ -27,6 +26,26 @@ type Props = {
   viewerId?: string | null;
   viewerName?: string | null;
   viewerEmail?: string | null;
+};
+
+type ReserveRequestPayload = {
+  action: "reserve";
+  slots: Array<{ sectionId: string; slotId: string; quantity: number }>;
+  name: string;
+  note?: string;
+  guests?: number;
+  answers?: Array<{ questionId: string; value: string }>;
+  email?: string;
+  phone?: string;
+  signupId?: string;
+};
+
+type SignupApiResponse = {
+  ok?: boolean;
+  error?: string;
+  signupForm?: SignupForm;
+  response?: SignupResponse;
+  status?: string;
 };
 
 type SlotSelectionMap = Record<string, number>;
@@ -321,14 +340,14 @@ const SignupViewer: React.FC<Props> = ({
       }))
       .filter((entry) => entry.value);
 
-    const payload: any = {
+    const payload: ReserveRequestPayload = {
       action: "reserve",
       slots: slotsPayload,
       name: name.trim(),
-      note: note.trim() || undefined,
-      guests,
-      answers: answersPayload,
     };
+    if (note.trim()) payload.note = note.trim();
+    if (guests > 0) payload.guests = guests;
+    if (answersPayload.length > 0) payload.answers = answersPayload;
     if (form.settings.collectEmail && email.trim()) payload.email = email.trim();
     if (form.settings.collectPhone && phone.trim()) payload.phone = phone.trim();
     if (myResponse?.id) payload.signupId = myResponse.id;
@@ -340,14 +359,14 @@ const SignupViewer: React.FC<Props> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
         setError(
           (data && data.error) || "Could not save your sign-up. Try again."
         );
         return;
       }
-      setForm(data.signupForm as SignupForm);
+      setForm(data.signupForm);
       const status =
         typeof data?.status === "string"
           ? data.status
@@ -357,7 +376,7 @@ const SignupViewer: React.FC<Props> = ({
       } else {
         setServerMessage("Saved! We'll send reminders before the event.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to submit signup:", err);
       setError("Unexpected error. Please try again.");
     } finally {
@@ -376,19 +395,19 @@ const SignupViewer: React.FC<Props> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "cancel", signupId: myResponse.id }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
         setError(
           (data && data.error) || "Couldn't cancel. Try again or refresh."
         );
         return;
       }
-      setForm(data.signupForm as SignupForm);
+      setForm(data.signupForm);
       setServerMessage("Cancelled. Thanks for letting us know!");
       setSelectedSlots({});
       setNote("");
       setGuests(0);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to cancel signup:", err);
       setError("Unexpected error cancelling.");
     } finally {

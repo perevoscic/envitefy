@@ -5,7 +5,6 @@ import {
   SignupFormSettings,
   SignupQuestion,
   SignupResponse,
-  SignupResponseSlot,
   SignupResponseStatus,
 } from "@/types/signup";
 
