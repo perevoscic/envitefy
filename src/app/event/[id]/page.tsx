@@ -35,6 +35,8 @@ import {
   normalizeRegistryLinks,
 } from "@/utils/registry-links";
 import type { CSSProperties } from "react";
+import { decorateAmazonUrl } from "@/utils/affiliates";
+import SponsoredSupplies from "@/components/SponsoredSupplies";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +109,9 @@ const extractTimeTokens = (value?: string | null): string[] => {
   return tokens;
 };
 
-const normalizeTimeToken = (token: string | null | undefined): number | null => {
+const normalizeTimeToken = (
+  token: string | null | undefined
+): number | null => {
   if (!token) return null;
   const trimmed = token.trim().toLowerCase().replace(/\s+/g, " ");
   const ampmMatch =
@@ -122,8 +126,7 @@ const normalizeTimeToken = (token: string | null | undefined): number | null => 
     if (suffix.startsWith("p")) hour += 12;
     return hour * 60 + minute;
   }
-  const militaryMatch =
-    trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/) || null;
+  const militaryMatch = trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/) || null;
   if (militaryMatch) {
     const hour = Number.parseInt(militaryMatch[1], 10);
     const minute = Number.parseInt(militaryMatch[2], 10);
@@ -311,6 +314,12 @@ export default async function EventPage({
   )
     .trim()
     .toLowerCase();
+  const createdFlag = String(
+    ((awaitedSearchParams as any)?.created ?? "") as string
+  )
+    .trim()
+    .toLowerCase();
+  const createdParam = createdFlag === "1" || createdFlag === "true";
   const autoAccept = acceptRaw === "1" || acceptRaw === "true";
   // Try to resolve by slug, slug-id, or id; prefer user context for slug-only matches
   const session: any = await getServerSession(authOptions as any);
@@ -387,11 +396,7 @@ export default async function EventPage({
   const data = row.data as any;
   const attachmentInfo = (() => {
     const raw = data?.attachment;
-    if (
-      raw &&
-      typeof raw === "object" &&
-      typeof raw.dataUrl === "string"
-    ) {
+    if (raw && typeof raw === "object" && typeof raw.dataUrl === "string") {
       return {
         name:
           typeof raw.name === "string" && raw.name.trim()
@@ -497,12 +502,13 @@ export default async function EventPage({
   const canonical = `/event/${slug}-${row.id}`;
   const shareUrl = `${base}${canonical}`;
 
-  // Redirect to canonical slug-id URL if needed
-  if (awaitedParams.id !== `${slug}-${row.id}`) {
-    redirect(canonical);
-  }
-  if (autoAccept) {
-    redirect(canonical);
+  // Redirect to canonical slug-id URL if needed, preserving key query params
+  if (awaitedParams.id !== `${slug}-${row.id}` || autoAccept) {
+    const params = new URLSearchParams();
+    if (createdParam) params.set("created", "1");
+    const qs = params.toString();
+    const next = qs ? `${canonical}?${qs}` : canonical;
+    redirect(next);
   }
 
   // Detect RSVP phone and build SMS/Call links
@@ -606,6 +612,8 @@ export default async function EventPage({
               : null,
         })
       : null;
+
+  const viewerKind = isOwner ? "owner" : "guest";
 
   return (
     <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
@@ -796,17 +804,20 @@ export default async function EventPage({
                 Attachment
               </p>
               <a
-                href={attachmentInfo.dataUrl}
+                href={attachmentInfo?.dataUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                download={attachmentInfo.name}
+                download={attachmentInfo?.name}
                 className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:border-foreground/50 hover:bg-surface/80"
               >
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-xs">
-                  {attachmentInfo.type.startsWith("image/") ? "🖼" : "📄"}
+                  {attachmentInfo?.type?.startsWith("image/") ? "🖼" : "📄"}
                 </span>
-                <span className="truncate" title={attachmentInfo.name}>
-                  {attachmentInfo.name}
+                <span
+                  className="truncate"
+                  title={attachmentInfo?.name || "Attachment"}
+                >
+                  {attachmentInfo?.name || "Attachment"}
                 </span>
               </a>
             </div>
@@ -819,53 +830,81 @@ export default async function EventPage({
               <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
             </div>
           )}
+
+          {/* Sponsored supplies block: show to owner right after creation */}
+          {!isReadOnly && isOwner && createdParam && (
+            <SponsoredSupplies
+              placement="confirm"
+              category={categoryRaw}
+              viewer="owner"
+            />
+          )}
+          {/* Sponsored supplies block for guests (always visible to non-owners) */}
+          {!isOwner && (
+            <SponsoredSupplies
+              placement="confirm"
+              category={categoryRaw}
+              viewer="guest"
+            />
+          )}
           {registriesAllowed && registryCards.length > 0 && (
             <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 Registries
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {registryCards.map((link) => (
-                  <a
-                    key={link.url}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-foreground/40 hover:bg-surface/80"
-                  >
-                    <span
-                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-                      style={{ backgroundColor: link.accentColor, color: link.textColor }}
-                      aria-hidden="true"
+                {registryCards.map((link) => {
+                  const decorated = decorateAmazonUrl(link.url, {
+                    category: categoryRaw,
+                    viewer: viewerKind as any,
+                    placement: "registry_card",
+                  });
+                  return (
+                    <a
+                      key={link.url}
+                      href={decorated}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-foreground/40 hover:bg-surface/80"
                     >
-                      {link.badgeText}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-foreground">
-                        {link.label}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-90"
-                          aria-hidden="true"
-                        >
-                          <path d="M8.5 5.5L12.5 10l-4 4.5" />
-                        </svg>
+                      <span
+                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                        style={{
+                          backgroundColor: link.accentColor,
+                          color: link.textColor,
+                        }}
+                        aria-hidden="true"
+                      >
+                        {link.badgeText}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-foreground/60">
-                        {link.host}
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-foreground">
+                          {link.label}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-90"
+                            aria-hidden="true"
+                          >
+                            <path d="M8.5 5.5L12.5 10l-4 4.5" />
+                          </svg>
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                          {link.host}
+                        </span>
                       </span>
-                    </span>
-                  </a>
-                ))}
+                    </a>
+                  );
+                })}
               </div>
               <p className="mt-3 text-xs text-foreground/60">
-                These links open in a new tab. Registries must stay public or shareable so guests can view them.
+                These links open in a new tab. Registries must stay public or
+                shareable so guests can view them.
               </p>
             </div>
           )}

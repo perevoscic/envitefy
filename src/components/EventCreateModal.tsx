@@ -678,7 +678,7 @@ export default function EventCreateModal({
         }
       } catch {}
       if (id) {
-        router.push(`/event/${id}`);
+        router.push(`/event/${id}?created=1`);
       }
       onClose();
     } catch (err: any) {

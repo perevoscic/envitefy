@@ -8,13 +8,128 @@ import {
 } from "@/utils/profileCache";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
 import Logo from "@/assets/logo.png";
 import { getCategoryIcon } from "@/lib/event-colors";
+
+declare global {
+  interface Window {
+    adsbygoogle?: unknown[];
+  }
+}
+
+const ADSENSE_CLIENT_ID = "ca-pub-8853590530457369";
+const ADSENSE_SLOT_SIDEBAR = "8155405384";
+const ADS_DISABLED_BY_ENV =
+  process.env.NEXT_PUBLIC_DISABLE_ADS === "1" ||
+  process.env.NODE_ENV !== "production";
+const LOCAL_AD_HOST_PATTERN =
+  /(^|\.)localhost$|(^|\.)127\.0\.0\.1$|^0\.0\.0\.0$|(^|\.)::1$|\.local$/i;
+
+type SidebarAdUnitProps = {
+  className?: string;
+};
+
+function SidebarAdUnit({ className }: SidebarAdUnitProps) {
+  const adRef = useRef<HTMLModElement | null>(null);
+  const [hasContent, setHasContent] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  if (
+    ADS_DISABLED_BY_ENV ||
+    (typeof window !== "undefined" &&
+      LOCAL_AD_HOST_PATTERN.test(window.location.hostname))
+  ) {
+    return null;
+  }
+
+  useEffect(() => {
+    const node = adRef.current;
+    if (!node) return;
+
+    let hideTimer: number | null = null;
+    let cancelled = false;
+    let observer: MutationObserver | null = null;
+
+    const detectContent = () => {
+      const el = adRef.current;
+      if (!el) return false;
+      const populated =
+        el.childElementCount > 0 ||
+        !!el.querySelector("iframe") ||
+        el.getAttribute("data-ad-status") === "filled";
+      if (!cancelled) {
+        setHasContent(populated);
+      }
+      if (populated && hideTimer !== null) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      return populated;
+    };
+
+    try {
+      const queue = (window.adsbygoogle = window.adsbygoogle || []);
+      queue.push({});
+    } catch (error) {
+      console.debug("[adsense] failed to enqueue ad", error);
+    }
+
+    detectContent();
+
+    if (typeof MutationObserver !== "undefined") {
+      observer = new MutationObserver(() => {
+        if (detectContent() && observer) {
+          observer.disconnect();
+          observer = null;
+        }
+      });
+      observer.observe(node, { childList: true, subtree: true });
+    }
+
+    hideTimer = window.setTimeout(() => {
+      if (!detectContent() && !cancelled) {
+        if (observer) {
+          observer.disconnect();
+          observer = null;
+        }
+        setHidden(true);
+      }
+    }, 4000);
+
+    return () => {
+      if (hideTimer !== null) {
+        window.clearTimeout(hideTimer);
+      }
+      if (observer) observer.disconnect();
+      cancelled = true;
+    };
+  }, []);
+
+  if (hidden) return null;
+
+  const containerClass = ["px-2", hasContent ? "py-2" : "py-0", className || ""]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className={containerClass}>
+      <ins
+        ref={adRef}
+        className="adsbygoogle"
+        style={{ display: "block" }}
+        data-ad-format="fluid"
+        data-ad-layout-key="-gw-3+1f-3d+2z"
+        data-ad-client={ADSENSE_CLIENT_ID}
+        data-ad-slot={ADSENSE_SLOT_SIDEBAR}
+      />
+    </div>
+  );
+}
 
 const CATEGORY_OPTIONS = [
   "Birthdays",
@@ -722,6 +837,32 @@ export default function LeftSidebar() {
         };
     }
   };
+
+  const recentAdIndex = useMemo<number | null>(() => {
+    if (!history || history.length <= 1) return null;
+    const choice = Math.random() < 0.5 ? 1 : 2;
+    return Math.min(history.length - 1, choice);
+  }, [history.length]);
+
+  const categoryAdPositions = useMemo<Map<string, number | null>>(() => {
+    const counts = new Map<string, number>();
+    for (const row of history) {
+      const category = (row as any)?.data?.category as string | null;
+      if (!category) continue;
+      if (category.trim().toLowerCase() === "shared events") continue;
+      counts.set(category, (counts.get(category) ?? 0) + 1);
+    }
+    const map = new Map<string, number | null>();
+    counts.forEach((count, category) => {
+      if (count <= 1) {
+        map.set(category, null);
+        return;
+      }
+      const choice = Math.random() < 0.5 ? 1 : 2;
+      map.set(category, Math.min(count - 1, choice));
+    });
+    return map;
+  }, [history]);
 
   // Shared Events gradient palette (8 options)
   const SHARED_GRADIENTS: {
@@ -2375,16 +2516,19 @@ export default function LeftSidebar() {
                 return (
                   <div ref={categoriesRef} className="mt-2 space-y-1">
                     {sortedCategories.map((c) => {
-                      // Show total count of items in the category (not only future-dated)
-                      const totalCount = (() => {
+                      // Gather items under this category once to reuse below
+                      const categoryItems = (() => {
                         try {
                           return history.filter(
                             (h) => (h as any)?.data?.category === c
-                          ).length;
+                          );
                         } catch {
-                          return 0;
+                          return [] as typeof history;
                         }
                       })();
+                      const totalCount = categoryItems.length;
+                      const categoryAdIndex =
+                        categoryAdPositions.get(c) ?? null;
                       return (
                         <div key={c} className="">
                           <button
@@ -2996,57 +3140,48 @@ export default function LeftSidebar() {
                               );
                             })()}
                           </button>
-                          {activeCategory === c && (
+                          {activeCategory === c ? (
                             <div className="mt-1 mb-2">
-                              {(() => {
-                                const items = history.filter(
-                                  (h) => (h as any)?.data?.category === c
-                                );
-                                if (items.length === 0)
-                                  return (
-                                    <div className="text-xs text-foreground/60 px-1 py-0.5">
-                                      No events
-                                    </div>
-                                  );
-                                return (
-                                  <div className="space-y-1">
-                                    {items.map((h) => {
-                                      const slug = (h.title || "")
-                                        .toLowerCase()
-                                        .replace(/[^a-z0-9]+/g, "-")
-                                        .replace(/^-+|-+$/g, "");
-                                      const prettyHref = `/event/${slug}-${h.id}`;
-                                      const category = (h as any)?.data
-                                        ?.category as string | null;
-                                      const isShared = Boolean(
-                                        (h as any)?.data?.shared ||
-                                          (h as any)?.data?.sharedOut ||
-                                          (h as any)?.data?.category ===
-                                            "Shared events"
-                                      );
-                                      const rowAndBadge = (() => {
-                                        if (isShared) {
-                                          return {
-                                            row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                            badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
-                                          };
-                                        }
-                                        if (!category)
-                                          return {
-                                            row: "",
-                                            badge:
-                                              "bg-surface/70 text-foreground/70 border-border/70",
-                                          };
-                                        const color =
-                                          categoryColors[category] ||
-                                          defaultCategoryColor(category);
-                                        const ccls = colorClasses(color);
-                                        const row = ccls.tint;
-                                        return { row, badge: ccls.badge };
-                                      })();
-                                      return (
+                              {categoryItems.length === 0 ? (
+                                <div className="text-xs text-foreground/60 px-1 py-0.5">
+                                  No events
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  {categoryItems.map((h, index) => {
+                                    const slug = (h.title || "")
+                                      .toLowerCase()
+                                      .replace(/[^a-z0-9]+/g, "-")
+                                      .replace(/^-+|-+$/g, "");
+                                    const prettyHref = `/event/${slug}-${h.id}`;
+                                    const category = (h as any)?.data?.category as string | null;
+                                    const isShared = Boolean(
+                                      (h as any)?.data?.shared ||
+                                        (h as any)?.data?.sharedOut ||
+                                        (h as any)?.data?.category === "Shared events"
+                                    );
+                                    const rowAndBadge = (() => {
+                                      if (isShared) {
+                                        return {
+                                          row: `${sharedGradientRowClass()} ${sharedTextClass}`,
+                                          badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
+                                        };
+                                      }
+                                      if (!category)
+                                        return {
+                                          row: "",
+                                          badge: "bg-surface/70 text-foreground/70 border-border/70",
+                                        };
+                                      const color =
+                                        categoryColors[category] ||
+                                        defaultCategoryColor(category);
+                                      const ccls = colorClasses(color);
+                                      const row = ccls.tint;
+                                      return { row, badge: ccls.badge };
+                                    })();
+                                    return (
+                                      <Fragment key={h.id}>
                                         <div
-                                          key={h.id}
                                           data-history-item={h.id}
                                           className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
                                         >
@@ -3055,15 +3190,12 @@ export default function LeftSidebar() {
                                             onClick={() => {
                                               try {
                                                 const isTouch =
-                                                  typeof window !==
-                                                    "undefined" &&
-                                                  typeof window.matchMedia ===
-                                                    "function" &&
+                                                  typeof window !== "undefined" &&
+                                                  typeof window.matchMedia === "function" &&
                                                   window.matchMedia(
                                                     "(hover: none), (pointer: coarse)"
                                                   ).matches;
-                                                if (isTouch)
-                                                  setIsCollapsed(true);
+                                                if (isTouch) setIsCollapsed(true);
                                               } catch {}
                                             }}
                                             className="block pr-8"
@@ -3084,25 +3216,18 @@ export default function LeftSidebar() {
                                               {(() => {
                                                 const start =
                                                   (h as any)?.data?.start ||
-                                                  (h as any)?.data?.event
-                                                    ?.start;
-                                                const dateStr =
-                                                  start || h.created_at;
+                                                  (h as any)?.data?.event?.start;
+                                                const dateStr = start || h.created_at;
                                                 return dateStr
-                                                  ? new Date(
-                                                      dateStr
-                                                    ).toLocaleDateString()
+                                                  ? new Date(dateStr).toLocaleDateString()
                                                   : "";
                                               })()}
                                             </div>
                                           </Link>
-                                          {/* Shared badge (bottom-right) */}
                                           {Boolean(
                                             (h as any)?.data &&
-                                              (((h as any).data
-                                                .shared as any) ||
-                                                ((h as any).data
-                                                  .sharedOut as any))
+                                              (((h as any).data.shared as any) ||
+                                                ((h as any).data.sharedOut as any))
                                           ) && (
                                             <svg
                                               viewBox="0 0 25.274 25.274"
@@ -3116,7 +3241,6 @@ export default function LeftSidebar() {
                                               <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
                                             </svg>
                                           )}
-                                          {/* Options menu for category list items (kebab) */}
                                           <button
                                             type="button"
                                             aria-label="Item options"
@@ -3148,9 +3272,7 @@ export default function LeftSidebar() {
                                                   shouldOpenUpward
                                                 );
                                                 setItemMenuPos({
-                                                  left: Math.round(
-                                                    rect.right + 8
-                                                  ),
+                                                  left: Math.round(rect.right + 8),
                                                   top: shouldOpenUpward
                                                     ? Math.round(rect.top - 10)
                                                     : Math.round(
@@ -3219,90 +3341,6 @@ export default function LeftSidebar() {
                                                     <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
                                                   </svg>
                                                   <span className="text-sm">
-                                                    Share
-                                                  </span>
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={async (e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setItemMenuId(null);
-                                                    setItemMenuOpensUpward(
-                                                      false
-                                                    );
-                                                    setItemMenuPos(null);
-                                                    await renameHistoryItem(
-                                                      h.id,
-                                                      h.title
-                                                    );
-                                                  }}
-                                                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                                >
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    className="h-4 w-4"
-                                                    aria-hidden="true"
-                                                  >
-                                                    <path d="M12 20h9" />
-                                                    <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                                  </svg>
-                                                  <span className="text-sm">
-                                                    Rename
-                                                  </span>
-                                                </button>
-                                                <div className="my-1 h-px bg-border" />
-                                                <button
-                                                  type="button"
-                                                  onClick={async (e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setItemMenuId(null);
-                                                    setItemMenuOpensUpward(
-                                                      false
-                                                    );
-                                                    setItemMenuPos(null);
-                                                    await deleteHistoryItem(
-                                                      h.id,
-                                                      h.title
-                                                    );
-                                                  }}
-                                                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-500 hover:bg-red-500/10"
-                                                >
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    className="h-4 w-4"
-                                                    aria-hidden="true"
-                                                  >
-                                                    <path d="M3 6h18" />
-                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    <line
-                                                      x1="10"
-                                                      y1="11"
-                                                      x2="10"
-                                                      y2="17"
-                                                    />
-                                                    <line
-                                                      x1="14"
-                                                      y1="11"
-                                                      x2="14"
-                                                      y2="17"
-                                                    />
-                                                  </svg>
-                                                  <span className="text-sm">
                                                     Delete
                                                   </span>
                                                 </button>
@@ -3310,13 +3348,18 @@ export default function LeftSidebar() {
                                               document.body
                                             )}
                                         </div>
-                                      );
-                                    })}
-                                  </div>
-                                );
-                              })()}
+                                        {categoryAdIndex !== null &&
+                                        categoryAdIndex === index ? (
+                                          <SidebarAdUnit />
+                                        ) : null}
+                                      </Fragment>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ) : null}
+
                         </div>
                       );
                     })}
@@ -3336,7 +3379,7 @@ export default function LeftSidebar() {
                   No history yet
                 </div>
               )}
-              {history.map((h) => {
+              {history.map((h, index) => {
                 const slug = (h.title || "")
                   .toLowerCase()
                   .replace(/[^a-z0-9]+/g, "-")
@@ -3369,11 +3412,11 @@ export default function LeftSidebar() {
                 })();
                 const categoryMenuOpen = itemMenuCategoryOpenFor === h.id;
                 return (
-                  <div
-                    key={h.id}
-                    data-history-item={h.id}
-                    className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
-                  >
+                  <Fragment key={h.id}>
+                    <div
+                      data-history-item={h.id}
+                      className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
+                    >
                     <Link
                       href={prettyHref}
                       onClick={() => {
@@ -3721,7 +3764,11 @@ export default function LeftSidebar() {
                       </svg>
                     )}
                   </div>
-                );
+                  {recentAdIndex !== null && index === recentAdIndex ? (
+                    <SidebarAdUnit />
+                  ) : null}
+                </Fragment>
+              );
               })}
             </nav>
           </div>
