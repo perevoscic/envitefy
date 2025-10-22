@@ -17,6 +17,7 @@ export default function PwaInstallButton() {
   const [maybeInstallable, setMaybeInstallable] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [heroOutOfView, setHeroOutOfView] = useState(false);
+  const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Hide if already installed or running in standalone
@@ -90,6 +91,57 @@ export default function PwaInstallButton() {
       } catch {
         (mql as any)?.removeListener?.(onChange);
       }
+    };
+  }, []);
+
+  // Nudge the FAB above the reCAPTCHA badge when present
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let raf = 0 as number;
+    const compute = () => {
+      try {
+        const el = document.querySelector(
+          ".grecaptcha-badge"
+        ) as HTMLElement | null;
+        if (!el) {
+          setRecaptchaOffset(0);
+          return;
+        }
+        const rect = el.getBoundingClientRect();
+        const isVisible = rect.width > 0 && rect.height > 0;
+        // Add a small gap above the badge
+        setRecaptchaOffset(isVisible ? Math.ceil(rect.height) + 12 : 0);
+      } catch {
+        // best effort only
+      }
+    };
+    compute();
+
+    const mo = new MutationObserver(() => {
+      try {
+        cancelAnimationFrame(raf);
+      } catch {}
+      raf = window.requestAnimationFrame(compute);
+    });
+    try {
+      mo.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    } catch {}
+    window.addEventListener("resize", compute);
+    const interval = window.setInterval(compute, 2000);
+    return () => {
+      try {
+        mo.disconnect();
+      } catch {}
+      window.removeEventListener("resize", compute);
+      window.clearInterval(interval);
+      try {
+        cancelAnimationFrame(raf);
+      } catch {}
     };
   }, []);
 
@@ -213,7 +265,10 @@ export default function PwaInstallButton() {
     return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-2">
+    <div
+      className="fixed right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-2"
+      style={{ bottom: 16 + recaptchaOffset }}
+    >
       {!expanded && (
         <button
           type="button"

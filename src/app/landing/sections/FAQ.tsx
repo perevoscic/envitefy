@@ -4,7 +4,7 @@ import { useState } from "react";
 const qs = [
   {
     q: "Can I share my event without guests downloading an app?",
-    a: "Yes! Guests can open and RSVP via an email or text link — no downloads needed.",
+    a: "Yes! Guests can open and RSVP via an email or text link - no downloads needed.",
   },
   {
     q: "If I change event details, do guests see the update?",
@@ -61,7 +61,7 @@ export default function FAQ() {
                 aria-expanded={open === idx}
               >
                 <div className="flex items-center justify-between gap-4">
-                  <span className="font-medium">{item.q}</span>
+                  <span className="font-semibold">{item.q}</span>
                   <span className="text-foreground/60">
                     {open === idx ? "−" : "+"}
                   </span>

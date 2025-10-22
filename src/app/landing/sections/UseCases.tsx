@@ -2,7 +2,7 @@ export default function UseCases() {
   const items = [
     {
       title: "Parents",
-      text: "School events, parties, appointments—all in one place.",
+      text: "School events, parties, appointments - all in one place.",
       badgeClass: "bg-primary/15 text-primary",
       icon: (
         <svg
@@ -69,7 +69,7 @@ export default function UseCases() {
     },
     {
       title: "Weddings",
-      text: "Invites, ceremonies, and receptions—saved with reminders.",
+      text: "Invites, ceremonies, and receptions - saved with reminders.",
       badgeClass: "bg-primary/15 text-primary",
       icon: (
         <svg

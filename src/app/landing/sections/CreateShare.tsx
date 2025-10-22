@@ -1,19 +1,34 @@
 import Image from "next/image";
-import Link from "next/link";
+import CreateShareCta from "./CreateShareCta";
 
 const points = [
+  "Your guests can add your event to their calendar in one tap.",
   "Make plans simple again. With Snap My Date, you can create and share an event in under a minute.",
-  "Instant event page: Add your title, time, and location — no login required for guests.",
+  "Instant event page: Add your title, time, location, and description - no login required for guests.",
   "Smart directions: Your guests get dynamic maps that update automatically.",
   'RSVP by email or text: Guests reply "Yes" or "No" directly — no forms, no confusion.',
   "Always up to date: If you change the time, place, or details, your shared link updates instantly.",
+  "Add registry links and save to your calendar — Apple, Google, or Outlook in one tap.",
   "One link, zero stress: Perfect for birthdays, meetups, practices, and parties.",
+  "Registry link support, add Amazon, Target, Walmart or any other registry link right from your event page.",
 ];
 
 const calendarTargets = [
-  { label: "Apple", className: "text-xs font-semibold" },
-  { label: "G", className: "text-sm font-semibold" },
-  { label: "O", className: "text-sm font-semibold" },
+  {
+    alt: "Apple",
+    light: "/brands/apple-black.svg",
+    dark: "/brands/apple-white.svg",
+  },
+  {
+    alt: "Google",
+    light: "/brands/google.svg",
+    dark: "/brands/google.svg",
+  },
+  {
+    alt: "Microsoft",
+    light: "/brands/microsoft.svg",
+    dark: "/brands/microsoft.svg",
+  },
 ];
 
 const rsvpStatuses = [
@@ -60,9 +75,11 @@ export default function CreateShare() {
             id="create-share"
             className="text-2xl sm:text-3xl font-bold tracking-tight"
           >
-            Create &amp; Share Events in Seconds — One Link Does It All
+            Create &amp; Share Events in Seconds.
+            <br />
+            One Link Does It All.
           </h2>
-          <ul className="mt-6 space-y-4 text-foreground/75 text-base sm:text-lg">
+          <ul className="mt-6 space-y-4 pb-10 text-foreground/75 text-base sm:text-lg">
             {points.map((point) => (
               <li key={point} className="flex items-start gap-3">
                 <span className="mt-1 h-2 w-2 rounded-full bg-primary/80" />
@@ -70,12 +87,7 @@ export default function CreateShare() {
               </li>
             ))}
           </ul>
-          <Link
-            href="/snap"
-            className="mt-8 inline-flex items-center justify-center rounded-2xl px-6 py-3 text-base font-semibold bg-primary text-on-primary hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
-          >
-            Create your first event →
-          </Link>
+          <CreateShareCta />
         </div>
         <div className="mx-auto w-full max-w-2xl">
           <p className="text-center text-sm font-medium text-primary">
@@ -92,7 +104,7 @@ export default function CreateShare() {
                     Dominic&apos;s 7th Birthday Party
                   </h3>
                   <p className="mt-1 text-sm text-foreground/70">
-                    Hosted by Ruslan Josan
+                    Hosted by Russell Jason
                   </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-2xl shadow-sm">
@@ -110,56 +122,73 @@ export default function CreateShare() {
                     Apr 10, 2026 {"\u00B7"} 10:15 PM {"\u2013"} 11:15 PM
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                    Venue
-                  </dt>
-                  <dd className="mt-1 text-base font-semibold text-foreground">
-                    US Gold Gymnastics
-                  </dd>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                      Venue
+                    </dt>
+                    <dd className="mt-1 text-base font-semibold text-foreground">
+                      US Gold Gymnastics
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                      Address
+                    </dt>
+                    <dd className="mt-1 text-base font-semibold text-foreground">
+                      145 Main St, Atlanta, GA 30301
+                    </dd>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                    Address
-                  </dt>
-                  <dd className="mt-1 text-base font-semibold text-foreground">
-                    12432 Emerald Coast Pkwy, Miramar Beach, FL 32550
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                    Add to calendar
-                  </dt>
-                  <dd className="mt-1">
-                    <div className="flex items-center gap-3">
-                      {calendarTargets.map((target) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                      Add to calendar
+                    </dt>
+                    <dd className="mt-1">
+                      <div className="flex items-center gap-3">
+                        {calendarTargets.map((target) => (
+                          <span
+                            key={target.alt}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90"
+                          >
+                            <Image
+                              src={target.light}
+                              alt={target.alt}
+                              width={22}
+                              height={22}
+                              className="h-5 w-5 dark:hidden"
+                            />
+                            <Image
+                              src={target.dark}
+                              alt={target.alt}
+                              width={22}
+                              height={22}
+                              className="hidden h-5 w-5 dark:block"
+                            />
+                          </span>
+                        ))}
+                      </div>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                      RSVP
+                    </dt>
+                    <dd className="mt-2 flex items-center gap-2">
+                      {rsvpStatuses.map((status) => (
                         <span
-                          key={target.label}
-                          className={`flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/90 text-foreground ${target.className}`}
+                          key={status.label}
+                          className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900"
                         >
-                          {target.label}
+                          <span className="text-base" aria-hidden="true">
+                            {status.icon}
+                          </span>
+                          {status.label}
                         </span>
                       ))}
-                    </div>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                    RSVP
-                  </dt>
-                  <dd className="mt-2 flex items-center gap-2">
-                    {rsvpStatuses.map((status) => (
-                      <span
-                        key={status.label}
-                        className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900"
-                      >
-                        <span className="text-base" aria-hidden="true">
-                          {status.icon}
-                        </span>
-                        {status.label}
-                      </span>
-                    ))}
-                  </dd>
+                    </dd>
+                  </div>
                 </div>
               </dl>
               <div>
@@ -190,17 +219,20 @@ export default function CreateShare() {
                   ))}
                 </div>
               </div>
-              <div className="flex justify-center">
-                <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
+              <div className="flex flex-col items-center">
+                <div className="rounded-2xl border border-border/70 bg-background/80 p-3 shadow-sm">
                   <Image
-                    src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80' shape-rendering='crispEdges'><rect width='120' height='80' fill='%23f8fafc'/><rect x='8' y='10' width='104' height='24' rx='4' fill='%23f472b6'/><rect x='14' y='18' width='52' height='8' rx='2' fill='%23ffffff'/><rect x='14' y='46' width='72' height='10' rx='2' fill='%23a855f7'/><rect x='14' y='60' width='92' height='6' rx='2' fill='%236564f1'/></svg>"
-                    alt="Birthday invite thumbnail"
-                    width={120}
-                    height={80}
-                    className="h-28 w-44 rounded-xl border border-border/60 object-cover"
+                    src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 240' shape-rendering='crispEdges'><rect width='180' height='240' rx='10' fill='%23ffffff'/><rect x='0' y='0' width='180' height='48' rx='10' fill='%23f472b6'/><rect x='16' y='16' width='100' height='16' rx='3' fill='%23ffffff'/><rect x='16' y='72' width='148' height='14' rx='3' fill='%2311182722'/><rect x='16' y='92' width='120' height='10' rx='3' fill='%23a855f7'/><rect x='16' y='110' width='140' height='8' rx='3' fill='%236564f1'/><rect x='16' y='134' width='148' height='6' rx='3' fill='%23e5e7eb'/><rect x='16' y='148' width='112' height='6' rx='3' fill='%23e5e7eb'/><rect x='16' y='162' width='148' height='6' rx='3' fill='%23e5e7eb'/><rect x='16' y='176' width='96' height='6' rx='3' fill='%23e5e7eb'/></svg>"
+                    alt="Flyer preview"
+                    width={180}
+                    height={240}
+                    className="h-64 w-48 rounded-xl border border-border/60 object-cover"
                     draggable={false}
                   />
                 </div>
+                <p className="mt-2 text-xs text-foreground/60 italic">
+                  Your flyer could be here
+                </p>
               </div>
             </div>
             <div className="flex items-center justify-between border-t border-border/60 px-6 py-4 text-sm font-medium text-foreground/80">
@@ -218,9 +250,6 @@ export default function CreateShare() {
               </span>
             </div>
           </div>
-          <p className="mt-6 text-xs text-center text-foreground/50">
-            Share one link. Guests stay up to date automatically.
-          </p>
         </div>
       </div>
     </section>
