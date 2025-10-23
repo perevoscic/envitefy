@@ -6,6 +6,7 @@ import {
   SignupQuestion,
   SignupResponse,
   SignupResponseStatus,
+  SignupFormHeader,
 } from "@/types/signup";
 
 export const SIGNUP_FORM_VERSION = 1;
@@ -63,6 +64,12 @@ export const createDefaultSignupForm = (): SignupForm => ({
   enabled: true,
   title: "",
   description: null,
+  header: {
+    backgroundColor: "#F5F5F4",
+    backgroundImage: null,
+    groupName: "",
+    creatorName: "",
+  },
   sections: [
     createSignupSection({
       title: "",
@@ -191,6 +198,25 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     ? form.responses
     : [];
   const questions = sanitizeQuestions(form.questions || []);
+  const header: SignupFormHeader | null = (() => {
+    const raw = form.header || null;
+    if (!raw || typeof raw !== "object") return null;
+    const backgroundColor = typeof (raw as any).backgroundColor === "string" && (raw as any).backgroundColor.trim()
+      ? (raw as any).backgroundColor.trim()
+      : null;
+    const imageCandidate = (raw as any).backgroundImage;
+    const backgroundImage = imageCandidate && typeof imageCandidate === "object" && typeof imageCandidate.dataUrl === "string"
+      ? {
+          name: String(imageCandidate.name || "image"),
+          type: String(imageCandidate.type || "image/*"),
+          dataUrl: imageCandidate.dataUrl as string,
+        }
+      : null;
+    const groupName = (raw as any).groupName?.trim() || null;
+    const creatorName = (raw as any).creatorName?.trim() || null;
+    if (!backgroundColor && !backgroundImage && !groupName && !creatorName) return null;
+    return { backgroundColor, backgroundImage, groupName, creatorName };
+  })();
 
   if (!sections.length) {
     return {
@@ -198,6 +224,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
       enabled: false,
       title: (form.title || "").trim() || "Sign-up sheet",
       description: form.description?.trim() ? form.description.trim() : null,
+      header: header || null,
       sections: [],
       questions: [],
       settings,
@@ -210,6 +237,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     enabled: Boolean(form.enabled),
     title: (form.title || "").trim() || "Sign-up sheet",
     description: form.description?.trim() ? form.description.trim() : null,
+    header: header || null,
     sections,
     questions,
     settings,

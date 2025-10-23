@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SignupBuilder from "@/components/smart-signup-form/SignupBuilder";
+import SmartSignupWizard from "@/components/smart-signup-form/Wizard";
 import type { SignupForm } from "@/types/signup";
 import { createDefaultSignupForm, sanitizeSignupForm } from "@/utils/signup";
 
@@ -48,18 +49,12 @@ export default function SmartSignupFormPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Create a Smart sign-up</h1>
       </header>
-      <form className="space-y-3" onSubmit={submit}>
-        <SignupBuilder form={form} onChange={setForm} />
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-3 py-2 rounded-md bg-primary text-white text-sm disabled:opacity-70"
-          >
-            {submitting ? "Creating…" : "Create sign-up"}
-          </button>
-        </div>
-      </form>
+      <SmartSignupWizard
+        form={form}
+        onChange={setForm}
+        onSubmit={submit}
+        submitting={submitting}
+      />
     </main>
   );
 }

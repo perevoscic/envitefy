@@ -69,8 +69,35 @@ export type SignupForm = {
   enabled: boolean;
   title: string;
   description?: string | null;
+  header?: SignupFormHeader | null;
   sections: SignupFormSection[];
   questions: SignupQuestion[];
   settings: SignupFormSettings;
   responses: SignupResponse[];
+};
+
+export type SignupFormHeader = {
+  backgroundColor?: string | null;
+  backgroundImage?: { name: string; type: string; dataUrl: string } | null;
+  backgroundCss?: string | null;
+  groupName?: string | null;
+  creatorName?: string | null;
+  templateId?:
+    | "header-1"
+    | "header-2"
+    | "header-3"
+    | "header-4"
+    | "header-5"
+    | "header-6"
+    | "header-7"
+    | "header-8"
+    | "header-9"
+    | "header-10"
+    | null;
+  themeId?: string | null;
+  textColor1?: string | null;
+  textColor2?: string | null;
+  buttonColor?: string | null;
+  buttonTextColor?: string | null;
+  images?: Array<{ id: string; name: string; type: string; dataUrl: string }> | null;
 };
