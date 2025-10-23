@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   getAffiliateLinks,
   getAffiliateImageCards,
@@ -23,6 +23,10 @@ export default function SponsoredSupplies({
   title = null,
   description = null,
 }: Props) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   const enabled = shouldShowSponsored();
   const links = useMemo(() => {
     const key = placement === "email" ? "email" : "confirm";
@@ -42,8 +46,6 @@ export default function SponsoredSupplies({
       description,
     });
   }, [category, viewer, title, description]);
-
-  if (!enabled) return null;
 
   // Always prefer Target; add Amazon fallback; selectively show Oriental Trading for team/classroom cues
   const showOriental = (() => {
@@ -71,6 +73,9 @@ export default function SponsoredSupplies({
       strictCategoryOnly: false,
     });
   }, [amazonUrl, category, viewer]);
+
+  // Defer rendering until after mount to avoid SSR/CSR mismatches from env-dependent flags
+  if (!isMounted || !enabled) return null;
 
   if (!targetUrl && !amazonUrl && !orientalUrl) return null;
 
