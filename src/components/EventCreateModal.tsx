@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import RegistryLinksEditor, {
   RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
-import SignupBuilder from "@/components/signup/SignupBuilder";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
   MAX_REGISTRY_LINKS,
@@ -13,11 +12,6 @@ import {
   validateRegistryUrl,
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
-import type { SignupForm } from "@/types/signup";
-import {
-  createDefaultSignupForm,
-  sanitizeSignupForm,
-} from "@/utils/signup";
 
 type Props = {
   open: boolean;
@@ -173,10 +167,7 @@ export default function EventCreateModal({
   >(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
-  const [signupEnabled, setSignupEnabled] = useState<boolean>(false);
-  const [signupForm, setSignupForm] = useState<SignupForm>(() =>
-    createDefaultSignupForm()
-  );
+  // Smart sign-up configuration moved to its own modal
 
   // Connected calendars state
   const [connectedCalendars, setConnectedCalendars] =
@@ -376,8 +367,6 @@ export default function EventCreateModal({
     setAttachment(null);
     setAttachmentPreviewUrl(null);
     setAttachmentError(null);
-    setSignupEnabled(false);
-    setSignupForm(createDefaultSignupForm());
     if (flyerInputRef.current) flyerInputRef.current.value = "";
   }, [open, initialStart, initialEnd]);
   useEffect(() => {
@@ -462,13 +451,7 @@ export default function EventCreateModal({
           }))
         )
       : [];
-    const sanitizedSignup = signupEnabled
-      ? sanitizeSignupForm({ ...signupForm, enabled: true })
-      : null;
-    const activeSignupForm =
-      sanitizedSignup && sanitizedSignup.enabled && sanitizedSignup.sections.length
-        ? sanitizedSignup
-        : null;
+    const activeSignupForm = null;
 
     setSubmitting(true);
     try {
@@ -590,7 +573,7 @@ export default function EventCreateModal({
             : undefined,
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
-          signupForm: activeSignupForm || undefined,
+          signupForm: undefined,
         },
       };
       const r = await fetch("/api/history", {
@@ -1019,12 +1002,7 @@ export default function EventCreateModal({
               </div>
             </div>
           )}
-          <SignupBuilder
-            enabled={signupEnabled}
-            form={signupForm}
-            onEnabledChange={(next) => setSignupEnabled(next)}
-            onChange={setSignupForm}
-          />
+          {/* Smart sign-up builder moved to SmartSignupModal */}
 
           <div className="flex items-center gap-3">
             <span className="text-sm">Repeats</span>

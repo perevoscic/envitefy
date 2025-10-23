@@ -417,7 +417,9 @@ export default async function EventPage({
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
   const registriesAllowed =
-    categoryNormalized === "birthdays" || categoryNormalized === "weddings";
+    categoryNormalized === "birthdays" ||
+    categoryNormalized === "weddings" ||
+    categoryNormalized === "baby showers";
   const registryLinksRaw = Array.isArray(data?.registries)
     ? (data.registries as any[])
     : [];
@@ -863,9 +865,7 @@ export default async function EventPage({
                 initialForm={signupForm}
                 viewerKind={viewerKind}
                 viewerId={userId}
-                viewerName={
-                  (session?.user?.name as string | undefined) || null
-                }
+                viewerName={(session?.user?.name as string | undefined) || null}
                 viewerEmail={sessionEmail}
               />
             </div>
@@ -902,7 +902,8 @@ export default async function EventPage({
                     category: categoryRaw,
                     viewer: viewerKind as any,
                     placement: "registry_card",
-                    strictCategoryOnly: true,
+                    // Allow fallback to default tag when category-specific envs are not set
+                    strictCategoryOnly: false,
                   });
                   return (
                     <a

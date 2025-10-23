@@ -892,6 +892,10 @@ export default function CalendarPage() {
   useEffect(() => {
     (window as any).__openCreateEvent = () => {
       try {
+        (window as any).__closeSmartSignup?.();
+        window.dispatchEvent?.(new Event("closeSmartSignup"));
+      } catch {}
+      try {
         setCreateDefaultDate(startOfDay(new Date()));
         setCreateOpen(true);
       } catch {}
@@ -1013,6 +1017,10 @@ export default function CalendarPage() {
             <button
               type="button"
               onClick={() => {
+                try {
+                  (window as any).__closeSmartSignup?.();
+                  window.dispatchEvent?.(new Event("closeSmartSignup"));
+                } catch {}
                 setCreateDefaultDate(startOfDay(new Date()));
                 setCreateOpen(true);
               }}
@@ -1509,6 +1517,10 @@ export default function CalendarPage() {
                     type="button"
                     onClick={() => {
                       setOpenDay(null);
+                      try {
+                        (window as any).__closeSmartSignup?.();
+                        window.dispatchEvent?.(new Event("closeSmartSignup"));
+                      } catch {}
                       setCreateDefaultDate(startOfDay(openDay.date));
                       setCreateOpen(true);
                     }}

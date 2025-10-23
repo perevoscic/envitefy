@@ -23,7 +23,6 @@ export default async function Hero() {
             Now you can create and share your own events, too — no app installs
             needed.
           </p>
-          <p>Impact-Site-Verification: 4423e484-94c7-440d-9dba-4fd92408244a</p>
           <ClientHeroCtas isAuthed={isAuthed} />
           <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-foreground/70">
             <span className="text-sm uppercase tracking-wide">Works with</span>

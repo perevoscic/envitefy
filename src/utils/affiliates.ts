@@ -142,10 +142,11 @@ export function getAffiliateLinks(
 }
 
 export function shouldShowSponsored(): boolean {
-  // if (process.env.NODE_ENV !== "production") return false;
-  // Feature flag to enable/disable block globally
+  // Feature flag to enable/disable block globally. In development, default to on
   const flag = getEnv("NEXT_PUBLIC_AFFILIATE_ENABLE");
-  return flag === "1" || flag === "true";
+  if (flag === "0" || flag === "false") return false;
+  if (flag === "1" || flag === "true") return true;
+  return process.env.NODE_ENV !== "production";
 }
 
 function extractAmazonTagFromUrl(url: string): string | null {
@@ -236,6 +237,9 @@ export function decorateAmazonUrl(
             if (t) return t;
           }
         }
+        // Fallback: allow specifying a tag directly via env without a full URL
+        const directTag = get("NEXT_PUBLIC_AFFILIATE_AMAZON_TAG");
+        if (directTag && directTag.trim()) return directTag.trim();
         return null;
       })();
       if (tag) u.searchParams.set("tag", tag);

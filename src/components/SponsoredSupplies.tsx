@@ -67,7 +67,8 @@ export default function SponsoredSupplies({
       category: category || null,
       viewer,
       placement: "sponsored_main",
-      strictCategoryOnly: true,
+      // Allow default/global tag fallback if no category-specific link is configured
+      strictCategoryOnly: false,
     });
   }, [amazonUrl, category, viewer]);
 

@@ -14,6 +14,7 @@ import {
 } from "react";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
+import GlobalSmartSignup from "./GlobalSmartSignup";
 import PwaInstallButton from "@/components/PwaInstallButton";
 import {
   ThemeKey,
@@ -79,19 +80,27 @@ function ThemeProvider({
   scheduledThemeKey,
   initialOverride,
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<ThemeVariant>(initialTheme ?? "light");
-  const [isThemeHydrated, setIsThemeHydrated] = useState(initialTheme !== undefined);
+  const [theme, setThemeState] = useState<ThemeVariant>(
+    initialTheme ?? "light"
+  );
+  const [isThemeHydrated, setIsThemeHydrated] = useState(
+    initialTheme !== undefined
+  );
   const [userPrefersExplicitTheme, setUserPrefersExplicitTheme] = useState(
     initialTheme !== undefined
   );
   const [themeKey, setThemeKeyState] = useState<ThemeKey>(
     initialOverride?.themeKey ?? initialThemeKey
   );
-  const [override, setOverride] = useState<ThemeOverride | null>(initialOverride ?? null);
+  const [override, setOverride] = useState<ThemeOverride | null>(
+    initialOverride ?? null
+  );
 
   const scheduledThemeKeyRef = useRef<ThemeKey>(scheduledThemeKey);
   const mediaQueryRef = useRef<MediaQueryList | null>(null);
-  const mediaListenerRef = useRef<((e: MediaQueryListEvent) => void) | null>(null);
+  const mediaListenerRef = useRef<((e: MediaQueryListEvent) => void) | null>(
+    null
+  );
   const scheduleIntervalRef = useRef<number | null>(null);
 
   const setThemeCookie = useCallback((value: ThemeVariant | null) => {
@@ -122,12 +131,20 @@ function ThemeProvider({
         });
         if (!res.ok) return null;
         const json = (await res.json().catch(() => ({}))) as {
-          override?: { themeKey?: string; variant?: string; expiresAt?: string | null };
+          override?: {
+            themeKey?: string;
+            variant?: string;
+            expiresAt?: string | null;
+          };
         };
         const next = json?.override;
         if (!next) return payload;
-        const parsedKey = isValidThemeKey(next.themeKey) ? next.themeKey : payload.themeKey;
-        const parsedVariant = isValidVariant(next.variant) ? next.variant : payload.variant;
+        const parsedKey = isValidThemeKey(next.themeKey)
+          ? next.themeKey
+          : payload.themeKey;
+        const parsedVariant = isValidVariant(next.variant)
+          ? next.variant
+          : payload.variant;
         return {
           themeKey: parsedKey,
           variant: parsedVariant,
@@ -151,7 +168,6 @@ function ThemeProvider({
       return false;
     }
   }, []);
-
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -189,7 +205,10 @@ function ThemeProvider({
     return () => {
       if (!mediaQueryRef.current || !mediaListenerRef.current) return;
       try {
-        mediaQueryRef.current.removeEventListener("change", mediaListenerRef.current);
+        mediaQueryRef.current.removeEventListener(
+          "change",
+          mediaListenerRef.current
+        );
       } catch {
         (mediaQueryRef.current as any).removeListener(mediaListenerRef.current);
       }
@@ -207,7 +226,10 @@ function ThemeProvider({
     if (!userPrefersExplicitTheme) return;
     if (mediaQueryRef.current && mediaListenerRef.current) {
       try {
-        mediaQueryRef.current.removeEventListener("change", mediaListenerRef.current);
+        mediaQueryRef.current.removeEventListener(
+          "change",
+          mediaListenerRef.current
+        );
       } catch {
         (mediaQueryRef.current as any).removeListener(mediaListenerRef.current);
       }
@@ -285,7 +307,10 @@ function ThemeProvider({
       setThemeKeyState(nextKey);
 
       if (options?.variant && options.variant !== theme) {
-        setTheme(options.variant, { persist: options.persist ?? false, persistOverride: false });
+        setTheme(options.variant, {
+          persist: options.persist ?? false,
+          persistOverride: false,
+        });
       }
 
       if (options?.persist) {
@@ -317,7 +342,8 @@ function ThemeProvider({
     const success = await deleteOverrideOnServer();
     if (success) {
       setOverride(null);
-      const next = scheduledThemeKeyRef.current ?? resolveThemeForDate(new Date());
+      const next =
+        scheduledThemeKeyRef.current ?? resolveThemeForDate(new Date());
       setThemeKeyState(next);
     }
   }, [deleteOverrideOnServer]);
@@ -333,10 +359,20 @@ function ThemeProvider({
       override,
       clearOverride,
     }),
-    [theme, themeKey, setTheme, toggleTheme, setThemeKey, override, clearOverride]
+    [
+      theme,
+      themeKey,
+      setTheme,
+      toggleTheme,
+      setThemeKey,
+      override,
+      clearOverride,
+    ]
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
@@ -372,6 +408,7 @@ export default function Providers({
           <RegisterServiceWorker />
           {children}
           <GlobalEventCreate />
+          <GlobalSmartSignup />
           <PwaInstallButton />
         </ThemeProvider>
       </SidebarProvider>
@@ -381,6 +418,26 @@ export default function Providers({
 
 function RegisterServiceWorker() {
   useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      try {
+        if (
+          "serviceWorker" in navigator &&
+          navigator.serviceWorker.getRegistrations
+        ) {
+          navigator.serviceWorker.getRegistrations().then((regs) => {
+            regs.forEach((reg) => {
+              try {
+                reg.unregister();
+              } catch {}
+            });
+          });
+        }
+      } catch {}
+      return;
+    }
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
     const register = async () => {
@@ -396,4 +453,3 @@ function RegisterServiceWorker() {
   }, []);
   return null;
 }
-

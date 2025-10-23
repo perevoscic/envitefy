@@ -1059,9 +1059,7 @@ export default function LeftSidebar() {
           setHistory((prev) => {
             const exists = prev.some((r) => r.id === detail.id);
             const detailData =
-              detail.data && typeof detail.data === "object"
-                ? detail.data
-                : {};
+              detail.data && typeof detail.data === "object" ? detail.data : {};
             const nextItem = {
               id: String(detail.id),
               title: String(detail.title || "Event"),
@@ -2022,6 +2020,64 @@ export default function LeftSidebar() {
                       aria-hidden="true"
                     >
                       <path d="M4 13.9999L5.57465 20.2985C5.61893 20.4756 5.64107 20.5642 5.66727 20.6415C5.92317 21.397 6.60352 21.9282 7.39852 21.9933C7.4799 21.9999 7.5712 21.9999 7.75379 21.9999C7.98244 21.9999 8.09677 21.9999 8.19308 21.9906C9.145 21.8982 9.89834 21.1449 9.99066 20.193C10 20.0967 10 19.9823 10 19.7537V5.49991M18.5 13.4999C20.433 13.4999 22 11.9329 22 9.99991C22 8.06691 20.433 6.49991 18.5 6.49991M10.25 5.49991H6.5C4.01472 5.49991 2 7.51463 2 9.99991C2 12.4852 4.01472 14.4999 6.5 14.4999H10.25C12.0164 14.4999 14.1772 15.4468 15.8443 16.3556C16.8168 16.8857 17.3031 17.1508 17.6216 17.1118C17.9169 17.0756 18.1402 16.943 18.3133 16.701C18.5 16.4401 18.5 15.9179 18.5 14.8736V5.1262C18.5 4.08191 18.5 3.55976 18.3133 3.2988C18.1402 3.05681 17.9169 2.92421 17.6216 2.88804C17.3031 2.84903 16.8168 3.11411 15.8443 3.64427C14.1772 4.55302 12.0164 5.49991 10.25 5.49991Z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    try {
+                      (window as any).__openSmartSignup?.();
+                    } catch {}
+                  }}
+                  className="flex flex-1 items-center gap-2 pl-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <path d="M17 16v3" />
+                    <path d="M15.5 17.5h3" />
+                  </svg>
+                  <span>Smart sign-up</span>
+                </button>
+                <div className="ml-auto flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      try {
+                        (window as any).__openSmartSignup?.();
+                      } catch {}
+                    }}
+                    className="p-1 rounded hover:bg-surface/50"
+                    aria-label="Open Smart sign-up"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 5v14M5 12h14" />
                     </svg>
                   </button>
                 </div>
@@ -3154,11 +3210,13 @@ export default function LeftSidebar() {
                                       .replace(/[^a-z0-9]+/g, "-")
                                       .replace(/^-+|-+$/g, "");
                                     const prettyHref = `/event/${slug}-${h.id}`;
-                                    const category = (h as any)?.data?.category as string | null;
+                                    const category = (h as any)?.data
+                                      ?.category as string | null;
                                     const isShared = Boolean(
                                       (h as any)?.data?.shared ||
                                         (h as any)?.data?.sharedOut ||
-                                        (h as any)?.data?.category === "Shared events"
+                                        (h as any)?.data?.category ===
+                                          "Shared events"
                                     );
                                     const rowAndBadge = (() => {
                                       if (isShared) {
@@ -3170,7 +3228,8 @@ export default function LeftSidebar() {
                                       if (!category)
                                         return {
                                           row: "",
-                                          badge: "bg-surface/70 text-foreground/70 border-border/70",
+                                          badge:
+                                            "bg-surface/70 text-foreground/70 border-border/70",
                                         };
                                       const color =
                                         categoryColors[category] ||
@@ -3190,12 +3249,15 @@ export default function LeftSidebar() {
                                             onClick={() => {
                                               try {
                                                 const isTouch =
-                                                  typeof window !== "undefined" &&
-                                                  typeof window.matchMedia === "function" &&
+                                                  typeof window !==
+                                                    "undefined" &&
+                                                  typeof window.matchMedia ===
+                                                    "function" &&
                                                   window.matchMedia(
                                                     "(hover: none), (pointer: coarse)"
                                                   ).matches;
-                                                if (isTouch) setIsCollapsed(true);
+                                                if (isTouch)
+                                                  setIsCollapsed(true);
                                               } catch {}
                                             }}
                                             className="block pr-8"
@@ -3216,18 +3278,24 @@ export default function LeftSidebar() {
                                               {(() => {
                                                 const start =
                                                   (h as any)?.data?.start ||
-                                                  (h as any)?.data?.event?.start;
-                                                const dateStr = start || h.created_at;
+                                                  (h as any)?.data?.event
+                                                    ?.start;
+                                                const dateStr =
+                                                  start || h.created_at;
                                                 return dateStr
-                                                  ? new Date(dateStr).toLocaleDateString()
+                                                  ? new Date(
+                                                      dateStr
+                                                    ).toLocaleDateString()
                                                   : "";
                                               })()}
                                             </div>
                                           </Link>
                                           {Boolean(
                                             (h as any)?.data &&
-                                              (((h as any).data.shared as any) ||
-                                                ((h as any).data.sharedOut as any))
+                                              (((h as any).data
+                                                .shared as any) ||
+                                                ((h as any).data
+                                                  .sharedOut as any))
                                           ) && (
                                             <svg
                                               viewBox="0 0 25.274 25.274"
@@ -3272,7 +3340,9 @@ export default function LeftSidebar() {
                                                   shouldOpenUpward
                                                 );
                                                 setItemMenuPos({
-                                                  left: Math.round(rect.right + 8),
+                                                  left: Math.round(
+                                                    rect.right + 8
+                                                  ),
                                                   top: shouldOpenUpward
                                                     ? Math.round(rect.top - 10)
                                                     : Math.round(
@@ -3359,7 +3429,6 @@ export default function LeftSidebar() {
                               )}
                             </div>
                           ) : null}
-
                         </div>
                       );
                     })}
@@ -3417,188 +3486,124 @@ export default function LeftSidebar() {
                       data-history-item={h.id}
                       className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
                     >
-                    <Link
-                      href={prettyHref}
-                      onClick={() => {
-                        try {
-                          const isTouch =
-                            typeof window !== "undefined" &&
-                            typeof window.matchMedia === "function" &&
-                            window.matchMedia(
-                              "(hover: none), (pointer: coarse)"
-                            ).matches;
-                          if (isTouch) setIsCollapsed(true);
-                        } catch {}
-                      }}
-                      className="block pr-8"
-                      title={h.title}
-                    >
-                      <div className="truncate flex items-center gap-2">
-                        <span className="truncate">
-                          {h.title || "Untitled event"}
-                        </span>
-                      </div>
-                      <div
-                        className={`text-xs ${
-                          isShared ? sharedMutedTextClass : "text-foreground/60"
-                        }`}
+                      <Link
+                        href={prettyHref}
+                        onClick={() => {
+                          try {
+                            const isTouch =
+                              typeof window !== "undefined" &&
+                              typeof window.matchMedia === "function" &&
+                              window.matchMedia(
+                                "(hover: none), (pointer: coarse)"
+                              ).matches;
+                            if (isTouch) setIsCollapsed(true);
+                          } catch {}
+                        }}
+                        className="block pr-8"
+                        title={h.title}
                       >
-                        {(() => {
-                          const start =
-                            (h as any)?.data?.start ||
-                            (h as any)?.data?.event?.start;
-                          const dateStr = start || h.created_at;
-                          return dateStr
-                            ? new Date(dateStr).toLocaleDateString()
-                            : "";
-                        })()}
-                      </div>
-                    </Link>
-                    <button
-                      type="button"
-                      aria-label="Item options"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const target = e.currentTarget as HTMLElement | null;
-                        if (itemMenuId === h.id) {
-                          setItemMenuId(null);
-                          setItemMenuOpensUpward(false);
-                          setItemMenuPos(null);
-                          setItemMenuOpensUpward(false);
-                          setItemMenuCategoryOpenFor(null);
-                          return;
-                        }
-                        if (target) {
-                          const rect = target.getBoundingClientRect();
-                          const viewportHeight = window.innerHeight;
-                          const menuHeight = 280; // Increased height for expanded menu with categories
-                          const spaceBelow = viewportHeight - rect.top;
-                          const spaceAbove = rect.top;
-
-                          // Open upward if there's not enough space below (with buffer) or if we're in bottom half of screen
-                          const shouldOpenUpward = spaceBelow < menuHeight + 50; // Only open upward if not enough space below
-                          setItemMenuOpensUpward(shouldOpenUpward);
-
-                          setItemMenuPos({
-                            left: Math.round(rect.right + 8),
-                            top: shouldOpenUpward
-                              ? Math.round(rect.top - 10) // Just 10px above the item
-                              : Math.round(rect.top + rect.height / 2),
-                          });
-                        }
-                        setItemMenuCategoryOpenFor(null);
-                        setItemMenuId(h.id);
-                      }}
-                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <circle cx="5" cy="12" r="1.5" />
-                        <circle cx="12" cy="12" r="1.5" />
-                        <circle cx="19" cy="12" r="1.5" />
-                      </svg>
-                    </button>
-                    {itemMenuId === h.id &&
-                      itemMenuPos &&
-                      createPortal(
+                        <div className="truncate flex items-center gap-2">
+                          <span className="truncate">
+                            {h.title || "Untitled event"}
+                          </span>
+                        </div>
                         <div
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            position: "fixed",
-                            left: itemMenuPos.left,
-                            top: itemMenuPos.top,
-                            transform: itemMenuOpensUpward
-                              ? "translateY(-100%)"
-                              : "translateY(-10%)",
-                          }}
-                          className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
+                          className={`text-xs ${
+                            isShared
+                              ? sharedMutedTextClass
+                              : "text-foreground/60"
+                          }`}
                         >
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuCategoryOpenFor(null);
-                              setItemMenuId(null);
-                              setItemMenuOpensUpward(false);
-                              setItemMenuPos(null);
-                              await shareHistoryItem(prettyHref);
+                          {(() => {
+                            const start =
+                              (h as any)?.data?.start ||
+                              (h as any)?.data?.event?.start;
+                            const dateStr = start || h.created_at;
+                            return dateStr
+                              ? new Date(dateStr).toLocaleDateString()
+                              : "";
+                          })()}
+                        </div>
+                      </Link>
+                      <button
+                        type="button"
+                        aria-label="Item options"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const target = e.currentTarget as HTMLElement | null;
+                          if (itemMenuId === h.id) {
+                            setItemMenuId(null);
+                            setItemMenuOpensUpward(false);
+                            setItemMenuPos(null);
+                            setItemMenuOpensUpward(false);
+                            setItemMenuCategoryOpenFor(null);
+                            return;
+                          }
+                          if (target) {
+                            const rect = target.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight;
+                            const menuHeight = 280; // Increased height for expanded menu with categories
+                            const spaceBelow = viewportHeight - rect.top;
+                            const spaceAbove = rect.top;
+
+                            // Open upward if there's not enough space below (with buffer) or if we're in bottom half of screen
+                            const shouldOpenUpward =
+                              spaceBelow < menuHeight + 50; // Only open upward if not enough space below
+                            setItemMenuOpensUpward(shouldOpenUpward);
+
+                            setItemMenuPos({
+                              left: Math.round(rect.right + 8),
+                              top: shouldOpenUpward
+                                ? Math.round(rect.top - 10) // Just 10px above the item
+                                : Math.round(rect.top + rect.height / 2),
+                            });
+                          }
+                          setItemMenuCategoryOpenFor(null);
+                          setItemMenuId(h.id);
+                        }}
+                        className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <circle cx="5" cy="12" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="19" cy="12" r="1.5" />
+                        </svg>
+                      </button>
+                      {itemMenuId === h.id &&
+                        itemMenuPos &&
+                        createPortal(
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "fixed",
+                              left: itemMenuPos.left,
+                              top: itemMenuPos.top,
+                              transform: itemMenuOpensUpward
+                                ? "translateY(-100%)"
+                                : "translateY(-10%)",
                             }}
-                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                            className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuCategoryOpenFor(null);
+                                setItemMenuId(null);
+                                setItemMenuOpensUpward(false);
+                                setItemMenuPos(null);
+                                await shareHistoryItem(prettyHref);
+                              }}
+                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                             >
-                              <circle cx="18" cy="5" r="3" />
-                              <circle cx="6" cy="12" r="3" />
-                              <circle cx="18" cy="19" r="3" />
-                              <line
-                                x1="8.59"
-                                y1="13.51"
-                                x2="15.42"
-                                y2="17.49"
-                              />
-                              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                            </svg>
-                            <span className="text-sm">Share</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuCategoryOpenFor(null);
-                              setItemMenuId(null);
-                              setItemMenuOpensUpward(false);
-                              setItemMenuPos(null);
-                              await renameHistoryItem(h.id, h.title);
-                            }}
-                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <path d="M12 20h9" />
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                            </svg>
-                            <span className="text-sm">Rename</span>
-                          </button>
-                          <div className="my-1 h-px bg-border" />
-                          <button
-                            type="button"
-                            aria-expanded={categoryMenuOpen}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuCategoryOpenFor(
-                                categoryMenuOpen ? null : h.id
-                              );
-                            }}
-                            className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                          >
-                            <span className="inline-flex items-center gap-3">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 24 24"
@@ -3610,165 +3615,238 @@ export default function LeftSidebar() {
                                 className="h-4 w-4"
                                 aria-hidden="true"
                               >
-                                <path d="M4 6h16" />
-                                <path d="M7 12h13" />
-                                <path d="M10 18h10" />
+                                <circle cx="18" cy="5" r="3" />
+                                <circle cx="6" cy="12" r="3" />
+                                <circle cx="18" cy="19" r="3" />
+                                <line
+                                  x1="8.59"
+                                  y1="13.51"
+                                  x2="15.42"
+                                  y2="17.49"
+                                />
+                                <line
+                                  x1="15.41"
+                                  y1="6.51"
+                                  x2="8.59"
+                                  y2="10.49"
+                                />
                               </svg>
-                              <span className="text-sm">Change to</span>
-                            </span>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className={`h-3.5 w-3.5 transition-transform ${
-                                categoryMenuOpen ? "rotate-90" : ""
-                              }`}
-                              aria-hidden="true"
+                              <span className="text-sm">Share</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuCategoryOpenFor(null);
+                                setItemMenuId(null);
+                                setItemMenuOpensUpward(false);
+                                setItemMenuPos(null);
+                                await renameHistoryItem(h.id, h.title);
+                              }}
+                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                             >
-                              <path d="m9 6 6 6-6 6" />
-                            </svg>
-                          </button>
-                          {categoryMenuOpen && (
-                            <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5 min-w-[180px]">
-                              {CATEGORY_OPTIONS.map((label) => {
-                                const isActive = category === label;
-                                return (
-                                  <button
-                                    key={label}
-                                    type="button"
-                                    onClick={async (e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setItemMenuCategoryOpenFor(null);
-                                      setItemMenuId(null);
-                                      setItemMenuOpensUpward(false);
-                                      setItemMenuPos(null);
-                                      try {
-                                        await fetch(`/api/history/${h.id}`, {
-                                          method: "PATCH",
-                                          headers: {
-                                            "content-type": "application/json",
-                                          },
-                                          body: JSON.stringify({
-                                            category: label,
-                                          }),
-                                        });
-                                        setHistory((prev) =>
-                                          prev.map((r) =>
-                                            r.id === h.id
-                                              ? {
-                                                  ...r,
-                                                  data: {
-                                                    ...(r.data || {}),
-                                                    category: label,
-                                                  },
-                                                }
-                                              : r
-                                          )
-                                        );
-                                        setCategoryColors((prev) => {
-                                          const next = {
-                                            ...prev,
-                                          } as Record<string, string>;
-                                          if (!next[label])
-                                            next[label] =
-                                              defaultCategoryColor(label);
-                                          return next;
-                                        });
-                                      } catch {}
-                                    }}
-                                    className={`flex w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                                      isActive
-                                        ? "bg-foreground/10 text-foreground"
-                                        : "text-foreground/80 hover:bg-foreground/10 hover:text-foreground"
-                                    }`}
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className={`h-4 w-4 ${
-                                        isActive ? "" : "opacity-40"
-                                      }`}
-                                      aria-hidden="true"
-                                    >
-                                      <path d="M20 6L9 17l-5-5" />
-                                    </svg>
-                                    <span className="text-sm">{label}</span>
-                                  </button>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                              </svg>
+                              <span className="text-sm">Rename</span>
+                            </button>
+                            <div className="my-1 h-px bg-border" />
+                            <button
+                              type="button"
+                              aria-expanded={categoryMenuOpen}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuCategoryOpenFor(
+                                  categoryMenuOpen ? null : h.id
                                 );
-                              })}
-                            </div>
-                          )}
-                          <div className="my-1 h-px bg-border" />
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setItemMenuCategoryOpenFor(null);
-                              setItemMenuId(null);
-                              setItemMenuOpensUpward(false);
-                              setItemMenuPos(null);
-                              await deleteHistoryItem(h.id, h.title);
-                            }}
-                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-500 hover:bg-red-500/10"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
+                              }}
+                              className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                             >
-                              <path d="M3 6h18" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              <line x1="10" y1="11" x2="10" y2="17" />
-                              <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                            <span className="hidden sm:inline text-sm">
-                              Delete
-                            </span>
-                          </button>
-                        </div>,
-                        document.body
+                              <span className="inline-flex items-center gap-3">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M4 6h16" />
+                                  <path d="M7 12h13" />
+                                  <path d="M10 18h10" />
+                                </svg>
+                                <span className="text-sm">Change to</span>
+                              </span>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`h-3.5 w-3.5 transition-transform ${
+                                  categoryMenuOpen ? "rotate-90" : ""
+                                }`}
+                                aria-hidden="true"
+                              >
+                                <path d="m9 6 6 6-6 6" />
+                              </svg>
+                            </button>
+                            {categoryMenuOpen && (
+                              <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5 min-w-[180px]">
+                                {CATEGORY_OPTIONS.map((label) => {
+                                  const isActive = category === label;
+                                  return (
+                                    <button
+                                      key={label}
+                                      type="button"
+                                      onClick={async (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setItemMenuCategoryOpenFor(null);
+                                        setItemMenuId(null);
+                                        setItemMenuOpensUpward(false);
+                                        setItemMenuPos(null);
+                                        try {
+                                          await fetch(`/api/history/${h.id}`, {
+                                            method: "PATCH",
+                                            headers: {
+                                              "content-type":
+                                                "application/json",
+                                            },
+                                            body: JSON.stringify({
+                                              category: label,
+                                            }),
+                                          });
+                                          setHistory((prev) =>
+                                            prev.map((r) =>
+                                              r.id === h.id
+                                                ? {
+                                                    ...r,
+                                                    data: {
+                                                      ...(r.data || {}),
+                                                      category: label,
+                                                    },
+                                                  }
+                                                : r
+                                            )
+                                          );
+                                          setCategoryColors((prev) => {
+                                            const next = {
+                                              ...prev,
+                                            } as Record<string, string>;
+                                            if (!next[label])
+                                              next[label] =
+                                                defaultCategoryColor(label);
+                                            return next;
+                                          });
+                                        } catch {}
+                                      }}
+                                      className={`flex w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                                        isActive
+                                          ? "bg-foreground/10 text-foreground"
+                                          : "text-foreground/80 hover:bg-foreground/10 hover:text-foreground"
+                                      }`}
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className={`h-4 w-4 ${
+                                          isActive ? "" : "opacity-40"
+                                        }`}
+                                        aria-hidden="true"
+                                      >
+                                        <path d="M20 6L9 17l-5-5" />
+                                      </svg>
+                                      <span className="text-sm">{label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <div className="my-1 h-px bg-border" />
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setItemMenuCategoryOpenFor(null);
+                                setItemMenuId(null);
+                                setItemMenuOpensUpward(false);
+                                setItemMenuPos(null);
+                                await deleteHistoryItem(h.id, h.title);
+                              }}
+                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-500 hover:bg-red-500/10"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
+                              <span className="hidden sm:inline text-sm">
+                                Delete
+                              </span>
+                            </button>
+                          </div>,
+                          document.body
+                        )}
+                      {Boolean(
+                        (h as any)?.data &&
+                          (((h as any).data.shared as any) ||
+                            ((h as any).data.sharedOut as any))
+                      ) && (
+                        <svg
+                          viewBox="0 0 25.274 25.274"
+                          fill="currentColor"
+                          className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
+                          aria-hidden="true"
+                          aria-label="Shared event"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <title>Shared event</title>
+                          <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
+                        </svg>
                       )}
-                    {Boolean(
-                      (h as any)?.data &&
-                        (((h as any).data.shared as any) ||
-                          ((h as any).data.sharedOut as any))
-                    ) && (
-                      <svg
-                        viewBox="0 0 25.274 25.274"
-                        fill="currentColor"
-                        className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
-                        aria-hidden="true"
-                        aria-label="Shared event"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <title>Shared event</title>
-                        <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
-                      </svg>
-                    )}
-                  </div>
-                  {recentAdIndex !== null && index === recentAdIndex ? (
-                    <SidebarAdUnit />
-                  ) : null}
-                </Fragment>
-              );
+                    </div>
+                    {recentAdIndex !== null && index === recentAdIndex ? (
+                      <SidebarAdUnit />
+                    ) : null}
+                  </Fragment>
+                );
               })}
             </nav>
           </div>
