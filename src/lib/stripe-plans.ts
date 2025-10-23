@@ -13,6 +13,11 @@ export type StripePlanConfig = {
   productId?: string;
 };
 
+const stripeSecret = (process.env.STRIPE_SECRET_KEY || "").trim();
+const isLiveKey = stripeSecret.startsWith("sk_live_");
+const monthlyProductId = (process.env.STRIPE_PRODUCT_ID_MONTHLY || "").trim();
+const yearlyProductId = (process.env.STRIPE_PRODUCT_ID_YEARLY || "").trim();
+
 export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
   monthly: {
     id: "monthly",
@@ -22,7 +27,8 @@ export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
     interval: "month",
     name: "Snap My Date Monthly",
     description: "Monthly subscription for Snap My Date",
-    productId: "prod_T93CX7Yaqefp2B",
+    // Use explicit product id only when supplied via env or when a live key is used (to avoid mixing modes)
+    productId: monthlyProductId || (isLiveKey ? "prod_T93CX7Yaqefp2B" : undefined),
   },
   yearly: {
     id: "yearly",
@@ -32,7 +38,7 @@ export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
     interval: "year",
     name: "Snap My Date Yearly",
     description: "Yearly subscription for Snap My Date",
-    productId: "prod_T93Df9XcDp26Nm",
+    productId: yearlyProductId || (isLiveKey ? "prod_T93Df9XcDp26Nm" : undefined),
   },
 };
 
