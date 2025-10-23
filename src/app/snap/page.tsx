@@ -1619,27 +1619,6 @@ export default function SnapPage() {
 
               {/* Credits pill removed */}
 
-              {showCreditsBanner && (
-                <p className={creditsBannerClasses}>
-                  {creditsError ? (
-                    creditsError
-                  ) : isOutOfCredits ? (
-                    <>
-                      You're out of credits.{" "}
-                      <Link
-                        href="/subscription"
-                        className="font-medium underline"
-                      >
-                        Upgrade
-                      </Link>{" "}
-                      to keep scanning.
-                    </>
-                  ) : (
-                    "Hang tight — checking your credits…"
-                  )}
-                </p>
-              )}
-
               <div className="mt-8 flex flex-row gap-3 justify-center lg:justify-center">
                 <button
                   onClick={openCamera}
