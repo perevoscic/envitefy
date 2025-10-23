@@ -37,7 +37,7 @@ import {
 import type { CSSProperties } from "react";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
-import SignupViewer from "@/components/signup/SignupViewer";
+import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
 

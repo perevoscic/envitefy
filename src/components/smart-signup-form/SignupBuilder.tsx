@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React from "react";
 import type {
@@ -15,9 +15,7 @@ import {
 } from "@/utils/signup";
 
 type Props = {
-  enabled: boolean;
   form: SignupForm;
-  onEnabledChange: (next: boolean) => void;
   onChange: (next: SignupForm) => void;
 };
 
@@ -66,29 +64,7 @@ const addQuestion = (questions: SignupQuestion[]): SignupQuestion[] => [
   },
 ];
 
-const Toggle = ({
-  checked,
-  onChange,
-  srLabel,
-}: {
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  srLabel: string;
-}) => (
-  <label className="flex items-center cursor-pointer select-none text-foreground">
-    <span className="sr-only">{srLabel}</span>
-    <div className="relative">
-      <input
-        type="checkbox"
-        className="peer sr-only"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      <div className="block h-6 w-11 rounded-full bg-foreground/20 transition-colors duration-200 ease-out peer-checked:bg-primary/60 border border-border/70 shadow-inner" />
-      <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out peer-checked:translate-x-full peer-checked:bg-primary peer-checked:shadow-md dark:bg-surface dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
-    </div>
-  </label>
-);
+// Removed toggle UI: Smart sign-up is always enabled in the modal now.
 
 const SectionCard = ({
   section,
@@ -116,11 +92,7 @@ const SectionCard = ({
     slotId: string,
     next: SignupFormSlot
   ) => void;
-  onSlotMove: (
-    sectionId: string,
-    slotId: string,
-    direction: -1 | 1
-  ) => void;
+  onSlotMove: (sectionId: string, slotId: string, direction: -1 | 1) => void;
   onSlotDuplicate: (sectionId: string, slot: SignupFormSlot) => void;
   onSlotRemove: (sectionId: string, slotId: string) => void;
   onAddSlot: (sectionId: string) => void;
@@ -353,12 +325,7 @@ const SectionCard = ({
   </div>
 );
 
-const SignupBuilder: React.FC<Props> = ({
-  enabled,
-  form,
-  onEnabledChange,
-  onChange,
-}) => {
+const SignupBuilder: React.FC<Props> = ({ form, onChange }) => {
   const settings = { ...DEFAULT_SIGNUP_SETTINGS, ...form.settings };
 
   const setSettings = (next: Partial<typeof settings>) => {
@@ -430,7 +397,9 @@ const SignupBuilder: React.FC<Props> = ({
   const handleSectionRemove = (section: SignupFormSection) => {
     onChange({
       ...form,
-      sections: form.sections.filter((candidate) => candidate.id !== section.id),
+      sections: form.sections.filter(
+        (candidate) => candidate.id !== section.id
+      ),
     });
   };
 
@@ -543,7 +512,9 @@ const SignupBuilder: React.FC<Props> = ({
   const handleQuestionRemove = (id: string) => {
     onChange({
       ...form,
-      questions: (form.questions || []).filter((question) => question.id !== id),
+      questions: (form.questions || []).filter(
+        (question) => question.id !== id
+      ),
     });
   };
 
@@ -551,361 +522,420 @@ const SignupBuilder: React.FC<Props> = ({
     <section className="rounded-lg border border-border bg-surface/60 px-4 py-4 sm:px-5 sm:py-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-xl space-y-1">
-          <h4 className="text-sm font-semibold text-foreground">
-            Smart sign-up form
-          </h4>
           <p className="text-xs text-foreground/70 leading-relaxed">
             Better than static spreadsheets. Create roles, time slots, and
             supply lists in minutes. We’ll auto-manage waitlists, limit
             sign-ups, and send reminders so no one drops the ball.
           </p>
         </div>
-        <Toggle
-          checked={enabled}
-          onChange={(next) => onEnabledChange(next)}
-          srLabel="Toggle smart signup form"
-        />
       </div>
 
-      {enabled && (
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Form title
-              </label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(event) =>
-                  onChange({ ...form, title: event.target.value })
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                placeholder="Example: Volunteer & supply sign-up"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Headline description
-              </label>
-              <input
-                type="text"
-                value={form.description || ""}
-                onChange={(event) =>
-                  onChange({ ...form, description: event.target.value })
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                placeholder="Let guests know how to prepare."
-              />
-            </div>
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+              Form title
+            </label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(event) =>
+                onChange({ ...form, title: event.target.value })
+              }
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Example: Volunteer & supply sign-up"
+            />
           </div>
-
-          <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                Smart settings
-              </span>
-              <button
-                type="button"
-                onClick={() => setSettings({ ...DEFAULT_SIGNUP_SETTINGS })}
-                className="text-xs text-foreground/70 hover:text-foreground underline underline-offset-2"
-              >
-                Reset to defaults
-              </button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={settings.allowMultipleSlotsPerPerson}
-                  onChange={(event) =>
-                    setSettings({
-                      allowMultipleSlotsPerPerson: event.target.checked,
-                    })
-                  }
-                />
-                <span>
-                  Allow guests to claim multiple slots
-                  <span className="block text-xs text-foreground/60">
-                    Perfect for parents helping in multiple time blocks.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={settings.waitlistEnabled}
-                  onChange={(event) =>
-                    setSettings({ waitlistEnabled: event.target.checked })
-                  }
-                />
-                <span>
-                  Enable automatic waitlist
-                  <span className="block text-xs text-foreground/60">
-                    Overflow sign-ups queue automatically when slots are full.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={settings.lockWhenFull}
-                  onChange={(event) =>
-                    setSettings({ lockWhenFull: event.target.checked })
-                  }
-                />
-                <span>
-                  Lock slots once capacity is met
-                  <span className="block text-xs text-foreground/60">
-                    Prevents overbooking. Waitlist still collects interest.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={settings.showRemainingSpots}
-                  onChange={(event) =>
-                    setSettings({ showRemainingSpots: event.target.checked })
-                  }
-                />
-                <span>
-                  Show remaining spots to guests
-                  <span className="block text-xs text-foreground/60">
-                    Creates urgency and builds trust in availability data.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={settings.collectPhone}
-                  onChange={(event) =>
-                    setSettings({ collectPhone: event.target.checked })
-                  }
-                />
-                <span>
-                  Collect mobile numbers
-                  <span className="block text-xs text-foreground/60">
-                    Useful for last-minute changes or team group texts.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={settings.collectEmail}
-                  onChange={(event) =>
-                    setSettings({ collectEmail: event.target.checked })
-                  }
-                />
-                <span>
-                  Collect alternate email
-                  <span className="block text-xs text-foreground/60">
-                    Guests can route reminders to a personal inbox if needed.
-                  </span>
-                </span>
-              </label>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                  Max guests per sign-up
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={settings.maxGuestsPerSignup}
-                  onChange={(event) =>
-                    setSettings({
-                      maxGuestsPerSignup: Math.max(
-                        1,
-                        Math.min(
-                          20,
-                          Number.parseInt(event.target.value || "1", 10)
-                        )
-                      ),
-                    })
-                  }
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                />
-                <p className="mt-1 text-[11px] text-foreground/60">
-                  Let families register multiple attendees at once.
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                  Automated reminders
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {REMINDER_PRESETS.map((option) => {
-                    const checked = settings.autoRemindersHoursBefore.includes(
-                      option.value
-                    );
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => toggleReminder(option.value)}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                          checked
-                            ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
-                            : "border-border bg-background text-foreground"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={handleAddReminderPrompt}
-                    className="rounded-full border border-dashed border-primary/60 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-                  >
-                    + Custom
-                  </button>
-                </div>
-                <p className="mt-2 text-[11px] text-foreground/60">
-                  Active:{" "}
-                  {settings.autoRemindersHoursBefore.length
-                    ? settings.autoRemindersHoursBefore
-                        .slice()
-                        .sort((a, b) => a - b)
-                        .map((hours) =>
-                          hours >= 24
-                            ? `${Math.round(hours / 24)} day${
-                                hours / 24 === 1 ? "" : "s"
-                              }`
-                            : `${hours} hour${hours === 1 ? "" : "s"}`
-                        )
-                        .join(", ")
-                    : "None"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {form.sections.map((section, index) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                index={index}
-                total={form.sections.length}
-                onChange={(nextSection) =>
-                  handleSectionChange(section.id, nextSection)
-                }
-                onMove={handleSectionMove}
-                onDuplicate={handleSectionDuplicate}
-                onRemove={handleSectionRemove}
-                onSlotChange={handleSlotChange}
-                onSlotMove={handleSlotMove}
-                onSlotDuplicate={handleSlotDuplicate}
-                onSlotRemove={handleSlotRemove}
-                onAddSlot={handleAddSlot}
-              />
-            ))}
-            <button
-              type="button"
-              onClick={handleAddSection}
-              className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-            >
-              + Add another section
-            </button>
-          </div>
-
-          <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                Custom follow-up questions
-              </span>
-              <button
-                type="button"
-                onClick={handleAddQuestion}
-                className="inline-flex items-center gap-1 rounded-md border border-dashed border-primary/60 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
-              >
-                + Question
-              </button>
-            </div>
-            {(form.questions || []).length === 0 ? (
-              <p className="text-xs text-foreground/60">
-                Ask for dietary notes, t-shirt sizes, carpool info, or anything
-                else you need.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {(form.questions || []).map((question, index) => (
-                  <div
-                    key={question.id}
-                    className="rounded-md border border-border bg-background px-3 py-3 space-y-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                            Prompt
-                          </label>
-                          <input
-                            type="text"
-                            value={question.prompt}
-                            onChange={(event) =>
-                              handleQuestionChange(question.id, {
-                                prompt: event.target.value,
-                              })
-                            }
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                            placeholder="Example: What time works best for you?"
-                          />
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-xs">
-                          <label className="inline-flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(question.required)}
-                              onChange={(event) =>
-                                handleQuestionChange(question.id, {
-                                  required: event.target.checked,
-                                })
-                              }
-                            />
-                            Required to submit
-                          </label>
-                          <label className="inline-flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(question.multiline)}
-                              onChange={(event) =>
-                                handleQuestionChange(question.id, {
-                                  multiline: event.target.checked,
-                                })
-                              }
-                            />
-                            Use a multi-line answer box
-                          </label>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-[11px] text-foreground/60">
-                          #{index + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleQuestionRemove(question.id)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-xs text-red-600 hover:text-red-700"
-                          title="Remove question"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+              Headline description
+            </label>
+            <input
+              type="text"
+              value={form.description || ""}
+              onChange={(event) =>
+                onChange({ ...form, description: event.target.value })
+              }
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Let guests know how to prepare."
+            />
           </div>
         </div>
-      )}
+
+        <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              Smart settings
+            </span>
+            <button
+              type="button"
+              onClick={() => setSettings({ ...DEFAULT_SIGNUP_SETTINGS })}
+              className="text-xs text-foreground/70 hover:text-foreground underline underline-offset-2"
+            >
+              Reset to defaults
+            </button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.allowMultipleSlotsPerPerson}
+                onChange={(event) =>
+                  setSettings({
+                    allowMultipleSlotsPerPerson: event.target.checked,
+                  })
+                }
+              />
+              <span>
+                Allow guests to claim multiple slots
+                <span className="block text-xs text-foreground/60">
+                  Perfect for parents helping in multiple time blocks.
+                </span>
+              </span>
+            </label>
+            <div className="grid grid-cols-[auto_1fr] items-center gap-2 text-sm">
+              <label className="flex items-center gap-2">
+                <span>Max slots per person</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={settings.maxSlotsPerPerson ?? ""}
+                onChange={(event) =>
+                  setSettings({
+                    maxSlotsPerPerson: event.target.value
+                      ? Math.max(
+                          1,
+                          Math.min(
+                            50,
+                            Number.parseInt(event.target.value, 10) || 1
+                          )
+                        )
+                      : null,
+                  })
+                }
+                className="w-28 rounded-md border border-border bg-background px-2 py-1 text-sm"
+                placeholder="Unlimited"
+              />
+            </div>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.waitlistEnabled}
+                onChange={(event) =>
+                  setSettings({ waitlistEnabled: event.target.checked })
+                }
+              />
+              <span>
+                Enable automatic waitlist
+                <span className="block text-xs text-foreground/60">
+                  Overflow sign-ups queue automatically when slots are full.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.lockWhenFull}
+                onChange={(event) =>
+                  setSettings({ lockWhenFull: event.target.checked })
+                }
+              />
+              <span>
+                Lock slots once capacity is met
+                <span className="block text-xs text-foreground/60">
+                  Prevents overbooking. Waitlist still collects interest.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.showRemainingSpots}
+                onChange={(event) =>
+                  setSettings({ showRemainingSpots: event.target.checked })
+                }
+              />
+              <span>
+                Show remaining spots to guests
+                <span className="block text-xs text-foreground/60">
+                  Creates urgency and builds trust in availability data.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(settings.hideParticipantNames)}
+                onChange={(event) =>
+                  setSettings({ hideParticipantNames: event.target.checked })
+                }
+              />
+              <span>
+                Hide names from participants
+                <span className="block text-xs text-foreground/60">
+                  Only the host can see who signed up.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.collectPhone}
+                onChange={(event) =>
+                  setSettings({ collectPhone: event.target.checked })
+                }
+              />
+              <span>
+                Collect mobile numbers
+                <span className="block text-xs text-foreground/60">
+                  Useful for last-minute changes or team group texts.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.collectEmail}
+                onChange={(event) =>
+                  setSettings({ collectEmail: event.target.checked })
+                }
+              />
+              <span>
+                Collect alternate email
+                <span className="block text-xs text-foreground/60">
+                  Guests can route reminders to a personal inbox if needed.
+                </span>
+              </span>
+            </label>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+                Max guests per sign-up
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={settings.maxGuestsPerSignup}
+                onChange={(event) =>
+                  setSettings({
+                    maxGuestsPerSignup: Math.max(
+                      1,
+                      Math.min(
+                        20,
+                        Number.parseInt(event.target.value || "1", 10)
+                      )
+                    ),
+                  })
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-[11px] text-foreground/60">
+                Let families register multiple attendees at once.
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+                Automated reminders
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {REMINDER_PRESETS.map((option) => {
+                  const checked = settings.autoRemindersHoursBefore.includes(
+                    option.value
+                  );
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => toggleReminder(option.value)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                        checked
+                          ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                          : "border-border bg-background text-foreground"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={handleAddReminderPrompt}
+                  className="rounded-full border border-dashed border-primary/60 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                >
+                  + Custom
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-foreground/60">
+                Active:{" "}
+                {settings.autoRemindersHoursBefore.length
+                  ? settings.autoRemindersHoursBefore
+                      .slice()
+                      .sort((a, b) => a - b)
+                      .map((hours) =>
+                        hours >= 24
+                          ? `${Math.round(hours / 24)} day${
+                              hours / 24 === 1 ? "" : "s"
+                            }`
+                          : `${hours} hour${hours === 1 ? "" : "s"}`
+                      )
+                      .join(", ")
+                  : "None"}
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+                Sign-up window
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="datetime-local"
+                  value={settings.signupOpensAt || ""}
+                  onChange={(e) =>
+                    setSettings({ signupOpensAt: e.target.value || null })
+                  }
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  placeholder="Opens"
+                />
+                <input
+                  type="datetime-local"
+                  value={settings.signupClosesAt || ""}
+                  onChange={(e) =>
+                    setSettings({ signupClosesAt: e.target.value || null })
+                  }
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  placeholder="Closes"
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-foreground/60">
+                Leave blank to accept sign-ups anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {form.sections.map((section, index) => (
+            <SectionCard
+              key={section.id}
+              section={section}
+              index={index}
+              total={form.sections.length}
+              onChange={(nextSection) =>
+                handleSectionChange(section.id, nextSection)
+              }
+              onMove={handleSectionMove}
+              onDuplicate={handleSectionDuplicate}
+              onRemove={handleSectionRemove}
+              onSlotChange={handleSlotChange}
+              onSlotMove={handleSlotMove}
+              onSlotDuplicate={handleSlotDuplicate}
+              onSlotRemove={handleSlotRemove}
+              onAddSlot={handleAddSlot}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={handleAddSection}
+            className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+          >
+            + Add another section
+          </button>
+        </div>
+
+        <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              Custom follow-up questions
+            </span>
+            <button
+              type="button"
+              onClick={handleAddQuestion}
+              className="inline-flex items-center gap-1 rounded-md border border-dashed border-primary/60 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+            >
+              + Question
+            </button>
+          </div>
+          {(form.questions || []).length === 0 ? (
+            <p className="text-xs text-foreground/60">
+              Ask for dietary notes, t-shirt sizes, carpool info, or anything
+              else you need.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {(form.questions || []).map((question, index) => (
+                <div
+                  key={question.id}
+                  className="rounded-md border border-border bg-background px-3 py-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+                          Prompt
+                        </label>
+                        <input
+                          type="text"
+                          value={question.prompt}
+                          onChange={(event) =>
+                            handleQuestionChange(question.id, {
+                              prompt: event.target.value,
+                            })
+                          }
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          placeholder="Example: What time works best for you?"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-xs">
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(question.required)}
+                            onChange={(event) =>
+                              handleQuestionChange(question.id, {
+                                required: event.target.checked,
+                              })
+                            }
+                          />
+                          Required to submit
+                        </label>
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(question.multiline)}
+                            onChange={(event) =>
+                              handleQuestionChange(question.id, {
+                                multiline: event.target.checked,
+                              })
+                            }
+                          />
+                          Use a multi-line answer box
+                        </label>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-[11px] text-foreground/60">
+                        #{index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuestionRemove(question.id)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-xs text-red-600 hover:text-red-700"
+                        title="Remove question"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 };

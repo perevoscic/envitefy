@@ -1,12 +1,6 @@
-'use client';
+"use client";
 
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  FormEvent,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState, FormEvent } from "react";
 import type { SignupForm, SignupResponse } from "@/types/signup";
 import {
   countConfirmedForSlot,
@@ -50,7 +44,8 @@ type SignupApiResponse = {
 
 type SlotSelectionMap = Record<string, number>;
 
-const slotKey = (sectionId: string, slotId: string) => `${sectionId}::${slotId}`;
+const slotKey = (sectionId: string, slotId: string) =>
+  `${sectionId}::${slotId}`;
 
 const formatTime = (value?: string | null): string | null => {
   if (!value) return null;
@@ -92,9 +87,9 @@ const summarizeResponseSlots = (
     const quantity = normalizeSignupQuantity(selection.quantity ?? 1);
     const range = formatSlotRange(slot.startTime, slot.endTime);
     entries.push(
-      `${section.title}: ${slot.label}${
-        quantity > 1 ? ` ×${quantity}` : ""
-      }${range ? ` (${range})` : ""}`
+      `${section.title}: ${slot.label}${quantity > 1 ? ` ×${quantity}` : ""}${
+        range ? ` (${range})` : ""
+      }`
     );
   }
   return entries.join("; ");
@@ -160,7 +155,11 @@ const SignupViewer: React.FC<Props> = ({
 
   const myResponse = useMemo(
     () =>
-      findSignupResponseForUser(form, viewerId || undefined, viewerEmail || undefined),
+      findSignupResponseForUser(
+        form,
+        viewerId || undefined,
+        viewerEmail || undefined
+      ),
     [form, viewerId, viewerEmail]
   );
 
@@ -348,8 +347,10 @@ const SignupViewer: React.FC<Props> = ({
     if (note.trim()) payload.note = note.trim();
     if (guests > 0) payload.guests = guests;
     if (answersPayload.length > 0) payload.answers = answersPayload;
-    if (form.settings.collectEmail && email.trim()) payload.email = email.trim();
-    if (form.settings.collectPhone && phone.trim()) payload.phone = phone.trim();
+    if (form.settings.collectEmail && email.trim())
+      payload.email = email.trim();
+    if (form.settings.collectPhone && phone.trim())
+      payload.phone = phone.trim();
     if (myResponse?.id) payload.signupId = myResponse.id;
 
     setLoading(true);
@@ -372,7 +373,9 @@ const SignupViewer: React.FC<Props> = ({
           ? data.status
           : (data?.response?.status as string | undefined);
       if (status === "waitlisted") {
-        setServerMessage("You're on the waitlist. We'll promote you automatically if spots open up.");
+        setServerMessage(
+          "You're on the waitlist. We'll promote you automatically if spots open up."
+        );
       } else {
         setServerMessage("Saved! We'll send reminders before the event.");
       }
@@ -433,9 +436,7 @@ const SignupViewer: React.FC<Props> = ({
   return (
     <section className="rounded-xl border border-border bg-surface/80 p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <h2 className="text-lg font-semibold text-foreground">
-          Sign-up board
-        </h2>
+        <h2 className="text-lg font-semibold text-foreground">Sign-up board</h2>
         <p className="text-sm text-foreground/70">
           Claim a spot, bring supplies, or volunteer for a role. Slots update in
           real time for everyone invited.
@@ -722,12 +723,15 @@ const SignupViewer: React.FC<Props> = ({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs text-foreground/60">
               We’ll auto-manage waitlists, notify you about updates, and remind
-              you {form.settings.autoRemindersHoursBefore
+              you{" "}
+              {form.settings.autoRemindersHoursBefore
                 .slice()
                 .sort((a, b) => a - b)
                 .map((hours) =>
                   hours >= 24
-                    ? `${Math.round(hours / 24)} day${hours / 24 === 1 ? "" : "s"}`
+                    ? `${Math.round(hours / 24)} day${
+                        hours / 24 === 1 ? "" : "s"
+                      }`
                     : `${hours} hour${hours === 1 ? "" : "s"}`
                 )
                 .join(", ")}{" "}
@@ -797,7 +801,8 @@ const SignupViewer: React.FC<Props> = ({
               Host dashboard
             </h3>
             <span className="text-xs text-foreground/60">
-              {confirmedResponses.length} confirmed · {waitlistedResponses.length} waitlisted ·{" "}
+              {confirmedResponses.length} confirmed ·{" "}
+              {waitlistedResponses.length} waitlisted ·{" "}
               {cancelledResponses.length} cancelled
             </span>
           </header>
@@ -818,7 +823,9 @@ const SignupViewer: React.FC<Props> = ({
                           {response.name}
                         </span>
                         <span className="text-xs text-foreground/60">
-                          {new Date(response.updatedAt || response.createdAt || "").toLocaleString()}
+                          {new Date(
+                            response.updatedAt || response.createdAt || ""
+                          ).toLocaleString()}
                         </span>
                       </div>
                       <div className="text-xs text-foreground/70 mt-1">
@@ -859,7 +866,9 @@ const SignupViewer: React.FC<Props> = ({
                           {response.name}
                         </span>
                         <span className="text-xs text-amber-700/70">
-                          {new Date(response.updatedAt || response.createdAt || "").toLocaleString()}
+                          {new Date(
+                            response.updatedAt || response.createdAt || ""
+                          ).toLocaleString()}
                         </span>
                       </div>
                       <div className="text-xs text-amber-700/80 mt-1">
@@ -881,7 +890,9 @@ const SignupViewer: React.FC<Props> = ({
                   {cancelledResponses.map((response) => (
                     <div key={response.id}>
                       {response.name} —{" "}
-                      {new Date(response.updatedAt || response.createdAt || "").toLocaleString()}
+                      {new Date(
+                        response.updatedAt || response.createdAt || ""
+                      ).toLocaleString()}
                     </div>
                   ))}
                 </div>

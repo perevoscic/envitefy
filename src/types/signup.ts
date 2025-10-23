@@ -51,6 +51,7 @@ export type SignupResponse = {
 
 export type SignupFormSettings = {
   allowMultipleSlotsPerPerson: boolean;
+  maxSlotsPerPerson?: number | null;
   maxGuestsPerSignup: number;
   waitlistEnabled: boolean;
   lockWhenFull: boolean;
@@ -58,6 +59,9 @@ export type SignupFormSettings = {
   collectEmail: boolean;
   showRemainingSpots: boolean;
   autoRemindersHoursBefore: number[];
+  hideParticipantNames?: boolean;
+  signupOpensAt?: string | null;
+  signupClosesAt?: string | null;
 };
 
 export type SignupForm = {

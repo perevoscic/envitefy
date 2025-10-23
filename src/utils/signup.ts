@@ -14,6 +14,7 @@ const ID_PREFIX = "sg";
 
 export const DEFAULT_SIGNUP_SETTINGS: SignupFormSettings = {
   allowMultipleSlotsPerPerson: false,
+  maxSlotsPerPerson: null,
   maxGuestsPerSignup: 1,
   waitlistEnabled: true,
   lockWhenFull: true,
@@ -21,6 +22,9 @@ export const DEFAULT_SIGNUP_SETTINGS: SignupFormSettings = {
   collectEmail: true,
   showRemainingSpots: true,
   autoRemindersHoursBefore: [24, 2],
+  hideParticipantNames: false,
+  signupOpensAt: null,
+  signupClosesAt: null,
 };
 
 export const generateSignupId = (): string =>
@@ -30,13 +34,13 @@ export const createSignupSlot = (
   overrides: Partial<SignupFormSlot> = {}
 ): SignupFormSlot => ({
   id: generateSignupId(),
-  label: overrides.label ?? "Volunteer spot",
+  label: overrides.label ?? "",
   capacity:
     typeof overrides.capacity === "number"
       ? overrides.capacity
       : overrides.capacity === null
       ? null
-      : 1,
+      : null,
   startTime: overrides.startTime ?? null,
   endTime: overrides.endTime ?? null,
   notes: overrides.notes ?? null,
@@ -46,7 +50,7 @@ export const createSignupSection = (
   overrides: Partial<SignupFormSection> = {}
 ): SignupFormSection => ({
   id: generateSignupId(),
-  title: overrides.title ?? "Sign-up section",
+  title: overrides.title ?? "",
   description: overrides.description ?? null,
   slots:
     overrides.slots && overrides.slots.length > 0
@@ -57,33 +61,25 @@ export const createSignupSection = (
 export const createDefaultSignupForm = (): SignupForm => ({
   version: SIGNUP_FORM_VERSION,
   enabled: true,
-  title: "Smart sign-up sheet",
-  description:
-    "Let guests claim roles, time slots, or supplies. We’ll send automatic reminders and manage waitlists for you.",
+  title: "",
+  description: null,
   sections: [
     createSignupSection({
-      title: "Arrival shifts",
-      description: "Claim a slot to help with setup or check-in.",
+      title: "",
+      description: null,
       slots: [
         createSignupSlot({
-          label: "Setup crew · arrives 1 hour early",
-          capacity: 4,
+          label: "",
+          capacity: null,
         }),
         createSignupSlot({
-          label: "Check-in table · welcome guests",
-          capacity: 2,
+          label: "",
+          capacity: null,
         }),
       ],
     }),
   ],
-  questions: [
-    {
-      id: generateSignupId(),
-      prompt: "Anything we should know? (allergies, special requests)",
-      multiline: true,
-      required: false,
-    },
-  ],
+  questions: [],
   settings: { ...DEFAULT_SIGNUP_SETTINGS },
   responses: [],
 });
@@ -113,18 +109,22 @@ const sanitizeReminders = (input: unknown): number[] => {
 };
 
 const sanitizeQuestions = (questions: SignupQuestion[]): SignupQuestion[] => {
-  return questions
-    .map((q) => {
-      const prompt = (q.prompt || "").trim();
-      if (!prompt) return null;
-      return {
-        id: q.id || generateSignupId(),
-        prompt,
-        required: Boolean(q.required),
-        multiline: Boolean(q.multiline),
-      };
-    })
-    .filter((q): q is SignupQuestion => Boolean(q));
+  const mapped: Array<SignupQuestion | null> = questions.map((q) => {
+    const prompt = (q.prompt || "").trim();
+    if (!prompt) return null;
+    const normalized: SignupQuestion = {
+      id: q.id || generateSignupId(),
+      prompt,
+    };
+    if (typeof q.required !== "undefined") {
+      normalized.required = Boolean(q.required);
+    }
+    if (typeof q.multiline !== "undefined") {
+      normalized.multiline = Boolean(q.multiline);
+    }
+    return normalized;
+  });
+  return mapped.filter((q): q is SignupQuestion => Boolean(q));
 };
 
 const sanitizeSections = (sections: SignupFormSection[]): SignupFormSection[] => {
@@ -132,32 +132,32 @@ const sanitizeSections = (sections: SignupFormSection[]): SignupFormSection[] =>
     .map((section) => {
       const title = (section.title || "").trim();
       const normalizedTitle = title || "Sign-up section";
-      const normalizedDescription = section.description
+      const normalizedDescription: string | null = section.description
         ? section.description.trim() || null
         : null;
-      const slots = (section.slots || [])
+      const slots: SignupFormSlot[] = (section.slots || [])
         .map((slot) => {
           const label = (slot.label || "").trim();
           if (!label) return null;
-          return {
+          const built: SignupFormSlot = {
             id: slot.id || generateSignupId(),
             label,
             capacity: sanitizeCapacity(slot.capacity),
-            startTime: slot.startTime?.trim()
-              ? slot.startTime.trim()
-              : null,
+            startTime: slot.startTime?.trim() ? slot.startTime.trim() : null,
             endTime: slot.endTime?.trim() ? slot.endTime.trim() : null,
             notes: slot.notes?.trim() ? slot.notes.trim() : null,
           };
+          return built;
         })
         .filter((slot): slot is SignupFormSlot => Boolean(slot));
       if (!slots.length) return null;
-      return {
+      const builtSection: SignupFormSection = {
         id: section.id || generateSignupId(),
         title: normalizedTitle,
         description: normalizedDescription,
         slots,
       };
+      return builtSection;
     })
     .filter((section): section is SignupFormSection => Boolean(section));
 };
@@ -167,6 +167,10 @@ const sanitizeSettings = (settings: SignupFormSettings): SignupFormSettings => {
   const maxGuests = Math.max(1, Math.min(20, Math.round(merged.maxGuestsPerSignup || 1)));
   return {
     allowMultipleSlotsPerPerson: Boolean(merged.allowMultipleSlotsPerPerson),
+    maxSlotsPerPerson:
+      typeof merged.maxSlotsPerPerson === "number" && Number.isFinite(merged.maxSlotsPerPerson)
+        ? Math.max(1, Math.min(50, Math.round(merged.maxSlotsPerPerson)))
+        : null,
     maxGuestsPerSignup: maxGuests,
     waitlistEnabled: Boolean(merged.waitlistEnabled),
     lockWhenFull: Boolean(merged.lockWhenFull),
@@ -174,6 +178,9 @@ const sanitizeSettings = (settings: SignupFormSettings): SignupFormSettings => {
     collectEmail: Boolean(merged.collectEmail),
     showRemainingSpots: Boolean(merged.showRemainingSpots),
     autoRemindersHoursBefore: sanitizeReminders(merged.autoRemindersHoursBefore),
+    hideParticipantNames: Boolean(merged.hideParticipantNames),
+    signupOpensAt: merged.signupOpensAt || null,
+    signupClosesAt: merged.signupClosesAt || null,
   };
 };
 
