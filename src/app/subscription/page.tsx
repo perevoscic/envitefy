@@ -315,6 +315,7 @@ export default function SubscriptionPage() {
 
   const isLegacyFreePlan = currentPlan === "free";
   const isFreemiumPlan = currentPlan === "freemium";
+  const isLifetimePlan = currentPlan === "FF";
   const basePlanSelected =
     selectedPlan === "freemium" || selectedPlan === "free";
   const basePlanCurrent = isFreemiumPlan || isLegacyFreePlan;
@@ -322,8 +323,10 @@ export default function SubscriptionPage() {
 
   const hasActivePaidPlan =
     currentPlan === "monthly" || currentPlan === "yearly";
-  const buttonDisabled = loading || (isAuthed && selectedPlan === currentPlan);
+  const buttonDisabled =
+    loading || isLifetimePlan || (isAuthed && selectedPlan === currentPlan);
   const buttonLabel = useMemo(() => {
+    if (isLifetimePlan) return "Current plan";
     if (!isAuthed) return "Subscribe";
     if (loading) return basePlanSelected ? "Updating..." : "Redirecting...";
 
@@ -407,17 +410,21 @@ export default function SubscriptionPage() {
           className={`relative rounded-xl bg-surface p-5 pt-7 flex flex-col transition outline-none focus:outline-none focus-visible:outline-none ${
             basePlanSelected ? "shadow-xl" : "shadow-md"
           } ${
-            basePlanLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+            isLifetimePlan
+              ? "opacity-60 cursor-not-allowed"
+              : basePlanLocked
+              ? "opacity-60 cursor-not-allowed"
+              : "cursor-pointer"
           }`}
           role="button"
-          aria-disabled={basePlanLocked}
-          tabIndex={basePlanLocked ? -1 : 0}
+          aria-disabled={isLifetimePlan || basePlanLocked}
+          tabIndex={isLifetimePlan || basePlanLocked ? -1 : 0}
           onClick={() => {
-            if (basePlanLocked) return;
+            if (isLifetimePlan || basePlanLocked) return;
             setSelectedPlan(isLegacyFreePlan ? "free" : "freemium");
           }}
           onKeyDown={(e) => {
-            if (basePlanLocked) return;
+            if (isLifetimePlan || basePlanLocked) return;
             if (e.key === "Enter" || e.key === " ")
               setSelectedPlan(isLegacyFreePlan ? "free" : "freemium");
           }}
@@ -471,8 +478,10 @@ export default function SubscriptionPage() {
           )}
         </div>
         <div
-          className={`relative rounded-xl bg-surface p-5 pt-7 flex flex-col cursor-pointer transition outline-none focus:outline-none focus-visible:outline-none ${
+          className={`relative rounded-xl bg-surface p-5 pt-7 flex flex-col transition outline-none focus:outline-none focus-visible:outline-none ${
             selectedPlan === "monthly" ? "shadow-xl" : "shadow-md"
+          } ${
+            isLifetimePlan ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
           }`}
           style={{
             background:
@@ -481,9 +490,14 @@ export default function SubscriptionPage() {
                 : undefined,
           }}
           role="button"
-          tabIndex={0}
-          onClick={() => setSelectedPlan("monthly")}
+          aria-disabled={isLifetimePlan}
+          tabIndex={isLifetimePlan ? -1 : 0}
+          onClick={() => {
+            if (isLifetimePlan) return;
+            setSelectedPlan("monthly");
+          }}
           onKeyDown={(e) => {
+            if (isLifetimePlan) return;
             if (e.key === "Enter" || e.key === " ") setSelectedPlan("monthly");
           }}
         >
@@ -513,8 +527,10 @@ export default function SubscriptionPage() {
         </div>
 
         <div
-          className={`relative rounded-xl bg-surface p-5 pt-7 flex flex-col cursor-pointer transition outline-none focus:outline-none focus-visible:outline-none ${
+          className={`relative rounded-xl bg-surface p-5 pt-7 flex flex-col transition outline-none focus:outline-none focus-visible:outline-none ${
             selectedPlan === "yearly" ? "shadow-xl" : "shadow-md"
+          } ${
+            isLifetimePlan ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
           }`}
           style={{
             background:
@@ -523,9 +539,14 @@ export default function SubscriptionPage() {
                 : undefined,
           }}
           role="button"
-          tabIndex={0}
-          onClick={() => setSelectedPlan("yearly")}
+          aria-disabled={isLifetimePlan}
+          tabIndex={isLifetimePlan ? -1 : 0}
+          onClick={() => {
+            if (isLifetimePlan) return;
+            setSelectedPlan("yearly");
+          }}
           onKeyDown={(e) => {
+            if (isLifetimePlan) return;
             if (e.key === "Enter" || e.key === " ") setSelectedPlan("yearly");
           }}
         >
@@ -555,7 +576,7 @@ export default function SubscriptionPage() {
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <button
           type="button"
-          className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow select-none"
+          className="px-6 py-2 rounded-2xl bg-[#A259FF] text-white shadow-lg hover:shadow-xl active:shadow-md transition-shadow select-none disabled:opacity-60 disabled:cursor-not-allowed"
           onClick={async () => {
             if (!isAuthed) {
               setAuthMode("signup");
@@ -563,6 +584,7 @@ export default function SubscriptionPage() {
               return;
             }
             if (loading) return;
+            if (isLifetimePlan) return;
             if (selectedPlan === "free" || selectedPlan === "freemium") {
               if (!hasActivePaidPlan) return;
               try {

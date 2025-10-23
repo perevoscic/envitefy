@@ -310,7 +310,7 @@ export default function LeftSidebar() {
   const userEmail = session?.user?.email as string | undefined;
   // Deprecated scanCredits removed; use unified credits state
   const [subscriptionPlan, setSubscriptionPlan] = useState<
-    "free" | "monthly" | "yearly" | "FF" | null
+    "freemium" | "free" | "monthly" | "yearly" | "FF" | null
   >(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
@@ -344,7 +344,7 @@ export default function LeftSidebar() {
         if (!ignore) {
           const p = json.subscriptionPlan;
           const plan =
-            p === "free" || p === "monthly" || p === "yearly" || p === "FF"
+            p === "freemium" || p === "free" || p === "monthly" || p === "yearly" || p === "FF"
               ? p
               : null;
           const nextCredits =

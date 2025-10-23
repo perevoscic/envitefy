@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 
-type Plan = "free" | "monthly" | "yearly" | "FF";
+type Plan = "freemium" | "free" | "monthly" | "yearly" | "FF";
 interface Scenario {
   oldPlan: Exclude<Plan, "FF">; // old plan can't be FF in these previews
   newPlan: Exclude<Plan, "free">; // new plan is one of paid or FF
@@ -55,15 +55,15 @@ export default function SubscriptionChangePreviewPage() {
     Scenario
   > = {
     upgradeMonthly: {
-      oldPlan: "free",
+      oldPlan: "freemium",
       newPlan: "monthly",
-      oldPlanLabel: "Free Trial",
+      oldPlanLabel: "Freemium",
       newPlanLabel: "Monthly Plan",
     },
     upgradeYearly: {
-      oldPlan: "free",
+      oldPlan: "freemium",
       newPlan: "yearly",
-      oldPlanLabel: "Free Trial",
+      oldPlanLabel: "Freemium",
       newPlanLabel: "Yearly Plan",
     },
     planSwitch: {
@@ -87,7 +87,10 @@ export default function SubscriptionChangePreviewPage() {
   };
 
   const scenario = scenarios[viewType];
-  const isUpgrade = scenario.oldPlan === "free" || scenario.newPlan === "FF";
+  const isUpgrade =
+    scenario.oldPlan === "free" ||
+    scenario.oldPlan === "freemium" ||
+    scenario.newPlan === "FF";
   const isPlanSwitch =
     (scenario.oldPlan === "monthly" && scenario.newPlan === "yearly") ||
     (scenario.oldPlan === "yearly" && scenario.newPlan === "monthly");

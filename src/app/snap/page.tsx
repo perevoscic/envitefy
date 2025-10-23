@@ -65,7 +65,9 @@ export default function SnapPage() {
       if (!action) return;
 
       const isFreePlan =
-        subscriptionPlan == null || subscriptionPlan === "free";
+        subscriptionPlan == null ||
+        subscriptionPlan === "free" ||
+        subscriptionPlan === "freemium";
       const creditsKnown = typeof credits === "number";
       // Wait until credits load for free users so we don't allow a bypass before state sync.
       if (isFreePlan && !creditsKnown) return;

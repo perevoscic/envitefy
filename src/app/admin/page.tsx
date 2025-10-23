@@ -740,6 +740,7 @@ function PlanBadge({ plan }: { plan?: string | null }) {
 
   const styles: Record<string, string> = {
     free: "bg-surface/80 text-foreground/80 border border-border",
+    freemium: "bg-surface/80 text-foreground/80 border border-border",
     monthly: "bg-blue-500/15 text-blue-600 border border-blue-500/30",
     yearly: "bg-purple-500/15 text-purple-600 border border-purple-500/30",
     FF: "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg shadow-amber-500/20",
@@ -751,7 +752,7 @@ function PlanBadge({ plan }: { plan?: string | null }) {
         styles[plan] || styles.free
       }`}
     >
-      {plan === "FF" ? "⭐ Lifetime" : plan}
+      {plan === "FF" ? "⭐ Lifetime" : plan === "free" ? "Freemium" : plan}
     </span>
   );
 }
