@@ -155,8 +155,8 @@ export default function SubscriptionPage() {
         plan === "yearly"
           ? "Snap My Date Premium - Yearly"
           : plan === "monthly"
-            ? "Snap My Date Premium - Monthly"
-            : "Snap My Date Premium";
+          ? "Snap My Date Premium - Monthly"
+          : "Snap My Date Premium";
 
       const payload = {
         transaction_id: sessionId,
@@ -239,15 +239,18 @@ export default function SubscriptionPage() {
               ? planFromParams
               : currentPlan;
           const normalizedPlan =
-            plan === "monthly" || plan === "yearly" || plan === "FF" || plan === "free"
+            plan === "monthly" ||
+            plan === "yearly" ||
+            plan === "FF" ||
+            plan === "free"
               ? plan
               : null;
           const cents =
             normalizedPlan === "yearly"
               ? pricing.yearly
               : normalizedPlan === "monthly"
-                ? pricing.monthly
-                : pricing.monthly;
+              ? pricing.monthly
+              : pricing.monthly;
           const value = Math.max(0, cents / 100);
           reportSubscriptionPurchase({
             sessionId,
@@ -445,9 +448,7 @@ export default function SubscriptionPage() {
               {!hasActivePaidPlan && (
                 <div className="text-xs text-muted-foreground">
                   {isLegacyFreePlan
-                    ? typeof credits === "number"
-                      ? `${credits} credits left`
-                      : "3 trial credits"
+                    ? "Free plan"
                     : "Ad-supported access. Upgrade to remove ads."}
                 </div>
               )}
@@ -463,7 +464,9 @@ export default function SubscriptionPage() {
           </div>
           {isAuthed && basePlanCurrent && (
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              {isLegacyFreePlan ? "Current plan (legacy trial)" : "Current plan"}
+              {isLegacyFreePlan
+                ? "Current plan (legacy trial)"
+                : "Current plan"}
             </div>
           )}
         </div>

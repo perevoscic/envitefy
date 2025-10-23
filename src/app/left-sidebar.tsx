@@ -412,19 +412,13 @@ export default function LeftSidebar() {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
   }, [session?.user]);
 
-  const showCreditsShell =
-    profileLoaded &&
-    subscriptionPlan !== "monthly" &&
-    subscriptionPlan !== "yearly" &&
-    subscriptionPlan !== "FF";
+  // Stop showing credits in the UI
+  const showCreditsShell = false;
   const creditsAreKnown =
     profileLoaded && typeof credits === "number" && credits >= 0;
   const creditsValue =
     typeof credits === "number" && credits >= 0 ? credits : 0;
-  const shouldBlockNewSnap = () => {
-    const isFreePlan = subscriptionPlan == null || subscriptionPlan === "free";
-    return isFreePlan && typeof credits === "number" && credits <= 0;
-  };
+  const shouldBlockNewSnap = () => false;
   const collapseSidebarOnTouch = () => {
     try {
       const isTouch =
@@ -443,12 +437,7 @@ export default function LeftSidebar() {
   const handleSnapShortcutClick = (
     event: React.MouseEvent<HTMLAnchorElement>
   ) => {
-    if (shouldBlockNewSnap()) {
-      event.preventDefault();
-      router.push("/subscription");
-      collapseSidebarOnTouch();
-      return;
-    }
+    // No credits gating; always allow snapping
     collapseSidebarOnTouch();
   };
   const profileMenuItemClass =

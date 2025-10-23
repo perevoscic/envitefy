@@ -12,25 +12,14 @@ export async function GET() {
   const email = session.user.email as string;
   const user = await getUserByEmail(email);
   const plan = await getSubscriptionPlanByEmail(email);
-  // Backfill free users who never received initial credits (legacy rows)
-  const init = await (async () => {
-    const current = await getCreditsByEmail(email);
-    if ((plan === "free" || plan == null) && current == null) {
-      return await initFreeCreditsIfMissing(email, 3);
-    }
-    return current ?? 0;
-  })();
+  // Do not initialize/backfill credits on sign-in; only read existing value
   const responsePlan = plan || "free";
-  const creditsCount =
-    typeof init === "number" ? init : (await getCreditsByEmail(email)) ?? 0;
-  const shouldReturnCredits = responsePlan === "free";
+  const rawCredits = await getCreditsByEmail(email);
   const creditsValue =
     responsePlan === "FF"
       ? null
-      : shouldReturnCredits
-      ? Number.isFinite(creditsCount as any)
-        ? creditsCount
-        : 0
+      : responsePlan === "free"
+      ? (Number.isFinite(rawCredits as any) ? (rawCredits as number) : 0)
       : null;
   return NextResponse.json({
     email: user?.email || email,

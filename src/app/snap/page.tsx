@@ -7,7 +7,12 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/assets/logo.png";
 import { preparePickedImage } from "@/utils/pickImage";
-import { readProfileCache, writeProfileCache, clearProfileCache, PROFILE_CACHE_TTL_MS } from "@/utils/profileCache";
+import {
+  readProfileCache,
+  writeProfileCache,
+  clearProfileCache,
+  PROFILE_CACHE_TTL_MS,
+} from "@/utils/profileCache";
 
 type EventFields = {
   title: string;
@@ -178,7 +183,9 @@ export default function SnapPage() {
 
         if (!res.ok) {
           setCredits(null);
-          setCreditsError("We couldn't load your credits. Try again in a few seconds.");
+          setCreditsError(
+            "We couldn't load your credits. Try again in a few seconds."
+          );
           return;
         }
 
@@ -206,11 +213,17 @@ export default function SnapPage() {
         setSubscriptionPlan(plan);
         setCredits(nextCredits);
         setCreditsError(null);
-        writeProfileCache(profileEmailRef.current || profileEmail, plan, nextCredits);
+        writeProfileCache(
+          profileEmailRef.current || profileEmail,
+          plan,
+          nextCredits
+        );
       } catch {
         if (!cancelled) {
           setCredits(null);
-          setCreditsError("We couldn't load your credits. Try again in a few seconds.");
+          setCreditsError(
+            "We couldn't load your credits. Try again in a few seconds."
+          );
         }
       }
     };
@@ -361,24 +374,11 @@ export default function SnapPage() {
   };
 
   const isSignedIn = Boolean(session?.user);
-  const isLifetime = subscriptionPlan === "FF" || credits === Infinity;
-  const creditsLoading = isSignedIn && !isLifetime && creditsError === null && credits === null;
-  const isOutOfCredits =
-    isSignedIn &&
-    !isLifetime &&
-    typeof credits === "number" &&
-    credits <= 0;
-  const actionButtonsDisabled = Boolean(creditsError) || creditsLoading || isOutOfCredits;
-  const disabledReason = actionButtonsDisabled
-    ? creditsError ?? (creditsLoading
-        ? "Hang tight — checking your credits…"
-        : "You're out of credits. Upgrade to keep scanning.")
-    : undefined;
-  const showCreditsBanner = Boolean(creditsError || creditsLoading || isOutOfCredits);
-  const creditsBannerClasses = [
-    "mt-4 text-sm text-center",
-    creditsError || isOutOfCredits ? "text-error" : "text-muted-foreground",
-  ].join(" ");
+  const isLifetime = true; // disable credits gating everywhere
+  const actionButtonsDisabled = false;
+  const disabledReason = undefined;
+  const showCreditsBanner = false;
+  const creditsBannerClasses = "mt-4 text-sm text-center";
 
   const resetForm = () => {
     setEvent(null);
@@ -934,13 +934,21 @@ export default function SnapPage() {
         setCredits((prev) => {
           if (typeof prev === "number") {
             const next = Math.max(prev - 1, 0);
-            writeProfileCache(profileEmailRef.current || profileEmail, "free", next);
+            writeProfileCache(
+              profileEmailRef.current || profileEmail,
+              "free",
+              next
+            );
             return next;
           }
           return prev;
         });
       } else if (subscriptionPlan) {
-        writeProfileCache(profileEmailRef.current || profileEmail, subscriptionPlan, credits);
+        writeProfileCache(
+          profileEmailRef.current || profileEmail,
+          subscriptionPlan,
+          credits
+        );
       }
       try {
         if (id && typeof window !== "undefined") {
@@ -1609,45 +1617,7 @@ export default function SnapPage() {
                 seconds. Works with Google, Apple, and Outlook Calendars.
               </p>
 
-              {/* Credits pill */}
-              {(!isSignedIn || !isLifetime) && (
-                <div className="mt-6 flex justify-center">
-                  <Link
-                    href="/subscription"
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 text-foreground/90 text-xs px-3 py-1.5 hover:bg-surface"
-                  >
-                    <span aria-hidden>🎟️</span>
-                    {isSignedIn ? (
-                      isLifetime ? (
-                        <span className="font-semibold tracking-tight">∞ Lifetime Access</span>
-                      ) : typeof credits === "number" ? (
-                        credits <= 0 ? (
-                          <>
-                            <span className="font-semibold text-error">Out of credits</span>
-                            <span>— Upgrade to keep scanning</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-semibold">{credits}</span>
-                            <span>credits left. Subscribe</span>
-                          </>
-                        )
-                      ) : creditsError ? (
-                        <span>Credits unavailable</span>
-                      ) : (
-                        <span>Checking credits…</span>
-                      )
-                    ) : (
-                      <>
-                        <span>Free trial:</span>
-                        <span className="font-semibold">3</span>
-                        <span>credits</span>
-                      </>
-                    )}
-                    <span aria-hidden>↗</span>
-                  </Link>
-                </div>
-              )}
+              {/* Credits pill removed */}
 
               {showCreditsBanner && (
                 <p className={creditsBannerClasses}>
@@ -1656,7 +1626,10 @@ export default function SnapPage() {
                   ) : isOutOfCredits ? (
                     <>
                       You're out of credits.{" "}
-                      <Link href="/subscription" className="font-medium underline">
+                      <Link
+                        href="/subscription"
+                        className="font-medium underline"
+                      >
                         Upgrade
                       </Link>{" "}
                       to keep scanning.
@@ -2846,4 +2819,3 @@ function IconAppleMono({ className }: { className?: string }) {
     </svg>
   );
 }
-
