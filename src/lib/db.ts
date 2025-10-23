@@ -317,7 +317,7 @@ export async function createUserWithEmailPassword(params: {
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
     `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
-     values ($1, $2, $3, $4, 'free', false, 3)
+     values ($1, $2, $3, $4, 'freemium', false, 3)
      returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, firstName || null, lastName || null, password_hash]
   );
@@ -363,7 +363,7 @@ export async function createOrUpdateOAuthUser(params: {
   // Create new OAuth user with NULL password_hash
   const res = await query<AppUserRow>(
     `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
-     values ($1, $2, $3, NULL, 'free', false, 3)
+     values ($1, $2, $3, NULL, 'freemium', false, 3)
      returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, params.firstName || null, params.lastName || null]
   );
@@ -532,7 +532,7 @@ async function ensureUsersHasStripeBillingColumns(): Promise<void> {
   `);
 }
 
-export type SubscriptionPlan = "free" | "monthly" | "yearly" | "FF";
+export type SubscriptionPlan = "freemium" | "free" | "monthly" | "yearly" | "FF";
 
 export async function getSubscriptionPlanByEmail(email: string): Promise<string | null> {
   await ensureUsersHasSubscriptionPlanColumn();
@@ -697,7 +697,7 @@ export async function initFreeCreditsIfMissing(email: string, amount: number = 3
     `update users
      set credits = coalesce(credits, $2)
      where email = $1
-       and (subscription_plan = 'free' or subscription_plan is null)
+       and (subscription_plan in ('freemium','free') or subscription_plan is null)
      returning credits`,
     [lower, Math.max(0, Math.trunc(amount))]
   );

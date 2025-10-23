@@ -71,7 +71,7 @@ NEXTAUTH_URL=http://localhost:3000  # or your production URL
    - `email` from Google
    - `first_name` and `last_name` from Google profile
    - `password_hash = NULL`
-   - `subscription_plan = "free"`
+   - `subscription_plan = "freemium"`
    - `credits = 3`
 5. User is signed in and redirected
 

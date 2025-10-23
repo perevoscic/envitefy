@@ -31,7 +31,7 @@ export function normalizePlan(value: string | null | undefined): StripePlanId | 
 
 function normalizeSubscriptionPlan(value: string | null | undefined): SubscriptionPlan | null {
   if (!value) return null;
-  if (value === "monthly" || value === "yearly" || value === "free" || value === "FF") {
+  if (value === "monthly" || value === "yearly" || value === "free" || value === "freemium" || value === "FF") {
     return value;
   }
   return null;

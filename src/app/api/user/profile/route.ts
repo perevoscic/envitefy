@@ -13,12 +13,12 @@ export async function GET() {
   const user = await getUserByEmail(email);
   const plan = await getSubscriptionPlanByEmail(email);
   // Do not initialize/backfill credits on sign-in; only read existing value
-  const responsePlan = plan || "free";
+  const responsePlan = plan || "freemium";
   const rawCredits = await getCreditsByEmail(email);
   const creditsValue =
     responsePlan === "FF"
       ? null
-      : responsePlan === "free"
+      : responsePlan === "free" || responsePlan === "freemium"
       ? (Number.isFinite(rawCredits as any) ? (rawCredits as number) : 0)
       : null;
   return NextResponse.json({
