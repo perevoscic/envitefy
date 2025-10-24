@@ -1,0 +1,156 @@
+{
+  "Fall & Seasonal": [
+    { "name": "Apple Picking", "tier": "free" },
+    { "name": "Fall Scene", "tier": "premium" },
+    { "name": "Fall Fun 2", "tier": "free" },
+    { "name": "Harvest Table", "tier": "premium" },
+    { "name": "Pumpkin Patch", "tier": "premium" },
+    { "name": "Fall Forest", "tier": "free" },
+    { "name": "Fall Food Drive", "tier": "free" },
+    { "name": "Fall Gathering", "tier": "premium" },
+    { "name": "Corn Maze", "tier": "free" },
+    { "name": "Autumn Blessings", "tier": "premium" },
+    { "name": "Thanksgiving Feast", "tier": "free" },
+    { "name": "Friendsgiving", "tier": "premium" },
+    { "name": "Fall Food", "tier": "free" },
+    { "name": "Fall Leaves", "tier": "free" },
+    { "name": "Fall Y’all", "tier": "premium" },
+    { "name": "Fall Festival", "tier": "free" },
+    { "name": "Fall Pumpkins", "tier": "premium" }
+  ],
+
+  "Winter & Holidays": [
+    { "name": "Winter Cabin", "tier": "free" },
+    { "name": "Santa’s Workshop", "tier": "premium" },
+    { "name": "Ugly Sweater Party", "tier": "free" },
+    { "name": "Gingerbread Fun", "tier": "premium" },
+    { "name": "Holiday Lights", "tier": "premium" },
+    { "name": "Winter Wonderland", "tier": "free" },
+    { "name": "Christmas Cookies", "tier": "free" },
+    { "name": "New Year’s Eve", "tier": "premium" },
+    { "name": "Christmas Tree Farm", "tier": "premium" },
+    { "name": "Holiday Giving", "tier": "free" },
+    { "name": "Christmas Village", "tier": "premium" },
+    { "name": "Hanukkah Celebration", "tier": "premium" },
+    { "name": "Snow Day", "tier": "free" },
+    { "name": "Snowflakes", "tier": "free" },
+    { "name": "Merry Christmas", "tier": "free" }
+  ],
+
+  "Spring": [
+    { "name": "Spring Hike", "tier": "free" },
+    { "name": "Easter Bunnies", "tier": "premium" },
+    { "name": "Mother’s Day", "tier": "free" },
+    { "name": "Spring Flowers", "tier": "free" },
+    { "name": "Graduation Caps", "tier": "free" },
+    { "name": "Teacher Appreciation", "tier": "premium" },
+    { "name": "Spring Break", "tier": "free" },
+    { "name": "Spring Picnic", "tier": "free" },
+    { "name": "Field Day", "tier": "premium" },
+    { "name": "Spring Garden", "tier": "free" }
+  ],
+
+  "Summer": [
+    { "name": "Summer Camp", "tier": "free" },
+    { "name": "Beach Day", "tier": "free" },
+    { "name": "Vacation Vibes", "tier": "premium" },
+    { "name": "Family Reunion", "tier": "free" },
+    { "name": "Picnic Fun", "tier": "free" },
+    { "name": "Fourth of July", "tier": "premium" },
+    { "name": "Ice Cream Social", "tier": "free" },
+    { "name": "Summer BBQ", "tier": "free" },
+    { "name": "Lemonade Stand", "tier": "free" },
+    { "name": "Pool Party", "tier": "premium" }
+  ],
+
+  "School & Education": [
+    { "name": "Teacher Appreciation", "tier": "premium" },
+    { "name": "Book Fair", "tier": "free" },
+    { "name": "Field Trip", "tier": "free" },
+    { "name": "Back to School", "tier": "free" },
+    { "name": "Class Party", "tier": "free" },
+    { "name": "Open House", "tier": "free" },
+    { "name": "Parent Teacher Conference", "tier": "free" },
+    { "name": "Classroom Helpers", "tier": "free" },
+    { "name": "School Spirit", "tier": "premium" },
+    { "name": "Student Volunteers", "tier": "free" }
+  ],
+
+  "Church & Community": [
+    { "name": "Service Project", "tier": "premium" },
+    { "name": "Community Picnic", "tier": "free" },
+    { "name": "Bible Study", "tier": "free" },
+    { "name": "Mission Trip", "tier": "premium" },
+    { "name": "Church Gathering", "tier": "free" },
+    { "name": "Volunteer Sign-Up", "tier": "free" },
+    { "name": "Worship Team", "tier": "premium" },
+    { "name": "Sunday School", "tier": "free" },
+    { "name": "Fundraiser", "tier": "free" },
+    { "name": "Food Drive", "tier": "free" }
+  ],
+
+  "Sports & Recreation": [
+    { "name": "Swim Team", "tier": "premium" },
+    { "name": "Cheer Squad", "tier": "premium" },
+    { "name": "Track Meet", "tier": "free" },
+    { "name": "Baseball Team", "tier": "free" },
+    { "name": "Sports Banquet", "tier": "free" },
+    { "name": "Gymnastics", "tier": "free" },
+    { "name": "Fitness Class", "tier": "free" },
+    { "name": "Soccer Game", "tier": "free" },
+    { "name": "Basketball Practice", "tier": "free" },
+    { "name": "Golf Tournament", "tier": "premium" }
+  ],
+
+  "Fundraising, Food, & Events": [
+    { "name": "Car Wash", "tier": "free" },
+    { "name": "Bake Sale", "tier": "free" },
+    { "name": "Charity Gala", "tier": "premium" },
+    { "name": "Restaurant Night", "tier": "premium" },
+    { "name": "Food Pantry", "tier": "free" },
+    { "name": "Auction Event", "tier": "premium" },
+    { "name": "Donation Drive", "tier": "free" },
+    { "name": "Vendor Fair", "tier": "premium" },
+    { "name": "Raffle", "tier": "premium" },
+    { "name": "Potluck Dinner", "tier": "free" }
+  ],
+
+  "Family & Personal": [
+    { "name": "Anniversary Celebration", "tier": "premium" },
+    { "name": "Family Event", "tier": "premium" },
+    { "name": "Housewarming", "tier": "free" },
+    { "name": "Birthday Party", "tier": "free" },
+    { "name": "Block Party", "tier": "free" },
+    { "name": "Wedding", "tier": "premium" },
+    { "name": "Baby Shower", "tier": "premium" },
+    { "name": "Game Night", "tier": "free" },
+    { "name": "Bridal Shower", "tier": "premium" },
+    { "name": "Family Holiday", "tier": "premium" }
+  ],
+
+  "Business & Professional": [
+    { "name": "Conference Schedule", "tier": "premium" },
+    { "name": "Client Meeting", "tier": "free" },
+    { "name": "Team Lunch", "tier": "free" },
+    { "name": "Corporate Event", "tier": "premium" },
+    { "name": "Workshop", "tier": "free" },
+    { "name": "Networking Night", "tier": "premium" },
+    { "name": "Professional Gathering", "tier": "premium" },
+    { "name": "Office Meeting", "tier": "free" },
+    { "name": "Training Session", "tier": "free" }
+  ],
+
+  "Other / Special Interest": [
+    { "name": "Tech Event", "tier": "free" },
+    { "name": "Political Campaign", "tier": "premium" },
+    { "name": "Gaming Tournament", "tier": "premium" },
+    { "name": "Environment & Cleanup", "tier": "free" },
+    { "name": "Senior Services", "tier": "free" },
+    { "name": "Travel Group", "tier": "free" },
+    { "name": "Real Estate Open House", "tier": "premium" },
+    { "name": "Arts & Culture", "tier": "free" },
+    { "name": "Pets & Animals", "tier": "free" }
+  ]
+}
+
+
