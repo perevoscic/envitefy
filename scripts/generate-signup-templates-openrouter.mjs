@@ -56,13 +56,13 @@ function buildPrompt(category, name, tier) {
   
     const seasonAdds = {
       "Fall & Seasonal":
-        "Warm autumn palette with oranges/ambers; orange trees, pumpkins, hay bales, string lights.",
+        "Warm autumn palette with oranges/ambers; that it might include orange trees, pumpkins, hay bales, string lights.",
       "Winter & Holidays":
         "Crisp winter palette (soft whites, deep greens); subtle sparkle, festive market or snowy ambience.",
       "Spring":
-        "Fresh pastels; flowering trees and garden stalls; airy sunlight and light breezes.",
+        "Fresh pastels; that it might include flowering trees and garden stalls; airy sunlight and light breezes.",
       "Summer":
-        "Vibrant summer palette; bright sun flares; lemonade/ice cream stands; playful fair energy.",
+        "Vibrant summer palette; bright sun flares; that it might include lemonade/ice cream stands; playful fair energy.",
       "School & Education":
         "Outdoor school fair/campus vibe; PTA/books/crafts tables; friendly scholastic tone.",
       "Church & Community":
@@ -229,25 +229,8 @@ async function run() {
         } catch (e) {
           const msg = e?.message || String(e);
           console.warn("OpenRouter failed:", msg);
-          // Fallback to OpenAI if available
-          const fallbackKey = isNana
-            ? (process.env.NANA_OPENAI_API_KEY || process.env.OPENAI_API_KEY)
-            : process.env.OPENAI_API_KEY;
-          if (fallbackKey) {
-            console.log("Falling back to OpenAI image generation...");
-            const client = new OpenAI({ apiKey: fallbackKey });
-            const res = await client.images.generate({
-              model: "gpt-image-1",
-              prompt: `Generate a single square (1024x1024) PNG image in a lifestyle photography style (no text). ${prompt}`,
-              size: "1024x1024",
-              quality: "high",
-            });
-            const b64 = res.data?.[0]?.b64_json;
-            if (!b64) throw new Error("OpenAI fallback: no image data returned");
-            buf = Buffer.from(b64, "base64");
-          } else {
-            throw e;
-          }
+          // No fallback: surface the OpenRouter error
+          throw new Error(`OpenRouter failed: ${msg}`);
         }
         await fs.writeFile(filePath, buf);
       } else {
