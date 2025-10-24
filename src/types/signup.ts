@@ -74,6 +74,12 @@ export type SignupForm = {
   questions: SignupQuestion[];
   settings: SignupFormSettings;
   responses: SignupResponse[];
+  venue?: string | null;
+  location?: string | null;
+  start?: string | null; // ISO (local clock preserved)
+  end?: string | null;   // ISO (local clock preserved)
+  timezone?: string | null;
+  allDay?: boolean | null;
 };
 
 export type SignupFormHeader = {

@@ -199,6 +199,7 @@ const SectionCard = ({
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
+            {/* Date and time removed from slot editor (moved to Basics) */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -1238,16 +1239,6 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
 
   return (
     <section className="rounded-lg border border-border bg-surface/60 px-4 py-4 sm:px-5 sm:py-5 space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-xl space-y-1">
-          <p className="text-xs text-foreground/70 leading-relaxed">
-            Better than static spreadsheets. Create roles, time slots, and
-            supply lists in minutes. We'll auto-manage waitlists, limit
-            sign-ups, and send reminders so no one drops the ball.
-          </p>
-        </div>
-      </div>
-
       <div className="space-y-4">
         {showBasics && (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1301,6 +1292,93 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                 }
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 placeholder="Let guests know how to prepare."
+              />
+            </div>
+            {/* Venue and Address fields */}
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Venue
+              </label>
+              <input
+                type="text"
+                value={(form as any).venue || ""}
+                onChange={(e) =>
+                  onChange({ ...(form as any), venue: e.target.value })
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                placeholder="e.g., Central Park"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Address <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                aria-required="true"
+                value={(form as any).location || ""}
+                onChange={(e) =>
+                  onChange({ ...(form as any), location: e.target.value })
+                }
+                className={`w-full rounded-md border bg-background px-3 py-2 text-sm ${
+                  typeof (form as any).location !== "string" ||
+                  !(form as any).location.trim()
+                    ? "border-red-500"
+                    : "border-border"
+                }`}
+                placeholder="Street, City, State"
+              />
+              {(typeof (form as any).location !== "string" ||
+                !(form as any).location.trim()) && (
+                <p className="text-[11px] text-red-600">Address is required.</p>
+              )}
+            </div>
+            {/* Date and time (start) */}
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Date
+              </label>
+              <input
+                type="date"
+                value={(((form as any).start as string) || "").slice(0, 10)}
+                onChange={(e) => {
+                  const date = e.target.value; // YYYY-MM-DD
+                  const current = ((form as any).start as string) || "";
+                  const time = current.includes("T")
+                    ? current.split("T")[1].slice(0, 5)
+                    : "00:00";
+                  const isoLocal = date ? `${date}T${time}` : null;
+                  onChange({ ...(form as any), start: isoLocal });
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Time
+              </label>
+              <input
+                type="time"
+                value={(() => {
+                  const s = ((form as any).start as string) || "";
+                  if (!s.includes("T")) return "";
+                  return s.split("T")[1].slice(0, 5);
+                })()}
+                onChange={(e) => {
+                  const time = e.target.value || "00:00";
+                  const current = ((form as any).start as string) || "";
+                  const date = current ? current.slice(0, 10) : "";
+                  const today = new Date();
+                  const yyyy = String(today.getFullYear()).padStart(4, "0");
+                  const mm = String(today.getMonth() + 1).padStart(2, "0");
+                  const dd = String(today.getDate()).padStart(2, "0");
+                  const fallbackDate = `${yyyy}-${mm}-${dd}`;
+                  const baseDate = date || fallbackDate;
+                  const isoLocal = `${baseDate}T${time}`;
+                  onChange({ ...(form as any), start: isoLocal });
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
             {/* Removed manual background color control */}
@@ -1712,6 +1790,9 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                         : undefined,
                     }}
                   >
+                    <p className="text-xs text-foreground/70 mb-2 text-center">
+                      Header preview
+                    </p>
                     {(form.header?.templateId || "header-1") === "header-3" && (
                       <div className="mb-4">
                         {form.header?.images?.[0]?.dataUrl ? (

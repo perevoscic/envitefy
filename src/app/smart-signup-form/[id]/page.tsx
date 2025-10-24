@@ -5,6 +5,8 @@ import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
+import { combineVenueAndLocation } from "@/lib/mappers";
+import EventActions from "@/components/EventActions";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,10 @@ export default async function SignupPage({
   })();
 
   const header = signupForm.header || null;
+  const combinedLocation = combineVenueAndLocation(
+    (data?.venue as string | undefined) || null,
+    (data?.location as string | undefined) || null
+  );
   const pageBgStyle = {
     backgroundColor: header?.backgroundColor || undefined,
     backgroundImage: header?.backgroundCss || undefined,
@@ -60,6 +66,7 @@ export default async function SignupPage({
           }}
         >
           <div className="px-5 py-6">
+            <p className="text-xs text-foreground/60 mb-2">header preview</p>
             <div className="grid gap-4 md:grid-cols-[325px_1fr] items-start">
               <div>
                 {header?.backgroundImage?.dataUrl ? (
@@ -85,8 +92,65 @@ export default async function SignupPage({
                 >
                   {signupForm.title || row.title || "Smart sign-up"}
                 </h1>
+                {/* Headline description + location for guests */}
+                {(signupForm.description ||
+                  signupForm.venue ||
+                  signupForm.location ||
+                  combinedLocation) && (
+                  <div
+                    className="text-sm opacity-90"
+                    style={{ color: header?.textColor1 || undefined }}
+                  >
+                    {signupForm.description && (
+                      <p className="leading-relaxed">
+                        {signupForm.description}
+                      </p>
+                    )}
+                    {(signupForm.venue ||
+                      signupForm.location ||
+                      combinedLocation) && (
+                      <p className="mt-1 text-foreground/70">
+                        Location:{" "}
+                        {signupForm.venue
+                          ? `${signupForm.venue}${
+                              signupForm.location ? ", " : ""
+                            }`
+                          : ""}
+                        {signupForm.location || combinedLocation}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {/* Owner edit/delete actions now live in the Sign-up board header */}
               </div>
+            </div>
+            {/* Guest share actions inside header footer */}
+            <div className="mt-4 pt-3 border-t border-border/60">
+              <EventActions
+                shareUrl={`/smart-signup-form/${row.id}`}
+                historyId={row.id}
+                event={
+                  {
+                    title:
+                      (row.title as string) ||
+                      (signupForm.title as string) ||
+                      "Event",
+                    start:
+                      (data?.startISO as string | null) ||
+                      (data?.start as string | null) ||
+                      null,
+                    end:
+                      (data?.endISO as string | null) ||
+                      (data?.end as string | null) ||
+                      null,
+                    location: (data?.location as string | null) || null,
+                    venue: (data?.venue as string | null) || null,
+                    description: (data?.description as string | null) || null,
+                    timezone: (data?.timezone as string | null) || null,
+                    rsvp: (data?.rsvp as string | null) || null,
+                  } as any
+                }
+              />
             </div>
           </div>
         </section>

@@ -64,6 +64,19 @@ export const createDefaultSignupForm = (): SignupForm => ({
   enabled: true,
   title: "",
   description: null,
+  venue: null,
+  location: null,
+  start: (() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    // Store date only by default; time remains blank until chosen
+    return `${yyyy}-${mm}-${dd}`;
+  })(),
+  end: null,
+  timezone: null,
+  allDay: null,
   header: {
     backgroundColor: "#F5F5F4",
     backgroundImage: null,
@@ -266,6 +279,12 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
       enabled: false,
       title: (form.title || "").trim() || "Sign-up sheet",
       description: form.description?.trim() ? form.description.trim() : null,
+      venue: (form as any).venue?.trim ? ((form as any).venue as string).trim() || null : (form as any).venue ?? null,
+      location: (form as any).location?.trim ? ((form as any).location as string).trim() || null : (form as any).location ?? null,
+      start: (form as any).start?.trim ? ((form as any).start as string).trim() || null : (form as any).start ?? null,
+      end: (form as any).end?.trim ? ((form as any).end as string).trim() || null : (form as any).end ?? null,
+      timezone: (form as any).timezone?.trim ? ((form as any).timezone as string).trim() || null : (form as any).timezone ?? null,
+      allDay: typeof (form as any).allDay === "boolean" ? Boolean((form as any).allDay) : null,
       header: header || null,
       sections: [],
       questions: [],
@@ -279,6 +298,12 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     enabled: Boolean(form.enabled),
     title: (form.title || "").trim() || "Sign-up sheet",
     description: form.description?.trim() ? form.description.trim() : null,
+    venue: (form as any).venue?.trim ? ((form as any).venue as string).trim() || null : (form as any).venue ?? null,
+    location: (form as any).location?.trim ? ((form as any).location as string).trim() || null : (form as any).location ?? null,
+    start: (form as any).start?.trim ? ((form as any).start as string).trim() || null : (form as any).start ?? null,
+    end: (form as any).end?.trim ? ((form as any).end as string).trim() || null : (form as any).end ?? null,
+    timezone: (form as any).timezone?.trim ? ((form as any).timezone as string).trim() || null : (form as any).timezone ?? null,
+    allDay: typeof (form as any).allDay === "boolean" ? Boolean((form as any).allDay) : null,
     header: header || null,
     sections,
     questions,

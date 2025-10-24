@@ -159,6 +159,35 @@ const SignupViewer: React.FC<Props> = ({
   const canInteract = viewerKind !== "readonly";
   const maxGuests = form.settings.maxGuestsPerSignup || 1;
 
+  // Board-level capacity: total, filled (confirmed), remaining
+  const { totalCapacity, filledCount, remainingCount, hasUnlimited } =
+    useMemo(() => {
+      let total = 0;
+      let filled = 0;
+      let unlimited = false;
+      for (const section of form.sections) {
+        for (const slot of section.slots) {
+          const capacity = getSlotCapacity(slot);
+          const confirmed = countConfirmedForSlot(form, section.id, slot.id);
+          filled += confirmed;
+          if (capacity === null) {
+            unlimited = true;
+          } else {
+            total += capacity;
+          }
+        }
+      }
+      const remaining = unlimited
+        ? Number.POSITIVE_INFINITY
+        : Math.max(0, total - filled);
+      return {
+        totalCapacity: total,
+        filledCount: filled,
+        remainingCount: remaining,
+        hasUnlimited: unlimited,
+      };
+    }, [form]);
+
   const myResponse = useMemo(
     () =>
       findSignupResponseForUser(
@@ -819,15 +848,36 @@ const SignupViewer: React.FC<Props> = ({
 
       {viewerKind === "owner" && (
         <div className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
-          <header className="flex flex-wrap items-center justify-between gap-2">
+          <header className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-foreground">
               Host dashboard
             </h3>
-            <span className="text-xs text-foreground/60">
-              {confirmedResponses.length} confirmed ·{" "}
-              {waitlistedResponses.length} waitlisted ·{" "}
-              {cancelledResponses.length} cancelled
-            </span>
+            <div className="flex items-end gap-5">
+              <div className="text-center leading-none">
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-sky-600">
+                  {hasUnlimited ? "∞" : totalCapacity}
+                </div>
+                <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                  Total
+                </div>
+              </div>
+              <div className="text-center leading-none">
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-600">
+                  {filledCount}
+                </div>
+                <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                  Filled
+                </div>
+              </div>
+              <div className="text-center leading-none">
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-violet-600">
+                  {hasUnlimited ? "∞" : remainingCount}
+                </div>
+                <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                  Remaining
+                </div>
+              </div>
+            </div>
           </header>
           <div className="space-y-3">
             {confirmedResponses.length > 0 && (
