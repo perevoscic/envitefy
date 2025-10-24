@@ -204,6 +204,9 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     const backgroundColor = typeof (raw as any).backgroundColor === "string" && (raw as any).backgroundColor.trim()
       ? (raw as any).backgroundColor.trim()
       : null;
+    const backgroundCss = typeof (raw as any).backgroundCss === "string" && (raw as any).backgroundCss.trim()
+      ? (raw as any).backgroundCss.trim()
+      : null;
     const imageCandidate = (raw as any).backgroundImage;
     const backgroundImage = imageCandidate && typeof imageCandidate === "object" && typeof imageCandidate.dataUrl === "string"
       ? {
@@ -214,8 +217,47 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
       : null;
     const groupName = (raw as any).groupName?.trim() || null;
     const creatorName = (raw as any).creatorName?.trim() || null;
-    if (!backgroundColor && !backgroundImage && !groupName && !creatorName) return null;
-    return { backgroundColor, backgroundImage, groupName, creatorName };
+    const designTheme = (() => {
+      const dt = (raw as any).designTheme;
+      return typeof dt === "string" && dt.trim() ? dt.trim() : null;
+    })();
+    const templateId = typeof (raw as any).templateId === "string" ? ((raw as any).templateId as string) : null;
+    const themeId = typeof (raw as any).themeId === "string" ? ((raw as any).themeId as string) : null;
+    const textColor1 = typeof (raw as any).textColor1 === "string" ? ((raw as any).textColor1 as string) : null;
+    const textColor2 = typeof (raw as any).textColor2 === "string" ? ((raw as any).textColor2 as string) : null;
+    const buttonColor = typeof (raw as any).buttonColor === "string" ? ((raw as any).buttonColor as string) : null;
+    const buttonTextColor = typeof (raw as any).buttonTextColor === "string" ? ((raw as any).buttonTextColor as string) : null;
+    const images = Array.isArray((raw as any).images)
+      ? ((raw as any).images as Array<any>)
+          .map((img) =>
+            img && typeof img === "object" && typeof img.dataUrl === "string"
+              ? {
+                  id: String(img.id || generateSignupId()),
+                  name: String(img.name || "image"),
+                  type: String(img.type || "image/*"),
+                  dataUrl: img.dataUrl as string,
+                }
+              : null
+          )
+          .filter((v): v is { id: string; name: string; type: string; dataUrl: string } => Boolean(v))
+      : null;
+    if (!backgroundColor && !backgroundCss && !backgroundImage && !groupName && !creatorName && !designTheme && !templateId && !images)
+      return null;
+    return {
+      backgroundColor,
+      backgroundCss,
+      backgroundImage,
+      groupName,
+      creatorName,
+      designTheme,
+      templateId,
+      themeId,
+      textColor1,
+      textColor2,
+      buttonColor,
+      buttonTextColor,
+      images,
+    } as SignupFormHeader;
   })();
 
   if (!sections.length) {

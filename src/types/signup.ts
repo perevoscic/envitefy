@@ -100,4 +100,22 @@ export type SignupFormHeader = {
   buttonColor?: string | null;
   buttonTextColor?: string | null;
   images?: Array<{ id: string; name: string; type: string; dataUrl: string }> | null;
+  designTheme?: SignupDesignTheme | null;
 };
+
+export type SignupDesignTheme =
+  | "Spring"
+  | "Summer"
+  | "School & Education"
+  | "Fall & Seasonal"
+  | "Winter & Holidays"
+  | "Church & Community"
+  | "Sports & Recreation"
+  | "Fundraising, Food, & Events"
+  | "Family & Personal"
+  | "Business & Professional"
+  | "Parties & Events"
+  | "Health & Fitness"
+  | "Clubs & Groups"
+  | "General"
+  | "Other / Special Interest";

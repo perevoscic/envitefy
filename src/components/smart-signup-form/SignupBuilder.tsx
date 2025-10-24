@@ -7,6 +7,7 @@ import type {
   SignupFormSection,
   SignupFormSlot,
   SignupQuestion,
+  SignupDesignTheme,
 } from "@/types/signup";
 import { readFileAsDataUrl, createThumbnailDataUrl } from "@/utils/thumbnail";
 import {
@@ -433,12 +434,11 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
     {
       id: "night-sky",
       name: "Night Sky",
-      bgColor: "#1A1B2E",
-      bgCss:
-        "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 40%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.06), transparent 45%), linear-gradient(180deg, rgba(26,27,46,1) 0%, rgba(13,14,29,1) 100%)",
-      textColor1: "#D7E3FF",
+      bgColor: "#334155",
+      bgCss: "linear-gradient(180deg, #334155 0%, #1F2937 100%)",
+      textColor1: "#E5E7EB",
       textColor2: "#FFFFFF",
-      buttonColor: "#6EA8FE",
+      buttonColor: "#60A5FA",
       buttonTextColor: "#0B1220",
     },
     {
@@ -524,7 +524,425 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
       buttonColor: "#8B5CF6",
       buttonTextColor: "#1E0E3E",
     },
+    {
+      id: "charcoal-glow",
+      name: "Charcoal Glow",
+      bgColor: "#1F2937",
+      bgCss: "linear-gradient(135deg, #1F2937 0%, #374151 60%, #4B5563 100%)",
+      textColor1: "#F3F4F6",
+      textColor2: "#FFFFFF",
+      buttonColor: "#93C5FD",
+      buttonTextColor: "#0B1220",
+    },
+    {
+      id: "emerald-glow",
+      name: "Emerald Glow",
+      bgColor: "#064E3B",
+      bgCss: "linear-gradient(135deg, #064E3B 0%, #059669 100%)",
+      textColor1: "#D1FAE5",
+      textColor2: "#ECFDF5",
+      buttonColor: "#10B981",
+      buttonTextColor: "#052E2B",
+    },
+    {
+      id: "sunrise-peach",
+      name: "Sunrise Peach",
+      bgColor: "#FDBA74",
+      bgCss: "linear-gradient(135deg, #FDBA74 0%, #F472B6 100%)",
+      textColor1: "#1F2937",
+      textColor2: "#111827",
+      buttonColor: "#EC4899",
+      buttonTextColor: "#3B0820",
+    },
   ];
+
+  // Visual thumbnails for Theme design categories
+  const THEME_NAMES = [
+    "Spring",
+    "Summer",
+    "School & Education",
+    "Fall & Seasonal",
+    "Winter & Holidays",
+    "Church & Community",
+    "Sports & Recreation",
+    "Fundraising, Food, & Events",
+    "Family & Personal",
+    "Business & Professional",
+    "Parties & Events",
+    "Health & Fitness",
+    "Clubs & Groups",
+    "General",
+    "Other / Special Interest",
+  ] as const;
+
+  const [themeMenuOpen, setThemeMenuOpen] = React.useState(false);
+  const [templateMenuOpen, setTemplateMenuOpen] = React.useState(false);
+
+  const TEMPLATE_OPTIONS = [
+    { id: "header-1", label: "1. Left" },
+    { id: "header-2", label: "2. Right" },
+    { id: "header-3", label: "3. Full-width banner" },
+    { id: "header-4", label: "4. Banner + square left" },
+    { id: "header-5", label: "5. Two images" },
+    { id: "header-6", label: "6. Three images" },
+  ] as const;
+
+  const renderTemplateThumbSvg = (id: string) => {
+    switch (id) {
+      case "header-1":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="8" y="8" width="24" height="32" rx="4" fill="#D1D5DB" />
+            <rect x="36" y="10" width="36" height="8" rx="2" fill="#E5E7EB" />
+            <rect x="36" y="22" width="30" height="6" rx="2" fill="#E5E7EB" />
+            <rect x="36" y="32" width="20" height="4" rx="2" fill="#E5E7EB" />
+          </svg>
+        );
+      case "header-2":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="48" y="8" width="24" height="32" rx="4" fill="#D1D5DB" />
+            <rect x="8" y="10" width="36" height="8" rx="2" fill="#E5E7EB" />
+            <rect x="8" y="22" width="30" height="6" rx="2" fill="#E5E7EB" />
+            <rect x="8" y="32" width="20" height="4" rx="2" fill="#E5E7EB" />
+          </svg>
+        );
+      case "header-3":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="8" y="8" width="64" height="24" rx="4" fill="#D1D5DB" />
+            <rect x="12" y="36" width="28" height="4" rx="2" fill="#E5E7EB" />
+            <rect x="44" y="36" width="24" height="4" rx="2" fill="#E5E7EB" />
+          </svg>
+        );
+      case "header-4":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="8" y="8" width="64" height="18" rx="4" fill="#D1D5DB" />
+            <rect x="12" y="22" width="20" height="20" rx="4" fill="#E5E7EB" />
+            <rect x="36" y="28" width="32" height="4" rx="2" fill="#E5E7EB" />
+          </svg>
+        );
+      case "header-5":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="10" y="12" width="26" height="24" rx="4" fill="#D1D5DB" />
+            <rect x="44" y="12" width="26" height="24" rx="4" fill="#D1D5DB" />
+          </svg>
+        );
+      case "header-6":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="10" y="12" width="18" height="24" rx="4" fill="#D1D5DB" />
+            <rect x="31" y="12" width="18" height="24" rx="4" fill="#D1D5DB" />
+            <rect x="52" y="12" width="18" height="24" rx="4" fill="#D1D5DB" />
+          </svg>
+        );
+      default:
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <rect x="8" y="8" width="64" height="32" rx="4" fill="#D1D5DB" />
+          </svg>
+        );
+    }
+  };
+
+  const renderThemeThumbSvg = (name: SignupDesignTheme) => {
+    switch (name) {
+      case "Spring":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F0FDF4" />
+            <circle cx="20" cy="28" r="8" fill="#F472B6" />
+            <circle cx="28" cy="20" r="6" fill="#FDE68A" />
+            <circle cx="36" cy="28" r="8" fill="#34D399" />
+            <path
+              d="M55 34 C60 28, 70 28, 75 34"
+              stroke="#10B981"
+              strokeWidth="4"
+              fill="none"
+            />
+          </svg>
+        );
+      case "Summer":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#FFFBEB" />
+            <circle cx="18" cy="16" r="10" fill="#F59E0B" />
+            <path d="M0 36 C20 30, 40 42, 80 34" fill="#93C5FD" />
+            <path d="M0 40 C25 34, 45 46, 80 38" fill="#60A5FA" />
+          </svg>
+        );
+      case "School & Education":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#EEF2FF" />
+            <rect x="12" y="14" width="26" height="18" rx="2" fill="#3B82F6" />
+            <line
+              x1="16"
+              y1="20"
+              x2="34"
+              y2="20"
+              stroke="#BFDBFE"
+              strokeWidth="2"
+            />
+            <line
+              x1="16"
+              y1="24"
+              x2="34"
+              y2="24"
+              stroke="#BFDBFE"
+              strokeWidth="2"
+            />
+            <polygon points="54,14 74,20 54,26" fill="#F59E0B" />
+            <rect x="54" y="26" width="20" height="4" fill="#92400E" />
+          </svg>
+        );
+      case "Fall & Seasonal":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#FFF7ED" />
+            <path
+              d="M18 22 C22 16, 30 16, 34 22 C30 20, 22 24, 18 22"
+              fill="#EA580C"
+            />
+            <path
+              d="M44 26 C48 20, 58 20, 62 26 C58 24, 48 28, 44 26"
+              fill="#F59E0B"
+            />
+            <rect x="10" y="34" width="60" height="6" fill="#FCD34D" />
+          </svg>
+        );
+      case "Winter & Holidays":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F8FAFC" />
+            <polygon points="40,8 48,22 32,22" fill="#22D3EE" />
+            <polygon points="40,14 46,24 34,24" fill="#38BDF8" />
+            <circle cx="20" cy="36" r="3" fill="#E5E7EB" />
+            <circle cx="40" cy="36" r="3" fill="#E5E7EB" />
+            <circle cx="60" cy="36" r="3" fill="#E5E7EB" />
+          </svg>
+        );
+      case "Church & Community":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#ECFEFF" />
+            <rect x="12" y="18" width="18" height="14" fill="#0EA5E9" />
+            <polygon points="12,18 21,12 30,18" fill="#38BDF8" />
+            <circle cx="52" cy="28" r="6" fill="#22C55E" />
+            <circle cx="64" cy="30" r="5" fill="#86EFAC" />
+          </svg>
+        );
+      case "Sports & Recreation":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F0FDF4" />
+            <circle cx="24" cy="24" r="9" fill="#FB923C" />
+            <line
+              x1="24"
+              y1="15"
+              x2="24"
+              y2="33"
+              stroke="#9A3412"
+              strokeWidth="2"
+            />
+            <line
+              x1="15"
+              y1="24"
+              x2="33"
+              y2="24"
+              stroke="#9A3412"
+              strokeWidth="2"
+            />
+            <rect x="46" y="22" width="20" height="4" fill="#22C55E" />
+          </svg>
+        );
+      case "Fundraising, Food, & Events":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#FEF2F2" />
+            <path
+              d="M20 30 C20 22, 34 22, 34 30 C34 36, 20 36, 20 30 Z"
+              fill="#EF4444"
+            />
+            <rect x="44" y="22" width="18" height="10" rx="2" fill="#F59E0B" />
+            <rect x="64" y="22" width="2" height="10" fill="#92400E" />
+            <rect x="68" y="22" width="2" height="10" fill="#92400E" />
+          </svg>
+        );
+      case "Family & Personal":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#FDF2F8" />
+            <circle cx="24" cy="22" r="5" fill="#EC4899" />
+            <rect x="18" y="28" width="12" height="6" rx="3" fill="#F472B6" />
+            <circle cx="44" cy="22" r="5" fill="#8B5CF6" />
+            <rect x="38" y="28" width="12" height="6" rx="3" fill="#A78BFA" />
+          </svg>
+        );
+      case "Business & Professional":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#EFF6FF" />
+            <rect x="12" y="20" width="20" height="12" rx="2" fill="#334155" />
+            <rect x="16" y="16" width="12" height="6" rx="1" fill="#64748B" />
+            <polyline
+              points="46,30 54,24 62,28 70,18"
+              fill="none"
+              stroke="#3B82F6"
+              strokeWidth="2"
+            />
+          </svg>
+        );
+      case "Parties & Events":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#FFF7ED" />
+            <circle cx="20" cy="18" r="6" fill="#F59E0B" />
+            <rect x="14" y="24" width="12" height="10" rx="2" fill="#FCA5A5" />
+            <path d="M44 12 L50 26 L38 26 Z" fill="#60A5FA" />
+            <rect x="36" y="26" width="16" height="4" fill="#3B82F6" />
+            <circle cx="64" cy="22" r="5" fill="#A78BFA" />
+          </svg>
+        );
+      case "Health & Fitness":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F0FDF4" />
+            <rect x="18" y="22" width="12" height="4" fill="#059669" />
+            <rect x="50" y="22" width="12" height="4" fill="#059669" />
+            <rect x="30" y="20" width="20" height="8" fill="#10B981" />
+            <circle cx="40" cy="18" r="4" fill="#34D399" />
+          </svg>
+        );
+      case "Clubs & Groups":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#ECFEFF" />
+            <circle cx="26" cy="22" r="6" fill="#0EA5E9" />
+            <circle cx="40" cy="26" r="6" fill="#22D3EE" />
+            <circle cx="54" cy="22" r="6" fill="#38BDF8" />
+            <rect x="20" y="32" width="40" height="6" rx="3" fill="#67E8F9" />
+          </svg>
+        );
+      case "General":
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F3F4F6" />
+            <polygon
+              points="40,8 46,24 64,24 50,34 56,46 40,38 24,46 30,34 16,24 34,24"
+              fill="#9CA3AF"
+            />
+          </svg>
+        );
+      default:
+        return (
+          <svg
+            viewBox="0 0 80 48"
+            className="w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="80" height="48" fill="#F5F5F4" />
+            <polygon
+              points="40,8 46,24 64,24 50,34 56,46 40,38 24,46 30,34 16,24 34,24"
+              fill="#93C5FD"
+            />
+          </svg>
+        );
+    }
+  };
 
   const toggleReminder = (value: number) => {
     const exists = settings.autoRemindersHoursBefore.includes(value);
@@ -709,13 +1127,122 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
     });
   };
 
+  const headerFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const galleryFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleHeaderFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setHeader({ backgroundImage: null });
+      return;
+    }
+    const dataUrl = await readFileAsDataUrl(file);
+    const thumb = (await createThumbnailDataUrl(file, 600, 0.85)) as
+      | string
+      | null;
+    setHeader({
+      backgroundImage: {
+        name: file.name,
+        type: file.type,
+        dataUrl: thumb || dataUrl,
+      },
+    });
+  };
+
+  const [previewFixedHeightPx, setPreviewFixedHeightPx] = React.useState(240);
+  const [previewFloating, setPreviewFloating] = React.useState(true);
+  const previewRef = React.useRef<HTMLDivElement | null>(null);
+  const sentinelRef = React.useRef<HTMLDivElement | null>(null);
+  const lastToggleAtRef = React.useRef(0);
+  const overlapRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Keep the spacer in sync with the preview's live height to avoid jump/IO thrash
+  React.useLayoutEffect(() => {
+    if (!previewRef.current) return;
+    const node = previewRef.current;
+    const update = () => {
+      const h = node.offsetHeight || 240;
+      if (h !== previewFixedHeightPx) setPreviewFixedHeightPx(h);
+    };
+    update();
+    const RO = (window as any).ResizeObserver;
+    const ro = RO
+      ? new RO((entries: any[]) => {
+          if (!Array.isArray(entries) || entries.length === 0) return;
+          update();
+        })
+      : null;
+    if (ro) ro.observe(node);
+    return () => ro && ro.disconnect();
+  }, [previewFixedHeightPx]);
+
+  React.useEffect(() => {
+    if (!sentinelRef.current) return;
+    const node = sentinelRef.current;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const now = Date.now();
+        if (now - lastToggleAtRef.current < 120) return; // hysteresis to prevent rapid flip near boundary
+        const shouldFloat = !entry.isIntersecting;
+        if (shouldFloat !== previewFloating) {
+          lastToggleAtRef.current = now;
+          setPreviewFloating(shouldFloat);
+        }
+      },
+      {
+        root: null,
+        threshold: 0,
+        // Moderate early un-float to avoid overlap but still allow stickiness
+        rootMargin: `0px 0px -${Math.max(
+          72,
+          Math.min(140, Math.round(previewFixedHeightPx * 0.5))
+        )}px 0px`,
+      }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [previewFixedHeightPx, previewFloating]);
+
+  // Additional guard: if a sentinel above the image placement area enters the lower
+  // viewport zone, un-float the preview to keep it inside the form boundaries.
+  React.useEffect(() => {
+    if (!overlapRef.current) return;
+    const node = overlapRef.current;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const now = Date.now();
+        if (now - lastToggleAtRef.current < 120) return;
+        const shouldFloat = !entry.isIntersecting;
+        if (shouldFloat !== previewFloating) {
+          lastToggleAtRef.current = now;
+          setPreviewFloating(shouldFloat);
+        }
+      },
+      {
+        root: null,
+        threshold: 0,
+        // Guard zone before image placement to dock preview sooner, but not too early
+        rootMargin: `0px 0px -${Math.max(
+          100,
+          Math.min(180, Math.round(previewFixedHeightPx * 0.7))
+        )}px 0px`,
+      }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [previewFixedHeightPx, previewFloating]);
+
   return (
     <section className="rounded-lg border border-border bg-surface/60 px-4 py-4 sm:px-5 sm:py-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-xl space-y-1">
           <p className="text-xs text-foreground/70 leading-relaxed">
             Better than static spreadsheets. Create roles, time slots, and
-            supply lists in minutes. We’ll auto-manage waitlists, limit
+            supply lists in minutes. We'll auto-manage waitlists, limit
             sign-ups, and send reminders so no one drops the ball.
           </p>
         </div>
@@ -750,6 +1277,18 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                 placeholder="Your group or team"
               />
             </div>
+            <div className="space-y-1 hidden">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Group name
+              </label>
+              <input
+                type="text"
+                value={form.header?.groupName || ""}
+                onChange={(e) => setHeader({ groupName: e.target.value })}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                placeholder="Your group or team"
+              />
+            </div>
             <div className="space-y-1 sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Headline description
@@ -765,11 +1304,186 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
               />
             </div>
             {/* Removed manual background color control */}
+            {/* Theme design picker (between Headline description and Image template) */}
+            <div className="space-y-1 sm:col-span-2">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Theme design
+              </label>
+              {/* Small screens: dropdown with thumbnail */}
+              <div className="relative md:hidden">
+                <button
+                  type="button"
+                  onClick={() => setThemeMenuOpen((o) => !o)}
+                  className="w-full flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                      {form.header?.designTheme ? (
+                        renderThemeThumbSvg(
+                          form.header.designTheme as SignupDesignTheme
+                        )
+                      ) : (
+                        <svg
+                          viewBox="0 0 80 48"
+                          className="w-full h-full"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <rect width="80" height="48" fill="#F3F4F6" />
+                          <rect
+                            x="18"
+                            y="16"
+                            width="44"
+                            height="16"
+                            rx="3"
+                            fill="#E5E7EB"
+                          />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="truncate">
+                      {form.header?.designTheme || "Choose your theme"}
+                    </span>
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="opacity-70"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+                {themeMenuOpen && (
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-background shadow">
+                    <ul className="max-h-64 overflow-auto py-1">
+                      {THEME_NAMES.map((name) => (
+                        <li key={name}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHeader({ designTheme: name as any });
+                              setThemeMenuOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 px-2 py-2 text-left text-sm hover:bg-muted/40 ${
+                              (form.header?.designTheme || "") === name
+                                ? "bg-muted/30"
+                                : ""
+                            }`}
+                          >
+                            <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                              {renderThemeThumbSvg(name as SignupDesignTheme)}
+                            </span>
+                            <span className="truncate">{name}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* md+ screens: 5-column grid */}
+              <div className="hidden md:grid grid-cols-5 gap-2">
+                {THEME_NAMES.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setHeader({ designTheme: name as any })}
+                    className={`relative w-full rounded-lg border ${
+                      (form.header?.designTheme || "") === name
+                        ? "border-foreground"
+                        : "border-border"
+                    }`}
+                    title={name}
+                  >
+                    <div className="h-12 rounded-t-lg overflow-hidden bg-background grid place-items-center">
+                      {renderThemeThumbSvg(name as SignupDesignTheme)}
+                    </div>
+                    <div className="px-2 py-1 text-left">
+                      <div className="text-[11px] font-semibold truncate">
+                        {name}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-1 sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Image template
               </label>
-              <div className="inline-flex gap-2 flex-wrap">
+              {/* Small screens: dropdown with thumbnail */}
+              <div className="relative md:hidden">
+                <button
+                  type="button"
+                  onClick={() => setTemplateMenuOpen((o) => !o)}
+                  className="w-full flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                      {renderTemplateThumbSvg(
+                        (form.header?.templateId || "") as string
+                      )}
+                    </span>
+                    <span className="truncate">
+                      {(() => {
+                        const current = TEMPLATE_OPTIONS.find(
+                          (t) => t.id === (form.header?.templateId || "")
+                        );
+                        return current ? current.label : "Choose layout";
+                      })()}
+                    </span>
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="opacity-70"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+                {templateMenuOpen && (
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-background shadow">
+                    <ul className="max-h-64 overflow-auto py-1">
+                      {TEMPLATE_OPTIONS.map((opt) => (
+                        <li key={opt.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHeader({ templateId: opt.id as any });
+                              setTemplateMenuOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 px-2 py-2 text-left text-sm hover:bg-muted/40 ${
+                              (form.header?.templateId || "") === opt.id
+                                ? "bg-muted/30"
+                                : ""
+                            }`}
+                          >
+                            <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                              {renderTemplateThumbSvg(opt.id as string)}
+                            </span>
+                            <span className="truncate">{opt.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* md+ screens: existing button group */}
+              <div className="hidden md:inline-flex gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-1" })}
@@ -838,12 +1552,11 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                 </button>
               </div>
             </div>
-
             <div className="space-y-1 sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Background color
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-2">
                 {PRESETS.map((p) => (
                   <button
                     key={p.id}
@@ -877,296 +1590,303 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                       <div className="text-[11px] font-semibold truncate">
                         {p.name}
                       </div>
-                      <div className="text-[10px] text-foreground/60">
-                        {p.id}
-                      </div>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
-            <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Header image (top-left)
+            + <div ref={overlapRef} />
+            {/* Image placement (grouped uploads) */}
+            <div className="sm:col-span-2 rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
+              <label className="block text-xs uppercase tracking-wide text-foreground/60">
+                IMAGE PLACEMENT
               </label>
-              <div className="flex items-center gap-3 text-xs">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0] || null;
-                    if (!file) {
-                      setHeader({ backgroundImage: null });
-                      return;
-                    }
-                    const dataUrl = await readFileAsDataUrl(file);
-                    const thumb = (await createThumbnailDataUrl(
-                      file,
-                      600,
-                      0.85
-                    )) as string | null;
-                    setHeader({
-                      backgroundImage: {
-                        name: file.name,
-                        type: file.type,
-                        dataUrl: thumb || dataUrl,
-                      },
-                    });
-                  }}
-                  className="text-sm"
-                />
-                {form.header?.backgroundImage?.dataUrl && (
-                  <img
-                    src={form.header.backgroundImage.dataUrl}
-                    alt="header"
-                    className="h-12 w-12 rounded border border-border object-cover"
-                  />
-                )}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-foreground/60">
+                    Top-left
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      ref={headerFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleHeaderFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => headerFileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+                    >
+                      Upload header image
+                    </button>
+                    {form.header?.backgroundImage?.dataUrl && (
+                      <img
+                        src={form.header.backgroundImage.dataUrl}
+                        alt="header"
+                        className="h-12 w-12 rounded border border-border object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="text-xs text-foreground/60">
+                    {form.header?.backgroundImage?.name || "No file chosen"}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-foreground/60">
+                    Banner
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      ref={galleryFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={async (e) => {
+                        await addGalleryImages(e.target.files);
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => galleryFileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+                    >
+                      Upload gallery images
+                    </button>
+                  </div>
+                  <div className="text-xs text-foreground/60">
+                    {(() => {
+                      const count = Array.isArray(form.header?.images)
+                        ? form.header!.images!.length
+                        : 0;
+                      return count
+                        ? `${count} image${count === 1 ? "" : "s"} selected`
+                        : "No file chosen";
+                    })()}
+                  </div>
+                  {Array.isArray(form.header?.images) &&
+                    form.header!.images!.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {form.header!.images!.map((img) => (
+                          <img
+                            key={img.id}
+                            src={img.dataUrl}
+                            alt={img.name}
+                            className="h-14 w-14 rounded border border-border object-cover"
+                          />
+                        ))}
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
-            <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Gallery images (for headers 3, 4, 5, 6)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={async (e) => {
-                  await addGalleryImages(e.target.files);
-                }}
-              />
-              {Array.isArray(form.header?.images) &&
-                form.header!.images!.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {form.header!.images!.map((img) => (
-                      <img
-                        key={img.id}
-                        src={img.dataUrl}
-                        alt={img.name}
-                        className="h-14 w-14 rounded border border-border object-cover"
-                      />
-                    ))}
-                  </div>
-                )}
-            </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Group name
-              </label>
-              <input
-                type="text"
-                value={form.header?.groupName || ""}
-                onChange={(e) => setHeader({ groupName: e.target.value })}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                placeholder="Your group or team"
-              />
-            </div>
+            {/* Preview (bottom of Basics) */}
             <div className="sm:col-span-2">
-              <div className="rounded-xl overflow-hidden border">
-                <section
-                  className="px-5 py-6"
-                  style={{
-                    backgroundColor: form.header?.backgroundColor || undefined,
-                    backgroundImage: form.header?.backgroundCss || undefined,
-                    backgroundSize: form.header?.backgroundCss
-                      ? "cover"
-                      : undefined,
-                    backgroundPosition: form.header?.backgroundCss
-                      ? "center"
-                      : undefined,
-                  }}
-                >
-                  {(form.header?.templateId || "header-1") === "header-3" && (
-                    <div className="mb-4">
-                      {form.header?.images?.[0]?.dataUrl ? (
-                        <img
-                          src={form.header.images[0].dataUrl}
-                          alt="banner"
-                          className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-border"
-                        />
-                      ) : (
-                        <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                          Full-width image
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {(form.header?.templateId || "header-1") === "header-4" && (
-                    <div className="relative mb-16">
-                      {form.header?.images?.[0]?.dataUrl ? (
-                        <img
-                          src={form.header.images[0].dataUrl}
-                          alt="banner"
-                          className="w-full h-40 sm:h-56 object-cover rounded-xl border border-border"
-                        />
-                      ) : (
-                        <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                          Banner image
-                        </div>
-                      )}
-                      <div className="absolute left-6 -bottom-10">
-                        {form.header?.images?.[1]?.dataUrl ? (
-                          <img
-                            src={form.header.images[1].dataUrl}
-                            alt="square"
-                            className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
-                          />
-                        ) : form.header?.backgroundImage?.dataUrl ? (
-                          <img
-                            src={form.header.backgroundImage.dataUrl}
-                            alt="square"
-                            className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-40 h-40 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60 bg-background/70">
-                            Top-left image
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div
-                    className={`grid gap-4 items-start ${
-                      (form.header?.templateId || "header-1") === "header-2"
-                        ? "md:grid-cols-[1fr_325px]"
-                        : (form.header?.templateId || "header-1") === "header-4"
-                        ? "md:grid-cols-[325px_1fr]"
-                        : (form.header?.templateId || "header-1") === "header-5"
-                        ? "md:grid-cols-2"
-                        : (form.header?.templateId || "header-1") === "header-6"
-                        ? "md:grid-cols-3"
-                        : "md:grid-cols-[325px_1fr]"
-                    }`}
+              {/* spacer to prevent layout jump when preview is fixed */}
+              {previewFloating ? (
+                <div style={{ height: `${previewFixedHeightPx}px` }} />
+              ) : null}
+              <div
+                ref={previewRef}
+                className={
+                  previewFloating
+                    ? "fixed left-1/2 -translate-x-1/2 bottom-1 z-30 w-[min(720px,calc(100vw-2rem))]"
+                    : "relative z-10"
+                }
+              >
+                <div className="rounded-xl overflow-hidden border shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                  <section
+                    className="px-5 py-6"
+                    style={{
+                      backgroundColor:
+                        form.header?.backgroundColor || undefined,
+                      backgroundImage: form.header?.backgroundCss || undefined,
+                      backgroundSize: form.header?.backgroundCss
+                        ? "cover"
+                        : undefined,
+                      backgroundPosition: form.header?.backgroundCss
+                        ? "center"
+                        : undefined,
+                    }}
                   >
-                    {((form.header?.templateId || "header-1") === "header-1" ||
-                      (form.header?.templateId || "header-1") ===
-                        "header-2") && (
-                      <div
-                        className={`relative ${
-                          (form.header?.templateId || "header-1") === "header-2"
-                            ? "order-2"
-                            : "order-1"
-                        }`}
-                      >
-                        {form.header?.backgroundImage?.dataUrl ? (
+                    {(form.header?.templateId || "header-1") === "header-3" && (
+                      <div className="mb-4">
+                        {form.header?.images?.[0]?.dataUrl ? (
                           <img
-                            src={form.header.backgroundImage.dataUrl}
-                            alt="header"
-                            className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
+                            src={form.header.images[0].dataUrl}
+                            alt="banner"
+                            className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-border"
                           />
                         ) : (
-                          <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                            Top-left image
+                          <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                            Full-width image
                           </div>
                         )}
                       </div>
                     )}
-                    {((form.header?.templateId || "header-1") === "header-5" ||
-                      (form.header?.templateId || "header-1") ===
-                        "header-6") && (
-                      <div
-                        className={`${
-                          (form.header?.templateId || "header-1") === "header-6"
-                            ? "col-span-3"
-                            : "col-span-2"
-                        }`}
-                      >
-                        <div
-                          className={`grid gap-3 ${
-                            (form.header?.templateId || "header-1") ===
-                            "header-6"
-                              ? "grid-cols-3"
-                              : "grid-cols-2"
-                          }`}
-                        >
-                          {((form.header?.templateId || "header-1") ===
-                          "header-6"
-                            ? [0, 1, 2]
-                            : [0, 1]
-                          ).map((i) =>
-                            form.header?.images?.[i]?.dataUrl ? (
-                              <img
-                                key={i}
-                                src={form.header.images[i].dataUrl}
-                                alt={`image-${i}`}
-                                className="w-full h-36 object-cover rounded-xl border border-border"
-                              />
-                            ) : (
-                              <div
-                                key={i}
-                                className="w-full h-36 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
-                              >
-                                Image {i + 1}
-                              </div>
-                            )
+                    {(form.header?.templateId || "header-1") === "header-4" && (
+                      <div className="relative mb-16">
+                        {form.header?.images?.[0]?.dataUrl ? (
+                          <img
+                            src={form.header.images[0].dataUrl}
+                            alt="banner"
+                            className="w-full h-40 sm:h-56 object-cover rounded-xl border border-border"
+                          />
+                        ) : (
+                          <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                            Banner image
+                          </div>
+                        )}
+                        <div className="absolute left-6 -bottom-10">
+                          {form.header?.images?.[1]?.dataUrl ? (
+                            <img
+                              src={form.header.images[1].dataUrl}
+                              alt="square"
+                              className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
+                            />
+                          ) : form.header?.backgroundImage?.dataUrl ? (
+                            <img
+                              src={form.header.backgroundImage.dataUrl}
+                              alt="square"
+                              className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
+                            />
+                          ) : (
+                            <div className="w-40 h-40 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60 bg-background/70">
+                              Top-left image
+                            </div>
                           )}
                         </div>
                       </div>
                     )}
                     <div
-                      className={`${
+                      className={`grid gap-4 items-start ${
                         (form.header?.templateId || "header-1") === "header-2"
-                          ? "order-1"
-                          : "order-2"
-                      } flex flex-col gap-3`}
+                          ? "md:grid-cols-[1fr_325px]"
+                          : (form.header?.templateId || "header-1") ===
+                            "header-4"
+                          ? "md:grid-cols-[325px_1fr]"
+                          : (form.header?.templateId || "header-1") ===
+                            "header-5"
+                          ? "md:grid-cols-2"
+                          : (form.header?.templateId || "header-1") ===
+                            "header-6"
+                          ? "md:grid-cols-3"
+                          : "md:grid-cols-[325px_1fr]"
+                      }`}
                     >
-                      {form.header?.groupName ? (
+                      {((form.header?.templateId || "header-1") ===
+                        "header-1" ||
+                        (form.header?.templateId || "header-1") ===
+                          "header-2") && (
                         <div
-                          className="text-xs font-semibold opacity-85"
-                          style={{
-                            color: form.header?.textColor1 || undefined,
-                          }}
+                          className={`relative ${
+                            (form.header?.templateId || "header-1") ===
+                            "header-2"
+                              ? "order-2"
+                              : "order-1"
+                          }`}
                         >
-                          {form.header.groupName}
+                          {form.header?.backgroundImage?.dataUrl ? (
+                            <img
+                              src={form.header.backgroundImage.dataUrl}
+                              alt="header"
+                              className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
+                            />
+                          ) : (
+                            <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                              Top-left image
+                            </div>
+                          )}
                         </div>
-                      ) : null}
-                      <h3
-                        className="text-lg font-semibold"
-                        style={{ color: form.header?.textColor2 || undefined }}
-                      >
-                        {form.title || "Smart sign-up"}
-                      </h3>
-                      {creatorName ? (
+                      )}
+                      {((form.header?.templateId || "header-1") ===
+                        "header-5" ||
+                        (form.header?.templateId || "header-1") ===
+                          "header-6") && (
                         <div
-                          className="flex items-center gap-2 text-xs opacity-85"
-                          style={{
-                            color: form.header?.textColor1 || undefined,
-                          }}
+                          className={`${
+                            (form.header?.templateId || "header-1") ===
+                            "header-6"
+                              ? "col-span-3"
+                              : "col-span-2"
+                          }`}
                         >
-                          <span
-                            className="inline-grid place-items-center h-7 w-7 rounded-full"
+                          <div
+                            className={`grid gap-3 ${
+                              (form.header?.templateId || "header-1") ===
+                              "header-6"
+                                ? "grid-cols-3"
+                                : "grid-cols-2"
+                            }`}
+                          >
+                            {((form.header?.templateId || "header-1") ===
+                            "header-6"
+                              ? [0, 1, 2]
+                              : [0, 1]
+                            ).map((i) =>
+                              form.header?.images?.[i]?.dataUrl ? (
+                                <img
+                                  key={i}
+                                  src={form.header.images[i].dataUrl}
+                                  alt={`image-${i}`}
+                                  className="w-full h-36 object-cover rounded-xl border border-border"
+                                />
+                              ) : (
+                                <div
+                                  key={i}
+                                  className="w-full h-36 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
+                                >
+                                  Image {i + 1}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={`${
+                          (form.header?.templateId || "header-1") === "header-2"
+                            ? "order-1"
+                            : "order-2"
+                        } flex flex-col gap-3`}
+                      >
+                        {form.header?.groupName ? (
+                          <div
+                            className="text-xs font-semibold opacity-85"
                             style={{
-                              background: form.header?.buttonColor || "#44AD3C",
-                              color: form.header?.buttonTextColor || "#FFF4C7",
+                              color: form.header?.textColor1 || undefined,
                             }}
                           >
-                            {creatorInitials || "?"}
-                          </span>
-                          <span>Created by {creatorName}</span>
-                        </div>
-                      ) : null}
+                            {form.header.groupName}
+                          </div>
+                        ) : null}
+                        <h3
+                          className="text-lg font-semibold"
+                          style={{
+                            color: form.header?.textColor2 || undefined,
+                          }}
+                        >
+                          {form.title || "Smart sign-up"}
+                        </h3>
+                      </div>
                     </div>
-                  </div>
-                  {form.description && (
-                    <p
-                      className="mt-3 text-sm max-w-2xl opacity-90"
-                      style={{ color: form.header?.textColor1 || undefined }}
-                    >
-                      {form.description}
-                    </p>
-                  )}
-                </section>
-                <section className="px-5 py-3 border-t bg-background/60">
-                  <div className="mt-1 flex items-center gap-2 text-sm opacity-90">
-                    <strong>Related files</strong>
-                    <span aria-hidden>📎</span>
-                  </div>
-                </section>
+                    {form.description && (
+                      <p
+                        className="mt-3 text-sm max-w-2xl opacity-90"
+                        style={{ color: form.header?.textColor1 || undefined }}
+                      >
+                        {form.description}
+                      </p>
+                    )}
+                  </section>
+                </div>
               </div>
+              {/* Sentinel placed after the preview; when visible, we unfix the preview so it docks at the bottom */}
+              <div ref={sentinelRef} />
             </div>
-            {/* Removed duplicate legacy preview block */}
-            {/* Creator name removed - it will use the signed-in user's name */}
           </div>
         )}
 

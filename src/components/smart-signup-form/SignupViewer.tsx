@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, FormEvent } from "react";
+import EventEditModal from "@/components/EventEditModal";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import type { SignupForm, SignupResponse } from "@/types/signup";
 import {
   countConfirmedForSlot,
@@ -20,6 +22,8 @@ type Props = {
   viewerId?: string | null;
   viewerName?: string | null;
   viewerEmail?: string | null;
+  ownerEventTitle?: string;
+  ownerEventData?: any;
 };
 
 type ReserveRequestPayload = {
@@ -131,6 +135,8 @@ const SignupViewer: React.FC<Props> = ({
   viewerId,
   viewerName,
   viewerEmail,
+  ownerEventTitle,
+  ownerEventData,
 }) => {
   const [form, setForm] = useState<SignupForm>(initialForm);
   const [selectedSlots, setSelectedSlots] = useState<SlotSelectionMap>({});
@@ -436,7 +442,24 @@ const SignupViewer: React.FC<Props> = ({
   return (
     <section className="rounded-xl border border-border bg-surface/80 p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <h2 className="text-lg font-semibold text-foreground">Sign-up board</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            Sign-up board
+          </h2>
+          {viewerKind === "owner" && ownerEventData && (
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <EventEditModal
+                eventId={eventId}
+                eventData={ownerEventData}
+                eventTitle={ownerEventTitle || "Event"}
+              />
+              <EventDeleteModal
+                eventId={eventId}
+                eventTitle={ownerEventTitle || "Event"}
+              />
+            </div>
+          )}
+        </div>
         <p className="text-sm text-foreground/70">
           Claim a spot, bring supplies, or volunteer for a role. Slots update in
           real time for everyone invited.

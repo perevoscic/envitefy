@@ -62,8 +62,13 @@ export default function SmartSignupWizard({
     .slice(0, 2)
     .join("");
 
+  const handleSubmit = (e: React.FormEvent) => {
+    // Never auto-submit on Enter or implicit form submit; publishing is only via the button click
+    e.preventDefault();
+  };
+
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <form className="space-y-4" onSubmit={handleSubmit}>
       {/* Stepper */}
       <ol className="flex items-center gap-2 text-xs">
         {STEP_TITLES.map((label, i) => {
@@ -317,7 +322,8 @@ export default function SmartSignupWizard({
           </button>
         ) : (
           <button
-            type="submit"
+            type="button"
+            onClick={onSubmit as any}
             disabled={submitting}
             className="px-3 py-2 text-sm rounded-md bg-primary text-white disabled:opacity-70"
           >

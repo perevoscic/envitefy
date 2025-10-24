@@ -36,7 +36,7 @@ export default function SmartSignupFormPage() {
       if (!res.ok) throw new Error("Failed to create sign-up");
       const row = (await res.json().catch(() => ({}))) as { id?: string };
       const id = row?.id;
-      if (id) router.push(`/event/${id}?created=1`);
+      if (id) router.push(`/smart-signup-form/${id}?created=1`);
     } catch (err: any) {
       alert(String(err?.message || err || "Failed to create sign-up"));
     } finally {

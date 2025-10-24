@@ -673,6 +673,33 @@ body {
   background-attachment: scroll;
   transform: none;
 }
+
+/* Disable fixed background attachments on touch devices to prevent flicker/jitter
+   when interacting near the footer or during momentum scrolling (iOS/Android). */
+@media (pointer: coarse), (hover: none) {
+  body {
+    background-attachment: scroll;
+  }
+  .landing-dark-gradient {
+    background-attachment: scroll;
+  }
+  .landing-dark-gradient::after {
+    background-attachment: scroll;
+  }
+}
+
+/* Extra safeguard for iOS Safari which is particularly sensitive */
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
+  .landing-dark-gradient {
+    background-attachment: scroll;
+  }
+  .landing-dark-gradient::after {
+    background-attachment: scroll;
+  }
+}
 /* Hero slider readability fade: black at top/bottom, transparent center */
 .hero-slider-fade {
   background: linear-gradient(

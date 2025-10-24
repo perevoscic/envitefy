@@ -154,6 +154,17 @@ export default function LeftSidebar() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
+  // When building a Smart sign-up, hide Rename/Change actions to avoid confusing edits
+  const hideRenameAndChange = (() => {
+    try {
+      const p = String(pathname || "");
+      return (
+        p.startsWith("/smart-signup-form") || p.startsWith("/templates/signup")
+      );
+    } catch {
+      return false;
+    }
+  })();
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsOpenFloating, setSettingsOpenFloating] = useState(false);
@@ -167,6 +178,7 @@ export default function LeftSidebar() {
   const [itemMenuCategoryOpenFor, setItemMenuCategoryOpenFor] = useState<
     string | null
   >(null);
+  const [itemMenuScope, setItemMenuScope] = useState<string | null>(null);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
   const isOpen = !isCollapsed;
@@ -257,12 +269,16 @@ export default function LeftSidebar() {
     const onDocClick = (e: Event) => {
       try {
         const target = e.target as Element | null;
+        // If click is inside the open item's container OR the menu popover itself, ignore
         const itemEl = target?.closest(
           "[data-history-item]"
         ) as HTMLElement | null;
-        if (itemEl && itemEl.getAttribute("data-history-item") === itemMenuId) {
-          return; // Click inside the currently open item's area → ignore
-        }
+        const inSameItem =
+          itemEl && itemEl.getAttribute("data-history-item") === itemMenuId;
+        const inMenuPopover = (target as HTMLElement | null)?.closest(
+          "[data-popover=item-menu]"
+        );
+        if (inSameItem || inMenuPopover) return;
       } catch {}
       setItemMenuId(null);
       setItemMenuOpensUpward(false);
@@ -344,7 +360,11 @@ export default function LeftSidebar() {
         if (!ignore) {
           const p = json.subscriptionPlan;
           const plan =
-            p === "freemium" || p === "free" || p === "monthly" || p === "yearly" || p === "FF"
+            p === "freemium" ||
+            p === "free" ||
+            p === "monthly" ||
+            p === "yearly" ||
+            p === "FF"
               ? p
               : null;
           const nextCredits =
@@ -498,6 +518,38 @@ export default function LeftSidebar() {
       return acc;
     }, 0);
   }, [history]);
+  const smartSignupCount = useMemo(() => {
+    const myEmail = profileEmail || profileEmailRef.current || null;
+    const myUserId = ((session as any)?.user?.id as string | undefined) || null;
+    return history.reduce((acc, row) => {
+      if (!row || typeof row !== "object") return acc;
+      const data: any = row?.data;
+      if (!data || typeof data !== "object") return acc;
+      const form = (data as any)?.signupForm;
+      if (!form || typeof form !== "object") return acc;
+
+      // If it's the owner's item (not marked shared), always count it as a created form
+      if (!data.shared) return acc + 1;
+
+      // For shared items, count only if the current user has an active (non-cancelled) response
+      const responses: any[] = Array.isArray(form.responses)
+        ? form.responses
+        : [];
+      const hasMyActiveResponse = responses.some((r) => {
+        if (!r || typeof r !== "object") return false;
+        if (String(r.status || "").toLowerCase() === "cancelled") return false;
+        const emailMatches =
+          myEmail &&
+          typeof r.email === "string" &&
+          r.email.toLowerCase() === myEmail;
+        const userIdMatches =
+          myUserId && typeof r.userId === "string" && r.userId === myUserId;
+        return Boolean(emailMatches || userIdMatches);
+      });
+      if (hasMyActiveResponse) return acc + 1;
+      return acc;
+    }, 0);
+  }, [history, profileEmail, session]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
     {}
@@ -591,7 +643,8 @@ export default function LeftSidebar() {
       if (!activeCategory) return;
       try {
         const target = e.target as Node | null;
-        if (categoriesRef.current && categoriesRef.current.contains(target)) {
+        // Do not collapse when clicking anywhere inside the sidebar (including Smart sign-up section)
+        if (asideRef.current && asideRef.current.contains(target)) {
           return;
         }
       } catch {}
@@ -930,6 +983,169 @@ export default function LeftSidebar() {
   const sharedTextClass = "text-neutral-900 dark:text-foreground";
   const sharedMutedTextClass = "text-neutral-600 dark:text-foreground/70";
 
+  // Smart sign-up gradient palette (distinct from Shared Events)
+  // Includes legacy ids (signup-g1..6) and the full Create flow presets
+  const SIGNUP_GRADIENTS: {
+    id: string;
+    swatch: string; // used for small square preview
+    lightRow: string; // applied to list row in light mode
+    darkRow: string; // applied to list row in dark mode
+  }[] = [
+    // Legacy options kept for backward-compatibility with stored values
+    {
+      id: "signup-g1",
+      swatch: "bg-gradient-to-br from-sky-400 to-emerald-400",
+      lightRow: "bg-gradient-to-br from-sky-200 via-teal-200 to-emerald-200",
+      darkRow: "bg-gradient-to-br from-sky-900 via-teal-900 to-emerald-900",
+    },
+    {
+      id: "signup-g2",
+      swatch: "bg-gradient-to-br from-fuchsia-400 to-rose-400",
+      lightRow: "bg-gradient-to-br from-fuchsia-200 via-pink-200 to-rose-200",
+      darkRow: "bg-gradient-to-br from-fuchsia-900 via-pink-900 to-rose-900",
+    },
+    {
+      id: "signup-g3",
+      swatch: "bg-gradient-to-br from-amber-400 to-indigo-400",
+      lightRow: "bg-gradient-to-br from-amber-200 via-yellow-200 to-indigo-200",
+      darkRow: "bg-gradient-to-br from-amber-900 via-yellow-900 to-indigo-900",
+    },
+    {
+      id: "signup-g4",
+      swatch: "bg-gradient-to-br from-cyan-400 to-violet-400",
+      lightRow: "bg-gradient-to-br from-cyan-200 via-blue-200 to-violet-200",
+      darkRow: "bg-gradient-to-br from-cyan-900 via-blue-900 to-violet-900",
+    },
+    {
+      id: "signup-g5",
+      swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
+      lightRow: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
+      darkRow: "bg-gradient-to-br from-lime-900 via-green-900 to-emerald-900",
+    },
+    {
+      id: "signup-g6",
+      swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
+      lightRow: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
+      darkRow: "bg-gradient-to-br from-slate-900 via-zinc-900 to-sky-900",
+    },
+    // Full Create a Smart sign-up Background color presets
+    {
+      id: "fall-fun",
+      swatch: "bg-gradient-to-br from-orange-700 to-amber-500",
+      lightRow: "bg-gradient-to-br from-orange-200 via-amber-200 to-rose-200",
+      darkRow: "bg-gradient-to-br from-orange-900 via-amber-900 to-rose-900",
+    },
+    {
+      id: "trusty-blue",
+      swatch: "bg-gradient-to-br from-blue-900 to-blue-700",
+      lightRow: "bg-gradient-to-br from-blue-200 via-sky-200 to-indigo-200",
+      darkRow: "bg-gradient-to-br from-blue-950 via-sky-950 to-indigo-900",
+    },
+    {
+      id: "mint-fresh",
+      swatch: "bg-gradient-to-br from-teal-200 to-emerald-100",
+      lightRow: "bg-gradient-to-br from-emerald-100 via-teal-100 to-white",
+      darkRow: "bg-gradient-to-br from-teal-900 via-emerald-900 to-slate-900",
+    },
+    {
+      id: "night-sky",
+      swatch: "bg-gradient-to-b from-slate-700 to-gray-900",
+      lightRow: "bg-gradient-to-b from-slate-300 to-gray-400",
+      darkRow: "bg-gradient-to-b from-slate-800 to-gray-950",
+    },
+    {
+      id: "sunset-blend",
+      swatch: "bg-gradient-to-br from-orange-500 via-rose-500 to-pink-600",
+      lightRow: "bg-gradient-to-br from-orange-200 via-rose-200 to-pink-200",
+      darkRow: "bg-gradient-to-br from-orange-900 via-rose-900 to-pink-900",
+    },
+    {
+      id: "ocean-wave",
+      swatch: "bg-gradient-to-r from-sky-500 to-blue-500",
+      lightRow: "bg-gradient-to-r from-sky-200 via-blue-200 to-cyan-200",
+      darkRow: "bg-gradient-to-r from-sky-900 via-blue-900 to-cyan-900",
+    },
+    {
+      id: "forest-mist",
+      swatch: "bg-gradient-to-br from-emerald-700 to-teal-600",
+      lightRow: "bg-gradient-to-br from-emerald-200 via-teal-200 to-green-200",
+      darkRow: "bg-gradient-to-br from-emerald-900 via-teal-900 to-green-900",
+    },
+    {
+      id: "royal-plum",
+      swatch: "bg-gradient-to-br from-violet-600 to-fuchsia-600",
+      lightRow:
+        "bg-gradient-to-br from-violet-200 via-fuchsia-200 to-purple-200",
+      darkRow:
+        "bg-gradient-to-br from-violet-900 via-fuchsia-900 to-purple-900",
+    },
+    {
+      id: "citrus-light",
+      swatch: "bg-gradient-to-br from-amber-200 to-rose-200",
+      lightRow: "bg-gradient-to-br from-amber-100 via-yellow-100 to-rose-100",
+      darkRow: "bg-gradient-to-br from-amber-800 via-yellow-800 to-rose-800",
+    },
+    {
+      id: "dawn-rose",
+      swatch: "bg-gradient-to-br from-pink-200 to-violet-200",
+      lightRow: "bg-gradient-to-br from-pink-100 via-violet-100 to-rose-100",
+      darkRow: "bg-gradient-to-br from-pink-800 via-violet-800 to-rose-900",
+    },
+    {
+      id: "steel-sky",
+      swatch: "bg-gradient-to-br from-sky-300 to-emerald-200",
+      lightRow: "bg-gradient-to-br from-sky-100 via-teal-100 to-emerald-100",
+      darkRow: "bg-gradient-to-br from-sky-900 via-teal-900 to-emerald-900",
+    },
+    {
+      id: "berry-splash",
+      swatch: "bg-gradient-to-br from-pink-400 to-indigo-400",
+      lightRow: "bg-gradient-to-br from-pink-200 via-indigo-200 to-violet-200",
+      darkRow: "bg-gradient-to-br from-pink-900 via-indigo-900 to-violet-900",
+    },
+    {
+      id: "charcoal-glow",
+      swatch: "bg-gradient-to-br from-gray-800 to-slate-600",
+      lightRow: "bg-gradient-to-br from-gray-400 via-slate-400 to-zinc-400",
+      darkRow: "bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900",
+    },
+    {
+      id: "emerald-glow",
+      swatch: "bg-gradient-to-br from-emerald-800 to-teal-600",
+      lightRow: "bg-gradient-to-br from-emerald-200 via-green-200 to-teal-200",
+      darkRow: "bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900",
+    },
+    {
+      id: "sunrise-peach",
+      swatch: "bg-gradient-to-br from-orange-300 to-pink-300",
+      lightRow: "bg-gradient-to-br from-orange-100 via-rose-100 to-pink-100",
+      darkRow: "bg-gradient-to-br from-orange-900 via-rose-900 to-pink-900",
+    },
+  ];
+
+  const getSignupGradientId = (): string => {
+    const val = categoryColors["Smart sign-up"];
+    const exists = SIGNUP_GRADIENTS.some((g) => g.id === val);
+    return exists ? (val as string) : "fall-fun";
+  };
+
+  const signupGradientRowClass = (): string => {
+    const id = getSignupGradientId();
+    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
+    if (!found) {
+      return theme === "dark"
+        ? SIGNUP_GRADIENTS[0].darkRow
+        : SIGNUP_GRADIENTS[0].lightRow;
+    }
+    return theme === "dark" ? found.darkRow : found.lightRow;
+  };
+
+  const signupGradientSwatchClass = (): string => {
+    const id = getSignupGradientId();
+    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
+    return found?.swatch || SIGNUP_GRADIENTS[0].swatch;
+  };
+
   const sharedGradientSwatchClass = (): string => {
     const id = getSharedGradientId();
     const found = SHARED_GRADIENTS.find((g) => g.id === id);
@@ -1156,7 +1372,9 @@ export default function LeftSidebar() {
           typeof window !== "undefined" ? window.location.pathname : pathname;
         if (
           currentPath &&
-          (currentPath === `/event/${id}` || currentPath.endsWith(`-${id}`))
+          (currentPath === `/event/${id}` ||
+            currentPath === `/smart-signup-form/${id}` ||
+            currentPath.endsWith(`-${id}`))
         ) {
           router.replace("/");
         }
@@ -2016,13 +2234,18 @@ export default function LeftSidebar() {
               <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    try {
-                      (window as any).__openSmartSignup?.();
-                    } catch {}
+                  onClick={() => {
+                    setActiveCategory((prev) =>
+                      prev === "Smart sign-up" ? null : "Smart sign-up"
+                    );
                   }}
-                  className="flex flex-1 items-center gap-2 pl-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className={`flex flex-1 items-center gap-2 pl-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                    activeCategory === "Smart sign-up"
+                      ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
+                      : ""
+                  }`}
+                  aria-pressed={activeCategory === "Smart sign-up"}
+                  title="Smart sign-up"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -2044,6 +2267,9 @@ export default function LeftSidebar() {
                   <span>Smart sign-up</span>
                 </button>
                 <div className="ml-auto flex items-center gap-1">
+                  <span className="inline-flex items-center rounded-full border border-border bg-surface/60 px-1.5 py-0.5 text-[10px] text-foreground/80">
+                    {smartSignupCount}
+                  </span>
                   <button
                     type="button"
                     onClick={(event) => {
@@ -2071,6 +2297,228 @@ export default function LeftSidebar() {
                   </button>
                 </div>
               </div>
+              {activeCategory === "Smart sign-up" && (
+                <div className="mt-1 mb-2">
+                  {(() => {
+                    const myEmail = (profileEmail ||
+                      profileEmailRef.current ||
+                      "") as string;
+                    const myUserId =
+                      ((session as any)?.user?.id as string | undefined) ||
+                      null;
+                    const items = sortHistoryRows(
+                      history.filter((h) => {
+                        const data: any = (h as any)?.data;
+                        const form = data?.signupForm;
+                        if (!form || typeof form !== "object") return false;
+                        if (!data?.shared) return true;
+                        const responses: any[] = Array.isArray(form.responses)
+                          ? form.responses
+                          : [];
+                        const hasMyActiveResponse = responses.some((r) => {
+                          if (!r || typeof r !== "object") return false;
+                          if (
+                            String(r.status || "").toLowerCase() === "cancelled"
+                          )
+                            return false;
+                          const emailMatches =
+                            myEmail &&
+                            typeof r.email === "string" &&
+                            r.email.toLowerCase() === myEmail;
+                          const userIdMatches =
+                            myUserId &&
+                            typeof r.userId === "string" &&
+                            r.userId === myUserId;
+                          return Boolean(emailMatches || userIdMatches);
+                        });
+                        return hasMyActiveResponse;
+                      }) as any
+                    );
+                    if (items.length === 0)
+                      return (
+                        <div className="text-xs text-foreground/60 px-1 py-0.5">
+                          No forms
+                        </div>
+                      );
+                    return (
+                      <div className="space-y-1">
+                        {items.map((h: any) => {
+                          const slug = (h.title || "")
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, "-")
+                            .replace(/^-+|-+$/g, "");
+                          const prettyHref = `/smart-signup-form/${h.id}`;
+                          // Use the event's chosen category color for background tint
+                          const signupCategory = (h as any)?.data?.category as
+                            | string
+                            | null;
+                          const signupRowClass = (() => {
+                            if (!signupCategory) return "";
+                            const color =
+                              categoryColors[signupCategory] ||
+                              defaultCategoryColor(signupCategory);
+                            const ccls = colorClasses(color);
+                            return ccls.tint;
+                          })();
+                          return (
+                            <div
+                              key={h.id}
+                              data-history-item={h.id}
+                              className={`relative px-2 py-2 rounded-md text-sm ${signupRowClass}`}
+                            >
+                              <Link
+                                href={prettyHref}
+                                onClick={() => {
+                                  try {
+                                    const isTouch =
+                                      typeof window !== "undefined" &&
+                                      typeof window.matchMedia === "function" &&
+                                      window.matchMedia(
+                                        "(hover: none), (pointer: coarse)"
+                                      ).matches;
+                                    if (isTouch) setIsCollapsed(true);
+                                  } catch {}
+                                }}
+                                className="block pr-8"
+                                title={h.title}
+                              >
+                                <div className="truncate flex items-center gap-2">
+                                  <span className="truncate">
+                                    {h.title || "Untitled form"}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-foreground/60">
+                                  {(() => {
+                                    const start =
+                                      (h as any)?.data?.start ||
+                                      (h as any)?.data?.event?.start;
+                                    const dateStr = start || h.created_at;
+                                    return dateStr
+                                      ? new Date(dateStr).toLocaleDateString()
+                                      : "";
+                                  })()}
+                                </div>
+                              </Link>
+                              <button
+                                type="button"
+                                aria-label={`Edit ${
+                                  signupCategory || "category"
+                                } color`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Ensure Smart sign-up stays expanded when opening the color menu
+                                  try {
+                                    setActiveCategory("Smart sign-up");
+                                  } catch {}
+                                  try {
+                                    const rect = (
+                                      e.currentTarget as HTMLElement
+                                    ).getBoundingClientRect();
+                                    const menuWidth = 220;
+                                    const viewportPadding = 8;
+                                    const idealLeft =
+                                      rect.left +
+                                      rect.width / 2 -
+                                      menuWidth / 2;
+                                    const clampedLeft = Math.max(
+                                      viewportPadding,
+                                      Math.min(
+                                        idealLeft,
+                                        window.innerWidth -
+                                          menuWidth -
+                                          viewportPadding
+                                      )
+                                    );
+                                    setColorMenuPos({
+                                      left: Math.round(clampedLeft),
+                                      top: Math.round(rect.bottom + 12),
+                                    });
+                                  } catch {
+                                    setColorMenuPos(null);
+                                  }
+                                  if (signupCategory)
+                                    setColorMenuFor(signupCategory);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    (e.currentTarget as HTMLElement).click();
+                                  }
+                                }}
+                                className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${(() => {
+                                  const color = signupCategory
+                                    ? categoryColors[signupCategory] ||
+                                      defaultCategoryColor(signupCategory)
+                                    : null;
+                                  return color
+                                    ? colorClasses(color).swatch
+                                    : "bg-surface/70";
+                                })()} border`}
+                                title="Edit color"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Item options"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Keep Smart sign-up expanded while the item menu is open
+                                  try {
+                                    setActiveCategory("Smart sign-up");
+                                  } catch {}
+                                  const target =
+                                    e.currentTarget as HTMLElement | null;
+                                  if (itemMenuId === h.id) {
+                                    setItemMenuId(null);
+                                    setItemMenuOpensUpward(false);
+                                    setItemMenuPos(null);
+                                    setItemMenuCategoryOpenFor(null);
+                                    return;
+                                  }
+                                  if (target) {
+                                    const rect = target.getBoundingClientRect();
+                                    const viewportHeight = window.innerHeight;
+                                    const menuHeight = 200;
+                                    const spaceBelow =
+                                      viewportHeight - rect.top;
+                                    const shouldOpenUpward =
+                                      spaceBelow < menuHeight + 50;
+                                    setItemMenuOpensUpward(shouldOpenUpward);
+                                    setItemMenuPos({
+                                      left: Math.round(rect.right + 8),
+                                      top: shouldOpenUpward
+                                        ? Math.round(rect.top - 10)
+                                        : Math.round(
+                                            rect.top + rect.height / 2
+                                          ),
+                                    });
+                                  }
+                                  setItemMenuCategoryOpenFor(null);
+                                  setItemMenuId(h.id);
+                                }}
+                                className="absolute top-1.5 right-1.5 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <circle cx="5" cy="12" r="1.5" />
+                                  <circle cx="12" cy="12" r="1.5" />
+                                  <circle cx="19" cy="12" r="1.5" />
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
               <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
                 <Link
                   href="/calendar"
@@ -2271,7 +2719,7 @@ export default function LeftSidebar() {
                                   .toLowerCase()
                                   .replace(/[^a-z0-9]+/g, "-")
                                   .replace(/^-+|-+$/g, "");
-                                const prettyHref = `/event/${slug}-${h.id}`;
+                                const prettyHref = `/smart-signup-form/${h.id}`;
                                 const category = (h as any)?.data?.category as
                                   | string
                                   | null;
@@ -2372,6 +2820,10 @@ export default function LeftSidebar() {
                                       onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
+                                        // Keep Smart sign-up expanded while the item menu is open
+                                        try {
+                                          setActiveCategory("Smart sign-up");
+                                        } catch {}
                                         const target =
                                           e.currentTarget as HTMLElement | null;
                                         if (itemMenuId === h.id) {
@@ -2424,6 +2876,7 @@ export default function LeftSidebar() {
                                       itemMenuPos &&
                                       createPortal(
                                         <div
+                                          data-popover="item-menu"
                                           onClick={(e) => e.stopPropagation()}
                                           style={{
                                             position: "fixed",
@@ -2462,39 +2915,41 @@ export default function LeftSidebar() {
                                               Share
                                             </span>
                                           </button>
-                                          <button
-                                            type="button"
-                                            onClick={async (e) => {
-                                              e.preventDefault();
-                                              e.stopPropagation();
-                                              setItemMenuId(null);
-                                              setItemMenuOpensUpward(false);
-                                              setItemMenuPos(null);
-                                              await renameHistoryItem(
-                                                h.id,
-                                                h.title
-                                              );
-                                            }}
-                                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                          >
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              className="h-4 w-4"
-                                              aria-hidden="true"
+                                          {!hideRenameAndChange && (
+                                            <button
+                                              type="button"
+                                              onClick={async (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setItemMenuId(null);
+                                                setItemMenuOpensUpward(false);
+                                                setItemMenuPos(null);
+                                                await renameHistoryItem(
+                                                  h.id,
+                                                  h.title
+                                                );
+                                              }}
+                                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                                             >
-                                              <path d="M12 20h9" />
-                                              <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                            </svg>
-                                            <span className="text-sm">
-                                              Rename
-                                            </span>
-                                          </button>
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="h-4 w-4"
+                                                aria-hidden="true"
+                                              >
+                                                <path d="M12 20h9" />
+                                                <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                              </svg>
+                                              <span className="text-sm">
+                                                Rename
+                                              </span>
+                                            </button>
+                                          )}
                                           <button
                                             type="button"
                                             onClick={async (e) => {
@@ -3198,7 +3653,7 @@ export default function LeftSidebar() {
                                       .toLowerCase()
                                       .replace(/[^a-z0-9]+/g, "-")
                                       .replace(/^-+|-+$/g, "");
-                                    const prettyHref = `/event/${slug}-${h.id}`;
+                                    const prettyHref = `/smart-signup-form/${h.id}`;
                                     const category = (h as any)?.data
                                       ?.category as string | null;
                                     const isShared = Boolean(
@@ -3361,6 +3816,7 @@ export default function LeftSidebar() {
                                             itemMenuPos &&
                                             createPortal(
                                               <div
+                                                data-popover="item-menu"
                                                 onClick={(e) =>
                                                   e.stopPropagation()
                                                 }
@@ -3569,6 +4025,7 @@ export default function LeftSidebar() {
                         itemMenuPos &&
                         createPortal(
                           <div
+                            data-popover="item-menu"
                             onClick={(e) => e.stopPropagation()}
                             style={{
                               position: "fixed",
@@ -3622,49 +4079,20 @@ export default function LeftSidebar() {
                               </svg>
                               <span className="text-sm">Share</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setItemMenuCategoryOpenFor(null);
-                                setItemMenuId(null);
-                                setItemMenuOpensUpward(false);
-                                setItemMenuPos(null);
-                                await renameHistoryItem(h.id, h.title);
-                              }}
-                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                                aria-hidden="true"
+                            {!hideRenameAndChange && (
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setItemMenuCategoryOpenFor(null);
+                                  setItemMenuId(null);
+                                  setItemMenuOpensUpward(false);
+                                  setItemMenuPos(null);
+                                  await renameHistoryItem(h.id, h.title);
+                                }}
+                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                               >
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                              </svg>
-                              <span className="text-sm">Rename</span>
-                            </button>
-                            <div className="my-1 h-px bg-border" />
-                            <button
-                              type="button"
-                              aria-expanded={categoryMenuOpen}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setItemMenuCategoryOpenFor(
-                                  categoryMenuOpen ? null : h.id
-                                );
-                              }}
-                              className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                            >
-                              <span className="inline-flex items-center gap-3">
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 24 24"
@@ -3676,104 +4104,146 @@ export default function LeftSidebar() {
                                   className="h-4 w-4"
                                   aria-hidden="true"
                                 >
-                                  <path d="M4 6h16" />
-                                  <path d="M7 12h13" />
-                                  <path d="M10 18h10" />
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
                                 </svg>
-                                <span className="text-sm">Change to</span>
-                              </span>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className={`h-3.5 w-3.5 transition-transform ${
-                                  categoryMenuOpen ? "rotate-90" : ""
-                                }`}
-                                aria-hidden="true"
-                              >
-                                <path d="m9 6 6 6-6 6" />
-                              </svg>
-                            </button>
-                            {categoryMenuOpen && (
-                              <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5 min-w-[180px]">
-                                {CATEGORY_OPTIONS.map((label) => {
-                                  const isActive = category === label;
-                                  return (
-                                    <button
-                                      key={label}
-                                      type="button"
-                                      onClick={async (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setItemMenuCategoryOpenFor(null);
-                                        setItemMenuId(null);
-                                        setItemMenuOpensUpward(false);
-                                        setItemMenuPos(null);
-                                        try {
-                                          await fetch(`/api/history/${h.id}`, {
-                                            method: "PATCH",
-                                            headers: {
-                                              "content-type":
-                                                "application/json",
-                                            },
-                                            body: JSON.stringify({
-                                              category: label,
-                                            }),
-                                          });
-                                          setHistory((prev) =>
-                                            prev.map((r) =>
-                                              r.id === h.id
-                                                ? {
-                                                    ...r,
-                                                    data: {
-                                                      ...(r.data || {}),
-                                                      category: label,
-                                                    },
-                                                  }
-                                                : r
-                                            )
-                                          );
-                                          setCategoryColors((prev) => {
-                                            const next = {
-                                              ...prev,
-                                            } as Record<string, string>;
-                                            if (!next[label])
-                                              next[label] =
-                                                defaultCategoryColor(label);
-                                            return next;
-                                          });
-                                        } catch {}
-                                      }}
-                                      className={`flex w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                                        isActive
-                                          ? "bg-foreground/10 text-foreground"
-                                          : "text-foreground/80 hover:bg-foreground/10 hover:text-foreground"
-                                      }`}
+                                <span className="text-sm">Rename</span>
+                              </button>
+                            )}
+                            {!hideRenameAndChange && (
+                              <>
+                                <div className="my-1 h-px bg-border" />
+                                {/* Change to */}
+
+                                <button
+                                  type="button"
+                                  aria-expanded={categoryMenuOpen}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setItemMenuCategoryOpenFor(
+                                      categoryMenuOpen ? null : h.id
+                                    );
+                                  }}
+                                  className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-4 w-4"
+                                      aria-hidden="true"
                                     >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        className={`h-4 w-4 ${
-                                          isActive ? "" : "opacity-40"
-                                        }`}
-                                        aria-hidden="true"
-                                      >
-                                        <path d="M20 6L9 17l-5-5" />
-                                      </svg>
-                                      <span className="text-sm">{label}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                                      <path d="M4 6h16" />
+                                      <path d="M7 12h13" />
+                                      <path d="M10 18h10" />
+                                    </svg>
+                                    <span className="text-sm">Change to</span>
+                                  </span>
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={`h-3.5 w-3.5 transition-transform ${
+                                      categoryMenuOpen ? "rotate-90" : ""
+                                    }`}
+                                    aria-hidden="true"
+                                  >
+                                    <path d="m9 6 6 6-6 6" />
+                                  </svg>
+                                </button>
+                                {categoryMenuOpen && (
+                                  <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5 min-w-[180px]">
+                                    {CATEGORY_OPTIONS.map((label) => {
+                                      const isActive = category === label;
+                                      return (
+                                        <button
+                                          key={label}
+                                          type="button"
+                                          onClick={async (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setItemMenuCategoryOpenFor(null);
+                                            setItemMenuId(null);
+                                            setItemMenuOpensUpward(false);
+                                            setItemMenuPos(null);
+                                            try {
+                                              await fetch(
+                                                `/api/history/${h.id}`,
+                                                {
+                                                  method: "PATCH",
+                                                  headers: {
+                                                    "content-type":
+                                                      "application/json",
+                                                  },
+                                                  body: JSON.stringify({
+                                                    category: label,
+                                                  }),
+                                                }
+                                              );
+                                              setHistory((prev) =>
+                                                prev.map((r) =>
+                                                  r.id === h.id
+                                                    ? {
+                                                        ...r,
+                                                        data: {
+                                                          ...(r.data || {}),
+                                                          category: label,
+                                                        },
+                                                      }
+                                                    : r
+                                                )
+                                              );
+                                              setCategoryColors((prev) => {
+                                                const next = {
+                                                  ...prev,
+                                                } as Record<string, string>;
+                                                if (!next[label])
+                                                  next[label] =
+                                                    defaultCategoryColor(label);
+                                                return next;
+                                              });
+                                            } catch {}
+                                          }}
+                                          className={`flex w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                                            isActive
+                                              ? "bg-foreground/10 text-foreground"
+                                              : "text-foreground/80 hover:bg-foreground/10 hover:text-foreground"
+                                          }`}
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className={`h-4 w-4 ${
+                                              isActive ? "" : "opacity-40"
+                                            }`}
+                                            aria-hidden="true"
+                                          >
+                                            <path d="M20 6L9 17l-5-5" />
+                                          </svg>
+                                          <span className="text-sm">
+                                            {label}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
                             )}
                             <div className="my-1 h-px bg-border" />
                             <button
@@ -4220,6 +4690,36 @@ export default function LeftSidebar() {
                         e.preventDefault();
                         e.stopPropagation();
                         setCategoryColor("Shared events", g.id);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            ) : colorMenuFor === "Smart sign-up" ? (
+              <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
+                {SIGNUP_GRADIENTS.filter(
+                  (g) =>
+                    g.id !== "signup-g1" &&
+                    g.id !== "signup-g2" &&
+                    g.id !== "signup-g3" &&
+                    g.id !== "signup-g4" &&
+                    g.id !== "signup-g5" &&
+                    g.id !== "signup-g6"
+                ).map((g) => {
+                  const selected = getSignupGradientId() === g.id;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className={`h-6 w-6 rounded-[5px] border-0 ${g.swatch} ${
+                        selected ? "ring-2 ring-foreground/80" : ""
+                      }`}
+                      aria-label={`Choose ${g.id}`}
+                      title={g.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCategoryColor("Smart sign-up", g.id);
                       }}
                     />
                   );

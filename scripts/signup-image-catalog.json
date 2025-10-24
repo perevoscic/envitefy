@@ -150,6 +150,21 @@
     { "name": "Real Estate Open House", "tier": "premium" },
     { "name": "Arts & Culture", "tier": "free" },
     { "name": "Pets & Animals", "tier": "free" }
+  ],
+
+  "General": [
+  { "name": "HOA Meeting", "tier": "free" },
+  { "name": "Ad Hoc Meeting", "tier": "premium" },
+  { "name": "Board Meeting", "tier": "free" },
+  { "name": "Team Planning Session", "tier": "free" },
+  { "name": "Volunteer Orientation", "tier": "premium" },
+  { "name": "Town Hall Meeting", "tier": "free" },
+  { "name": "Community Discussion", "tier": "free" },
+  { "name": "Staff Training", "tier": "premium" },
+  { "name": "Committee Meeting", "tier": "free" },
+  { "name": "Monthly Meetup", "tier": "free" },
+  { "name": "Project Kickoff", "tier": "premium" },
+  { "name": "Workshop Registration", "tier": "free" }
   ]
 }
 
