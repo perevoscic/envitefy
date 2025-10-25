@@ -167,8 +167,8 @@ export async function POST(
       ...(rawFormSource as SignupForm),
       enabled: true,
     });
-    // Best-effort backfill to normalized table when only JSON existed previously
-    if (!tableRow) {
+    // Best-effort backfill to normalized table only when legacy JSON exists and looks valid
+    if (!tableRow && Array.isArray((rawFormSource as any).sections) && typeof (rawFormSource as any).version === "number") {
       try {
         await upsertSignupForm(id, form);
       } catch {}

@@ -402,11 +402,12 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - Validates slot availability, per-person limits, and required questions based on the form's `settings`.
   - Applies automatic waitlisting and promotions: when capacity frees up, earliest waitlisted responses are moved to confirmed.
   - Persists updates to both places for backward compatibility:
-    - Normalized table: `signup_forms.form` (authoritative)
+    - Normalized table: `signup_forms.form` (authoritative for sign-up forms only)
     - Legacy JSON: `event_history.data.signupForm` (kept in sync)
 - **Storage**:
-  - Normalized table `signup_forms(event_id uuid primary key references event_history(id) on delete cascade, form jsonb, created_at, updated_at)` stores the full form including `responses`.
-  - When a legacy-only form exists in `event_history.data.signupForm`, the API backfills it into `signup_forms` on first access.
+  - Events and their metadata continue to live in `event_history`.
+  - Sign-up forms are normalized in `signup_forms(event_id uuid primary key references event_history(id) on delete cascade, form jsonb, created_at, updated_at)`.
+  - When a legacy-only form exists in `event_history.data.signupForm`, the API backfills it into `signup_forms` on first access if it has a valid form shape.
 - **Output**: `{ ok: true, signupForm, response? }` with the normalized form state and (for reserve) the caller's latest response. Errors return `{ error }` with HTTP 4xx/5xx codes.
 - **Notes**: Fails with 400 when the event lacks a sign-up form. Contact fields are optional unless the sign-up settings require them.
 

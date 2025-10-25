@@ -116,10 +116,16 @@ export async function POST(req: Request) {
       );
     } catch {}
     const row = await insertEventHistory({ userId, title, data });
-    // If the payload included a signupForm, store it in normalized table too (best-effort)
+    // Only upsert into signup_forms when payload clearly includes a signup form
     try {
-      if (data && typeof data === "object" && data.signupForm && typeof data.signupForm === "object") {
-        await upsertSignupForm(row.id, data.signupForm);
+      const sf = data && typeof data === "object" ? (data as any).signupForm : null;
+      if (
+        sf &&
+        typeof sf === "object" &&
+        Array.isArray((sf as any).sections) &&
+        typeof (sf as any).version === "number"
+      ) {
+        await upsertSignupForm(row.id, sf);
       }
     } catch {}
     try {
