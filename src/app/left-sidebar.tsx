@@ -2132,7 +2132,7 @@ export default function LeftSidebar() {
                   </Link>
                   <div className="flex items-center gap-1">
                     <Link
-                      href="/snap?action=camera"
+                      href="/?action=camera"
                       onClick={handleSnapShortcutClick}
                       className="p-1 rounded hover:bg-surface/50"
                       aria-label="Snap with camera"
@@ -2153,7 +2153,7 @@ export default function LeftSidebar() {
                       </svg>
                     </Link>
                     <Link
-                      href="/snap?action=upload"
+                      href="/?action=upload"
                       onClick={handleSnapShortcutClick}
                       className="p-1 rounded hover:bg-surface/50"
                       aria-label="Upload file"

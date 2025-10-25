@@ -12,6 +12,11 @@ export async function middleware(req: NextRequest) {
     res.headers.set("x-mw-version", "v2");  // <<< marker
     return res;
   };
+  const redirectWithMarker = (url: URL, status = 302) => {
+    const res = NextResponse.redirect(url, status);
+    res.headers.set("x-mw-version", "v2");
+    return res;
+  };
 
   if (
     pathname.startsWith("/api") ||
@@ -28,7 +33,17 @@ export async function middleware(req: NextRequest) {
 
   const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
   const token = await getToken({ req: req as any, secret });
-  const hasSession = Boolean(token);
+  let hasSession = Boolean(token);
+
+  if (!hasSession) {
+    // Fallback: some browsers omit the JWT when the secret mismatches or during race conditions.
+    // Checking for the session cookie prevents flashing the public landing page for signed-in users.
+    const sessionCookie =
+      req.cookies.get("__Secure-next-auth.session-token") ??
+      req.cookies.get("__Host-next-auth.session-token") ??
+      req.cookies.get("next-auth.session-token");
+    hasSession = Boolean(sessionCookie?.value);
+  }
 
   // Allow direct access to /landing without redirecting back to /
   if (pathname === "/landing") {
@@ -39,11 +54,10 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  // Require authentication for the snap experience
-  if (pathname.startsWith("/snap") && !hasSession) {
+  if (pathname === "/snap" || pathname.startsWith("/snap/")) {
     const url = req.nextUrl.clone();
-    url.pathname = "/landing";
-    return NextResponse.redirect(url, 302);
+    url.pathname = "/";
+    return redirectWithMarker(url, 308);
   }
 
   // Protect calendar/subscription pages when not signed in
@@ -53,34 +67,33 @@ export async function middleware(req: NextRequest) {
       if (!hasSession) {
         const url = req.nextUrl.clone();
         url.pathname = "/";
-        return NextResponse.redirect(url, 302);
+        return redirectWithMarker(url, 302);
       }
       break;
     }
   }
 
   // Public homepage at "/":
-  // - authenticated users go to "/snap"
+  // - authenticated users stay on "/"
   // - unauthenticated users see landing content (rewrite)
   if (pathname === "/") {
-    if (hasSession) {
+    if (!hasSession) {
+      // Render landing content at "/" without changing the URL
       const url = req.nextUrl.clone();
-      url.pathname = "/snap";
-      return NextResponse.redirect(url, 302);
+      url.pathname = "/landing";
+      const res = NextResponse.rewrite(url);
+      res.headers.set("x-mw-version", "v2");
+      return res;
     }
-    // Render landing content at "/" without changing the URL
-    const url = req.nextUrl.clone();
-    url.pathname = "/landing";
-    const res = NextResponse.rewrite(url);
-    res.headers.set("x-mw-version", "v2");
-    return res;
+    // Signed-in users stay on "/" without a redirect
+    return ok();
   }
 
   // Optional: redirect legacy /signup to the public homepage
   if (pathname === "/signup") {
     const url = req.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url, 308);
+    return redirectWithMarker(url, 308);
   }
 
   return ok();
