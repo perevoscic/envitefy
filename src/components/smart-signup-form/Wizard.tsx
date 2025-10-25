@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import type { SignupForm } from "@/types/signup";
 import SignupBuilder from "@/components/smart-signup-form/SignupBuilder";
 import { getEventTheme } from "@/lib/event-theme";
+import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 
 type Props = {
   form: SignupForm;
@@ -61,6 +62,55 @@ export default function SmartSignupWizard({
     .map((w) => (w ? w[0].toUpperCase() : ""))
     .slice(0, 2)
     .join("");
+
+  const formatRangeLabel = (
+    startInput?: string | null,
+    endInput?: string | null,
+    options?: { timeZone?: string | null; allDay?: boolean | null }
+  ): string | null => {
+    const timeZone = options?.timeZone || undefined;
+    const allDay = Boolean(options?.allDay);
+    try {
+      if (!startInput) return null;
+      const start = new Date(startInput);
+      const end = endInput ? new Date(endInput) : null;
+      if (Number.isNaN(start.getTime())) return null;
+      const sameDay =
+        !!end &&
+        start.getFullYear() === end.getFullYear() &&
+        start.getMonth() === end.getMonth() &&
+        start.getDate() === end.getDate();
+      if (allDay) {
+        const dateFmt = new Intl.DateTimeFormat(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          timeZone,
+        });
+        const label =
+          end && !sameDay
+            ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+            : dateFmt.format(start);
+        return `${label} (all day)`;
+      }
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone,
+      });
+      if (end) {
+        if (sameDay) {
+          return `${dateFmt.format(start)}`;
+        }
+        return `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
+      }
+      return dateFmt.format(start);
+    } catch {
+      return startInput || null;
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     // Never auto-submit on Enter or implicit form submit; publishing is only via the button click
@@ -132,174 +182,11 @@ export default function SmartSignupWizard({
         />
       )}
       {step === 3 && (
-        <div className="space-y-3">
-          <div
-            className="event-theme-scope rounded-xl overflow-hidden border"
-            style={themeStyleVars}
-          >
-            <section
-              className="px-5 py-6"
-              style={{
-                backgroundColor: form.header?.backgroundColor || undefined,
-                backgroundImage: form.header?.backgroundCss || undefined,
-                backgroundSize: form.header?.backgroundCss
-                  ? "cover"
-                  : undefined,
-                backgroundPosition: form.header?.backgroundCss
-                  ? "center"
-                  : undefined,
-                color: form.header?.textColor2 || undefined,
-              }}
-            >
-              <div
-                className={`grid gap-6 items-start ${
-                  (form.header?.templateId || "header-1") === "header-2"
-                    ? "md:grid-cols-[1fr_325px]"
-                    : (form.header?.templateId || "header-1") === "header-3"
-                    ? "grid-cols-1"
-                    : (form.header?.templateId || "header-1") === "header-5"
-                    ? "md:grid-cols-2"
-                    : (form.header?.templateId || "header-1") === "header-6"
-                    ? "md:grid-cols-3"
-                    : "md:grid-cols-[325px_1fr]"
-                }`}
-              >
-                <div
-                  className={`relative ${
-                    (form.header?.templateId || "header-1") === "header-2"
-                      ? "order-2"
-                      : "order-1"
-                  } ${
-                    (form.header?.templateId || "header-1") === "header-3"
-                      ? "col-span-full"
-                      : ""
-                  }`}
-                >
-                  {(form.header?.templateId || "header-1") === "header-3" ? (
-                    form.header?.images?.[0]?.dataUrl ? (
-                      <img
-                        src={form.header.images[0].dataUrl}
-                        alt="banner"
-                        className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-border"
-                      />
-                    ) : (
-                      <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                        Full-width image
-                      </div>
-                    )
-                  ) : (form.header?.templateId || "header-1") === "header-5" ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[0, 1].map((i) =>
-                        form.header?.images?.[i]?.dataUrl ? (
-                          <img
-                            key={i}
-                            src={form.header.images[i].dataUrl}
-                            alt={`image-${i}`}
-                            className="w-full h-40 object-cover rounded-xl border border-border"
-                          />
-                        ) : (
-                          <div
-                            key={i}
-                            className="w-full h-40 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
-                          >
-                            Image {i + 1}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ) : (form.header?.templateId || "header-1") === "header-6" ? (
-                    <div className="grid grid-cols-3 gap-3">
-                      {[0, 1, 2].map((i) =>
-                        form.header?.images?.[i]?.dataUrl ? (
-                          <img
-                            key={i}
-                            src={form.header.images[i].dataUrl}
-                            alt={`image-${i}`}
-                            className="w-full h-36 object-cover rounded-xl border border-border"
-                          />
-                        ) : (
-                          <div
-                            key={i}
-                            className="w-full h-36 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
-                          >
-                            Image {i + 1}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ) : form.header?.backgroundImage?.dataUrl ? (
-                    <img
-                      src={form.header.backgroundImage.dataUrl}
-                      alt="header"
-                      className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
-                    />
-                  ) : (
-                    <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-border/70 bg-white/20 grid place-items-center text-foreground/80">
-                      Top-left image
-                    </div>
-                  )}
-                </div>
-                <div
-                  className={`flex flex-col gap-3 ${
-                    (form.header?.templateId || "header-1") === "header-2"
-                      ? "order-1"
-                      : "order-2"
-                  }`}
-                >
-                  {form.header?.groupName ? (
-                    <div
-                      className="text-xs font-semibold opacity-85"
-                      style={{ color: form.header?.textColor1 || undefined }}
-                    >
-                      {form.header.groupName}
-                    </div>
-                  ) : null}
-                  <h3
-                    className="text-lg font-semibold"
-                    style={{ color: form.header?.textColor2 || undefined }}
-                  >
-                    {form.title || "Smart sign-up"}
-                  </h3>
-                  {creatorName ? (
-                    <div
-                      className="flex items-center gap-2 text-xs opacity-85"
-                      style={{ color: form.header?.textColor1 || undefined }}
-                    >
-                      <span
-                        className="inline-grid place-items-center h-7 w-7 rounded-full"
-                        style={{
-                          background: form.header?.buttonColor || "#44AD3C",
-                          color: form.header?.buttonTextColor || "#FFF4C7",
-                        }}
-                      >
-                        {initials || "?"}
-                      </span>
-                      <span>Created by {creatorName}</span>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              {form.description && (
-                <p
-                  className="mt-3 text-sm max-w-2xl opacity-90"
-                  style={{ color: form.header?.textColor1 || undefined }}
-                >
-                  {form.description}
-                </p>
-              )}
-            </section>
-            <section className="event-theme-card px-5 py-4 border-t">
-              <p className="text-sm opacity-80">
-                This preview reflects the current theme colors. Final layout on
-                the event page also shows slots and questions.
-              </p>
-              <div className="mt-2 flex items-center gap-2 text-sm opacity-90">
-                <strong>Related files</strong>
-                <span aria-hidden>📎</span>
-              </div>
-            </section>
-          </div>
-        </div>
+        <SignupViewer
+          eventId="preview"
+          initialForm={form as SignupForm}
+          viewerKind="readonly"
+        />
       )}
 
       {/* Actions */}

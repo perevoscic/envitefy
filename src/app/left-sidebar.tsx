@@ -251,14 +251,20 @@ export default function LeftSidebar() {
     // Use capture phase so it still triggers if inner handlers stop propagation
     document.addEventListener("pointerdown", onOutside, true);
     document.addEventListener("mousedown", onOutside, true);
-    document.addEventListener("touchstart", onOutside, true);
+    // Mark touchstart as passive so Safari can keep edge-swipe back navigation responsive
+    document.addEventListener("touchstart", onOutside as any, {
+      capture: true,
+      passive: true,
+    });
     document.addEventListener("click", onOutside, true);
     document.addEventListener("focusin", onOutside, true);
     document.addEventListener("keydown", onEsc);
     return () => {
       document.removeEventListener("pointerdown", onOutside, true);
       document.removeEventListener("mousedown", onOutside, true);
-      document.removeEventListener("touchstart", onOutside, true);
+      document.removeEventListener("touchstart", onOutside as any, {
+        capture: true,
+      });
       document.removeEventListener("click", onOutside, true);
       document.removeEventListener("focusin", onOutside, true);
       document.removeEventListener("keydown", onEsc);
@@ -2111,23 +2117,18 @@ export default function LeftSidebar() {
                     className="flex items-center gap-2"
                   >
                     <svg
-                      viewBox="0 0 16 16"
+                      viewBox="0 0 1920 1920"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="currentColor"
                       className="h-4 w-4"
                       aria-hidden="true"
                     >
-                      <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
-                      <g strokeLinecap="round" strokeLinejoin="round"></g>
-                      <g id="SVGRepo_iconCarrier">
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M9.5 1.1l3.4 3.5.1.4v2h-1V6H8V2H3v11h4v1H2.5l-.5-.5v-12l.5-.5h6.7l.3.1zM9 2v3h2.9L9 2zm4 14h-1v-3H9v-1h3V9h1v3h3v1h-3v3z"
-                        ></path>
-                      </g>
+                      <path
+                        fillRule="evenodd"
+                        d="M960.16 0 28 932.16l79 78.777 853.16-853.16 853.16 853.16 78.889-78.777L960.16 0Zm613.693 1027.34v781.078h-334.86v-557.913h-557.8v557.912H346.445V1027.34H234.751V1920h1450.684v-892.66h-111.582Zm-446.33 334.748v446.441H792.775v-446.441h334.748ZM960.127 692.604c61.593 0 111.582 49.989 111.582 111.582 0 61.594-49.989 111.583-111.582 111.583-61.594 0-111.583-49.99-111.583-111.583 0-61.593 49.99-111.582 111.583-111.582Zm223.165 111.582c0-123.075-100.09-223.165-223.165-223.165-123.076 0-223.165 100.09-223.165 223.165 0 123.076 100.09 223.165 223.165 223.165 123.075 0 223.165-100.09 223.165-223.165"
+                      ></path>
                     </svg>
-                    <span>New Snap</span>
+                    <span>Home</span>
                   </Link>
                   <div className="flex items-center gap-1">
                     <Link
@@ -2170,6 +2171,65 @@ export default function LeftSidebar() {
                       >
                         <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
                         <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                      </svg>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        triggerCreateEvent();
+                      }}
+                      className="p-1 rounded hover:bg-surface/50"
+                      aria-label="Create event"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="3"
+                          y="4"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                        <line x1="12" y1="14" x2="12" y2="18" />
+                        <line x1="10" y1="16" x2="14" y2="16" />
+                      </svg>
+                    </button>
+                    <Link
+                      href="/smart-signup-form"
+                      onClick={collapseSidebarOnTouch}
+                      className="p-1 rounded hover:bg-surface/50"
+                      aria-label="Create signup form"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M9 11h6" />
+                        <path d="M9 15h6" />
+                        <path d="M12 7h3" />
+                        <rect x="4" y="3" width="16" height="18" rx="2" />
+                        <path d="M8 3v2a2 2 0 0 1-2 2H4" />
                       </svg>
                     </Link>
                   </div>
@@ -3898,7 +3958,10 @@ export default function LeftSidebar() {
                   .toLowerCase()
                   .replace(/[^a-z0-9]+/g, "-")
                   .replace(/^-+|-+$/g, "");
-                const prettyHref = `/event/${slug}-${h.id}`;
+                const dataObj: any = (h as any)?.data || {};
+                const prettyHref = dataObj?.signupForm
+                  ? `/smart-signup-form/${h.id}`
+                  : `/event/${slug}-${h.id}`;
                 const category = (h as any)?.data?.category as string | null;
                 const isShared = Boolean(
                   (h as any)?.data?.shared ||

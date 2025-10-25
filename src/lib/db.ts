@@ -239,7 +239,7 @@ export async function getTopUsersByScans(limit: number = 20): Promise<Array<{ em
 export async function incrementUserScanCounters(params: { userId?: string | null; email?: string | null; category?: string | null }): Promise<void> {
   await ensureUsersHasAdminAndMetricsColumns();
   const where = buildUserWhereClause({ userId: params.userId || null, email: params.email || null }, 1);
-  const updates: string[] = ["scans_total = coalesce(scans_total, 0) + 1"]; 
+  const updates: string[] = ["scans_total = coalesce(scans_total, 0) + 1"];
   const cat = (params.category || "").toLowerCase();
   if (cat.includes("birthday")) updates.push("scans_birthdays = coalesce(scans_birthdays, 0) + 1");
   if (cat.includes("wedding")) updates.push("scans_weddings = coalesce(scans_weddings, 0) + 1");
@@ -354,12 +354,12 @@ export async function createOrUpdateOAuthUser(params: {
 }): Promise<AppUserRow> {
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
-  
+
   if (existing) {
     // User exists, just return them
     return existing;
   }
-  
+
   // Create new OAuth user with NULL password_hash
   const res = await query<AppUserRow>(
     `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
@@ -1670,6 +1670,63 @@ export async function deleteThemeOverrideForUser(userId: string): Promise<boolea
     return (res.rowCount ?? 0) > 0;
   } catch (err) {
     if (isTableMissingError(err)) return false;
+    throw err;
+  }
+}
+
+// Smart sign-up forms (normalized storage)
+export type SignupFormRow = {
+  event_id: string;
+  form: any;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+async function ensureSignupFormsTable(): Promise<void> {
+  // Create table if it does not exist; keep it minimal and reference event_history
+  await query(`
+    create table if not exists signup_forms (
+      event_id uuid primary key references event_history(id) on delete cascade,
+      form jsonb not null,
+      created_at timestamptz(6) default now(),
+      updated_at timestamptz(6) default now()
+    );
+  `);
+}
+
+export async function getSignupFormByEventId(eventId: string): Promise<SignupFormRow | null> {
+  if (!eventId) return null;
+  try {
+    await ensureSignupFormsTable();
+    const res = await query<SignupFormRow>(
+      `select event_id, form, created_at, updated_at
+       from signup_forms
+       where event_id = $1
+       limit 1`,
+      [eventId]
+    );
+    return res.rows[0] || null;
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function upsertSignupForm(eventId: string, form: any): Promise<SignupFormRow | null> {
+  if (!eventId) return null;
+  try {
+    await ensureSignupFormsTable();
+    const res = await query<SignupFormRow>(
+      `insert into signup_forms (event_id, form)
+       values ($1, $2::jsonb)
+       on conflict (event_id)
+       do update set form = excluded.form, updated_at = now()
+       returning event_id, form, created_at, updated_at`,
+      [eventId, JSON.stringify(form ?? {})]
+    );
+    return res.rows[0] || null;
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
     throw err;
   }
 }

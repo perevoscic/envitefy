@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import SignupBuilder from "@/components/smart-signup-form/SignupBuilder";
 import SmartSignupWizard from "@/components/smart-signup-form/Wizard";
@@ -9,12 +10,42 @@ import { createDefaultSignupForm, sanitizeSignupForm } from "@/utils/signup";
 
 export default function SmartSignupFormPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<SignupForm>(() => createDefaultSignupForm());
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    originalTitle: string;
+  } | null>(null);
 
   useEffect(() => {
-    setForm(createDefaultSignupForm());
-  }, []);
+    const isDuplicate = searchParams?.get("duplicate") === "1";
+    if (!isDuplicate) {
+      setForm(createDefaultSignupForm());
+      return;
+    }
+    try {
+      const raw = sessionStorage.getItem("snapmydate:signup-duplicate");
+      if (!raw) {
+        setForm(createDefaultSignupForm());
+        return;
+      }
+      const parsed = JSON.parse(raw) as {
+        originalTitle?: string;
+        dataCopy?: any;
+      };
+      const signup = parsed?.dataCopy?.signupForm as SignupForm | undefined;
+      if (signup && typeof signup === "object") {
+        setForm(sanitizeSignupForm({ ...(signup as any), enabled: true }));
+        setDuplicateInfo({
+          originalTitle: parsed?.originalTitle || "this form",
+        });
+      } else {
+        setForm(createDefaultSignupForm());
+      }
+    } catch {
+      setForm(createDefaultSignupForm());
+    }
+  }, [searchParams]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +80,11 @@ export default function SmartSignupFormPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Create a Smart sign-up</h1>
       </header>
+      {duplicateInfo && (
+        <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+          This is a duplicate of "{duplicateInfo.originalTitle}".
+        </div>
+      )}
       <SmartSignupWizard
         form={form}
         onChange={setForm}

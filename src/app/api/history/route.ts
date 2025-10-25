@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents } from "@/lib/db";
+import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents, upsertSignupForm } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -116,6 +116,12 @@ export async function POST(req: Request) {
       );
     } catch {}
     const row = await insertEventHistory({ userId, title, data });
+    // If the payload included a signupForm, store it in normalized table too (best-effort)
+    try {
+      if (data && typeof data === "object" && data.signupForm && typeof data.signupForm === "object") {
+        await upsertSignupForm(row.id, data.signupForm);
+      }
+    } catch {}
     try {
       console.log(
         "[history] POST: inserted",

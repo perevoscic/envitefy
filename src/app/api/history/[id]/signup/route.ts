@@ -7,6 +7,8 @@ import {
   getUserIdByEmail,
   isEventSharedWithUser,
   updateEventHistoryData,
+  getSignupFormByEventId,
+  upsertSignupForm,
 } from "@/lib/db";
 import {
   sanitizeSignupForm,
@@ -22,6 +24,7 @@ import type {
   SignupResponse,
   SignupResponseSlot,
 } from "@/types/signup";
+import { sendSignupConfirmationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -152,17 +155,24 @@ export async function POST(
     }
 
     const existingData = (row.data ?? null) as Record<string, unknown> | null;
-    const rawForm = existingData?.["signupForm"];
-    if (!rawForm || typeof rawForm !== "object") {
+    const tableRow = await getSignupFormByEventId(id);
+    const rawFormSource = tableRow?.form || (existingData?.["signupForm"] as any);
+    if (!rawFormSource || typeof rawFormSource !== "object") {
       return NextResponse.json(
         { error: "Sign-up form is not enabled for this event." },
         { status: 400 }
       );
     }
     const form = sanitizeSignupForm({
-      ...(rawForm as SignupForm),
+      ...(rawFormSource as SignupForm),
       enabled: true,
     });
+    // Best-effort backfill to normalized table when only JSON existed previously
+    if (!tableRow) {
+      try {
+        await upsertSignupForm(id, form);
+      } catch {}
+    }
     if (!form.sections.length) {
       return NextResponse.json(
         { error: "Sign-up form is missing sections." },
@@ -326,6 +336,9 @@ export async function POST(
         signupForm: normalizedNext,
       };
       const updatedRow = await updateEventHistoryData(id, mergedData);
+      try {
+        await upsertSignupForm(id, normalizedNext);
+      } catch {}
       const updatedData = (updatedRow?.data ?? null) as
         | Record<string, unknown>
         | null;
@@ -341,6 +354,31 @@ export async function POST(
         persistedForm.responses.find(
           (response) => response.id === newResponse.id
         ) || newResponse;
+      // Fire-and-forget: email confirmation to participant when we have an email
+      (async () => {
+        try {
+          const toEmail = (latestResponse.email || (sessionEmail as string | null)) as string | undefined;
+          if (toEmail) {
+            const baseUrl =
+              process.env.PUBLIC_BASE_URL ||
+              process.env.APP_URL ||
+              process.env.NEXTAUTH_URL ||
+              "https://snapmydate.com";
+            const eventUrl = `${baseUrl}/smart-signup-form/${id}`;
+            await sendSignupConfirmationEmail({
+              toEmail,
+              userName: latestResponse.name || null,
+              eventTitle: row.title || "Smart sign-up",
+              eventUrl,
+              form: persistedForm,
+              response: latestResponse,
+            });
+          }
+        } catch (err) {
+          console.error("[signup] failed to send confirmation email", err);
+        }
+      })();
+
       return NextResponse.json({
         ok: true,
         status: latestResponse.status,
@@ -380,7 +418,7 @@ export async function POST(
       const nowIso = new Date().toISOString();
       const responsesNext = form.responses.map((response) =>
         response.id === signupId
-          ? { ...response, status: "cancelled", updatedAt: nowIso }
+          ? { ...response, status: "cancelled" as "cancelled", updatedAt: nowIso }
           : response
       );
       const nextForm: SignupForm = rebalanceSignupWaitlist({
@@ -397,6 +435,9 @@ export async function POST(
         signupForm: normalizedNext,
       };
       const updatedRow = await updateEventHistoryData(id, cancelMerged);
+      try {
+        await upsertSignupForm(id, normalizedNext);
+      } catch {}
       const updatedData = (updatedRow?.data ?? null) as
         | Record<string, unknown>
         | null;

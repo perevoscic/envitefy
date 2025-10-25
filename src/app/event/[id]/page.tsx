@@ -735,14 +735,14 @@ export default async function EventPage({
               </>
             )}
             {data?.venue && (
-              <div>
+              <div className="sm:col-span-2">
                 <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                   Venue
                 </dt>
-                <dd className="mt-1 text-base font-semibold">{data.venue}</dd>
+                <dd className="mt-1 text-2xl font-semibold">{data.venue}</dd>
               </div>
             )}
-            <div>
+            <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 {data?.venue ? "Address" : "Location"}
               </dt>
@@ -754,7 +754,7 @@ export default async function EventPage({
                     (typeof data?.location === "string" && data.location) ||
                       null
                   )}
-                  className="text-base font-semibold"
+                  className="text-2xl font-semibold"
                 />
               </dd>
             </div>

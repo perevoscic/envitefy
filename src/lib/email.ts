@@ -1,6 +1,7 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { getUserByEmail } from "@/lib/db";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
+import type { SignupForm, SignupResponse } from "@/types/signup";
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
 
@@ -520,6 +521,151 @@ export async function sendPasswordChangeConfirmationEmail(params: {
     });
   } catch (err: any) {
     console.error("[email] sendPasswordChangeConfirmationEmail failed", {
+      to: maskEmail(to),
+      error: err?.message,
+    });
+    throw err;
+  }
+}
+
+export async function sendSignupConfirmationEmail(params: {
+  toEmail: string;
+  userName?: string | null;
+  eventTitle: string;
+  eventUrl?: string | null;
+  form: SignupForm;
+  response: SignupResponse;
+}): Promise<void> {
+  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
+  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const to = params.toEmail;
+
+  const status = params.response.status === "waitlisted" ? "Waitlisted" : "Confirmed";
+  const subject = `${status}: ${params.eventTitle}`;
+  const preheader = `${status} for ${params.eventTitle}`;
+
+  const startLabel = (() => {
+    const raw = (params.form as any)?.start as string | undefined;
+    if (!raw) return null;
+    // If it's just a date (YYYY-MM-DD), show date only
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      try {
+        const [y, m, d] = raw.split("-").map((s) => Number.parseInt(s, 10));
+        const dt = new Date(y, (m || 1) - 1, d || 1);
+        return dt.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+      } catch {
+        return raw;
+      }
+    }
+    // Otherwise attempt to parse as ISO-local
+    const dt = new Date(raw);
+    if (Number.isNaN(dt.getTime())) return raw;
+    return dt.toLocaleString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  })();
+
+  const formatTime = (value?: string | null): string | null => {
+    if (!value) return null;
+    const [hh, mm] = value.split(":");
+    const hour = Number.parseInt(hh || "0", 10);
+    const minute = Number.parseInt(mm || "0", 10);
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) return value;
+    const suffix = hour >= 12 ? "PM" : "AM";
+    const h12 = ((hour + 11) % 12) + 1;
+    const mmPad = String(minute).padStart(2, "0");
+    return `${h12}:${mmPad} ${suffix}`;
+  };
+
+  const slotSummaries = (() => {
+    const entries: string[] = [];
+    for (const sel of params.response.slots || []) {
+      const section = params.form.sections.find((s) => s.id === sel.sectionId);
+      const slot = section?.slots.find((s) => s.id === sel.slotId);
+      if (!section || !slot) continue;
+      const qty = (sel.quantity && sel.quantity > 1) ? ` ×${sel.quantity}` : "";
+      const range = (() => {
+        const a = formatTime(slot.startTime);
+        const b = formatTime(slot.endTime);
+        if (a && b) return `${a} – ${b}`;
+        if (a) return `Starts ${a}`;
+        if (b) return `Ends ${b}`;
+        return null;
+      })();
+      entries.push(`${escapeHtml(section.title)}: ${escapeHtml(slot.label)}${qty}${range ? ` (${escapeHtml(range)})` : ""}`);
+    }
+    return entries;
+  })();
+
+  const header = params.form.header || null;
+  const headerBg = header?.backgroundCss || header?.backgroundColor || "#F5F5F4";
+  const text1 = header?.textColor1 || "#4E4E50";
+  const text2 = header?.textColor2 || "#111827";
+  const bannerSrc = header?.images?.[0]?.dataUrl || null;
+  const squareSrc = header?.backgroundImage?.dataUrl || header?.images?.[1]?.dataUrl || null;
+
+  const headerPreview = `
+    <div style="border:1px solid #E5E7EB; border-radius: 14px; overflow: hidden; background:${escapeHtml(headerBg)};">
+      <div style="padding:18px;">
+        <p style="margin:0 0 8px 0; font-size:12px; color:${escapeHtml(text1)}; text-align:center;">Header preview</p>
+        ${bannerSrc ? `<img src="${bannerSrc}" alt="banner" style="width:100%; height:180px; object-fit:cover; border-radius: 12px; border:1px solid #E5E7EB;" />` : ""}
+        <div style="display:flex; gap:16px; align-items:flex-start; margin-top:${bannerSrc ? "12px" : "0"};">
+          ${squareSrc ? `<img src="${squareSrc}" alt="image" width="140" height="140" style="border-radius:12px; object-fit:cover; border:1px solid #E5E7EB;" />` : ""}
+          <div style="flex:1; min-width:0;">
+            ${header?.groupName ? `<div style="font-weight:600; font-size:14px; color:${escapeHtml(text1)}; margin:4px 0 6px 0;">${escapeHtml(header.groupName)}</div>` : ""}
+            <div style="font-weight:700; font-size:20px; color:${escapeHtml(text2)};">${escapeHtml(params.eventTitle || "Smart sign-up")}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  const greeting = params.userName ? `Hi ${escapeHtml(params.userName)}` : "Hello";
+  const body = `
+    <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6;">${greeting},</p>
+    <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">You're <strong>${escapeHtml(status)}</strong> for <strong>${escapeHtml(params.eventTitle)}</strong>.</p>
+    <div style="background:#F9FAFB; border:1px solid #E5E7EB; padding:14px 16px; border-radius:10px; margin:16px 0;">
+      ${startLabel ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Date:</strong> ${escapeHtml(startLabel)}</p>` : ""}
+      ${(params.form as any)?.location ? `<p style=\"margin:0 0 4px 0; font-size:14px;\"><strong>Location:</strong> ${escapeHtml(((params.form as any).location as string) || "")}</p>` : ""}
+      ${slotSummaries.length ? `<p style=\"margin:8px 0 0 0; font-size:14px;\"><strong>Selections:</strong><br/> ${slotSummaries.map((s) => `• ${s}`).join("<br/>")}</p>` : ""}
+    </div>
+    ${headerPreview}
+  `;
+
+  const html = createEmailTemplate({
+    preheader,
+    title: `${status} for ${params.eventTitle}`,
+    body,
+    buttonText: params.eventUrl ? "View Sign-up" : undefined,
+    buttonUrl: params.eventUrl || undefined,
+  });
+
+  const text = [
+    `${status} for ${params.eventTitle}`,
+    startLabel ? `Date: ${startLabel}` : undefined,
+    (params.form as any)?.location ? `Location: ${(params.form as any).location}` : undefined,
+    slotSummaries.length ? `Selections:\n${slotSummaries.map((s) => `- ${s}`).join("\n")}` : undefined,
+    params.eventUrl ? `Open: ${params.eventUrl}` : undefined,
+  ].filter(Boolean).join("\n");
+
+  const cmd = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+  });
+
+  try {
+    console.log("[email] sendSignupConfirmationEmail dispatch", { to: maskEmail(to), status });
+    const result = await getSes().send(cmd);
+    console.log("[email] sendSignupConfirmationEmail success", {
+      to: maskEmail(to),
+      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+    });
+  } catch (err: any) {
+    console.error("[email] sendSignupConfirmationEmail failed", {
       to: maskEmail(to),
       error: err?.message,
     });

@@ -53,6 +53,55 @@ export default async function SignupPage({
     backgroundPosition: header?.backgroundCss ? "center" : undefined,
   } as React.CSSProperties;
 
+  const formatRangeLabel = (
+    startInput?: string | null,
+    endInput?: string | null,
+    options?: { timeZone?: string | null; allDay?: boolean | null }
+  ): string | null => {
+    const timeZone = options?.timeZone || undefined;
+    const allDay = Boolean(options?.allDay);
+    try {
+      if (!startInput) return null;
+      const start = new Date(startInput);
+      const end = endInput ? new Date(endInput) : null;
+      if (Number.isNaN(start.getTime())) return null;
+      const sameDay =
+        !!end &&
+        start.getFullYear() === end.getFullYear() &&
+        start.getMonth() === end.getMonth() &&
+        start.getDate() === end.getDate();
+      if (allDay) {
+        const dateFmt = new Intl.DateTimeFormat(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          timeZone,
+        });
+        const label =
+          end && !sameDay
+            ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+            : dateFmt.format(start);
+        return `${label} (all day)`;
+      }
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone,
+      });
+      if (end) {
+        if (sameDay) {
+          return `${dateFmt.format(start)}`;
+        }
+        return `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
+      }
+      return dateFmt.format(start);
+    } catch {
+      return startInput || null;
+    }
+  };
+
   return (
     <div className="min-h-screen" style={pageBgStyle}>
       <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-4">
@@ -66,7 +115,6 @@ export default async function SignupPage({
           }}
         >
           <div className="px-5 py-6">
-            <p className="text-xs text-foreground/60 mb-2">header preview</p>
             <div className="grid gap-4 md:grid-cols-[325px_1fr] items-start">
               <div>
                 {header?.backgroundImage?.dataUrl ? (
@@ -80,50 +128,108 @@ export default async function SignupPage({
               <div className="flex flex-col gap-2">
                 {header?.groupName ? (
                   <div
-                    className="text-xs font-semibold opacity-85"
+                    className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
                     style={{ color: header?.textColor1 || undefined }}
                   >
                     {header.groupName}
                   </div>
                 ) : null}
                 <h1
-                  className="text-lg font-semibold"
+                  className="text-2xl sm:text-[1.6rem] font-semibold"
                   style={{ color: header?.textColor2 || undefined }}
                 >
                   {signupForm.title || row.title || "Smart sign-up"}
                 </h1>
-                {/* Headline description + location for guests */}
-                {(signupForm.description ||
-                  signupForm.venue ||
-                  signupForm.location ||
-                  combinedLocation) && (
+                {(session?.user?.name as string | undefined) && (
                   <div
-                    className="text-sm opacity-90"
+                    className="flex items-start gap-2 text-[0.95rem] opacity-85"
                     style={{ color: header?.textColor1 || undefined }}
                   >
-                    {signupForm.description && (
-                      <p className="leading-relaxed">
-                        {signupForm.description}
-                      </p>
-                    )}
-                    {(signupForm.venue ||
-                      signupForm.location ||
-                      combinedLocation) && (
-                      <p className="mt-1 text-foreground/70">
-                        Location:{" "}
-                        {signupForm.venue
-                          ? `${signupForm.venue}${
-                              signupForm.location ? ", " : ""
-                            }`
-                          : ""}
-                        {signupForm.location || combinedLocation}
-                      </p>
-                    )}
+                    <span
+                      className="inline-grid place-items-center h-7 w-7 rounded-full"
+                      style={{
+                        background: header?.buttonColor || "#44AD3C",
+                        color: header?.buttonTextColor || "#FFF4C7",
+                      }}
+                    >
+                      {(() => {
+                        const name = (session?.user?.name as string) || "";
+                        return (
+                          name
+                            .trim()
+                            .split(/\s+/)
+                            .map((w) => (w ? w[0].toUpperCase() : ""))
+                            .slice(0, 2)
+                            .join("") || "?"
+                        );
+                      })()}
+                    </span>
+                    <span className="leading-tight">
+                      <div>
+                        Created by {(session?.user?.name as string) || ""}
+                      </div>
+                      <div className="opacity-90">
+                        {(() => {
+                          const label = formatRangeLabel(
+                            (data?.startISO as string | null) ||
+                              (data?.start as string | null) ||
+                              signupForm.start ||
+                              null,
+                            (data?.endISO as string | null) ||
+                              (data?.end as string | null) ||
+                              signupForm.end ||
+                              null,
+                            {
+                              timeZone:
+                                (data?.timezone as string | null) ||
+                                (signupForm.timezone as string | null) ||
+                                undefined,
+                              allDay:
+                                (data?.allDay as boolean | null) ||
+                                (signupForm.allDay as boolean | null) ||
+                                null,
+                            }
+                          );
+                          return label || "";
+                        })()}
+                      </div>
+                    </span>
                   </div>
                 )}
-                {/* Owner edit/delete actions now live in the Sign-up board header */}
+                {(() => {
+                  const text = combinedLocation || signupForm.location || "";
+                  if (!text) return null;
+                  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    text
+                  )}`;
+                  return (
+                    <a
+                      href={mapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[0.95rem] underline text-foreground/70"
+                    >
+                      {signupForm.venue ? signupForm.venue : ""}
+                      {signupForm.venue &&
+                      (signupForm.location || combinedLocation)
+                        ? ", "
+                        : ""}
+                      {signupForm.location || combinedLocation}
+                    </a>
+                  );
+                })()}
               </div>
             </div>
+            {signupForm.description && (
+              <div className="mt-3">
+                <p
+                  className="leading-relaxed text-sm"
+                  style={{ color: header?.textColor1 || undefined }}
+                >
+                  {signupForm.description}
+                </p>
+              </div>
+            )}
             {/* Guest share actions inside header footer */}
             <div className="mt-4 pt-3 border-t border-border/60">
               <EventActions

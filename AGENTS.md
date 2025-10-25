@@ -399,9 +399,14 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - Reserve: `{ action: "reserve", slots: Array<{ sectionId: string, slotId: string, quantity?: number }>, name: string, email?: string, phone?: string, guests?: number, note?: string, answers?: Array<{ questionId: string, value: string }>, signupId?: string }`.
   - Cancel: `{ action: "cancel", signupId: string }`.
 - **Behavior**:
-  - Validates slot availability, per-person limits, and required questions based on `data.signupForm.settings`.
+  - Validates slot availability, per-person limits, and required questions based on the form's `settings`.
   - Applies automatic waitlisting and promotions: when capacity frees up, earliest waitlisted responses are moved to confirmed.
-  - Persists updates to `event_history.data.signupForm.responses`, recording timestamps and statuses (`confirmed`, `waitlisted`, `cancelled`).
+  - Persists updates to both places for backward compatibility:
+    - Normalized table: `signup_forms.form` (authoritative)
+    - Legacy JSON: `event_history.data.signupForm` (kept in sync)
+- **Storage**:
+  - Normalized table `signup_forms(event_id uuid primary key references event_history(id) on delete cascade, form jsonb, created_at, updated_at)` stores the full form including `responses`.
+  - When a legacy-only form exists in `event_history.data.signupForm`, the API backfills it into `signup_forms` on first access.
 - **Output**: `{ ok: true, signupForm, response? }` with the normalized form state and (for reserve) the caller's latest response. Errors return `{ error }` with HTTP 4xx/5xx codes.
 - **Notes**: Fails with 400 when the event lacks a sign-up form. Contact fields are optional unless the sign-up settings require them.
 
@@ -559,6 +564,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-25: History Signup now stores forms in normalized `signup_forms` table (with backfill from `event_history.data.signupForm`) and keeps the legacy JSON in sync for backward compatibility.
 - 2025-10-21: Event detail pages now surface a guided RSVP prompt when a phone number is available. Guests can tap **Yes**, **No**, or **Maybe** to launch an SMS with prefilled copy, after sharing their contact details. We cache the sender info in `localStorage` (`snapmydate:rsvp-sender`) so future RSVPs prefill, and declining shows a confirmation message with the host’s contact.
 - 2025-10-20: Added admin dashboard endpoints `GET /api/admin/users/filter` (segmented user views) and `GET /api/admin/stats` (overview metrics + top scanners), plus `/api/debug-egress` for richer outbound network diagnostics.
 - 2025-10-18: Added optional `registries` (Amazon/Target/Walmart/Babylist/MyRegistry links), file `attachment`, and `venue` to NormalizedEvent. Event create/edit flows capture up to three shareable registries for **Birthdays**, **Weddings**, and **Baby Showers**, support image/PDF uploads for all categories, the event detail page renders branded registry cards plus attachment downloads, and calendar mappers still deduplicate venues while keeping same-day ranges formatted as "start – end". Added Baby Showers as a top-level category with registry + RSVP support and sidebar icon.

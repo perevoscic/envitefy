@@ -1196,11 +1196,8 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
       {
         root: null,
         threshold: 0,
-        // Moderate early un-float to avoid overlap but still allow stickiness
-        rootMargin: `0px 0px -${Math.max(
-          72,
-          Math.min(140, Math.round(previewFixedHeightPx * 0.5))
-        )}px 0px`,
+        // Un-float as soon as the sentinel enters the viewport
+        rootMargin: `0px 0px 0px 0px`,
       }
     );
     io.observe(node);
@@ -1226,11 +1223,8 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
       {
         root: null,
         threshold: 0,
-        // Guard zone before image placement to dock preview sooner, but not too early
-        rootMargin: `0px 0px -${Math.max(
-          100,
-          Math.min(180, Math.round(previewFixedHeightPx * 0.7))
-        )}px 0px`,
+        // Dock as soon as the guard sentinel appears
+        rootMargin: `0px 0px 0px 0px`,
       }
     );
     io.observe(node);
@@ -1284,12 +1278,12 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Headline description
               </label>
-              <input
-                type="text"
+              <textarea
                 value={form.description || ""}
                 onChange={(event) =>
                   onChange({ ...form, description: event.target.value })
                 }
+                rows={3}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 placeholder="Let guests know how to prepare."
               />
@@ -1673,7 +1667,7 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                 ))}
               </div>
             </div>
-            + <div ref={overlapRef} />
+            <div ref={overlapRef} />
             {/* Image placement (grouped uploads) */}
             <div className="sm:col-span-2 rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
               <label className="block text-xs uppercase tracking-wide text-foreground/60">
@@ -1765,204 +1759,212 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
             <div className="sm:col-span-2">
               {/* spacer to prevent layout jump when preview is fixed */}
               {previewFloating ? (
-                <div style={{ height: `${previewFixedHeightPx}px` }} />
+                <div style={{ height: `${previewFixedHeightPx + 32}px` }} />
               ) : null}
               <div
                 ref={previewRef}
                 className={
                   previewFloating
-                    ? "fixed left-1/2 -translate-x-1/2 bottom-1 z-30 w-[min(720px,calc(100vw-2rem))]"
+                    ? "fixed left-1/2 -translate-x-1/2 bottom-16 md:bottom-20 z-30 w-[min(720px,calc(100vw-2rem))]"
                     : "relative z-10"
                 }
               >
-                <div className="rounded-xl overflow-hidden border shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
-                  <section
-                    className="px-5 py-6"
-                    style={{
-                      backgroundColor:
-                        form.header?.backgroundColor || undefined,
-                      backgroundImage: form.header?.backgroundCss || undefined,
-                      backgroundSize: form.header?.backgroundCss
-                        ? "cover"
-                        : undefined,
-                      backgroundPosition: form.header?.backgroundCss
-                        ? "center"
-                        : undefined,
-                    }}
-                  >
-                    <p className="text-xs text-foreground/70 mb-2 text-center">
-                      Header preview
-                    </p>
-                    {(form.header?.templateId || "header-1") === "header-3" && (
-                      <div className="mb-4">
-                        {form.header?.images?.[0]?.dataUrl ? (
-                          <img
-                            src={form.header.images[0].dataUrl}
-                            alt="banner"
-                            className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-border"
-                          />
-                        ) : (
-                          <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                            Full-width image
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {(form.header?.templateId || "header-1") === "header-4" && (
-                      <div className="relative mb-16">
-                        {form.header?.images?.[0]?.dataUrl ? (
-                          <img
-                            src={form.header.images[0].dataUrl}
-                            alt="banner"
-                            className="w-full h-40 sm:h-56 object-cover rounded-xl border border-border"
-                          />
-                        ) : (
-                          <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                            Banner image
-                          </div>
-                        )}
-                        <div className="absolute left-6 -bottom-10">
-                          {form.header?.images?.[1]?.dataUrl ? (
-                            <img
-                              src={form.header.images[1].dataUrl}
-                              alt="square"
-                              className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
-                            />
-                          ) : form.header?.backgroundImage?.dataUrl ? (
-                            <img
-                              src={form.header.backgroundImage.dataUrl}
-                              alt="square"
-                              className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
-                            />
-                          ) : (
-                            <div className="w-40 h-40 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60 bg-background/70">
-                              Top-left image
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div
-                      className={`grid gap-4 items-start ${
-                        (form.header?.templateId || "header-1") === "header-2"
-                          ? "md:grid-cols-[1fr_325px]"
-                          : (form.header?.templateId || "header-1") ===
-                            "header-4"
-                          ? "md:grid-cols-[325px_1fr]"
-                          : (form.header?.templateId || "header-1") ===
-                            "header-5"
-                          ? "md:grid-cols-2"
-                          : (form.header?.templateId || "header-1") ===
-                            "header-6"
-                          ? "md:grid-cols-3"
-                          : "md:grid-cols-[325px_1fr]"
-                      }`}
+                <div className="rounded-xl overflow-hidden border shadow-sm">
+                  <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur max-h-[70vh] overflow-auto">
+                    <section
+                      className="px-5 py-6"
+                      style={{
+                        backgroundColor:
+                          form.header?.backgroundColor || undefined,
+                        backgroundImage:
+                          form.header?.backgroundCss || undefined,
+                        backgroundSize: form.header?.backgroundCss
+                          ? "cover"
+                          : undefined,
+                        backgroundPosition: form.header?.backgroundCss
+                          ? "center"
+                          : undefined,
+                      }}
                     >
-                      {((form.header?.templateId || "header-1") ===
-                        "header-1" ||
-                        (form.header?.templateId || "header-1") ===
-                          "header-2") && (
-                        <div
-                          className={`relative ${
-                            (form.header?.templateId || "header-1") ===
-                            "header-2"
-                              ? "order-2"
-                              : "order-1"
-                          }`}
-                        >
-                          {form.header?.backgroundImage?.dataUrl ? (
+                      <p className="text-xs text-foreground/70 mb-2 text-center">
+                        Header preview
+                      </p>
+                      {(form.header?.templateId || "header-1") ===
+                        "header-3" && (
+                        <div className="mb-4">
+                          {form.header?.images?.[0]?.dataUrl ? (
                             <img
-                              src={form.header.backgroundImage.dataUrl}
-                              alt="header"
-                              className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
+                              src={form.header.images[0].dataUrl}
+                              alt="banner"
+                              className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-border"
                             />
                           ) : (
-                            <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
-                              Top-left image
+                            <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                              Full-width image
                             </div>
                           )}
                         </div>
                       )}
-                      {((form.header?.templateId || "header-1") ===
-                        "header-5" ||
-                        (form.header?.templateId || "header-1") ===
-                          "header-6") && (
-                        <div
-                          className={`${
-                            (form.header?.templateId || "header-1") ===
-                            "header-6"
-                              ? "col-span-3"
-                              : "col-span-2"
-                          }`}
-                        >
-                          <div
-                            className={`grid gap-3 ${
-                              (form.header?.templateId || "header-1") ===
-                              "header-6"
-                                ? "grid-cols-3"
-                                : "grid-cols-2"
-                            }`}
-                          >
-                            {((form.header?.templateId || "header-1") ===
-                            "header-6"
-                              ? [0, 1, 2]
-                              : [0, 1]
-                            ).map((i) =>
-                              form.header?.images?.[i]?.dataUrl ? (
-                                <img
-                                  key={i}
-                                  src={form.header.images[i].dataUrl}
-                                  alt={`image-${i}`}
-                                  className="w-full h-36 object-cover rounded-xl border border-border"
-                                />
-                              ) : (
-                                <div
-                                  key={i}
-                                  className="w-full h-36 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
-                                >
-                                  Image {i + 1}
-                                </div>
-                              )
+                      {(form.header?.templateId || "header-1") ===
+                        "header-4" && (
+                        <div className="relative mb-16">
+                          {form.header?.images?.[0]?.dataUrl ? (
+                            <img
+                              src={form.header.images[0].dataUrl}
+                              alt="banner"
+                              className="w-full h-40 sm:h-56 object-cover rounded-xl border border-border"
+                            />
+                          ) : (
+                            <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                              Banner image
+                            </div>
+                          )}
+                          <div className="absolute left-6 -bottom-10">
+                            {form.header?.images?.[1]?.dataUrl ? (
+                              <img
+                                src={form.header.images[1].dataUrl}
+                                alt="square"
+                                className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
+                              />
+                            ) : form.header?.backgroundImage?.dataUrl ? (
+                              <img
+                                src={form.header.backgroundImage.dataUrl}
+                                alt="square"
+                                className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
+                              />
+                            ) : (
+                              <div className="w-40 h-40 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60 bg-background/70">
+                                Top-left image
+                              </div>
                             )}
                           </div>
                         </div>
                       )}
                       <div
-                        className={`${
+                        className={`grid gap-4 items-start ${
                           (form.header?.templateId || "header-1") === "header-2"
-                            ? "order-1"
-                            : "order-2"
-                        } flex flex-col gap-3`}
+                            ? "md:grid-cols-[1fr_325px]"
+                            : (form.header?.templateId || "header-1") ===
+                              "header-4"
+                            ? "md:grid-cols-[325px_1fr]"
+                            : (form.header?.templateId || "header-1") ===
+                              "header-5"
+                            ? "md:grid-cols-2"
+                            : (form.header?.templateId || "header-1") ===
+                              "header-6"
+                            ? "md:grid-cols-3"
+                            : "md:grid-cols-[325px_1fr]"
+                        }`}
                       >
-                        {form.header?.groupName ? (
+                        {((form.header?.templateId || "header-1") ===
+                          "header-1" ||
+                          (form.header?.templateId || "header-1") ===
+                            "header-2") && (
                           <div
-                            className="text-xs font-semibold opacity-85"
+                            className={`relative ${
+                              (form.header?.templateId || "header-1") ===
+                              "header-2"
+                                ? "order-2"
+                                : "order-1"
+                            }`}
+                          >
+                            {form.header?.backgroundImage?.dataUrl ? (
+                              <img
+                                src={form.header.backgroundImage.dataUrl}
+                                alt="header"
+                                className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
+                              />
+                            ) : (
+                              <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                                Top-left image
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {((form.header?.templateId || "header-1") ===
+                          "header-5" ||
+                          (form.header?.templateId || "header-1") ===
+                            "header-6") && (
+                          <div
+                            className={`${
+                              (form.header?.templateId || "header-1") ===
+                              "header-6"
+                                ? "col-span-3"
+                                : "col-span-2"
+                            }`}
+                          >
+                            <div
+                              className={`grid gap-3 ${
+                                (form.header?.templateId || "header-1") ===
+                                "header-6"
+                                  ? "grid-cols-3"
+                                  : "grid-cols-2"
+                              }`}
+                            >
+                              {((form.header?.templateId || "header-1") ===
+                              "header-6"
+                                ? [0, 1, 2]
+                                : [0, 1]
+                              ).map((i) =>
+                                form.header?.images?.[i]?.dataUrl ? (
+                                  <img
+                                    key={i}
+                                    src={form.header.images[i].dataUrl}
+                                    alt={`image-${i}`}
+                                    className="w-full h-36 object-cover rounded-xl border border-border"
+                                  />
+                                ) : (
+                                  <div
+                                    key={i}
+                                    className="w-full h-36 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
+                                  >
+                                    Image {i + 1}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          className={`${
+                            (form.header?.templateId || "header-1") ===
+                            "header-2"
+                              ? "order-1"
+                              : "order-2"
+                          } flex flex-col gap-3`}
+                        >
+                          {form.header?.groupName ? (
+                            <div
+                              className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
+                              style={{
+                                color: form.header?.textColor1 || undefined,
+                              }}
+                            >
+                              {form.header.groupName}
+                            </div>
+                          ) : null}
+                          <h3
+                            className="text-2xl sm:text-[1.6rem] font-semibold"
                             style={{
-                              color: form.header?.textColor1 || undefined,
+                              color: form.header?.textColor2 || undefined,
                             }}
                           >
-                            {form.header.groupName}
-                          </div>
-                        ) : null}
-                        <h3
-                          className="text-lg font-semibold"
+                            {form.title || "Smart sign-up"}
+                          </h3>
+                        </div>
+                      </div>
+                      {form.description && (
+                        <p
+                          className="mt-3 text-[0.95rem] max-w-2xl opacity-90"
                           style={{
-                            color: form.header?.textColor2 || undefined,
+                            color: form.header?.textColor1 || undefined,
                           }}
                         >
-                          {form.title || "Smart sign-up"}
-                        </h3>
-                      </div>
-                    </div>
-                    {form.description && (
-                      <p
-                        className="mt-3 text-sm max-w-2xl opacity-90"
-                        style={{ color: form.header?.textColor1 || undefined }}
-                      >
-                        {form.description}
-                      </p>
-                    )}
-                  </section>
+                          {form.description}
+                        </p>
+                      )}
+                    </section>
+                  </div>
                 </div>
               </div>
               {/* Sentinel placed after the preview; when visible, we unfix the preview so it docks at the bottom */}

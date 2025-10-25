@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import type { SignupForm, SignupResponse } from "@/types/signup";
@@ -138,6 +139,7 @@ const SignupViewer: React.FC<Props> = ({
   ownerEventTitle,
   ownerEventData,
 }) => {
+  const router = useRouter();
   const [form, setForm] = useState<SignupForm>(initialForm);
   const [selectedSlots, setSelectedSlots] = useState<SlotSelectionMap>({});
   const [name, setName] = useState<string>(
@@ -154,6 +156,7 @@ const SignupViewer: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const feedback = useStatusMessage(serverMessage, 4000);
   const canInteract = viewerKind !== "readonly";
@@ -414,6 +417,7 @@ const SignupViewer: React.FC<Props> = ({
       } else {
         setServerMessage("Saved! We'll send reminders before the event.");
       }
+      setConfirmOpen(true);
     } catch (err: unknown) {
       console.error("Failed to submit signup:", err);
       setError("Unexpected error. Please try again.");
@@ -482,6 +486,55 @@ const SignupViewer: React.FC<Props> = ({
                 eventData={ownerEventData}
                 eventTitle={ownerEventTitle || "Event"}
               />
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const originalTitle = ownerEventTitle || "Smart sign-up";
+                    const dataCopy: any = { ...(ownerEventData || {}) };
+                    if (
+                      dataCopy.signupForm &&
+                      typeof dataCopy.signupForm === "object"
+                    ) {
+                      dataCopy.signupForm = {
+                        ...dataCopy.signupForm,
+                        title: `Copy of ${
+                          dataCopy.signupForm.title || originalTitle
+                        }`,
+                        responses: [],
+                      };
+                    }
+                    if (dataCopy.shared) delete dataCopy.shared;
+                    if (dataCopy.sharedOut) delete dataCopy.sharedOut;
+                    try {
+                      sessionStorage.setItem(
+                        "snapmydate:signup-duplicate",
+                        JSON.stringify({ originalTitle, dataCopy })
+                      );
+                    } catch {}
+                    router.push(`/smart-signup-form?duplicate=1`);
+                  } catch (err: any) {
+                    alert(String(err?.message || err || "Could not duplicate"));
+                  }
+                }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-foreground/70 hover:text-foreground hover:bg-surface transition-colors"
+                title="Duplicate form"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                <span className="hidden sm:inline">Duplicate</span>
+              </button>
               <EventDeleteModal
                 eventId={eventId}
                 eventTitle={ownerEventTitle || "Event"}
@@ -971,6 +1024,50 @@ const SignupViewer: React.FC<Props> = ({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setConfirmOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-background shadow-lg">
+            <div className="p-4 sm:p-5 space-y-3">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                {feedback?.includes("waitlist")
+                  ? "You're on the waitlist"
+                  : "Sign-up saved"}
+              </h3>
+              <p className="text-sm text-foreground/70">
+                {feedback?.includes("waitlist")
+                  ? "We'll promote you automatically if spots open up."
+                  : `We've saved your sign-up${
+                      form.settings.collectEmail &&
+                      (email?.trim() || myResponse?.email)
+                        ? ` and sent a confirmation to ${(
+                            email ||
+                            myResponse?.email ||
+                            ""
+                          ).trim()}.`
+                        : "."
+                    }`}
+              </p>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                  onClick={() => setConfirmOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
