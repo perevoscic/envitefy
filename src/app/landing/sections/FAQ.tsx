@@ -28,11 +28,11 @@ const qs = [
   },
   {
     q: "What are the available subscription plans?",
-    a: "Snap My Date offers various plans, including a free tier that comes with a set number of credits for event extractions. Paid plans provide more features and additional credits, catering to different usage needs. You can view detailed plan information on our Subscription page.",
+    a: "Snap My Date offers a freemium tier with core features plus monthly and yearly subscriptions that unlock advanced automation, faster processing, and premium support. You can view the full breakdown on our Subscription page.",
   },
   {
     q: "How do promo codes work?",
-    a: "Promo codes can be used to extend your subscription or gift credits to others. If you have a code, you can redeem it via your Subscription settings to instantly update your account benefits. Promo codes are a great way to enjoy more of Snap My Date's features!",
+    a: "Promo codes extend your subscription or gift extra subscription time to someone else. Redeem them from your Subscription settings to apply the added benefits instantly.",
   },
   {
     q: "Which calendar services does Snap My Date support for direct integration?",

@@ -316,8 +316,8 @@ export async function createUserWithEmailPassword(params: {
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
-     values ($1, $2, $3, $4, 'freemium', false, 3)
+    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid)
+     values ($1, $2, $3, $4, 'freemium', false)
      returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, firstName || null, lastName || null, password_hash]
   );
@@ -362,8 +362,8 @@ export async function createOrUpdateOAuthUser(params: {
 
   // Create new OAuth user with NULL password_hash
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid, credits)
-     values ($1, $2, $3, NULL, 'freemium', false, 3)
+    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid)
+     values ($1, $2, $3, NULL, 'freemium', false)
      returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
     [lower, params.firstName || null, params.lastName || null]
   );

@@ -307,7 +307,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Auth**: None.
 - **Input (JSON)**: `{ email: string, password: string, firstName?: string, lastName?: string, recaptchaToken?: string }`.
 - **Behavior**:
-  - New users are created with `subscription_plan = "freemium"` and `credits = 3`.
+  - New users are created with `subscription_plan = "freemium"` and no initial credits assignment (legacy `credits` column remains `NULL`).
   - Verifies reCAPTCHA v3 token if provided and `RECAPTCHA_SECRET_KEY` is configured.
   - Requires score > 0.5 for reCAPTCHA v3.
   - Falls back gracefully if reCAPTCHA is not configured.
@@ -324,7 +324,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Providers**: NextAuth configured with Google OAuth provider.
 - **Behavior**:
   - Users can sign in/up using their Google account.
-  - On first Google sign-in, a new user account is created automatically with `subscription_plan = "freemium"` and `credits = 3`.
+  - On first Google sign-in, a new user account is created automatically with `subscription_plan = "freemium"` and leaves the legacy `credits` column `NULL`.
   - Existing users can link their Google account by signing in with Google using the same email.
   - OAuth users have `password_hash = NULL` in the database (no password required).
   - User profile (first_name, last_name) is populated from Google profile data.
@@ -565,6 +565,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-10-25: Signup and OAuth user creation now leave the legacy `credits` column `NULL` (no default allotment) while keeping `subscription_plan = "freemium"`; update FAQ to reflect the retirement of credits.
 - 2025-10-25: History Signup now stores forms in normalized `signup_forms` table (with backfill from `event_history.data.signupForm`) and keeps the legacy JSON in sync for backward compatibility.
 - 2025-10-21: Event detail pages now surface a guided RSVP prompt when a phone number is available. Guests can tap **Yes**, **No**, or **Maybe** to launch an SMS with prefilled copy, after sharing their contact details. We cache the sender info in `localStorage` (`snapmydate:rsvp-sender`) so future RSVPs prefill, and declining shows a confirmation message with the host’s contact.
 - 2025-10-20: Added admin dashboard endpoints `GET /api/admin/users/filter` (segmented user views) and `GET /api/admin/stats` (overview metrics + top scanners), plus `/api/debug-egress` for richer outbound network diagnostics.
