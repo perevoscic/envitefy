@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  cloneElement,
+  isValidElement,
   useCallback,
   useEffect,
   useRef,
@@ -9,6 +11,28 @@ import {
 } from "react";
 import Link from "next/link";
 import { Camera, Upload, CalendarPlus, ClipboardList } from "lucide-react";
+
+type HighlightTone = "primary" | "secondary" | "accent" | "success";
+
+const TONE_STYLES: Record<HighlightTone, { iconBg: string; iconText: string }> =
+  {
+    primary: {
+      iconBg: "bg-primary/15",
+      iconText: "text-primary",
+    },
+    secondary: {
+      iconBg: "bg-secondary/15",
+      iconText: "text-secondary",
+    },
+    accent: {
+      iconBg: "bg-accent/15",
+      iconText: "text-accent",
+    },
+    success: {
+      iconBg: "bg-success/15",
+      iconText: "text-success",
+    },
+  };
 
 export default function Home() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -74,50 +98,53 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-pink-50 flex flex-col items-center justify-center px-4 py-10">
-      <div className="text-center mb-8">
-        <img
-          src="/icons/icon-180.png"
-          alt="Snap My Date"
-          className="mx-auto w-24 h-24 rounded-full shadow-md mb-3"
-        />
-        <h1 className="text-3xl font-bold text-gray-800">
+    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-16 text-foreground md:px-8">
+      <div className="mb-12 flex flex-col items-center text-center">
+        <div className="mb-6 inline-flex h-24 w-24 items-center justify-center rounded-full border border-border/60 bg-surface/90 shadow-[0_22px_45px_-24px_var(--theme-card-glow)] backdrop-blur-sm">
+          <img
+            src="/icons/icon-180.png"
+            alt="Snap My Date"
+            className="h-16 w-16 rounded-full shadow-sm"
+          />
+        </div>
+        <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
           Plan Something Great!
         </h1>
-        <p className="text-gray-500 mt-2">
-          Choose how you want to start - snap it, upload it, create new, or set
-          up a sign-up form.
+        <p className="mt-3 max-w-2xl text-base text-muted-foreground md:text-lg">
+          Choose how you want to start - scan it, upload it, create it from
+          scratch, or launch a smart sign-up. Every option adapts to your theme,
+          from cozy holidays to sleek dark mode.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
+      <div className="grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <OptionCard
-          title="Snap with Camera"
-          description="Quickly capture your invite or flyer using your camera and let Snap My Date auto-detect event details."
-          icon={<Camera className="w-10 h-10 text-pink-500" />}
-          href={undefined}
+          title="Scan"
+          description="Scan any flyer or invitation and we'll add it to your calendar."
+          icon={<Camera className="h-10 w-10" />}
+          tone="primary"
           onClick={onSnap}
         />
         <OptionCard
-          title="Upload Flyer or PDF"
-          description="Upload any saved invitation or document. We'll extract the event info and add it to your calendar."
-          icon={<Upload className="w-10 h-10 text-blue-500" />}
-          href={undefined}
+          title="Upload"
+          description="Upload any saved invitation, and add it to your calendar."
+          icon={<Upload className="h-10 w-10" />}
+          tone="secondary"
           onClick={onUpload}
         />
         <OptionCard
-          title="Create Event Manually"
-          description="Want full control? Start from scratch and fill in your event details manually."
-          icon={<CalendarPlus className="w-10 h-10 text-green-500" />}
-          href={undefined}
+          title="Create Event"
+          description="Use our advanced creation tools for more control."
+          icon={<CalendarPlus className="h-10 w-10" />}
+          tone="accent"
           onClick={openCreateEvent}
         />
         <OptionCard
-          title="Smart Sign-Up Form"
-          description="Create interactive sign-up sheets for parties, volunteers, fundraisers, or school events in seconds."
-          icon={<ClipboardList className="w-10 h-10 text-purple-500" />}
+          title="Sign-Up Form"
+          description="Smart forms for school events, volunteers, or any event."
+          icon={<ClipboardList className="h-10 w-10" />}
+          tone="success"
           href="/smart-signup-form"
-          onClick={undefined}
         />
       </div>
 
@@ -138,8 +165,8 @@ export default function Home() {
       />
 
       {pickedName ? (
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 truncate">
-          Selected: {pickedName}
+        <p className="mt-6 max-w-6xl truncate text-sm text-muted-foreground">
+          Selected file: {pickedName}
         </p>
       ) : null}
     </main>
@@ -151,36 +178,66 @@ function OptionCard({
   title,
   icon,
   description,
+  tone = "primary",
   onClick,
 }: {
   href?: string;
   title: string;
   icon: ReactNode;
   description: string;
+  tone?: HighlightTone;
   onClick?: () => void;
 }) {
+  const toneClass = TONE_STYLES[tone] ?? TONE_STYLES.primary;
+
+  const renderedIcon =
+    isValidElement(icon)
+      ? cloneElement(icon, {
+          className: [
+            icon.props.className ?? "",
+            toneClass.iconText,
+            "transition-transform duration-300",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        })
+      : icon;
+
   const content = (
-    <div className="group bg-white p-6 rounded-2xl shadow hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-pink-200 cursor-pointer">
-      <div className="flex flex-col items-center text-center space-y-3">
-        <div className="bg-pink-50 p-3 rounded-full group-hover:scale-105 transition">
-          {icon}
+    <div
+      className="group relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 p-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)] cursor-pointer"
+      data-card-tone={tone}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-70"
+        style={{
+          background:
+            "radial-gradient(120% 120% at 50% 0%, var(--theme-overlay) 0%, transparent 60%)",
+        }}
+        aria-hidden
+      />
+      <div className="relative flex flex-col items-center space-y-4 text-center">
+        <div
+          className={`rounded-full p-3 transition-transform duration-300 group-hover:scale-105 ${toneClass.iconBg}`}
+        >
+          {renderedIcon}
         </div>
-        <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
-        <p className="text-gray-500 text-sm">{description}</p>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
   );
 
   if (href) {
     return (
-      <Link href={href} onClick={onClick}>
+      <Link href={href} onClick={onClick} className="block">
         {content}
       </Link>
     );
   }
 
   return (
-    <button type="button" onClick={onClick} className="text-left">
+    <button type="button" onClick={onClick} className="block w-full text-left">
       {content}
     </button>
   );
