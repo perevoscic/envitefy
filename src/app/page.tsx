@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
   type ChangeEvent,
+  type MouseEvent,
+  type KeyboardEvent,
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -126,10 +128,15 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid w-full max-w-6xl grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
         <OptionCard
           title="Scan"
           description="Scan any flyer or invitation and we'll add it to your calendar."
+          details={[
+            "Use your camera to capture invites on the spot.",
+            "AI extracts dates, locations, and RSVP details automatically.",
+            "Export straight to Google, Outlook, or an ICS download.",
+          ]}
           artwork={<ScanIllustration />}
           tone="primary"
           onClick={onSnap}
@@ -137,6 +144,11 @@ export default function Home() {
         <OptionCard
           title="Upload"
           description="Upload any saved invitation, and add it to your calendar."
+          details={[
+            "Drop PDFs, screenshots, or photos from your library.",
+            "Smart cleanup handles decorative fonts and tricky layouts.",
+            "Store the parsed event in History for quick edits later.",
+          ]}
           artwork={<UploadIllustration />}
           tone="secondary"
           onClick={onUpload}
@@ -144,6 +156,11 @@ export default function Home() {
         <OptionCard
           title="Create Event"
           description="Use our advanced creation tools for more control."
+          details={[
+            "Start from scratch with precise times, reminders, and notes.",
+            "Add recurrence rules, categories, and custom reminders.",
+            "One-click insert into your connected calendars or share via link.",
+          ]}
           artwork={<CreateEventIllustration />}
           tone="accent"
           onClick={openCreateEvent}
@@ -151,6 +168,11 @@ export default function Home() {
         <OptionCard
           title="Sign-Up Form"
           description="Smart forms for school events, volunteers, or any event."
+          details={[
+            "Build RSVP and volunteer sheets with slot limits and questions.",
+            "Automatic waitlists, confirmations, and attendee tracking.",
+            "Share a single link that syncs responses in real time.",
+          ]}
           artwork={<SignUpIllustration />}
           tone="success"
           href="/smart-signup-form"
@@ -182,11 +204,54 @@ export default function Home() {
   );
 }
 
+function FlipHintIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M7 5h9.5a.5.5 0 01.5.5V11" />
+      <path d="M16 9l2 2 2-2" />
+      <path d="M17 19H7.5a.5.5 0 01-.5-.5V13" />
+      <path d="M8 15l-2-2-2 2" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M6 6L18 18" />
+      <path d="M18 6L6 18" />
+    </svg>
+  );
+}
+
 function OptionCard({
   href,
   title,
   artwork,
   description,
+  details,
   tone = "primary",
   onClick,
 }: {
@@ -194,14 +259,64 @@ function OptionCard({
   title: string;
   artwork: ReactNode;
   description: string;
+  details?: string[];
   tone?: HighlightTone;
   onClick?: () => void;
 }) {
   const toneClass = TONE_STYLES[tone] ?? TONE_STYLES.primary;
+  const [showDetails, setShowDetails] = useState(false);
 
-  const content = (
+  const handlePrimaryAction = (
+    event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+  ) => {
+    if (showDetails) {
+      event.preventDefault();
+      setShowDetails(false);
+      return;
+    }
+    onClick?.();
+  };
+
+  const openDetails = () => setShowDetails(true);
+
+  const handleInfoPointer = (
+    event: MouseEvent<HTMLSpanElement> | KeyboardEvent<HTMLSpanElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!showDetails) {
+      openDetails();
+    }
+  };
+
+  const handleInfoKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      handleInfoPointer(event);
+    }
+  };
+
+  const closeDetails = (
+    event?: MouseEvent<HTMLButtonElement | HTMLDivElement> | KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setShowDetails(false);
+  };
+
+  const primaryWrapperClass = [
+    "group block h-full w-full text-left focus:outline-none",
+    showDetails ? "pointer-events-none select-none" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const primaryTabIndex = showDetails ? -1 : undefined;
+
+  const frontCard = (
     <div
-      className="group relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 p-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)] cursor-pointer"
+      className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 p-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
       data-card-tone={tone}
     >
       <div
@@ -212,6 +327,16 @@ function OptionCard({
         }}
         aria-hidden
       />
+      <span
+        role="button"
+        tabIndex={showDetails ? -1 : 0}
+        aria-label="Show details"
+        className="absolute right-3 top-3 z-10 inline-flex items-center justify-center bg-transparent p-1 text-black transition hover:text-black/75 focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white/60 dark:focus-visible:ring-offset-0"
+        onClick={handleInfoPointer}
+        onKeyDown={handleInfoKeyDown}
+      >
+        <FlipHintIcon className="h-6 w-6" />
+      </span>
       <div className="relative flex flex-col items-center space-y-4 text-center">
         <div
           className={[
@@ -224,25 +349,98 @@ function OptionCard({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
           <div className="relative w-full">{artwork}</div>
         </div>
-        <h2 className="text-lg font-semibold text-foreground">
-          {title}
-        </h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       </div>
     </div>
   );
 
-  if (href) {
-    return (
-      <Link href={href} onClick={onClick} className="block">
-        {content}
-      </Link>
-    );
-  }
+  const backCard = (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={closeDetails}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          closeDetails(event);
+        }
+      }}
+      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-surface/95 p-6 text-left shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-transform duration-300 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      data-card-tone={tone}
+      style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+    >
+      <button
+        type="button"
+        aria-label="Hide details"
+        className="absolute right-3 top-3 inline-flex items-center justify-center bg-transparent p-1 text-black transition hover:text-black/75 focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white/60 dark:focus-visible:ring-offset-0"
+        onClick={closeDetails}
+      >
+        <CloseIcon className="h-5 w-5" />
+      </button>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background:
+            "radial-gradient(140% 140% at 50% 15%, var(--theme-overlay) 0%, transparent 65%)",
+        }}
+        aria-hidden
+      />
+      <div className="relative mx-auto flex max-w-xs flex-1 flex-col justify-center gap-4 text-center">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        {details?.length ? (
+          <ul className="space-y-2 text-left text-sm text-muted-foreground">
+            {details.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-current opacity-60" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </div>
+  );
 
-  return (
-    <button type="button" onClick={onClick} className="block w-full text-left">
-      {content}
+  const frontWrapper = href ? (
+    <Link
+      href={href}
+      onClick={handlePrimaryAction}
+      className={primaryWrapperClass}
+      tabIndex={primaryTabIndex}
+    >
+      {frontCard}
+    </Link>
+  ) : (
+    <button
+      type="button"
+      onClick={handlePrimaryAction}
+      className={primaryWrapperClass}
+      tabIndex={showDetails ? -1 : 0}
+    >
+      {frontCard}
     </button>
   );
+
+  return (
+    <div className="relative h-full w-full [perspective:2000px]">
+      <div
+        className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]"
+        style={{ transform: showDetails ? "rotateY(180deg)" : "rotateY(0deg)" }}
+      >
+        <div
+          className="relative h-full w-full"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          {frontWrapper}
+        </div>
+        {backCard}
+      </div>
+    </div>
+  );
 }
+
+
+
+
