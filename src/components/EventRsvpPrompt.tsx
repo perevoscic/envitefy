@@ -181,7 +181,7 @@ export default function EventRsvpPrompt({
     if (shareUrl) {
       lines.push("", `Event link: ${shareUrl}`);
     }
-    lines.push("", "Sent via SnapMyDate · snapmydate.com");
+    lines.push("", "Sent via SnapMyDate · envitefy.com");
     const subject = `RSVP for ${eventTitle?.trim() || "your event"}`;
     const href = `mailto:${encodeURIComponent(
       rsvpEmail
@@ -365,3 +365,4 @@ export default function EventRsvpPrompt({
     </div>
   );
 }
+

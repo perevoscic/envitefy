@@ -264,7 +264,7 @@ export default function EventActions({
       absoluteUrl ? `Event link: ${absoluteUrl}` : undefined,
       "",
       "—",
-      "Sent via SnapMyDate · snapmydate.com",
+      "Sent via SnapMyDate · envitefy.com",
     ].filter(Boolean) as string[];
     const body = encodeURIComponent(parts.join("\n"));
     const subject = encodeURIComponent(title);
@@ -579,3 +579,4 @@ export default function EventActions({
     </div>
   );
 }
+

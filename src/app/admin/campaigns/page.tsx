@@ -262,7 +262,7 @@ export default function CampaignsPage() {
     const origin = window.location.origin || "";
     let baseUrl = origin;
     try {
-      const url = new URL(baseUrl || "https://snapmydate.com");
+      const url = new URL(baseUrl || "https://envitefy.com");
       const host = (url.hostname || "").toLowerCase();
       if (
         host === "localhost" ||
@@ -270,12 +270,12 @@ export default function CampaignsPage() {
         host.endsWith(".local") ||
         !url.protocol.startsWith("http")
       ) {
-        baseUrl = "https://snapmydate.com";
+        baseUrl = "https://envitefy.com";
       } else {
         baseUrl = `${url.protocol}//${url.host}`;
       }
     } catch {
-      baseUrl = "https://snapmydate.com";
+      baseUrl = "https://envitefy.com";
     }
     const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
     const socialIcons = [
@@ -682,7 +682,7 @@ ${socialIconsHtml}
                   type="url"
                   value={buttonUrl}
                   onChange={(e) => setButtonUrl(e.target.value)}
-                  placeholder="https://snapmydate.com/subscription"
+                  placeholder="https://envitefy.com/subscription"
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -955,3 +955,4 @@ ${socialIconsHtml}
     </div>
   );
 }
+

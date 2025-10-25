@@ -32,8 +32,8 @@ export default function EventSharePreviewPage() {
   const senderName = "John Doe";
   const eventTitle = "Sarah's Birthday Party";
   const acceptUrl =
-    "https://snapmydate.com/event/sarahs-birthday-party-123?accept=1";
-  const signupUrl = "https://snapmydate.com/?auth=signup";
+    "https://envitefy.com/event/sarahs-birthday-party-123?accept=1";
+  const signupUrl = "https://envitefy.com/?auth=signup";
   const greeting = "Hi Emily";
   const preheader = `${senderName} shared "${eventTitle}" with you`;
 
@@ -140,3 +140,4 @@ export default function EventSharePreviewPage() {
     </div>
   );
 }
+

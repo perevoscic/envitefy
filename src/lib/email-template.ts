@@ -30,7 +30,7 @@ export function createEmailTemplate(params: {
     process.env.APP_URL ||
     process.env.NEXTAUTH_URL ||
     "";
-  let baseUrl = candidate || "https://snapmydate.com";
+  let baseUrl = candidate || "https://envitefy.com";
   try {
     const u = new URL(baseUrl);
     const host = (u.hostname || "").toLowerCase();
@@ -40,10 +40,10 @@ export function createEmailTemplate(params: {
       host.endsWith(".local") ||
       u.protocol.startsWith("http") === false
     ) {
-      baseUrl = "https://snapmydate.com";
+      baseUrl = "https://envitefy.com";
     }
   } catch {
-    baseUrl = "https://snapmydate.com";
+    baseUrl = "https://envitefy.com";
   }
   const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
   const currentYear = new Date().getFullYear();
@@ -180,4 +180,5 @@ ${socialIconsRow}
   </body>
 </html>`;
 }
+
 

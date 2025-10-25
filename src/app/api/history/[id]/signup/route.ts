@@ -363,7 +363,7 @@ export async function POST(
               process.env.PUBLIC_BASE_URL ||
               process.env.APP_URL ||
               process.env.NEXTAUTH_URL ||
-              "https://snapmydate.com";
+              "https://envitefy.com";
             const eventUrl = `${baseUrl}/smart-signup-form/${id}`;
             await sendSignupConfirmationEmail({
               toEmail,

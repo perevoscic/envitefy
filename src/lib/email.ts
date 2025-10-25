@@ -57,8 +57,8 @@ export async function sendGiftEmail(params: {
     params.message ? `Message: ${params.message}` : "",
     "",
     autoRedeemed
-      ? "View your subscription: https://snapmydate.com/subscription"
-      : "Redeem here: https://snapmydate.com/subscription (Redeem a Snap)",
+      ? "View your subscription: https://envitefy.com/subscription"
+      : "Redeem here: https://envitefy.com/subscription (Redeem a Snap)",
   ]
     .filter(Boolean)
     .join("\n");
@@ -111,7 +111,7 @@ export async function sendGiftEmail(params: {
     title: autoRedeemed ? "Your gift has been added" : "You've received a gift",
     body,
     buttonText: autoRedeemed ? "View My Subscription" : "Redeem My Gift",
-    buttonUrl: "https://snapmydate.com/subscription",
+    buttonUrl: "https://envitefy.com/subscription",
     footerText: autoRedeemed 
       ? undefined 
       : `Having trouble? Copy and paste this code on the subscription page: <strong>${params.giftCode}</strong>`,
@@ -237,7 +237,7 @@ export async function sendShareEventEmail(params: {
     process.env.NEXT_PUBLIC_BASE_URL ||
     process.env.NEXTAUTH_URL ||
     process.env.PUBLIC_BASE_URL ||
-    "https://snapmydate.com";
+    "https://envitefy.com";
   const signupUrl = `${baseUrl}/?auth=signup`;
   const text = [
     `${senderName || params.ownerEmail} shared an event with you on Snap My Date.`,
@@ -412,7 +412,7 @@ export async function sendSubscriptionChangeEmail(params: {
     `Previous: ${oldPlanLabel}`,
     `New: ${newPlanLabel}`,
     ``,
-    `View your subscription: https://snapmydate.com/subscription`,
+    `View your subscription: https://envitefy.com/subscription`,
   ].join("\n");
 
   const html = createEmailTemplate({
@@ -420,7 +420,7 @@ export async function sendSubscriptionChangeEmail(params: {
     title: isUpgrade ? "Subscription Upgraded!" : "Subscription Updated",
     body,
     buttonText: "View My Subscription",
-    buttonUrl: "https://snapmydate.com/subscription",
+    buttonUrl: "https://envitefy.com/subscription",
   });
 
   const cmd = new SendEmailCommand({
@@ -500,7 +500,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
     title: "Password Changed",
     body,
     buttonText: "View My Account",
-    buttonUrl: "https://snapmydate.com/settings/profile",
+    buttonUrl: "https://envitefy.com/settings/profile",
     footerText,
   });
 
@@ -696,5 +696,6 @@ function maskEmail(email: string): string {
   const masked = `${user[0]}${"*".repeat(Math.max(1, user.length - 2))}${user[user.length - 1]}`;
   return `${masked}@${domain}`;
 }
+
 
 

@@ -65,7 +65,7 @@ export default function GiftCodePreviewPage() {
     title: "You've received a gift",
     body,
     buttonText: "Redeem My Gift",
-    buttonUrl: "https://snapmydate.com/subscription",
+    buttonUrl: "https://envitefy.com/subscription",
     footerText,
   });
 
@@ -138,3 +138,4 @@ export default function GiftCodePreviewPage() {
     </div>
   );
 }
+

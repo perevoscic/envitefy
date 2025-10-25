@@ -18,7 +18,7 @@
             <!-- Your production origin -->
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://snapmydate.com/" />
+                android:value="https://envitefy.com/" />
 
             <!-- Optional splash -->
             <meta-data
@@ -32,3 +32,4 @@
     </application>
 
 </manifest>
+

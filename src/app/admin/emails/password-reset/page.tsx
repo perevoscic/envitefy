@@ -29,7 +29,7 @@ export default function PasswordResetPreviewPage() {
   }
 
   // Generate sample email
-  const resetUrl = "https://snapmydate.com/reset?token=abc123xyz456";
+  const resetUrl = "https://envitefy.com/reset?token=abc123xyz456";
   const preheader = "We received a request to reset your password.";
 
   const body = `
@@ -122,3 +122,4 @@ export default function PasswordResetPreviewPage() {
     </div>
   );
 }
+

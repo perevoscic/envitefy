@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     status: ("CONFIRMED" as unknown) as any,
   });
   if (floating) evt.floating(true);
-  evt.organizer({ name: "Snap My Date", email: "noreply@snapmydate.com" });
+  evt.organizer({ name: "Snap My Date", email: "noreply@envitefy.com" });
   if (recurrence) {
     evt.repeating({
       rrule: recurrence,
@@ -70,4 +70,5 @@ export async function GET(request: Request) {
   // No side-effect update
   return response;
 }
+
 

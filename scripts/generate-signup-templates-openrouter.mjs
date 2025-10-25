@@ -42,7 +42,7 @@ if (!openrouterApiKey) {
   process.exit(1);
 }
 
-const appReferer = process.env.OPENROUTER_HTTP_REFERER || process.env.PUBLIC_BASE_URL || "https://snapmydate.com";
+const appReferer = process.env.OPENROUTER_HTTP_REFERER || process.env.PUBLIC_BASE_URL || "https://envitefy.com";
 const appTitle = process.env.OPENROUTER_X_TITLE || "Snap My Date";
 const model = (getArg("--model") || "openai/gpt-5-image-mini").toString();
 
@@ -600,3 +600,4 @@ run().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+

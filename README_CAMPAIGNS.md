@@ -121,7 +121,7 @@ We're excited to help you capture and organize all your important dates. As a fr
 Ready to unlock unlimited scans? Upgrade to our premium plan today!
 ```
 
-**Button**: Upgrade Now → `https://snapmydate.com/subscription`
+**Button**: Upgrade Now → `https://envitefy.com/subscription`
 
 **Audience**: ☑️ Free Trial
 
@@ -143,7 +143,7 @@ Just open any event and click "Share" to invite others. They'll see the event in
 Try it out today!
 ```
 
-**Button**: Learn More → `https://snapmydate.com/about`
+**Button**: Learn More → `https://envitefy.com/about`
 
 **Audience**: ☑️ Monthly Plan, ☑️ Yearly Plan
 
@@ -187,3 +187,4 @@ For issues or questions about the campaign system, contact the development team 
 - `/src/app/admin/campaigns/page.tsx` (UI)
 - `/src/app/api/admin/campaigns/` (API)
 - `/src/lib/resend.ts` (Email sending)
+

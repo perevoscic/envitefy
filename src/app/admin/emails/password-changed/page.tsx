@@ -66,7 +66,7 @@ export default function PasswordChangedPreviewPage() {
     title: "Password Changed",
     body,
     buttonText: "View My Account",
-    buttonUrl: "https://snapmydate.com/settings/profile",
+    buttonUrl: "https://envitefy.com/settings/profile",
     footerText,
   });
 
@@ -139,3 +139,4 @@ export default function PasswordChangedPreviewPage() {
     </div>
   );
 }
+

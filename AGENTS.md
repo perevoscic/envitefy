@@ -15,10 +15,10 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: Receive messages from the Contact form and deliver them via SES.
 - **Auth**: None.
 - **Input (JSON)**: `{ name?: string, email?: string, title: string, message: string }`.
-- **Behavior**: Sends an email to the contact inbox. The destination address is taken from `CONTACT_TO` when set; otherwise it uses the email portion of `SES_FROM_EMAIL_CONTACT` (display name ignored), falling back to `contact@snapmydate.com`. The message is sent using AWS SES when configured, with `Reply-To` set to the submitter's `email` when provided.
-- **From/Sender**: Uses `SES_FROM_EMAIL_CONTACT` when available; otherwise falls back to `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_NO_REPLY`, then `SMTP_FROM`, then `no-reply@snapmydate.com`.
+- **Behavior**: Sends an email to the contact inbox. The destination address is taken from `CONTACT_TO` when set; otherwise it uses the email portion of `SES_FROM_EMAIL_CONTACT` (display name ignored), falling back to `contact@envitefy.com`. The message is sent using AWS SES when configured, with `Reply-To` set to the submitter's `email` when provided.
+- **From/Sender**: Uses `SES_FROM_EMAIL_CONTACT` when available; otherwise falls back to `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_NO_REPLY`, then `SMTP_FROM`, then `no-reply@envitefy.com`.
 - **Output**: `{ ok: true, delivered: boolean }`.
-- **Env**: `SES_FROM_EMAIL_CONTACT` (e.g., `Snap My Date Contact <contact@snapmydate.com>`), optional `CONTACT_TO` to override destination; standard AWS credentials and `AWS_REGION`/`AWS_DEFAULT_REGION`. Optionally supports SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
+- **Env**: `SES_FROM_EMAIL_CONTACT` (e.g., `Snap My Date Contact <contact@envitefy.com>`), optional `CONTACT_TO` to override destination; standard AWS credentials and `AWS_REGION`/`AWS_DEFAULT_REGION`. Optionally supports SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
 
 ### Event Share — POST `/api/events/share`
 
@@ -544,9 +544,9 @@ Payload used by the authenticated calendar agents.
 - **OpenAI (optional OCR fallback)**
   - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
 - **AWS SES (email senders)**
-  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Snap My Date <no-reply@snapmydate.com>` (password reset, system mail)
-  - `SES_FROM_EMAIL_GIFT` e.g. `"Snap My Date Gifts" <gift@snapmydate.com>` (gift delivery emails)
-  - `SES_FROM_EMAIL_CONTACT` e.g. `"Snap My Date Support" <contact@snapmydate.com>` (reserved for contact replies)
+  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Snap My Date <no-reply@envitefy.com>` (password reset, system mail)
+  - `SES_FROM_EMAIL_GIFT` e.g. `"Snap My Date Gifts" <gift@envitefy.com>` (gift delivery emails)
+  - `SES_FROM_EMAIL_CONTACT` e.g. `"Snap My Date Support" <contact@envitefy.com>` (reserved for contact replies)
   - Region: `AWS_REGION` or `AWS_DEFAULT_REGION` and standard AWS credentials
 - **Stripe**
   - `STRIPE_SECRET_KEY`
@@ -623,3 +623,4 @@ Payload used by the authenticated calendar agents.
 - 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
 - 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
+

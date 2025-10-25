@@ -79,7 +79,7 @@ export default function GiftAutoPreviewPage() {
     title: "Your gift has been added",
     body,
     buttonText: "View My Subscription",
-    buttonUrl: "https://snapmydate.com/subscription",
+    buttonUrl: "https://envitefy.com/subscription",
   });
 
   return (
@@ -151,3 +151,4 @@ export default function GiftAutoPreviewPage() {
     </div>
   );
 }
+

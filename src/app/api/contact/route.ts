@@ -103,13 +103,13 @@ export async function POST(req: NextRequest) {
     }
 
     const contactSender = getEnv("SES_FROM_EMAIL_CONTACT");
-    const receiver = getEnv("CONTACT_TO") || extractEmailAddress(contactSender) || "contact@snapmydate.com";
+    const receiver = getEnv("CONTACT_TO") || extractEmailAddress(contactSender) || "contact@envitefy.com";
     const from =
       contactSender ||
       getEnv("SES_FROM_EMAIL") ||
       getEnv("SES_FROM_EMAIL_NO_REPLY") ||
       getEnv("SMTP_FROM") ||
-      "no-reply@snapmydate.com";
+      "no-reply@envitefy.com";
 
     const subject = `[Contact] ${title}`;
     const text = [
@@ -132,5 +132,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err?.message || "Invalid request" }, { status: 400 });
   }
 }
+
 
 

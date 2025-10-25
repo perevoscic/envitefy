@@ -173,7 +173,7 @@ export default function SubscriptionChangePreviewPage() {
     title: isUpgrade ? "Subscription Upgraded!" : "Subscription Updated",
     body,
     buttonText: "View My Subscription",
-    buttonUrl: "https://snapmydate.com/subscription",
+    buttonUrl: "https://envitefy.com/subscription",
   });
 
   return (
@@ -306,3 +306,4 @@ export default function SubscriptionChangePreviewPage() {
     </div>
   );
 }
+
