@@ -1,38 +1,44 @@
 "use client";
 
 import {
-  cloneElement,
-  isValidElement,
   useCallback,
   useEffect,
   useRef,
   useState,
   type ReactNode,
+  type ChangeEvent,
 } from "react";
 import Link from "next/link";
-import { Camera, Upload, CalendarPlus, ClipboardList } from "lucide-react";
+import Image from "next/image";
+import {
+  CreateEventIllustration,
+  ScanIllustration,
+  SignUpIllustration,
+  UploadIllustration,
+} from "@/components/landing/action-illustrations";
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
 
-const TONE_STYLES: Record<HighlightTone, { iconBg: string; iconText: string }> =
-  {
-    primary: {
-      iconBg: "bg-primary/15",
-      iconText: "text-primary",
-    },
-    secondary: {
-      iconBg: "bg-secondary/15",
-      iconText: "text-secondary",
-    },
-    accent: {
-      iconBg: "bg-accent/15",
-      iconText: "text-accent",
-    },
-    success: {
-      iconBg: "bg-success/15",
-      iconText: "text-success",
-    },
-  };
+const TONE_STYLES: Record<HighlightTone, { iconBg: string }> = {
+  primary: {
+    iconBg: "bg-primary/15",
+  },
+  secondary: {
+    iconBg: "bg-secondary/15",
+  },
+  accent: {
+    iconBg: "bg-accent/15",
+  },
+  success: {
+    iconBg: "bg-success/15",
+  },
+};
+
+declare global {
+  interface Window {
+    __openCreateEvent?: () => void;
+  }
+}
 
 export default function Home() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -41,7 +47,7 @@ export default function Home() {
 
   const openCreateEvent = useCallback(() => {
     try {
-      (window as any).__openCreateEvent?.();
+      window.__openCreateEvent?.();
     } catch {
       // noop
     }
@@ -92,7 +98,7 @@ export default function Home() {
     }
   }, [onSnap, onUpload]);
 
-  const onFilePicked = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFilePicked = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
     setPickedName(f ? f.name : null);
   }, []);
@@ -101,9 +107,12 @@ export default function Home() {
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-16 text-foreground md:px-8">
       <div className="mb-12 flex flex-col items-center text-center">
         <div className="mb-6 inline-flex h-24 w-24 items-center justify-center rounded-full border border-border/60 bg-surface/90 shadow-[0_22px_45px_-24px_var(--theme-card-glow)] backdrop-blur-sm">
-          <img
+          <Image
             src="/icons/icon-180.png"
             alt="Snap My Date"
+            width={64}
+            height={64}
+            priority
             className="h-16 w-16 rounded-full shadow-sm"
           />
         </div>
@@ -121,28 +130,28 @@ export default function Home() {
         <OptionCard
           title="Scan"
           description="Scan any flyer or invitation and we'll add it to your calendar."
-          icon={<Camera className="h-10 w-10" />}
+          artwork={<ScanIllustration />}
           tone="primary"
           onClick={onSnap}
         />
         <OptionCard
           title="Upload"
           description="Upload any saved invitation, and add it to your calendar."
-          icon={<Upload className="h-10 w-10" />}
+          artwork={<UploadIllustration />}
           tone="secondary"
           onClick={onUpload}
         />
         <OptionCard
           title="Create Event"
           description="Use our advanced creation tools for more control."
-          icon={<CalendarPlus className="h-10 w-10" />}
+          artwork={<CreateEventIllustration />}
           tone="accent"
           onClick={openCreateEvent}
         />
         <OptionCard
           title="Sign-Up Form"
           description="Smart forms for school events, volunteers, or any event."
-          icon={<ClipboardList className="h-10 w-10" />}
+          artwork={<SignUpIllustration />}
           tone="success"
           href="/smart-signup-form"
         />
@@ -176,32 +185,19 @@ export default function Home() {
 function OptionCard({
   href,
   title,
-  icon,
+  artwork,
   description,
   tone = "primary",
   onClick,
 }: {
   href?: string;
   title: string;
-  icon: ReactNode;
+  artwork: ReactNode;
   description: string;
   tone?: HighlightTone;
   onClick?: () => void;
 }) {
   const toneClass = TONE_STYLES[tone] ?? TONE_STYLES.primary;
-
-  const renderedIcon =
-    isValidElement(icon)
-      ? cloneElement(icon, {
-          className: [
-            icon.props.className ?? "",
-            toneClass.iconText,
-            "transition-transform duration-300",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        })
-      : icon;
 
   const content = (
     <div
@@ -218,11 +214,19 @@ function OptionCard({
       />
       <div className="relative flex flex-col items-center space-y-4 text-center">
         <div
-          className={`rounded-full p-3 transition-transform duration-300 group-hover:scale-105 ${toneClass.iconBg}`}
+          className={[
+            "relative flex w-full max-w-[200px] items-center justify-center overflow-hidden rounded-xl bg-surface/70 p-4 transition-all duration-300 group-hover:scale-[1.02]",
+            toneClass.iconBg,
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
-          {renderedIcon}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
+          <div className="relative w-full">{artwork}</div>
         </div>
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          {title}
+        </h2>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
