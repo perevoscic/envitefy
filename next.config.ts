@@ -1,3 +1,5 @@
+import path from "path";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   devIndicators: false,
@@ -16,6 +18,13 @@ const nextConfig = {
       { protocol: "https", hostname: "upload.wikimedia.org" },
       { protocol: "https", hostname: "static.thenounproject.com" },
     ],
+  },
+  webpack: (config: any) => {
+    // Ensure alias resolution works consistently in all environments (e.g., Docker Linux)
+    config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias["@"] = config.resolve.alias["@"] || path.resolve(__dirname, "src");
+    return config;
   },
 };
 
