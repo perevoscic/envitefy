@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "./providers";
-import Logo from "@/assets/logo.png";
+import Logo from "@/assets/Logo.png";
 
 export default function TopNav() {
   const { data: session, status } = useSession();

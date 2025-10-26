@@ -7,16 +7,20 @@ const qs = [
     a: "Yes! Guests can open and RSVP via an email or text link — no downloads needed.",
   },
   {
+    q: "Can I co-manage events with other Envitefy users?",
+    a: "Yes. Invite another Envitefy user from the share menu and they'll accept from their email to see the event in their dashboard, access the live link, and stay synced on every change.",
+  },
+  {
     q: "If I change event details, do guests see the update?",
     a: "Absolutely. The shared link always reflects the latest info, so everyone stays on the same page.",
   },
   {
     q: "Can I track RSVPs?",
-    a: "Yes. Envitefy collects replies from text or email and sends you updates, so you always know who's coming.",
+    a: "Yes. Envitefy collects replies from text or email and sends you updates, so you and any collaborators always know who's coming.",
   },
   {
     q: "What are smart sign-up forms?",
-    a: "Smart sign-up forms let families claim snack duty, volunteer slots, or carpool seats right from your event link, and they update instantly when someone responds.",
+    a: "Smart sign-up forms let families claim snack duty, volunteer slots, or carpool seats right from your event link. We enforce capacity limits, manage waitlists automatically, and sync every response in your event history so you always know who's confirmed.",
   },
   {
     q: "How accurate is Envitefy's scanning?",
@@ -31,20 +35,32 @@ const qs = [
     a: "Yes, Envitefy processes PDFs just like photos — even multi-page schedules — so you can capture every date at once.",
   },
   {
+    q: "Can I add an entire season to my calendar at once?",
+    a: "Absolutely. Envitefy builds multi-event ICS downloads and offers bulk pushes directly to Google Calendar and Outlook, so you can drop every game or practice onto your calendar with one upload.",
+  },
+  {
     q: "What are the available subscription plans?",
-    a: "Envitefy offers a free tier with core features plus monthly and yearly plans that unlock bulk schedules, faster processing, and premium support. Visit the Subscription page for details.",
+    a: "Envitefy offers a free tier with core features plus monthly and yearly plans that unlock bulk schedule tools, faster processing, and premium support. You can upgrade or downgrade any time from the Subscription page, and the self-serve billing portal lets you update payment methods or renewals on your own.",
+  },
+  {
+    q: "How do I manage my subscription or payment info?",
+    a: "Open the Subscription page and launch the billing portal to update cards, download invoices, or set cancellations whenever you need. Changes take effect immediately.",
+  },
+  {
+    q: "Can I gift Envitefy to someone else?",
+    a: "Yes. Start a gift checkout from the Subscription page to send prepaid months or years to a friend. We email them a code once payment clears, and if they already use Envitefy the bonus time is applied automatically.",
   },
   {
     q: "How do promo codes work?",
-    a: "Promo codes extend your subscription or gift extra time to someone else. Redeem them from your Subscription settings to apply the benefits instantly.",
+    a: "Promo codes extend your subscription or credit extra time to someone else. Redeem them from your Subscription settings to apply the benefits instantly, and gifted codes sent to existing users attach to their account right away.",
   },
   {
     q: "Which calendar services does Envitefy support for direct integration?",
-    a: "Envitefy offers secure, one-tap connections to Google Calendar and Microsoft Outlook, and universal ICS downloads for everything else.",
+    a: "Envitefy offers secure, one-tap connections to Google Calendar and Microsoft Outlook, plus universal ICS downloads for everything else. Bulk imports work the same way, so large schedules sync just as easily as single events.",
   },
   {
     q: "Can Envitefy handle sports schedules and weekly practices?",
-    a: "Definitely. Envitefy recognizes season flyers, builds each meet automatically, and creates weekly practice schedules with recurring reminders.",
+    a: "Definitely. Envitefy recognizes season flyers, builds each meet automatically, and creates weekly practice schedules with recurring reminders that you can export individually or in bulk.",
   },
   {
     q: "What types of image files can I upload?",
