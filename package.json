@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.js",
+    "favicon": "node scripts/generate-favicon.js",
     "db:init": "node scripts/init-db.js",
     "signup:templates": "node scripts/generate-signup-templates-openai.mjs",
     "signup:templates:nana": "node scripts/generate-signup-templates-google.mjs --profile=nana",
@@ -53,6 +54,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
+    "png-to-ico": "^3.0.1",
     "prisma": "^6.15.0",
     "tailwindcss": "^4",
     "typescript": "^5"
