@@ -13,7 +13,7 @@ import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
-import Logo from "@/assets/Logo.png";
+import Logo from "@/assets/logo.png";
 import { getCategoryIcon } from "@/lib/event-colors";
 
 declare global {

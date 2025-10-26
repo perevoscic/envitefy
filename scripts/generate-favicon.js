@@ -1,5 +1,5 @@
 /*
-  Generate a multi-size favicon.ico from src/assets/Logo.png
+  Generate a multi-size favicon.ico from src/assets/logo.png
 */
 
 const fs = require("fs");
@@ -12,7 +12,7 @@ async function ensureDir(dir) {
 
 async function main() {
   const { default: toIco } = await import("png-to-ico");
-  const srcPath = path.resolve(__dirname, "../src/assets/Logo.png");
+  const srcPath = path.resolve(__dirname, "../src/assets/logo.png");
   const outDir = path.resolve(__dirname, "../src/app");
   const sizes = [16, 24, 32, 48, 64];
 
@@ -43,5 +43,4 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
 

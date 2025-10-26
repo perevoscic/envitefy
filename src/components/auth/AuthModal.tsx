@@ -5,7 +5,7 @@ import { useSidebar } from "@/app/sidebar-context";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import Image from "next/image";
-import Logo from "@/assets/Logo.png";
+import Logo from "@/assets/logo.png";
 
 export type AuthModalProps = {
   open: boolean;

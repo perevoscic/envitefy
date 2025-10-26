@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import GiftSnapModal from "@/components/GiftSnapModal";
 import RedeemPromoModal from "@/components/RedeemPromoModal";
 import AuthModal from "@/components/auth/AuthModal";
-import Logo from "@/assets/Logo.png";
+import Logo from "@/assets/logo.png";
 
 declare global {
   // Allow optional GA4/global site tag typings without forcing app-wide declarations

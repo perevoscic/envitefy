@@ -106,15 +106,15 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-16 text-foreground md:px-8">
-      <div className="mb-12 flex flex-col items-center text-center">
+    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-3 pt-10 pb-16 text-foreground md:px-8 md:pt-16">
+      <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
         <Image
           src={"/icons/icon-180.png"}
           alt="envitefy.com"
           width={100}
           height={100}
         />
-        <p className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3 pt-2">
+        <p className="mt-2 text-3xl md:text-7xl tracking-tight text-white pb-3 pt-2">
           <span className="font-pacifico">
             <span className="text-[#0e7bc4]">env</span>
             <span className="text-[#ee3c2b]">i</span>
@@ -122,13 +122,13 @@ export default function Home() {
           </span>
         </p>
       </div>
-      <div className="grid w-full max-w-6xl grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+      <div className="grid w-full max-w-6xl grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
         <OptionCard
           title="Snap"
-          description="Scan any flyer or invitation and we'll add it to your calendar."
+          description="Scan any flyer and we'll add it to your calendar."
           details={[
-            "Use your camera to capture invites on the spot.",
-            "AI extracts dates, locations, and RSVP details automatically.",
+            "Use your camera to snap invites to calendar.",
+            "Extracts dates, locations, and RSVP details automatically.",
             "Export straight to Google, Outlook, or an ICS download.",
           ]}
           artwork={<ScanIllustration />}
@@ -312,7 +312,7 @@ function OptionCard({
 
   const frontCard = (
     <div
-      className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 p-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 p-4 md:p-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
       data-card-tone={tone}
     >
       <div
@@ -333,10 +333,10 @@ function OptionCard({
       >
         <FlipHintIcon className="h-6 w-6" />
       </span>
-      <div className="relative flex flex-col items-center space-y-4 text-center">
+      <div className="relative flex flex-col items-center space-y-3 md:space-y-4 text-center">
         <div
           className={[
-            "relative flex w-full max-w-[200px] items-center justify-center overflow-hidden rounded-xl bg-surface/70 p-4 transition-all duration-300 group-hover:scale-[1.02]",
+            "relative flex w-full max-w-[180px] md:max-w-[200px] items-center justify-center overflow-hidden rounded-xl bg-surface/70 p-3 md:p-4 transition-all duration-300 group-hover:scale-[1.02]",
             toneClass.iconBg,
           ]
             .filter(Boolean)
@@ -345,7 +345,9 @@ function OptionCard({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
           <div className="relative w-full">{artwork}</div>
         </div>
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <h2 className="text-base md:text-lg font-semibold text-foreground">
+          {title}
+        </h2>
       </div>
     </div>
   );
@@ -360,14 +362,14 @@ function OptionCard({
           closeDetails(event);
         }
       }}
-      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-surface/95 p-6 text-left shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-transform duration-300 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-surface/95 p-4 md:p-6 text-left shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-transform duration-300 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
       data-card-tone={tone}
       style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
     >
       <button
         type="button"
         aria-label="Hide details"
-        className="absolute right-3 top-3 inline-flex items-center justify-center bg-transparent p-1 text-black transition hover:text-black/75 focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white/60 dark:focus-visible:ring-offset-0"
+        className="absolute right-3 top-3 inline-flex items-center justify-center bg-transparent p-1 text-[#0e7bc4] transition hover:text-[#0e7bc4] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[#0e7bc4]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-[#0e7bc4] dark:hover:text-[#0e7bc4] dark:focus-visible:ring-[#0e7bc4]/60 dark:focus-visible:ring-offset-0"
         onClick={closeDetails}
       >
         <CloseIcon className="h-5 w-5" />
@@ -380,16 +382,20 @@ function OptionCard({
         }}
         aria-hidden
       />
-      <div className="relative mx-auto flex max-w-xs flex-1 flex-col justify-center gap-4 text-center">
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground">{description}</p>
+      <div className="relative mx-auto flex max-w-xs flex-1 flex-col justify-center gap-3 md:gap-4 text-center">
+        <div className="space-y-1.5 md:space-y-2">
+          <h2 className="text-base md:text-lg font-semibxold text-foreground">
+            {title}
+          </h2>
+          <p className="text-xs md:text-sm text-muted-foreground">
+            {description}
+          </p>
         </div>
         {details?.length ? (
-          <ul className="space-y-2 text-left text-sm text-muted-foreground">
+          <ul className="space-y-1.5 md:space-y-2 text-left text-xs md:text-sm text-muted-foreground">
             {details.map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <span className="mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-current opacity-60" />
+                <span className="mt-[0.35rem] md:mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-current opacity-60" />
                 <span>{item}</span>
               </li>
             ))}
