@@ -2,15 +2,16 @@ import Image from "next/image";
 import CreateShareCta from "./CreateShareCta";
 
 const points = [
-  "Your guests can add your event to their calendar in one tap.",
-  "Make plans simple again. With Snap My Date, you can create and share an event in under a minute.",
-  "Instant event page: Add your title, time, location, and description - no login required for guests.",
-  "Smart directions: Your guests get dynamic maps that update automatically.",
-  'RSVP by email or text: Guests reply "Yes" or "No" directly — no forms, no confusion.',
-  "Always up to date: If you change the time, place, or details, your shared link updates instantly.",
-  "Add registry links and save to your calendar — Apple, Google, or Outlook in one tap.",
-  "One link, zero stress: Perfect for birthdays, meetups, practices, and parties.",
-  "Registry link support, add Amazon, Target, Walmart or any other registry link right from your event page.",
+  "Create and share events in seconds from any flyer or a blank template.",
+  "Guests add the event to Google, Apple, or Outlook in one tap.",
+  "Smart sign-up forms keep snack duty, volunteers, and carpools organized.",
+  "Send one link by text or email—no accounts required for grandparents or teammates.",
+  "Smart updates keep everyone in sync the moment you change time, place, or details.",
+  "Collect RSVPs by email or text and get notified instantly.",
+  "Attach packing lists, allergy info, or carpool instructions so parents know what to bring.",
+  "Drop in multiple registries or wish lists straight from Amazon, Target, Walmart, and more.",
+  "Built-in maps serve up live directions for families on the go.",
+  "Need a download? Save a polished ICS invite for teachers, coaches, or printouts.",
 ];
 
 const calendarTargets = [
@@ -65,10 +66,7 @@ const footerSecondaryAction = { label: "Directions", icon: "\u{1F9ED}" };
 
 export default function CreateShare() {
   return (
-    <section
-      aria-labelledby="create-share"
-      className="w-full bg-surface/50 border-y border-border/60"
-    >
+    <section aria-labelledby="create-share" className="w-full">
       <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <h2
@@ -77,7 +75,7 @@ export default function CreateShare() {
           >
             Create &amp; Share Events in Seconds.
             <br />
-            One Link Does It All.
+            Envitefy keeps everyone in sync.
           </h2>
           <ul className="mt-6 space-y-4 pb-10 text-foreground/75 text-base sm:text-lg">
             {points.map((point) => (
@@ -94,7 +92,7 @@ export default function CreateShare() {
             Event preview
           </p>
           <div className="mt-4 rounded-3xl border border-border/70 bg-surface/95 shadow-md text-left">
-            <div className="bg-gradient-to-r from-rose-100 via-amber-100 to-orange-50 px-6 py-5">
+            <div className="bg-gradient-to-r from-rose-100 via-amber-100 to-orange-50 dark:bg-gradient-to-r dark:from-rose-900/40 dark:via-amber-900/30 dark:to-orange-900/40 px-6 py-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">

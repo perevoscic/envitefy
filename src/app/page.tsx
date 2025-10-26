@@ -108,29 +108,23 @@ export default function Home() {
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-16 text-foreground md:px-8">
       <div className="mb-12 flex flex-col items-center text-center">
-        <div className="mb-6 inline-flex h-24 w-24 items-center justify-center rounded-full border border-border/60 bg-surface/90 shadow-[0_22px_45px_-24px_var(--theme-card-glow)] backdrop-blur-sm">
-          <Image
-            src="/icons/icon-180.png"
-            alt="Snap My Date"
-            width={64}
-            height={64}
-            priority
-            className="h-16 w-16 rounded-full shadow-sm"
-          />
-        </div>
-        <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
-          Plan Something Great!
-        </h1>
-        <p className="mt-3 max-w-2xl text-base text-muted-foreground md:text-lg">
-          Choose how you want to start - scan it, upload it, create it from
-          scratch, or launch a smart sign-up. Every option adapts to your theme,
-          from cozy holidays to sleek dark mode.
+        <Image
+          src={"/icons/icon-180.png"}
+          alt="envitefy.com"
+          width={100}
+          height={100}
+        />
+        <p className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3 pt-2">
+          <span className="font-pacifico">
+            <span className="text-[#0e7bc4]">env</span>
+            <span className="text-[#ee3c2b]">i</span>
+            <span className="text-[#0e7bc4]">tefy.com</span>
+          </span>
         </p>
       </div>
-
       <div className="grid w-full max-w-6xl grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
         <OptionCard
-          title="Scan"
+          title="Snap"
           description="Scan any flyer or invitation and we'll add it to your calendar."
           details={[
             "Use your camera to capture invites on the spot.",
@@ -182,7 +176,7 @@ export default function Home() {
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept="image/*"
         capture="environment"
         onChange={onFilePicked}
         className="hidden"
@@ -267,7 +261,7 @@ function OptionCard({
   const [showDetails, setShowDetails] = useState(false);
 
   const handlePrimaryAction = (
-    event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+    event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>
   ) => {
     if (showDetails) {
       event.preventDefault();
@@ -280,7 +274,7 @@ function OptionCard({
   const openDetails = () => setShowDetails(true);
 
   const handleInfoPointer = (
-    event: MouseEvent<HTMLSpanElement> | KeyboardEvent<HTMLSpanElement>,
+    event: MouseEvent<HTMLSpanElement> | KeyboardEvent<HTMLSpanElement>
   ) => {
     event.preventDefault();
     event.stopPropagation();
@@ -296,7 +290,9 @@ function OptionCard({
   };
 
   const closeDetails = (
-    event?: MouseEvent<HTMLButtonElement | HTMLDivElement> | KeyboardEvent<HTMLDivElement>,
+    event?:
+      | MouseEvent<HTMLButtonElement | HTMLDivElement>
+      | KeyboardEvent<HTMLDivElement>
   ) => {
     if (event) {
       event.preventDefault();
@@ -331,7 +327,7 @@ function OptionCard({
         role="button"
         tabIndex={showDetails ? -1 : 0}
         aria-label="Show details"
-        className="absolute right-3 top-3 z-10 inline-flex items-center justify-center bg-transparent p-1 text-black transition hover:text-black/75 focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white/60 dark:focus-visible:ring-offset-0"
+        className="absolute right-3 top-3 z-10 inline-flex items-center justify-center bg-transparent p-1 text-[#0e7bc4] transition hover:text-[#0e7bc4] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[#0e7bc4]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-[#0e7bc4] dark:hover:text-[#0e7bc4] dark:focus-visible:ring-[#0e7bc4]/60 dark:focus-visible:ring-offset-0"
         onClick={handleInfoPointer}
         onKeyDown={handleInfoKeyDown}
       >
@@ -440,7 +436,3 @@ function OptionCard({
     </div>
   );
 }
-
-
-
-

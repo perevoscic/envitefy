@@ -14,10 +14,11 @@ export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
         <div className="rounded-3xl bg-gradient-to-tr from-fuchsia-500/20 via-sky-400/20 to-violet-500/20 p-1">
           <div className="rounded-3xl bg-surface/70 backdrop-blur-sm p-8 ring-1 ring-border text-center">
             <h3 className="text-2xl sm:text-3xl font-bold">
-              Ready to snap your next date?
+              Ready to plan the easy way?
             </h3>
             <p className="mt-2 text-foreground/70 max-w-2xl mx-auto">
-              Snap it. Save it. Done.
+              Envitefy turns flyers, text threads, and schedules into shareable
+              calendar plans.
               <br />
               Start in seconds - no credit card needed.
             </p>

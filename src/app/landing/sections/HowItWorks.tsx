@@ -30,10 +30,11 @@ export default function HowItWorks() {
                   <circle cx="12" cy="13" r="4" />
                 </svg>
               </span>
-              Snap or Upload
+              Snap or Start Fresh
             </h3>
             <p className="mt-2 text-foreground/70">
-              Take a quick photo of any flyer, card, or schedule.
+              Upload a flyer, birthday or wedding invitation, or snap a photo of
+              a flyer— and add it to your calendar in seconds.
             </p>
           </div>
           <div className="rounded-2xl bg-surface/70 border border-border p-6 text-center shadow">
@@ -50,16 +51,20 @@ export default function HowItWorks() {
                   className="h-4 w-4"
                   aria-hidden="true"
                 >
-                  <path d="M8 2v4" />
-                  <path d="M16 2v4" />
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M3 10h18" />
+                  <path d="M3 4h18" />
+                  <path d="M7 4v2" />
+                  <path d="M17 4v2" />
+                  <rect x="3" y="6" width="18" height="15" rx="2" />
+                  <path d="M8 13h3" />
+                  <path d="M8 16h6" />
                 </svg>
               </span>
-              We Fill the Details
+              Events in Seconds
             </h3>
             <p className="mt-2 text-foreground/70">
-              Our AI extracts the date, time, and location.
+              Create events with dates, locations, and notes so birthdays,
+              weddings, and team plans come together with smart RSVP by text or
+              email, built-in directions, and handy registry links.
             </p>
           </div>
           <div className="rounded-2xl bg-surface/70 border border-border p-6 text-center shadow">
@@ -80,16 +85,15 @@ export default function HowItWorks() {
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
               </span>
-              Add or Share
+              Smart Sign-Up Forms
             </h3>
             <p className="mt-2 text-foreground/70">
-              Add to your calendar or share the link directly.
+              Share one sign-up form for school events, volunteer slots, snack
+              duty, and field trips — seamless signup flow and updates for
+              everyone.
             </p>
           </div>
         </div>
-        <p className="mt-6 text-center text-sm text-foreground/60">
-          Or skip the photo — create your own event from scratch, just as fast.
-        </p>
       </div>
     </section>
   );

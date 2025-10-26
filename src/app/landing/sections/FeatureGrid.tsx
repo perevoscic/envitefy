@@ -1,35 +1,35 @@
 const features = [
   {
-    title: "Family calendar harmony",
-    desc: "All events in one place — no more juggling.",
+    title: "Create & share in seconds",
+    desc: "Start from a flyer, screenshot, or blank canvas and publish instantly.",
   },
   {
-    title: "Carpool & activity sync",
-    desc: "Share with other parents to keep pickups and practices aligned.",
+    title: "Shareable event pages",
+    desc: "Send one beautiful link guests can open anywhere.",
   },
   {
-    title: "Automatic reminders",
-    desc: "Quick chips for 1h, 1d, 1w. Edit anytime.",
+    title: "Smart sign-up forms",
+    desc: "Track volunteers, snack duty, or carpool slots with live updates.",
   },
   {
-    title: "RSVP in one tap",
-    desc: "send reply with our intelligent in seconds.",
+    title: "Text & email RSVPs",
+    desc: "Replies land in your inbox so you can plan headcounts fast.",
   },
   {
-    title: "Photo-to-plan magic",
-    desc: "Snap a flyer, we’ll turn it into calendar details instantly.",
+    title: "Instant calendar sync",
+    desc: "Connect Apple, Google or Outlook and we add events with reminders.",
   },
   {
-    title: "One less thing to remember",
-    desc: "Birthdays, weddings, play-days auto-saved, so nothing slips.",
+    title: "Weekly practice builder",
+    desc: "Spin up recurring practices with ready-made reminders.",
   },
   {
-    title: "Never late again",
-    desc: "No more missed events, no more rushing.",
+    title: "Universal ICS downloads",
+    desc: "Share printable ICS files for classrooms and grandparents.",
   },
   {
-    title: "Peaceful mornings",
-    desc: "Start the day calm with a clear plan — no last-minute chaos.",
+    title: "Registry & wishlist links",
+    desc: "Show Amazon, Target, Walmart, or custom wishlists right on the event page.",
   },
 ];
 

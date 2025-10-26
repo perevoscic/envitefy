@@ -4,7 +4,7 @@ import { useState } from "react";
 const qs = [
   {
     q: "Can I share my event without guests downloading an app?",
-    a: "Yes! Guests can open and RSVP via an email or text link - no downloads needed.",
+    a: "Yes! Guests can open and RSVP via an email or text link — no downloads needed.",
   },
   {
     q: "If I change event details, do guests see the update?",
@@ -12,35 +12,43 @@ const qs = [
   },
   {
     q: "Can I track RSVPs?",
-    a: "Yes. You’ll see who’s attending by receiving email or text notifications when guests reply.",
+    a: "Yes. Envitefy collects replies from text or email and sends you updates, so you always know who's coming.",
   },
   {
-    q: "How accurate is Snap My Date's OCR technology?",
-    a: "Snap My Date utilizes advanced scanning technology to extract event details from photos and PDFs with high accuracy. While our system is very robust, you always have the opportunity to review and edit any extracted information before saving it to your calendar.",
+    q: "What are smart sign-up forms?",
+    a: "Smart sign-up forms let families claim snack duty, volunteer slots, or carpool seats right from your event link, and they update instantly when someone responds.",
   },
   {
-    q: "Does Snap My Date integrate with Apple Calendar?",
-    a: "Yes! We generate universally compatible requests, which are easily imported into Apple Calendar on your iOS devices and macOS. It's a seamless way to get your events into your preferred Apple ecosystem.",
+    q: "How accurate is Envitefy's scanning?",
+    a: "Envitefy uses advanced text recognition to pull dates, times, locations, and notes from flyers and PDFs with high accuracy. You can review everything before saving, and tweak any detail with a tap.",
+  },
+  {
+    q: "Does Envitefy integrate with Apple Calendar?",
+    a: "Yes! We generate universally compatible calendar files that open instantly in Apple Calendar on iPhone, iPad, and Mac.",
   },
   {
     q: "Can I upload PDF files for event extraction?",
-    a: "Yes, you can directly upload PDF documents. Our OCR engine processes them just like image files, allowing for efficient extraction of event information from multi-page documents as well.",
+    a: "Yes, Envitefy processes PDFs just like photos — even multi-page schedules — so you can capture every date at once.",
   },
   {
     q: "What are the available subscription plans?",
-    a: "Snap My Date offers a freemium tier with core features plus monthly and yearly subscriptions that unlock advanced automation, faster processing, and premium support. You can view the full breakdown on our Subscription page.",
+    a: "Envitefy offers a free tier with core features plus monthly and yearly plans that unlock bulk schedules, faster processing, and premium support. Visit the Subscription page for details.",
   },
   {
     q: "How do promo codes work?",
-    a: "Promo codes extend your subscription or gift extra subscription time to someone else. Redeem them from your Subscription settings to apply the added benefits instantly.",
+    a: "Promo codes extend your subscription or gift extra time to someone else. Redeem them from your Subscription settings to apply the benefits instantly.",
   },
   {
-    q: "Which calendar services does Snap My Date support for direct integration?",
-    a: "Snap My Date offers direct, secure integration with Google Calendar and Microsoft Outlook. This allows for quick, one-tap saving of extracted events directly into your chosen calendar, complete with all details and reminders.",
+    q: "Which calendar services does Envitefy support for direct integration?",
+    a: "Envitefy offers secure, one-tap connections to Google Calendar and Microsoft Outlook, and universal ICS downloads for everything else.",
+  },
+  {
+    q: "Can Envitefy handle sports schedules and weekly practices?",
+    a: "Definitely. Envitefy recognizes season flyers, builds each meet automatically, and creates weekly practice schedules with recurring reminders.",
   },
   {
     q: "What types of image files can I upload?",
-    a: "You can upload various common image formats, including JPEG, PNG, and GIF. For best results, we recommend clear, well-lit images of your event materials.",
+    a: "You can upload common image formats like JPEG, PNG, and GIF. Clear, well-lit photos give the best results.",
   },
 ];
 

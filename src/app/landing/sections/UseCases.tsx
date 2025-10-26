@@ -2,7 +2,7 @@ export default function UseCases() {
   const items = [
     {
       title: "Parents",
-      text: "School events, parties, appointments - all in one place.",
+      text: "Snap school flyers, share beautiful event pages, add smart sign-up forms, and keep calendars in sync.",
       badgeClass: "bg-primary/15 text-primary",
       icon: (
         <svg
@@ -24,7 +24,7 @@ export default function UseCases() {
     },
     {
       title: "Coaches",
-      text: "Team schedules and practices without manual entry.",
+      text: "Upload the season once; Envitefy creates every game and practice with reminders.",
       badgeClass: "bg-secondary/15 text-secondary",
       icon: (
         <svg
@@ -48,7 +48,7 @@ export default function UseCases() {
     },
     {
       title: "Teachers",
-      text: "Share class events as calendar links in seconds.",
+      text: "Send calendar-ready class events with one link and gather volunteer or snack sign-ups without extra apps.",
       badgeClass: "bg-accent/15 text-accent",
       icon: (
         <svg
@@ -69,7 +69,7 @@ export default function UseCases() {
     },
     {
       title: "Weddings",
-      text: "Invites, ceremonies, and receptions - saved with reminders.",
+      text: "Registries, RSVPs, and timeline updates stay current for every guest.",
       badgeClass: "bg-primary/15 text-primary",
       icon: (
         <svg
@@ -89,7 +89,7 @@ export default function UseCases() {
     },
     {
       title: "Playdates",
-      text: "Snap invites and save times and locations in one tap.",
+      text: "Share allergy notes, packing lists, and directions in a single invite.",
       badgeClass: "bg-secondary/15 text-secondary",
       icon: (
         <svg
@@ -112,7 +112,7 @@ export default function UseCases() {
     },
     {
       title: "Doctor appointments",
-      text: "Appointment cards to calendar with reliable reminders.",
+      text: "Save appointment cards with automatic follow-up reminders for the whole family.",
       badgeClass: "bg-accent/15 text-accent",
       icon: (
         <svg

@@ -5,7 +5,7 @@ import { useSidebar } from "@/app/sidebar-context";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import Image from "next/image";
-import Logo from "@/assets/logo.png";
+import Logo from "@/assets/Logo.png";
 
 export type AuthModalProps = {
   open: boolean;
@@ -89,7 +89,7 @@ export default function AuthModal({
           <div className="pt-2 pb-4 text-center">
             <Image
               src={Logo}
-              alt="Snap My Date"
+              alt="envitefy.com"
               height={60}
               className="mx-auto rounded"
             />
@@ -98,19 +98,23 @@ export default function AuthModal({
                 <p className="mt-3 text-base text-foreground/80">
                   Welcome back to
                 </p>
-                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground text-shadow-soft">
-                  <span className="font-pacifico">Snap</span>
-                  <span> </span>
-                  <span className="font-montserrat font-semibold">My Date</span>
+                <p className="mt-1 text-2xl tracking-tight text-foreground">
+                  <span className="font-pacifico">
+                    <span className="text-[#0e7bc4]">env</span>
+                    <span className="text-[#ee3c2b]">i</span>
+                    <span className="text-[#0e7bc4]">tefy.com</span>
+                  </span>
                 </p>
               </>
             ) : (
               <>
                 <p className="mt-3 text-base text-foreground/80">Join</p>
-                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground text-shadow-soft">
-                  <span className="font-pacifico">Snap</span>
-                  <span> </span>
-                  <span className="font-montserrat font-semibold">My Date</span>
+                <p className="mt-1 text-2xl tracking-tight text-foreground">
+                  <span className="font-pacifico">
+                    <span className="text-[#0e7bc4]">env</span>
+                    <span className="text-[#ee3c2b]">i</span>
+                    <span className="text-[#0e7bc4]">tefy.com</span>
+                  </span>
                 </p>
               </>
             )}

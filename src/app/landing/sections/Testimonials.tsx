@@ -1,7 +1,8 @@
 const groups = [
   {
     title: "Parents",
-    summary: "Family calendars stay in sync without retyping flyers or invites.",
+    summary:
+      "Envitefy keeps family calendars in sync and wrangles snack sign-ups without retyping flyers or invites.",
     quotes: [
       {
         quote:
@@ -17,7 +18,8 @@ const groups = [
   },
   {
     title: "Coaches",
-    summary: "Seasons, practices, and carpools shared instantly with every player.",
+    summary:
+      "Seasons, practices, and carpools shared instantly with every player.",
     quotes: [
       {
         quote: "I snapped the soccer schedule and it added every date perfectly.",
@@ -32,7 +34,8 @@ const groups = [
   },
   {
     title: "Planners",
-    summary: "Events look polished and stay updated for guests and vendors.",
+    summary:
+      "Events look polished and stay updated for guests and vendors.",
     quotes: [
       {
         quote:

@@ -45,9 +45,9 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Envitefy.",
+  title: "Envitefy | Create. Share. Enjoy.",
   description:
-    "Snap My Date is an innovative event management tool to scan birthday invites, flyers, wedding invitations, appointment cards instantly adding events to your preferred calendar. Simplify your scheduling with our powerful calendar integration and keep your family events organized.",
+    "Envitefy helps you capture and organize life’s events — scan invites and schedules, design and share beautiful invitations, collect RSVPs and smart sign‑ups, and add events to Google, Microsoft, or Apple calendars in one tap.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

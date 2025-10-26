@@ -13,7 +13,7 @@ import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
-import Logo from "@/assets/logo.png";
+import Logo from "@/assets/Logo.png";
 import { getCategoryIcon } from "@/lib/event-colors";
 
 declare global {
@@ -1326,7 +1326,7 @@ export default function LeftSidebar() {
     try {
       const url = new URL(prettyHref, window.location.origin).toString();
       if ((navigator as any).share) {
-        await (navigator as any).share({ title: "Snap My Date", url });
+        await (navigator as any).share({ title: "Envitefy", url });
       } else {
         await navigator.clipboard.writeText(url);
         // eslint-disable-next-line no-alert
@@ -2068,15 +2068,17 @@ export default function LeftSidebar() {
         {/* Top: Logo + App name + close button */}
         <div className="h-16 border-b border-border flex items-center gap-2 px-4">
           <Link href="/" className="flex items-center gap-2 min-w-0">
-            <Image src={Logo} alt="Snap My Date" width={32} height={32} />
+            <Image src={Logo} alt="Envitefy" width={32} height={32} />
             <div className="min-w-0 leading-tight">
-              <span className="text-base text-foreground truncate block">
-                <span className="font-pacifico">Snap</span>
-                <span> </span>
-                <span className="font-montserrat font-semibold">My Date</span>
+              <span className="text-base truncate block">
+                <span className="font-pacifico">
+                  <span className="text-[#0e7bc4]">env</span>
+                  <span className="text-[#ee3c2b]">i</span>
+                  <span className="text-[#0e7bc4]">tefy.com</span>
+                </span>
               </span>
-              <span className="text-xs text-foreground/60 block truncate">
-                Snap it. Save it. Done.
+              <span className="text-xs text-foreground/60 block truncate text-center">
+                Create. Share. Enjoy.
               </span>
             </div>
           </Link>
@@ -3944,7 +3946,7 @@ export default function LeftSidebar() {
             <div className="border-t border-border mx-2 my-3" />
             <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50 pb-1 mb-2">
               <div className="px-2 py-1 text-xs uppercase tracking-wide text-foreground/60">
-                Recent Snapped
+                Recent Added
               </div>
             </div>
             <nav className="space-y-1">

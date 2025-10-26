@@ -10,6 +10,11 @@ export default function Integrations() {
         >
           Works with your calendars
         </h2>
+        <p className="mt-2 text-center text-foreground/70 max-w-2xl mx-auto">
+          Envitefy connects directly to Google and Outlook for instant saves, and
+          still shares universal ICS downloads for Apple Calendar and everyone
+          else.
+        </p>
       </div>
       <div className="max-w-7xl mx-auto px-6 py-8 mt-4 text-center">
         <div className="grid grid-cols-3 gap-4 items-center justify-center">

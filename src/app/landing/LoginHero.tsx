@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import Logo from "@/assets/logo.png";
+import Logo from "@/assets/Logo.png";
 import BackgroundSlider from "@/components/BackgroundSlider";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -27,7 +27,7 @@ export default function LoginHero() {
       h: "/sliders/horizontal/horizontal-slide-1.jpg",
       v: "/sliders/vertical/vertical-slide-1.jpg",
       title: "No more manual entry.",
-      subtitle: "Forget the old fashioned way of manually entering events.",
+      subtitle: "Envitefy keeps your family calendar up to date for you.",
     },
     {
       type: "video" as const,
@@ -35,42 +35,45 @@ export default function LoginHero() {
       v: "/sliders/vertical/vertical-slide-2.mp4",
       title: "Just Snap It",
       subtitle:
-        "Automatically extracts dates, times and locations from flyers.",
+        "Automatically extracts dates, times, locations, and RSVP details.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-3.jpg",
       v: "/sliders/vertical/vertical-slide-3.jpg",
       title: "Save to any calendar",
-      subtitle: "Google, Apple, Outlook — with reminders included.",
+      subtitle:
+        "Google, Apple, Outlook — plus shareable ICS downloads for anyone.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-4.jpg",
       v: "/sliders/vertical/vertical-slide-4.jpg",
       title: "Any Birthday Invites",
-      subtitle: "Are a snap away from your calendar.",
+      subtitle: "Share one cute link with RSVP-by-text for the whole crew.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-5.jpg",
       v: "/sliders/vertical/vertical-slide-5.jpg",
       title: "Wedding Invites",
-      subtitle: "Just got better with Snap My Date.",
+      subtitle:
+        "Envitefy keeps RSVPs, registries, and directions together for you.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-6.jpg",
       v: "/sliders/vertical/vertical-slide-6.jpg",
       title: "Doctor Appointments",
-      subtitle: "Never miss another one again.",
+      subtitle: "Never miss another one again with automatic reminders.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-7.jpg",
       v: "/sliders/vertical/vertical-slide-7.jpg",
       title: "Reclaim your space",
-      subtitle: "On refrigerator - snap it and lose it.",
+      subtitle:
+        "Clear the fridge and keep every flyer, invite, and schedule in one place.",
     },
   ];
   const desktopSlides = slidesMeta.map((m) => ({
@@ -270,13 +273,16 @@ export default function LoginHero() {
         <p className="text-3xl md:text-4xl text-white/90 font-montserrat">
           Welcome to
         </p>
-        <p className="mt-2 text-5xl md:text-7xl font-extrabold tracking-tight text-white text-shadow-soft pb-3">
-          <span className="font-pacifico">Snap</span>
-          <span> </span>
-          <span className="font-montserrat font-semibold">My Date</span>
+        <p className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3">
+          <span className="font-pacifico">
+            <span className="text-[#FFFFFF]">env</span>
+            <span className="text-[#ee3c2b]">i</span>
+            <span className="text-[#FFFFFF]">tefy.com</span>
+          </span>
         </p>
         <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat">
-          Turn any flyer into a calendar event in seconds.
+          Turn flyers, invites, and schedules into shareable plans in seconds —
+          or craft your own event and smart sign-up form just as fast.
         </p>
       </div>
 
