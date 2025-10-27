@@ -477,16 +477,7 @@ export default function PwaInstallButton() {
             {!canInstall &&
               !showIosFallback &&
               showGenericFallback &&
-              (isAndroid ? (
-                <div className="pt-1">
-                  <button
-                    onClick={attemptInstall}
-                    className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
-                  >
-                    Install app
-                  </button>
-                </div>
-              ) : (
+              (isAndroid ? null : (
                 <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
                   <div className="font-medium mb-2">Install this app</div>
                   <button
