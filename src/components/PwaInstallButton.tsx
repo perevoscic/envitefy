@@ -43,6 +43,7 @@ export default function PwaInstallButton() {
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const [isAndroid, setIsAndroid] = useState(false);
   const [androidFallbackHint, setAndroidFallbackHint] = useState(false);
+  const [needsSecondTap, setNeedsSecondTap] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const computeStandalone = useCallback(() => {
@@ -231,6 +232,7 @@ export default function PwaInstallButton() {
       setCanInstall(true);
       setShowIosTip(false);
       setAndroidFallbackHint(false);
+      setNeedsSecondTap(false);
     };
     adoptPrompt(w.__snapInstallDeferredPrompt ?? null);
     const onPromptReady = (event: Event) => {
@@ -313,20 +315,51 @@ export default function PwaInstallButton() {
       setCanInstall(false);
       setShowIosTip(false);
       setAndroidFallbackHint(false);
+      setNeedsSecondTap(false);
       try {
         w.__snapInstallDeferredPrompt = null;
       } catch {}
     };
+
+    const storePromptForLater = (evt: BeforeInstallPromptEvent) => {
+      setDeferred(evt);
+      setCanInstall(true);
+      setShowIosTip(false);
+      setAndroidFallbackHint(false);
+      setNeedsSecondTap(true);
+      try {
+        w.__snapInstallDeferredPrompt = evt;
+      } catch {}
+    };
+
+    const handlePrompt = async (evt: BeforeInstallPromptEvent) => {
+      try {
+        await evt.prompt();
+        await evt.userChoice;
+        resetPromptState();
+        return true;
+      } catch (error) {
+        const domError = error as DOMException | undefined;
+        const name = domError?.name ?? "";
+        const message = (error as Error)?.message ?? "";
+        if (
+          name === "InvalidStateError" ||
+          name === "NotAllowedError" ||
+          /gesture/i.test(message)
+        ) {
+          storePromptForLater(evt);
+        } else {
+          resetPromptState();
+        }
+        return false;
+      }
+    };
+
     let prompted = false;
     if (promptEvt) {
       prompted = true;
-      await promptEvt.prompt();
-      try {
-        await promptEvt.userChoice;
-      } finally {
-        resetPromptState();
-      }
-      return;
+      const shown = await handlePrompt(promptEvt);
+      if (shown) return;
     }
     // Wait up to 3s for a late arriving event after click
     await new Promise<void>((resolve) => {
@@ -342,13 +375,8 @@ export default function PwaInstallButton() {
           if (ev) {
             prompted = true;
             (async () => {
-              try {
-                await ev.prompt();
-                await ev.userChoice;
-              } finally {
-                resetPromptState();
-                resolve();
-              }
+              await handlePrompt(ev);
+              resolve();
             })();
             return;
           }
@@ -458,6 +486,12 @@ export default function PwaInstallButton() {
               >
                 Install app
               </button>
+            )}
+            {canInstall && needsSecondTap && (
+              <p className="text-xs text-muted-foreground text-left">
+                Ready when you are—tap <span className="font-semibold">Install app</span> again to
+                open your browser prompt.
+              </p>
             )}
             {showIosFallback && (
               <div className="rounded-xl border border-border bg-surface/80 p-3 text-sm shadow-inner">
