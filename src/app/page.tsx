@@ -120,7 +120,7 @@ export default function Home() {
       </div>
       <div className="grid w-full max-w-6xl grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
         <OptionCard
-          title="Snap"
+          title="Snap Event"
           description="and it to your calendar."
           details={[
             "Use your camera to snap invites to calendar.",
@@ -131,7 +131,7 @@ export default function Home() {
           onClick={onSnap}
         />
         <OptionCard
-          title="Upload"
+          title="Upload Event"
           description="any saved invitation or flyer."
           details={[
             "Drop PDFs, screenshots, or photos from your library.",

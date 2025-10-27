@@ -221,7 +221,7 @@ export default async function RootLayout({
                       Privacy Policy
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
-                    <span>© {new Date().getFullYear()} Snap My Date</span>
+                    <span>© {new Date().getFullYear()} Envitefy</span>
                   </p>
                 </div>
               </div>
