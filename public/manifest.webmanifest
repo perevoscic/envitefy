@@ -1,6 +1,6 @@
 {
-  "name": "Snap My Date",
-  "short_name": "Snap My Date",
+  "name": "Envitefy",
+  "short_name": "Envitefy",
   "start_url": "/landing",
   "scope": "/",
   "display": "standalone",

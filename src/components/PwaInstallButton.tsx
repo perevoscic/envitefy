@@ -195,9 +195,7 @@ export default function PwaInstallButton() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const w = window as SnapWindow;
-    const adoptPrompt = (
-      evt: BeforeInstallPromptEvent | null | undefined
-    ) => {
+    const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
       w.__snapInstallDeferredPrompt = evt;
       setDeferred(evt);
@@ -329,8 +327,8 @@ export default function PwaInstallButton() {
                 </div>
                 <div className="text-xs opacity-70">
                   {showIosFallback
-                    ? "Follow these steps to add Snap My Date to your iOS home screen."
-                    : "Keep Snap My Date handy on your device."}
+                    ? "Follow these steps to add Envitefy to your iOS home screen."
+                    : "Keep Envitefy handy on your device."}
                 </div>
               </div>
               <button
@@ -398,7 +396,7 @@ export default function PwaInstallButton() {
                   </div>
                   <div className="space-y-2">
                     <div className="font-medium">
-                      Add Snap My Date to your Home Screen
+                      Add Envitefy to your Home Screen
                     </div>
                     <ol className="list-decimal ml-5 space-y-1">
                       <li>
@@ -406,7 +404,10 @@ export default function PwaInstallButton() {
                       </li>
                       <li>
                         Choose{" "}
-                        <span className="font-semibold">Add to Home Screen</span>.
+                        <span className="font-semibold">
+                          Add to Home Screen
+                        </span>
+                        .
                       </li>
                       <li>
                         Tap <span className="font-semibold">Add</span> to
@@ -423,7 +424,32 @@ export default function PwaInstallButton() {
             )}
             {!canInstall && !showIosFallback && showGenericFallback && (
               <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
-                <div className="font-medium mb-1">Install this app</div>
+                <div className="font-medium mb-2">Install this app</div>
+                <button
+                  onClick={async () => {
+                    if (deferred) {
+                      await deferred.prompt();
+                      try {
+                        await deferred.userChoice;
+                      } finally {
+                        setDeferred(null);
+                        setCanInstall(false);
+                        setShowIosTip(false);
+                        try {
+                          (window as SnapWindow).__snapInstallDeferredPrompt =
+                            null;
+                        } catch {}
+                      }
+                    } else {
+                      try {
+                        setExpanded(true);
+                      } catch {}
+                    }
+                  }}
+                  className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg mb-3"
+                >
+                  Install app
+                </button>
                 <div className="opacity-80">
                   Open your browser menu and choose{" "}
                   <span className="font-semibold">Install app</span>.
