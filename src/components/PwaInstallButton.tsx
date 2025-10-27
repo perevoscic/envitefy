@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -42,30 +42,32 @@ export default function PwaInstallButton() {
   const [heroOutOfView, setHeroOutOfView] = useState(false);
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [androidFallbackHint, setAndroidFallbackHint] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const computeStandalone = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      if ((window.navigator as any).standalone === true) return true; // iOS
+      if (
+        window.matchMedia &&
+        window.matchMedia("(display-mode: standalone)").matches
+      )
+        return true;
+      if (
+        window.matchMedia &&
+        window.matchMedia("(display-mode: fullscreen)").matches
+      )
+        return true;
+    } catch {}
+    return false;
+  }, []);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const isStandalone = () => {
-      try {
-        if ((window.navigator as any).standalone === true) return true; // iOS
-        if (
-          window.matchMedia &&
-          window.matchMedia("(display-mode: standalone)").matches
-        )
-          return true;
-        if (
-          window.matchMedia &&
-          window.matchMedia("(display-mode: fullscreen)").matches
-        )
-          return true;
-      } catch {}
-      return false;
-    };
-
-    if (isStandalone()) {
+    if (computeStandalone()) {
       setCanInstall(false);
       return;
     }
@@ -96,17 +98,38 @@ export default function PwaInstallButton() {
     };
     maybeCheckRelated();
 
-    // Heuristic: mark as maybe-installable for fallback flows on browsers
-    // that don't expose beforeinstallprompt or haven't fired it yet
+    const refreshInstallable = () => {
+      try {
+        const hasManifest = !!document.querySelector('link[rel="manifest"]');
+        const isSecure =
+          window.isSecureContext || location.hostname === "localhost";
+        const hasController = Boolean(
+          (navigator as any).serviceWorker?.controller
+        );
+        const standaloneNow = computeStandalone();
+        const installable =
+          hasManifest && isSecure && hasController && !standaloneNow;
+        setMaybeInstallable(installable);
+        if (installable) setAndroidFallbackHint(false);
+      } catch {}
+    };
+
+    refreshInstallable();
+
     try {
-      const hasManifest = !!document.querySelector('link[rel="manifest"]');
-      const isSecure =
-        window.isSecureContext || location.hostname === "localhost";
-      const hasSW = "serviceWorker" in navigator;
-      const isStandaloneNow = isStandalone();
-      if (hasManifest && isSecure && hasSW && !isStandaloneNow) {
-        setMaybeInstallable(true);
-      }
+      navigator.serviceWorker?.ready
+        .then(() => {
+          refreshInstallable();
+        })
+        .catch(() => {});
+    } catch {}
+
+    const sw = navigator.serviceWorker;
+    const onControllerChange = () => {
+      refreshInstallable();
+    };
+    try {
+      sw?.addEventListener("controllerchange", onControllerChange);
     } catch {}
 
     return () => {
@@ -115,8 +138,11 @@ export default function PwaInstallButton() {
       } catch {
         (mql as any)?.removeListener?.(onChange);
       }
+      try {
+        sw?.removeEventListener("controllerchange", onControllerChange);
+      } catch {}
     };
-  }, []);
+  }, [computeStandalone]);
 
   // Nudge the FAB above the reCAPTCHA badge when present
   useEffect(() => {
@@ -204,6 +230,7 @@ export default function PwaInstallButton() {
       setDeferred(evt);
       setCanInstall(true);
       setShowIosTip(false);
+      setAndroidFallbackHint(false);
     };
     adoptPrompt(w.__snapInstallDeferredPrompt ?? null);
     const onPromptReady = (event: Event) => {
@@ -241,6 +268,7 @@ export default function PwaInstallButton() {
       setCanInstall(false);
       setShowIosTip(false);
       setMaybeInstallable(false);
+      setAndroidFallbackHint(false);
       setExpanded(false);
     };
     window.addEventListener("appinstalled", onInstalled);
@@ -280,17 +308,23 @@ export default function PwaInstallButton() {
   const attemptInstall = async () => {
     const w = window as SnapWindow;
     const promptEvt = deferred || w.__snapInstallDeferredPrompt || null;
+    const resetPromptState = () => {
+      setDeferred(null);
+      setCanInstall(false);
+      setShowIosTip(false);
+      setAndroidFallbackHint(false);
+      try {
+        w.__snapInstallDeferredPrompt = null;
+      } catch {}
+    };
+    let prompted = false;
     if (promptEvt) {
+      prompted = true;
       await promptEvt.prompt();
       try {
         await promptEvt.userChoice;
       } finally {
-        setDeferred(null);
-        setCanInstall(false);
-        setShowIosTip(false);
-        try {
-          w.__snapInstallDeferredPrompt = null;
-        } catch {}
+        resetPromptState();
       }
       return;
     }
@@ -306,17 +340,13 @@ export default function PwaInstallButton() {
             (window as SnapWindow).__snapInstallDeferredPrompt ||
             null;
           if (ev) {
+            prompted = true;
             (async () => {
               try {
                 await ev.prompt();
                 await ev.userChoice;
               } finally {
-                setDeferred(null);
-                setCanInstall(false);
-                setShowIosTip(false);
-                try {
-                  (window as SnapWindow).__snapInstallDeferredPrompt = null;
-                } catch {}
+                resetPromptState();
                 resolve();
               }
             })();
@@ -337,6 +367,9 @@ export default function PwaInstallButton() {
         resolve();
       }, 3000);
     });
+    if (!prompted && isAndroid) {
+      setAndroidFallbackHint(true);
+    }
   };
 
   useEffect(() => {
@@ -478,13 +511,18 @@ export default function PwaInstallButton() {
               !showIosFallback &&
               showGenericFallback &&
               (isAndroid ? (
-                <div className="pt-1">
+                <div className="pt-1 space-y-2">
                   <button
                     onClick={attemptInstall}
                     className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
                   >
                     Install app
                   </button>
+                  <div className="text-xs opacity-70 text-left">
+                    {androidFallbackHint
+                      ? "If Chrome doesn't show the install sheet, open the browser menu and choose \"Install app\". On a first visit you may need to reload once so Chrome notices Envitefy is installable."
+                      : "Chrome may take a moment to show the install sheet. If it doesn't appear right away, open the browser menu and choose \"Install app\"."}
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
