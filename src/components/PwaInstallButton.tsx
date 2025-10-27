@@ -41,6 +41,7 @@ export default function PwaInstallButton() {
   const [expanded, setExpanded] = useState(false);
   const [heroOutOfView, setHeroOutOfView] = useState(false);
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
+  const [isAndroid, setIsAndroid] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Hide if already installed or running in standalone
@@ -175,9 +176,11 @@ export default function PwaInstallButton() {
     const isIOS =
       /iPhone|iPad|iPod/.test(ua) ||
       (/\bMacintosh\b/.test(ua) && "ontouchend" in document);
+    const androidUA = /Android|Windows Phone|Silk\//i.test(ua);
     const mql = window.matchMedia("(max-width: 1024px)");
     const update = () => setAllowedDevice(isIOS || mql.matches);
     update();
+    setIsAndroid(androidUA);
     try {
       mql.addEventListener("change", update);
     } catch {
@@ -422,40 +425,71 @@ export default function PwaInstallButton() {
                 </div>
               </div>
             )}
-            {!canInstall && !showIosFallback && showGenericFallback && (
-              <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
-                <div className="font-medium mb-2">Install this app</div>
-                <button
-                  onClick={async () => {
-                    if (deferred) {
-                      await deferred.prompt();
-                      try {
-                        await deferred.userChoice;
-                      } finally {
-                        setDeferred(null);
-                        setCanInstall(false);
-                        setShowIosTip(false);
+            {!canInstall &&
+              !showIosFallback &&
+              showGenericFallback &&
+              (isAndroid ? (
+                <div className="pt-1">
+                  <button
+                    onClick={async () => {
+                      if (deferred) {
+                        await deferred.prompt();
                         try {
-                          (window as SnapWindow).__snapInstallDeferredPrompt =
-                            null;
+                          await deferred.userChoice;
+                        } finally {
+                          setDeferred(null);
+                          setCanInstall(false);
+                          setShowIosTip(false);
+                          try {
+                            (window as SnapWindow).__snapInstallDeferredPrompt =
+                              null;
+                          } catch {}
+                        }
+                      } else {
+                        try {
+                          setExpanded(true);
                         } catch {}
                       }
-                    } else {
-                      try {
-                        setExpanded(true);
-                      } catch {}
-                    }
-                  }}
-                  className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg mb-3"
-                >
-                  Install app
-                </button>
-                <div className="opacity-80">
-                  Open your browser menu and choose{" "}
-                  <span className="font-semibold">Install app</span>.
+                    }}
+                    className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
+                  >
+                    Install app
+                  </button>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
+                  <div className="font-medium mb-2">Install this app</div>
+                  <button
+                    onClick={async () => {
+                      if (deferred) {
+                        await deferred.prompt();
+                        try {
+                          await deferred.userChoice;
+                        } finally {
+                          setDeferred(null);
+                          setCanInstall(false);
+                          setShowIosTip(false);
+                          try {
+                            (window as SnapWindow).__snapInstallDeferredPrompt =
+                              null;
+                          } catch {}
+                        }
+                      } else {
+                        try {
+                          setExpanded(true);
+                        } catch {}
+                      }
+                    }}
+                    className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg mb-3"
+                  >
+                    Install app
+                  </button>
+                  <div className="opacity-80">
+                    Open your browser menu and choose{" "}
+                    <span className="font-semibold">Install app</span>.
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       )}
