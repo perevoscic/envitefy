@@ -121,7 +121,7 @@ export default function Home() {
       <div className="grid w-full max-w-6xl grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
         <OptionCard
           title="Snap"
-          description="Scan any flyer and we'll add it to your calendar."
+          description="and it to your calendar."
           details={[
             "Use your camera to snap invites to calendar.",
             "Extracts dates, locations, and RSVP details automatically.",
@@ -132,7 +132,7 @@ export default function Home() {
         />
         <OptionCard
           title="Upload"
-          description="Upload any saved invitation, and add it to your calendar."
+          description="any saved invitation or flyer."
           details={[
             "Drop PDFs, screenshots, or photos from your library.",
             "Smart cleanup handles decorative fonts and tricky layouts.",
@@ -143,7 +143,7 @@ export default function Home() {
         />
         <OptionCard
           title="Create Event"
-          description="Use our advanced creation tools for more control."
+          description="advanced creation tools."
           details={[
             "Start from scratch with precise times, reminders, and notes.",
             "Add recurrence rules, categories, and custom reminders.",
@@ -154,7 +154,7 @@ export default function Home() {
         />
         <OptionCard
           title="Sign-Up Form"
-          description="Smart forms for school events, volunteers, or any event."
+          description="for school events, volunteers."
           details={[
             "Build RSVP and volunteer sheets with slot limits and questions.",
             "Share a single link that syncs responses in real time.",
@@ -304,7 +304,7 @@ function OptionCard({
 
   const frontCard = (
     <div
-      className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 p-4 md:p-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 px-3 py-4 md:px-5 md:py-6 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
       data-card-tone={tone}
     >
       <div
@@ -354,7 +354,7 @@ function OptionCard({
           closeDetails(event);
         }
       }}
-      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-surface/95 p-4 md:p-6 text-left shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-transform duration-300 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-surface/95 px-3 py-4 md:px-5 md:py-6 text-left shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-transform duration-300 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
       data-card-tone={tone}
       style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
     >

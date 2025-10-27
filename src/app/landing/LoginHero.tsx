@@ -280,7 +280,7 @@ export default function LoginHero() {
             <span className="text-[#FFFFFF]">tefy.com</span>
           </span>
         </p>
-        <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat">
+        <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat px-4 md:px-0">
           Turn flyers, invites, and schedules into shareable plans in seconds —
           or craft your own event and smart sign-up form just as fast.
         </p>

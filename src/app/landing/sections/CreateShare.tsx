@@ -43,17 +43,17 @@ const registries = [
   {
     label: "Amazon",
     badge: "A",
-    badgeClass: "bg-foreground/10 text-sm font-bold",
+    badgeClass: "bg-foreground/10 text-xs font-bold",
   },
   {
     label: "Target",
     badge: "T",
-    badgeClass: "bg-primary/10 text-sm font-bold text-primary",
+    badgeClass: "bg-primary/10 text-xs font-bold text-primary",
   },
   {
     label: "Walmart",
     badge: "W",
-    badgeClass: "bg-blue-100 text-sm font-bold text-blue-700",
+    badgeClass: "bg-blue-100 text-xs font-bold text-blue-700",
   },
 ];
 
@@ -277,18 +277,18 @@ export default function CreateShare() {
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
                   Registries
                 </h4>
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-3 flex items-center gap-2">
                   {registries.map((registry) => (
                     <span
                       key={registry.label}
-                      className="flex items-center gap-2 rounded-xl border border-border bg-background/90 px-3 py-1.5 text-sm font-semibold text-foreground"
+                      className="flex items-center gap-1.5 rounded-xl border border-border bg-background/90 px-2.5 py-1 text-xs sm:text-sm font-semibold text-foreground max-w-[38%] truncate"
                     >
                       <span
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${registry.badgeClass}`}
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${registry.badgeClass}`}
                       >
                         {registry.badge}
                       </span>
-                      {registry.label}
+                      <span className="truncate">{registry.label}</span>
                     </span>
                   ))}
                 </div>
