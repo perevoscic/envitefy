@@ -30,7 +30,13 @@ if (typeof window !== "undefined") {
   }
 }
 
-export default function PwaInstallButton() {
+type PwaInstallButtonProps = {
+  startExpanded?: boolean;
+};
+
+export default function PwaInstallButton({
+  startExpanded = false,
+}: PwaInstallButtonProps) {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
@@ -38,7 +44,8 @@ export default function PwaInstallButton() {
   const [showIosTip, setShowIosTip] = useState(false);
   const [allowedDevice, setAllowedDevice] = useState(false);
   const [maybeInstallable, setMaybeInstallable] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(startExpanded);
+  const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
   const [heroOutOfView, setHeroOutOfView] = useState(false);
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -285,13 +292,31 @@ export default function PwaInstallButton() {
     !canInstall && !showIosFallback && maybeInstallable;
 
   useEffect(() => {
-    if (
-      !heroOutOfView ||
-      (!canInstall && !showIosFallback && !showGenericFallback)
-    ) {
-      setExpanded(false);
+    const hasAnyOption =
+      canInstall || showIosFallback || showGenericFallback;
+    if (!heroOutOfView || !hasAnyOption) {
+      if (!startExpanded) {
+        setExpanded(false);
+      }
+      return;
     }
-  }, [heroOutOfView, canInstall, showIosFallback, showGenericFallback]);
+    if (startExpanded && !wasManuallyClosed) {
+      setExpanded(true);
+    }
+  }, [
+    heroOutOfView,
+    canInstall,
+    showIosFallback,
+    showGenericFallback,
+    startExpanded,
+    wasManuallyClosed,
+  ]);
+
+  useEffect(() => {
+    if (!startExpanded) {
+      setWasManuallyClosed(false);
+    }
+  }, [startExpanded]);
   if (
     (!canInstall && !showIosFallback && !showGenericFallback) ||
     !heroOutOfView
@@ -306,7 +331,10 @@ export default function PwaInstallButton() {
       {!expanded && (
         <button
           type="button"
-          onClick={() => setExpanded(true)}
+          onClick={() => {
+            setWasManuallyClosed(false);
+            setExpanded(true);
+          }}
           className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
           aria-label="Open install options"
         >
@@ -343,7 +371,10 @@ export default function PwaInstallButton() {
               </div>
               <button
                 type="button"
-                onClick={() => setExpanded(false)}
+                onClick={() => {
+                  setExpanded(false);
+                  setWasManuallyClosed(true);
+                }}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground transition"
                 aria-label="Collapse install options"
               >
