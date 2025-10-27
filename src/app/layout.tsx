@@ -81,12 +81,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Envitefy | Create. Share. Enjoy.",
     description:
-      "Turn flyers, invites, and schedules into shareable plans in seconds.",
+      "Turn flyers, invites, and signup forms into shareable plans in seconds.",
     url: "https://envitefy.com",
     siteName: "Envitefy",
     images: [
       {
-        url: "https://envitefy.com/og-default.jpg",
+        url: "https://envitefy.com/og-default-v2.jpg",
         width: 1200,
         height: 630,
         alt: "Envitefy thumbnail",
