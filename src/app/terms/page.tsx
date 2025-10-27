@@ -6,7 +6,7 @@ export default function TermsPage() {
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-5xl grid grid-cols-1 items-center">
         <div className="text-center">
-          <h1 className="sr-only">Snap My Date - Snap it. Save it. Done.</h1>
+          <h1 className="sr-only">Envitefy — Create. Share. Enjoy.</h1>
           <div className="bg-gradient-to-tr from-fuchsia-500/15 via-sky-400/15 to-violet-500/15 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-10 pb-16 border border-border">
               <h1 className="text-5xl sm:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible">
@@ -15,8 +15,8 @@ export default function TermsPage() {
                 </span>
               </h1>
               <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
-                By using Snap My Date, you agree to these terms. Please read
-                them carefully.
+                By using Envitefy, you agree to these terms. Please read them
+                carefully.
               </p>
 
               <div className="mt-8 text-left max-w-3xl mx-auto space-y-6 text-foreground/80">
@@ -25,7 +25,7 @@ export default function TermsPage() {
                     What we do
                   </h2>
                   <p className="mt-2">
-                    Snap My Date helps you extract event details from
+                    Envitefy helps you extract event details from
                     images/photos/pdfs and create calendar events (including
                     `.ics` files) and optionally save them to your favorite
                     calendar service via integrations.
@@ -115,7 +115,7 @@ export default function TermsPage() {
                     Intellectual property
                   </h2>
                   <p className="mt-2">
-                    The Snap My Date app, logos, and code are our intellectual
+                    The Envitefy app, logos, and code are our intellectual
                     property or our licensors&apos;. Using the service
                     doesn&apos;t give you ownership of our IP.
                   </p>

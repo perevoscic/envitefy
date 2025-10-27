@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       metadata,
       payment_intent_data: {
         metadata,
-        description: `Snap My Date gift (${quantity} ${period})`,
+        description: `Envitefy gift (${quantity} ${period})`,
       },
       line_items: [
         {
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
             currency: "usd",
             unit_amount: unitAmount,
             product_data: {
-              name: `Snap My Date Gift (${period === "years" ? "Year" : "Month"})`,
+              name: `Envitefy Gift (${period === "years" ? "Year" : "Month"})`,
               metadata: {
                 type: "gift",
                 period,

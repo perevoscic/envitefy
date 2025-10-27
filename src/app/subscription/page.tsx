@@ -153,10 +153,10 @@ export default function SubscriptionPage() {
       if (typeof window === "undefined") return;
       const label =
         plan === "yearly"
-          ? "Snap My Date Premium - Yearly"
+          ? "Envitefy Premium - Yearly"
           : plan === "monthly"
-          ? "Snap My Date Premium - Monthly"
-          : "Snap My Date Premium";
+          ? "Envitefy Premium - Monthly"
+          : "Envitefy Premium";
 
       const payload = {
         transaction_id: sessionId,
@@ -190,8 +190,7 @@ export default function SubscriptionPage() {
     let message: string | null = null;
     if (status === "success") {
       type = "success";
-      message =
-        "Subscription confirmed. Thank you for supporting Snap My Date!";
+      message = "Subscription confirmed. Thank you for supporting Envitefy!";
     } else if (status === "gift-success") {
       type = "success";
       message = "Gift purchase complete! We'll email the gift code shortly.";
@@ -369,11 +368,9 @@ export default function SubscriptionPage() {
         href="/"
         className="mx-auto flex items-center gap-4 mb-6 justify-center"
       >
-        <Image src={Logo} alt="Snap My Date" width={64} height={64} />
+        <Image src={Logo} alt="Envitefy" width={64} height={64} />
         <span className="text-4xl sm:text-5xl md:text-6xl text-foreground">
-          <span className="font-pacifico">Snap</span>
-          <span> </span>
-          <span className="font-montserrat font-semibold">My Date</span>
+          <span className="font-montserrat font-semibold">Envitefy</span>
         </span>
       </Link>
       <h4 className="text-l text-muted-foreground mb-6 text-center">
@@ -748,7 +745,7 @@ export default function SubscriptionPage() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Welcome to Snap My Date"
+            aria-label="Welcome to Envitefy"
             className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/60"
             style={{
               background:
@@ -771,12 +768,7 @@ export default function SubscriptionPage() {
 
               <div className="flex items-start justify-between gap-4">
                 <h2 className="text-2xl font-bold tracking-tight">
-                  Welcome to
-                  <span className="block text-3xl md:text-4xl">
-                    <span className="font-pacifico"> Snap</span>
-                    <span> </span>
-                    <span className="font-montserrat">My Date</span>
-                  </span>
+                  Welcome to Envitefy
                 </h2>
                 <button
                   aria-label="Close"

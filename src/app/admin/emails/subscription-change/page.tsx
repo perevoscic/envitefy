@@ -96,8 +96,8 @@ export default function SubscriptionChangePreviewPage() {
     (scenario.oldPlan === "yearly" && scenario.newPlan === "monthly");
 
   const subject = isUpgrade
-    ? `Welcome to ${scenario.newPlanLabel} - Snap My Date`
-    : `Your Snap My Date plan has been updated`;
+    ? `Welcome to ${scenario.newPlanLabel} - Envitefy`
+    : `Your Envitefy plan has been updated`;
 
   const preheader = isUpgrade
     ? `You've upgraded from ${scenario.oldPlanLabel} to ${scenario.newPlanLabel}.`
@@ -110,7 +110,7 @@ export default function SubscriptionChangePreviewPage() {
       ? `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; font-weight: 600; color: #2E2C2D;">
-        🎊 Welcome to Snap My Date Family and Friends Club!
+        🎊 Welcome to Envitefy Family and Friends Club!
       </p>
       <div style="text-align: center; margin: 24px 0;">
         <span style="display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 8px; background: linear-gradient(to right, #f59e0b, #f97316); color: white; font-weight: 600; font-size: 14px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2);">
@@ -118,7 +118,7 @@ export default function SubscriptionChangePreviewPage() {
         </span>
       </div>
       <p style="margin: 20px 0 16px 0; font-size: 16px; line-height: 1.6;">
-        You've been granted exclusive lifetime access to Snap My Date! This special membership gives you unlimited scans, unlimited storage, and all premium features—forever.
+        You've been granted exclusive lifetime access to Envitefy! This special membership gives you unlimited scans, unlimited storage, and all premium features—forever.
       </p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
         Start snapping and saving all your important dates with no limits!
@@ -128,7 +128,7 @@ export default function SubscriptionChangePreviewPage() {
       ? `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-        🎉 Great news! Your Snap My Date subscription has been upgraded.
+        🎉 Great news! Your Envitefy subscription has been upgraded.
       </p>
       <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
         <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">Subscription Upgraded</p>
@@ -147,7 +147,7 @@ export default function SubscriptionChangePreviewPage() {
       : `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-        Your Snap My Date plan has been updated.
+        Your Envitefy plan has been updated.
       </p>
       <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
         <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #737373;">Plan Updated</p>
@@ -306,4 +306,3 @@ export default function SubscriptionChangePreviewPage() {
     </div>
   );
 }
-

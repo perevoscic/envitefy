@@ -76,7 +76,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Snap My Date",
+    title: "Envitefy",
   },
 };
 

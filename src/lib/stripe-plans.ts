@@ -25,8 +25,8 @@ export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
     unitAmount: 99,
     currency: "usd",
     interval: "month",
-    name: "Snap My Date Monthly",
-    description: "Monthly subscription for Snap My Date",
+    name: "Envitefy Monthly",
+    description: "Monthly subscription for Envitefy",
     // Use explicit product id only when supplied via env or when a live key is used (to avoid mixing modes)
     productId: monthlyProductId || (isLiveKey ? "prod_T93CX7Yaqefp2B" : undefined),
   },
@@ -36,8 +36,8 @@ export const STRIPE_PLAN_CONFIG: Record<StripePlanId, StripePlanConfig> = {
     unitAmount: 999,
     currency: "usd",
     interval: "year",
-    name: "Snap My Date Yearly",
-    description: "Yearly subscription for Snap My Date",
+    name: "Envitefy Yearly",
+    description: "Yearly subscription for Envitefy",
     productId: yearlyProductId || (isLiveKey ? "prod_T93Df9XcDp26Nm" : undefined),
   },
 };

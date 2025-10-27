@@ -44,7 +44,7 @@ async function resendHttpSend(params: {
   // If domain not verified, Resend returns 400/422. Retry with onboarding.
   const maybeDomainError = /domain|from address|verified/i.test(first.text || "");
   if (maybeDomainError || first.status === 400 || first.status === 422) {
-    const fallbackFrom = process.env.RESEND_FROM_EMAIL || "Snap My Date <onboarding@resend.dev>";
+    const fallbackFrom = process.env.RESEND_FROM_EMAIL || "Envitefy <onboarding@resend.dev>";
     const second = await doSend(fallbackFrom);
     if (second.ok) return;
     throw new Error(`Resend HTTP ${second.status}: ${second.text || "send failed"}`);
@@ -82,7 +82,7 @@ export async function sendBulkEmail(
     params.fromEmail ||
     process.env.RESEND_FROM_EMAIL ||
     process.env.SES_FROM_EMAIL_NO_REPLY ||
-    "Snap My Date <onboarding@resend.dev>";
+    "Envitefy <onboarding@resend.dev>";
 
   // Resend free tier: 2 requests/second. We'll send 1 at a time with 550ms delay to be safe.
   const RATE_LIMIT_BATCH = 1;
@@ -113,7 +113,7 @@ export async function sendBulkEmail(
           buttonText: params.buttonText,
           buttonUrl: params.buttonUrl,
           footerText:
-            "You're receiving this because you have a Snap My Date account.",
+            "You're receiving this because you have an Envitefy account.",
         });
 
         await resendHttpSend({
@@ -155,14 +155,14 @@ export async function sendTestEmail(toEmail: string): Promise<boolean> {
         <p>This is a test email to verify your Resend integration is working correctly.</p>
         <p>If you're seeing this, everything is set up properly! 🎉</p>
       `,
-      footerText: "This is a test email from Snap My Date admin.",
+      footerText: "This is a test email from Envitefy admin.",
     });
 
     await resendHttpSend({
       from:
         process.env.RESEND_FROM_EMAIL ||
         process.env.SES_FROM_EMAIL_NO_REPLY ||
-        "Snap My Date <onboarding@resend.dev>",
+        "Envitefy <onboarding@resend.dev>",
       to: toEmail,
       subject: "Resend Test Email",
       html,

@@ -98,7 +98,7 @@ const THEMES_ARRAY: ThemeDefinition[] = [
   createThemeDefinition({
     key: "general",
     label: "General",
-    description: "Default Snap My Date experience with teal + indigo accent colors.",
+    description: "Default Envitefy experience with teal + indigo accent colors.",
     order: 0,
     scheduleSummary: "Used whenever no seasonal window is active.",
     light: generalLight,

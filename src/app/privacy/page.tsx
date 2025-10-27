@@ -6,7 +6,7 @@ export default function PrivacyPage() {
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-5xl grid grid-cols-1 items-center">
         <div className="text-center">
-          <h1 className="sr-only">Snap My Date - Snap it. Save it. Done.</h1>
+          <h1 className="sr-only">Envitefy — Create. Share. Enjoy.</h1>
           <div className="bg-gradient-to-tr from-fuchsia-500/15 via-sky-400/15 to-violet-500/15 rounded-3xl p-1">
             <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-10 pb-16 border border-border">
               <h1 className="text-5xl sm:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible">

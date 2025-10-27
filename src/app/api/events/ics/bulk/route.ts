@@ -65,7 +65,7 @@ function foldLine(input: string): string {
 function buildIcs(events: NormalizedEvent[]): string {
   const lines: string[] = [];
   lines.push("BEGIN:VCALENDAR");
-  lines.push("PRODID:-//Snap My Date//Bulk Export//EN");
+  lines.push("PRODID:-//Envitefy//Bulk Export//EN");
   lines.push("VERSION:2.0");
   lines.push("CALSCALE:GREGORIAN");
   lines.push("METHOD:PUBLISH");
@@ -73,7 +73,7 @@ function buildIcs(events: NormalizedEvent[]): string {
   const now = formatIcsDate(new Date().toISOString());
 
   for (const ev of events) {
-    const uid = `${randomUUID()}@snapmydate.app`;
+    const uid = `${randomUUID()}@envitefy.com`;
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${uid}`);
     lines.push(`DTSTAMP:${now}`);

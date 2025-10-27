@@ -16,15 +16,13 @@ export default function TopNav() {
       <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <Link href="/" className="flex items-center gap-2 min-w-0">
-            <Image src={Logo} alt="Snap My Date" className="h-9 w-9" />
+            <Image src={Logo} alt="Envitefy" className="h-9 w-9" />
             <span className="text-base text-foreground truncate leading-tight">
-              <span className="block truncate">
-                <span className="font-pacifico">Snap</span>
-                <span> </span>
-                <span className="font-montserrat font-semibold">My Date</span>
+              <span className="block truncate font-montserrat font-semibold">
+                Envitefy
               </span>
               <span className="block text-xs text-foreground/60 truncate">
-                Snap it. Save it.
+                Create. Share. Enjoy.
               </span>
             </span>
           </Link>
