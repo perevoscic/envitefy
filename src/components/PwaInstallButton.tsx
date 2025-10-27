@@ -277,6 +277,68 @@ export default function PwaInstallButton() {
   const showGenericFallback =
     !canInstall && !showIosFallback && maybeInstallable;
 
+  const attemptInstall = async () => {
+    const w = window as SnapWindow;
+    const promptEvt = deferred || w.__snapInstallDeferredPrompt || null;
+    if (promptEvt) {
+      await promptEvt.prompt();
+      try {
+        await promptEvt.userChoice;
+      } finally {
+        setDeferred(null);
+        setCanInstall(false);
+        setShowIosTip(false);
+        try {
+          w.__snapInstallDeferredPrompt = null;
+        } catch {}
+      }
+      return;
+    }
+    // Wait up to 3s for a late arriving event after click
+    await new Promise<void>((resolve) => {
+      let done = false as boolean;
+      const onReady = (event: Event) => {
+        if (done) return;
+        done = true;
+        try {
+          const ev =
+            (event as CustomEvent<BeforeInstallPromptEvent | null>).detail ||
+            (window as SnapWindow).__snapInstallDeferredPrompt ||
+            null;
+          if (ev) {
+            (async () => {
+              try {
+                await ev.prompt();
+                await ev.userChoice;
+              } finally {
+                setDeferred(null);
+                setCanInstall(false);
+                setShowIosTip(false);
+                try {
+                  (window as SnapWindow).__snapInstallDeferredPrompt = null;
+                } catch {}
+                resolve();
+              }
+            })();
+            return;
+          }
+        } catch {}
+        resolve();
+      };
+      window.addEventListener(BRIDGE_EVENT_NAME, onReady as any, {
+        once: true,
+      });
+      window.setTimeout(() => {
+        if (done) return;
+        try {
+          window.removeEventListener(BRIDGE_EVENT_NAME, onReady as any);
+        } catch {}
+        done = true;
+        resolve();
+      }, 3000);
+    });
+  };
+
   useEffect(() => {
     if (
       !heroOutOfView ||
@@ -358,20 +420,7 @@ export default function PwaInstallButton() {
             </div>
             {canInstall && (
               <button
-                onClick={async () => {
-                  if (!deferred) return;
-                  await deferred.prompt();
-                  try {
-                    await deferred.userChoice;
-                  } finally {
-                    setDeferred(null);
-                    setCanInstall(false);
-                    setShowIosTip(false);
-                    try {
-                      (window as SnapWindow).__snapInstallDeferredPrompt = null;
-                    } catch {}
-                  }
-                }}
+                onClick={attemptInstall}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
               >
                 Install app
@@ -431,26 +480,7 @@ export default function PwaInstallButton() {
               (isAndroid ? (
                 <div className="pt-1">
                   <button
-                    onClick={async () => {
-                      if (deferred) {
-                        await deferred.prompt();
-                        try {
-                          await deferred.userChoice;
-                        } finally {
-                          setDeferred(null);
-                          setCanInstall(false);
-                          setShowIosTip(false);
-                          try {
-                            (window as SnapWindow).__snapInstallDeferredPrompt =
-                              null;
-                          } catch {}
-                        }
-                      } else {
-                        try {
-                          setExpanded(true);
-                        } catch {}
-                      }
-                    }}
+                    onClick={attemptInstall}
                     className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
                   >
                     Install app
@@ -460,26 +490,7 @@ export default function PwaInstallButton() {
                 <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
                   <div className="font-medium mb-2">Install this app</div>
                   <button
-                    onClick={async () => {
-                      if (deferred) {
-                        await deferred.prompt();
-                        try {
-                          await deferred.userChoice;
-                        } finally {
-                          setDeferred(null);
-                          setCanInstall(false);
-                          setShowIosTip(false);
-                          try {
-                            (window as SnapWindow).__snapInstallDeferredPrompt =
-                              null;
-                          } catch {}
-                        }
-                      } else {
-                        try {
-                          setExpanded(true);
-                        } catch {}
-                      }
-                    }}
+                    onClick={attemptInstall}
                     className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg mb-3"
                   >
                     Install app
