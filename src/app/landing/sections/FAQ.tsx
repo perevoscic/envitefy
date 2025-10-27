@@ -66,6 +66,14 @@ const qs = [
     q: "What types of image files can I upload?",
     a: "You can upload common image formats like JPEG, and PNG. Clear, well-lit photos give the best results.",
   },
+  {
+    q: "What is Envitefy?",
+    a: "Envitefy turns invitations and flyers into real calendar events. Upload a photo or PDF and we extract the title, date, time, and location, then let you download an ICS file or add the event directly to Google Calendar or Microsoft Outlook.",
+  },
+  {
+    q: "How does Envitefy use my Google data?",
+    a: "When you choose “Continue with Google,” we request Calendar permission to create and update events you save with Envitefy. We do not read your email, contacts, or other Google data. We store a Google refresh token only to add events on your behalf; you can disconnect anytime from your account or at myaccount.google.com.",
+  },
 ];
 
 export default function FAQ() {

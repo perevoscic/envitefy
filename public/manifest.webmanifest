@@ -1,7 +1,7 @@
 {
-  "name": "Snap My Date",
-  "short_name": "Snap My Date",
-  "start_url": "/landing",
+  "name": "Envitefy",
+  "short_name": "Envitefy",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -217,16 +217,23 @@ export default function PwaInstallButton({
     };
     window.addEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
     // iOS/iPadOS Safari never fires beforeinstallprompt; show a clear fallback
+    // Also surface the same fallback UI on macOS Safari for consistency
     const ua = navigator.userAgent || (navigator as any).vendor || "";
     const isIOS =
       /iPhone|iPad|iPod/.test(ua) ||
       (/\bMacintosh\b/.test(ua) && "ontouchend" in document);
+    const isMacSafari =
+      /\bMacintosh\b/.test(ua) &&
+      !("ontouchend" in document) &&
+      /Safari\//.test(ua) &&
+      !/Chrome|Chromium|Edg|OPR\//.test(ua);
     const isStandalone =
       (window.navigator as any).standalone === true ||
       (window.matchMedia &&
         window.matchMedia("(display-mode: standalone)").matches);
     let iosTimeout: number | undefined;
-    if (isIOS && !isStandalone && !w.__snapInstallDeferredPrompt) {
+    const isAppleLike = isIOS || isMacSafari;
+    if (isAppleLike && !isStandalone && !w.__snapInstallDeferredPrompt) {
       setShowIosTip(true);
       // Guard in case UA parsing runs before iOS paints toolbar
       iosTimeout = window.setTimeout(() => {
@@ -254,16 +261,6 @@ export default function PwaInstallButton({
   // Observe hero visibility
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // On the landing page, show install UI immediately (match "/" behavior)
-    // without requiring the hero to scroll out of view
-    try {
-      const isLandingPath = window.location?.pathname.startsWith("/landing");
-      if (isLandingPath) {
-        setHeroOutOfView(true);
-        return;
-      }
-    } catch {}
-
     const target = document.getElementById("landing-hero");
     if (!target) {
       setHeroOutOfView(true);
@@ -286,14 +283,19 @@ export default function PwaInstallButton({
   }, []);
 
   // Show native install button whenever eligible (regardless of viewport/device)
-  // iOS tip gated to mobile-ish devices; generic fallback shown when heuristically installable
-  const showIosFallback = !canInstall && showIosTip && allowedDevice;
+  // Show iOS fallback on all screen sizes; generic fallback when heuristically installable
+  const showIosFallback = !canInstall && showIosTip;
+  // Force-show generic fallback on localhost for dev/testing
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.hostname === "[::1]");
   const showGenericFallback =
-    !canInstall && !showIosFallback && maybeInstallable;
+    !canInstall && !showIosFallback && (maybeInstallable || isLocalhost);
 
   useEffect(() => {
-    const hasAnyOption =
-      canInstall || showIosFallback || showGenericFallback;
+    const hasAnyOption = canInstall || showIosFallback || showGenericFallback;
     if (!heroOutOfView || !hasAnyOption) {
       if (!startExpanded) {
         setExpanded(false);
@@ -364,9 +366,7 @@ export default function PwaInstallButton({
                   {showIosFallback ? "Install to Home Screen" : "Install app"}
                 </div>
                 <div className="text-xs opacity-70">
-                  {showIosFallback
-                    ? "Follow these steps to add Snap My Date to your iOS home screen."
-                    : "Keep Snap My Date handy on your device."}
+                  Keep Snap My Date handy on your device.
                 </div>
               </div>
               <button
@@ -436,9 +436,6 @@ export default function PwaInstallButton({
                     </svg>
                   </div>
                   <div className="space-y-2">
-                    <div className="font-medium">
-                      Add Snap My Date to your Home Screen
-                    </div>
                     <ol className="list-decimal ml-5 space-y-1">
                       <li>
                         Tap the Share button in Safari (square with arrow).
@@ -455,10 +452,6 @@ export default function PwaInstallButton({
                         confirm.
                       </li>
                     </ol>
-                    <div className="text-xs opacity-70">
-                      Tip: If you opened this in another browser on iOS, open in
-                      Safari to install.
-                    </div>
                   </div>
                 </div>
               </div>
