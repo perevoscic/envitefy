@@ -6,20 +6,24 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
-interface SnapWindow extends Window {
+interface InstallBridgeWindow extends Window {
+  __envitefyInstallDeferredPrompt?: BeforeInstallPromptEvent | null;
+  __envitefyInstallBridgeReady?: boolean;
   __snapInstallDeferredPrompt?: BeforeInstallPromptEvent | null;
   __snapInstallBridgeReady?: boolean;
 }
 
-const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
+const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
 
 if (typeof window !== "undefined") {
-  const w = window as SnapWindow;
-  if (!w.__snapInstallBridgeReady) {
+  const w = window as InstallBridgeWindow;
+  if (!w.__envitefyInstallBridgeReady) {
+    w.__envitefyInstallBridgeReady = true;
     w.__snapInstallBridgeReady = true;
     window.addEventListener("beforeinstallprompt", (event: Event) => {
       const bip = event as BeforeInstallPromptEvent;
       bip.preventDefault?.();
+      w.__envitefyInstallDeferredPrompt = bip;
       w.__snapInstallDeferredPrompt = bip;
       window.dispatchEvent(
         new CustomEvent<BeforeInstallPromptEvent | null>(BRIDGE_EVENT_NAME, {
@@ -224,20 +228,28 @@ export default function PwaInstallButton() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const w = window as SnapWindow;
+    const w = window as InstallBridgeWindow;
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
+      w.__envitefyInstallDeferredPrompt = evt;
       w.__snapInstallDeferredPrompt = evt;
       setDeferred(evt);
       setCanInstall(true);
       setShowIosTip(false);
       setAndroidFallbackHint(false);
     };
-    adoptPrompt(w.__snapInstallDeferredPrompt ?? null);
+    adoptPrompt(
+      w.__envitefyInstallDeferredPrompt ?? w.__snapInstallDeferredPrompt ?? null
+    );
     const onPromptReady = (event: Event) => {
       const detail =
         (event as CustomEvent<BeforeInstallPromptEvent | null>).detail ?? null;
-      adoptPrompt(detail ?? w.__snapInstallDeferredPrompt ?? null);
+      adoptPrompt(
+        detail ??
+          w.__envitefyInstallDeferredPrompt ??
+          w.__snapInstallDeferredPrompt ??
+          null
+      );
     };
     window.addEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
     // iOS/iPadOS Safari never fires beforeinstallprompt; show a clear fallback
@@ -250,11 +262,17 @@ export default function PwaInstallButton() {
       (window.matchMedia &&
         window.matchMedia("(display-mode: standalone)").matches);
     let iosTimeout: number | undefined;
-    if (isIOS && !isStandalone && !w.__snapInstallDeferredPrompt) {
+    const currentDeferred =
+      w.__envitefyInstallDeferredPrompt ?? w.__snapInstallDeferredPrompt ?? null;
+    if (isIOS && !isStandalone && !currentDeferred) {
       setShowIosTip(true);
       // Guard in case UA parsing runs before iOS paints toolbar
       iosTimeout = window.setTimeout(() => {
-        if (!w.__snapInstallDeferredPrompt) setShowIosTip(true);
+        const nextDeferred =
+          w.__envitefyInstallDeferredPrompt ??
+          w.__snapInstallDeferredPrompt ??
+          null;
+        if (!nextDeferred) setShowIosTip(true);
       }, 1200);
     }
 
@@ -313,7 +331,8 @@ export default function PwaInstallButton() {
     setAndroidFallbackHint(false);
     setNeedsSecondTap(false);
     try {
-      (window as SnapWindow).__snapInstallDeferredPrompt = null;
+      (window as InstallBridgeWindow).__envitefyInstallDeferredPrompt = null;
+      (window as InstallBridgeWindow).__snapInstallDeferredPrompt = null;
     } catch {}
   };
 
@@ -324,7 +343,8 @@ export default function PwaInstallButton() {
     setAndroidFallbackHint(false);
     setNeedsSecondTap(true);
     try {
-      (window as SnapWindow).__snapInstallDeferredPrompt = evt;
+      (window as InstallBridgeWindow).__envitefyInstallDeferredPrompt = evt;
+      (window as InstallBridgeWindow).__snapInstallDeferredPrompt = evt;
     } catch {}
   };
 
@@ -356,8 +376,12 @@ export default function PwaInstallButton() {
   };
 
   const attemptInstall = async () => {
-    const w = window as SnapWindow;
-    const promptEvt = deferred || w.__snapInstallDeferredPrompt || null;
+    const w = window as InstallBridgeWindow;
+    const promptEvt =
+      deferred ||
+      w.__envitefyInstallDeferredPrompt ||
+      w.__snapInstallDeferredPrompt ||
+      null;
     let outcome: PromptResult | "none" = "none";
     if (promptEvt) {
       outcome = await fulfillPrompt(promptEvt);
@@ -372,7 +396,8 @@ export default function PwaInstallButton() {
         try {
           const ev =
             (event as CustomEvent<BeforeInstallPromptEvent | null>).detail ||
-            (window as SnapWindow).__snapInstallDeferredPrompt ||
+            (window as InstallBridgeWindow).__envitefyInstallDeferredPrompt ||
+            (window as InstallBridgeWindow).__snapInstallDeferredPrompt ||
             null;
           if (ev) {
             (async () => {
@@ -403,18 +428,15 @@ export default function PwaInstallButton() {
   };
 
   useEffect(() => {
-    if (
-      !heroOutOfView ||
-      (!canInstall && !showIosFallback && !showGenericFallback)
-    ) {
+    if (!canInstall && !showIosFallback && !showGenericFallback) {
+      setExpanded(false);
+      return;
+    }
+    if (!heroOutOfView) {
       setExpanded(false);
     }
   }, [heroOutOfView, canInstall, showIosFallback, showGenericFallback]);
-  if (
-    (!canInstall && !showIosFallback && !showGenericFallback) ||
-    !heroOutOfView
-  )
-    return null;
+  if (!canInstall && !showIosFallback && !showGenericFallback) return null;
 
   return (
     <div
