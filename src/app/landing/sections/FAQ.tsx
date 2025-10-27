@@ -64,7 +64,7 @@ const qs = [
   },
   {
     q: "What types of image files can I upload?",
-    a: "You can upload common image formats like JPEG, PNG, and GIF. Clear, well-lit photos give the best results.",
+    a: "You can upload common image formats like JPEG, and PNG. Clear, well-lit photos give the best results.",
   },
 ];
 

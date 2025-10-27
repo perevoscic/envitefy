@@ -62,9 +62,8 @@ export default function HowItWorks() {
               Events in Seconds
             </h3>
             <p className="mt-2 text-foreground/70">
-              Create events with dates, locations, and notes so birthdays,
-              weddings, and team plans come together with smart RSVP by text or
-              email, built-in directions, and handy registry links.
+              Create birthdays and weddings events, and team plans come together
+              with smart RSVP by text or email, and handy registry links.
             </p>
           </div>
           <div className="rounded-2xl bg-surface/70 border border-border p-6 text-center shadow">
