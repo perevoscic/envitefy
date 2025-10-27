@@ -327,6 +327,10 @@ export default function PwaInstallButton() {
               <div>
                 <div className="font-semibold text-base">
                   {showIosFallback ? "Install to Home Screen" : "Install app"}
+                  <div className="mt-2 text-xs opacity-70">
+                    If nothing happens, open the Chrome menu and tap
+                    <span className="font-semibold"> Install app</span>.
+                  </div>
                 </div>
                 <div className="text-xs opacity-70">
                   {showIosFallback
