@@ -129,7 +129,6 @@ export default function Home() {
           details={[
             "Use your camera to snap invites to calendar.",
             "Extracts dates, locations, and RSVP details automatically.",
-            "Export straight to Google, Outlook, or an ICS download.",
           ]}
           artwork={<ScanIllustration />}
           tone="primary"
@@ -141,7 +140,6 @@ export default function Home() {
           details={[
             "Drop PDFs, screenshots, or photos from your library.",
             "Smart cleanup handles decorative fonts and tricky layouts.",
-            "Store the parsed event in History for quick edits later.",
           ]}
           artwork={<UploadIllustration />}
           tone="secondary"
@@ -153,7 +151,6 @@ export default function Home() {
           details={[
             "Start from scratch with precise times, reminders, and notes.",
             "Add recurrence rules, categories, and custom reminders.",
-            "One-click insert into your connected calendars or share via link.",
           ]}
           artwork={<CreateEventIllustration />}
           tone="accent"
@@ -164,7 +161,6 @@ export default function Home() {
           description="Smart forms for school events, volunteers, or any event."
           details={[
             "Build RSVP and volunteer sheets with slot limits and questions.",
-            "Automatic waitlists, confirmations, and attendee tracking.",
             "Share a single link that syncs responses in real time.",
           ]}
           artwork={<SignUpIllustration />}
