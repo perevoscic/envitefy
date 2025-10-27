@@ -6,6 +6,7 @@ import Image from "next/image";
 import Logo from "@/assets/logo.png";
 import BackgroundSlider from "@/components/BackgroundSlider";
 import AuthModal from "@/components/auth/AuthModal";
+import PwaInstallButton from "@/components/PwaInstallButton";
 
 export default function LoginHero() {
   const { status } = useSession();
@@ -320,6 +321,7 @@ export default function LoginHero() {
         onClose={() => setModalOpen(false)}
         onModeChange={setMode}
       />
+      <PwaInstallButton />
     </section>
   );
 }

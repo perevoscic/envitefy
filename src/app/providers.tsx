@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
@@ -396,6 +397,9 @@ export default function Providers({
   scheduledThemeKey: ThemeKey;
   initialOverride?: ThemeOverride | null;
 }) {
+  const pathname = usePathname();
+  const showGlobalInstall = pathname ? !pathname.startsWith("/landing") : true;
+
   return (
     <SessionProvider session={session}>
       <SidebarProvider>
@@ -409,7 +413,7 @@ export default function Providers({
           {children}
           <GlobalEventCreate />
           <GlobalSmartSignup />
-          <PwaInstallButton />
+          {showGlobalInstall ? <PwaInstallButton /> : null}
         </ThemeProvider>
       </SidebarProvider>
     </SessionProvider>

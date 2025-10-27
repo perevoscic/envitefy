@@ -44,6 +44,9 @@ export default function PwaInstallButton() {
   const [maybeInstallable, setMaybeInstallable] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [heroOutOfView, setHeroOutOfView] = useState(false);
+  const [heroVisibilityState, setHeroVisibilityState] = useState<
+    "unknown" | "absent" | "tracked"
+  >("unknown");
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const [isAndroid, setIsAndroid] = useState(false);
   const [androidFallbackHint, setAndroidFallbackHint] = useState(false);
@@ -299,14 +302,15 @@ export default function PwaInstallButton() {
     if (typeof window === "undefined") return;
     const target = document.getElementById("landing-hero");
     if (!target) {
+      setHeroVisibilityState("absent");
       setHeroOutOfView(true);
       return;
     }
+    setHeroVisibilityState("tracked");
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        const ratio = entry.intersectionRatio ?? 0;
-        setHeroOutOfView(ratio <= 0.5);
+        setHeroOutOfView(!entry.isIntersecting);
       },
       { root: null, threshold: [0, 0.25, 0.5, 0.75, 1] }
     );
@@ -323,6 +327,8 @@ export default function PwaInstallButton() {
   const showIosFallback = !canInstall && showIosTip && allowedDevice;
   const showGenericFallback =
     !canInstall && !showIosFallback && maybeInstallable;
+  const hideWhileHeroVisible =
+    heroVisibilityState !== "absent" && !heroOutOfView;
 
   const resetPromptState = () => {
     setDeferred(null);
@@ -436,6 +442,7 @@ export default function PwaInstallButton() {
       setExpanded(false);
     }
   }, [heroOutOfView, canInstall, showIosFallback, showGenericFallback]);
+  if (hideWhileHeroVisible) return null;
   if (!canInstall && !showIosFallback && !showGenericFallback) return null;
 
   return (
