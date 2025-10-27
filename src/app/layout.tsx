@@ -192,6 +192,24 @@ export default async function RootLayout({
             }
           })();
         `}</Script>
+        <Script id="pwa-bridge" strategy="beforeInteractive">{`
+          (function(){
+            try {
+              var w = window;
+              if (!w.__snapInstallBridgeReady) {
+                w.__snapInstallBridgeReady = true;
+                window.addEventListener('beforeinstallprompt', function(event){
+                  try { if (event && event.preventDefault) event.preventDefault(); } catch (e) {}
+                  try { w.__snapInstallDeferredPrompt = event; } catch (e) {}
+                  try {
+                    var ev = new CustomEvent('snapmydate:beforeinstallprompt', { detail: event });
+                    window.dispatchEvent(ev);
+                  } catch (e) {}
+                });
+              }
+            } catch (e) {}
+          })();
+        `}</Script>
         {gaMeasurementId ? (
           <>
             <Script

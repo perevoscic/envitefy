@@ -48,3 +48,5 @@ pgssl.key
 /src/generated/prisma
 
 /src/prisma/migrations
+
+client_secret_envitefy_835611267543-h29p0hgqs3od4g94ogqo34lbh0birvfd.apps.googleusercontent.com.json
