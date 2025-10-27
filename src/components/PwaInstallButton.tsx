@@ -43,6 +43,7 @@ export default function PwaInstallButton() {
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const [isAndroid, setIsAndroid] = useState(false);
   const [androidFallbackHint, setAndroidFallbackHint] = useState(false);
+  const [needsSecondTap, setNeedsSecondTap] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const computeStandalone = useCallback(() => {
@@ -305,28 +306,62 @@ export default function PwaInstallButton() {
   const showGenericFallback =
     !canInstall && !showIosFallback && maybeInstallable;
 
+  const resetPromptState = () => {
+    setDeferred(null);
+    setCanInstall(false);
+    setShowIosTip(false);
+    setAndroidFallbackHint(false);
+    setNeedsSecondTap(false);
+    try {
+      (window as SnapWindow).__snapInstallDeferredPrompt = null;
+    } catch {}
+  };
+
+  const storePromptForLater = (evt: BeforeInstallPromptEvent) => {
+    setDeferred(evt);
+    setCanInstall(true);
+    setShowIosTip(false);
+    setAndroidFallbackHint(false);
+    setNeedsSecondTap(true);
+    try {
+      (window as SnapWindow).__snapInstallDeferredPrompt = evt;
+    } catch {}
+  };
+
+  type PromptResult = "shown" | "stored" | "error";
+
+  const fulfillPrompt = async (
+    evt: BeforeInstallPromptEvent
+  ): Promise<PromptResult> => {
+    try {
+      await evt.prompt();
+      await evt.userChoice;
+      resetPromptState();
+      return "shown";
+    } catch (error) {
+      const domError = error as DOMException | undefined;
+      const name = domError?.name ?? "";
+      const message = (error as Error)?.message ?? "";
+      if (
+        name === "InvalidStateError" ||
+        name === "NotAllowedError" ||
+        /gesture/i.test(message)
+      ) {
+        storePromptForLater(evt);
+        return "stored";
+      }
+      resetPromptState();
+      return "error";
+    }
+  };
+
   const attemptInstall = async () => {
     const w = window as SnapWindow;
     const promptEvt = deferred || w.__snapInstallDeferredPrompt || null;
-    const resetPromptState = () => {
-      setDeferred(null);
-      setCanInstall(false);
-      setShowIosTip(false);
-      setAndroidFallbackHint(false);
-      try {
-        w.__snapInstallDeferredPrompt = null;
-      } catch {}
-    };
-    let prompted = false;
+    let outcome: PromptResult | "none" = "none";
     if (promptEvt) {
-      prompted = true;
-      await promptEvt.prompt();
-      try {
-        await promptEvt.userChoice;
-      } finally {
-        resetPromptState();
-      }
-      return;
+      outcome = await fulfillPrompt(promptEvt);
+      if (outcome === "shown") return;
     }
     // Wait up to 3s for a late arriving event after click
     await new Promise<void>((resolve) => {
@@ -340,15 +375,10 @@ export default function PwaInstallButton() {
             (window as SnapWindow).__snapInstallDeferredPrompt ||
             null;
           if (ev) {
-            prompted = true;
             (async () => {
-              try {
-                await ev.prompt();
-                await ev.userChoice;
-              } finally {
-                resetPromptState();
-                resolve();
-              }
+              const result = await fulfillPrompt(ev);
+              outcome = result;
+              resolve();
             })();
             return;
           }
@@ -367,7 +397,7 @@ export default function PwaInstallButton() {
         resolve();
       }, 3000);
     });
-    if (!prompted && isAndroid) {
+    if (outcome !== "shown" && outcome !== "stored" && isAndroid) {
       setAndroidFallbackHint(true);
     }
   };
@@ -458,6 +488,12 @@ export default function PwaInstallButton() {
               >
                 Install app
               </button>
+            )}
+            {canInstall && needsSecondTap && (
+              <p className="text-xs text-muted-foreground text-left">
+                Ready when you are—tap <span className="font-semibold">Install app</span> again to
+                open your browser prompt.
+              </p>
             )}
             {showIosFallback && (
               <div className="rounded-xl border border-border bg-surface/80 p-3 text-sm shadow-inner">
