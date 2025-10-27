@@ -307,59 +307,62 @@ export default function PwaInstallButton() {
   const showGenericFallback =
     !canInstall && !showIosFallback && maybeInstallable;
 
+  const resetPromptState = () => {
+    setDeferred(null);
+    setCanInstall(false);
+    setShowIosTip(false);
+    setAndroidFallbackHint(false);
+    setNeedsSecondTap(false);
+    try {
+      (window as SnapWindow).__snapInstallDeferredPrompt = null;
+    } catch {}
+  };
+
+  const storePromptForLater = (evt: BeforeInstallPromptEvent) => {
+    setDeferred(evt);
+    setCanInstall(true);
+    setShowIosTip(false);
+    setAndroidFallbackHint(false);
+    setNeedsSecondTap(true);
+    try {
+      (window as SnapWindow).__snapInstallDeferredPrompt = evt;
+    } catch {}
+  };
+
+  type PromptResult = "shown" | "stored" | "error";
+
+  const fulfillPrompt = async (
+    evt: BeforeInstallPromptEvent
+  ): Promise<PromptResult> => {
+    try {
+      await evt.prompt();
+      await evt.userChoice;
+      resetPromptState();
+      return "shown";
+    } catch (error) {
+      const domError = error as DOMException | undefined;
+      const name = domError?.name ?? "";
+      const message = (error as Error)?.message ?? "";
+      if (
+        name === "InvalidStateError" ||
+        name === "NotAllowedError" ||
+        /gesture/i.test(message)
+      ) {
+        storePromptForLater(evt);
+        return "stored";
+      }
+      resetPromptState();
+      return "error";
+    }
+  };
+
   const attemptInstall = async () => {
     const w = window as SnapWindow;
     const promptEvt = deferred || w.__snapInstallDeferredPrompt || null;
-    const resetPromptState = () => {
-      setDeferred(null);
-      setCanInstall(false);
-      setShowIosTip(false);
-      setAndroidFallbackHint(false);
-      setNeedsSecondTap(false);
-      try {
-        w.__snapInstallDeferredPrompt = null;
-      } catch {}
-    };
-
-    const storePromptForLater = (evt: BeforeInstallPromptEvent) => {
-      setDeferred(evt);
-      setCanInstall(true);
-      setShowIosTip(false);
-      setAndroidFallbackHint(false);
-      setNeedsSecondTap(true);
-      try {
-        w.__snapInstallDeferredPrompt = evt;
-      } catch {}
-    };
-
-    const handlePrompt = async (evt: BeforeInstallPromptEvent) => {
-      try {
-        await evt.prompt();
-        await evt.userChoice;
-        resetPromptState();
-        return true;
-      } catch (error) {
-        const domError = error as DOMException | undefined;
-        const name = domError?.name ?? "";
-        const message = (error as Error)?.message ?? "";
-        if (
-          name === "InvalidStateError" ||
-          name === "NotAllowedError" ||
-          /gesture/i.test(message)
-        ) {
-          storePromptForLater(evt);
-        } else {
-          resetPromptState();
-        }
-        return false;
-      }
-    };
-
-    let prompted = false;
+    let outcome: PromptResult | "none" = "none";
     if (promptEvt) {
-      prompted = true;
-      const shown = await handlePrompt(promptEvt);
-      if (shown) return;
+      outcome = await fulfillPrompt(promptEvt);
+      if (outcome === "shown") return;
     }
     // Wait up to 3s for a late arriving event after click
     await new Promise<void>((resolve) => {
@@ -373,9 +376,9 @@ export default function PwaInstallButton() {
             (window as SnapWindow).__snapInstallDeferredPrompt ||
             null;
           if (ev) {
-            prompted = true;
             (async () => {
-              await handlePrompt(ev);
+              const result = await fulfillPrompt(ev);
+              outcome = result;
               resolve();
             })();
             return;
@@ -395,7 +398,7 @@ export default function PwaInstallButton() {
         resolve();
       }, 3000);
     });
-    if (!prompted && isAndroid) {
+    if (outcome !== "shown" && outcome !== "stored" && isAndroid) {
       setAndroidFallbackHint(true);
     }
   };
