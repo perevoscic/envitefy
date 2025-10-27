@@ -195,12 +195,14 @@ export default async function RootLayout({
         <Script id="pwa-install-bridge" strategy="beforeInteractive">{`
           (function(){
             try {
-              var BRIDGE_EVENT_NAME = 'snapmydate:beforeinstallprompt';
+              var BRIDGE_EVENT_NAME = 'envitefy:beforeinstallprompt';
               var w = window;
-              if (!w.__snapInstallBridgeReady) {
-                w.__snapInstallBridgeReady = true;
+              if (!w.__envitefyInstallBridgeReady) {
+                w.__envitefyInstallBridgeReady = true;
+                try { w.__snapInstallBridgeReady = true; } catch {}
                 window.addEventListener('beforeinstallprompt', function(e){
                   try { e.preventDefault && e.preventDefault(); } catch {}
+                  try { w.__envitefyInstallDeferredPrompt = e; } catch {}
                   try { w.__snapInstallDeferredPrompt = e; } catch {}
                   try {
                     var evt;
