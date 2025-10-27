@@ -46,7 +46,9 @@ function relativeLuminance(r: number, g: number, b: number): number {
 
 export default function ReadOnlyEventLogo() {
   const { theme, themeKey } = useTheme();
-  const [useLightVariant, setUseLightVariant] = useState<boolean>(() => theme === "dark");
+  const [useLightVariant, setUseLightVariant] = useState<boolean>(
+    () => theme === "dark"
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -75,12 +77,12 @@ export default function ReadOnlyEventLogo() {
         className="inline-flex rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <img
-          src="/SnapMyDateSnapItSaveitDone_Black_vertical.png"
+          src="/Logo_stacked.png"
           alt="Snap My Date tag line"
           className={`h-24 w-auto ${useLightVariant ? "hidden" : "block"}`}
         />
         <img
-          src="/SnapMyDateSnapItSaveitDone_White_vertical.png"
+          src="/Logo_stacked.png"
           alt="Snap My Date tag line"
           className={`h-24 w-auto ${useLightVariant ? "block" : "hidden"}`}
         />

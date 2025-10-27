@@ -47,7 +47,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Envitefy | Create. Share. Enjoy.",
   description:
-    "Envitefy helps you capture and organize life’s events — scan invites and schedules, design and share beautiful invitations, collect RSVPs and smart sign‑ups, and add events to Google, Microsoft, or Apple calendars in one tap.",
+    "Turn flyers, invites, and schedules into shareable plans in seconds.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -77,6 +77,22 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Envitefy",
+  },
+  openGraph: {
+    title: "Envitefy | Create. Share. Enjoy.",
+    description:
+      "Turn flyers, invites, and schedules into shareable plans in seconds.",
+    url: "https://envitefy.com",
+    siteName: "Envitefy",
+    images: [
+      {
+        url: "https://envitefy.com/og-default.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Envitefy thumbnail",
+      },
+    ],
+    type: "website",
   },
 };
 

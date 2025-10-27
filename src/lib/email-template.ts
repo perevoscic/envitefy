@@ -45,7 +45,7 @@ export function createEmailTemplate(params: {
   } catch {
     baseUrl = "https://envitefy.com";
   }
-  const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
+  const logoUrl = `${baseUrl}/Logo_stacked.png`;
   const currentYear = new Date().getFullYear();
   const socialIcons = [
     {

@@ -277,7 +277,7 @@ export default function CampaignsPage() {
     } catch {
       baseUrl = "https://envitefy.com";
     }
-    const logoUrl = `${baseUrl}/SnapMyDateSnapItSaveitDone_black_h.png`;
+    const logoUrl = `${baseUrl}/Logo_stacked.png`;
     const socialIcons = [
       {
         href: "https://www.instagram.com/snapmydate/",
@@ -955,4 +955,3 @@ ${socialIconsHtml}
     </div>
   );
 }
-
