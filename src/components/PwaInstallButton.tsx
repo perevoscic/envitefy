@@ -195,9 +195,7 @@ export default function PwaInstallButton() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const w = window as SnapWindow;
-    const adoptPrompt = (
-      evt: BeforeInstallPromptEvent | null | undefined
-    ) => {
+    const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
       w.__snapInstallDeferredPrompt = evt;
       setDeferred(evt);
@@ -249,6 +247,16 @@ export default function PwaInstallButton() {
   // Observe hero visibility
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // On the landing page, show install UI immediately (match "/" behavior)
+    // without requiring the hero to scroll out of view
+    try {
+      const isLandingPath = window.location?.pathname.startsWith("/landing");
+      if (isLandingPath) {
+        setHeroOutOfView(true);
+        return;
+      }
+    } catch {}
+
     const target = document.getElementById("landing-hero");
     if (!target) {
       setHeroOutOfView(true);
@@ -406,7 +414,10 @@ export default function PwaInstallButton() {
                       </li>
                       <li>
                         Choose{" "}
-                        <span className="font-semibold">Add to Home Screen</span>.
+                        <span className="font-semibold">
+                          Add to Home Screen
+                        </span>
+                        .
                       </li>
                       <li>
                         Tap <span className="font-semibold">Add</span> to
