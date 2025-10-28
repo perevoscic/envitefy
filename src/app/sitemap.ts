@@ -10,7 +10,7 @@ const baseUrl = (
   process.env.NEXT_PUBLIC_BASE_URL ||
   process.env.NEXTAUTH_URL ||
   process.env.PUBLIC_BASE_URL ||
-  "https://www.envitefy.com"
+  "https://envitefy.com"
 ).replace(/\/+$/, "");
 
 const lastModified = new Date();
@@ -33,4 +33,3 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority,
   }));
 }
-

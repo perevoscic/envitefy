@@ -242,14 +242,14 @@ export default async function RootLayout({
                 <div className="w-full overflow-x-auto">
                   <p className="text-center whitespace-nowrap">
                     <Link
-                      href="https://www.envitefy.com/terms"
+                      href="https://envitefy.com/terms"
                       className="hover:text-foreground"
                     >
                       Terms of Use
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
                     <Link
-                      href="https://www.envitefy.com/privacy"
+                      href="https://envitefy.com/privacy"
                       className="hover:text-foreground"
                     >
                       Privacy Policy
