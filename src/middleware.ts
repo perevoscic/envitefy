@@ -18,6 +18,14 @@ export async function middleware(req: NextRequest) {
     return res;
   };
 
+  const host = req.headers.get("host");
+  if (host === "www.envitefy.com") {
+    const url = req.nextUrl.clone();
+    url.hostname = "envitefy.com";
+    url.protocol = "https:";
+    return redirectWithMarker(url, 301);
+  }
+
   if (
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
