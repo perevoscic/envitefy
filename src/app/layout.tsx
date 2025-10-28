@@ -45,7 +45,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Envitefy | Create. Share. Enjoy.",
+  title: "Envitefy",
   description:
     "Turn flyers, invites, and schedules into shareable plans in seconds.",
   manifest: "/manifest.webmanifest",

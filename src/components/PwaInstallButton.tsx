@@ -366,7 +366,7 @@ export default function PwaInstallButton({
                   {showIosFallback ? "Install to Home Screen" : "Install app"}
                 </div>
                 <div className="text-xs opacity-70">
-                  Keep Snap My Date handy on your device.
+                  Keep Envitefy handy on your device.
                 </div>
               </div>
               <button
