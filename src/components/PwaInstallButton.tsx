@@ -362,6 +362,7 @@ export default function PwaInstallButton({
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
+  const [guidePulse, setGuidePulse] = useState(false);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
@@ -697,6 +698,14 @@ export default function PwaInstallButton({
       setWasManuallyClosed(false);
     }
   }, [startExpanded]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!guidePulse) return;
+    const timer = window.setTimeout(() => setGuidePulse(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [guidePulse]);
+
   if (
     (!canInstall && !showIosFallback && !showGenericFallback) ||
     !heroOutOfView
@@ -704,7 +713,15 @@ export default function PwaInstallButton({
     return null;
 
   const fallbackGuide = !canInstall ? installGuide : null;
-  const fallbackGuideActive = Boolean(!canInstall && (showIosFallback || showGenericFallback) && fallbackGuide);
+  const fallbackGuideActive = Boolean(
+    !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
+  );
+  const showInstallCta =
+    canInstall ||
+    (fallbackGuideActive &&
+      fallbackGuide?.supported &&
+      fallbackGuide.os !== "ios" &&
+      fallbackGuide.os !== "ipados");
   const headingText = (() => {
     if (canInstall) return "Install app";
     if (fallbackGuide) {
@@ -726,6 +743,18 @@ export default function PwaInstallButton({
     }
     return "Keep Envitefy handy on your device.";
   })();
+  const fallbackGuideClassName = [
+    "rounded-xl",
+    "border",
+    "border-border",
+    "bg-surface/80",
+    "p-3",
+    "text-sm",
+    "shadow-inner",
+    guidePulse ? "ring-2 ring-primary/60 animate-pulse" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
@@ -792,20 +821,30 @@ export default function PwaInstallButton({
                 </svg>
               </button>
             </div>
-            {canInstall && (
+            {showInstallCta && (
               <button
                 onClick={async () => {
-                  if (!deferred) return;
-                  await deferred.prompt();
-                  try {
-                    await deferred.userChoice;
-                  } finally {
-                    setDeferred(null);
-                    setCanInstall(false);
-                    setShowIosTip(false);
+                  if (deferred) {
+                    await deferred.prompt();
                     try {
-                      (window as SnapWindow).__snapInstallDeferredPrompt = null;
-                    } catch {}
+                      await deferred.userChoice;
+                    } finally {
+                      setDeferred(null);
+                      setCanInstall(false);
+                      setShowIosTip(false);
+                      try {
+                        (window as SnapWindow).__snapInstallDeferredPrompt = null;
+                      } catch {}
+                    }
+                    return;
+                  }
+                  if (fallbackGuideActive && fallbackGuide?.supported) {
+                    setExpanded(true);
+                    setGuidePulse(true);
+                    pushDebug("install CTA fallback invoked", {
+                      os: fallbackGuide.os,
+                      browser: fallbackGuide.browser,
+                    });
                   }
                 }}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
@@ -814,7 +853,7 @@ export default function PwaInstallButton({
               </button>
             )}
             {fallbackGuideActive && fallbackGuide && (
-              <div className="rounded-xl border border-border bg-surface/80 p-3 text-sm shadow-inner">
+              <div className={fallbackGuideClassName}>
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                     <svg
