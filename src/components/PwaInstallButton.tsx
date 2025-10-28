@@ -89,24 +89,36 @@ export default function PwaInstallButton({
 
     const isStandalone = () => {
       try {
-        if ((window.navigator as any).standalone === true) return true; // iOS
-        if (
-          window.matchMedia &&
-          window.matchMedia("(display-mode: standalone)").matches
-        )
-          return true;
-        if (
-          window.matchMedia &&
-          window.matchMedia("(display-mode: fullscreen)").matches
-        )
-          return true;
-      } catch {}
+        // iOS/iPadOS Safari exposes `navigator.standalone`
+        if ((window.navigator as any).standalone === true) return true;
+        if (!window.matchMedia) return false;
+        const standaloneMatch = window
+          .matchMedia("(display-mode: standalone)")
+          .matches;
+        const fullscreenMatch = window
+          .matchMedia("(display-mode: fullscreen)")
+          .matches;
+        if (!standaloneMatch && !fullscreenMatch) return false;
+        const isAndroid = /Android/i.test(navigator.userAgent || "");
+        // Chrome on Android reports standalone for launched PWAs; check referrer to
+        // avoid false positives when the page loads in a normal browser tab.
+        const ref = document.referrer || "";
+        const androidStandalone =
+          ref.startsWith("android-app://") ||
+          ref.startsWith("chrome-extension://");
+        return isAndroid ? androidStandalone : standaloneMatch || fullscreenMatch;
+      } catch {
+        // best effort only
+      }
       return false;
     };
 
-    if (isStandalone()) {
+    const standalone = isStandalone();
+    if (standalone) {
       setCanInstall(false);
-      pushDebug("display-mode standalone detected; hiding CTA");
+      pushDebug("display-mode standalone detected; hiding CTA", {
+        referrer: document.referrer || "",
+      });
       return;
     }
 
@@ -115,7 +127,7 @@ export default function PwaInstallButton({
       ? window.matchMedia("(display-mode: standalone)")
       : null;
     const onChange = () => {
-      if (mql && mql.matches) setCanInstall(false);
+      if (isStandalone()) setCanInstall(false);
     };
     try {
       mql?.addEventListener("change", onChange);
