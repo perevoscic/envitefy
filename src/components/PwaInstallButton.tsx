@@ -204,6 +204,14 @@ export default function PwaInstallButton({
     const w = window as SnapWindow;
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
+      if (process.env.NODE_ENV === "production") {
+        try {
+          // eslint-disable-next-line no-console
+          console.info("[pwa] beforeinstallprompt captured");
+        } catch {
+          // ignore
+        }
+      }
       w.__snapInstallDeferredPrompt = evt;
       setDeferred(evt);
       setCanInstall(true);
@@ -293,6 +301,38 @@ export default function PwaInstallButton({
       window.location.hostname === "[::1]");
   const showGenericFallback =
     !canInstall && !showIosFallback && (maybeInstallable || isLocalhost);
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") return;
+    if (canInstall) {
+      try {
+        // eslint-disable-next-line no-console
+        console.info("[pwa] native install available");
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    if (showIosFallback) {
+      try {
+        // eslint-disable-next-line no-console
+        console.info("[pwa] showing iOS fallback");
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    if (showGenericFallback) {
+      try {
+        // eslint-disable-next-line no-console
+        console.info("[pwa] falling back to generic instructions", {
+          maybeInstallable,
+          heroOutOfView,
+        });
+      } catch {
+        // ignore
+      }
+    }
+  }, [canInstall, showIosFallback, showGenericFallback, maybeInstallable, heroOutOfView]);
 
   useEffect(() => {
     const hasAnyOption = canInstall || showIosFallback || showGenericFallback;

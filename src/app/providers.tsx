@@ -474,6 +474,10 @@ function RegisterServiceWorker() {
         } catch {
           // ignore
         }
+        if (process.env.NODE_ENV === "production") {
+          // eslint-disable-next-line no-console
+          console.info("[sw] controller change detected; reloading");
+        }
         try {
           sessionStorage.setItem("__snap_sw_reloaded__", "1");
         } catch {
@@ -510,10 +514,20 @@ function RegisterServiceWorker() {
       if (cancelled || hasRegistered) return;
       hasRegistered = true;
       try {
-        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        const registration = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+        });
+        if (process.env.NODE_ENV === "production") {
+          // eslint-disable-next-line no-console
+          console.info("[sw] registered", registration.scope);
+        }
         controllerCleanup = setupControllerReload();
       } catch (e) {
         // Allow a subsequent attempt (e.g., after load) if registration fails.
+        if (process.env.NODE_ENV === "production") {
+          // eslint-disable-next-line no-console
+          console.warn("[sw] registration failed", e);
+        }
         hasRegistered = false;
       } finally {
         clearIdleHandle();
