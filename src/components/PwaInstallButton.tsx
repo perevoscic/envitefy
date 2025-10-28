@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -12,6 +12,7 @@ interface SnapWindow extends Window {
 }
 
 const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
+const DEBUG_STORE_KEY = "__snapInstallDebugLog";
 
 if (typeof window !== "undefined") {
   const w = window as SnapWindow;
@@ -26,6 +27,18 @@ if (typeof window !== "undefined") {
           detail: bip,
         })
       );
+      try {
+        const dbg: any = window as any;
+        if (!Array.isArray(dbg[DEBUG_STORE_KEY])) {
+          dbg[DEBUG_STORE_KEY] = [];
+        }
+        dbg[DEBUG_STORE_KEY].push({
+          message: "beforeinstallprompt intercepted (module)",
+          ts: Date.now(),
+        });
+      } catch {
+        // noop
+      }
     });
   }
 }
@@ -37,6 +50,26 @@ type PwaInstallButtonProps = {
 export default function PwaInstallButton({
   startExpanded = false,
 }: PwaInstallButtonProps) {
+  const pushDebug = useCallback(
+    (message: string, meta?: Record<string, unknown>) => {
+      if (typeof window === "undefined") return;
+      try {
+        const w = window as any;
+        if (!Array.isArray(w[DEBUG_STORE_KEY])) {
+          w[DEBUG_STORE_KEY] = [];
+        }
+        w[DEBUG_STORE_KEY].push({
+          message,
+          meta: meta ?? null,
+          ts: Date.now(),
+        });
+      } catch {
+        // noop
+      }
+    },
+    []
+  );
+
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
@@ -73,6 +106,7 @@ export default function PwaInstallButton({
 
     if (isStandalone()) {
       setCanInstall(false);
+      pushDebug("display-mode standalone detected; hiding CTA");
       return;
     }
 
@@ -95,8 +129,12 @@ export default function PwaInstallButton({
         const anyNav = navigator as any;
         if (anyNav.getInstalledRelatedApps) {
           const related = await anyNav.getInstalledRelatedApps();
-          if (Array.isArray(related) && related.length > 0)
+          if (Array.isArray(related) && related.length > 0) {
             setCanInstall(false);
+          }
+          pushDebug("checked installed related apps", {
+            count: Array.isArray(related) ? related.length : null,
+          });
         }
       } catch {}
     };
@@ -112,6 +150,7 @@ export default function PwaInstallButton({
       const isStandaloneNow = isStandalone();
       if (hasManifest && isSecure && hasSW && !isStandaloneNow) {
         setMaybeInstallable(true);
+        pushDebug("heuristic installable", { hasManifest, isSecure, hasSW });
       }
     } catch {}
 
@@ -183,7 +222,11 @@ export default function PwaInstallButton({
       /iPhone|iPad|iPod/.test(ua) ||
       (/\bMacintosh\b/.test(ua) && "ontouchend" in document);
     const mql = window.matchMedia("(max-width: 1024px)");
-    const update = () => setAllowedDevice(isIOS || mql.matches);
+    const update = () => {
+      const allowed = isIOS || mql.matches;
+      setAllowedDevice(allowed);
+      pushDebug("allowed-device updated", { allowed, isIOS, widthMatch: mql.matches });
+    };
     update();
     try {
       mql.addEventListener("change", update);
@@ -204,14 +247,9 @@ export default function PwaInstallButton({
     const w = window as SnapWindow;
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
-      if (process.env.NODE_ENV === "production") {
-        try {
-          // eslint-disable-next-line no-console
-          console.info("[pwa] beforeinstallprompt captured");
-        } catch {
-          // ignore
-        }
-      }
+      pushDebug("beforeinstallprompt adopted", {
+        hasPrompt: typeof evt.prompt === "function",
+      });
       w.__snapInstallDeferredPrompt = evt;
       setDeferred(evt);
       setCanInstall(true);
@@ -243,6 +281,7 @@ export default function PwaInstallButton({
     const isAppleLike = isIOS || isMacSafari;
     if (isAppleLike && !isStandalone && !w.__snapInstallDeferredPrompt) {
       setShowIosTip(true);
+      pushDebug("showing iOS fallback", { isIOS, isMacSafari });
       // Guard in case UA parsing runs before iOS paints toolbar
       iosTimeout = window.setTimeout(() => {
         if (!w.__snapInstallDeferredPrompt) setShowIosTip(true);
@@ -261,6 +300,7 @@ export default function PwaInstallButton({
       setShowIosTip(false);
       setMaybeInstallable(false);
       setExpanded(false);
+      pushDebug("appinstalled event observed");
     };
     window.addEventListener("appinstalled", onInstalled);
     return () => window.removeEventListener("appinstalled", onInstalled);
@@ -302,37 +342,14 @@ export default function PwaInstallButton({
   const showGenericFallback =
     !canInstall && !showIosFallback && (maybeInstallable || isLocalhost);
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") return;
-    if (canInstall) {
-      try {
-        // eslint-disable-next-line no-console
-        console.info("[pwa] native install available");
-      } catch {
-        // ignore
-      }
-      return;
-    }
-    if (showIosFallback) {
-      try {
-        // eslint-disable-next-line no-console
-        console.info("[pwa] showing iOS fallback");
-      } catch {
-        // ignore
-      }
-      return;
-    }
-    if (showGenericFallback) {
-      try {
-        // eslint-disable-next-line no-console
-        console.info("[pwa] falling back to generic instructions", {
-          maybeInstallable,
-          heroOutOfView,
-        });
-      } catch {
-        // ignore
-      }
-    }
-  }, [canInstall, showIosFallback, showGenericFallback, maybeInstallable, heroOutOfView]);
+    pushDebug("install UI flags", {
+      canInstall,
+      showIosFallback,
+      showGenericFallback,
+      maybeInstallable,
+      heroOutOfView,
+    });
+  }, [canInstall, showIosFallback, showGenericFallback, maybeInstallable, heroOutOfView, pushDebug]);
 
   useEffect(() => {
     const hasAnyOption = canInstall || showIosFallback || showGenericFallback;

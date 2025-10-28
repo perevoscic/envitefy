@@ -422,6 +422,19 @@ export default function Providers({
 
 function RegisterServiceWorker() {
   useEffect(() => {
+    const pushDebug = (message: string, meta?: Record<string, unknown>) => {
+      try {
+        const w = window as any;
+        const payload = { message, meta: meta ?? null, ts: Date.now() };
+        if (!Array.isArray(w.__snapInstallDebugLog)) {
+          w.__snapInstallDebugLog = [];
+        }
+        w.__snapInstallDebugLog.push(payload);
+      } catch {
+        // ignore
+      }
+    };
+
     if (
       typeof window !== "undefined" &&
       process.env.NODE_ENV !== "production"
@@ -439,6 +452,7 @@ function RegisterServiceWorker() {
             });
           });
         }
+        pushDebug("dev-mode unregistering existing SWs");
       } catch {}
       return;
     }
@@ -458,6 +472,7 @@ function RegisterServiceWorker() {
         } catch {
           // ignore
         }
+        pushDebug("sw already controlling page");
         return null;
       }
       let alreadyReloaded = false;
@@ -469,6 +484,7 @@ function RegisterServiceWorker() {
       }
       if (alreadyReloaded) return null;
       const onControllerChange = () => {
+        pushDebug("sw controllerchange -> hard reload");
         try {
           nav.removeEventListener("controllerchange", onControllerChange);
         } catch {
@@ -514,20 +530,17 @@ function RegisterServiceWorker() {
       if (cancelled || hasRegistered) return;
       hasRegistered = true;
       try {
+        pushDebug("attempting sw register");
         const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
         });
-        if (process.env.NODE_ENV === "production") {
-          // eslint-disable-next-line no-console
-          console.info("[sw] registered", registration.scope);
-        }
+        pushDebug("sw registered", { scope: registration.scope });
         controllerCleanup = setupControllerReload();
       } catch (e) {
         // Allow a subsequent attempt (e.g., after load) if registration fails.
-        if (process.env.NODE_ENV === "production") {
-          // eslint-disable-next-line no-console
-          console.warn("[sw] registration failed", e);
-        }
+        pushDebug("sw registration failed", {
+          error: e instanceof Error ? e.message : String(e),
+        });
         hasRegistered = false;
       } finally {
         clearIdleHandle();
@@ -556,10 +569,12 @@ function RegisterServiceWorker() {
     scheduleIdleRegistration();
 
     const onLoad = () => {
+      pushDebug("window load -> forcing sw register");
       register();
     };
 
     if (document.readyState === "complete") {
+      pushDebug("document already complete -> immediate sw register");
       register();
     } else {
       window.addEventListener("load", onLoad, { once: true });
