@@ -11,6 +11,285 @@ interface SnapWindow extends Window {
   __snapInstallBridgeReady?: boolean;
 }
 
+type OSKey = "windows" | "macos" | "android" | "ios" | "ipados" | "unknown";
+type BrowserKey = "chrome" | "safari" | "edge" | "firefox" | "unknown";
+
+interface PlatformInfo {
+  os: OSKey;
+  osLabel: string;
+  browser: BrowserKey;
+  browserLabel: string;
+}
+
+interface InstallGuide extends PlatformInfo {
+  supported: boolean;
+  steps: string[];
+  note?: string;
+  unsupportedMessage?: string;
+}
+
+const OS_LABELS: Record<OSKey, string> = {
+  windows: "Windows",
+  macos: "macOS",
+  android: "Android",
+  ios: "iOS",
+  ipados: "iPadOS",
+  unknown: "your device",
+};
+
+const BROWSER_LABELS: Record<BrowserKey, string> = {
+  chrome: "Chrome",
+  safari: "Safari",
+  edge: "Edge",
+  firefox: "Firefox",
+  unknown: "your browser",
+};
+
+const getPlatformInfo = (win: Window): PlatformInfo => {
+  const nav = win.navigator;
+  const vendor = nav.vendor ?? "";
+  const uaSource = `${nav.userAgent ?? ""} ${vendor}`.toLowerCase();
+  const maxTouchPoints =
+    typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
+  const isTouchMac =
+    (uaSource.includes("macintosh") || uaSource.includes("mac os x")) &&
+    maxTouchPoints > 1;
+
+  let os: OSKey = "unknown";
+  if (uaSource.includes("windows")) {
+    os = "windows";
+  } else if (uaSource.includes("android")) {
+    os = "android";
+  } else if (uaSource.includes("ipad") || isTouchMac) {
+    os = "ipados";
+  } else if (uaSource.includes("iphone") || uaSource.includes("ipod")) {
+    os = "ios";
+  } else if (
+    uaSource.includes("mac os x") ||
+    uaSource.includes("macintosh")
+  ) {
+    os = "macos";
+  }
+
+  let browser: BrowserKey = "unknown";
+  const isEdge =
+    uaSource.includes("edg/") ||
+    uaSource.includes("edgios") ||
+    uaSource.includes("edga/");
+  const isFirefox =
+    uaSource.includes("fxios") || uaSource.includes("firefox/");
+  const isChromeLike =
+    (uaSource.includes("chrome/") ||
+      uaSource.includes("chromium/") ||
+      uaSource.includes("crios") ||
+      uaSource.includes("crmo/")) &&
+    !isEdge;
+  const isSafariLike =
+    uaSource.includes("safari/") &&
+    !uaSource.includes("chrome/") &&
+    !uaSource.includes("crios") &&
+    !uaSource.includes("chromium/") &&
+    !uaSource.includes("crmo/") &&
+    !isFirefox &&
+    !isEdge;
+
+  if (isEdge) {
+    browser = "edge";
+  } else if (isFirefox) {
+    browser = "firefox";
+  } else if (isChromeLike) {
+    browser = "chrome";
+  } else if (isSafariLike) {
+    browser = "safari";
+  }
+
+  return {
+    os,
+    osLabel: OS_LABELS[os],
+    browser,
+    browserLabel: BROWSER_LABELS[browser],
+  };
+};
+
+const resolveInstallGuide = (win: Window): InstallGuide => {
+  const platform = getPlatformInfo(win);
+
+  const withSteps = (steps: string[], note?: string): InstallGuide => ({
+    ...platform,
+    supported: true,
+    steps,
+    note,
+    unsupportedMessage: undefined,
+  });
+
+  const unsupported = (message: string, note?: string): InstallGuide => ({
+    ...platform,
+    supported: false,
+    steps: [],
+    unsupportedMessage: message,
+    note,
+  });
+
+  switch (platform.os) {
+    case "windows": {
+      switch (platform.browser) {
+        case "chrome":
+          return withSteps(
+            [
+              "Click the install icon (computer with a down arrow) in the Chrome address bar.",
+              'When the dialog opens, choose "Install" to create the Envitefy app.',
+            ],
+            'If you do not see the icon, open the Chrome menu (three dots) and choose "Install Envitefy".'
+          );
+        case "edge":
+          return withSteps(
+            [
+              "Open the Edge menu (three dots) on the toolbar.",
+              'Choose "Apps" and then "Install this site as an app".',
+              "Click Install to confirm.",
+            ],
+            'Newer versions may show "Install Envitefy" directly in the menu.'
+          );
+        case "firefox":
+          return unsupported(
+            "Firefox on Windows does not support installing Envitefy as a progressive web app.",
+            "Open Envitefy in Chrome or Edge if you want an installable app experience."
+          );
+        case "safari":
+          return unsupported(
+            "Safari is not available on Windows, so installation is not supported.",
+            "Try Chrome or Edge on Windows to install Envitefy."
+          );
+        default:
+          break;
+      }
+      break;
+    }
+    case "macos": {
+      switch (platform.browser) {
+        case "safari":
+          return withSteps(
+            [
+              "In Safari, open the File menu.",
+              'Choose "Add to Dock".',
+              'Click "Add" when the confirmation dialog appears.',
+            ],
+            "Requires macOS Sonoma 14 or later. Earlier macOS releases cannot install web apps from Safari."
+          );
+        case "chrome":
+          return withSteps(
+            [
+              "Click the install icon (computer with a down arrow) in Chrome's address bar.",
+              'Select "Install" to confirm.',
+            ],
+            'You can also open the Chrome menu (three dots) and choose "Install Envitefy".'
+          );
+        case "edge":
+          return withSteps(
+            [
+              "Open the Edge menu (three dots).",
+              'Select "Apps" and then "Install this site as an app".',
+              "Click Install.",
+            ],
+            "Edge places Envitefy inside your Applications folder after installation."
+          );
+        case "firefox":
+          return unsupported(
+            "Firefox on macOS does not support installing Envitefy as an app.",
+            "Use Safari on macOS Sonoma or Chrome to install Envitefy."
+          );
+        default:
+          break;
+      }
+      break;
+    }
+    case "android": {
+      switch (platform.browser) {
+        case "chrome":
+          return withSteps(
+            [
+              "Tap the Chrome menu (three dots) in the top-right corner.",
+              'Choose "Install app" or "Add to Home screen".',
+              "Tap Install to finish.",
+            ],
+            "Envitefy will appear as its own app icon on your home screen."
+          );
+        case "edge":
+          return withSteps(
+            [
+              "Tap the Edge menu (three dots).",
+              'Select "Add to phone".',
+              "Tap Install when prompted.",
+            ],
+            "Edge pins Envitefy to your Android home screen and app drawer."
+          );
+        case "firefox":
+          return withSteps(
+            [
+              "Tap the Firefox menu (three dots).",
+              'Choose "Add to Home screen".',
+              "Tap Add to confirm.",
+            ],
+            "Firefox creates a shortcut that launches Envitefy fullscreen."
+          );
+        case "safari":
+          return unsupported(
+            "Safari is not available on Android, so installation is not supported.",
+            "Use Chrome, Edge, or Firefox on Android to add Envitefy to your device."
+          );
+        default:
+          break;
+      }
+      break;
+    }
+    case "ios":
+    case "ipados": {
+      const deviceLabel = platform.os === "ios" ? "iPhone" : "iPad";
+      const noteSuffix =
+        platform.browser === "safari"
+          ? "The Envitefy icon will appear on your home screen."
+          : 'If the option is missing, open the share menu and choose "Open in Safari" to finish the install.';
+
+      switch (platform.browser) {
+        case "safari":
+          return withSteps(
+            [
+              `Tap the share icon (square with an arrow) in Safari on your ${deviceLabel}.`,
+              'Scroll and choose "Add to Home Screen".',
+              'Tap "Add" in the top-right corner.',
+            ],
+            noteSuffix
+          );
+        case "chrome":
+        case "edge":
+        case "firefox":
+          return withSteps(
+            [
+              `Tap the share icon in ${platform.browserLabel} on your ${deviceLabel}.`,
+              'Select "Add to Home Screen".',
+              'Tap "Add" to confirm.',
+            ],
+            noteSuffix
+          );
+        default:
+          break;
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
+  return withSteps(
+    [
+      "Open your browser menu.",
+      'Choose the option labelled "Install app" or "Add to Home Screen".',
+      "Confirm the install prompt.",
+    ],
+    "If no install option appears, try opening Envitefy in Chrome or Safari."
+  );
+};
+
 const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
 const DEBUG_STORE_KEY = "__snapInstallDebugLog";
 
@@ -82,6 +361,7 @@ export default function PwaInstallButton({
   const [heroOutOfView, setHeroOutOfView] = useState(false);
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
@@ -256,6 +536,17 @@ export default function PwaInstallButton({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const guide = resolveInstallGuide(window);
+    setInstallGuide(guide);
+    pushDebug("install guide resolved", {
+      os: guide.os,
+      browser: guide.browser,
+      supported: guide.supported,
+    });
+  }, [pushDebug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     const w = window as SnapWindow;
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
@@ -352,7 +643,12 @@ export default function PwaInstallButton({
       window.location.hostname === "127.0.0.1" ||
       window.location.hostname === "[::1]");
   const showGenericFallback =
-    !canInstall && !showIosFallback && (maybeInstallable || isLocalhost);
+    !canInstall &&
+    !showIosFallback &&
+    (maybeInstallable || isLocalhost || installGuide !== null);
+  const guideOs = installGuide?.os ?? "unknown";
+  const guideBrowser = installGuide?.browser ?? "unknown";
+  const guideSupported = installGuide?.supported ?? null;
   useEffect(() => {
     pushDebug("install UI flags", {
       canInstall,
@@ -360,8 +656,21 @@ export default function PwaInstallButton({
       showGenericFallback,
       maybeInstallable,
       heroOutOfView,
+      guideOs,
+      guideBrowser,
+      guideSupported,
     });
-  }, [canInstall, showIosFallback, showGenericFallback, maybeInstallable, heroOutOfView, pushDebug]);
+  }, [
+    canInstall,
+    showIosFallback,
+    showGenericFallback,
+    maybeInstallable,
+    heroOutOfView,
+    guideOs,
+    guideBrowser,
+    guideSupported,
+    pushDebug,
+  ]);
 
   useEffect(() => {
     const hasAnyOption = canInstall || showIosFallback || showGenericFallback;
@@ -393,6 +702,30 @@ export default function PwaInstallButton({
     !heroOutOfView
   )
     return null;
+
+  const fallbackGuide = !canInstall ? installGuide : null;
+  const fallbackGuideActive = Boolean(!canInstall && (showIosFallback || showGenericFallback) && fallbackGuide);
+  const headingText = (() => {
+    if (canInstall) return "Install app";
+    if (fallbackGuide) {
+      if (fallbackGuide.supported) {
+        return `Install with ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}`;
+      }
+      return `Install not supported in ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}`;
+    }
+    if (showIosFallback) return "Install to Home Screen";
+    return "Install app";
+  })();
+  const subheadingText = (() => {
+    if (canInstall) return "Keep Envitefy handy on your device.";
+    if (fallbackGuide) {
+      if (fallbackGuide.supported) {
+        return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
+      }
+      return `We couldn't find an install option for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
+    }
+    return "Keep Envitefy handy on your device.";
+  })();
 
   return (
     <div
@@ -431,12 +764,8 @@ export default function PwaInstallButton({
           <div className="rounded-2xl bg-surface text-foreground border border-border shadow-2xl p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="font-semibold text-base">
-                  {showIosFallback ? "Install to Home Screen" : "Install app"}
-                </div>
-                <div className="text-xs opacity-70">
-                  Keep Envitefy handy on your device.
-                </div>
+                <div className="font-semibold text-base">{headingText}</div>
+                <div className="text-xs opacity-70">{subheadingText}</div>
               </div>
               <button
                 type="button"
@@ -484,7 +813,7 @@ export default function PwaInstallButton({
                 Install app
               </button>
             )}
-            {showIosFallback && (
+            {fallbackGuideActive && fallbackGuide && (
               <div className="rounded-xl border border-border bg-surface/80 p-3 text-sm shadow-inner">
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
@@ -505,32 +834,27 @@ export default function PwaInstallButton({
                     </svg>
                   </div>
                   <div className="space-y-2">
-                    <ol className="list-decimal ml-5 space-y-1">
-                      <li>
-                        Tap the Share button in Safari (square with arrow).
-                      </li>
-                      <li>
-                        Choose{" "}
-                        <span className="font-semibold">
-                          Add to Home Screen
-                        </span>
-                        .
-                      </li>
-                      <li>
-                        Tap <span className="font-semibold">Add</span> to
-                        confirm.
-                      </li>
-                    </ol>
+                    <div className="font-medium">
+                      {fallbackGuide.browserLabel} on {fallbackGuide.osLabel}
+                    </div>
+                    {fallbackGuide.supported && fallbackGuide.steps.length > 0 ? (
+                      <ol className="list-decimal ml-5 space-y-1">
+                        {fallbackGuide.steps.map((step, idx) => (
+                          <li key={idx}>{step}</li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <div className="opacity-80">
+                        {
+                          fallbackGuide.unsupportedMessage ??
+                          "We couldn't detect an install option for this combination."
+                        }
+                      </div>
+                    )}
+                    {fallbackGuide.note && (
+                      <div className="text-xs opacity-70">{fallbackGuide.note}</div>
+                    )}
                   </div>
-                </div>
-              </div>
-            )}
-            {!canInstall && !showIosFallback && showGenericFallback && (
-              <div className="rounded-xl bg-surface text-foreground border border-border shadow-inner p-3 text-sm">
-                <div className="font-medium mb-1">Install this app</div>
-                <div className="opacity-80">
-                  Open your browser menu and choose{" "}
-                  <span className="font-semibold">Install app</span>.
                 </div>
               </div>
             )}
@@ -540,3 +864,4 @@ export default function PwaInstallButton({
     </div>
   );
 }
+
