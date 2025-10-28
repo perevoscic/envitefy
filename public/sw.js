@@ -1,4 +1,4 @@
-const CACHE_NAME = "smd-static-v4";
+const CACHE_NAME = "smd-static-v5";
 const APP_SHELL = [
   "/",
   "/landing",
@@ -11,10 +11,25 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const urls = APP_SHELL.slice();
+      await Promise.allSettled(
+        urls.map(async (url) => {
+          try {
+            const request = new Request(url, { cache: "reload" });
+            const response = await fetch(request);
+            if (!response || !response.ok) {
+              throw new Error(`Unexpected response (${response?.status})`);
+            }
+            await cache.put(request, response.clone());
+          } catch (error) {
+            console.warn("[sw] failed to precache", url, error);
+          }
+        })
+      );
+      await self.skipWaiting();
+    })()
   );
 });
 
@@ -72,5 +87,3 @@ self.addEventListener("fetch", (event) => {
     )
   );
 });
-
-

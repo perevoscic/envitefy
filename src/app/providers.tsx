@@ -447,6 +447,53 @@ function RegisterServiceWorker() {
     let cancelled = false;
     let hasRegistered = false;
     let idleHandle: number | null = null;
+    let controllerCleanup: (() => void) | null = null;
+
+    const setupControllerReload = () => {
+      const nav = navigator.serviceWorker;
+      if (!nav) return null;
+      if (nav.controller) {
+        try {
+          sessionStorage.removeItem("__snap_sw_reloaded__");
+        } catch {
+          // ignore
+        }
+        return null;
+      }
+      let alreadyReloaded = false;
+      try {
+        alreadyReloaded =
+          sessionStorage.getItem("__snap_sw_reloaded__") === "1";
+      } catch {
+        // ignore
+      }
+      if (alreadyReloaded) return null;
+      const onControllerChange = () => {
+        try {
+          nav.removeEventListener("controllerchange", onControllerChange);
+        } catch {
+          // ignore
+        }
+        try {
+          sessionStorage.setItem("__snap_sw_reloaded__", "1");
+        } catch {
+          // ignore
+        }
+        window.location.reload();
+      };
+      try {
+        nav.addEventListener("controllerchange", onControllerChange);
+      } catch {
+        return null;
+      }
+      return () => {
+        try {
+          nav.removeEventListener("controllerchange", onControllerChange);
+        } catch {
+          // ignore
+        }
+      };
+    };
 
     const clearIdleHandle = () => {
       if (idleHandle === null) return;
@@ -464,6 +511,7 @@ function RegisterServiceWorker() {
       hasRegistered = true;
       try {
         await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        controllerCleanup = setupControllerReload();
       } catch (e) {
         // Allow a subsequent attempt (e.g., after load) if registration fails.
         hasRegistered = false;
@@ -507,6 +555,10 @@ function RegisterServiceWorker() {
       cancelled = true;
       clearIdleHandle();
       window.removeEventListener("load", onLoad);
+      if (controllerCleanup) {
+        controllerCleanup();
+        controllerCleanup = null;
+      }
     };
   }, []);
   return null;
