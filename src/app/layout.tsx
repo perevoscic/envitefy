@@ -47,7 +47,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Envitefy",
   description:
-    "Turn flyers, invites, and schedules into shareable plans in seconds.",
+    "Turn flyers, invites, and schedules into shareable plans in seconds. Create birthday, wedding, and other events and share them with your friends. Smart Sign-up forms for school, volunteer, and more.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

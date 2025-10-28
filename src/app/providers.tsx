@@ -444,16 +444,70 @@ function RegisterServiceWorker() {
     }
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
+    let cancelled = false;
+    let hasRegistered = false;
+    let idleHandle: number | null = null;
+
+    const clearIdleHandle = () => {
+      if (idleHandle === null) return;
+      const anyWindow = window as any;
+      if (typeof anyWindow.cancelIdleCallback === "function") {
+        anyWindow.cancelIdleCallback(idleHandle);
+      } else {
+        window.clearTimeout(idleHandle);
+      }
+      idleHandle = null;
+    };
+
     const register = async () => {
+      if (cancelled || hasRegistered) return;
+      hasRegistered = true;
       try {
         await navigator.serviceWorker.register("/sw.js", { scope: "/" });
       } catch (e) {
-        // noop
+        // Allow a subsequent attempt (e.g., after load) if registration fails.
+        hasRegistered = false;
+      } finally {
+        clearIdleHandle();
       }
     };
-    const idle =
-      (self as any).requestIdleCallback || ((fn: any) => setTimeout(fn, 100));
-    idle(register);
+
+    const scheduleIdleRegistration = () => {
+      if (idleHandle !== null) return;
+      const anyWindow = window as any;
+      if (typeof anyWindow.requestIdleCallback === "function") {
+        idleHandle = anyWindow.requestIdleCallback(
+          () => {
+            idleHandle = null;
+            register();
+          },
+          { timeout: 1500 }
+        );
+      } else {
+        idleHandle = window.setTimeout(() => {
+          idleHandle = null;
+          register();
+        }, 200);
+      }
+    };
+
+    scheduleIdleRegistration();
+
+    const onLoad = () => {
+      register();
+    };
+
+    if (document.readyState === "complete") {
+      register();
+    } else {
+      window.addEventListener("load", onLoad, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      clearIdleHandle();
+      window.removeEventListener("load", onLoad);
+    };
   }, []);
   return null;
 }
