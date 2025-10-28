@@ -57,11 +57,11 @@ export default async function LandingPage() {
               contact@envitefy.com
             </a>
             . See our{" "}
-            <Link href="https://envitefy.com/privacy" className="underline">
+            <Link href="https://www.envitefy.com/privacy" className="underline">
               Privacy Policy
             </Link>{" "}
             and{" "}
-            <Link href="https://envitefy.com/terms" className="underline">
+            <Link href="https://www.envitefy.com/terms" className="underline">
               Terms
             </Link>
             .
