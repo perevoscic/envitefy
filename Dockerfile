@@ -51,12 +51,12 @@ COPY --from=build /app/.next/static ./.next/static
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('http').get('http://localhost:'+ (process.env.PORT || 8080) +'/api/health');" || exit 1
 
 RUN mkdir -p /tmp/next-cache \
-    && chown -R nodeusr:nodegrp /tmp/next-cache \
+    && mkdir -p .next/cache \
+    && chown -R nodeusr:nodegrp /tmp/next-cache .next \
     && chmod -R 777 /tmp/next-cache
 
 USER nodeusr
 
 EXPOSE 8080
 CMD ["sh", "-lc", "echo Starting Next server on PORT=${PORT} HOSTNAME=0.0.0.0; HOSTNAME=0.0.0.0 node server.js"]
-
 
