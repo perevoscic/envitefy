@@ -363,6 +363,7 @@ export default function PwaInstallButton({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
+  const [forceFallbackGuide, setForceFallbackGuide] = useState(false);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
@@ -706,26 +707,35 @@ export default function PwaInstallButton({
     return () => window.clearTimeout(timer);
   }, [guidePulse]);
 
+  const fallbackGuide = !canInstall ? installGuide : null;
+  const fallbackGuideActive = Boolean(
+    !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
+  );
+  const hasDeferredPrompt = Boolean(deferred);
+  const fallbackCtaAvailable =
+    !hasDeferredPrompt &&
+    fallbackGuideActive &&
+    fallbackGuide?.supported &&
+    fallbackGuide.os !== "ios" &&
+    fallbackGuide.os !== "ipados";
+  const showInstallCta = hasDeferredPrompt || fallbackCtaAvailable;
+  const showFallbackGuideCard =
+    fallbackGuideActive && (forceFallbackGuide || !showInstallCta);
+
+  useEffect(() => {
+    if (!fallbackGuideActive) {
+      setForceFallbackGuide(false);
+    }
+  }, [fallbackGuideActive]);
+
   if (
     (!canInstall && !showIosFallback && !showGenericFallback) ||
     !heroOutOfView
   )
     return null;
 
-  const fallbackGuide = !canInstall ? installGuide : null;
-  const fallbackGuideActive = Boolean(
-    !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
-  );
-  const showInstallCta =
-    canInstall ||
-    (fallbackGuideActive &&
-      fallbackGuide?.supported &&
-      fallbackGuide.os !== "ios" &&
-      fallbackGuide.os !== "ipados");
-  const showFallbackGuideCard =
-    fallbackGuideActive && !showInstallCta && Boolean(fallbackGuide);
   const headingText = (() => {
-    if (canInstall) return "Install app";
+    if (showInstallCta) return "Add Envitefy to your home screen";
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
         return `Install with ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}`;
@@ -735,12 +745,12 @@ export default function PwaInstallButton({
     if (showIosFallback) return "Install to Home Screen";
     return "Install app";
   })();
-  const subheadingText = (() => {
-    if (canInstall) return "Keep Envitefy handy on your device.";
+  const subheadingText: string | null = (() => {
+    if (hasDeferredPrompt) return null;
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
-        if (showInstallCta) {
-          return `Select Install app to add Envitefy using ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
+        if (showInstallCta && !forceFallbackGuide) {
+          return `Tap Install app to view the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
         }
         return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
       }
@@ -799,13 +809,16 @@ export default function PwaInstallButton({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold text-base">{headingText}</div>
-                <div className="text-xs opacity-70">{subheadingText}</div>
+                {subheadingText ? (
+                  <div className="text-xs opacity-70">{subheadingText}</div>
+                ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => {
                   setExpanded(false);
                   setWasManuallyClosed(true);
+                  setForceFallbackGuide(false);
                 }}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground transition"
                 aria-label="Collapse install options"
@@ -846,6 +859,7 @@ export default function PwaInstallButton({
                   if (fallbackGuideActive && fallbackGuide?.supported) {
                     setExpanded(true);
                     setGuidePulse(true);
+                    setForceFallbackGuide(true);
                     pushDebug("install CTA fallback invoked", {
                       os: fallbackGuide.os,
                       browser: fallbackGuide.browser,
