@@ -49,22 +49,31 @@ const getPlatformInfo = (win: Window): PlatformInfo => {
   const nav = win.navigator;
   const vendor = nav.vendor ?? "";
   const uaSource = `${nav.userAgent ?? ""} ${vendor}`.toLowerCase();
+  const platform = (nav.platform ?? "").toLowerCase();
   const maxTouchPoints =
     typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
-  const isTouchMac =
-    (uaSource.includes("macintosh") || uaSource.includes("mac os x")) &&
-    maxTouchPoints > 1;
+  const isTouchMac = platform === "macintel" && maxTouchPoints > 1;
+  const isIpadLike =
+    uaSource.includes("ipad") || platform === "ipad" || isTouchMac;
 
   let os: OSKey = "unknown";
   if (uaSource.includes("windows")) {
     os = "windows";
   } else if (uaSource.includes("android")) {
     os = "android";
-  } else if (uaSource.includes("ipad") || isTouchMac) {
+  } else if (isIpadLike) {
     os = "ipados";
-  } else if (uaSource.includes("iphone") || uaSource.includes("ipod")) {
+  } else if (
+    uaSource.includes("iphone") ||
+    uaSource.includes("ipod") ||
+    platform === "iphone"
+  ) {
     os = "ios";
-  } else if (uaSource.includes("mac os x") || uaSource.includes("macintosh")) {
+  } else if (
+    uaSource.includes("mac os x") ||
+    uaSource.includes("macintosh") ||
+    platform.startsWith("mac")
+  ) {
     os = "macos";
   }
 
@@ -730,6 +739,11 @@ export default function PwaInstallButton({
   const showInstallCta = canInstall;
   const showFallbackGuideCard =
     fallbackGuideActive && !showInstallCta && Boolean(fallbackGuide);
+  const showFallbackCta =
+    !showInstallCta &&
+    fallbackGuideActive &&
+    Boolean(fallbackGuide?.supported) &&
+    (fallbackGuide?.steps.length ?? 0) > 0;
   const headingText = (() => {
     if (showInstallCta) return "Add Envitefy to your home screen";
     if (fallbackGuide) {
@@ -763,6 +777,16 @@ export default function PwaInstallButton({
   ]
     .filter(Boolean)
     .join(" ");
+  const handleFallbackCtaClick = () => {
+    if (!fallbackGuide) return;
+    pushDebug("fallback install CTA clicked", {
+      os: fallbackGuide.os,
+      browser: fallbackGuide.browser,
+    });
+    setWasManuallyClosed(false);
+    setExpanded(true);
+    setGuidePulse(true);
+  };
 
   return (
     <div
@@ -900,6 +924,14 @@ export default function PwaInstallButton({
                   setGuidePulse(true);
                   setExpanded(true);
                 }}
+                className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
+              >
+                Install app
+              </button>
+            )}
+            {showFallbackCta && (
+              <button
+                onClick={handleFallbackCtaClick}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
               >
                 Install app
