@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
   };
 
   const host = req.headers.get("host");
-  if (host === "envitefy.com") {
+  if (host === "www.envitefy.com") {
     const url = req.nextUrl.clone();
     url.hostname = "envitefy.com";
     url.protocol = "https:";
