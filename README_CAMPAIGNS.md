@@ -2,7 +2,7 @@
 
 ## Overview
 
-Snap My Date now includes a powerful email campaign system for admin users to send bulk marketing emails to users based on subscription tiers. The system uses **Resend** for reliable email delivery.
+Envitefy now includes a powerful email campaign system for admin users to send bulk marketing emails to users based on subscription tiers. The system uses **Resend** for reliable email delivery.
 
 ## Features
 
@@ -10,7 +10,7 @@ Snap My Date now includes a powerful email campaign system for admin users to se
 - 🎯 **Audience Targeting**: Filter recipients by subscription plan (Free Trial, Monthly, Yearly, Lifetime)
 - 📊 **Campaign History**: Track all sent campaigns with delivery stats
 - ⚡ **Batch Processing**: Automatically handles rate limiting with 100-email batches
-- 🎨 **Branded Templates**: Uses existing Snap My Date email template with logo
+- 🎨 **Branded Templates**: Uses existing Envitefy email template with logo
 - 👤 **Personalization**: Supports `{{greeting}}` placeholder for "Hi [FirstName]" or "Hello"
 
 ## Admin Access
@@ -107,14 +107,14 @@ DATABASE_URL=postgresql://...          # Required
 
 ### Example 1: Welcome Email to Free Users
 
-**Subject**: Welcome to Snap My Date!
+**Subject**: Welcome to Envitefy!
 
 **Body**:
 
 ```
 {{greeting}},
 
-Thank you for joining Snap My Date! 🎉
+Thank you for joining Envitefy! 🎉
 
 We're excited to help you capture and organize all your important dates. As a free user, you have 3 scans to get started.
 
@@ -187,4 +187,3 @@ For issues or questions about the campaign system, contact the development team 
 - `/src/app/admin/campaigns/page.tsx` (UI)
 - `/src/app/api/admin/campaigns/` (API)
 - `/src/lib/resend.ts` (Email sending)
-

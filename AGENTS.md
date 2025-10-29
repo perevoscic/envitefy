@@ -18,7 +18,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Behavior**: Sends an email to the contact inbox. The destination address is taken from `CONTACT_TO` when set; otherwise it uses the email portion of `SES_FROM_EMAIL_CONTACT` (display name ignored), falling back to `contact@envitefy.com`. The message is sent using AWS SES when configured, with `Reply-To` set to the submitter's `email` when provided.
 - **From/Sender**: Uses `SES_FROM_EMAIL_CONTACT` when available; otherwise falls back to `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_NO_REPLY`, then `SMTP_FROM`, then `no-reply@envitefy.com`.
 - **Output**: `{ ok: true, delivered: boolean }`.
-- **Env**: `SES_FROM_EMAIL_CONTACT` (e.g., `Snap My Date Contact <contact@envitefy.com>`), optional `CONTACT_TO` to override destination; standard AWS credentials and `AWS_REGION`/`AWS_DEFAULT_REGION`. Optionally supports SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
+- **Env**: `SES_FROM_EMAIL_CONTACT` (e.g., `Envitefy Contact <contact@envitefy.com>`), optional `CONTACT_TO` to override destination; standard AWS credentials and `AWS_REGION`/`AWS_DEFAULT_REGION`. Optionally supports SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
 
 ### Event Share — POST `/api/events/share`
 
@@ -70,7 +70,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: Create and send a bulk email campaign to users filtered by subscription plan or other criteria.
 - **Auth**: NextAuth session required and `isAdmin=true`.
 - **Input (JSON)**: `{ subject: string, body: string, fromEmail?: string, audienceFilter: { plans?: string[], minScans?: number, maxScans?: number, lastActiveAfter?: string, lastActiveBefore?: string }, buttonText?: string, buttonUrl?: string }`.
-- **Behavior**: Queries users matching the audience filter, creates a campaign record in `email_campaigns` table, sends emails in batches of 100 via Resend, and updates campaign stats (sent/failed counts). The body supports a `{{greeting}}` placeholder for personalized greetings. Emails use the standard Snap My Date template wrapper.
+- **Behavior**: Queries users matching the audience filter, creates a campaign record in `email_campaigns` table, sends emails in batches of 100 via Resend, and updates campaign stats (sent/failed counts). The body supports a `{{greeting}}` placeholder for personalized greetings. Emails use the standard Envitefy template wrapper.
 - **Output**: `{ ok: true, campaignId: string, sent: number, failed: number, errors: Array<{ email: string, error: string }> }`.
 - **Env**: `RESEND_API_KEY` (required), `SES_FROM_EMAIL_NO_REPLY` (default sender), `DATABASE_URL`.
 
@@ -98,7 +98,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message: string, senderFirstName?: string, senderLastName?: string, senderEmail?: string }`. Non-authenticated purchasers must supply the sender fields.
 - **Pricing**: Server computes cents using Stripe plan pricing (defaults: $0.99/month, $9.99/year). `quantity` multiplies the unit amount.
 - **Output**: `{ ok: true, orderId, sessionId, checkoutUrl, amountCents, currency }`. Clients must redirect the browser to `checkoutUrl` to complete payment.
-- **Fulfillment**: Webhook `payment_intent.succeeded` issues the promo code, attaches it to the `gift_orders` row (including the purchaser's user id when known for downstream linking). If the recipient email already belongs to a Snap My Date user, the gifted months are automatically added to their subscription and the promo code is marked redeemed; otherwise the recipient receives the code to redeem manually. Refunds revoke the code.
+- **Fulfillment**: Webhook `payment_intent.succeeded` issues the promo code, attaches it to the `gift_orders` row (including the purchaser's user id when known for downstream linking). If the recipient email already belongs to a Envitefy user, the gifted months are automatically added to their subscription and the promo code is marked redeemed; otherwise the recipient receives the code to redeem manually. Refunds revoke the code.
 - **Env**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `APP_URL`, plus `DATABASE_URL`, `SES_FROM_EMAIL_GIFT`, and AWS credentials/region for SES (`AWS_REGION` or `AWS_DEFAULT_REGION`, and standard AWS credentials). Gift emails still send from `SES_FROM_EMAIL_GIFT`; purchaser email is used for Reply-To when provided.
 
 ### Promo Redeem Agent — POST `/api/promo/redeem`
@@ -544,9 +544,9 @@ Payload used by the authenticated calendar agents.
 - **OpenAI (optional OCR fallback)**
   - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
 - **AWS SES (email senders)**
-  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Snap My Date <no-reply@envitefy.com>` (password reset, system mail)
-  - `SES_FROM_EMAIL_GIFT` e.g. `"Snap My Date Gifts" <gift@envitefy.com>` (gift delivery emails)
-  - `SES_FROM_EMAIL_CONTACT` e.g. `"Snap My Date Support" <contact@envitefy.com>` (reserved for contact replies)
+  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Envitefy <no-reply@envitefy.com>` (password reset, system mail)
+  - `SES_FROM_EMAIL_GIFT` e.g. `"Envitefy Gifts" <gift@envitefy.com>` (gift delivery emails)
+  - `SES_FROM_EMAIL_CONTACT` e.g. `"Envitefy Support" <contact@envitefy.com>` (reserved for contact replies)
   - Region: `AWS_REGION` or `AWS_DEFAULT_REGION` and standard AWS credentials
 - **Stripe**
   - `STRIPE_SECRET_KEY`
@@ -623,4 +623,3 @@ Payload used by the authenticated calendar agents.
 - 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
 - 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.
 - 2025-08-26: Initial creation with OCR, ICS, Google/Outlook agents, OAuth routes, and debug/status endpoints documented.
-

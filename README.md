@@ -1,4 +1,4 @@
-## Snap My Date
+## Envitefy
 
 OCR images/flyers, parse events, and add them to Google Calendar or Microsoft Outlook. Includes ICS generation and OAuth flows. See `AGENTS.md` for a concise catalog of API agents.
 

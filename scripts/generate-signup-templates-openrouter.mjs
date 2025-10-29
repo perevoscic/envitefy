@@ -43,7 +43,7 @@ if (!openrouterApiKey) {
 }
 
 const appReferer = process.env.OPENROUTER_HTTP_REFERER || process.env.PUBLIC_BASE_URL || "https://envitefy.com";
-const appTitle = process.env.OPENROUTER_X_TITLE || "Snap My Date";
+const appTitle = process.env.OPENROUTER_X_TITLE || "Envitefy";
 const model = (getArg("--model") || "openai/gpt-5-image-mini").toString();
 
 /* --------------------------------- Utils --------------------------------- */

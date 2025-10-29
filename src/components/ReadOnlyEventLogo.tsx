@@ -73,17 +73,17 @@ export default function ReadOnlyEventLogo() {
     <div className="mb-6 flex justify-center">
       <Link
         href="/"
-        aria-label="Snap My Date home"
+        aria-label="Envitefy home"
         className="inline-flex rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <img
           src="/Logo_stacked.png"
-          alt="Snap My Date tag line"
+          alt="Envitefy tag line"
           className={`h-24 w-auto ${useLightVariant ? "hidden" : "block"}`}
         />
         <img
           src="/Logo_stacked.png"
-          alt="Snap My Date tag line"
+          alt="Envitefy tag line"
           className={`h-24 w-auto ${useLightVariant ? "block" : "hidden"}`}
         />
       </Link>

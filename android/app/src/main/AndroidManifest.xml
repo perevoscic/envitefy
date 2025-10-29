@@ -3,7 +3,7 @@
     <application
         android:label="Snap My Date"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@style/Theme.SnapMyDate"
+        android:theme="@style/Theme.Envitefy"
         android:usesCleartextTraffic="false">
 
         <!-- Launcher that opens your website in a Trusted Web Activity -->

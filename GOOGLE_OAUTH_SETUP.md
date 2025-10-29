@@ -2,7 +2,7 @@
 
 ## Summary
 
-Google OAuth authentication has been successfully integrated into your Snap My Date application. Users can now sign in or sign up using their Google account in addition to the existing email/password authentication.
+Google OAuth authentication has been successfully integrated into your Envitefy application. Users can now sign in or sign up using their Google account in addition to the existing email/password authentication.
 
 ## Changes Made
 

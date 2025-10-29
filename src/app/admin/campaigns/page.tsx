@@ -337,7 +337,7 @@ export default function CampaignsPage() {
         <td align="center" style="background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
           <!-- Logo on beige background -->
           <div style="padding: 0 0 24px 0; background-color: #FFFBF7 !important; text-align: center;" bgcolor="#FFFBF7">
-            <img src="${logoUrl}" alt="Snap My Date" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
+            <img src="${logoUrl}" alt="Envitefy" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
           </div>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #FFFFFF !important; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" bgcolor="#FFFFFF">
             <!-- Content -->
@@ -371,13 +371,13 @@ export default function CampaignsPage() {
               <td style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E5E5; background-color: #FFFFFF;" bgcolor="#FFFFFF">
                 <p style="margin: 0 0 8px 0; font-size: 14px; color: #737373; line-height: 1.5; font-style: italic;">
                   Sincerely,<br>
-                  <strong style="color: #2E2C2D;">Snap My Date Team</strong>
+                  <strong style="color: #2E2C2D;">Envitefy Team</strong>
                 </p>
                 <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
                   SNAP IT. SAVE IT. DONE.
                 </p>
                 <p style="margin: 16px 0 0 0; font-size: 12px; color: #A3A3A3; line-height: 1.5;">
-                  You're receiving this because you have a Snap My Date account.
+                  You're receiving this because you have a Envitefy account.
                 </p>
               </td>
             </tr>
@@ -400,7 +400,7 @@ ${socialIconsHtml}
             </tr>
           </table>
           <p style="margin: 24px 0 0 0; font-size: 12px; color: #737373; text-align: center;">
-            &copy; ${currentYear} Snap My Date. All rights reserved.
+            &copy; ${currentYear} Envitefy. All rights reserved.
           </p>
         </td>
       </tr>

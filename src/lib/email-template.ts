@@ -128,7 +128,7 @@ export function createEmailTemplate(params: {
             <tr>
               <td align="center" style="padding: 0 0 24px 0; background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
                 <a href="${escapeHtml(baseUrl)}" target="_blank" style="display:inline-block; background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
-                  <img src="${logoUrl}" width="280" height="auto" alt="Snap My Date" style="display:block; margin: 0 auto; max-width: 100%;" />
+                  <img src="${logoUrl}" width="280" height="auto" alt="Envitefy" style="display:block; margin: 0 auto; max-width: 100%;" />
                 </a>
               </td>
             </tr>
@@ -169,7 +169,7 @@ ${socialIconsRow}
                   </tr>
                 </table>
                 <p style="margin: 24px 0 0 0; font-size: 12px; color: #9CA3AF; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                  &copy; ${currentYear} Snap My Date. All rights reserved.
+                  &copy; ${currentYear} Envitefy. All rights reserved.
                 </p>
               </td>
             </tr>

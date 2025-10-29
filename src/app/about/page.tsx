@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About — Snap My Date",
+  title: "About — Envitefy",
   description:
-    "Snap My Date turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
+    "Envitefy turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
 };
 
 export default function AboutPage() {
@@ -27,15 +27,15 @@ export default function AboutPage() {
                 Snap it. Save it.
               </p>
               <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
-                Snap My Date was built by parents who were tired of digging
-                through backpacks and group chats. Snap a picture of any flyer,
-                invite, practice chart, or appointment card and we turn it into
-                a clean calendar event with the right title, place, and
-                reminders — no typing and no guesswork.
+                Envitefy was built by parents who were tired of digging through
+                backpacks and group chats. Snap a picture of any flyer, invite,
+                practice chart, or appointment card and we turn it into a clean
+                calendar event with the right title, place, and reminders — no
+                typing and no guesswork.
               </p>
               <p className="mt-6 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
                 From kindergarten concerts to travel tournaments and birthday
-                parties, Snap My Date understands the details that matter. It
+                parties, Envitefy understands the details that matter. It
                 recognizes names written in script, catches spelled-out times
                 like "four in the afternoon," and knows the difference between a
                 home game and an away meet so your calendar always tells the
@@ -118,7 +118,7 @@ export default function AboutPage() {
                       <span className="font-semibold text-foreground">
                         Ready for every invitation:
                       </span>{" "}
-                      Snap My Date handles weddings, showers, and milestone
+                      Envitefy handles weddings, showers, and milestone
                       birthdays without adding generic filler, keeping the
                       wording true to the card.
                     </li>
@@ -155,7 +155,7 @@ export default function AboutPage() {
                   </h2>
                   <ul className="mt-5 space-y-4 text-foreground/75">
                     <li>
-                      We started Snap My Date as parents juggling concerts,
+                      We started Envitefy as parents juggling concerts,
                       practices, appointments, and invites across group chats
                       and crumpled flyers.
                     </li>
