@@ -18,6 +18,7 @@ export async function middleware(req: NextRequest) {
     return res;
   };
 
+  // Redirect legacy www.envitefy.com to envitefy.com
   const host = req.headers.get("host");
   if (host === "www.envitefy.com") {
     const url = req.nextUrl.clone();
