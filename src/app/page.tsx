@@ -116,7 +116,7 @@ export default function Home() {
           aria-level={1}
         >
           <span className="font-pacifico">
-            <span className="text-[#0e7bc4]">Env</span>
+            <span className="text-[#0e7bc4]">env</span>
             <span className="text-[#ee3c2b]">i</span>
             <span className="text-[#0e7bc4]">tefy</span>
           </span>

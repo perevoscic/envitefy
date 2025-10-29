@@ -279,9 +279,9 @@ export default function LoginHero() {
           aria-level={1}
         >
           <span className="font-pacifico">
-            <span className="text-[#0e7bc4]">Env</span>
+            <span className="text-[#ffffff]">env</span>
             <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#0e7bc4]">tefy</span>
+            <span className="text-[#ffffff]">tefy</span>
           </span>
         </p>
         <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat px-4 md:px-0">
