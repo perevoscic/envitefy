@@ -841,18 +841,16 @@ export default function PwaInstallButton({
                     w.__snapInstallDeferredPrompt ??
                     null;
 
-                  if (
-                    promptEvent &&
-                    typeof promptEvent.prompt === "function"
-                  ) {
+                  if (promptEvent && typeof promptEvent.prompt === "function") {
                     deferredPromptRef.current = promptEvent;
                     setDeferred(promptEvent);
                     try {
                       pushDebug("install CTA prompt triggered");
                       await promptEvent.prompt();
-                      let choice:
-                        | { outcome: "accepted" | "dismissed"; platform: string }
-                        | null = null;
+                      let choice: {
+                        outcome: "accepted" | "dismissed";
+                        platform: string;
+                      } | null = null;
                       try {
                         choice = await (promptEvent as any).userChoice;
                       } catch {
@@ -891,7 +889,10 @@ export default function PwaInstallButton({
                       } catch {}
                     }
                     return;
-                  pushDebug("install CTA prompt missing; switching to fallback");
+                  }
+                  pushDebug(
+                    "install CTA prompt missing; switching to fallback"
+                  );
                   deferredPromptRef.current = null;
                   setDeferred(null);
                   setCanInstall(false);
