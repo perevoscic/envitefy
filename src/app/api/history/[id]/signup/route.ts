@@ -25,6 +25,7 @@ import type {
   SignupResponseSlot,
 } from "@/types/signup";
 import { sendSignupConfirmationEmail } from "@/lib/email";
+import { absoluteUrl } from "@/lib/absolute-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -354,22 +355,17 @@ export async function POST(
         persistedForm.responses.find(
           (response) => response.id === newResponse.id
         ) || newResponse;
+      const signupFormUrl = await absoluteUrl(`/smart-signup-form/${id}`);
       // Fire-and-forget: email confirmation to participant when we have an email
       (async () => {
         try {
           const toEmail = (latestResponse.email || (sessionEmail as string | null)) as string | undefined;
           if (toEmail) {
-            const baseUrl =
-              process.env.PUBLIC_BASE_URL ||
-              process.env.APP_URL ||
-              process.env.NEXTAUTH_URL ||
-              "https://envitefy.com";
-            const eventUrl = `${baseUrl}/smart-signup-form/${id}`;
             await sendSignupConfirmationEmail({
               toEmail,
               userName: latestResponse.name || null,
               eventTitle: row.title || "Smart sign-up",
-              eventUrl,
+              eventUrl: signupFormUrl,
               form: persistedForm,
               response: latestResponse,
             });

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createOrUpdateEventShare, getEventHistoryById, getUserIdByEmail, incrementUserSharesSent } from "@/lib/db";
 import { sendShareEventEmail } from "@/lib/email";
+import { absoluteUrl } from "@/lib/absolute-url";
 
 export const runtime = "nodejs";
 
@@ -46,11 +47,23 @@ export async function POST(request: NextRequest) {
     // Email notification to recipient (from no-reply)
     try {
       const ownerEmail = email;
-      const base = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL || "";
-      const slugTitle = (await getEventHistoryById(eventId))?.title || "Event";
-      const slug = (slugTitle || "event").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const eventUrl = `${base}/event/${slug}-${eventId}`;
-      await sendShareEventEmail({ toEmail: recipientEmail, ownerEmail, eventTitle: slugTitle, eventUrl, recipientFirstName, recipientLastName });
+      const slugTitle =
+        typeof existing.title === "string" && existing.title.trim().length
+          ? existing.title
+          : "Event";
+      const slug = slugTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "event";
+      const eventUrl = await absoluteUrl(`/event/${slug}-${eventId}`);
+      await sendShareEventEmail({
+        toEmail: recipientEmail,
+        ownerEmail,
+        eventTitle: slugTitle,
+        eventUrl,
+        recipientFirstName,
+        recipientLastName,
+      });
     } catch (e) {
       try { console.error("[share] email send failed", e); } catch {}
     }
@@ -61,5 +74,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: String(err?.message || err || "unknown error") }, { status: 500 });
   }
 }
-
-

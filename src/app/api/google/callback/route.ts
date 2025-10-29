@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
+import { absoluteUrl } from "@/lib/absolute-url";
 import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -68,25 +69,6 @@ export async function GET(request: Request) {
       process.env.GOOGLE_REDIRECT_URI!
     );
     const { tokens } = await oAuth2Client.getToken(code);
-
-    const deriveBaseUrl = (req: Request): string => {
-      const configured = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL;
-      if (configured) return configured;
-      const xfProto = req.headers.get("x-forwarded-proto");
-      const xfHost = req.headers.get("x-forwarded-host");
-      if (xfProto && xfHost) return (xfProto || "") + "://" + (xfHost || "");
-      const host = req.headers.get("host");
-      if (host) {
-        const proto = host.includes("localhost") ? "http" : "https";
-        return proto + "://" + host;
-      }
-      try {
-        return new URL(req.url).origin;
-      } catch {
-        return "";
-      }
-    };
-    const baseUrl = deriveBaseUrl(request);
 
     let refresh = tokens.refresh_token || undefined;
     const cookieRefresh = readCookie(request.headers.get("cookie"), "g_refresh");
@@ -171,7 +153,7 @@ export async function GET(request: Request) {
         const requestBody = toGoogleEvent(normalized);
         const created = await calendar.events.insert({ calendarId: "primary", requestBody });
         const link = created.data.htmlLink || "/";
-        const openUrl = new URL("/open", baseUrl || request.url);
+        const openUrl = new URL(await absoluteUrl("/open"));
         openUrl.searchParams.set("url", link);
         const redirectResp = NextResponse.redirect(openUrl);
         if (refresh) {
@@ -191,7 +173,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const homeRedirect = NextResponse.redirect(new URL("/", baseUrl || request.url));
+    const homeRedirect = NextResponse.redirect(await absoluteUrl("/"));
     if (refresh) {
       homeRedirect.cookies.set({
         name: "g_refresh",

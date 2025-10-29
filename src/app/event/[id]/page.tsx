@@ -38,6 +38,7 @@ import type { CSSProperties } from "react";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
+import { absoluteUrl } from "@/lib/absolute-url";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
 
@@ -523,9 +524,8 @@ export default async function EventPage({
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
   const slug = slugify(title);
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "";
   const canonical = `/event/${slug}-${row.id}`;
-  const shareUrl = `${base}${canonical}`;
+  const shareUrl = await absoluteUrl(canonical);
 
   // Redirect to canonical slug-id URL if needed, preserving key query params
   if (awaitedParams.id !== `${slug}-${row.id}` || autoAccept) {

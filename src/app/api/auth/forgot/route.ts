@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPasswordResetToken, getUserByEmail } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { absoluteUrl } from "@/lib/absolute-url";
 
 export const runtime = "nodejs";
 
@@ -14,8 +15,7 @@ export async function POST(request: Request) {
     const user = await getUserByEmail(email).catch(() => null);
     if (user) {
       const reset = await createPasswordResetToken(email, 30);
-      const base = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL || new URL(request.url).origin;
-      const resetUrl = new URL("/reset", base);
+      const resetUrl = new URL(await absoluteUrl("/reset"));
       resetUrl.searchParams.set("token", reset.token);
       let emailSent = false;
       try {
@@ -35,5 +35,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-

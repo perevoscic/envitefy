@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { saveMicrosoftRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
+import { absoluteUrl } from "@/lib/absolute-url";
 
 export const runtime = "nodejs";
 
@@ -54,27 +55,7 @@ export async function GET(request: Request) {
       // ignore persistence errors
     }
 
-    // Compute external base URL similar to Google callback to avoid 0.0.0.0:8080
-    const deriveBaseUrl = (req: Request): string => {
-      const configured = process.env.NEXTAUTH_URL || process.env.PUBLIC_BASE_URL;
-      if (configured) return configured;
-      const xfProto = req.headers.get("x-forwarded-proto");
-      const xfHost = req.headers.get("x-forwarded-host");
-      if (xfProto && xfHost) return `${xfProto}://${xfHost}`;
-      const host = req.headers.get("host");
-      if (host) {
-        const proto = host.includes("localhost") ? "http" : "https";
-        return `${proto}://${host}`;
-      }
-      try {
-        return new URL(req.url).origin;
-      } catch {
-        return "";
-      }
-    };
-
-    const baseUrl = deriveBaseUrl(request);
-    const response = NextResponse.redirect(new URL("/", baseUrl || request.url));
+    const response = NextResponse.redirect(await absoluteUrl("/"));
     response.cookies.set({
       name: "o_refresh",
       value: refresh,
@@ -90,5 +71,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-
