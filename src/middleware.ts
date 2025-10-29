@@ -18,9 +18,20 @@ export async function middleware(req: NextRequest) {
     return res;
   };
 
-  // Redirect legacy www.envitefy.com to envitefy.com
-  const host = req.headers.get("host");
-  if (host === "www.envitefy.com") {
+  // // Redirect legacy www.envitefy.com to envitefy.com
+  // const host = req.headers.get("host");
+  // if (host === "www.envitefy.com") {
+  //   const url = req.nextUrl.clone();
+  //   url.hostname = "envitefy.com";
+  //   url.protocol = "https:";
+  //   return redirectWithMarker(url, 301);
+  // }
+
+  // NEW 10/29/25 Redirect legacy www.envitefy.com to envitefy.com
+  const host = req.headers.get("host") || "";
+  const cleanHost = host.replace(/:8080$/, "");
+
+  if (cleanHost === "www.envitefy.com") {
     const url = req.nextUrl.clone();
     url.hostname = "envitefy.com";
     url.protocol = "https:";
