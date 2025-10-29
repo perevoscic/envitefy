@@ -348,8 +348,10 @@ export default function PwaInstallButton({
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [canInstall, setCanInstall] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
+  const [hideUi, setHideUi] = useState(false);
   const [allowedDevice, setAllowedDevice] = useState(false);
   const [maybeInstallable, setMaybeInstallable] = useState(false);
   const [expanded, setExpanded] = useState(startExpanded);
@@ -395,6 +397,7 @@ export default function PwaInstallButton({
     const standalone = isStandalone();
     if (standalone) {
       setCanInstall(false);
+      setHideUi(true);
       pushDebug("display-mode standalone detected; hiding CTA", {
         referrer: document.referrer || "",
       });
@@ -422,6 +425,7 @@ export default function PwaInstallButton({
           const related = await anyNav.getInstalledRelatedApps();
           if (Array.isArray(related) && related.length > 0) {
             setCanInstall(false);
+            setHideUi(true);
           }
           pushDebug("checked installed related apps", {
             count: Array.isArray(related) ? related.length : null,
@@ -557,6 +561,7 @@ export default function PwaInstallButton({
         hasPrompt: typeof evt.prompt === "function",
       });
       w.__snapInstallDeferredPrompt = evt;
+      deferredPromptRef.current = evt;
       setDeferred(evt);
       setCanInstall(true);
       setShowIosTip(false);
@@ -606,6 +611,8 @@ export default function PwaInstallButton({
       setShowIosTip(false);
       setMaybeInstallable(false);
       setExpanded(false);
+      setHideUi(true);
+      deferredPromptRef.current = null;
       pushDebug("appinstalled event observed");
     };
     window.addEventListener("appinstalled", onInstalled);
@@ -707,6 +714,8 @@ export default function PwaInstallButton({
     const timer = window.setTimeout(() => setGuidePulse(false), 1400);
     return () => window.clearTimeout(timer);
   }, [guidePulse]);
+
+  if (hideUi) return null;
 
   if (
     (!canInstall && !showIosFallback && !showGenericFallback) ||
@@ -825,29 +834,70 @@ export default function PwaInstallButton({
             {showInstallCta && (
               <button
                 onClick={async () => {
-                  if (deferred) {
-                    await deferred.prompt();
+                  const w = window as SnapWindow;
+                  const promptEvent =
+                    deferredPromptRef.current ??
+                    deferred ??
+                    w.__snapInstallDeferredPrompt ??
+                    null;
+
+                  if (
+                    promptEvent &&
+                    typeof promptEvent.prompt === "function"
+                  ) {
+                    deferredPromptRef.current = promptEvent;
+                    setDeferred(promptEvent);
                     try {
-                      await deferred.userChoice;
+                      pushDebug("install CTA prompt triggered");
+                      await promptEvent.prompt();
+                      let choice:
+                        | { outcome: "accepted" | "dismissed"; platform: string }
+                        | null = null;
+                      try {
+                        choice = await (promptEvent as any).userChoice;
+                      } catch {
+                        choice = null;
+                      }
+                      pushDebug("install CTA user choice resolved", {
+                        outcome: choice?.outcome ?? "unknown",
+                        platform: choice?.platform ?? "unknown",
+                      });
+                      if (choice?.outcome === "accepted") {
+                        setShowIosTip(false);
+                        setMaybeInstallable(false);
+                        setExpanded(false);
+                        setHideUi(true);
+                      } else {
+                        // Prompt dismissed or unavailable; surface fallback instructions.
+                        setGuidePulse(true);
+                        setExpanded(true);
+                      }
+                    } catch (error) {
+                      pushDebug("install CTA prompt error", {
+                        message:
+                          error instanceof Error
+                            ? error.message
+                            : String(error),
+                      });
+                      setGuidePulse(true);
+                      setExpanded(true);
                     } finally {
+                      deferredPromptRef.current = null;
                       setDeferred(null);
                       setCanInstall(false);
                       setShowIosTip(false);
                       try {
-                        (window as SnapWindow).__snapInstallDeferredPrompt =
-                          null;
+                        w.__snapInstallDeferredPrompt = null;
                       } catch {}
                     }
                     return;
-                  }
-                  if (fallbackGuideActive && fallbackGuide?.supported) {
-                    setExpanded(true);
-                    setGuidePulse(true);
-                    pushDebug("install CTA fallback invoked", {
-                      os: fallbackGuide.os,
-                      browser: fallbackGuide.browser,
-                    });
-                  }
+                  pushDebug("install CTA prompt missing; switching to fallback");
+                  deferredPromptRef.current = null;
+                  setDeferred(null);
+                  setCanInstall(false);
+                  setShowIosTip(false);
+                  setGuidePulse(true);
+                  setExpanded(true);
                 }}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
               >

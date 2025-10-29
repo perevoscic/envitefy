@@ -202,7 +202,7 @@ export default async function RootLayout({
                   try { if (event && event.preventDefault) event.preventDefault(); } catch (e) {}
                   try { w.__snapInstallDeferredPrompt = event; } catch (e) {}
                   try {
-                    var ev = new CustomEvent('snapmydate:beforeinstallprompt', { detail: event });
+                    var ev = new CustomEvent('envitefy:beforeinstallprompt', { detail: event });
                     window.dispatchEvent(ev);
                   } catch (e) {}
                 });
