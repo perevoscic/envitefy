@@ -34,16 +34,14 @@ export default function LoginHero() {
       h: "/sliders/horizontal/horizontal-slide-2.jpg",
       v: "/sliders/vertical/vertical-slide-2.`",
       title: "Just Snap It",
-      subtitle:
-        "Automatically extracts dates, times, locations, and RSVP details.",
+      subtitle: "Add events to your calendar in seconds.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-3.jpg",
       v: "/sliders/vertical/vertical-slide-3.jpg",
       title: "Save to any calendar",
-      subtitle:
-        "Google, Apple, Outlook — plus shareable ICS downloads for anyone.",
+      subtitle: "Receive RSVPs by text or email.",
     },
     {
       type: "image" as const,
