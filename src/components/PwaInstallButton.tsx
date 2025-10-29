@@ -889,16 +889,17 @@ export default function PwaInstallButton({
                       } catch {}
                     }
                     return;
+                  } else {
+                    pushDebug(
+                      "install CTA prompt missing; switching to fallback"
+                    );
+                    deferredPromptRef.current = null;
+                    setDeferred(null);
+                    setCanInstall(false);
+                    setShowIosTip(false);
+                    setGuidePulse(true);
+                    setExpanded(true);
                   }
-                  pushDebug(
-                    "install CTA prompt missing; switching to fallback"
-                  );
-                  deferredPromptRef.current = null;
-                  setDeferred(null);
-                  setCanInstall(false);
-                  setShowIosTip(false);
-                  setGuidePulse(true);
-                  setExpanded(true);
                 }}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
               >
