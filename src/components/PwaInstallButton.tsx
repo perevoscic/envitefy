@@ -722,6 +722,8 @@ export default function PwaInstallButton({
       fallbackGuide?.supported &&
       fallbackGuide.os !== "ios" &&
       fallbackGuide.os !== "ipados");
+  const showFallbackGuideCard =
+    fallbackGuideActive && !showInstallCta && Boolean(fallbackGuide);
   const headingText = (() => {
     if (canInstall) return "Install app";
     if (fallbackGuide) {
@@ -737,6 +739,9 @@ export default function PwaInstallButton({
     if (canInstall) return "Keep Envitefy handy on your device.";
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
+        if (showInstallCta) {
+          return `Select Install app to add Envitefy using ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
+        }
         return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
       }
       return `We couldn't find an install option for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
@@ -852,7 +857,7 @@ export default function PwaInstallButton({
                 Install app
               </button>
             )}
-            {fallbackGuideActive && fallbackGuide && (
+            {showFallbackGuideCard && fallbackGuide && (
               <div className={fallbackGuideClassName}>
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
