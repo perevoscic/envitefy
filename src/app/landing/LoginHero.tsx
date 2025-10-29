@@ -266,18 +266,22 @@ export default function LoginHero() {
       >
         <Image
           src={Logo}
-          alt="Logo"
+          alt="Envitefy logo"
           height={84}
           className="rounded mx-auto mt-1"
         />
         <p className="text-3xl md:text-4xl text-white/90 font-montserrat">
           Welcome to
         </p>
-        <p className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3">
+        <p
+          className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3"
+          role="heading"
+          aria-level={1}
+        >
           <span className="font-pacifico">
-            <span className="text-[#FFFFFF]">env</span>
+            <span className="text-[#0e7bc4]">Env</span>
             <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#FFFFFF]">tefy.com</span>
+            <span className="text-[#0e7bc4]">tefy</span>
           </span>
         </p>
         <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat px-4 md:px-0">
