@@ -28,13 +28,17 @@ export async function middleware(req: NextRequest) {
   // }
 
   // NEW 10/29/25 Redirect legacy www.envitefy.com to envitefy.com
-  const host = req.headers.get("host") || "";
-  const cleanHost = host.replace(/:8080$/, "");
+  const rawHost =
+    req.headers.get("x-forwarded-host") ||
+    req.headers.get("host") ||
+    "";
+  const cleanHost = rawHost.split(":")[0];
 
   if (cleanHost === "www.envitefy.com") {
     const url = req.nextUrl.clone();
     url.hostname = "envitefy.com";
     url.protocol = "https:";
+    url.port = "";
     return redirectWithMarker(url, 301);
   }
 
