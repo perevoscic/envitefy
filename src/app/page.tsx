@@ -109,12 +109,14 @@ export default function Home() {
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-3 pb-16 text-foreground md:px-8 md:pt-16">
       <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
-        <Image src={Logo} alt="envitefy.com" width={100} height={100} />
-        <p className="mt-2 text-3xl md:text-7xl tracking-tight text-white pb-3 pt-2">
+        <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
+        <p
+          className="mt-2 text-3xl md:text-7xl tracking-tight text-white pb-3 pt-2"
+          role="heading"
+          aria-level={1}
+        >
           <span className="font-pacifico">
-            <span className="text-[#0e7bc4]">env</span>
-            <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#0e7bc4]">tefy.com</span>
+            <span className="text-[#0e7bc4]">Envitefy</span>
           </span>
         </p>
       </div>
