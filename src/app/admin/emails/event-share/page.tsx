@@ -42,7 +42,7 @@ export default function EventSharePreviewPage() {
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
       <strong>${escapeHtml(
         senderName
-      )}</strong> has shared an event with you on Snap My Date.
+      )}</strong> has shared an event with you on Envitefy.
     </p>
     <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0; font-size: 18px; font-weight: 600; color: #2E2C2D;">📅 ${escapeHtml(
@@ -55,7 +55,7 @@ export default function EventSharePreviewPage() {
   `;
 
   const footerText = `
-    Don't have a Snap My Date account yet? 
+    Don't have a Envitefy account yet? 
     <a href="${escapeHtml(
       signupUrl
     )}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Sign up now</a> 

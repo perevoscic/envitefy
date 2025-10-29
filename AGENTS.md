@@ -115,7 +115,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: Create a Stripe Checkout session for upgrading to the paid monthly or yearly plan.
 - **Auth**: NextAuth session required.
 - **Input (JSON)**: `{ plan: "monthly" | "yearly" }`.
-- **Behavior**: Ensures the user has a Stripe customer record, provisions or reuses the price (lookup keys `snap-my-date-monthly` / `snap-my-date-yearly`), and returns the hosted checkout URL. Active subscriptions short-circuit with HTTP 409.
+- **Behavior**: Ensures the user has a Stripe customer record, provisions or reuses the price (lookup keys `envitefy-monthly` / `envitefy-yearly`), and returns the hosted checkout URL. Active subscriptions short-circuit with HTTP 409.
 - **Output**: `{ ok: true, sessionId, url }`.
 - **Env**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `APP_URL`.
 
@@ -546,7 +546,7 @@ Payload used by the authenticated calendar agents.
 - **AWS SES (email senders)**
   - `SES_FROM_EMAIL_NO_REPLY` e.g. `Envitefy <no-reply@envitefy.com>` (password reset, system mail)
   - `SES_FROM_EMAIL_GIFT` e.g. `"Envitefy Gifts" <gift@envitefy.com>` (gift delivery emails)
-  - `SES_FROM_EMAIL_CONTACT` e.g. `"Envitefy Support" <contact@envitefy.com>` (reserved for contact replies)
+  - `SES_FROM_EMAIL_CONTACT` e.g. `"Envitefy Contact" <contact@envitefy.com>` (reserved for contact replies)
   - Region: `AWS_REGION` or `AWS_DEFAULT_REGION` and standard AWS credentials
 - **Stripe**
   - `STRIPE_SECRET_KEY`
@@ -612,13 +612,13 @@ Payload used by the authenticated calendar agents.
 - 2025-09-17: Gift checkout/webhook instrumentation now traces SES email delivery, promo codes store the purchaser’s `created_by_user_id`, and fulfilled gifts auto-extend existing recipients’ subscriptions while marking the promo code redeemed.
 - 2025-09-17: Stripe webhook now scans subscription and invoice items to sync yearly upgrades correctly and updates checkout success URLs to respect localhost origins, preventing dev redirects to production.
 - 2025-09-16: Integrated Stripe billing. Added `/api/billing/stripe/checkout`, `/api/billing/stripe/portal`, and `/api/stripe/webhook`; promo gifts now initiate checkout sessions and are fulfilled post-payment. Documented new Stripe env vars and database tables (`gift_orders`, `stripe_webhook_events`, Stripe columns on `users`/`promo_codes`).
-- 2025-09-10: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).
-- 2025-09-11: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.
-- 2025-09-13: Promo Gift Agent no longer returns gift code in response; code is email-only and UI shows in-modal success with auto-close.
-- 2025-09-13: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.
-- 2025-09-14: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing. Also switched event times to be preserved as typed (floating) with no cross-timezone adjustment; ICS supports `floating=1`.
-- 2025-09-14: OCR/ingest: Category detection is words-only (from OCR text). Removed any image-only category influence. If wedding and birthday keywords both appear, neither is preferred (category left unset). Tightened birthday matching (e.g., 'birthday party', 'b-day', 'turns 5').
-- 2025-09-14: History PATCH now supports updating `data` (shallow merge) or just `category` to fix miscategorized rows post-creation. Left sidebar adds quick "Mark as <Category>" to re-sync colors.
+- 2025-10-06: Documented History, User Profile/Subscription/Change Password, OAuth disconnect, and additional debug endpoints; clarified NextAuth envs (`AUTH_SECRET`, `NEXTAUTH_URL`, `PUBLIC_BASE_URL`).
+- 2025-10-06: Added Promo Gift agent/email delivery and Promo Redeem agent; expanded `promo_codes` schema (quantity/period, redeemed_by_email) and added `users.subscription_expires_at`; Subscription page modals for gifting/redeeming.
+- 2025-10-03: Promo Gift Agent no longer returns gift code in response; code is email-only and UI shows in-modal success with auto-close.
+- 2025-10-03: Switched SES sender envs to per-channel vars: `SES_FROM_EMAIL_NO_REPLY`, `SES_FROM_EMAIL_GIFT`, `SES_FROM_EMAIL_CONTACT`.
+- 2025-10-04: OCR: Improved invitation handling (cursive names, ignore "Invitation Card" header), added wedding/marriage classification, and basic U.S. timezone inference from address; accepts optional LLM `category` from image parsing. Also switched event times to be preserved as typed (floating) with no cross-timezone adjustment; ICS supports `floating=1`.
+- 2025-10-04: OCR/ingest: Category detection is words-only (from OCR text). Removed any image-only category influence. If wedding and birthday keywords both appear, neither is preferred (category left unset). Tightened birthday matching (e.g., 'birthday party', 'b-day', 'turns 5').
+- 2025-10-04: History PATCH now supports updating `data` (shallow merge) or just `category` to fix miscategorized rows post-creation. Left sidebar adds quick "Mark as <Category>" to re-sync colors.
 - 2025-08-28: Added Forgot/Reset password agents; created `password_resets` table; non-prod returns resetUrl for testing.
 - 2025-08-27: Switched token and user storage from Supabase to Postgres (AWS RDS); Signup now writes to Postgres; added DATABASE_URL env.
 - 2025-08-27: Documented Google callback state-based event creation; clarified Microsoft OAuth scopes; added Signup endpoint.

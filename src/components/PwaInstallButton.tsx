@@ -718,14 +718,11 @@ export default function PwaInstallButton({
   const fallbackGuideActive = Boolean(
     !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
   );
-  const showInstallCta =
-    canInstall ||
-    (fallbackGuideActive &&
-      fallbackGuide?.supported &&
-      fallbackGuide.os !== "ios" &&
-      fallbackGuide.os !== "ipados");
+  const showInstallCta = canInstall;
+  const showFallbackGuideCard =
+    fallbackGuideActive && !showInstallCta && Boolean(fallbackGuide);
   const headingText = (() => {
-    if (canInstall) return "Install app";
+    if (showInstallCta) return "Add Envitefy to your home screen";
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
         return `Install with ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}`;
@@ -736,7 +733,7 @@ export default function PwaInstallButton({
     return "Install app";
   })();
   const subheadingText = (() => {
-    if (canInstall) return "Keep Envitefy handy on your device.";
+    if (showInstallCta) return null;
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
         return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
@@ -796,7 +793,9 @@ export default function PwaInstallButton({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold text-base">{headingText}</div>
-                <div className="text-xs opacity-70">{subheadingText}</div>
+                {subheadingText ? (
+                  <div className="text-xs opacity-70">{subheadingText}</div>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -855,7 +854,7 @@ export default function PwaInstallButton({
                 Install app
               </button>
             )}
-            {fallbackGuideActive && fallbackGuide && (
+            {showFallbackGuideCard && fallbackGuide && (
               <div className={fallbackGuideClassName}>
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">

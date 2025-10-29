@@ -53,7 +53,7 @@ OPENAI_API_KEY=
 LLM_MODEL=gpt-4o-mini
 
 # Postgres (users + token store)
-DATABASE_URL=postgresql://appuser:pass@host:5432/snapmydate
+DATABASE_URL=postgresql://appuser:pass@host:5432/envitefy
 # Choose ONE SSL mode for local/dev; remove sslmode from DATABASE_URL if using these
 PGSSL_DISABLE_VERIFY=true
 # or

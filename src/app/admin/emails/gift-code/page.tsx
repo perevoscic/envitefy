@@ -32,14 +32,14 @@ export default function GiftCodePreviewPage() {
   const recipientName = "Alex";
   const giftCode = "SNAP2025GIFT";
   const months = 3;
-  const message = "Happy Birthday! Enjoy 3 months of Snap My Date on me! 🎂";
-  const preheader = `You've been gifted ${months} months of Snap My Date.`;
+  const message = "Happy Birthday! Enjoy 3 months of Envitefy on me! 🎂";
+  const preheader = `You've been gifted ${months} months of Envitefy.`;
   const greeting = `Hi ${escapeHtml(recipientName)}`;
 
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-      🎁 Exciting news! Someone has gifted you <strong>${months} months</strong> of Snap My Date premium access!
+      🎁 Exciting news! Someone has gifted you <strong>${months} months</strong> of Envitefy premium access!
     </p>
     <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0 0 4px 0; font-size: 13px; font-weight: 600; color: #737373;">💌 Message from sender:</p>

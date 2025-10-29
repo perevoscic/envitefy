@@ -40,11 +40,11 @@ export async function sendGiftEmail(params: {
   const to = params.toEmail;
 
   const autoRedeemed = params.autoRedeemed?.applied === true;
-  const subject = autoRedeemed ? `Your Snap My Date gift has been added` : `You've received a Snap My Date gift`;
+  const subject = autoRedeemed ? `Your Envitefy gift has been added` : `You've received a Envitefy gift`;
   const months = params.period === "years" ? params.quantity * 12 : params.quantity;
   const preheader = autoRedeemed
-    ? `We've added ${months} month${months === 1 ? "" : "s"} of Snap My Date to your account.`
-    : `You've been gifted ${months} month${months === 1 ? "" : "s"} of Snap My Date.`;
+    ? `We've added ${months} month${months === 1 ? "" : "s"} of Envitefy to your account.`
+    : `You've been gifted ${months} month${months === 1 ? "" : "s"} of Envitefy.`;
   const text = [
     `Hi${params.recipientName ? ` ${params.recipientName}` : ""},`,
     "",
@@ -69,7 +69,7 @@ export async function sendGiftEmail(params: {
     ? `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-        🎉 Great news! You've received a gift subscription to Snap My Date, and we've already added it to your account.
+        🎉 Great news! You've received a gift subscription to Envitefy, and we've already added it to your account.
       </p>
       <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
         <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">✓ Gift Applied</p>
@@ -89,7 +89,7 @@ export async function sendGiftEmail(params: {
     : `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-        🎁 Exciting news! Someone has gifted you <strong>${months} month${months === 1 ? "" : "s"}</strong> of Snap My Date premium access!
+        🎁 Exciting news! Someone has gifted you <strong>${months} month${months === 1 ? "" : "s"}</strong> of Envitefy premium access!
       </p>
       ${params.message ? `<div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
         <p style="margin: 0 0 4px 0; font-size: 13px; font-weight: 600; color: #737373;">💌 Message from sender:</p>
@@ -167,7 +167,7 @@ export async function sendPasswordResetEmail(params: {
   assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
   const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
   const to = params.toEmail;
-  const subject = `Reset your Snap My Date password`;
+  const subject = `Reset your Envitefy password`;
   const preheader = `We received a request to reset your password.`;
   const text = [
     preheader,
@@ -178,7 +178,7 @@ export async function sendPasswordResetEmail(params: {
   ].join("\n");
   
   const body = `
-    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">We received a request to reset your password for your Snap My Date account.</p>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">We received a request to reset your password for your Envitefy account.</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">Click the button below to create a new password:</p>
   `;
   
@@ -230,8 +230,8 @@ export async function sendShareEventEmail(params: {
     senderName = full || null;
   } catch {}
   const subject = senderName
-    ? `${senderName} shared an event with you on Snap My Date`
-    : `An event was shared with you on Snap My Date`;
+    ? `${senderName} shared an event with you on Envitefy`
+    : `An event was shared with you on Envitefy`;
   const acceptUrl = `${params.eventUrl}?accept=1`;
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL ||
@@ -240,7 +240,7 @@ export async function sendShareEventEmail(params: {
     "https://envitefy.com";
   const signupUrl = `${baseUrl}/?auth=signup`;
   const text = [
-    `${senderName || params.ownerEmail} shared an event with you on Snap My Date.`,
+    `${senderName || params.ownerEmail} shared an event with you on Envitefy.`,
     ``,
     `Title: ${params.eventTitle}`,
     `Link: ${params.eventUrl}`,
@@ -257,7 +257,7 @@ export async function sendShareEventEmail(params: {
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-      <strong>${escapeHtml(senderName || params.ownerEmail)}</strong> has shared an event with you on Snap My Date.
+      <strong>${escapeHtml(senderName || params.ownerEmail)}</strong> has shared an event with you on Envitefy.
     </p>
     <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0; font-size: 18px; font-weight: 600; color: #2E2C2D;">📅 ${escapeHtml(params.eventTitle)}</p>
@@ -268,7 +268,7 @@ export async function sendShareEventEmail(params: {
   `;
   
   const footerText = `
-    Don't have a Snap My Date account yet? 
+    Don't have a Envitefy account yet? 
     <a href="${escapeHtml(signupUrl)}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Sign up now</a> 
     to manage all your events in one place.
   `;
@@ -341,8 +341,8 @@ export async function sendSubscriptionChangeEmail(params: {
                        (params.oldPlan === "yearly" && params.newPlan === "monthly");
   
   const subject = isUpgrade
-    ? `Welcome to ${newPlanLabel} - Snap My Date`
-    : `Your Snap My Date plan has been updated`;
+    ? `Welcome to ${newPlanLabel} - Envitefy`
+    : `Your Envitefy plan has been updated`;
     
   const preheader = isUpgrade 
     ? `You've upgraded from ${oldPlanLabel} to ${newPlanLabel}.`
@@ -354,7 +354,7 @@ export async function sendSubscriptionChangeEmail(params: {
     ? `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; font-weight: 600; color: #2E2C2D;">
-        🎊 Welcome to Snap My Date Family and Friends Club!
+        🎊 Welcome to Envitefy Family and Friends Club!
       </p>
       <div style="text-align: center; margin: 24px 0;">
         <span style="display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 8px; background: linear-gradient(to right, #f59e0b, #f97316); color: white; font-weight: 600; font-size: 14px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2);">
@@ -362,7 +362,7 @@ export async function sendSubscriptionChangeEmail(params: {
         </span>
       </div>
       <p style="margin: 20px 0 16px 0; font-size: 16px; line-height: 1.6;">
-        You've been granted exclusive lifetime access to Snap My Date! This special membership gives you unlimited scans, unlimited storage, and all premium features—forever.
+        You've been granted exclusive lifetime access to Envitefy! This special membership gives you unlimited scans, unlimited storage, and all premium features—forever.
       </p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
         Start snapping and saving all your important dates with no limits!
@@ -372,7 +372,7 @@ export async function sendSubscriptionChangeEmail(params: {
     ? `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-        🎉 Great news! Your Snap My Date subscription has been upgraded.
+        🎉 Great news! Your Envitefy subscription has been upgraded.
       </p>
       <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
         <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">Subscription Upgraded</p>
@@ -389,7 +389,7 @@ export async function sendSubscriptionChangeEmail(params: {
     : `
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-        Your Snap My Date plan has been updated.
+        Your Envitefy plan has been updated.
       </p>
       <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
         <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #737373;">Plan Updated</p>
@@ -407,7 +407,7 @@ export async function sendSubscriptionChangeEmail(params: {
   const text = [
     `${greeting},`,
     ``,
-    `Your Snap My Date ${isUpgrade ? "subscription has been upgraded" : "plan has been updated"}.`,
+    `Your Envitefy ${isUpgrade ? "subscription has been upgraded" : "plan has been updated"}.`,
     ``,
     `Previous: ${oldPlanLabel}`,
     `New: ${newPlanLabel}`,
@@ -456,7 +456,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
   assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
   const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
   const to = params.toEmail;
-  const subject = `Your Snap My Date password was changed`;
+  const subject = `Your Envitefy password was changed`;
   const preheader = `Your password was successfully changed.`;
   const greeting = params.userName ? `Hi ${escapeHtml(params.userName)}` : "Hello";
   
@@ -472,7 +472,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-      Your Snap My Date password was successfully changed.
+      Your Envitefy password was successfully changed.
     </p>
     <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">✓ Password Changed</p>
@@ -490,7 +490,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
   const text = [
     `${greeting},`,
     ``,
-    `Your Snap My Date password was successfully changed on ${timestamp}.`,
+    `Your Envitefy password was successfully changed on ${timestamp}.`,
     ``,
     `If you didn't make this change, please contact us immediately.`,
   ].join("\n");

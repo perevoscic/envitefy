@@ -280,17 +280,17 @@ export default function CampaignsPage() {
     const logoUrl = `${baseUrl}/Logo_stacked.png`;
     const socialIcons = [
       {
-        href: "https://www.instagram.com/snapmydate/",
+        href: "https://www.instagram.com/envitefy/",
         title: "Instagram",
         src: `${baseUrl}/email/social-instagram.png`,
       },
       {
-        href: "https://www.facebook.com/snapmydate/",
+        href: "https://www.facebook.com/envitefy/",
         title: "Facebook",
         src: `${baseUrl}/email/social-facebook.png`,
       },
       {
-        href: "https://www.youtube.com/@snapmydate",
+        href: "https://www.youtube.com/@envitefy",
         title: "YouTube",
         src: `${baseUrl}/email/social-youtube.png`,
       },

@@ -49,22 +49,22 @@ export function createEmailTemplate(params: {
   const currentYear = new Date().getFullYear();
   const socialIcons = [
     {
-      href: "https://www.instagram.com/snapmydate/",
+      href: "https://www.instagram.com/envitefy/",
       title: "Instagram",
       src: `${baseUrl}/email/social-instagram.png`,
     },
     {
-      href: "https://www.facebook.com/snapmydate/",
+      href: "https://www.facebook.com/envitefy/",
       title: "Facebook",
       src: `${baseUrl}/email/social-facebook.png`,
     },
     {
-      href: "https://www.youtube.com/@snapmydate",
+      href: "https://www.youtube.com/@envitefy",
       title: "YouTube",
       src: `${baseUrl}/email/social-youtube.png`,
     },
     {
-      href: "https://www.tiktok.com/@snapemydate",
+      href: "https://www.tiktok.com/@envitefy",
       title: "TikTok",
       src: `${baseUrl}/email/social-tiktok.png`,
     },
@@ -147,7 +147,7 @@ export function createEmailTemplate(params: {
                       ${params.footerText ? `<p class="muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 1.6; color:#737373;">${params.footerText}</p>` : ""}
                       <p class="signature" style="font-style: italic; color: #737373; margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.5;">
                         Sincerely,<br/>
-                        <strong>Snap My Date Team</strong>
+                        <strong>Envitefy Team</strong>
                       </p>
                       <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
                         SNAP IT. SAVE IT. DONE.

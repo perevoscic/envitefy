@@ -45,14 +45,14 @@ export default function GiftAutoPreviewPage() {
   const expiresAt = new Date(
     Date.now() + 365 * 24 * 60 * 60 * 1000
   ).toISOString();
-  const message = "Merry Christmas! A whole year of Snap My Date for you! 🎄";
-  const preheader = `We've added ${months} months of Snap My Date to your account.`;
+  const message = "Merry Christmas! A whole year of Envitefy for you! 🎄";
+  const preheader = `We've added ${months} months of Envitefy to your account.`;
   const greeting = `Hi ${escapeHtml(recipientName)}`;
 
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
-      🎉 Great news! You've received a gift subscription to Snap My Date, and we've already added it to your account.
+      🎉 Great news! You've received a gift subscription to Envitefy, and we've already added it to your account.
     </p>
     <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #065F46;">✓ Gift Applied</p>

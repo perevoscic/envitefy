@@ -18,9 +18,9 @@ export default function AboutPage() {
                 <span className="bg-clip-text pb-10 text-transparent bg-gradient-to-r from-cyan-600 via-sky-500 to-fuchsia-600 dark:from-cyan-300 dark:via-sky-200 dark:to-fuchsia-300">
                   About
                   <span> </span>
-                  <span className="font-pacifico inline-block pb-1"> Snap</span>
+                  <span className="font-pacifico inline-block pb-1"> Envitefy</span>
                   <span> </span>
-                  <span className="font-montserrat">My Date</span>
+                  <span className="font-montserrat"></span>
                 </span>
               </h1>
               <p className="mt-4 text-base sm:text-lg uppercase tracking-[0.2em] text-foreground/60">
@@ -165,8 +165,8 @@ export default function AboutPage() {
                       original.
                     </li>
                     <li>
-                      Today, families, coaches, and club organizers use Snap My
-                      Date to stay in sync without extra typing.
+                      Today, families, coaches, and club organizers use Envitefy
+                      to stay in sync without extra typing.
                     </li>
                   </ul>
                 </div>

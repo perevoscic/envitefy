@@ -33,7 +33,7 @@ export default function PasswordResetPreviewPage() {
   const preheader = "We received a request to reset your password.";
 
   const body = `
-    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">We received a request to reset your password for your Snap My Date account.</p>
+    <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">We received a request to reset your password for your Envitefy account.</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">Click the button below to create a new password:</p>
   `;
 
