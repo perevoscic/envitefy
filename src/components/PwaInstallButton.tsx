@@ -733,11 +733,7 @@ export default function PwaInstallButton({
 
   if (hideUi) return null;
 
-  if (
-    (!canInstall && !showIosFallback && !showGenericFallback) ||
-    !heroOutOfView
-  )
-    return null;
+  if (!heroOutOfView) return null; // Always hide if hero is in view
 
   const fallbackGuide = !canInstall ? installGuide : null;
   const fallbackGuideActive = Boolean(
@@ -760,18 +756,15 @@ export default function PwaInstallButton({
     return null;
   })();
   const fallbackCtaLabel = (() => {
-    if (!fallbackGuide) return "Install app";
+    if (!fallbackGuide) return "Add to Home Screen";
     if (fallbackGuide.os === "ios" || fallbackGuide.os === "ipados") {
       return "Add to Home Screen";
     }
-    return "Install app";
+    return "Add to Home Screen";
   })();
   const headingText = (() => {
     if (showInstallCta) return "Add Envitefy to your home screen";
     if (showFallbackCta) {
-      if (fallbackDeviceLabel) {
-        return `Add Envitefy to your ${fallbackDeviceLabel} home screen`;
-      }
       return "Add Envitefy to your home screen";
     }
     if (fallbackGuide) {
@@ -890,7 +883,7 @@ export default function PwaInstallButton({
                 </svg>
               </button>
             </div>
-            {showInstallCta && (
+            {(canInstall || (!showIosFallback && showGenericFallback)) && (
               <button
                 onClick={async () => {
                   const w = window as SnapWindow;
@@ -964,18 +957,11 @@ export default function PwaInstallButton({
                 }}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
               >
-                Install app
+                Add to Home Screen
               </button>
             )}
-            {showFallbackCta && (
-              <button
-                onClick={handleFallbackCtaClick}
-                className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
-              >
-                {fallbackCtaLabel}
-              </button>
-            )}
-            {showFallbackGuideCard && fallbackGuide && (
+            {/* Show fallback guide card if active, or if it's an iOS fallback */}
+            {(showFallbackGuideCard || showIosFallback) && fallbackGuide && (
               <div className={fallbackGuideClassName}>
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">

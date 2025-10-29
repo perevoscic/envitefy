@@ -31,8 +31,8 @@ export default function LoginHero() {
     },
     {
       type: "video" as const,
-      h: "/sliders/horizontal/horizontal-slide-2.mp4",
-      v: "/sliders/vertical/vertical-slide-2.mp4",
+      h: "/sliders/horizontal/horizontal-slide-2.jpg",
+      v: "/sliders/vertical/vertical-slide-2.`",
       title: "Just Snap It",
       subtitle:
         "Automatically extracts dates, times, locations, and RSVP details.",
