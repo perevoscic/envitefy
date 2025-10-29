@@ -64,10 +64,7 @@ const getPlatformInfo = (win: Window): PlatformInfo => {
     os = "ipados";
   } else if (uaSource.includes("iphone") || uaSource.includes("ipod")) {
     os = "ios";
-  } else if (
-    uaSource.includes("mac os x") ||
-    uaSource.includes("macintosh")
-  ) {
+  } else if (uaSource.includes("mac os x") || uaSource.includes("macintosh")) {
     os = "macos";
   }
 
@@ -76,8 +73,7 @@ const getPlatformInfo = (win: Window): PlatformInfo => {
     uaSource.includes("edg/") ||
     uaSource.includes("edgios") ||
     uaSource.includes("edga/");
-  const isFirefox =
-    uaSource.includes("fxios") || uaSource.includes("firefox/");
+  const isFirefox = uaSource.includes("fxios") || uaSource.includes("firefox/");
   const isChromeLike =
     (uaSource.includes("chrome/") ||
       uaSource.includes("chromium/") ||
@@ -363,7 +359,6 @@ export default function PwaInstallButton({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
-  const [forceFallbackGuide, setForceFallbackGuide] = useState(false);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
@@ -374,12 +369,12 @@ export default function PwaInstallButton({
         // iOS/iPadOS Safari exposes `navigator.standalone`
         if ((window.navigator as any).standalone === true) return true;
         if (!window.matchMedia) return false;
-        const standaloneMatch = window
-          .matchMedia("(display-mode: standalone)")
-          .matches;
-        const fullscreenMatch = window
-          .matchMedia("(display-mode: fullscreen)")
-          .matches;
+        const standaloneMatch = window.matchMedia(
+          "(display-mode: standalone)"
+        ).matches;
+        const fullscreenMatch = window.matchMedia(
+          "(display-mode: fullscreen)"
+        ).matches;
         if (!standaloneMatch && !fullscreenMatch) return false;
         const isAndroid = /Android/i.test(navigator.userAgent || "");
         // Chrome on Android reports standalone for launched PWAs; check referrer to
@@ -388,7 +383,9 @@ export default function PwaInstallButton({
         const androidStandalone =
           ref.startsWith("android-app://") ||
           ref.startsWith("chrome-extension://");
-        return isAndroid ? androidStandalone : standaloneMatch || fullscreenMatch;
+        return isAndroid
+          ? androidStandalone
+          : standaloneMatch || fullscreenMatch;
       } catch {
         // best effort only
       }
@@ -519,7 +516,11 @@ export default function PwaInstallButton({
     const update = () => {
       const allowed = isIOS || mql.matches;
       setAllowedDevice(allowed);
-      pushDebug("allowed-device updated", { allowed, isIOS, widthMatch: mql.matches });
+      pushDebug("allowed-device updated", {
+        allowed,
+        isIOS,
+        widthMatch: mql.matches,
+      });
     };
     update();
     try {
@@ -707,35 +708,24 @@ export default function PwaInstallButton({
     return () => window.clearTimeout(timer);
   }, [guidePulse]);
 
-  const fallbackGuide = !canInstall ? installGuide : null;
-  const fallbackGuideActive = Boolean(
-    !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
-  );
-  const hasDeferredPrompt = Boolean(deferred);
-  const fallbackCtaAvailable =
-    !hasDeferredPrompt &&
-    fallbackGuideActive &&
-    fallbackGuide?.supported &&
-    fallbackGuide.os !== "ios" &&
-    fallbackGuide.os !== "ipados";
-  const showInstallCta = hasDeferredPrompt || fallbackCtaAvailable;
-  const showFallbackGuideCard =
-    fallbackGuideActive && (forceFallbackGuide || !showInstallCta);
-
-  useEffect(() => {
-    if (!fallbackGuideActive) {
-      setForceFallbackGuide(false);
-    }
-  }, [fallbackGuideActive]);
-
   if (
     (!canInstall && !showIosFallback && !showGenericFallback) ||
     !heroOutOfView
   )
     return null;
 
+  const fallbackGuide = !canInstall ? installGuide : null;
+  const fallbackGuideActive = Boolean(
+    !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
+  );
+  const showInstallCta =
+    canInstall ||
+    (fallbackGuideActive &&
+      fallbackGuide?.supported &&
+      fallbackGuide.os !== "ios" &&
+      fallbackGuide.os !== "ipados");
   const headingText = (() => {
-    if (showInstallCta) return "Add Envitefy to your home screen";
+    if (canInstall) return "Install app";
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
         return `Install with ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}`;
@@ -745,13 +735,10 @@ export default function PwaInstallButton({
     if (showIosFallback) return "Install to Home Screen";
     return "Install app";
   })();
-  const subheadingText: string | null = (() => {
-    if (hasDeferredPrompt) return null;
+  const subheadingText = (() => {
+    if (canInstall) return "Keep Envitefy handy on your device.";
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
-        if (showInstallCta && !forceFallbackGuide) {
-          return `Tap Install app to view the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
-        }
         return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
       }
       return `We couldn't find an install option for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
@@ -809,16 +796,13 @@ export default function PwaInstallButton({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold text-base">{headingText}</div>
-                {subheadingText ? (
-                  <div className="text-xs opacity-70">{subheadingText}</div>
-                ) : null}
+                <div className="text-xs opacity-70">{subheadingText}</div>
               </div>
               <button
                 type="button"
                 onClick={() => {
                   setExpanded(false);
                   setWasManuallyClosed(true);
-                  setForceFallbackGuide(false);
                 }}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground transition"
                 aria-label="Collapse install options"
@@ -851,7 +835,8 @@ export default function PwaInstallButton({
                       setCanInstall(false);
                       setShowIosTip(false);
                       try {
-                        (window as SnapWindow).__snapInstallDeferredPrompt = null;
+                        (window as SnapWindow).__snapInstallDeferredPrompt =
+                          null;
                       } catch {}
                     }
                     return;
@@ -859,7 +844,6 @@ export default function PwaInstallButton({
                   if (fallbackGuideActive && fallbackGuide?.supported) {
                     setExpanded(true);
                     setGuidePulse(true);
-                    setForceFallbackGuide(true);
                     pushDebug("install CTA fallback invoked", {
                       os: fallbackGuide.os,
                       browser: fallbackGuide.browser,
@@ -871,7 +855,7 @@ export default function PwaInstallButton({
                 Install app
               </button>
             )}
-            {showFallbackGuideCard && fallbackGuide && (
+            {fallbackGuideActive && fallbackGuide && (
               <div className={fallbackGuideClassName}>
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
@@ -895,7 +879,8 @@ export default function PwaInstallButton({
                     <div className="font-medium">
                       {fallbackGuide.browserLabel} on {fallbackGuide.osLabel}
                     </div>
-                    {fallbackGuide.supported && fallbackGuide.steps.length > 0 ? (
+                    {fallbackGuide.supported &&
+                    fallbackGuide.steps.length > 0 ? (
                       <ol className="list-decimal ml-5 space-y-1">
                         {fallbackGuide.steps.map((step, idx) => (
                           <li key={idx}>{step}</li>
@@ -903,14 +888,14 @@ export default function PwaInstallButton({
                       </ol>
                     ) : (
                       <div className="opacity-80">
-                        {
-                          fallbackGuide.unsupportedMessage ??
-                          "We couldn't detect an install option for this combination."
-                        }
+                        {fallbackGuide.unsupportedMessage ??
+                          "We couldn't detect an install option for this combination."}
                       </div>
                     )}
                     {fallbackGuide.note && (
-                      <div className="text-xs opacity-70">{fallbackGuide.note}</div>
+                      <div className="text-xs opacity-70">
+                        {fallbackGuide.note}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -922,4 +907,3 @@ export default function PwaInstallButton({
     </div>
   );
 }
-
