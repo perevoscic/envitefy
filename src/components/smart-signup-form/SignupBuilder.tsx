@@ -79,7 +79,9 @@ const addQuestion = (questions: SignupQuestion[]): SignupQuestion[] => [
 const ThemeImagesCarousel: React.FC<{
   themeName: string;
   onPick: (url: string) => void;
-}> = ({ themeName, onPick }) => {
+  searchQuery?: string;
+  [key: string]: any;
+}> = ({ themeName, onPick, searchQuery }) => {
   const [urls, setUrls] = React.useState<string[] | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -132,7 +134,7 @@ const ThemeImagesCarousel: React.FC<{
     return (
       <div className="sm:col-span-2">
         <div className="text-xs text-foreground/60">
-          No theme images found for “{themeName}”.
+          No theme images found for "{themeName}".
         </div>
       </div>
     );
@@ -677,7 +679,7 @@ const SignupBuilder: React.FC<Props> = ({
     "Winter & Holidays",
     "Church & Community",
     "Sports & Recreation",
-    "Fundraising, Food, & Events",
+    "Fundraising & Food",
     "Family & Personal",
     "Business & Professional",
     "Parties & Events",
@@ -689,6 +691,7 @@ const SignupBuilder: React.FC<Props> = ({
 
   const [themeMenuOpen, setThemeMenuOpen] = React.useState(false);
   const [templateMenuOpen, setTemplateMenuOpen] = React.useState(false);
+  const [themeSearch, setThemeSearch] = React.useState("");
 
   const TEMPLATE_OPTIONS = [
     { id: "header-1", label: "1. Left" },
@@ -1492,9 +1495,18 @@ const SignupBuilder: React.FC<Props> = ({
             {/* Removed manual background color control */}
             {/* Theme design picker (between Headline description and Image template) */}
             <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Theme design
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                  Theme design
+                </label>
+                <input
+                  type="text"
+                  value={themeSearch}
+                  onChange={(e) => setThemeSearch(e.target.value)}
+                  placeholder="Search theme images..."
+                  className="h-8 w-56 rounded-md border border-border bg-background px-2 text-sm"
+                />
+              </div>
               {/* Small screens: dropdown with thumbnail */}
               <div className="relative md:hidden">
                 <button
@@ -1613,6 +1625,7 @@ const SignupBuilder: React.FC<Props> = ({
                     },
                   });
                 }}
+                searchQuery={themeSearch}
               />
             ) : null}
             <div className="space-y-1 sm:col-span-2">

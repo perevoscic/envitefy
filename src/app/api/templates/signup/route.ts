@@ -12,7 +12,10 @@ const THEME_FOLDER_MAP: Record<string, string> = {
   "Winter & Holidays": "winter-holidays",
   "Church & Community": "church-community",
   "Sports & Recreation": "sports-recreation",
-  "Fundraising, Food, & Events": "fundraising-food-events",
+  // Legacy label kept for backward compatibility; mapped to new folder
+  "Fundraising, Food, & Events": "fundraising-and-food",
+  // New label (preferred)
+  "Fundraising & Food": "fundraising-and-food",
   "Family & Personal": "family-personal",
   "Business & Professional": "business-professional",
   "Parties & Events": "parties-events",
@@ -50,6 +53,13 @@ export async function GET(req: NextRequest) {
         .replace(/&/g, "and")
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9_-]/g, "-");
+    const uslug = (s: string) =>
+      s
+        .trim()
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_-]/g, "_");
 
     const original = category;
     const andToWord = original.replace(/&/g, "and");
@@ -62,6 +72,8 @@ export async function GET(req: NextRequest) {
         decodeURIComponent(mappedFolder),
         THEME_FOLDER_MAP[category] || slug(mappedFolder),
         slug(decodeURIComponent(mappedFolder)),
+        uslug(mappedFolder),
+        uslug(decodeURIComponent(mappedFolder)),
         // originals (including &)
         original,
         original.trim(),
@@ -69,11 +81,15 @@ export async function GET(req: NextRequest) {
         // replace & with 'and' or remove it
         andToWord,
         slug(andToWord),
+        uslug(andToWord),
         andRemoved,
         slug(andRemoved),
+        uslug(andRemoved),
         // plain slug of the original
         slug(original),
         slug(decodeURIComponent(original)),
+        uslug(original),
+        uslug(decodeURIComponent(original)),
       ])
     );
 
