@@ -98,22 +98,22 @@ export default function AuthModal({
                 <p className="mt-3 text-base text-foreground/80">
                   Welcome back to
                 </p>
-                <p className="mt-1 text-2xl tracking-tight text-foreground">
+                <p className="mt-1 text-5xl tracking-tight text-foreground">
                   <span className="font-pacifico">
                     <span className="text-[#0e7bc4]">env</span>
                     <span className="text-[#ee3c2b]">i</span>
-                    <span className="text-[#0e7bc4]">tefy.com</span>
+                    <span className="text-[#0e7bc4]">tefy</span>
                   </span>
                 </p>
               </>
             ) : (
               <>
                 <p className="mt-3 text-base text-foreground/80">Join</p>
-                <p className="mt-1 text-2xl tracking-tight text-foreground">
+                <p className="mt-1 text-5xl tracking-tight text-foreground">
                   <span className="font-pacifico">
                     <span className="text-[#0e7bc4]">env</span>
                     <span className="text-[#ee3c2b]">i</span>
-                    <span className="text-[#0e7bc4]">tefy.com</span>
+                    <span className="text-[#0e7bc4]">tefy</span>
                   </span>
                 </p>
               </>

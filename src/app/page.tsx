@@ -107,7 +107,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-3 pb-16 text-foreground md:px-8 md:pt-16">
+    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-3 pb-20 text-foreground md:px-8 md:pt-1">
       <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
         <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
         <p
