@@ -20,6 +20,7 @@ import {
 type Props = {
   form: SignupForm;
   onChange: (next: SignupForm) => void;
+  showBasicsErrors?: boolean;
   panels?: {
     basics?: boolean;
     settings?: boolean;
@@ -74,6 +75,111 @@ const addQuestion = (questions: SignupQuestion[]): SignupQuestion[] => [
 ];
 
 // Removed toggle UI: Smart sign-up is always enabled in the modal now.
+
+const ThemeImagesCarousel: React.FC<{
+  themeName: string;
+  onPick: (url: string) => void;
+}> = ({ themeName, onPick }) => {
+  const [urls, setUrls] = React.useState<string[] | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(
+          `/api/templates/signup?category=${encodeURIComponent(themeName)}`
+        );
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        if (!mounted) return;
+        setUrls(Array.isArray(data.images) ? data.images : []);
+      } catch (e) {
+        if (mounted) {
+          setError("failed");
+          setUrls([]);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [themeName]);
+
+  if (loading) {
+    return (
+      <div className="sm:col-span-2">
+        <div className="text-xs text-foreground/60">Loading theme images…</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="sm:col-span-2">
+        <div className="text-xs text-foreground/60">
+          No images found for this theme.
+        </div>
+      </div>
+    );
+  }
+  if (!urls || urls.length === 0) {
+    return (
+      <div className="sm:col-span-2">
+        <div className="text-xs text-foreground/60">
+          No theme images found for “{themeName}”.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sm:col-span-2 space-y-1">
+      <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        Theme images
+      </label>
+      <div className="rounded-md border border-gray-200 bg-white p-2 overflow-x-auto">
+        <div className="flex gap-3">
+          {urls.map((url) => {
+            const file = url.split("/").pop() || "image";
+            const base = file.replace(/\.[^.]+$/, "");
+            const pretty = base
+              .replace(/[\-_]+/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .toLowerCase()
+              .replace(/\b\w/g, (m) => m.toUpperCase());
+            return (
+              <button
+                key={url}
+                type="button"
+                className="shrink-0 w-36 rounded-md border border-gray-200 hover:ring-2 hover:ring-blue-500 bg-white"
+                title={pretty}
+                onClick={() => onPick(url)}
+              >
+                <div className="p-1">
+                  <img
+                    src={url}
+                    alt={pretty}
+                    className="h-20 w-full object-cover rounded"
+                  />
+                </div>
+                <div className="px-2 pb-2 text-[11px] text-gray-800 text-center truncate">
+                  {pretty}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SectionCard = ({
   section,
@@ -335,7 +441,12 @@ const SectionCard = ({
   </div>
 );
 
-const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
+const SignupBuilder: React.FC<Props> = ({
+  form,
+  onChange,
+  showBasicsErrors,
+  panels,
+}) => {
   const settings = { ...DEFAULT_SIGNUP_SETTINGS, ...form.settings };
   const { data: session } = useSession();
   const creatorName = (session?.user?.name as string | undefined) || null;
@@ -1305,28 +1416,31 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
             </div>
             <div className="space-y-1">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Address <span className="text-red-600">*</span>
+                Address
               </label>
               <input
                 type="text"
-                required
-                aria-required="true"
+                aria-required="false"
                 value={(form as any).location || ""}
                 onChange={(e) =>
                   onChange({ ...(form as any), location: e.target.value })
                 }
                 className={`w-full rounded-md border bg-background px-3 py-2 text-sm ${
-                  typeof (form as any).location !== "string" ||
-                  !(form as any).location.trim()
+                  showBasicsErrors &&
+                  (typeof (form as any).location !== "string" ||
+                    !(form as any).location.trim())
                     ? "border-red-500"
                     : "border-border"
                 }`}
                 placeholder="Street, City, State"
               />
-              {(typeof (form as any).location !== "string" ||
-                !(form as any).location.trim()) && (
-                <p className="text-[11px] text-red-600">Address is required.</p>
-              )}
+              {showBasicsErrors &&
+                (typeof (form as any).location !== "string" ||
+                  !(form as any).location.trim()) && (
+                  <p className="text-[11px] text-red-600">
+                    Address is required.
+                  </p>
+                )}
             </div>
             {/* Date and time (start) */}
             <div className="space-y-1">
@@ -1485,6 +1599,22 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                 ))}
               </div>
             </div>
+
+            {/* Theme images carousel (from public/templates/signup/<Theme>) */}
+            {form.header?.designTheme ? (
+              <ThemeImagesCarousel
+                themeName={form.header.designTheme as any}
+                onPick={(url) => {
+                  setHeader({
+                    backgroundImage: {
+                      name: url.split("/").pop() || "theme-image",
+                      type: "image/jpeg",
+                      dataUrl: url,
+                    },
+                  });
+                }}
+              />
+            ) : null}
             <div className="space-y-1 sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Image template
@@ -1759,18 +1889,21 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
             <div className="sm:col-span-2">
               {/* spacer to prevent layout jump when preview is fixed */}
               {previewFloating ? (
-                <div style={{ height: `${previewFixedHeightPx + 32}px` }} />
+                <div
+                  className="hidden md:block"
+                  style={{ height: `${previewFixedHeightPx + 32}px` }}
+                />
               ) : null}
               <div
                 ref={previewRef}
                 className={
                   previewFloating
-                    ? "fixed left-1/2 -translate-x-1/2 bottom-16 md:bottom-20 z-30 w-[min(720px,calc(100vw-2rem))]"
-                    : "relative z-10"
+                    ? "relative z-10 w-[min(720px,calc(100vw-2rem))] md:fixed md:left-1/2 md:-translate-x-1/2 md:bottom-20 md:z-30"
+                    : "relative z-10 w-[min(720px,calc(100vw-2rem))]"
                 }
               >
-                <div className="rounded-xl overflow-hidden border shadow-sm">
-                  <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur max-h-[70vh] overflow-auto">
+                <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+                  <div className="bg-white backdrop-blur supports-[backdrop-filter]:backdrop-blur max-h-[70vh] overflow-auto">
                     <section
                       className="px-5 py-6"
                       style={{
@@ -1786,7 +1919,7 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                           : undefined,
                       }}
                     >
-                      <p className="text-xs text-foreground/70 mb-2 text-center">
+                      <p className="text-xs text-gray-700 mb-2 text-center">
                         Header preview
                       </p>
                       {(form.header?.templateId || "header-1") ===
@@ -1796,10 +1929,10 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                             <img
                               src={form.header.images[0].dataUrl}
                               alt="banner"
-                              className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-border"
+                              className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-gray-200"
                             />
                           ) : (
-                            <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                            <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600">
                               Full-width image
                             </div>
                           )}
@@ -1812,10 +1945,10 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                             <img
                               src={form.header.images[0].dataUrl}
                               alt="banner"
-                              className="w-full h-40 sm:h-56 object-cover rounded-xl border border-border"
+                              className="w-full h-40 sm:h-56 object-cover rounded-xl border border-gray-200"
                             />
                           ) : (
-                            <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                            <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600">
                               Banner image
                             </div>
                           )}
@@ -1824,16 +1957,16 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                               <img
                                 src={form.header.images[1].dataUrl}
                                 alt="square"
-                                className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
+                                className="w-40 h-40 object-cover rounded-xl border border-gray-200 shadow-lg"
                               />
                             ) : form.header?.backgroundImage?.dataUrl ? (
                               <img
                                 src={form.header.backgroundImage.dataUrl}
                                 alt="square"
-                                className="w-40 h-40 object-cover rounded-xl border border-border shadow-lg"
+                                className="w-40 h-40 object-cover rounded-xl border border-gray-200 shadow-lg"
                               />
                             ) : (
-                              <div className="w-40 h-40 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60 bg-background/70">
+                              <div className="w-40 h-40 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 bg-gray-100">
                                 Top-left image
                               </div>
                             )}
@@ -1872,10 +2005,10 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                               <img
                                 src={form.header.backgroundImage.dataUrl}
                                 alt="header"
-                                className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
+                                className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-gray-200 object-cover"
                               />
                             ) : (
-                              <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60">
+                              <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600">
                                 Top-left image
                               </div>
                             )}
@@ -1911,12 +2044,12 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                                     key={i}
                                     src={form.header.images[i].dataUrl}
                                     alt={`image-${i}`}
-                                    className="w-full h-36 object-cover rounded-xl border border-border"
+                                    className="w-full h-36 object-cover rounded-xl border border-gray-200"
                                   />
                                 ) : (
                                   <div
                                     key={i}
-                                    className="w-full h-36 rounded-xl border border-dashed border-border/70 grid place-items-center text-foreground/60"
+                                    className="w-full h-36 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600"
                                   >
                                     Image {i + 1}
                                   </div>
@@ -1935,19 +2068,23 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                         >
                           {form.header?.groupName ? (
                             <div
-                              className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
-                              style={{
-                                color: form.header?.textColor1 || undefined,
-                              }}
+                              className="text-[0.9rem] sm:text-sm font-semibold text-gray-700 opacity-85"
+                              style={
+                                {
+                                  // color: form.header?.textColor1 || undefined,
+                                }
+                              }
                             >
                               {form.header.groupName}
                             </div>
                           ) : null}
                           <h3
-                            className="text-2xl sm:text-[1.6rem] font-semibold"
-                            style={{
-                              color: form.header?.textColor2 || undefined,
-                            }}
+                            className="text-2xl sm:text-[1.6rem] font-semibold text-gray-900"
+                            style={
+                              {
+                                // color: form.header?.textColor2 || undefined,
+                              }
+                            }
                           >
                             {form.title || "Smart sign-up"}
                           </h3>
@@ -1955,10 +2092,12 @@ const SignupBuilder: React.FC<Props> = ({ form, onChange, panels }) => {
                       </div>
                       {form.description && (
                         <p
-                          className="mt-3 text-[0.95rem] max-w-2xl opacity-90"
-                          style={{
-                            color: form.header?.textColor1 || undefined,
-                          }}
+                          className="mt-3 text-[0.95rem] max-w-2xl text-gray-700 opacity-90"
+                          style={
+                            {
+                              // color: form.header?.textColor1 || undefined,
+                            }
+                          }
                         >
                           {form.description}
                         </p>

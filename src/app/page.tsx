@@ -3,10 +3,12 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
   type ReactNode,
-  type ChangeEvent,
   type MouseEvent,
   type KeyboardEvent,
 } from "react";
@@ -19,6 +21,18 @@ import {
   SignUpIllustration,
   UploadIllustration,
 } from "@/components/landing/action-illustrations";
+import { useSession } from "next-auth/react";
+import * as chrono from "chrono-node";
+
+type EventFields = {
+  title: string;
+  start: string | null;
+  end: string | null;
+  location: string;
+  description: string;
+  timezone: string;
+  reminders?: { minutes: number }[] | null;
+};
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
 
@@ -40,13 +54,28 @@ const TONE_STYLES: Record<HighlightTone, { iconBg: string }> = {
 declare global {
   interface Window {
     __openCreateEvent?: () => void;
+    __openSnapCamera?: () => void;
+    __openSnapUpload?: () => void;
   }
 }
 
 export default function Home() {
+  const { data: session } = useSession();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [pickedName, setPickedName] = useState<string | null>(null);
+  const [event, setEvent] = useState<EventFields | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [, setOcrText] = useState<string>("");
+
+  const connected = useMemo(
+    () => ({
+      google: Boolean((session as any)?.providers?.google),
+      microsoft: Boolean((session as any)?.providers?.microsoft),
+    }),
+    [session]
+  );
 
   const openCreateEvent = useCallback(() => {
     try {
@@ -56,27 +85,162 @@ export default function Home() {
     }
   }, []);
 
-  const onSnap = useCallback(() => {
+  const resetForm = useCallback(() => {
+    setEvent(null);
+    setModalOpen(false);
+    setError(null);
+    setOcrText("");
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const parseStartToIso = useCallback((value: string | null, timezone: string) => {
+    if (!value) return null;
     try {
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
-      cameraInputRef.current?.click();
+      const isoDate = new Date(value);
+      if (!Number.isNaN(isoDate.getTime())) return isoDate.toISOString();
     } catch {
-      // noop
+      // ignore
+    }
+    const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
+    return parsed ? new Date(parsed.getTime()).toISOString() : null;
+  }, []);
+
+  const normalizeAddress = useCallback((raw: string) => {
+    if (!raw) return "";
+    const fromNumber = raw.match(/\b\d{1,6}[^\n]*/);
+    const candidate = fromNumber ? fromNumber[0] : raw;
+    const streetSuffix =
+      /(Ave(nue)?|St(reet)?|Blvd|Road|Rd|Drive|Dr|Ct|Court|Ln|Lane|Way|Pl|Place|Ter(race)?|Pkwy|Parkway|Hwy|Highway)/i;
+    if (streetSuffix.test(candidate)) {
+      return candidate
+        .replace(/^[^\d]*?(?=\d)/, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+    return candidate.trim();
+  }, []);
+
+  const buildSubmissionEvent = useCallback(
+    (input: EventFields) => {
+      const timezone =
+        input.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC";
+      const startIso = parseStartToIso(input.start, timezone);
+      if (!startIso) return null;
+      const endIso = input.end
+        ? parseStartToIso(input.end, timezone) ||
+          new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
+        : new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString();
+      const location = normalizeAddress(input.location || "");
+      return {
+        ...input,
+        start: startIso,
+        end: endIso,
+        location,
+        timezone,
+      } as EventFields;
+    },
+    [normalizeAddress, parseStartToIso]
+  );
+
+  const ingest = useCallback(async (incoming: File) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", incoming);
+      const res = await fetch("/api/ocr", { method: "POST", body: form });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(
+          (payload as { error?: string })?.error || "Failed to scan file"
+        );
+      }
+      const data = await res.json();
+      const tz =
+        data?.fieldsGuess?.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC";
+      const formatIsoForInput = (iso: string | null, timezone: string) => {
+        if (!iso) return null;
+        try {
+          const dt = new Date(iso);
+          if (Number.isNaN(dt.getTime())) return iso;
+          return new Intl.DateTimeFormat(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+            timeZone: timezone,
+          }).format(dt);
+        } catch {
+          return iso;
+        }
+      };
+      const adjusted = data?.fieldsGuess
+        ? {
+            ...data.fieldsGuess,
+            start: formatIsoForInput(data.fieldsGuess.start, tz),
+            end: formatIsoForInput(data.fieldsGuess.end, tz),
+            reminders: [{ minutes: 1440 }],
+          }
+        : null;
+      setEvent(adjusted);
+      setModalOpen(Boolean(adjusted));
+      setOcrText(data.ocrText || "");
+    } catch (err) {
+      setEvent(null);
+      setModalOpen(false);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to scan file");
+      }
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const onUpload = useCallback(() => {
-    try {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      fileInputRef.current?.click();
-    } catch {
-      // noop
-    }
-  }, []);
+  const onFile = useCallback(
+    (selected: File | null) => {
+      if (!selected) return;
+      void ingest(selected);
+    },
+    [ingest]
+  );
+
+  const openCamera = useCallback(() => {
+    resetForm();
+    cameraInputRef.current?.click();
+  }, [resetForm]);
+
+  const openUpload = useCallback(() => {
+    resetForm();
+    fileInputRef.current?.click();
+  }, [resetForm]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const w = window as any;
+    w.__openSnapCamera = openCamera;
+    w.__openSnapUpload = openUpload;
+    return () => {
+      if (w.__openSnapCamera === openCamera) {
+        delete w.__openSnapCamera;
+      }
+      if (w.__openSnapUpload === openUpload) {
+        delete w.__openSnapUpload;
+      }
+    };
+  }, [openCamera, openUpload]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     try {
-      if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
       const action = (params.get("action") || "").toLowerCase();
       if (!action) return;
@@ -90,24 +254,128 @@ export default function Home() {
         }
       };
       if (action === "camera") {
-        onSnap();
+        openCamera();
         cleanup();
       } else if (action === "upload") {
-        onUpload();
+        openUpload();
         cleanup();
       }
     } catch {
       // noop
     }
-  }, [onSnap, onUpload]);
+  }, [openCamera, openUpload]);
 
-  const onFilePicked = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] || null;
-    setPickedName(f ? f.name : null);
+  useEffect(() => {
+    if (!event && modalOpen) {
+      setModalOpen(false);
+    }
+  }, [event, modalOpen]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    if (typeof document === "undefined") return;
+    const { body } = document;
+    const previous = body.style.overflow;
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.overflow = previous;
+    };
+  }, [modalOpen]);
+
+  const dlIcs = useCallback(() => {
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) {
+      setError("Missing start time for calendar export");
+      return;
+    }
+    const q = new URLSearchParams({
+      title: ready.title || "Event",
+      start: ready.start ?? "",
+      end: ready.end ?? "",
+      location: ready.location || "",
+      description: ready.description || "",
+      timezone: ready.timezone || "America/Chicago",
+      ...(ready.reminders && ready.reminders.length
+        ? {
+            reminders: ready.reminders
+              .map((r) => String(r.minutes))
+              .join(","),
+          }
+        : {}),
+    }).toString();
+    window.location.href = `/api/ics?${q}`;
+  }, [event, buildSubmissionEvent]);
+
+  const connectGoogle = useCallback(() => {
+    window.location.href = "/api/google/auth";
   }, []);
 
+  const connectOutlook = useCallback(() => {
+    window.location.href = "/api/outlook/auth";
+  }, []);
+
+  const addGoogle = useCallback(async () => {
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) {
+      setError("Missing start time for Google Calendar");
+      return;
+    }
+    const res = await fetch("/api/events/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(ready),
+    });
+    let payload: any = {};
+    try {
+      payload = await res.json();
+    } catch {
+      // ignore
+    }
+    if (!res.ok) {
+      setError(payload?.error || "Failed to add to Google Calendar");
+      return;
+    }
+    if (payload?.htmlLink) {
+      window.open(payload.htmlLink, "_blank");
+    }
+  }, [event, buildSubmissionEvent]);
+
+  const addOutlook = useCallback(async () => {
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) {
+      setError("Missing start time for Outlook Calendar");
+      return;
+    }
+    const res = await fetch("/api/events/outlook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ready),
+    });
+    let payload: any = {};
+    try {
+      payload = await res.json();
+    } catch {
+      // ignore
+    }
+    if (!res.ok) {
+      setError(payload?.error || "Failed to add to Outlook Calendar");
+      return;
+    }
+    if (payload?.webLink) {
+      window.open(payload.webLink, "_blank");
+    }
+  }, [event, buildSubmissionEvent]);
+
+  useEffect(() => {
+    // Touch the session so provider connections hydrate promptly
+  }, [session]);
+
   return (
-    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center justify-center px-3 pb-20 text-foreground md:px-8 md:pt-1">
+    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
       <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
         <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
         <p
@@ -125,29 +393,29 @@ export default function Home() {
       <div className="grid w-full max-w-6xl grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
         <OptionCard
           title="Snap Event"
-          description="and it to your calendar."
+          description="Add it to your calendar instantly."
           details={[
-            "Use your camera to snap invites to calendar.",
+            "Use your camera to capture invitations right into Envitefy.",
             "Extracts dates, locations, and RSVP details automatically.",
           ]}
           artwork={<ScanIllustration />}
           tone="primary"
-          onClick={onSnap}
+          onClick={openCamera}
         />
         <OptionCard
           title="Upload Event"
-          description="any saved invitation or flyer."
+          description="Turn a saved flyer into an event."
           details={[
             "Drop PDFs, screenshots, or photos from your library.",
             "Smart cleanup handles decorative fonts and tricky layouts.",
           ]}
           artwork={<UploadIllustration />}
           tone="secondary"
-          onClick={onUpload}
+          onClick={openUpload}
         />
         <OptionCard
           title="Create Event"
-          description="advanced creation tools."
+          description="Use advanced creation tools."
           details={[
             "Start from scratch with precise times, reminders, and notes.",
             "Add recurrence rules, categories, and custom reminders.",
@@ -158,7 +426,7 @@ export default function Home() {
         />
         <OptionCard
           title="Sign-Up Form"
-          description="for school events, volunteers."
+          description="Perfect for school events or volunteers."
           details={[
             "Build RSVP and volunteer sheets with slot limits and questions.",
             "Share a single link that syncs responses in real time.",
@@ -169,28 +437,400 @@ export default function Home() {
         />
       </div>
 
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={onFilePicked}
-        className="hidden"
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,application/pdf"
-        onChange={onFilePicked}
-        className="hidden"
-      />
+      <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
+        <div className="space-y-3">
+          {error && (
+            <div className="rounded border border-error bg-surface/90 p-3 text-sm text-error">
+              {error}
+            </div>
+          )}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+            className="hidden"
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+            className="hidden"
+          />
+          {loading && (
+            <div role="status" aria-live="polite" className="mt-3">
+              <div className="scan-inline" style={{ height: 10 }}>
+                <div className="scan-beam" />
+              </div>
+            </div>
+          )}
+        </div>
 
-      {pickedName ? (
-        <p className="mt-6 max-w-6xl truncate text-sm text-muted-foreground">
-          Selected file: {pickedName}
-        </p>
-      ) : null}
+        <SnapEventModal
+          open={modalOpen && Boolean(event)}
+          event={event}
+          onClose={resetForm}
+          setEvent={setEvent}
+          connected={connected}
+          addGoogle={addGoogle}
+          connectGoogle={connectGoogle}
+          addOutlook={addOutlook}
+          connectOutlook={connectOutlook}
+          dlIcs={dlIcs}
+        />
+
+        {!event && !loading ? (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-surface/40 p-6 text-center text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              Snap or upload an invitation to start.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Works with photos, screenshots, and PDFs. We&apos;ll parse the details
+              automatically and let you tweak them here.
+            </p>
+          </div>
+        ) : null}
+      </section>
     </main>
+  );
+}
+
+type SnapEventModalProps = {
+  open: boolean;
+  event: EventFields | null;
+  onClose: () => void;
+  setEvent: Dispatch<SetStateAction<EventFields | null>>;
+  connected: { google: boolean; microsoft: boolean };
+  addGoogle: () => void;
+  connectGoogle: () => void;
+  addOutlook: () => void;
+  connectOutlook: () => void;
+  dlIcs: () => void;
+};
+
+function SnapEventModal({
+  open,
+  event,
+  onClose,
+  setEvent,
+  connected,
+  addGoogle,
+  connectGoogle,
+  addOutlook,
+  connectOutlook,
+  dlIcs,
+}: SnapEventModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  const updateEvent = useCallback(
+    (mutator: (current: EventFields) => EventFields) => {
+      setEvent((prev) => {
+        if (!prev) return prev;
+        return mutator(prev);
+      });
+    },
+    [setEvent]
+  );
+
+  if (!open || !event) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-10 md:px-8">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-10 flex w-full max-w-3xl flex-col gap-5 overflow-hidden rounded-3xl border border-border bg-surface/95 p-6 shadow-[0_45px_90px_-40px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Review Event Details
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Make any tweaks before sending it to your calendar.
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close event editor"
+            className="rounded-full border border-border bg-surface p-2 text-sm text-foreground hover:bg-surface/80"
+            onClick={onClose}
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1 md:max-h-[60vh]">
+          <div className="space-y-1">
+            <label
+              htmlFor="snap-event-title"
+              className="text-sm text-muted-foreground"
+            >
+              Title
+            </label>
+            <input
+              id="snap-event-title"
+              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              value={event.title}
+              onChange={(e) =>
+                updateEvent((current) => ({
+                  ...current,
+                  title: e.target.value,
+                }))
+              }
+            />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <label
+                htmlFor="snap-event-start"
+                className="text-sm text-muted-foreground"
+              >
+                Start
+              </label>
+              <input
+                id="snap-event-start"
+                className="w-full rounded border border-border bg-surface text-foreground p-2"
+                value={event.start || ""}
+                onChange={(e) => {
+                  const value = e.target.value || null;
+                  updateEvent((current) => ({ ...current, start: value }));
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                htmlFor="snap-event-end"
+                className="text-sm text-muted-foreground"
+              >
+                End (optional)
+              </label>
+              <input
+                id="snap-event-end"
+                className="w-full rounded border border-border bg-surface text-foreground p-2"
+                value={event.end || ""}
+                onChange={(e) => {
+                  const value = e.target.value || null;
+                  updateEvent((current) => ({ ...current, end: value }));
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <label
+                htmlFor="snap-event-location"
+                className="text-sm text-muted-foreground"
+              >
+                Location
+              </label>
+              <input
+                id="snap-event-location"
+                className="w-full rounded border border-border bg-surface text-foreground p-2"
+                value={event.location}
+                onChange={(e) =>
+                  updateEvent((current) => ({
+                    ...current,
+                    location: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                htmlFor="snap-event-timezone"
+                className="text-sm text-muted-foreground"
+              >
+                Timezone
+              </label>
+              <input
+                id="snap-event-timezone"
+                className="w-full rounded border border-border bg-surface text-foreground p-2"
+                value={event.timezone}
+                onChange={(e) =>
+                  updateEvent((current) => ({
+                    ...current,
+                    timezone: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label
+              htmlFor="snap-event-description"
+              className="text-sm text-muted-foreground"
+            >
+              Description
+            </label>
+            <textarea
+              id="snap-event-description"
+              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              rows={4}
+              value={event.description}
+              onChange={(e) =>
+                updateEvent((current) => ({
+                  ...current,
+                  description: e.target.value,
+                }))
+              }
+            />
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-sm text-muted-foreground">Reminders</span>
+            <div className="space-y-2">
+              {(event.reminders || []).map((reminder, idx) => {
+                const dayOptions = [1, 2, 3, 7, 14, 30];
+                const currentDays = Math.max(
+                  1,
+                  Math.round((reminder.minutes || 0) / 1440) || 1
+                );
+                return (
+                  <div key={idx} className="flex items-center gap-2">
+                    <select
+                      className="rounded border border-border bg-surface text-foreground p-2"
+                      value={currentDays}
+                      onChange={(e) => {
+                        const days = Math.max(1, Number(e.target.value) || 1);
+                        updateEvent((current) => {
+                          const next = [...(current.reminders || [])];
+                          next[idx] = { minutes: days * 1440 };
+                          return { ...current, reminders: next };
+                        });
+                      }}
+                    >
+                      {dayOptions.map((d) => (
+                        <option key={d} value={d}>
+                          {d} day{d === 1 ? "" : "s"} before
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      aria-label="Delete reminder"
+                      className="rounded border border-border bg-surface px-2 py-2 text-sm hover:opacity-80"
+                      onClick={() =>
+                        updateEvent((current) => ({
+                          ...current,
+                          reminders: (current.reminders || []).filter(
+                            (_, i) => i !== idx
+                          ),
+                        }))
+                      }
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        className="h-4 w-4"
+                      >
+                        <path
+                          d="M6 7h12M9 7l1-2h4l1 2m-9 0l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6m4-6v6"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
+              <div>
+                <button
+                  type="button"
+                  className="rounded border border-border bg-surface px-3 py-1 text-sm hover:opacity-80"
+                  onClick={() =>
+                    updateEvent((current) => {
+                      const base = Array.isArray(current.reminders)
+                        ? [...current.reminders]
+                        : [];
+                      return {
+                        ...current,
+                        reminders: [...base, { minutes: 1440 }],
+                      };
+                    })
+                  }
+                >
+                  + Add reminder
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {connected.google ? (
+              <button
+                type="button"
+                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                onClick={addGoogle}
+              >
+                Add to Google
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                onClick={connectGoogle}
+              >
+                Connect to Google
+              </button>
+            )}
+            {connected.microsoft ? (
+              <button
+                type="button"
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                onClick={addOutlook}
+              >
+                Add to Outlook
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                onClick={connectOutlook}
+              >
+                Connect to Outlook
+              </button>
+            )}
+            <button
+              type="button"
+              className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80"
+              onClick={dlIcs}
+            >
+              Download ICS
+            </button>
+          </div>
+          <button
+            type="button"
+            className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

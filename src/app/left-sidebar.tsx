@@ -461,10 +461,21 @@ export default function LeftSidebar() {
     } catch {}
   };
   const handleSnapShortcutClick = (
-    event: React.MouseEvent<HTMLAnchorElement>
+    event: React.MouseEvent<HTMLAnchorElement>,
+    mode: "camera" | "upload"
   ) => {
-    // No credits gating; always allow snapping
-    collapseSidebarOnTouch();
+    const win = window as any;
+    const fn =
+      mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
+    if (typeof fn === "function") {
+      event.preventDefault();
+      collapseSidebarOnTouch();
+      try {
+        fn();
+      } catch {}
+    } else {
+      collapseSidebarOnTouch();
+    }
   };
   const profileMenuItemClass =
     "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -2135,7 +2146,9 @@ export default function LeftSidebar() {
                   <div className="flex items-center gap-1">
                     <Link
                       href="/?action=camera"
-                      onClick={handleSnapShortcutClick}
+                      onClick={(event) =>
+                        handleSnapShortcutClick(event, "camera")
+                      }
                       className="p-1 rounded hover:bg-surface/50"
                       aria-label="Snap with camera"
                     >
@@ -2156,7 +2169,9 @@ export default function LeftSidebar() {
                     </Link>
                     <Link
                       href="/?action=upload"
-                      onClick={handleSnapShortcutClick}
+                      onClick={(event) =>
+                        handleSnapShortcutClick(event, "upload")
+                      }
                       className="p-1 rounded hover:bg-surface/50"
                       aria-label="Upload file"
                     >

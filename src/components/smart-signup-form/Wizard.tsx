@@ -30,6 +30,7 @@ export default function SmartSignupWizard({
   submitting,
 }: Props) {
   const [step, setStep] = useState<StepKey>(0);
+  const [showBasicsErrors, setShowBasicsErrors] = useState(false);
   const { data: session } = useSession();
   const creatorName = (session?.user?.name as string | undefined) || null;
 
@@ -54,7 +55,18 @@ export default function SmartSignupWizard({
     [theme]
   );
 
-  const next = () => setStep((s) => (s < 3 ? ((s + 1) as StepKey) : s));
+  const next = () => {
+    if (step === 0) {
+      const address = (form as any).location as string | undefined;
+      const missingAddress = !address || !address.trim();
+      if (missingAddress) {
+        setShowBasicsErrors(true);
+        return;
+      }
+      setShowBasicsErrors(false);
+    }
+    setStep((s) => (s < 3 ? ((s + 1) as StepKey) : s));
+  };
   const prev = () => setStep((s) => (s > 0 ? ((s - 1) as StepKey) : s));
   const initials = (creatorName || "")
     .trim()
@@ -135,7 +147,7 @@ export default function SmartSignupWizard({
                   : "border-dashed border-border text-foreground/70"
               }`}
             >
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-[11px]">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-white text-[11px] text-gray-900">
                 {i + 1}
               </span>
               {label}
@@ -149,6 +161,7 @@ export default function SmartSignupWizard({
         <SignupBuilder
           form={form}
           onChange={onChange}
+          showBasicsErrors={showBasicsErrors}
           panels={{
             basics: true,
             settings: false,
