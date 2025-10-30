@@ -30,9 +30,9 @@ export default function LoginHero() {
       subtitle: "Envitefy keeps your family calendar up to date for you.",
     },
     {
-      type: "video" as const,
+      type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-2.jpg",
-      v: "/sliders/vertical/vertical-slide-2.`",
+      v: "/sliders/vertical/vertical-slide-2.jpg",
       title: "Just Snap It",
       subtitle: "Add events to your calendar in seconds.",
     },
