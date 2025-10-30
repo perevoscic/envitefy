@@ -79,11 +79,12 @@ const addQuestion = (questions: SignupQuestion[]): SignupQuestion[] => [
 const ThemeImagesCarousel: React.FC<{
   themeName: string;
   onPick: (url: string) => void;
-}> = ({ themeName, onPick }) => {
+  searchQuery?: string;
+  allNames?: string[];
+}> = ({ themeName, onPick, searchQuery, allNames }) => {
   const [urls, setUrls] = React.useState<string[] | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [query, setQuery] = React.useState("");
 
   React.useEffect(() => {
     let mounted = true;
@@ -91,13 +92,21 @@ const ThemeImagesCarousel: React.FC<{
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(
-          `/api/templates/signup?category=${encodeURIComponent(themeName)}`
+        const q = (searchQuery || "").trim();
+        const categories: string[] = q ? allNames || [] : [themeName];
+        const results = await Promise.all(
+          categories.map(async (cat) => {
+            const res = await fetch(
+              `/api/templates/signup?category=${encodeURIComponent(cat)}`
+            );
+            if (!res.ok) return [] as string[];
+            const data = await res.json();
+            return Array.isArray(data.images) ? (data.images as string[]) : [];
+          })
         );
-        if (!res.ok) throw new Error("Failed");
-        const data = await res.json();
+        const all = results.flat();
         if (!mounted) return;
-        setUrls(Array.isArray(data.images) ? data.images : []);
+        setUrls(all);
       } catch (e) {
         if (mounted) {
           setError("failed");
@@ -111,7 +120,7 @@ const ThemeImagesCarousel: React.FC<{
     return () => {
       mounted = false;
     };
-  }, [themeName]);
+  }, [themeName, searchQuery, allNames]);
 
   if (loading) {
     return (
@@ -141,19 +150,7 @@ const ThemeImagesCarousel: React.FC<{
 
   return (
     <div className="sm:col-span-2 space-y-1">
-      <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-        Theme images
-      </label>
       <div className="rounded-md border border-gray-200 bg-white p-2 overflow-x-auto">
-        <div className="flex items-center justify-end mb-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search images..."
-            className="h-8 w-56 rounded-md border border-gray-200 bg-white px-2 text-sm"
-          />
-        </div>
         <div className="flex gap-3">
           {urls.map((url) => {
             const file = url.split("/").pop() || "image";
@@ -165,8 +162,8 @@ const ThemeImagesCarousel: React.FC<{
               .toLowerCase()
               .replace(/\b\w/g, (m) => m.toUpperCase());
             if (
-              query.trim() &&
-              !pretty.toLowerCase().includes(query.toLowerCase())
+              (searchQuery || "").trim() &&
+              !pretty.toLowerCase().includes((searchQuery || "").toLowerCase())
             ) {
               return null;
             }
@@ -705,6 +702,7 @@ const SignupBuilder: React.FC<Props> = ({
 
   const [themeMenuOpen, setThemeMenuOpen] = React.useState(false);
   const [templateMenuOpen, setTemplateMenuOpen] = React.useState(false);
+  const [themeImagesQuery, setThemeImagesQuery] = React.useState("");
 
   const TEMPLATE_OPTIONS = [
     { id: "header-1", label: "1. Left" },
@@ -1508,9 +1506,18 @@ const SignupBuilder: React.FC<Props> = ({
             {/* Removed manual background color control */}
             {/* Theme design picker (between Headline description and Image template) */}
             <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Theme design
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                  Theme design
+                </label>
+                <input
+                  type="text"
+                  value={themeImagesQuery}
+                  onChange={(e) => setThemeImagesQuery(e.target.value)}
+                  placeholder="Search theme images..."
+                  className="h-8 w-56 rounded-md border border-border bg-background px-2 text-sm"
+                />
+              </div>
               {/* Small screens: dropdown with thumbnail */}
               <div className="relative md:hidden">
                 <button
@@ -1616,6 +1623,19 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </div>
 
+            {/* Theme images header with search */}
+            <div className="sm:col-span-2 flex items-center justify-between">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Theme images
+              </label>
+              <input
+                type="text"
+                value={themeImagesQuery}
+                onChange={(e) => setThemeImagesQuery(e.target.value)}
+                placeholder="Search theme images..."
+                className="h-8 w-56 rounded-md border border-border bg-background px-2 text-sm"
+              />
+            </div>
             {/* Theme images carousel (from public/templates/signup/<Theme>) */}
             <ThemeImagesCarousel
               themeName={
@@ -1630,6 +1650,8 @@ const SignupBuilder: React.FC<Props> = ({
                   },
                 });
               }}
+              searchQuery={themeImagesQuery}
+              allNames={THEME_NAMES as unknown as string[]}
             />
             <div className="space-y-1 sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
