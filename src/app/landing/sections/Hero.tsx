@@ -17,8 +17,8 @@ export default async function Hero() {
             </div>
           </h1>
           <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto lg:mx-0">
-            Turn flyers, PDFs, and chat screenshots into organized event pages
-            in seconds.
+            Turn flyers, invites, and schedules into shareable plans in seconds,
+            or craft your own event and smart sign-up form just as fast.
           </p>
           <p className="mt-3 text-base sm:text-lg text-foreground/70 max-w-2xl mx-auto lg:mx-0">
             Build a shareable link, add smart sign-up forms, collect RSVPs by

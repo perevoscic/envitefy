@@ -40,14 +40,14 @@ export default function LoginHero() {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-3.jpg",
       v: "/sliders/vertical/vertical-slide-3.jpg",
-      title: "Save to any calendar",
+      title: "Get Notified",
       subtitle: "Receive RSVPs by text or email.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-4.jpg",
       v: "/sliders/vertical/vertical-slide-4.jpg",
-      title: "Any Birthday Invites",
+      title: "Any Event Invites",
       subtitle: "Share one cute link with RSVP-by-text for the whole crew.",
     },
     {
@@ -69,9 +69,9 @@ export default function LoginHero() {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-7.jpg",
       v: "/sliders/vertical/vertical-slide-7.jpg",
-      title: "Reclaim your space",
+      title: "Sigun-Up Forms with you in mind",
       subtitle:
-        "Clear the fridge and keep every flyer, invite, and schedule in one place.",
+        "Smart sign-up forms for school events, volunteer slots, snack duty, field trips and more.",
     },
   ];
   const desktopSlides = slidesMeta.map((m) => ({
@@ -281,11 +281,6 @@ export default function LoginHero() {
             <span className="text-[#ee3c2b]">i</span>
             <span className="text-[#ffffff]">tefy</span>
           </span>
-        </p>
-        <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat px-4 md:px-0">
-          Turn flyers, invites, and schedules into shareable plans in seconds,
-          <br />
-          or craft your own event and smart sign-up form just as fast.
         </p>
       </div>
 
