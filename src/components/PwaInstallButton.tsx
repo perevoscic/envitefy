@@ -49,22 +49,31 @@ const getPlatformInfo = (win: Window): PlatformInfo => {
   const nav = win.navigator;
   const vendor = nav.vendor ?? "";
   const uaSource = `${nav.userAgent ?? ""} ${vendor}`.toLowerCase();
+  const platform = (nav.platform ?? "").toLowerCase();
   const maxTouchPoints =
     typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
-  const isTouchMac =
-    (uaSource.includes("macintosh") || uaSource.includes("mac os x")) &&
-    maxTouchPoints > 1;
+  const isTouchMac = platform === "macintel" && maxTouchPoints > 1;
+  const isIpadLike =
+    uaSource.includes("ipad") || platform === "ipad" || isTouchMac;
 
   let os: OSKey = "unknown";
   if (uaSource.includes("windows")) {
     os = "windows";
   } else if (uaSource.includes("android")) {
     os = "android";
-  } else if (uaSource.includes("ipad") || isTouchMac) {
+  } else if (isIpadLike) {
     os = "ipados";
-  } else if (uaSource.includes("iphone") || uaSource.includes("ipod")) {
+  } else if (
+    uaSource.includes("iphone") ||
+    uaSource.includes("ipod") ||
+    platform === "iphone"
+  ) {
     os = "ios";
-  } else if (uaSource.includes("mac os x") || uaSource.includes("macintosh")) {
+  } else if (
+    uaSource.includes("mac os x") ||
+    uaSource.includes("macintosh") ||
+    platform.startsWith("mac")
+  ) {
     os = "macos";
   }
 
@@ -361,6 +370,7 @@ export default function PwaInstallButton({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
+  const [fallbackGuideRevealed, setFallbackGuideRevealed] = useState(false);
 
   // Hide if already installed or running in standalone
   useEffect(() => {
@@ -683,6 +693,12 @@ export default function PwaInstallButton({
   ]);
 
   useEffect(() => {
+    if (!showIosFallback && !showGenericFallback) {
+      setFallbackGuideRevealed(false);
+    }
+  }, [showIosFallback, showGenericFallback]);
+
+  useEffect(() => {
     const hasAnyOption = canInstall || showIosFallback || showGenericFallback;
     if (!heroOutOfView || !hasAnyOption) {
       if (!startExpanded) {
@@ -717,21 +733,40 @@ export default function PwaInstallButton({
 
   if (hideUi) return null;
 
-  if (
-    (!canInstall && !showIosFallback && !showGenericFallback) ||
-    !heroOutOfView
-  )
-    return null;
+  if (!heroOutOfView) return null; // Always hide if hero is in view
 
   const fallbackGuide = !canInstall ? installGuide : null;
   const fallbackGuideActive = Boolean(
     !canInstall && (showIosFallback || showGenericFallback) && fallbackGuide
   );
   const showInstallCta = canInstall;
+  const showFallbackCta =
+    !showInstallCta &&
+    fallbackGuideActive &&
+    Boolean(fallbackGuide?.supported) &&
+    (fallbackGuide?.steps.length ?? 0) > 0;
   const showFallbackGuideCard =
-    fallbackGuideActive && !showInstallCta && Boolean(fallbackGuide);
+    fallbackGuideActive &&
+    (!showFallbackCta || fallbackGuideRevealed) &&
+    Boolean(fallbackGuide);
+  const fallbackDeviceLabel = (() => {
+    if (!fallbackGuide) return null;
+    if (fallbackGuide.os === "ios") return "iPhone";
+    if (fallbackGuide.os === "ipados") return "iPad";
+    return null;
+  })();
+  const fallbackCtaLabel = (() => {
+    if (!fallbackGuide) return "Add to Home Screen";
+    if (fallbackGuide.os === "ios" || fallbackGuide.os === "ipados") {
+      return "Add to Home Screen";
+    }
+    return "Add to Home Screen";
+  })();
   const headingText = (() => {
     if (showInstallCta) return "Add Envitefy to your home screen";
+    if (showFallbackCta) {
+      return "Add Envitefy to your home screen";
+    }
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
         return `Install with ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}`;
@@ -743,6 +778,12 @@ export default function PwaInstallButton({
   })();
   const subheadingText = (() => {
     if (showInstallCta) return null;
+    if (showFallbackCta) {
+      if (fallbackGuideRevealed && fallbackGuide?.supported) {
+        return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
+      }
+      return null;
+    }
     if (fallbackGuide) {
       if (fallbackGuide.supported) {
         return `Follow the steps for ${fallbackGuide.browserLabel} on ${fallbackGuide.osLabel}.`;
@@ -763,6 +804,17 @@ export default function PwaInstallButton({
   ]
     .filter(Boolean)
     .join(" ");
+  const handleFallbackCtaClick = () => {
+    if (!fallbackGuide) return;
+    pushDebug("fallback install CTA clicked", {
+      os: fallbackGuide.os,
+      browser: fallbackGuide.browser,
+    });
+    setWasManuallyClosed(false);
+    setExpanded(true);
+    setFallbackGuideRevealed(true);
+    setGuidePulse(true);
+  };
 
   return (
     <div
@@ -831,7 +883,7 @@ export default function PwaInstallButton({
                 </svg>
               </button>
             </div>
-            {showInstallCta && (
+            {(canInstall || (!showIosFallback && showGenericFallback)) && (
               <button
                 onClick={async () => {
                   const w = window as SnapWindow;
@@ -869,6 +921,7 @@ export default function PwaInstallButton({
                         // Prompt dismissed or unavailable; surface fallback instructions.
                         setGuidePulse(true);
                         setExpanded(true);
+                        setFallbackGuideRevealed(true);
                       }
                     } catch (error) {
                       pushDebug("install CTA prompt error", {
@@ -879,6 +932,7 @@ export default function PwaInstallButton({
                       });
                       setGuidePulse(true);
                       setExpanded(true);
+                      setFallbackGuideRevealed(true);
                     } finally {
                       deferredPromptRef.current = null;
                       setDeferred(null);
@@ -903,10 +957,11 @@ export default function PwaInstallButton({
                 }}
                 className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
               >
-                Install app
+                Add to Home Screen
               </button>
             )}
-            {showFallbackGuideCard && fallbackGuide && (
+            {/* Show fallback guide card if active, or if it's an iOS fallback */}
+            {(showFallbackGuideCard || showIosFallback) && fallbackGuide && (
               <div className={fallbackGuideClassName}>
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">

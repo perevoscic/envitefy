@@ -30,26 +30,24 @@ export default function LoginHero() {
       subtitle: "Envitefy keeps your family calendar up to date for you.",
     },
     {
-      type: "video" as const,
-      h: "/sliders/horizontal/horizontal-slide-2.mp4",
-      v: "/sliders/vertical/vertical-slide-2.mp4",
+      type: "image" as const,
+      h: "/sliders/horizontal/horizontal-slide-2.jpg",
+      v: "/sliders/vertical/vertical-slide-2.jpg",
       title: "Just Snap It",
-      subtitle:
-        "Automatically extracts dates, times, locations, and RSVP details.",
+      subtitle: "Add events to your calendar in seconds.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-3.jpg",
       v: "/sliders/vertical/vertical-slide-3.jpg",
-      title: "Save to any calendar",
-      subtitle:
-        "Google, Apple, Outlook — plus shareable ICS downloads for anyone.",
+      title: "Get Notified",
+      subtitle: "Receive RSVPs by text or email.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-4.jpg",
       v: "/sliders/vertical/vertical-slide-4.jpg",
-      title: "Any Birthday Invites",
+      title: "Any Event Invites",
       subtitle: "Share one cute link with RSVP-by-text for the whole crew.",
     },
     {
@@ -71,9 +69,9 @@ export default function LoginHero() {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-7.jpg",
       v: "/sliders/vertical/vertical-slide-7.jpg",
-      title: "Reclaim your space",
+      title: "Sigun-Up Forms with you in mind",
       subtitle:
-        "Clear the fridge and keep every flyer, invite, and schedule in one place.",
+        "Smart sign-up forms for school events, volunteer slots, snack duty, field trips and more.",
     },
   ];
   const desktopSlides = slidesMeta.map((m) => ({
@@ -266,23 +264,23 @@ export default function LoginHero() {
       >
         <Image
           src={Logo}
-          alt="Logo"
+          alt="Envitefy logo"
           height={84}
           className="rounded mx-auto mt-1"
         />
         <p className="text-3xl md:text-4xl text-white/90 font-montserrat">
           Welcome to
         </p>
-        <p className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3">
+        <p
+          className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3"
+          role="heading"
+          aria-level={1}
+        >
           <span className="font-pacifico">
-            <span className="text-[#FFFFFF]">env</span>
+            <span className="text-[#ffffff]">env</span>
             <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#FFFFFF]">tefy.com</span>
+            <span className="text-[#ffffff]">tefy</span>
           </span>
-        </p>
-        <p className="mt-1 text-white/80 text-base md:text-lg font-montserrat px-4 md:px-0">
-          Turn flyers, invites, and schedules into shareable plans in seconds —
-          or craft your own event and smart sign-up form just as fast.
         </p>
       </div>
 
