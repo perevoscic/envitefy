@@ -74,6 +74,25 @@ const addQuestion = (questions: SignupQuestion[]): SignupQuestion[] => [
   },
 ];
 
+// Visual thumbnails for Theme design categories (moved outside component to prevent recreating on each render)
+const THEME_NAMES = [
+  "Spring",
+  "Summer",
+  "School & Education",
+  "Fall & Seasonal",
+  "Winter & Holidays",
+  "Church & Community",
+  "Sports & Recreation",
+  "Fundraising & Food",
+  "Family & Personal",
+  "Business & Professional",
+  "Parties & Events",
+  "Health & Fitness",
+  "Clubs & Groups",
+  "General",
+  "Other / Special Interest",
+] as const;
+
 // Removed toggle UI: Smart sign-up is always enabled in the modal now.
 
 const ThemeImagesCarousel: React.FC<{
@@ -81,10 +100,17 @@ const ThemeImagesCarousel: React.FC<{
   onPick: (url: string) => void;
   searchQuery?: string;
   allNames?: string[];
-}> = ({ themeName, onPick, searchQuery, allNames }) => {
+  selectedUrl?: string | null;
+}> = ({ themeName, onPick, searchQuery, allNames, selectedUrl }) => {
   const [urls, setUrls] = React.useState<string[] | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  // Memoize the search query to avoid unnecessary re-renders
+  const normalizedSearchQuery = React.useMemo(
+    () => (searchQuery || "").trim(),
+    [searchQuery]
+  );
 
   React.useEffect(() => {
     let mounted = true;
@@ -92,7 +118,7 @@ const ThemeImagesCarousel: React.FC<{
       try {
         setLoading(true);
         setError(null);
-        const q = (searchQuery || "").trim();
+        const q = normalizedSearchQuery;
         const categories: string[] = q ? allNames || [] : [themeName];
         const results = await Promise.all(
           categories.map(async (cat) => {
@@ -120,7 +146,7 @@ const ThemeImagesCarousel: React.FC<{
     return () => {
       mounted = false;
     };
-  }, [themeName, searchQuery, allNames]);
+  }, [themeName, normalizedSearchQuery, allNames]);
 
   if (loading) {
     return (
@@ -167,20 +193,43 @@ const ThemeImagesCarousel: React.FC<{
             ) {
               return null;
             }
+            const isSelected = selectedUrl === url;
             return (
               <button
                 key={url}
                 type="button"
-                className="shrink-0 w-28 rounded-md border border-gray-200 hover:ring-2 hover:ring-blue-500 bg-white"
+                className={`shrink-0 w-28 rounded-md border bg-white transition-all ${
+                  isSelected
+                    ? "border-blue-500 ring-2 ring-blue-500 shadow-md"
+                    : "border-gray-200 hover:ring-2 hover:ring-blue-500"
+                }`}
                 title={pretty}
                 onClick={() => onPick(url)}
               >
-                <div className="p-1">
+                <div className="p-1 relative">
                   <img
                     src={url}
                     alt={pretty}
-                    className="h-16 w-full object-cover rounded"
+                    className={`h-16 w-full object-cover rounded ${
+                      isSelected ? "opacity-100" : "opacity-90"
+                    }`}
                   />
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 10l3 3 7-7" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="px-2 pb-2 text-[10px] text-gray-800 text-center truncate">
                   {pretty}
@@ -680,25 +729,6 @@ const SignupBuilder: React.FC<Props> = ({
       buttonTextColor: "#3B0820",
     },
   ];
-
-  // Visual thumbnails for Theme design categories
-  const THEME_NAMES = [
-    "Spring",
-    "Summer",
-    "School & Education",
-    "Fall & Seasonal",
-    "Winter & Holidays",
-    "Church & Community",
-    "Sports & Recreation",
-    "Fundraising & Food",
-    "Family & Personal",
-    "Business & Professional",
-    "Parties & Events",
-    "Health & Fitness",
-    "Clubs & Groups",
-    "General",
-    "Other / Special Interest",
-  ] as const;
 
   const [themeMenuOpen, setThemeMenuOpen] = React.useState(false);
   const [templateMenuOpen, setTemplateMenuOpen] = React.useState(false);
@@ -1693,17 +1723,21 @@ const SignupBuilder: React.FC<Props> = ({
               themeName={
                 (form.header?.designTheme || (THEME_NAMES[0] as any)) as any
               }
-              onPick={(url) => {
-                setHeader({
-                  backgroundImage: {
-                    name: url.split("/").pop() || "theme-image",
-                    type: "image/jpeg",
-                    dataUrl: url,
-                  },
-                });
-              }}
+              onPick={React.useCallback(
+                (url: string) => {
+                  setHeader({
+                    backgroundImage: {
+                      name: url.split("/").pop() || "theme-image",
+                      type: "image/jpeg",
+                      dataUrl: url,
+                    },
+                  });
+                },
+                [setHeader]
+              )}
               searchQuery={themeImagesQuery}
               allNames={THEME_NAMES as unknown as string[]}
+              selectedUrl={form.header?.backgroundImage?.dataUrl || null}
             />
             <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
