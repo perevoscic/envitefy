@@ -151,16 +151,51 @@ export default function Home() {
   const ingest = useCallback(async (incoming: File) => {
     setLoading(true);
     setError(null);
+
+    // Validate file size before upload (10 MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10 MB
+    if (incoming.size > maxSize) {
+      setError("File is too large. Please upload a file smaller than 10 MB.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const form = new FormData();
       form.append("file", incoming);
-      const res = await fetch("/api/ocr", { method: "POST", body: form });
+
+      // Add timeout handling for mobile/network issues
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
+      let res: Response;
+      try {
+        res = await fetch("/api/ocr", {
+          method: "POST",
+          body: form,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+          throw new Error(
+            "Upload timed out. Please check your connection and try again."
+          );
+        }
+        // Network errors, CORS issues, etc.
+        throw new Error(
+          "Upload failed. Please check your connection and try again."
+        );
+      }
+
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         throw new Error(
           (payload as { error?: string })?.error || "Failed to scan file"
         );
       }
+
       const data = await res.json();
       const tz =
         data?.fieldsGuess?.timezone ||
@@ -201,7 +236,7 @@ export default function Home() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Failed to scan file");
+        setError("Failed to scan file. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -309,11 +344,11 @@ export default function Home() {
   }, [event, buildSubmissionEvent]);
 
   const connectGoogle = useCallback(() => {
-    window.location.href = "/api/google/auth";
+    window.open("/api/google/auth", "_blank");
   }, []);
 
   const connectOutlook = useCallback(() => {
-    window.location.href = "/api/outlook/auth";
+    window.open("/api/outlook/auth", "_blank");
   }, []);
 
   const addGoogle = useCallback(async () => {
@@ -511,6 +546,29 @@ function SnapEventModal({
   connectOutlook,
   dlIcs,
 }: SnapEventModalProps) {
+  const [isAppleDevice, setIsAppleDevice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent || (navigator as any).vendor || "";
+    const platform = (navigator.platform || "").toLowerCase();
+    const maxTouchPoints =
+      typeof navigator.maxTouchPoints === "number"
+        ? navigator.maxTouchPoints
+        : 0;
+    const isTouchMac = platform === "macintel" && maxTouchPoints > 1;
+    const isIpadLike =
+      ua.toLowerCase().includes("ipad") || platform === "ipad" || isTouchMac;
+
+    const isIOS = /iPhone|iPod/.test(ua) || platform === "iphone";
+    const isIPadOS = isIpadLike;
+    const isMacOS =
+      (/Mac OS X|Macintosh/.test(ua) || platform.startsWith("mac")) &&
+      !isTouchMac;
+
+    setIsAppleDevice(isIOS || isIPadOS || isMacOS);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
@@ -538,13 +596,16 @@ function SnapEventModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-10 md:px-8">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center px-4 py-4 sm:py-10 md:px-8">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative z-10 flex w-full max-w-3xl flex-col gap-5 overflow-hidden rounded-3xl border border-border bg-surface/95 p-6 shadow-[0_45px_90px_-40px_rgba(0,0,0,0.6)] backdrop-blur">
-        <div className="flex items-start justify-between gap-4">
+      <div
+        className="relative z-10 flex w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex-col gap-5 overflow-hidden rounded-3xl border border-border bg-surface/95 p-6 shadow-[0_45px_90px_-40px_rgba(0,0,0,0.6)] backdrop-blur"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-foreground">
               Review Event Details
@@ -563,7 +624,7 @@ function SnapEventModal({
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 overflow-y-auto pr-1 md:max-h-[60vh]">
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1 min-h-0 flex-1 max-h-[calc(90vh-240px)] sm:max-h-[60vh]">
           <div className="space-y-1">
             <label
               htmlFor="snap-event-title"
@@ -766,49 +827,90 @@ function SnapEventModal({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             {connected.google ? (
               <button
                 type="button"
-                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
                 onClick={addGoogle}
               >
-                Add to Google
+                <span>Add to</span>
+                <Image
+                  src="/brands/google.svg"
+                  alt="Google"
+                  width={20}
+                  height={20}
+                />
               </button>
             ) : (
               <button
                 type="button"
-                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
                 onClick={connectGoogle}
               >
-                Connect to Google
+                <span>Connect to</span>
+                <Image
+                  src="/brands/google.svg"
+                  alt="Google"
+                  width={20}
+                  height={20}
+                />
               </button>
             )}
             {connected.microsoft ? (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
                 onClick={addOutlook}
               >
-                Add to Outlook
+                <span>Add to</span>
+                <Image
+                  src="/brands/microsoft.svg"
+                  alt="Microsoft"
+                  width={20}
+                  height={20}
+                />
               </button>
             ) : (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm"
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
                 onClick={connectOutlook}
               >
-                Connect to Outlook
+                <span>Connect to</span>
+                <Image
+                  src="/brands/microsoft.svg"
+                  alt="Microsoft"
+                  width={20}
+                  height={20}
+                />
               </button>
             )}
-            <button
-              type="button"
-              className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80"
-              onClick={dlIcs}
-            >
-              Download ICS
-            </button>
+            {isAppleDevice && (
+              <button
+                type="button"
+                className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80 flex items-center gap-2"
+                onClick={dlIcs}
+              >
+                <span>Connect to</span>
+                <Image
+                  src="/brands/apple-black.svg"
+                  alt="Apple"
+                  width={20}
+                  height={20}
+                  className="show-light"
+                />
+                <Image
+                  src="/brands/apple-white.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="show-dark"
+                  aria-hidden="true"
+                />
+              </button>
+            )}
           </div>
           <button
             type="button"
