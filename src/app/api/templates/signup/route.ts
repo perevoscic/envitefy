@@ -13,9 +13,9 @@ const THEME_FOLDER_MAP: Record<string, string> = {
   "Church & Community": "church-community",
   "Sports & Recreation": "sports-recreation",
   // Legacy label kept for backward compatibility; mapped to new folder
-  "Fundraising, Food, & Events": "fundraising-and-food",
+  "Fundraising, Food, & Events": "fundraising-food",
   // New label (preferred)
-  "Fundraising & Food": "fundraising-and-food",
+  "Fundraising & Food": "fundraising-food",
   "Family & Personal": "family-personal",
   "Business & Professional": "business-professional",
   "Parties & Events": "parties-events",

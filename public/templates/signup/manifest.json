@@ -427,52 +427,52 @@
     {
       "name": "Car Wash",
       "tier": "free",
-      "path": "/templates/signup/fundraising-food-and-events/car-wash.png"
+      "path": "/templates/signup/fundraising-food/car-wash.png"
     },
     {
       "name": "Bake Sale",
       "tier": "free",
-      "path": "/templates/signup/fundraising-food-and-events/bake-sale.png"
+      "path": "/templates/signup/fundraising-food/bake-sale.png"
     },
     {
       "name": "Charity Gala",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-food-and-events/charity-gala.png"
+      "path": "/templates/signup/fundraising-food/charity-gala.png"
     },
     {
       "name": "Restaurant Night",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-food-and-events/restaurant-night.png"
+      "path": "/templates/signup/fundraising-food/restaurant-night.png"
     },
     {
       "name": "Food Pantry",
       "tier": "free",
-      "path": "/templates/signup/fundraising-food-and-events/food-pantry.png"
+      "path": "/templates/signup/fundraising-food/food-pantry.png"
     },
     {
       "name": "Auction Event",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-food-and-events/auction-event.png"
+      "path": "/templates/signup/fundraising-food/auction-event.png"
     },
     {
       "name": "Donation Drive",
       "tier": "free",
-      "path": "/templates/signup/fundraising-food-and-events/donation-drive.png"
+      "path": "/templates/signup/fundraising-food/donation-drive.png"
     },
     {
       "name": "Vendor Fair",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-food-and-events/vendor-fair.png"
+      "path": "/templates/signup/fundraising-food/vendor-fair.png"
     },
     {
       "name": "Raffle",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-food-and-events/raffle.png"
+      "path": "/templates/signup/fundraising-food/raffle.png"
     },
     {
       "name": "Potluck Dinner",
       "tier": "free",
-      "path": "/templates/signup/fundraising-food-and-events/potluck-dinner.png"
+      "path": "/templates/signup/fundraising-food/potluck-dinner.png"
     }
   ],
   "Family & Personal": [
