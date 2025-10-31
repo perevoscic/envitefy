@@ -149,9 +149,9 @@ const ThemeImagesCarousel: React.FC<{
   }
 
   return (
-    <div className="sm:col-span-2 space-y-1">
-      <div className="rounded-md border border-gray-200 bg-white p-2 overflow-x-auto">
-        <div className="flex gap-3">
+    <div className="sm:col-span-2 space-y-1 w-full min-w-0 max-w-full">
+      <div className="rounded-md border border-gray-200 bg-white p-2 overflow-x-auto w-full min-w-0 max-w-full">
+        <div className="flex gap-3 min-w-0 max-w-full">
           {urls.map((url) => {
             const file = url.split("/").pop() || "image";
             const base = file.replace(/\.[^.]+$/, "");
@@ -171,7 +171,7 @@ const ThemeImagesCarousel: React.FC<{
               <button
                 key={url}
                 type="button"
-                className="shrink-0 w-36 rounded-md border border-gray-200 hover:ring-2 hover:ring-blue-500 bg-white"
+                className="shrink-0 w-28 rounded-md border border-gray-200 hover:ring-2 hover:ring-blue-500 bg-white"
                 title={pretty}
                 onClick={() => onPick(url)}
               >
@@ -179,10 +179,10 @@ const ThemeImagesCarousel: React.FC<{
                   <img
                     src={url}
                     alt={pretty}
-                    className="h-20 w-full object-cover rounded"
+                    className="h-16 w-full object-cover rounded"
                   />
                 </div>
-                <div className="px-2 pb-2 text-[11px] text-gray-800 text-center truncate">
+                <div className="px-2 pb-2 text-[10px] text-gray-800 text-center truncate">
                   {pretty}
                 </div>
               </button>
@@ -703,6 +703,8 @@ const SignupBuilder: React.FC<Props> = ({
   const [themeMenuOpen, setThemeMenuOpen] = React.useState(false);
   const [templateMenuOpen, setTemplateMenuOpen] = React.useState(false);
   const [themeImagesQuery, setThemeImagesQuery] = React.useState("");
+  const [themeImagesSearchOpen, setThemeImagesSearchOpen] =
+    React.useState(false);
 
   const TEMPLATE_OPTIONS = [
     { id: "header-1", label: "1. Left" },
@@ -1357,10 +1359,10 @@ const SignupBuilder: React.FC<Props> = ({
   }, [previewFixedHeightPx, previewFloating]);
 
   return (
-    <section className="rounded-lg border border-border bg-surface/60 px-4 py-4 sm:px-5 sm:py-5 space-y-4">
-      <div className="space-y-4">
+    <section className="rounded-lg border border-border bg-surface/60 px-4 py-4 sm:px-5 sm:py-5 space-y-4 max-w-full overflow-x-hidden">
+      <div className="space-y-4 max-w-full overflow-x-hidden">
         {showBasics && (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 max-w-full min-w-0">
             <div className="space-y-1">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Form title
@@ -1399,7 +1401,7 @@ const SignupBuilder: React.FC<Props> = ({
                 placeholder="Your group or team"
               />
             </div>
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Headline description
               </label>
@@ -1505,19 +1507,10 @@ const SignupBuilder: React.FC<Props> = ({
             </div>
             {/* Removed manual background color control */}
             {/* Theme design picker (between Headline description and Image template) */}
-            <div className="space-y-1 sm:col-span-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                  Theme design
-                </label>
-                <input
-                  type="text"
-                  value={themeImagesQuery}
-                  onChange={(e) => setThemeImagesQuery(e.target.value)}
-                  placeholder="Search theme images..."
-                  className="h-8 w-56 rounded-md border border-border bg-background px-2 text-sm"
-                />
-              </div>
+            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Theme design
+              </label>
               {/* Small screens: dropdown with thumbnail */}
               <div className="relative md:hidden">
                 <button
@@ -1624,17 +1617,76 @@ const SignupBuilder: React.FC<Props> = ({
             </div>
 
             {/* Theme images header with search */}
-            <div className="sm:col-span-2 flex items-center justify-between">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+            <div className="sm:col-span-2 flex items-center justify-between min-w-0 max-w-full gap-2">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 truncate min-w-0">
                 Theme images
               </label>
-              <input
-                type="text"
-                value={themeImagesQuery}
-                onChange={(e) => setThemeImagesQuery(e.target.value)}
-                placeholder="Search theme images..."
-                className="h-8 w-56 rounded-md border border-border bg-background px-2 text-sm"
-              />
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {themeImagesSearchOpen ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={themeImagesQuery}
+                      onChange={(e) => setThemeImagesQuery(e.target.value)}
+                      placeholder="Search..."
+                      autoFocus
+                      className="h-8 w-32 rounded-md border border-border bg-background px-2 text-sm"
+                      onBlur={() => {
+                        if (!themeImagesQuery.trim()) {
+                          setThemeImagesSearchOpen(false);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          setThemeImagesSearchOpen(false);
+                          setThemeImagesQuery("");
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThemeImagesSearchOpen(false);
+                        setThemeImagesQuery("");
+                      }}
+                      className="h-8 w-8 rounded-md border border-border bg-background flex items-center justify-center hover:bg-muted"
+                      title="Close search"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setThemeImagesSearchOpen(true)}
+                    className="h-8 w-8 rounded-md border border-border bg-background flex items-center justify-center hover:bg-muted"
+                    title="Search theme images"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="9" cy="9" r="6" />
+                      <path d="m17 17-4-4" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
             {/* Theme images carousel (from public/templates/signup/<Theme>) */}
             <ThemeImagesCarousel
@@ -1653,7 +1705,7 @@ const SignupBuilder: React.FC<Props> = ({
               searchQuery={themeImagesQuery}
               allNames={THEME_NAMES as unknown as string[]}
             />
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Image template
               </label>
@@ -1792,11 +1844,11 @@ const SignupBuilder: React.FC<Props> = ({
                 </button>
               </div>
             </div>
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Background color
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-2">
+              <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 max-w-full min-w-0">
                 {PRESETS.map((p) => (
                   <button
                     key={p.id}
@@ -1835,13 +1887,12 @@ const SignupBuilder: React.FC<Props> = ({
                 ))}
               </div>
             </div>
-            <div ref={overlapRef} />
             {/* Image placement (grouped uploads) */}
-            <div className="sm:col-span-2 rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
+            <div className="sm:col-span-2 rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3 min-w-0 max-w-full">
               <label className="block text-xs uppercase tracking-wide text-foreground/60">
                 IMAGE PLACEMENT
               </label>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 min-w-0 max-w-full">
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-foreground/60">
                     Top-left
@@ -1924,22 +1975,8 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </div>
             {/* Preview (bottom of Basics) */}
-            <div className="sm:col-span-2">
-              {/* spacer to prevent layout jump when preview is fixed */}
-              {previewFloating ? (
-                <div
-                  className="hidden md:block"
-                  style={{ height: `${previewFixedHeightPx + 32}px` }}
-                />
-              ) : null}
-              <div
-                ref={previewRef}
-                className={
-                  previewFloating
-                    ? "relative z-10 w-[min(720px,calc(100vw-2rem))] md:fixed md:left-1/2 md:-translate-x-1/2 md:bottom-20 md:z-30"
-                    : "relative z-10 w-[min(720px,calc(100vw-2rem))]"
-                }
-              >
+            <div className="sm:col-span-2 min-w-0 max-w-full">
+              <div className="relative z-10 w-full max-w-[720px] min-w-0">
                 <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
                   <div className="bg-white backdrop-blur supports-[backdrop-filter]:backdrop-blur max-h-[70vh] overflow-auto">
                     <section
@@ -2144,8 +2181,6 @@ const SignupBuilder: React.FC<Props> = ({
                   </div>
                 </div>
               </div>
-              {/* Sentinel placed after the preview; when visible, we unfix the preview so it docks at the bottom */}
-              <div ref={sentinelRef} />
             </div>
           </div>
         )}

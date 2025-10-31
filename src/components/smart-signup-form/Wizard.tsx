@@ -132,29 +132,35 @@ export default function SmartSignupWizard({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       {/* Stepper */}
-      <ol className="flex items-center gap-2 text-xs">
-        {STEP_TITLES.map((label, i) => {
-          const active = i === step;
-          const done = i < step;
-          return (
-            <li
-              key={label}
-              className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border ${
-                active
-                  ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white"
-                  : done
-                  ? "border-border bg-surface text-foreground"
-                  : "border-dashed border-border text-foreground/70"
-              }`}
-            >
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-white text-[11px] text-gray-900">
-                {i + 1}
-              </span>
-              {label}
-            </li>
-          );
-        })}
-      </ol>
+      <div className="overflow-x-auto -mx-4 px-4">
+        <ol className="flex items-center gap-2 text-xs min-w-max">
+          {STEP_TITLES.map((label, i) => {
+            const active = i === step;
+            const done = i < step;
+            return (
+              <li
+                key={label}
+                className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border whitespace-nowrap flex-shrink-0 ${
+                  active
+                    ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white"
+                    : done
+                    ? "border-border bg-surface text-foreground"
+                    : "border-dashed border-border text-foreground/70"
+                }`}
+              >
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] flex-shrink-0 ${
+                  active
+                    ? "border-white/30 bg-white/20 text-white"
+                    : "border-gray-200 bg-white text-gray-900"
+                }`}>
+                  {i + 1}
+                </span>
+                <span className="whitespace-nowrap">{label}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
 
       {/* Content */}
       {step === 0 && (
