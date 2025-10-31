@@ -174,26 +174,34 @@ export default function Home() {
           method: "POST",
           body: form,
           signal: controller.signal,
+          // Ensure credentials are included for authenticated requests
+          credentials: "include",
         });
         clearTimeout(timeoutId);
       } catch (fetchErr) {
         clearTimeout(timeoutId);
+        // Log the actual error for debugging
+        console.error("Upload fetch error:", fetchErr);
         if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
           throw new Error(
             "Upload timed out. Please check your connection and try again."
           );
         }
         // Network errors, CORS issues, etc.
+        const errorMessage =
+          fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
         throw new Error(
-          "Upload failed. Please check your connection and try again."
+          `Upload failed: ${errorMessage}. Please check your connection and try again.`
         );
       }
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        throw new Error(
-          (payload as { error?: string })?.error || "Failed to scan file"
-        );
+        const errorMsg =
+          (payload as { error?: string })?.error ||
+          `Server error (${res.status})`;
+        console.error("OCR API error:", res.status, errorMsg);
+        throw new Error(errorMsg || "Failed to scan file");
       }
 
       const data = await res.json();
@@ -245,7 +253,10 @@ export default function Home() {
 
   const onFile = useCallback(
     (selected: File | null) => {
-      if (!selected) return;
+      if (!selected) {
+        // User cancelled file selection - silently return
+        return;
+      }
       void ingest(selected);
     },
     [ingest]
@@ -253,13 +264,34 @@ export default function Home() {
 
   const openCamera = useCallback(() => {
     resetForm();
-    cameraInputRef.current?.click();
-  }, [resetForm]);
+    // Use setTimeout to ensure the click happens within the user gesture context on mobile
+    setTimeout(() => {
+      if (cameraInputRef.current) {
+        try {
+          cameraInputRef.current.click();
+        } catch (err) {
+          console.error("Failed to open camera:", err);
+          setError("Unable to open camera. Please try again.");
+        }
+      }
+    }, 0);
+  }, [resetForm, setError]);
 
   const openUpload = useCallback(() => {
     resetForm();
-    fileInputRef.current?.click();
-  }, [resetForm]);
+    // Use setTimeout to ensure the click happens within the user gesture context on mobile
+    // This is necessary for iOS Safari and some Android browsers
+    setTimeout(() => {
+      if (fileInputRef.current) {
+        try {
+          fileInputRef.current.click();
+        } catch (err) {
+          console.error("Failed to open file picker:", err);
+          setError("Unable to open file picker. Please try again.");
+        }
+      }
+    }, 0);
+  }, [resetForm, setError]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
