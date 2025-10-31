@@ -167,6 +167,9 @@ export default async function RootLayout({
       style={htmlStyle}
       suppressHydrationWarning
     >
+      <head>
+        <title>Envitefy</title>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} antialiased`}
       >
