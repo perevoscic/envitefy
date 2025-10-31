@@ -272,12 +272,12 @@ export default function LoginHero() {
           Welcome to
         </p>
         <p
-          className="mt-2 text-5xl md:text-7xl tracking-tight text-white pb-3"
+          className="mt-2 text-6xl md:text-9xl tracking-tight text-white pb-3"
           role="heading"
           aria-level={1}
         >
           <span className="font-pacifico">
-            <span className="text-[#ffffff]">env</span>
+            <span className="text-[#ffffff]">Env</span>
             <span className="text-[#ee3c2b]">i</span>
             <span className="text-[#ffffff]">tefy</span>
           </span>

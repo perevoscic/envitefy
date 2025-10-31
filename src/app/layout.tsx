@@ -45,10 +45,15 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
+  // Title must match Google OAuth consent screen app name exactly: "Envitefy"
   title: "Envitefy",
   description:
     "Turn flyers, invites, and schedules into shareable plans in seconds. Create birthday, wedding, and other events and share them with your friends. Smart Sign-up forms for school, volunteer, and more.",
   manifest: "/manifest.webmanifest",
+  other: {
+    "google-adsense-account": "ca-pub-8853590530457369",
+    "impact-site-verification": "4423e484-94c7-440d-9dba-4fd92408244a",
+  },
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

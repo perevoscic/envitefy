@@ -94,17 +94,20 @@ export default function Home() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
-  const parseStartToIso = useCallback((value: string | null, timezone: string) => {
-    if (!value) return null;
-    try {
-      const isoDate = new Date(value);
-      if (!Number.isNaN(isoDate.getTime())) return isoDate.toISOString();
-    } catch {
-      // ignore
-    }
-    const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
-    return parsed ? new Date(parsed.getTime()).toISOString() : null;
-  }, []);
+  const parseStartToIso = useCallback(
+    (value: string | null, timezone: string) => {
+      if (!value) return null;
+      try {
+        const isoDate = new Date(value);
+        if (!Number.isNaN(isoDate.getTime())) return isoDate.toISOString();
+      } catch {
+        // ignore
+      }
+      const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
+      return parsed ? new Date(parsed.getTime()).toISOString() : null;
+    },
+    []
+  );
 
   const normalizeAddress = useCallback((raw: string) => {
     if (!raw) return "";
@@ -298,9 +301,7 @@ export default function Home() {
       timezone: ready.timezone || "America/Chicago",
       ...(ready.reminders && ready.reminders.length
         ? {
-            reminders: ready.reminders
-              .map((r) => String(r.minutes))
-              .join(","),
+            reminders: ready.reminders.map((r) => String(r.minutes)).join(","),
           }
         : {}),
     }).toString();
@@ -379,12 +380,12 @@ export default function Home() {
       <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
         <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
         <p
-          className="mt-2 text-3xl md:text-7xl tracking-tight text-white pb-3 pt-2"
+          className="mt-2 text-7xl md:text-9xl tracking-tight text-white pb-3 pt-2"
           role="heading"
           aria-level={1}
         >
           <span className="font-pacifico">
-            <span className="text-[#0e7bc4]">env</span>
+            <span className="text-[#0e7bc4]">Env</span>
             <span className="text-[#ee3c2b]">i</span>
             <span className="text-[#0e7bc4]">tefy</span>
           </span>
@@ -487,8 +488,8 @@ export default function Home() {
               Snap or upload an invitation to start.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Works with photos, screenshots, and PDFs. We&apos;ll parse the details
-              automatically and let you tweak them here.
+              Works with photos, screenshots, and PDFs. We&apos;ll parse the
+              details automatically and let you tweak them here.
             </p>
           </div>
         ) : null}
