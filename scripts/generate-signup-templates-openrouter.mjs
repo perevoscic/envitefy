@@ -81,9 +81,9 @@ const TONE = {
   "fundraising-and-food": "Inviting communal feel; uncluttered event layout.", // Match folder name
   "family-and-personal": "Cozy celebration tone; relaxed, candid feel.",
   "business-and-professional": "Clean, modern professional tone.",
-  "health-fitness": "Active, energetic tone; clean modern fitness space.",
+  "health-and-fitness": "Active, energetic tone; clean modern fitness space.",
   "parties-and-events": "Celebratory, festive tone; party decorations, joyful atmosphere.",
-  "clubs-groups": "Friendly group activity tone; shared interest, community gathering.",
+  "clubs-and-groups": "Friendly group activity tone; shared interest, community gathering.",
   "other-special-interest": "Neutral modern styling tailored to subject.",
   "general": "Clean, inclusive tone for organizational and community gatherings."
 };
@@ -113,17 +113,17 @@ const PROMPTS_FALL = {
   "fall-and-seasonal::autumn-blessings":
     "Outdoor scenic hills with glowing autumn trees and soft clouds; calm, contemplative; no religious symbols or people.",
   "fall-and-seasonal::thanksgiving-feast":
-    "Casual group meal—shared table with covered dishes and harvest décor; adults and kids; no logos or text.",
+    "Thanksgiving feast celebration—shared table with covered dishes, Thanksgiving turkey, harvest décor, and Thanksgiving meal; families gathered for Thanksgiving feast; adults and kids; no logos or text.",
   "fall-and-seasonal::friendsgiving":
-    "Relaxed dining/picnic vibe—simple table setting or blankets, lanterns; adults and kids together; cozy and informal.",
+    "Friendsgiving celebration—relaxed dining/picnic vibe with Friendsgiving meal; simple table setting or blankets, lanterns; friends gathered for Friendsgiving; adults and kids together; cozy and informal.",
   "fall-and-seasonal::fall-food":
     "Still life of autumn foods—pies, apples, cider jars on wooden trays; no people.",
   "fall-and-seasonal::fall-leaves":
     "Simple outdoor landscape with colorful foliage and drifting leaves over a quiet path; no people.",
   "fall-and-seasonal::fall-y-all":
-    "Outdoor casual hangout—quilts on lawn seating, lanterns; adults and kids; cozy evening.",
+    "Fall y'all casual hangout—outdoor casual fall gathering with 'fall y'all' theme; quilts on lawn seating, lanterns; adults and kids; cozy evening fall gathering.",
   "fall-and-seasonal::fall-festival":
-    "Outdoor small fair—little booths, game-station cues, bunting; families mingling; no corporate signage.",
+    "Fall festival celebration—outdoor fall festival with small fair booths, game-station cues, bunting; families mingling at fall festival; no corporate signage.",
   "fall-and-seasonal::fall-pumpkins":
     "Outdoor still life—cluster of pumpkins on hay with fallen leaves; no people or carving tools."
 };
@@ -376,39 +376,39 @@ const PROMPTS_OTHER = {
 
 // ------------------------- HEALTH & FITNESS -------------------------
 const PROMPTS_HEALTH_FITNESS = {
-  "health-fitness::fitness-class":
+  "health-and-fitness::fitness-class":
     "Indoor fitness studio—mixed ages doing light stretches or aerobics on mats; clean minimal room; friendly instructor guiding.",
-  "health-fitness::yoga-class":
+  "health-and-fitness::yoga-class":
     "Indoor yoga studio—mats arranged in rows, people in yoga poses; calm peaceful atmosphere; instructor at front.",
-  "health-fitness::pilates-class":
+  "health-and-fitness::pilates-class":
     "Pilates studio—reformers or mats, participants with instructor; focused workout session; clean modern space.",
-  "health-fitness::spin-class":
+  "health-and-fitness::spin-class":
     "Indoor cycling studio—stationary bikes in rows, participants cycling; energetic instructor at front; bright motivational atmosphere.",
-  "health-fitness::zumba-class":
+  "health-and-fitness::zumba-class":
     "Dance fitness class—participants following energetic instructor, upbeat music vibe; diverse group; fun active mood.",
-  "health-fitness::bootcamp-class":
+  "health-and-fitness::bootcamp-class":
     "Outdoor bootcamp—participants doing exercises in park or field; trainer leading group; energetic workout session.",
-  "health-fitness::dance-class":
+  "health-and-fitness::dance-class":
     "Dance studio—mirrored walls, participants learning choreography; dance instructor teaching; friendly artistic atmosphere.",
-  "health-fitness::morning-run":
+  "health-and-fitness::morning-run":
     "Outdoor morning run—runners on park trail or sidewalk; early light; mixed group including kids and adults.",
-  "health-fitness::cycling-club":
+  "health-and-fitness::cycling-club":
     "Outdoor cycling group—cyclists with bikes on path or road; cycling gear; friendly group ride atmosphere.",
-  "health-fitness::crossfit-session":
+  "health-and-fitness::crossfit-session":
     "CrossFit gym—equipment visible (bars, weights, boxes); participants doing high-intensity exercises; coach supervising; energetic vibe.",
-  "health-fitness::martial-arts-class":
+  "health-and-fitness::martial-arts-class":
     "Martial arts dojo—participants in uniform practicing moves; instructor demonstrating; respectful disciplined atmosphere.",
-  "health-fitness::boxing-class":
+  "health-and-fitness::boxing-class":
     "Boxing gym—punching bags and gloves; participants training with coach; focused workout session; energetic atmosphere.",
-  "health-fitness::swimming-lessons":
+  "health-and-fitness::swimming-lessons":
     "Swimming pool—swim lanes visible; instructor teaching kids or adults; swimming aids visible; clean aquatic facility.",
-  "health-fitness::tennis-club":
+  "health-and-fitness::tennis-club":
     "Tennis courts—players on courts with rackets; nets and court lines visible; friendly competitive atmosphere; outdoor or indoor facility.",
-  "health-fitness::basketball-league":
+  "health-and-fitness::basketball-league":
     "Basketball court—players shooting or dribbling; hoops and court markings visible; league game atmosphere; indoor or outdoor court.",
-  "health-fitness::volleyball-league":
+  "health-and-fitness::volleyball-league":
     "Volleyball court—net visible, players in position; volleyball in play; league match atmosphere; sand or indoor court.",
-  "health-fitness::wellness-workshop":
+  "health-and-fitness::wellness-workshop":
     "Wellness workshop—participants seated in circle or rows; instructor presenting; calm educational atmosphere; wellness-focused setting."
 };
 
@@ -466,66 +466,66 @@ const PROMPTS_GENERAL = {
 
 // -------------------------------- CLUBS & GROUPS --------------------------------
 const PROMPTS_CLUBS_GROUPS = {
-  "clubs-groups::baseball-club":
-    "Baseball club practice—players in baseball uniforms with gloves, bats, and helmets; pitcher throwing or batter at plate; baseball diamond with bases and pitcher's mound clearly visible; team members in dugout or on field; outdoor baseball field; NOT soccer or football.",
-  "clubs-groups::basketball-club":
-    "Basketball club practice—players in basketball jerseys dribbling or shooting basketballs; basketball hoops and court clearly visible; polished indoor court with three-point line and key; players practicing layups or free throws; basketball club activity; NOT volleyball or tennis.",
-  "clubs-groups::bike-club":
-    "Bike club group ride—cyclists on bicycles with helmets, wearing cycling gear, riding together on road or trail; multiple bikes visible; scenic route with cyclists in formation; cycling club outing; NOT running or walking.",
-  "clubs-groups::bird-watching-group":
-    "Bird watching group—people with binoculars and bird field guides, observing birds in natural habitat; group members pointing or looking through binoculars; forest, marsh, or park setting; bird watching activity with spotting scopes or cameras; nature observation club; NOT hiking or fishing.",
-  "clubs-groups::book-club":
-    "Book club meeting—group of adults seated around table or in circle, each holding open books; diverse participants discussing literature; books stacked on table; cozy indoor setting like library or living room; all people with fully visible heads and faces, no heads cropped; book club discussion; NOT reading group or writing group.",
-  "clubs-groups::cheerleading-club":
-    "Cheerleading club practice—cheerleaders in uniforms with pom-poms performing stunts or routines; pyramid formations or jumps; gymnasium or outdoor field; cheerleading squad practicing cheers; athletic cheerleading activity; NOT dance or gymnastics.",
-  "clubs-groups::cooking-group":
-    "Cooking group activity—people in aprons actively cooking in kitchen, chopping vegetables, stirring pots on stove; fresh ingredients and cutting boards visible; group cooking together; cooking club meeting in commercial or home kitchen; culinary group activity; NOT baking.",
-  "clubs-groups::crocheting-group":
-    "Crocheting group meeting—people crocheting with yarn and crochet hooks; half-finished crochet projects visible like blankets, scarves, or hats; colorful yarn balls on table; crocheters working together in cozy setting; crocheting club activity; NOT knitting or sewing.",
-  "clubs-groups::dance-club":
-    "Dance club rehearsal—dancers practicing choreography in dance studio; mirrored walls and dance floor clearly visible; dancers in dance attire performing moves; dance club practice session; artistic dance studio atmosphere; NOT cheerleading or fitness class.",
-  "clubs-groups::drive-group":
-    "Drive group car meetup—classic cars, sports cars, or unique vehicles parked together; car enthusiasts admiring vehicles; scenic location like overlook or parking lot; automotive club gathering with multiple cars; car club meetup; NOT family road trip.",
-  "clubs-groups::fisherman-group":
-    "Fisherman group fishing trip—people with fishing rods and tackle boxes fishing from pier, riverbank, or boat; fishing gear and bait visible; calm water with fishing activity; fishing club outing; outdoor fishing group; NOT bird watching or hiking.",
-  "clubs-groups::football-club":
-    "Football club practice—players in football uniforms with helmets, pads, and football; players in formation or running plays; football field with yard markers and goalposts visible; football team practicing; American football club activity; NOT soccer or baseball.",
-  "clubs-groups::gardening-group":
-    "Gardening group in community garden—people with gardening tools like trowels, watering cans, and gloves tending plants; raised garden beds with vegetables or flowers visible; gardeners planting or harvesting; community garden setting; gardening club activity; NOT landscaping or nature walk.",
-  "clubs-groups::golf-club":
-    "Golf club on golf course—golfers in golf attire with golf clubs swinging or putting; golf course with putting green, fairway, and flag visible; golf cart or golf bag nearby; golf club activity; outdoor golf course setting; NOT tennis or other sports.",
-  "clubs-groups::hiking-club":
-    "Hiking club on trail—group of hikers with backpacks and hiking boots on mountain or forest trail; hiking poles and gear visible; scenic natural landscape; hikers walking together on trail; hiking club outing; NOT running or casual walk.",
-  "clubs-groups::horseback-riding-group":
-    "Horseback riding group on trail—riders on horses with equestrian gear and helmets; horses trotting or walking on trail; scenic outdoor setting; horseback riding club activity; equestrian trail ride; NOT other outdoor activities.",
-  "clubs-groups::knitting-group":
-    "Knitting group meeting—people knitting with yarn and knitting needles; knitted projects in progress like sweaters, scarves, or socks visible; colorful yarn balls and knitting needles; knitters working together in cozy setting; knitting club activity; NOT crocheting or sewing.",
-  "clubs-groups::painting-group":
-    "Painting group in art studio—artists at easels with canvases, paint brushes, and palettes; paint tubes and brushes visible; colorful paints on palettes; painting club members creating artwork; art studio with easels; artistic painting activity; NOT pottery or drawing.",
-  "clubs-groups::pottery-group":
-    "Pottery group in ceramic studio—people working with clay on pottery wheels or hand-building; pottery wheels spinning; clay, tools, and finished ceramic pieces visible; pottery club members creating pottery; ceramic studio with kilns in background; pottery making activity; NOT painting or sculpture.",
-  "clubs-groups::quilting-group":
-    "Quilting group meeting—quilters working on quilts with fabric squares and quilting tools; sewing machines and colorful fabric pieces visible; quilt patterns and batting visible; quilting club members piecing together quilts; textile art activity; NOT sewing or crafting.",
-  "clubs-groups::reading-group":
-    "Reading group session—people individually reading books silently or discussing; books open on laps or tables; quiet reading atmosphere; reading group members with books; cozy library or reading room setting; reading club activity; NOT book club discussion.",
-  "clubs-groups::rock-climbing-club":
-    "Rock climbing club at indoor gym—climbers with harnesses and climbing shoes on colorful indoor climbing wall; climbing ropes and carabiners visible; multiple climbers on different routes; rock climbing gym with various wall features; indoor rock climbing club activity; NOT outdoor hiking or bouldering.",
-  "clubs-groups::running-club":
-    "Running club group run—runners in athletic gear running together on path or track; running shoes and running attire visible; group of runners jogging together; running club organized run; outdoor running activity; NOT walking or cycling.",
-  "clubs-groups::sewing-group":
-    "Sewing group in craft room—people at sewing machines or hand-sewing fabric; fabric pieces, patterns, and sewing supplies visible; sewing machines with fabric; sewing club members creating garments or crafts; textile sewing activity; NOT quilting or embroidery.",
-  "clubs-groups::soccer-club":
-    "Soccer club practice or game—players in soccer jerseys with soccer ball on green field; soccer goals clearly visible at each end; players dribbling, passing, or shooting; soccer club team activity; outdoor or indoor soccer field; NOT football or other sports.",
-  "clubs-groups::swim-club":
-    "Swim club at pool—swimmers in swimming caps and goggles in pool lanes; swim lanes with lane lines clearly visible; swimmers practicing strokes; indoor or outdoor swimming pool; swim club training session; aquatic swimming activity; NOT water polo or diving.",
-  "clubs-groups::tennis-club":
-    "Tennis club on court—tennis players with rackets hitting tennis balls over net; tennis court with net, baseline, and service boxes visible; tennis players in action; tennis club match or practice; outdoor or indoor tennis court; NOT other racket sports.",
-  "clubs-groups::volleyball-club":
-    "Volleyball club on court—volleyball players jumping and hitting volleyball over net; volleyball net and court boundaries clearly visible; players in volleyball positions; volleyball club practice or game; indoor or sand volleyball court; NOT basketball or tennis.",
-  "clubs-groups::writing-group":
-    "Writing group workshop—writers with notebooks, laptops, or pens writing; writing materials and papers visible; writers working individually or sharing work; writing club meeting in cafe or library; creative writing group activity; NOT reading or book club.",
-  "clubs-groups::baking-group":
-    "Baking group in kitchen—bakers in aprons mixing dough, decorating cakes, or using oven; baking ingredients like flour, sugar, and mixing bowls visible; baked goods like cookies, cakes, or pastries; baking club activity; kitchen with baking equipment; NOT cooking savory dishes."
+  "clubs-and-groups::baseball-club":
+    "Clubs & Groups category, Baseball Club activity—baseball club practice session with players wearing baseball uniforms, baseball gloves, bats, and helmets; pitcher on mound throwing baseball or batter at home plate; baseball diamond field with four bases (first, second, third, home), pitcher's mound, and infield clearly visible; team members in dugout and fielders positioned; outdoor baseball field with outfield fence; all people with fully visible heads and faces; baseball club team activity; NOT soccer, football, softball, or other sports.",
+  "clubs-and-groups::basketball-club":
+    "Clubs & Groups category, Basketball Club activity—basketball club practice session with players wearing basketball jerseys dribbling or shooting basketballs; basketball hoops with nets mounted on backboards clearly visible; polished indoor basketball court with three-point arc, free-throw line, key area, and center circle; players practicing layups, jump shots, or free throws; basketball club team activity; all people with fully visible heads and faces; NOT volleyball, tennis, or other sports.",
+  "clubs-and-groups::bike-club":
+    "Clubs & Groups category, Bike Club activity—bike club group ride with cyclists riding bicycles wearing helmets and cycling gear; multiple bicycles visible; cyclists riding together in formation on road or trail; cycling club organized group ride outing; scenic route with cyclists; all people with fully visible heads and faces; bike club cycling activity; NOT running, walking, motorcycling, or other activities.",
+  "clubs-and-groups::bird-watching-group":
+    "Clubs & Groups category, Bird Watching Group activity—bird watching group outing with people holding binoculars and bird field guides, observing birds in natural habitat; group members pointing toward birds or looking through binoculars; forest, marsh, wetland, or park setting; bird watching activity with spotting scopes or cameras; nature observation club; all people with fully visible heads and faces; bird watching group activity; NOT hiking, fishing, wildlife photography, or other outdoor activities.",
+  "clubs-and-groups::book-club":
+    "Clubs & Groups category, Book Club activity—book club meeting with group of adults seated around table or in circle, each person holding open books; diverse participants actively discussing literature; multiple books stacked on table; cozy indoor setting like library, living room, or cafe; all people with fully visible heads and faces, no heads cropped; book club discussion session; NOT reading group silent reading or writing group.",
+  "clubs-and-groups::cheerleading-club":
+    "Clubs & Groups category, Cheerleading Club activity—cheerleading club practice with cheerleaders wearing uniforms holding pom-poms, performing stunts, jumps, or cheers; pyramid formations or group routines; gymnasium or outdoor athletic field; cheerleading squad practicing coordinated cheers; athletic cheerleading club activity; all people with fully visible heads and faces; NOT dance class, gymnastics, or fitness class.",
+  "clubs-and-groups::cooking-group":
+    "Clubs & Groups category, Cooking Group activity—cooking group meeting with people wearing aprons actively cooking in kitchen; participants chopping vegetables on cutting boards, stirring pots on stove, or preparing ingredients; fresh ingredients, vegetables, herbs, and cooking utensils visible; group cooking together collaboratively; cooking club meeting in commercial or home kitchen; all people with fully visible heads and faces; culinary group cooking savory dishes; NOT baking group with desserts.",
+  "clubs-and-groups::crocheting-group":
+    "Clubs & Groups category, Crocheting Group activity—crocheting group meeting with people crocheting using yarn and crochet hooks; half-finished crochet projects visible like blankets, scarves, hats, or amigurumi; colorful yarn balls and skeins on table; crocheters working together in cozy setting; crocheting club activity; all people with fully visible heads and faces; NOT knitting group with knitting needles or sewing group.",
+  "clubs-and-groups::dance-club":
+    "Clubs & Groups category, Dance Club activity—dance club rehearsal with dancers practicing choreography in dance studio; mirrored walls and hardwood dance floor clearly visible; dancers in dance attire performing dance moves or routines; dance club practice session; artistic dance studio atmosphere; all people with fully visible heads and faces; NOT cheerleading, fitness class, or aerobics.",
+  "clubs-and-groups::drive-group":
+    "Clubs & Groups category, Drive Group activity—drive group car meetup with classic cars, sports cars, or unique vehicles parked together; car enthusiasts admiring and discussing vehicles; scenic location like overlook, parking lot, or car show venue; automotive club gathering with multiple diverse cars; car club meetup; all people with fully visible heads and faces; NOT family road trip or single vehicle.",
+  "clubs-and-groups::fisherman-group":
+    "Clubs & Groups category, Fisherman Group activity—fisherman group fishing trip with people holding fishing rods and tackle boxes; participants fishing from pier, riverbank, boat, or dock; fishing gear including rods, reels, tackle boxes, and bait visible; calm water with fishing activity; fishing club organized outing; all people with fully visible heads and faces; outdoor fishing group activity; NOT bird watching, hiking, or boating.",
+  "clubs-and-groups::football-club":
+    "Clubs & Groups category, Football Club activity—football club practice with players wearing football uniforms including helmets, shoulder pads, and football; players in offensive or defensive formation or running plays; American football field with yard markers, goal lines, and goalposts clearly visible; football team practicing drills; all people with fully visible heads and faces; American football club activity; NOT soccer, rugby, or baseball.",
+  "clubs-and-groups::gardening-group":
+    "Clubs & Groups category, Gardening Group activity—gardening group in community garden with people using gardening tools like trowels, watering cans, gloves, and shovels tending plants; raised garden beds with vegetables, flowers, or herbs visible; gardeners planting seeds, watering plants, or harvesting produce; community garden setting with organized plots; gardening club activity; all people with fully visible heads and faces; NOT landscaping work or nature walk.",
+  "clubs-and-groups::golf-club":
+    "Clubs & Groups category, Golf Club activity—golf club on golf course with golfers wearing golf attire swinging golf clubs; golf course setting with putting green, fairway, rough, and flagstick visible; golf cart or golf bag with clubs nearby; golf club organized activity; outdoor golf course setting; all people with fully visible heads and faces; NOT tennis, mini-golf, or other sports.",
+  "clubs-and-groups::hiking-club":
+    "Clubs & Groups category, Hiking Club activity—hiking club on trail with group of hikers wearing backpacks and hiking boots on mountain or forest trail; hiking poles and outdoor gear visible; scenic natural landscape with trail path; hikers walking together on trail; hiking club organized outing; all people with fully visible heads and faces; NOT running club, casual walk, or mountaineering.",
+  "clubs-and-groups::horseback-riding-group":
+    "Clubs & Groups category, Horseback Riding Group activity—horseback riding group on trail with riders on horses wearing equestrian gear and helmets; horses trotting or walking on trail; scenic outdoor setting like trail or open field; horseback riding club organized trail ride; equestrian activity; all people with fully visible heads and faces; NOT other outdoor activities without horses.",
+  "clubs-and-groups::knitting-group":
+    "Clubs & Groups category, Knitting Group activity—knitting group meeting with people knitting using yarn and knitting needles; knitted projects in progress like sweaters, scarves, socks, or hats visible; colorful yarn balls and knitting needles on table; knitters working together in cozy setting; knitting club activity; all people with fully visible heads and faces; NOT crocheting with hooks or sewing.",
+  "clubs-and-groups::painting-group":
+    "Clubs & Groups category, Painting Group activity—painting group in art studio with artists at easels painting on canvases using paint brushes and palettes; paint tubes, brushes, and water containers visible; colorful paints on palettes; painting club members creating artwork; art studio with multiple easels; artistic painting activity; all people with fully visible heads and faces; NOT pottery, drawing, or sculpture.",
+  "clubs-and-groups::pottery-group":
+    "Clubs & Groups category, Pottery Group activity—pottery group in ceramic studio with people working with clay on pottery wheels or hand-building pottery; pottery wheels spinning with clay on them; clay, pottery tools, and finished ceramic pieces like bowls or vases visible; pottery club members creating pottery; ceramic studio with kilns in background; all people with fully visible heads and faces; pottery making activity; NOT painting or sculpture.",
+  "clubs-and-groups::quilting-group":
+    "Clubs & Groups category, Quilting Group activity—quilting group meeting with quilters working on quilts using fabric squares and quilting tools; sewing machines and colorful fabric pieces visible; quilt patterns, batting, and quilt frames visible; quilting club members piecing together quilt blocks; textile art quilting activity; all people with fully visible heads and faces; NOT sewing garments or crafting.",
+  "clubs-and-groups::reading-group":
+    "Clubs & Groups category, Reading Group activity—reading group session with people individually reading books silently or quietly discussing; books open on laps, tables, or held in hands; quiet reading atmosphere; reading group members with books; cozy library or reading room setting; all people with fully visible heads and faces; reading club activity; NOT book club discussion or writing group.",
+  "clubs-and-groups::rock-climbing-club":
+    "Clubs & Groups category, Rock Climbing Club activity—rock climbing club at indoor gym with climbers wearing harnesses and climbing shoes on colorful indoor climbing wall; climbing ropes, carabiners, and safety equipment visible; multiple climbers on different climbing routes; rock climbing gym with various wall features like holds and overhangs; all people with fully visible heads and faces; indoor rock climbing club activity; NOT outdoor hiking or bouldering.",
+  "clubs-and-groups::running-club":
+    "Clubs & Groups category, Running Club activity—running club group run with runners in athletic gear running together on path or track; running shoes and running attire including shorts and shirts visible; group of runners jogging together; running club organized group run; outdoor running activity on trail or track; all people with fully visible heads and faces; NOT walking, cycling, or other activities.",
+  "clubs-and-groups::sewing-group":
+    "Clubs & Groups category, Sewing Group activity—sewing group in craft room with people at sewing machines or hand-sewing fabric; fabric pieces, patterns, and sewing supplies like thread and scissors visible; sewing machines with fabric being sewn; sewing club members creating garments or crafts; textile sewing activity; all people with fully visible heads and faces; NOT quilting or embroidery.",
+  "clubs-and-groups::soccer-club":
+    "Clubs & Groups category, Soccer Club activity—soccer club practice or game with players wearing soccer jerseys with soccer ball on green field; soccer goals with nets clearly visible at each end of field; players dribbling, passing, or shooting soccer ball; soccer club team activity; outdoor or indoor soccer field with field markings; all people with fully visible heads and faces; NOT football, rugby, or other sports.",
+  "clubs-and-groups::swim-club":
+    "Clubs & Groups category, Swim Club activity—swim club at pool with swimmers in swimming caps and goggles swimming in pool lanes; swim lanes with lane lines and lane markers clearly visible; swimmers practicing swimming strokes; indoor or outdoor swimming pool facility; swim club training session; aquatic swimming activity; all people with fully visible heads and faces; NOT water polo, diving, or synchronized swimming.",
+  "clubs-and-groups::tennis-club":
+    "Clubs & Groups category, Tennis Club activity—tennis club on court with tennis players holding rackets hitting tennis balls over net; tennis court with net, baseline, service boxes, and court lines clearly visible; tennis players in action playing or practicing; tennis club match or practice session; outdoor or indoor tennis court facility; all people with fully visible heads and faces; NOT pickleball, badminton, or other racket sports.",
+  "clubs-and-groups::volleyball-club":
+    "Clubs & Groups category, Volleyball Club activity—volleyball club on court with volleyball players jumping and hitting volleyball over net; volleyball net and court boundaries clearly visible; players in volleyball positions like serving, spiking, or setting; volleyball club practice or game; indoor or sand volleyball court; all people with fully visible heads and faces; NOT basketball, beach volleyball for recreation, or tennis.",
+  "clubs-and-groups::writing-group":
+    "Clubs & Groups category, Writing Group activity—writing group workshop with writers using notebooks, laptops, or pens writing; writing materials and papers visible; writers working individually or sharing written work; writing club meeting in cafe, library, or writing space; creative writing group activity; all people with fully visible heads and faces; NOT reading group or book club discussion.",
+  "clubs-and-groups::baking-group":
+    "Clubs & Groups category, Baking Group activity—baking group in kitchen with bakers in aprons mixing dough, decorating cakes, or using oven; baking ingredients like flour, sugar, eggs, and mixing bowls visible; baked goods like cookies, cakes, pastries, or bread visible; baking club activity; kitchen with baking equipment including mixers and baking pans; all people with fully visible heads and faces; NOT cooking group with savory dishes."
 };
 
 
@@ -560,9 +560,9 @@ const CATEGORY_FOLDER_MAP = {
   "Fundraising & Food": "fundraising-and-food",
   "Family & Personal": "family-and-personal",
   "Business & Professional": "business-and-professional",
-  "Health & Fitness": "health-fitness",
+  "Health & Fitness": "health-and-fitness",
   "Parties & Events": "parties-and-events",
-  "Clubs & Groups": "clubs-groups",
+  "Clubs & Groups": "clubs-and-groups",
   "Other / Special Interest": "other-special-interest",
   "General": "general",
 };

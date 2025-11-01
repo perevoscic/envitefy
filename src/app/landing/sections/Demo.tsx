@@ -23,8 +23,29 @@ export default function Demo() {
     setLoading(true);
     setError(null);
     setEvent(null);
+
+    // On Android, file objects from file inputs can become invalid during async upload.
+    // Read the file into memory first to capture the data before it becomes stale.
+    let fileToUpload: File = file;
+    try {
+      // Read file into ArrayBuffer, then create a new File from it
+      // This ensures the data is captured in memory before the original file reference becomes stale
+      const arrayBuffer = await file.arrayBuffer();
+      fileToUpload = new File([arrayBuffer], file.name, {
+        type: file.type || "application/octet-stream",
+        lastModified: file.lastModified,
+      });
+    } catch (readErr) {
+      // If reading fails, fall back to using the original file object
+      // (works on most platforms but may fail on Android)
+      console.warn(
+        "Failed to read file into memory, using original file object:",
+        readErr
+      );
+    }
+
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", fileToUpload);
     let res: Response;
     try {
       const controller = new AbortController();
