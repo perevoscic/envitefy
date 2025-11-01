@@ -447,7 +447,7 @@ export default function Home() {
       <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
         <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
         <p
-          className="mt-2 text-7xl md:text-9xl tracking-tight text-white pb-3 pt-2"
+          className="mt-2 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-2"
           role="heading"
           aria-level={1}
         >
@@ -458,12 +458,11 @@ export default function Home() {
           </span>
         </p>
       </div>
-      <div className="grid w-full max-w-6xl grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
+      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4">
         <OptionCard
           title="Snap Event"
-          description="Add it to your calendar instantly."
           details={[
-            "Use your camera to capture invitations right into Envitefy.",
+            "Use your camera to",
             "Extracts dates, locations, and RSVP details automatically.",
           ]}
           artwork={<ScanIllustration />}
@@ -472,7 +471,6 @@ export default function Home() {
         />
         <OptionCard
           title="Upload Event"
-          description="Turn a saved flyer into an event."
           details={[
             "Drop PDFs, screenshots, or photos from your library.",
             "Smart cleanup handles decorative fonts and tricky layouts.",
@@ -483,7 +481,6 @@ export default function Home() {
         />
         <OptionCard
           title="Create Event"
-          description="Use advanced creation tools."
           details={[
             "Start from scratch with precise times, reminders, and notes.",
             "Add recurrence rules, categories, and custom reminders.",
@@ -494,7 +491,6 @@ export default function Home() {
         />
         <OptionCard
           title="Sign-Up Form"
-          description="Perfect for school events or volunteers."
           details={[
             "Build RSVP and volunteer sheets with slot limits and questions.",
             "Share a single link that syncs responses in real time.",
@@ -1003,7 +999,6 @@ function OptionCard({
   href,
   title,
   artwork,
-  description,
   details,
   tone = "primary",
   onClick,
@@ -1011,7 +1006,6 @@ function OptionCard({
   href?: string;
   title: string;
   artwork: ReactNode;
-  description: string;
   details?: string[];
   tone?: HighlightTone;
   onClick?: () => void;
@@ -1104,7 +1098,7 @@ function OptionCard({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
           <div className="relative w-full">{artwork}</div>
         </div>
-        <h2 className="text-sm md:text-base font-semibold text-foreground">
+        <h2 className="text-xs md:text-sm font-semibold text-foreground">
           {title}
         </h2>
       </div>
@@ -1143,15 +1137,12 @@ function OptionCard({
       />
       <div className="relative mx-auto flex max-w-xs flex-1 flex-col justify-center gap-3 md:gap-4 text-center">
         <div className="space-y-1.5 md:space-y-2">
-          <h2 className="text-base md:text-lg font-semibxold text-foreground">
+          <h2 className="text-sm md:text-base font-semibold text-foreground">
             {title}
           </h2>
-          <p className="text-xs md:text-sm text-muted-foreground">
-            {description}
-          </p>
         </div>
         {details?.length ? (
-          <ul className="space-y-1.5 md:space-y-2 text-left text-xs md:text-sm text-muted-foreground">
+          <ul className="space-y-1.5 md:space-y-2 text-left text-xs text-muted-foreground">
             {details.map((item) => (
               <li key={item} className="flex items-start gap-2">
                 <span className="mt-[0.35rem] md:mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-current opacity-60" />
