@@ -56,27 +56,29 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=v3", sizes: "any" },
+      { url: "/icons/icon-192.png?v=v3", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=v3", sizes: "512x512", type: "image/png" },
       {
-        url: "/icons/maskable-icon-192.png",
+        url: "/icons/maskable-icon-192.png?v=v3",
         sizes: "192x192",
         type: "image/png",
         rel: "mask-icon" as any,
       },
       {
-        url: "/icons/maskable-icon-512.png",
+        url: "/icons/maskable-icon-512.png?v=v3",
         sizes: "512x512",
         type: "image/png",
         rel: "mask-icon" as any,
       },
     ],
     apple: [
-      { url: "/icons/apple-touch-icon-120.png", sizes: "120x120" },
-      { url: "/icons/apple-touch-icon-152.png", sizes: "152x152" },
-      { url: "/icons/apple-touch-icon-167.png", sizes: "167x167" },
-      { url: "/icons/apple-touch-icon-180.png", sizes: "180x180" },
+      { url: "/icons/apple-touch-icon-120.png?v=v3", sizes: "120x120" },
+      { url: "/icons/apple-touch-icon-152.png?v=v3", sizes: "152x152" },
+      { url: "/icons/apple-touch-icon-167.png?v=v3", sizes: "167x167" },
+      { url: "/icons/apple-touch-icon-180.png?v=v3", sizes: "180x180" },
     ],
+    shortcut: [{ url: "/favicon.ico?v=v3" }],
   },
   appleWebApp: {
     capable: true,
@@ -168,7 +170,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <title>Envitefy</title>
+        <title>Envitefy | Create. Share. Enjoy.</title>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} antialiased`}

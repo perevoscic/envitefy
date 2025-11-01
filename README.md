@@ -29,18 +29,18 @@ NEXTAUTH_SECRET=dev-build-secret
 # Optional alternative secret used by auth
 AUTH_SECRET=
 # Public/base URL (used by OAuth callbacks when behind proxies)
-NEXTAUTH_URL=http://localhost:3000
-PUBLIC_BASE_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3001
+PUBLIC_BASE_URL=http://localhost:3001
 
 # Google OAuth / Calendar
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3001/api/google/callback
 
 # Microsoft OAuth / Graph
 OUTLOOK_CLIENT_ID=
 OUTLOOK_CLIENT_SECRET=
-OUTLOOK_REDIRECT_URI=http://localhost:3000/api/outlook/callback
+OUTLOOK_REDIRECT_URI=http://localhost:3001/api/outlook/callback
 OUTLOOK_TENANT_ID=common
 
 # GCP Vision (prefer one of these inline variants)
@@ -63,7 +63,7 @@ PGSSL_CA_BASE64=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-APP_URL=http://localhost:3000
+APP_URL=http://localhost:3001
 ```
 
 Tips:
@@ -83,7 +83,7 @@ npm run db:init
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3001`.
 
 ---
 

@@ -2173,12 +2173,11 @@ export async function POST(request: Request) {
     }
     if (!containsExplicitYear && finalStart instanceof Date) {
       const now = new Date();
-      const dayMs = 24 * 60 * 60 * 1000;
-      const sixtyDaysMs = 60 * dayMs;
       const duration = finalEnd instanceof Date ? finalEnd.getTime() - finalStart.getTime() : null;
       const adjustedStart = new Date(finalStart);
       let shifts = 0;
-      while (adjustedStart.getTime() < now.getTime() - sixtyDaysMs && shifts < 3) {
+      // If date is in the past, shift to next occurrence (next year)
+      while (adjustedStart.getTime() < now.getTime() && shifts < 3) {
         adjustedStart.setFullYear(adjustedStart.getFullYear() + 1);
         shifts += 1;
       }

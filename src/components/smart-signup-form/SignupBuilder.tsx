@@ -538,6 +538,34 @@ const SignupBuilder: React.FC<Props> = ({
     });
   };
 
+  const uploadImageToIndex = async (index: number, file: File) => {
+    const dataUrl = await readFileAsDataUrl(file);
+    const thumb = (await createThumbnailDataUrl(file, 900, 0.9)) || dataUrl;
+    const currentImages = Array.isArray(form.header?.images)
+      ? [...form.header!.images!]
+      : [];
+
+    // Ensure array has enough slots
+    while (currentImages.length <= index) {
+      currentImages.push({
+        id: generateSignupId(),
+        name: "",
+        type: "image/jpeg",
+        dataUrl: "",
+      });
+    }
+
+    // Set the image at the specific index
+    currentImages[index] = {
+      id: currentImages[index]?.id || generateSignupId(),
+      name: file.name,
+      type: file.type,
+      dataUrl: thumb,
+    };
+
+    setHeader({ images: currentImages });
+  };
+
   const addGalleryImages = async (files: FileList | null) => {
     if (!files) return;
     const items: Array<{
@@ -557,9 +585,40 @@ const SignupBuilder: React.FC<Props> = ({
       });
     }
     const current = Array.isArray(form.header?.images)
-      ? form.header!.images!
+      ? [...form.header!.images!]
       : [];
-    setHeader({ images: [...current, ...items] });
+
+    const templateId = form.header?.templateId || "header-1";
+
+    // For templates 5 and 6, if uploading first image (index 0), set it at index 0
+    // For template 4, first image goes to index 0
+    // Otherwise append
+    if (
+      (templateId === "header-4" ||
+        templateId === "header-5" ||
+        templateId === "header-6") &&
+      (!current[0]?.dataUrl || current.length === 0)
+    ) {
+      // Set first image at index 0, preserving any existing images at other indices
+      const newImages = [...current];
+      newImages[0] = items[0];
+      // Add any additional items after index 0
+      if (items.length > 1) {
+        for (let i = 1; i < items.length; i++) {
+          const insertIndex =
+            newImages.findIndex((img) => !img?.dataUrl) || newImages.length;
+          if (insertIndex >= newImages.length) {
+            newImages.push(items[i]);
+          } else {
+            newImages[insertIndex] = items[i];
+          }
+        }
+      }
+      setHeader({ images: newImages });
+    } else {
+      // Append to existing array
+      setHeader({ images: [...current, ...items] });
+    }
   };
 
   const PRESETS: Array<{
@@ -1287,6 +1346,7 @@ const SignupBuilder: React.FC<Props> = ({
 
   const headerFileInputRef = React.useRef<HTMLInputElement | null>(null);
   const galleryFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const uploadTargetIndexRef = React.useRef<number | null>(null);
 
   const handleHeaderFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -1315,6 +1375,11 @@ const SignupBuilder: React.FC<Props> = ({
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
   const lastToggleAtRef = React.useRef(0);
   const overlapRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Gallery image selection modal
+  const [galleryImageIndex, setGalleryImageIndex] = React.useState<
+    number | null
+  >(null);
 
   // Keep the spacer in sync with the preview's live height to avoid jump/IO thrash
   React.useLayoutEffect(() => {
@@ -1725,19 +1790,61 @@ const SignupBuilder: React.FC<Props> = ({
               }
               onPick={React.useCallback(
                 (url: string) => {
-                  setHeader({
-                    backgroundImage: {
-                      name: url.split("/").pop() || "theme-image",
-                      type: "image/jpeg",
-                      dataUrl: url,
-                    },
-                  });
+                  const templateId = form.header?.templateId || "header-1";
+                  const imageObj = {
+                    name: url.split("/").pop() || "theme-image",
+                    type: "image/jpeg",
+                    dataUrl: url,
+                  };
+
+                  // For templates 3, 4, 5, 6, set the first image to images[0]
+                  // For templates 1, 2, set it to backgroundImage
+                  if (
+                    templateId === "header-3" ||
+                    templateId === "header-4" ||
+                    templateId === "header-5" ||
+                    templateId === "header-6"
+                  ) {
+                    const currentImages = Array.isArray(form.header?.images)
+                      ? [...form.header!.images!]
+                      : [];
+                    // Ensure array has at least one slot
+                    if (currentImages.length === 0) {
+                      currentImages.push({
+                        id: generateSignupId(),
+                        ...imageObj,
+                      });
+                    } else {
+                      // Set at index 0, preserving other images
+                      currentImages[0] = {
+                        id: currentImages[0]?.id || generateSignupId(),
+                        ...imageObj,
+                      };
+                    }
+                    setHeader({ images: currentImages });
+                  } else {
+                    // For templates 1 and 2, use backgroundImage
+                    setHeader({
+                      backgroundImage: imageObj,
+                    });
+                  }
                 },
-                [setHeader]
+                [form.header?.templateId, form.header?.images, setHeader]
               )}
               searchQuery={themeImagesQuery}
               allNames={THEME_NAMES as unknown as string[]}
-              selectedUrl={form.header?.backgroundImage?.dataUrl || null}
+              selectedUrl={(() => {
+                const templateId = form.header?.templateId || "header-1";
+                if (
+                  templateId === "header-3" ||
+                  templateId === "header-4" ||
+                  templateId === "header-5" ||
+                  templateId === "header-6"
+                ) {
+                  return form.header?.images?.[0]?.dataUrl || null;
+                }
+                return form.header?.backgroundImage?.dataUrl || null;
+              })()}
             />
             <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
@@ -1921,93 +2028,34 @@ const SignupBuilder: React.FC<Props> = ({
                 ))}
               </div>
             </div>
-            {/* Image placement (grouped uploads) */}
-            <div className="sm:col-span-2 rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3 min-w-0 max-w-full">
-              <label className="block text-xs uppercase tracking-wide text-foreground/60">
-                IMAGE PLACEMENT
-              </label>
-              <div className="grid gap-4 md:grid-cols-2 min-w-0 max-w-full">
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-foreground/60">
-                    Top-left
-                  </label>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <input
-                      ref={headerFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleHeaderFileChange}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => headerFileInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-                    >
-                      Upload header image
-                    </button>
-                    {form.header?.backgroundImage?.dataUrl && (
-                      <img
-                        src={form.header.backgroundImage.dataUrl}
-                        alt="header"
-                        className="h-12 w-12 rounded border border-border object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="text-xs text-foreground/60">
-                    {form.header?.backgroundImage?.name || "No file chosen"}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-foreground/60">
-                    Banner
-                  </label>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <input
-                      ref={galleryFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={async (e) => {
-                        await addGalleryImages(e.target.files);
-                      }}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => galleryFileInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-                    >
-                      Upload gallery images
-                    </button>
-                  </div>
-                  <div className="text-xs text-foreground/60">
-                    {(() => {
-                      const count = Array.isArray(form.header?.images)
-                        ? form.header!.images!.length
-                        : 0;
-                      return count
-                        ? `${count} image${count === 1 ? "" : "s"} selected`
-                        : "No file chosen";
-                    })()}
-                  </div>
-                  {Array.isArray(form.header?.images) &&
-                    form.header!.images!.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {form.header!.images!.map((img) => (
-                          <img
-                            key={img.id}
-                            src={img.dataUrl}
-                            alt={img.name}
-                            className="h-14 w-14 rounded border border-border object-cover"
-                          />
-                        ))}
-                      </div>
-                    )}
-                </div>
-              </div>
-            </div>
+            {/* Hidden file inputs */}
+            <input
+              ref={headerFileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleHeaderFileChange}
+              className="hidden"
+            />
+            <input
+              ref={galleryFileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file && uploadTargetIndexRef.current !== null) {
+                  // Upload to specific index
+                  await uploadImageToIndex(uploadTargetIndexRef.current, file);
+                  uploadTargetIndexRef.current = null;
+                } else {
+                  // Use default behavior (add to gallery)
+                  await addGalleryImages(e.target.files);
+                }
+                // Reset input
+                e.target.value = "";
+              }}
+              className="hidden"
+            />
             {/* Preview (bottom of Basics) */}
             <div className="sm:col-span-2 min-w-0 max-w-full">
               <div className="relative z-10 w-full max-w-[720px] min-w-0">
@@ -2033,17 +2081,80 @@ const SignupBuilder: React.FC<Props> = ({
                       </p>
                       {(form.header?.templateId || "header-1") ===
                         "header-3" && (
-                        <div className="mb-4">
+                        <div className="mb-4 relative">
                           {form.header?.images?.[0]?.dataUrl ? (
-                            <img
-                              src={form.header.images[0].dataUrl}
-                              alt="banner"
-                              className="w-full h-48 sm:h-64 md:h-72 object-cover rounded-xl border border-gray-200"
-                            />
-                          ) : (
-                            <div className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600">
-                              Full-width image
+                            <div className="group relative w-full h-48 sm:h-64 md:h-72 rounded-xl border border-gray-200 overflow-hidden">
+                              <img
+                                src={form.header.images[0].dataUrl}
+                                alt="banner"
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    galleryFileInputRef.current?.click()
+                                  }
+                                  className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                  aria-label="Replace image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4"
+                                  >
+                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newImages =
+                                      form.header?.images?.filter(
+                                        (_, i) => i !== 0
+                                      ) || [];
+                                    setHeader({
+                                      images:
+                                        newImages.length > 0 ? newImages : null,
+                                    });
+                                  }}
+                                  className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                  aria-label="Delete image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4 text-red-600"
+                                  >
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                galleryFileInputRef.current?.click()
+                              }
+                              className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+                            >
+                              Full-width image
+                            </button>
                           )}
                         </div>
                       )}
@@ -2051,32 +2162,357 @@ const SignupBuilder: React.FC<Props> = ({
                         "header-4" && (
                         <div className="relative mb-16">
                           {form.header?.images?.[0]?.dataUrl ? (
-                            <img
-                              src={form.header.images[0].dataUrl}
-                              alt="banner"
-                              className="w-full h-40 sm:h-56 object-cover rounded-xl border border-gray-200"
-                            />
+                            <div className="group relative w-full h-40 sm:h-56 rounded-xl border border-gray-200 overflow-hidden">
+                              <img
+                                src={form.header.images[0].dataUrl}
+                                alt="banner"
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Number label overlay */}
+                              <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
+                                1
+                              </div>
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setGalleryImageIndex(0);
+                                  }}
+                                  className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                  aria-label="Select from gallery"
+                                  title="Select from gallery"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4"
+                                  >
+                                    <rect
+                                      x="3"
+                                      y="3"
+                                      width="18"
+                                      height="18"
+                                      rx="2"
+                                      ry="2"
+                                    />
+                                    <circle cx="9" cy="9" r="2" />
+                                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    uploadTargetIndexRef.current = 0;
+                                    galleryFileInputRef.current?.click();
+                                  }}
+                                  className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                  aria-label="Upload file"
+                                  title="Upload file"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4"
+                                  >
+                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newImages =
+                                      form.header?.images?.filter(
+                                        (_, i) => i !== 0
+                                      ) || [];
+                                    setHeader({
+                                      images:
+                                        newImages.length > 0 ? newImages : null,
+                                    });
+                                  }}
+                                  className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                  aria-label="Delete image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4 text-red-600"
+                                  >
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           ) : (
-                            <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600">
-                              Banner image
+                            <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors p-4">
+                              <span className="text-gray-600 text-sm font-medium">
+                                Banner image
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setGalleryImageIndex(0)}
+                                  className="px-3 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                                  title="Select from gallery"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3 w-3"
+                                  >
+                                    <rect
+                                      x="3"
+                                      y="3"
+                                      width="18"
+                                      height="18"
+                                      rx="2"
+                                      ry="2"
+                                    />
+                                    <circle cx="9" cy="9" r="2" />
+                                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                  </svg>
+                                  Gallery
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    uploadTargetIndexRef.current = 0;
+                                    galleryFileInputRef.current?.click();
+                                  }}
+                                  className="px-3 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5"
+                                  title="Upload file"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3 w-3"
+                                  >
+                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                  </svg>
+                                  Upload
+                                </button>
+                              </div>
                             </div>
                           )}
                           <div className="absolute left-6 -bottom-10">
                             {form.header?.images?.[1]?.dataUrl ? (
-                              <img
-                                src={form.header.images[1].dataUrl}
-                                alt="square"
-                                className="w-40 h-40 object-cover rounded-xl border border-gray-200 shadow-lg"
-                              />
+                              <div className="group relative w-40 h-40 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                                <img
+                                  src={form.header.images[1].dataUrl}
+                                  alt="square"
+                                  className="w-full h-full object-cover"
+                                />
+                                {/* Number label overlay */}
+                                <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+                                  2
+                                </div>
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setGalleryImageIndex(1);
+                                    }}
+                                    className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                    aria-label="Replace image"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-3 w-3"
+                                    >
+                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newImages =
+                                        form.header?.images?.filter(
+                                          (_, i) => i !== 1
+                                        ) || [];
+                                      setHeader({
+                                        images:
+                                          newImages.length > 0
+                                            ? newImages
+                                            : null,
+                                      });
+                                    }}
+                                    className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                    aria-label="Delete image"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-3 w-3 text-red-600"
+                                    >
+                                      <path d="M3 6h18" />
+                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
                             ) : form.header?.backgroundImage?.dataUrl ? (
-                              <img
-                                src={form.header.backgroundImage.dataUrl}
-                                alt="square"
-                                className="w-40 h-40 object-cover rounded-xl border border-gray-200 shadow-lg"
-                              />
+                              <div className="group relative w-40 h-40 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                                <img
+                                  src={form.header.backgroundImage.dataUrl}
+                                  alt="square"
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setGalleryImageIndex(1);
+                                    }}
+                                    className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                    aria-label="Replace image"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-3 w-3"
+                                    >
+                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setHeader({ backgroundImage: null });
+                                    }}
+                                    className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                    aria-label="Delete image"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-3 w-3 text-red-600"
+                                    >
+                                      <path d="M3 6h18" />
+                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
                             ) : (
-                              <div className="w-40 h-40 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 bg-gray-100">
-                                Top-left image
+                              <div className="w-40 h-40 rounded-xl border border-dashed border-gray-200 bg-gray-100 hover:bg-gray-200 transition-colors flex flex-col items-center justify-center gap-2 p-2">
+                                <span className="text-gray-600 text-xs font-medium">
+                                  Top-left image
+                                </span>
+                                <div className="flex flex-col gap-1.5 w-full">
+                                  <button
+                                    type="button"
+                                    onClick={() => setGalleryImageIndex(1)}
+                                    className="px-2 py-1 text-[10px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
+                                    title="Select from gallery"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-2.5 w-2.5"
+                                    >
+                                      <rect
+                                        x="3"
+                                        y="3"
+                                        width="18"
+                                        height="18"
+                                        rx="2"
+                                        ry="2"
+                                      />
+                                      <circle cx="9" cy="9" r="2" />
+                                      <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                    </svg>
+                                    Gallery
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      uploadTargetIndexRef.current = 1;
+                                      galleryFileInputRef.current?.click();
+                                    }}
+                                    className="px-2 py-1 text-[10px] font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
+                                    title="Upload file"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-2.5 w-2.5"
+                                    >
+                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                    </svg>
+                                    Upload
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -2111,15 +2547,72 @@ const SignupBuilder: React.FC<Props> = ({
                             }`}
                           >
                             {form.header?.backgroundImage?.dataUrl ? (
-                              <img
-                                src={form.header.backgroundImage.dataUrl}
-                                alt="header"
-                                className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-gray-200 object-cover"
-                              />
-                            ) : (
-                              <div className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600">
-                                Top-left image
+                              <div className="group relative w-full max-w-[325px] max-h-[325px] rounded-xl border border-gray-200 overflow-hidden">
+                                <img
+                                  src={form.header.backgroundImage.dataUrl}
+                                  alt="header"
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      headerFileInputRef.current?.click();
+                                    }}
+                                    className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                    aria-label="Replace image"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-4 w-4"
+                                    >
+                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setHeader({ backgroundImage: null });
+                                    }}
+                                    className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                    aria-label="Delete image"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-4 w-4 text-red-600"
+                                    >
+                                      <path d="M3 6h18" />
+                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  headerFileInputRef.current?.click()
+                                }
+                                className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+                              >
+                                Top-left image
+                              </button>
                             )}
                           </div>
                         )}
@@ -2149,18 +2642,214 @@ const SignupBuilder: React.FC<Props> = ({
                                 : [0, 1]
                               ).map((i) =>
                                 form.header?.images?.[i]?.dataUrl ? (
-                                  <img
+                                  <div
                                     key={i}
-                                    src={form.header.images[i].dataUrl}
-                                    alt={`image-${i}`}
-                                    className="w-full h-36 object-cover rounded-xl border border-gray-200"
-                                  />
+                                    className="group relative w-full h-36 rounded-xl border border-gray-200 overflow-hidden"
+                                  >
+                                    <img
+                                      src={form.header.images[i].dataUrl}
+                                      alt={`image-${i}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    {/* Number label overlay */}
+                                    <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
+                                      {i + 1}
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (i === 1 || i === 2) {
+                                            setGalleryImageIndex(i);
+                                          } else {
+                                            galleryFileInputRef.current?.click();
+                                          }
+                                        }}
+                                        className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                        aria-label="Replace image"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          className="h-3 w-3"
+                                        >
+                                          <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                          <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const templateId =
+                                            form.header?.templateId ||
+                                            "header-1";
+                                          const currentImages = Array.isArray(
+                                            form.header?.images
+                                          )
+                                            ? [...form.header!.images!]
+                                            : [];
+
+                                          // For templates 5 and 6, preserve array structure by setting to null
+                                          // For other templates, filter out
+                                          if (
+                                            templateId === "header-5" ||
+                                            templateId === "header-6"
+                                          ) {
+                                            const newImages = [
+                                              ...currentImages,
+                                            ];
+                                            newImages[i] = {
+                                              id: generateSignupId(),
+                                              name: "",
+                                              type: "image/jpeg",
+                                              dataUrl: "",
+                                            };
+                                            // Clean up trailing empty images
+                                            while (
+                                              newImages.length > 0 &&
+                                              !newImages[newImages.length - 1]
+                                                ?.dataUrl
+                                            ) {
+                                              newImages.pop();
+                                            }
+                                            setHeader({
+                                              images:
+                                                newImages.length > 0
+                                                  ? newImages
+                                                  : null,
+                                            });
+                                          } else {
+                                            const newImages =
+                                              currentImages.filter(
+                                                (_, idx) => idx !== i
+                                              );
+                                            setHeader({
+                                              images:
+                                                newImages.length > 0
+                                                  ? newImages
+                                                  : null,
+                                            });
+                                          }
+                                        }}
+                                        className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                        aria-label="Delete image"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          className="h-3 w-3 text-red-600"
+                                        >
+                                          <path d="M3 6h18" />
+                                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
                                 ) : (
                                   <div
                                     key={i}
-                                    className="w-full h-36 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600"
+                                    className="relative w-full h-36 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
                                   >
-                                    Image {i + 1}
+                                    <span className="text-gray-600 text-sm">
+                                      Image {i + 1}
+                                    </span>
+                                    <div className="flex gap-2">
+                                      {i === 1 || i === 2 ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setGalleryImageIndex(i)
+                                            }
+                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                                            title="Select from gallery"
+                                          >
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              viewBox="0 0 24 24"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              strokeWidth="2"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              className="h-3 w-3"
+                                            >
+                                              <rect
+                                                x="3"
+                                                y="3"
+                                                width="18"
+                                                height="18"
+                                                rx="2"
+                                                ry="2"
+                                              />
+                                              <circle cx="9" cy="9" r="2" />
+                                              <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                            </svg>
+                                            Gallery
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              uploadTargetIndexRef.current = i;
+                                              galleryFileInputRef.current?.click();
+                                            }}
+                                            className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5"
+                                            title="Upload file"
+                                          >
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              viewBox="0 0 24 24"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              strokeWidth="2"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              className="h-3 w-3"
+                                            >
+                                              <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                              <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                            </svg>
+                                            Upload
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            galleryFileInputRef.current?.click()
+                                          }
+                                          className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-3 w-3"
+                                          >
+                                            <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                            <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                          </svg>
+                                          Upload
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 )
                               )}
@@ -2599,6 +3288,88 @@ const SignupBuilder: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* Gallery image selection modal */}
+      {galleryImageIndex !== null && (
+        <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold">
+                Select Image{" "}
+                {galleryImageIndex === 0
+                  ? "1"
+                  : galleryImageIndex === 1
+                  ? "2"
+                  : galleryImageIndex === 2
+                  ? "3"
+                  : ""}{" "}
+                from Gallery
+              </h3>
+              <button
+                type="button"
+                onClick={() => setGalleryImageIndex(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close modal"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <ThemeImagesCarousel
+                themeName={
+                  (form.header?.designTheme || (THEME_NAMES[0] as any)) as any
+                }
+                onPick={(url) => {
+                  const currentImages = Array.isArray(form.header?.images)
+                    ? [...form.header!.images!]
+                    : [];
+
+                  // Ensure we have enough slots in the array
+                  const newImages = [...currentImages];
+                  while (newImages.length <= galleryImageIndex) {
+                    newImages.push({
+                      id: generateSignupId(),
+                      name: "",
+                      type: "image/jpeg",
+                      dataUrl: "",
+                    });
+                  }
+
+                  // Set the image at the correct index
+                  newImages[galleryImageIndex] = {
+                    id:
+                      currentImages[galleryImageIndex]?.id ||
+                      generateSignupId(),
+                    name: url.split("/").pop() || "theme-image",
+                    type: "image/jpeg",
+                    dataUrl: url,
+                  };
+
+                  setHeader({ images: newImages });
+                  setGalleryImageIndex(null);
+                }}
+                searchQuery={themeImagesQuery}
+                allNames={THEME_NAMES as unknown as string[]}
+                selectedUrl={
+                  form.header?.images?.[galleryImageIndex]?.dataUrl || null
+                }
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

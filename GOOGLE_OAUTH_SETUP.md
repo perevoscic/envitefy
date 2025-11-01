@@ -57,7 +57,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # NextAuth (already existing)
 NEXTAUTH_SECRET=your-nextauth-secret
-NEXTAUTH_URL=http://localhost:3000  # or your production URL
+NEXTAUTH_URL=http://localhost:3001  # or your production URL
 ```
 
 ## How It Works
@@ -116,9 +116,13 @@ If you haven't already configured your Google OAuth app, follow these steps:
 3. Navigate to "APIs & Services" > "Credentials"
 4. Click "Create Credentials" > "OAuth client ID"
 5. Choose "Web application"
-6. Add authorized redirect URIs:
-   - Local: `http://localhost:3000/api/auth/callback/google`
-   - Production: `https://yourdomain.com/api/auth/callback/google`
+6. Add authorized redirect URIs (you need BOTH if using sign-in and calendar features):
+   - **For NextAuth Google Sign-In:**
+     - Local: `http://localhost:3001/api/auth/callback/google`
+     - Production: `https://yourdomain.com/api/auth/callback/google` (or whatever `NEXTAUTH_URL` is set to)
+   - **For Google Calendar OAuth:**
+     - Local: `http://localhost:3001/api/google/callback`
+     - Production: `https://yourdomain.com/api/google/callback` (matches `GOOGLE_REDIRECT_URI`)
 7. Copy the Client ID and Client Secret to your `.env` file
 
 ## UI Design
@@ -143,10 +147,14 @@ Possible improvements for the future:
 
 ## Troubleshooting
 
-### "Failed to sign in with Google" error
+### "Failed to sign in with Google" or "Error 400: redirect_uri_mismatch"
 
 - Check that `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set correctly
-- Verify the redirect URI is configured in Google Cloud Console
+- **IMPORTANT**: Verify that `{NEXTAUTH_URL}/api/auth/callback/google` is added as an authorized redirect URI in Google Cloud Console
+  - NextAuth automatically constructs this from your `NEXTAUTH_URL` environment variable
+  - Example: If `NEXTAUTH_URL=https://envitefy.com`, add `https://envitefy.com/api/auth/callback/google`
+  - If `NEXTAUTH_URL=http://localhost:3001`, add `http://localhost:3001/api/auth/callback/google`
+- Also ensure `{GOOGLE_REDIRECT_URI}` (typically `/api/google/callback`) is added if you're using calendar features
 - Check browser console for detailed error messages
 
 ### User not created in database

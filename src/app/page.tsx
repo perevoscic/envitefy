@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -22,6 +21,7 @@ import {
   UploadIllustration,
 } from "@/components/landing/action-illustrations";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
 
 type EventFields = {
@@ -113,13 +113,29 @@ export default function Home() {
     []
   );
 
-  const connected = useMemo(
-    () => ({
-      google: Boolean((session as any)?.providers?.google),
-      microsoft: Boolean((session as any)?.providers?.microsoft),
-    }),
-    [session]
-  );
+  const [connected, setConnected] = useState<{
+    google: boolean;
+    microsoft: boolean;
+  }>({
+    google: false,
+    microsoft: false,
+  });
+
+  useEffect(() => {
+    const fetchConnected = async () => {
+      try {
+        const res = await fetch("/api/calendars", { credentials: "include" });
+        const data = await res.json();
+        setConnected({
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+        });
+      } catch (err) {
+        console.error("Failed to fetch connected calendars:", err);
+      }
+    };
+    fetchConnected();
+  }, [session]);
 
   const openCreateEvent = useCallback(() => {
     try {
@@ -476,6 +492,57 @@ export default function Home() {
       setError("Missing start time for Google Calendar");
       return;
     }
+
+    // Save to Envitefy history first
+    try {
+      const timezone =
+        event.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC";
+      const payload: any = {
+        title: event.title || "Event",
+        data: {
+          startISO: ready.start,
+          endISO: ready.end,
+          location: ready.location || undefined,
+          description: event.description || undefined,
+          timezone,
+          reminders: event.reminders || undefined,
+          createdVia: "ocr",
+        },
+      };
+
+      const historyRes = await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const historyData = await historyRes.json().catch(() => ({}));
+      const eventId = (historyData as any)?.id as string | undefined;
+
+      // Emit event for sidebar refresh
+      if (eventId && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("history:created", {
+            detail: {
+              id: eventId,
+              title: historyData?.title || payload.title,
+              created_at: historyData?.created_at || new Date().toISOString(),
+              start: ready.start,
+              category: null,
+              data: payload.data,
+            },
+          })
+        );
+      }
+    } catch (err) {
+      console.error("Failed to save to Envitefy history:", err);
+      // Continue even if history save fails
+    }
+
+    // Add to Google Calendar
     const res = await fetch("/api/events/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -504,6 +571,57 @@ export default function Home() {
       setError("Missing start time for Outlook Calendar");
       return;
     }
+
+    // Save to Envitefy history first
+    try {
+      const timezone =
+        event.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC";
+      const payload: any = {
+        title: event.title || "Event",
+        data: {
+          startISO: ready.start,
+          endISO: ready.end,
+          location: ready.location || undefined,
+          description: event.description || undefined,
+          timezone,
+          reminders: event.reminders || undefined,
+          createdVia: "ocr",
+        },
+      };
+
+      const historyRes = await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const historyData = await historyRes.json().catch(() => ({}));
+      const eventId = (historyData as any)?.id as string | undefined;
+
+      // Emit event for sidebar refresh
+      if (eventId && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("history:created", {
+            detail: {
+              id: eventId,
+              title: historyData?.title || payload.title,
+              created_at: historyData?.created_at || new Date().toISOString(),
+              start: ready.start,
+              category: null,
+              data: payload.data,
+            },
+          })
+        );
+      }
+    } catch (err) {
+      console.error("Failed to save to Envitefy history:", err);
+      // Continue even if history save fails
+    }
+
+    // Add to Outlook Calendar
     const res = await fetch("/api/events/outlook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -523,6 +641,70 @@ export default function Home() {
       window.open(payload.webLink, "_blank");
     }
   }, [event, buildSubmissionEvent]);
+
+  const saveToEnvitefy = useCallback(async () => {
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) {
+      setError("Missing start time to save event");
+      return;
+    }
+
+    try {
+      const timezone =
+        event.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC";
+      const payload: any = {
+        title: event.title || "Event",
+        data: {
+          startISO: ready.start,
+          endISO: ready.end,
+          location: ready.location || undefined,
+          description: event.description || undefined,
+          timezone,
+          reminders: event.reminders || undefined,
+          createdVia: "ocr",
+        },
+      };
+
+      const historyRes = await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const historyData = await historyRes.json().catch(() => ({}));
+      const eventId = (historyData as any)?.id as string | undefined;
+
+      // Emit event for sidebar refresh
+      if (eventId && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("history:created", {
+            detail: {
+              id: eventId,
+              title: historyData?.title || payload.title,
+              created_at: historyData?.created_at || new Date().toISOString(),
+              start: ready.start,
+              category: null,
+              data: payload.data,
+            },
+          })
+        );
+      }
+
+      // Navigate to event page if saved successfully
+      if (eventId) {
+        window.location.href = `/event/${eventId}?created=1`;
+      } else {
+        resetForm();
+      }
+    } catch (err: any) {
+      console.error("Failed to save event:", err);
+      setError(err?.message || "Failed to save event. Please try again.");
+    }
+  }, [event, buildSubmissionEvent, setError, resetForm]);
 
   useEffect(() => {
     // Touch the session so provider connections hydrate promptly
@@ -629,6 +811,10 @@ export default function Home() {
           addOutlook={addOutlook}
           connectOutlook={connectOutlook}
           dlIcs={dlIcs}
+          buildSubmissionEvent={buildSubmissionEvent}
+          setError={setError}
+          saveToEnvitefy={saveToEnvitefy}
+          resetForm={resetForm}
         />
       </section>
     </main>
@@ -646,6 +832,10 @@ type SnapEventModalProps = {
   addOutlook: () => void;
   connectOutlook: () => void;
   dlIcs: () => void;
+  buildSubmissionEvent: (input: EventFields) => any;
+  setError: (error: string | null) => void;
+  saveToEnvitefy: () => void;
+  resetForm: () => void;
 };
 
 function SnapEventModal({
@@ -659,28 +849,74 @@ function SnapEventModal({
   addOutlook,
   connectOutlook,
   dlIcs,
+  buildSubmissionEvent,
+  setError,
+  saveToEnvitefy,
+  resetForm,
 }: SnapEventModalProps) {
+  const router = useRouter();
   const [isAppleDevice, setIsAppleDevice] = useState(false);
+  const [connectedCalendars, setConnectedCalendars] = useState<{
+    google: boolean;
+    microsoft: boolean;
+    apple: boolean;
+  }>({
+    google: connected.google,
+    microsoft: connected.microsoft,
+    apple: false,
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const ua = navigator.userAgent || (navigator as any).vendor || "";
-    const platform = (navigator.platform || "").toLowerCase();
+
+    const nav = window.navigator;
+    const ua = nav.userAgent || (nav as any).vendor || "";
+    const uaLower = ua.toLowerCase();
+    const platform = (nav.platform || "").toLowerCase();
     const maxTouchPoints =
-      typeof navigator.maxTouchPoints === "number"
-        ? navigator.maxTouchPoints
-        : 0;
-    const isTouchMac = platform === "macintel" && maxTouchPoints > 1;
+      typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
+
+    // First, check if it's clearly NOT an Apple device - exclude these explicitly
+    const isNotApple =
+      uaLower.includes("android") ||
+      uaLower.includes("windows") ||
+      uaLower.includes("linux") ||
+      uaLower.includes("cros") || // Chrome OS
+      uaLower.includes("x11") || // Unix-like systems
+      platform.includes("win") ||
+      platform.includes("linux") ||
+      platform.includes("android");
+
+    if (isNotApple) {
+      setIsAppleDevice(false);
+      return;
+    }
+
+    // Detect iPad (including iPadOS)
+    // iPadOS 13+ reports as "MacIntel" but has touch support
     const isIpadLike =
-      ua.toLowerCase().includes("ipad") || platform === "ipad" || isTouchMac;
+      uaLower.includes("ipad") ||
+      platform === "ipad" ||
+      (platform === "macintel" && maxTouchPoints > 1);
 
-    const isIOS = /iPhone|iPod/.test(ua) || platform === "iphone";
-    const isIPadOS = isIpadLike;
+    // Detect iPhone/iPod Touch (strict iOS check)
+    const isIOS =
+      /iPhone|iPod/.test(ua) ||
+      platform === "iphone" ||
+      uaLower.includes("iphone") ||
+      uaLower.includes("ipod");
+
+    // Detect macOS (but exclude touch-enabled Macs which are actually iPads)
     const isMacOS =
-      (/Mac OS X|Macintosh/.test(ua) || platform.startsWith("mac")) &&
-      !isTouchMac;
+      (/Mac OS X|Macintosh/.test(ua) ||
+        platform.startsWith("mac") ||
+        platform === "macintel") &&
+      !isIpadLike; // Exclude touch-enabled Macs that are actually iPads
 
-    setIsAppleDevice(isIOS || isIPadOS || isMacOS);
+    // Only set to true if it's definitively an Apple device
+    const isApple = isIOS || isIpadLike || isMacOS;
+
+    setIsAppleDevice(isApple);
   }, []);
 
   useEffect(() => {
@@ -694,6 +930,25 @@ function SnapEventModal({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
+
+  // Fetch connected calendars when modal opens
+  useEffect(() => {
+    if (!open) return;
+    const fetchConnected = async () => {
+      try {
+        const res = await fetch("/api/calendars", { credentials: "include" });
+        const data = await res.json();
+        setConnectedCalendars({
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+          apple: Boolean(data?.apple),
+        });
+      } catch (err) {
+        console.error("Failed to fetch connected calendars:", err);
+      }
+    };
+    fetchConnected();
+  }, [open]);
 
   const updateEvent = useCallback(
     (mutator: (current: EventFields) => EventFields) => {
@@ -946,12 +1201,12 @@ function SnapEventModal({
             {connected.google ? (
               <button
                 type="button"
-                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
+                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
                 onClick={addGoogle}
               >
                 <span>Add to</span>
                 <Image
-                  src="/brands/google.svg"
+                  src="/brands/google-white.svg"
                   alt="Google"
                   width={20}
                   height={20}
@@ -960,12 +1215,12 @@ function SnapEventModal({
             ) : (
               <button
                 type="button"
-                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
+                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
                 onClick={connectGoogle}
               >
                 <span>Connect to</span>
                 <Image
-                  src="/brands/google.svg"
+                  src="/brands/google-white.svg"
                   alt="Google"
                   width={20}
                   height={20}
@@ -975,12 +1230,12 @@ function SnapEventModal({
             {connected.microsoft ? (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
                 onClick={addOutlook}
               >
                 <span>Add to</span>
                 <Image
-                  src="/brands/microsoft.svg"
+                  src="/brands/microsoft-white.svg"
                   alt="Microsoft"
                   width={20}
                   height={20}
@@ -989,12 +1244,12 @@ function SnapEventModal({
             ) : (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2"
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
                 onClick={connectOutlook}
               >
                 <span>Connect to</span>
                 <Image
-                  src="/brands/microsoft.svg"
+                  src="/brands/microsoft-white.svg"
                   alt="Microsoft"
                   width={20}
                   height={20}
@@ -1004,7 +1259,7 @@ function SnapEventModal({
             {isAppleDevice && (
               <button
                 type="button"
-                className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80 flex items-center gap-2"
+                className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80 flex items-center gap-2 disabled:opacity-50"
                 onClick={dlIcs}
               >
                 <span>Connect to</span>
@@ -1026,13 +1281,30 @@ function SnapEventModal({
               </button>
             )}
           </div>
-          <button
-            type="button"
-            className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={!event?.start}
+              className="rounded border border-border bg-surface px-4 py-2 text-foreground hover:bg-surface/80 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              onClick={saveToEnvitefy}
+            >
+              <span>Save to</span>
+              <Image
+                src={Logo}
+                alt="Envitefy"
+                width={20}
+                height={20}
+                className="brightness-0 dark:brightness-100"
+              />
+            </button>
+            <button
+              type="button"
+              className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80 disabled:opacity-50"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

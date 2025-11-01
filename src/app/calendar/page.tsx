@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import EventActions from "@/components/EventActions";
-import EventCreateModal from "@/components/EventCreateModal";
 import { getEventTheme } from "@/lib/event-theme";
 
 type HistoryItem = {
@@ -612,10 +611,6 @@ export default function CalendarPage() {
     date: Date;
     items: CalendarEvent[];
   } | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createDefaultDate, setCreateDefaultDate] = useState<Date | undefined>(
-    undefined
-  );
   const [upcomingView, setUpcomingView] = useState<"week" | "month" | "shared">(
     "week"
   );
@@ -888,24 +883,8 @@ export default function CalendarPage() {
   const goNext = () => setCursor((d) => addMonths(d, 1));
   const goToday = () => setCursor(startOfDay(new Date()));
 
-  // Expose a global hook so the sidebar plus button can open the modal
-  useEffect(() => {
-    (window as any).__openCreateEvent = () => {
-      try {
-        (window as any).__closeSmartSignup?.();
-        window.dispatchEvent?.(new Event("closeSmartSignup"));
-      } catch {}
-      try {
-        setCreateDefaultDate(startOfDay(new Date()));
-        setCreateOpen(true);
-      } catch {}
-    };
-    return () => {
-      try {
-        delete (window as any).__openCreateEvent;
-      } catch {}
-    };
-  }, []);
+  // Use the global handler instead of overriding it
+  // The global GlobalEventCreate component handles opening the modal
 
   const onDayClick = (date: Date) => {
     const key = dayKey(startOfDay(date));
@@ -922,8 +901,9 @@ export default function CalendarPage() {
     }
     if (isPast) return; // do not allow creating events in the past from the calendar grid
     // No items on this day (today or future) → open create modal with default date prefilled
-    setCreateDefaultDate(date);
-    setCreateOpen(true);
+    try {
+      (window as any).__openCreateEvent?.(date);
+    } catch {}
   };
 
   const renderEventPill = (ev: CalendarEvent) => {
@@ -1021,8 +1001,9 @@ export default function CalendarPage() {
                   (window as any).__closeSmartSignup?.();
                   window.dispatchEvent?.(new Event("closeSmartSignup"));
                 } catch {}
-                setCreateDefaultDate(startOfDay(new Date()));
-                setCreateOpen(true);
+                try {
+                  (window as any).__openCreateEvent?.(startOfDay(new Date()));
+                } catch {}
               }}
               title="New event"
               className="ml-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-3 py-1.5 text-sm font-medium text-white shadow transition hover:opacity-90 focus:outline-none"
@@ -1521,8 +1502,11 @@ export default function CalendarPage() {
                         (window as any).__closeSmartSignup?.();
                         window.dispatchEvent?.(new Event("closeSmartSignup"));
                       } catch {}
-                      setCreateDefaultDate(startOfDay(openDay.date));
-                      setCreateOpen(true);
+                      try {
+                        (window as any).__openCreateEvent?.(
+                          startOfDay(openDay.date)
+                        );
+                      } catch {}
                     }}
                     className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-foreground/5 inline-flex items-center gap-2"
                     title="Add event"
@@ -1741,13 +1725,6 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
-
-      {/* Create new event modal */}
-      <EventCreateModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        defaultDate={createDefaultDate}
-      />
     </div>
   );
 }
