@@ -93,37 +93,37 @@ const TONE = {
 // --------------------------- FALL & SEASONAL ---------------------------
 const PROMPTS_FALL = {
   "fall-and-seasonal::apple-picking":
-    "Outdoor apple orchard activity with neat orchard rows and wood baskets full of apples; adults and kids picking fruit; no pumpkins or carving.",
+    "Outdoor apple orchard activity with neat orchard rows and wood baskets full of apples; adults and kids picking fruit; all people with fully visible heads and faces, no heads cropped; no pumpkins or carving.",
   "fall-and-seasonal::fall-scene":
     "Outdoor autumn landscape only—rolling hills, colorful trees, leaf-strewn path, soft sky gradient; no people or tables.",
   "fall-and-seasonal::fall-fun-2":
-    "Outdoor family fun with leaf piles, picnic blankets, gentle string lights at dusk; adults and kids together; not a kitchen.",
+    "Outdoor family fun with leaf piles, picnic blankets, gentle string lights at dusk; adults and kids together; all people with fully visible heads and faces, no heads cropped; not a kitchen.",
   "fall-and-seasonal::harvest-table":
     "Outdoor still life on a rustic wooden table—gourds, corn, wheat, lantern and fallen leaves; no people or text.",
   "fall-and-seasonal::pumpkin-patch":
-    "Outdoor farm landscape—rows of pumpkins, hay bales, simple farm backdrop; families browsing pumpkins.",
+    "Outdoor farm landscape—rows of pumpkins, hay bales, simple farm backdrop; families browsing pumpkins; all people with fully visible heads and faces, no heads cropped.",
   "fall-and-seasonal::fall-forest":
     "Outdoor forest landscape—warm sun through trees, layered depth, leaf carpet; no people.",
   "fall-and-seasonal::fall-food-drive":
-    "Community food-drive scene—donation tables with crates of canned goods; adults and kids sorting items; no pumpkins or carving.",
+    "Community food-drive scene—donation tables with crates of canned goods; adults and kids sorting items; all people with fully visible heads and faces, no heads cropped; no pumpkins or carving.",
   "fall-and-seasonal::fall-gathering":
-    "Outdoor picnic gathering—picnic tables, blankets, thermoses, soft string lights; adults and kids chatting.",
+    "Outdoor picnic gathering—picnic tables, blankets, thermoses, soft string lights; adults and kids chatting; all people with fully visible heads and faces, no heads cropped.",
   "fall-and-seasonal::corn-maze":
     "Outdoor corn maze landscape—tall corn rows with clear pathways; small entry arch shape without text; no people.",
   "fall-and-seasonal::autumn-blessings":
     "Outdoor scenic hills with glowing autumn trees and soft clouds; calm, contemplative; no religious symbols or people.",
   "fall-and-seasonal::thanksgiving-feast":
-    "Thanksgiving feast celebration—shared table with covered dishes, Thanksgiving turkey, harvest décor, and Thanksgiving meal; families gathered for Thanksgiving feast; adults and kids; no logos or text.",
+    "Thanksgiving Feast celebration—shared table with covered dishes, Thanksgiving turkey, Thanksgiving feast meal, harvest décor; families gathered for Thanksgiving Feast; adults and kids; all people with fully visible heads and faces, no heads cropped; no logos or text.",
   "fall-and-seasonal::friendsgiving":
-    "Friendsgiving celebration—relaxed dining/picnic vibe with Friendsgiving meal; simple table setting or blankets, lanterns; friends gathered for Friendsgiving; adults and kids together; cozy and informal.",
+    "Friendsgiving celebration—relaxed dining/picnic vibe with Friendsgiving meal; simple table setting or blankets, lanterns; friends gathered for Friendsgiving; adults and kids together; all people with fully visible heads and faces, no heads cropped; cozy and informal.",
   "fall-and-seasonal::fall-food":
     "Still life of autumn foods—pies, apples, cider jars on wooden trays; no people.",
   "fall-and-seasonal::fall-leaves":
     "Simple outdoor landscape with colorful foliage and drifting leaves over a quiet path; no people.",
   "fall-and-seasonal::fall-y-all":
-    "Fall y'all casual hangout—outdoor casual fall gathering with 'fall y'all' theme; quilts on lawn seating, lanterns; adults and kids; cozy evening fall gathering.",
+    "Fall Y'all casual hangout—outdoor casual fall gathering with 'Fall Y'all' theme; quilts on lawn seating, lanterns; adults and kids gathered for Fall Y'all; all people with fully visible heads and faces, no heads cropped; cozy evening fall gathering.",
   "fall-and-seasonal::fall-festival":
-    "Fall festival celebration—outdoor fall festival with small fair booths, game-station cues, bunting; families mingling at fall festival; no corporate signage.",
+    "Fall festival celebration—outdoor fall festival with small fair booths, game-station cues, bunting; families mingling at fall festival; all people with fully visible heads and faces, no heads cropped; no corporate signage.",
   "fall-and-seasonal::fall-pumpkins":
     "Outdoor still life—cluster of pumpkins on hay with fallen leaves; no people or carving tools."
 };
@@ -133,335 +133,335 @@ const PROMPTS_WINTER = {
   "winter-and-holidays::winter-cabin":
     "Outdoor winter landscape—cozy cabin with window glow, snow-dusted pines, distant mountains; no people.",
   "winter-and-holidays::santa-s-workshop":
-    "Indoor toy workshop—cheerful stylized elves (simple pointed hats) with a few kids at toy benches; wooden toys and gift-wrap rolls; not a living room.",
+    "Indoor toy workshop—cheerful stylized elves (simple pointed hats) with a few kids at toy benches; all people with fully visible heads and faces, no heads cropped; wooden toys and gift-wrap rolls; not a living room.",
   "winter-and-holidays::ugly-sweater-party":
-    "Indoor cozy party—adults and kids in bold patterned sweaters, cocoa mugs, warm string lights.",
+    "Indoor cozy party—adults and kids in bold patterned sweaters, cocoa mugs, warm string lights; all people with fully visible heads and faces, no heads cropped.",
   "winter-and-holidays::gingerbread-fun":
-    "Indoor decorating table—gingerbread houses, icing bags, candy bowls; kids decorating with adults; not tree-decorating.",
+    "Indoor decorating table—gingerbread houses, icing bags, candy bowls; kids decorating with adults; all people with fully visible heads and faces, no heads cropped; not tree-decorating.",
   "winter-and-holidays::holiday-lights":
-    "Outdoor evening street—glowing string lights and decorated houses, gentle snowfall; families strolling.",
+    "Outdoor evening street—glowing string lights and decorated houses, gentle snowfall; families strolling; all people with fully visible heads and faces, no heads cropped.",
   "winter-and-holidays::winter-wonderland":
-    "Outdoor sparkling snowy landscape—evergreens, frosty sky glow; no people.",
+    "Winter Wonderland scene—outdoor sparkling snowy Winter Wonderland landscape with evergreens, frosty sky glow; Winter Wonderland atmosphere; no people.",
   "winter-and-holidays::christmas-cookies":
-    "Indoor kitchen baking—cookie trays and cooling racks, rolling pins, icing and sprinkles; kids decorating cookies with adults; not tree-decorating.",
+    "Indoor kitchen baking—cookie trays and cooling racks, rolling pins, icing and sprinkles; kids decorating cookies with adults; all people with fully visible heads and faces, no heads cropped; not tree-decorating.",
   "winter-and-holidays::new-year-s-eve":
-    "Indoor party—table with confetti and clock; subtle skyline fireworks through window; adults and kids together.",
+    "New Year's Eve celebration—indoor New Year's Eve party with table, confetti, and clock; subtle skyline fireworks through window; adults and kids celebrating New Year's Eve together; all people with fully visible heads and faces, no heads cropped.",
   "winter-and-holidays::christmas-tree-farm":
-    "Outdoor farm rows of pine trees; families with sleds or wagons choosing a tree; simple tree-netting stand.",
+    "Outdoor farm rows of pine trees; families with sleds or wagons choosing a tree; all people with fully visible heads and faces, no heads cropped; simple tree-netting stand.",
   "winter-and-holidays::holiday-giving":
-    "Indoor donation/wrapping scene—boxes of toys and coats; volunteers (adults and kids) wrapping together.",
+    "Holiday Giving event—indoor Holiday Giving donation/wrapping scene with boxes of toys and coats; volunteers (adults and kids) wrapping together for Holiday Giving; all people with fully visible heads and faces, no heads cropped.",
   "winter-and-holidays::christmas-village":
-    "Outdoor holiday market—small huts with garlands and wreaths, cocoa stand, warm window glow; families browsing.",
+    "Christmas Village scene—outdoor Christmas Village holiday market with small huts, garlands and wreaths, cocoa stand, warm window glow; families browsing Christmas Village; all people with fully visible heads and faces, no heads cropped.",
   "winter-and-holidays::hanukkah-celebration":
-    "Indoor celebration—menorah with candles, dreidels and gelt on a table; blue and silver accents; adults and kids.",
+    "Indoor celebration—menorah with candles, dreidels and gelt on a table; blue and silver accents; adults and kids; all people with fully visible heads and faces, no heads cropped.",
   "winter-and-holidays::snow-day":
-    "Outdoor winter play—adults and kids making a snowman or sledding among evergreens; wide, bright snowy field.",
+    "Outdoor winter play—adults and kids making a snowman or sledding among evergreens; all people with fully visible heads and faces, no heads cropped; wide, bright snowy field.",
   "winter-and-holidays::snowflakes":
     "Stylized outdoor winter scene—large decorative snowflakes over a soft gradient sky above snowy trees; no indoor crafts, no people.",
   "winter-and-holidays::merry-christmas":
-    "Festive still life—evergreen branches and ornaments with a subtle sparkle; no text and no people."
+    "Merry Christmas celebration—Merry Christmas festive still life scene with Merry Christmas theme; evergreen branches and ornaments with a subtle sparkle; Merry Christmas holiday atmosphere and Merry Christmas decorations; no text and no people."
 };
 
 // ------------------------------- SPRING -------------------------------
 const PROMPTS_SPRING = {
   "spring::spring-hike":
-    "Outdoor hike—adults and children walking a gentle trail through green hills and wildflowers with a wide scenic view; not gardening indoors.",
+    "Spring hike—outdoor hike with adults and children walking a gentle trail through green hills and wildflowers with a wide scenic view; all people with fully visible heads and faces, no heads cropped; spring hiking activity; not gardening indoors.",
   "spring::easter-bunnies":
-    "Outdoor spring meadow—pastel eggs hidden in grass, simple bunny mascots, children searching with adults; fresh pastel palette.",
+    "Easter Bunnies celebration—Easter Bunnies scene with outdoor spring meadow, Easter Bunnies with pastel eggs hidden in grass, simple bunny mascots representing Easter Bunnies, children searching with adults for Easter Bunnies; all people with fully visible heads and faces; Easter Bunnies activity; fresh pastel palette.",
   "spring::mother-s-day":
-    "Brunch/tea celebration indoors or patio—flowers and a small gift; warm family moment with kids.",
+    "Mother's Day celebration—Mother's Day brunch/tea celebration indoors or patio with flowers and a small gift for Mother's Day; all people with fully visible heads and faces; warm family moment with kids celebrating Mother's Day together.",
   "spring::spring-flowers":
     "Still life—vase of spring flowers against a pastel backdrop; no people.",
   "spring::graduation-caps":
-    "Celebration—young adults tossing caps; simple campus/stage cues; no kids baking or holiday décor.",
+    "Graduation celebration—young adults tossing graduation caps; all people with fully visible heads and faces; simple campus/stage cues; graduation ceremony; no kids baking or holiday décor.",
   "spring::teacher-appreciation":
-    "Indoor classroom—teacher at desk with flowers and thank-you cards; a few students smiling.",
+    "Teacher appreciation event—indoor classroom with teacher at desk receiving flowers and thank-you cards; all people with fully visible heads and faces; a few students smiling; teacher appreciation activity.",
   "spring::spring-break":
-    "Outdoor leisure—park or light beach vibe, kites or frisbee, relaxed families.",
+    "Spring Break celebration—Spring Break activity with outdoor leisure in park or light beach vibe, kites or frisbee for Spring Break; all people with fully visible heads and faces; relaxed families enjoying Spring Break together.",
   "spring::spring-picnic":
-    "Outdoor picnic—blanket, basket, lemonade; adults and kids together.",
+    "Spring picnic—outdoor picnic with blanket, basket, lemonade; all people with fully visible heads and faces; adults and kids together; spring picnic activity.",
   "spring::field-day":
-    "Outdoor school field—cones and relay stations; children participating, teacher/coach guiding.",
+    "Field day event—outdoor school field with cones and relay stations; all people with fully visible heads and faces; children participating, teacher/coach guiding; field day activity.",
   "spring::spring-garden":
-    "Outdoor gardening—raised beds, seedlings, watering can; adults and kids planting together."
+    "Spring garden activity—outdoor gardening with raised beds, seedlings, watering can; all people with fully visible heads and faces; adults and kids planting together; spring gardening."
 };
 
 // ------------------------------- SUMMER -------------------------------
 const PROMPTS_SUMMER = {
   "summer::summer-camp":
-    "Outdoor camp—tents or cabins in background, campfire ring or activity field; kids with counselors.",
+    "Outdoor camp—tents or cabins in background, campfire ring or activity field; kids with counselors; all people with fully visible heads and faces, no heads cropped.",
   "summer::beach-day":
-    "Outdoor beach—shoreline with gentle waves, umbrellas and towels; families playing.",
+    "Outdoor beach—shoreline with gentle waves, umbrellas and towels; families playing; all people with fully visible heads and faces, no heads cropped.",
   "summer::vacation-vibes":
-    "Outdoor travel/leisure—boardwalk or overlook, families strolling; sunny relaxed feel.",
+    "Outdoor travel/leisure—boardwalk or overlook, families strolling; all people with fully visible heads and faces, no heads cropped; sunny relaxed feel.",
   "summer::family-reunion":
-    "Outdoor picnic—long tables or blankets, shared dishes; multi-generational family with kids.",
+    "Outdoor picnic—long tables or blankets, shared dishes; multi-generational family with kids; all people with fully visible heads and faces, no heads cropped.",
   "summer::picnic-fun":
-    "Outdoor picnic—picnic tables, coolers, frisbee or kite; adults and kids.",
+    "Outdoor picnic—picnic tables, coolers, frisbee or kite; adults and kids; all people with fully visible heads and faces, no heads cropped.",
   "summer::fourth-of-july":
-    "Outdoor evening Independence Day celebration—small American flags on tables and in hands, clear fireworks in the sky, string lights, picnic tables; families with kids; no text or brand logos.",
+    "Outdoor evening Independence Day celebration—small American flags on tables and in hands, clear fireworks in the sky, string lights, picnic tables; families with kids; all people with fully visible heads and faces, no heads cropped; no text or brand logos.",
   "summer::ice-cream-social":
-    "Outdoor ice-cream stand or cart—kids and adults enjoying cones; sunny park.",
+    "Outdoor ice-cream stand or cart—kids and adults enjoying cones; all people with fully visible heads and faces, no heads cropped; sunny park.",
   "summer::summer-bbq":
-    "Outdoor barbecue—grill, picnic tables, lemonade cooler; adults and kids.",
+    "Outdoor barbecue—grill, picnic tables, lemonade cooler; adults and kids; all people with fully visible heads and faces, no heads cropped.",
   "summer::lemonade-stand":
-    "Outdoor kid-led stand—simple booth with pitcher and cups; children selling with adults nearby; fundraiser vibe.",
+    "Outdoor kid-led stand—simple booth with pitcher and cups; children selling with adults nearby; all people with fully visible heads and faces, no heads cropped; fundraiser vibe.",
   "summer::pool-party":
-    "Outdoor pool—floaties, towels, umbrellas; kids playing, adults supervising."
+    "Outdoor pool—floaties, towels, umbrellas; kids playing, adults supervising; all people with fully visible heads and faces, no heads cropped."
 };
 
 // -------------------------- SCHOOL & EDUCATION --------------------------
 const PROMPTS_SCHOOL = {
   "school-and-education::teacher-appreciation":
-    "Indoor classroom—teacher receiving flowers/cards from students; warm friendly mood.",
+    "Indoor classroom—teacher receiving flowers/cards from students; all people with fully visible heads and faces, no heads cropped; warm friendly mood.",
   "school-and-education::book-fair":
-    "Indoor school book fair—tables of books, simple banners without text; kids browsing; librarian/volunteers.",
+    "Indoor school book fair—tables of books, simple banners without text; kids browsing; librarian/volunteers; all people with fully visible heads and faces, no heads cropped.",
   "school-and-education::field-trip":
-    "Outdoor educational outing—kids with chaperones at park/forest or museum exterior; simple sign shapes without text.",
+    "Outdoor educational outing—kids with chaperones at park/forest or museum exterior; all people with fully visible heads and faces, no heads cropped; simple sign shapes without text.",
   "school-and-education::back-to-school":
-    "School entrance arrival—students with backpacks and parents; bright welcoming vibe.",
+    "School entrance arrival—students with backpacks and parents; all people with fully visible heads and faces, no heads cropped; bright welcoming vibe.",
   "school-and-education::class-party":
-    "Indoor classroom celebration—snack and craft tables, balloons/streamers; kids with teacher.",
+    "Indoor classroom celebration—snack and craft tables, balloons/streamers; kids with teacher; all people with fully visible heads and faces, no heads cropped.",
   "school-and-education::open-house":
-    "School open house—classroom/hall with display boards (no text), parents and students chatting.",
+    "School open house—classroom/hall with display boards (no text), parents and students chatting; all people with fully visible heads and faces, no heads cropped.",
   "school-and-education::parent-teacher-conference":
-    "Quiet meeting—teacher and parent at table, child nearby with book; calm professional tone.",
+    "Quiet meeting—teacher and parent at table, child nearby with book; all people with fully visible heads and faces, no heads cropped; calm professional tone.",
   "school-and-education::classroom-helpers":
-    "Classroom activity—students assisting teacher with supplies or bulletin board; friendly.",
+    "Classroom activity—students assisting teacher with supplies or bulletin board; all people with fully visible heads and faces, no heads cropped; friendly.",
   "school-and-education::school-spirit":
-    "School spirit scene—students in school-color shirts, pennant shapes with no text, gym/bleachers hint.",
+    "School spirit scene—students in school-color shirts, pennant shapes with no text, gym/bleachers hint; all people with fully visible heads and faces, no heads cropped.",
   "school-and-education::student-volunteers":
-    "Volunteer activity—students organizing supplies at tables with an adult supervisor."
+    "Volunteer activity—students organizing supplies at tables with an adult supervisor; all people with fully visible heads and faces, no heads cropped."
 };
 
 // ------------------------- CHURCH & COMMUNITY -------------------------
 const PROMPTS_CHURCH = {
   "church-and-community::service-project":
-    "Community service—volunteers cleaning a park or sorting supplies; inclusive group; no logos.",
+    "Community service—volunteers cleaning a park or sorting supplies; all people with fully visible heads and faces, no heads cropped; inclusive group; no logos.",
   "church-and-community::community-picnic":
-    "Outdoor picnic—potluck tables, blankets, lawn games; families with kids.",
+    "Outdoor picnic—potluck tables, blankets, lawn games; families with kids; all people with fully visible heads and faces, no heads cropped.",
   "church-and-community::bible-study":
-    "Indoor small-group—circle of chairs, open books (no text), calm friendly mood.",
+    "Indoor small-group—circle of chairs, open books (no text), calm friendly mood; all people with fully visible heads and faces, no heads cropped.",
   "church-and-community::mission-trip":
-    "Outdoor community help—volunteers painting a fence or repairing benches; simple setting; no logos.",
+    "Outdoor community help—volunteers painting a fence or repairing benches; all people with fully visible heads and faces, no heads cropped; simple setting; no logos.",
   "church-and-community::church-gathering":
-    "Indoor fellowship—coffee and pastry table; warm conversation; inclusive.",
+    "Indoor fellowship—coffee and pastry table; all people with fully visible heads and faces, no heads cropped; warm conversation; inclusive.",
   "church-and-community::volunteer-sign-up":
-    "Volunteer table—clipboards and bins (no text); friendly mix of ages; approachable.",
+    "Volunteer table—clipboards and bins (no text); friendly mix of ages; all people with fully visible heads and faces, no heads cropped; approachable.",
   "church-and-community::worship-team":
-    "Indoor rehearsal—microphones and music stands (no text), simple stage lighting; friendly faces.",
+    "Indoor rehearsal—microphones and music stands (no text), simple stage lighting; friendly faces; all people with fully visible heads and faces, no heads cropped.",
   "church-and-community::sunday-school":
-    "Children’s class—kids at craft or story circle with teacher; welcoming room.",
+    "Children's class—kids at craft or story circle with teacher; all people with fully visible heads and faces, no heads cropped; welcoming room.",
   "church-and-community::fundraiser":
-    "Community fundraiser—donation table and jars/boxes (no text); friendly volunteers including kids.",
+    "Community fundraiser—donation table and jars/boxes (no text); friendly volunteers including kids; all people with fully visible heads and faces, no heads cropped.",
   "church-and-community::food-drive":
-    "Donation activity—adults and kids sorting canned goods at tables; neutral décor."
+    "Donation activity—adults and kids sorting canned goods at tables; all people with fully visible heads and faces, no heads cropped; neutral décor."
 };
 
 // ------------------------- SPORTS & RECREATION -------------------------
 const PROMPTS_SPORTS = {
   "sports-and-recreation::swim-team":
-    "Swimming pool with lane lines—swimmers practicing, coach signaling; kids in team suits.",
+    "Swimming pool with lane lines—swimmers practicing, coach signaling; kids in team suits; all people with fully visible heads and faces, no heads cropped.",
   "sports-and-recreation::cheer-squad":
-    "Gym or field—cheerleaders in formation with pom-poms; smiling faces; a few younger members.",
+    "Gym or field—cheerleaders in formation with pom-poms; smiling faces; a few younger members; all people with fully visible heads and faces, no heads cropped.",
   "sports-and-recreation::track-meet":
-    "Outdoor track—runners at start or mid-race with lane markings; coach nearby.",
+    "Outdoor track—runners at start or mid-race with lane markings; coach nearby; all people with fully visible heads and faces, no heads cropped.",
   "sports-and-recreation::baseball-team":
-    "Ballfield—pitcher, batter, outfielders; kids and adults playing together.",
+    "Ballfield—pitcher, batter, outfielders; kids and adults playing together; all people with fully visible heads and faces, no heads cropped.",
   "sports-and-recreation::sports-banquet":
-    "Indoor banquet—round tables, trophy centerpiece; friendly crowd; no text banners.",
+    "Indoor banquet—round tables, trophy centerpiece; friendly crowd; all people with fully visible heads and faces, no heads cropped; no text banners.",
   "sports-and-recreation::gymnastics":
-    "Gym—mats and balance beam; children practicing with instructor.",
+    "Gym—mats and balance beam; children practicing with instructor; all people with fully visible heads and faces, no heads cropped.",
   "sports-and-recreation::fitness-class":
-    "Studio—mixed ages doing light stretches or aerobics on mats; clean minimal room.",
+    "Studio—mixed ages doing light stretches or aerobics on mats; all people with fully visible heads and faces, no heads cropped; clean minimal room.",
   "sports-and-recreation::soccer-game":
-    "Outdoor soccer field—visible goal and ball in play; kids and adults; clear sidelines.",
+    "Outdoor soccer field—visible goal and ball in play; kids and adults; all people with fully visible heads and faces, no heads cropped; clear sidelines.",
   "sports-and-recreation::basketball-practice":
-    "Indoor court—kids dribbling with coach supervising; friendly energy.",
+    "Indoor court—kids dribbling with coach supervising; all people with fully visible heads and faces, no heads cropped; friendly energy.",
   "sports-and-recreation::golf-tournament":
-    "Golf course—players taking turns on green; include youth alongside adults; bright sunny setting."
+    "Golf course—players taking turns on green; include youth alongside adults; all people with fully visible heads and faces, no heads cropped; bright sunny setting."
 };
 
 // -------------------- FUNDRAISING & FOOD --------------------
 const PROMPTS_FUNDRAISING = {
   "fundraising-and-food::car-wash":
-    "Sunny parking-lot fundraiser—kids washing cars with sponges and buckets; cheerful water splashes.",
+    "Sunny parking-lot fundraiser—kids washing cars with sponges and buckets; all people with fully visible heads and faces, no heads cropped; cheerful water splashes.",
   "fundraising-and-food::bake-sale":
-    "Outdoor bake-sale table—cupcakes, cookies, pies; kids and adults selling/buying; no readable text on signs.",
+    "Outdoor bake-sale table—cupcakes, cookies, pies; kids and adults selling/buying; all people with fully visible heads and faces, no heads cropped; no readable text on signs.",
   "fundraising-and-food::charity-gala":
-    "Elegant indoor gala—round tables, subtle lighting, minimalist stage; friendly adults and teens.",
+    "Elegant indoor gala—round tables, subtle lighting, minimalist stage; friendly adults and teens; all people with fully visible heads and faces, no heads cropped.",
   "fundraising-and-food::restaurant-night":
-    "Restaurant fundraiser—families dining together; warm community vibe; simple décor; no brand logos.",
+    "Restaurant fundraiser—families dining together; all people with fully visible heads and faces, no heads cropped; warm community vibe; simple décor; no brand logos.",
   "fundraising-and-food::food-pantry":
-    "Assistance event—volunteers sorting canned and boxed food; adults and kids helping.",
+    "Assistance event—volunteers sorting canned and boxed food; adults and kids helping; all people with fully visible heads and faces, no heads cropped.",
   "fundraising-and-food::auction-event":
-    "Indoor auction—display tables with items; paddle shapes without text; attentive crowd.",
+    "Indoor auction—display tables with items; paddle shapes without text; attentive crowd; all people with fully visible heads and faces, no heads cropped.",
   "fundraising-and-food::donation-drive":
-    "Community donation—labeled box shapes (no text), volunteers placing items; kids assisting.",
+    "Community donation—labeled box shapes (no text), volunteers placing items; kids assisting; all people with fully visible heads and faces, no heads cropped.",
   "fundraising-and-food::vendor-fair":
-    "Outdoor vendor stalls—handmade crafts and baked goods; families browsing; no text on signs.",
+    "Outdoor vendor stalls—handmade crafts and baked goods; families browsing; all people with fully visible heads and faces, no heads cropped; no text on signs.",
   "fundraising-and-food::raffle":
-    "Fundraiser booth—ticket box and strips (no text), balloons; kids helping with adults.",
+    "Fundraiser booth—ticket box and strips (no text), balloons; kids helping with adults; all people with fully visible heads and faces, no heads cropped.",
   "fundraising-and-food::potluck-dinner":
-    "Community potluck—buffet-style dishes and friendly conversation; families including kids."
+    "Community potluck—buffet-style dishes and friendly conversation; families including kids; all people with fully visible heads and faces, no heads cropped."
 };
 
 // ------------------------ FAMILY & PERSONAL ------------------------
 const PROMPTS_FAMILY = {
   "family-and-personal::anniversary-celebration":
-    "Celebration—cake on table, candles/lanterns, warm romantic tone; adults with family present.",
+    "Celebration—cake on table, candles/lanterns, warm romantic tone; adults with family present; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::family-event":
-    "General family gathering—casual seating, snacks, simple crafts or games; mix of ages.",
+    "General family gathering—casual seating, snacks, simple crafts or games; mix of ages; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::housewarming":
-    "Home gathering—entry with boxes or plants, snacks on counter; smiling guests.",
+    "Home gathering—entry with boxes or plants, snacks on counter; smiling guests; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::birthday-party":
-    "Birthday party—balloons, confetti, cake; kids and adults; no character IP.",
+    "Birthday party—balloons, confetti, cake; kids and adults; all people with fully visible heads and faces, no heads cropped; no character IP.",
   "family-and-personal::block-party":
-    "Outdoor neighborhood party—string lights across street, food tables; families mingling.",
+    "Outdoor neighborhood party—string lights across street, food tables; families mingling; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::wedding":
-    "Wedding ceremony—arch or floral backdrop; guests seated; elegant but minimal.",
+    "Wedding ceremony—arch or floral backdrop; guests seated; all people with fully visible heads and faces, no heads cropped; elegant but minimal.",
   "family-and-personal::baby-shower":
-    "Baby shower—pastel decorations, gifts table, light snacks; joyful family and friends.",
+    "Baby shower—pastel decorations, gifts table, light snacks; joyful family and friends; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::game-night":
-    "Indoor casual game night—tabletop games with snacks; family and friends smiling.",
+    "Indoor casual game night—tabletop games with snacks; family and friends smiling; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::bridal-shower":
-    "Bridal shower—florals, gifts table, refreshments; friends gathered.",
+    "Bridal shower—florals, gifts table, refreshments; friends gathered; all people with fully visible heads and faces, no heads cropped.",
   "family-and-personal::family-holiday":
-    "Neutral seasonal family gathering—cozy décor, snacks, simple garlands; mix of ages."
+    "Neutral seasonal family gathering—cozy décor, snacks, simple garlands; mix of ages; all people with fully visible heads and faces, no heads cropped."
 };
 
 // ------------------- BUSINESS & PROFESSIONAL -------------------
 const PROMPTS_BUSINESS = {
   "business-and-professional::conference-schedule":
-    "Conference venue hall—registration desk, signage shapes without text, attendees conversing.",
+    "Conference venue hall—registration desk, signage shapes without text, attendees conversing; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::client-meeting":
-    "Client meeting—small table with laptops/tablets (blank screens), friendly discussion; modern space.",
+    "Client meeting—small table with laptops/tablets (blank screens), friendly discussion; all people with fully visible heads and faces, no heads cropped; modern space.",
   "business-and-professional::team-lunch":
-    "Team lunch—long table with takeout trays and drinks; friendly team chat.",
+    "Team lunch—long table with takeout trays and drinks; friendly team chat; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::corporate-event":
-    "Company social—branded-color accents (no logos), high-tops, mingling attendees.",
+    "Company social—branded-color accents (no logos), high-tops, mingling attendees; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::workshop":
-    "Hands-on workshop—tables with laptops (blank), sticky-note shapes (no text), facilitator guiding.",
+    "Hands-on workshop—tables with laptops (blank), sticky-note shapes (no text), facilitator guiding; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::networking-night":
-    "Evening mixer—string lights, name-tag shapes (no text), handshake moments.",
+    "Evening mixer—string lights, name-tag shapes (no text), handshake moments; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::professional-gathering":
-    "Professional mixer—clean décor, coffee station; friendly conversations.",
+    "Professional mixer—clean décor, coffee station; friendly conversations; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::office-meeting":
-    "Conference room—whiteboard shapes (no text), laptops (blank screens); collaborative energy.",
+    "Conference room—whiteboard shapes (no text), laptops (blank screens); collaborative energy; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::training-session":
-    "Training session—rows of seats with laptops (blank), instructor at front; minimal visuals."
+    "Training session—rows of seats with laptops (blank), instructor at front; all people with fully visible heads and faces, no heads cropped; minimal visuals."
 };
 
 // ---------------------- OTHER / SPECIAL INTEREST ----------------------
 const PROMPTS_OTHER = {
   "other-special-interest::tech-event":
-    "Tech meetup—screens with abstract UI shapes (no readable text), demo tables, attendees chatting.",
+    "Tech meetup—screens with abstract UI shapes (no readable text), demo tables, attendees chatting; all people with fully visible heads and faces, no heads cropped.",
   "other-special-interest::political-campaign":
-    "Neutral civic event—podium or lawn-sign shapes with no text, volunteers handing flyers; inclusive crowd; strictly nonpartisan.",
+    "Neutral civic event—podium or lawn-sign shapes with no text, volunteers handing flyers; inclusive crowd; all people with fully visible heads and faces, no heads cropped; strictly nonpartisan.",
   "other-special-interest::gaming-tournament":
-    "Esports vibe—big screen with abstract game graphics (no IP), players at stations, audience cheering.",
+    "Esports vibe—big screen with abstract game graphics (no IP), players at stations, audience cheering; all people with fully visible heads and faces, no heads cropped.",
   "other-special-interest::environment-and-cleanup":
-    "Park cleanup—volunteers with grabbers and bags; piles of leaves; kids helping; bright natural light.",
+    "Park cleanup—volunteers with grabbers and bags; piles of leaves; kids helping; all people with fully visible heads and faces, no heads cropped; bright natural light.",
   "other-special-interest::senior-services":
-    "Community assistance—friendly staff helping seniors with blank forms/resources; warm approachable room.",
+    "Community assistance—friendly staff helping seniors with blank forms/resources; all people with fully visible heads and faces, no heads cropped; warm approachable room.",
   "other-special-interest::travel-group":
-    "Tour meetup—guide with flag shape, group with backpacks; city or nature backdrop.",
+    "Tour meetup—guide with flag shape, group with backpacks; all people with fully visible heads and faces, no heads cropped; city or nature backdrop.",
   "other-special-interest::real-estate-open-house":
-    "Open house—entry table with brochures (no text), staged living room, smiling agent with visitors.",
+    "Open house—entry table with brochures (no text), staged living room, smiling agent with visitors; all people with fully visible heads and faces, no heads cropped.",
   "other-special-interest::arts-and-culture":
-    "Community arts fair—easels or craft tables, small stage; families browsing; no text banners.",
+    "Community arts fair—easels or craft tables, small stage; families browsing; all people with fully visible heads and faces, no heads cropped; no text banners.",
   "other-special-interest::pets-and-animals":
-    "Pet adoption/community pet day—volunteers with leashes/carriers, families greeting pets; outdoor or indoor shelter vibe."
+    "Pet adoption/community pet day—volunteers with leashes/carriers, families greeting pets; all people with fully visible heads and faces, no heads cropped; outdoor or indoor shelter vibe."
 };
 
 // ------------------------- HEALTH & FITNESS -------------------------
 const PROMPTS_HEALTH_FITNESS = {
   "health-and-fitness::fitness-class":
-    "Indoor fitness studio—mixed ages doing light stretches or aerobics on mats; clean minimal room; friendly instructor guiding.",
+    "Indoor fitness studio—mixed ages doing light stretches or aerobics on mats; clean minimal room; friendly instructor guiding; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::yoga-class":
-    "Indoor yoga studio—mats arranged in rows, people in yoga poses; calm peaceful atmosphere; instructor at front.",
+    "Indoor yoga studio—mats arranged in rows, people in yoga poses; calm peaceful atmosphere; instructor at front; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::pilates-class":
-    "Pilates studio—reformers or mats, participants with instructor; focused workout session; clean modern space.",
+    "Pilates studio—reformers or mats, participants with instructor; focused workout session; clean modern space; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::spin-class":
-    "Indoor cycling studio—stationary bikes in rows, participants cycling; energetic instructor at front; bright motivational atmosphere.",
+    "Indoor cycling studio—stationary bikes in rows, participants cycling; energetic instructor at front; bright motivational atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::zumba-class":
-    "Dance fitness class—participants following energetic instructor, upbeat music vibe; diverse group; fun active mood.",
+    "Dance fitness class—participants following energetic instructor, upbeat music vibe; diverse group; fun active mood; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::bootcamp-class":
-    "Outdoor bootcamp—participants doing exercises in park or field; trainer leading group; energetic workout session.",
+    "Outdoor bootcamp—participants doing exercises in park or field; trainer leading group; energetic workout session; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::dance-class":
-    "Dance studio—mirrored walls, participants learning choreography; dance instructor teaching; friendly artistic atmosphere.",
+    "Dance studio—mirrored walls, participants learning choreography; dance instructor teaching; friendly artistic atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::morning-run":
-    "Outdoor morning run—runners on park trail or sidewalk; early light; mixed group including kids and adults.",
+    "Outdoor morning run—runners on park trail or sidewalk; early light; mixed group including kids and adults; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::cycling-club":
-    "Outdoor cycling group—cyclists with bikes on path or road; cycling gear; friendly group ride atmosphere.",
+    "Outdoor cycling group—cyclists with bikes on path or road; cycling gear; friendly group ride atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::crossfit-session":
-    "CrossFit gym—equipment visible (bars, weights, boxes); participants doing high-intensity exercises; coach supervising; energetic vibe.",
+    "CrossFit gym—equipment visible (bars, weights, boxes); participants doing high-intensity exercises; coach supervising; energetic vibe; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::martial-arts-class":
-    "Martial arts dojo—participants in uniform practicing moves; instructor demonstrating; respectful disciplined atmosphere.",
+    "Martial arts dojo—participants in uniform practicing moves; instructor demonstrating; respectful disciplined atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::boxing-class":
-    "Boxing gym—punching bags and gloves; participants training with coach; focused workout session; energetic atmosphere.",
+    "Boxing gym—punching bags and gloves; participants training with coach; focused workout session; energetic atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::swimming-lessons":
-    "Swimming pool—swim lanes visible; instructor teaching kids or adults; swimming aids visible; clean aquatic facility.",
+    "Swimming pool—swim lanes visible; instructor teaching kids or adults; swimming aids visible; clean aquatic facility; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::tennis-club":
-    "Tennis courts—players on courts with rackets; nets and court lines visible; friendly competitive atmosphere; outdoor or indoor facility.",
+    "Tennis courts—players on courts with rackets; nets and court lines visible; friendly competitive atmosphere; outdoor or indoor facility; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::basketball-league":
-    "Basketball court—players shooting or dribbling; hoops and court markings visible; league game atmosphere; indoor or outdoor court.",
+    "Basketball court—players shooting or dribbling; hoops and court markings visible; league game atmosphere; indoor or outdoor court; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::volleyball-league":
-    "Volleyball court—net visible, players in position; volleyball in play; league match atmosphere; sand or indoor court.",
+    "Volleyball court—net visible, players in position; volleyball in play; league match atmosphere; sand or indoor court; all people with fully visible heads and faces, no heads cropped.",
   "health-and-fitness::wellness-workshop":
-    "Wellness workshop—participants seated in circle or rows; instructor presenting; calm educational atmosphere; wellness-focused setting."
+    "Wellness workshop—participants seated in circle or rows; instructor presenting; calm educational atmosphere; wellness-focused setting; all people with fully visible heads and faces, no heads cropped."
 };
 
 // ------------------------- PARTIES & EVENTS -------------------------
 const PROMPTS_PARTIES = {
   "parties-and-events::birthday-party":
-    "Indoor or outdoor birthday party—birthday cake with candles on table, colorful balloons, wrapped presents, party decorations like streamers or banners; kids and adults celebrating; festive birthday atmosphere; NOT a park walk or family outing.",
+    "Indoor or outdoor birthday party—birthday cake with candles on table, colorful balloons, wrapped presents, party decorations like streamers or banners; kids and adults celebrating; all people with fully visible heads and faces, no heads cropped; festive birthday atmosphere; NOT a park walk or family outing.",
   "parties-and-events::wedding":
-    "Wedding ceremony or reception—wedding arch or floral backdrop, bride and groom, guests seated or mingling; elegant decorations; indoor or outdoor wedding venue; sophisticated celebration atmosphere.",
+    "Wedding ceremony or reception—wedding arch or floral backdrop, bride and groom, guests seated or mingling; elegant decorations; indoor or outdoor wedding venue; sophisticated celebration atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "parties-and-events::baby-shower":
-    "Baby shower celebration—pastel decorations, baby-themed decorations, gifts table with wrapped presents, baby items visible; expectant parents with family and friends; joyful anticipation atmosphere.",
+    "Baby shower celebration—pastel decorations, baby-themed decorations, gifts table with wrapped presents, baby items visible; expectant parents with family and friends; all people with fully visible heads and faces, no heads cropped; joyful anticipation atmosphere.",
   "parties-and-events::game-night":
-    "Indoor casual game night—tabletop games and board games on table; friends and family playing together; snacks and drinks visible; cozy social gathering atmosphere.",
+    "Indoor casual game night—tabletop games and board games on table; friends and family playing together; snacks and drinks visible; cozy social gathering atmosphere; all people with fully visible heads and faces, no heads cropped.",
   "parties-and-events::bridal-shower":
-    "Bridal shower celebration—floral decorations, gifts table with wrapped presents, elegant party setup; bride-to-be with friends; feminine celebration atmosphere.",
+    "Bridal shower celebration—floral decorations, gifts table with wrapped presents, elegant party setup; bride-to-be with friends; all people with fully visible heads and faces, no heads cropped; feminine celebration atmosphere.",
   "parties-and-events::family-holiday":
-    "Family holiday gathering—holiday decorations like garlands or festive table settings; extended family together; seasonal celebration atmosphere; cozy warm feeling.",
+    "Family holiday gathering—holiday decorations like garlands or festive table settings; extended family together; all people with fully visible heads and faces, no heads cropped; seasonal celebration atmosphere; cozy warm feeling.",
   "parties-and-events::holiday-party":
-    "Holiday party—holiday decorations like lights, garlands, or themed decorations; party attendees mingling; festive holiday atmosphere; indoor or outdoor celebration.",
+    "Holiday party—holiday decorations like lights, garlands, or themed decorations; party attendees mingling; all people with fully visible heads and faces, no heads cropped; festive holiday atmosphere; indoor or outdoor celebration.",
   "parties-and-events::graduation-party":
-    "Graduation celebration—graduation caps visible, decorated party area, congratulations decorations; graduate with family and friends; achievement celebration atmosphere.",
+    "Graduation celebration—graduation caps visible, decorated party area, congratulations decorations; graduate with family and friends; all people with fully visible heads and faces, no heads cropped; achievement celebration atmosphere.",
   "parties-and-events::retirement-party":
-    "Retirement celebration—party decorations, congratulations cards or banners, cake; retiree with colleagues or family; milestone celebration atmosphere.",
+    "Retirement celebration—party decorations, congratulations cards or banners, cake; retiree with colleagues or family; all people with fully visible heads and faces, no heads cropped; milestone celebration atmosphere.",
   "parties-and-events::engagement-party":
-    "Engagement party—celebration decorations, engagement ring visible or suggested, party setup; engaged couple with family and friends; romantic celebration atmosphere."
+    "Engagement party—celebration decorations, engagement ring visible or suggested, party setup; engaged couple with family and friends; all people with fully visible heads and faces, no heads cropped; romantic celebration atmosphere."
 };
 
 // -------------------------------- GENERAL --------------------------------
 const PROMPTS_GENERAL = {
   "general::hoa-meeting":
-    "Community HOA meeting—adults seated around a conference table with papers and coffee mugs, calm discussion, bright neutral room; not corporate branding.",
+    "Community HOA meeting—adults seated around a conference table with papers and coffee mugs, calm discussion, bright neutral room; all people with fully visible heads and faces, no heads cropped; not corporate branding.",
   "general::ad-hoc-meeting":
-    "Small spontaneous meeting—few people gathered around a laptop or whiteboard, casual environment; friendly tone.",
+    "Small spontaneous meeting—few people gathered around a laptop or whiteboard, casual environment; all people with fully visible heads and faces, no heads cropped; friendly tone.",
   "general::board-meeting":
-    "Formal board meeting—conference table, papers and tablets, attentive participants; modern professional space.",
+    "Formal board meeting—conference table, papers and tablets, attentive participants; all people with fully visible heads and faces, no heads cropped; modern professional space.",
   "general::team-planning-session":
-    "Team planning session—table with open notebooks and sticky-note shapes (no text), engaged teammates collaborating.",
+    "Team planning session—table with open notebooks and sticky-note shapes (no text), engaged teammates collaborating; all people with fully visible heads and faces, no heads cropped.",
   "general::volunteer-orientation":
-    "Volunteer orientation—community-center room, facilitator speaking to mixed group with pamphlets (no text), inclusive vibe.",
+    "Volunteer orientation—community-center room, facilitator speaking to mixed group with pamphlets (no text), inclusive vibe; all people with fully visible heads and faces, no heads cropped.",
   "general::town-hall-meeting":
-    "Town hall meeting—open hall or gym, rows of chairs, speaker addressing audience, welcoming civic tone.",
+    "Town hall meeting—open hall or gym, rows of chairs, speaker addressing audience, welcoming civic tone; all people with fully visible heads and faces, no heads cropped.",
   "general::community-discussion":
-    "Community discussion circle—diverse adults seated in a casual semicircle, warm conversational mood; no branding.",
+    "Community discussion circle—diverse adults seated in a casual semicircle, warm conversational mood; all people with fully visible heads and faces, no heads cropped; no branding.",
   "general::staff-training":
-    "Staff training—classroom or office setup with instructor and participants taking notes; friendly learning tone.",
+    "Staff training—classroom or office setup with instructor and participants taking notes; all people with fully visible heads and faces, no heads cropped; friendly learning tone.",
   "general::committee-meeting":
-    "Committee meeting—small conference setup, laptops and papers, group collaboration; calm neutral setting.",
+    "Committee meeting—small conference setup, laptops and papers, group collaboration; all people with fully visible heads and faces, no heads cropped; calm neutral setting.",
   "general::monthly-meetup":
-    "Casual monthly meetup—people mingling in a lounge or café, light refreshments, friendly connections.",
+    "Casual monthly meetup—people mingling in a lounge or café, light refreshments, friendly connections; all people with fully visible heads and faces, no heads cropped.",
   "general::project-kickoff":
-    "Project kickoff—enthusiastic small group reviewing plans on screen or whiteboard; collaborative team energy.",
+    "Project kickoff—enthusiastic small group reviewing plans on screen or whiteboard; all people with fully visible heads and faces, no heads cropped; collaborative team energy.",
   "general::workshop-registration":
-    "Workshop registration—table with clipboards or laptops (no text), participants checking in or signing up; organized welcoming tone."
+    "Workshop registration—table with clipboards or laptops (no text), participants checking in or signing up; all people with fully visible heads and faces, no heads cropped; organized welcoming tone."
 };
 
 // -------------------------------- CLUBS & GROUPS --------------------------------

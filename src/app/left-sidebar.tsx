@@ -465,8 +465,7 @@ export default function LeftSidebar() {
     mode: "camera" | "upload"
   ) => {
     const win = window as any;
-    const fn =
-      mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
+    const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
     if (typeof fn === "function") {
       event.preventDefault();
       collapseSidebarOnTouch();
@@ -2077,19 +2076,19 @@ export default function LeftSidebar() {
         aria-label="Sidebar"
       >
         {/* Top: Logo + App name + close button */}
-        <div className="h-16 border-b border-border flex items-center gap-2 px-4">
-          <Link href="/" className="flex items-center gap-2 min-w-0">
+        <div className="h-16 border-b border-border flex items-center gap-2 px-4 overflow-visible">
+          <Link
+            href="/"
+            className="flex items-center gap-2 min-w-0 overflow-visible"
+          >
             <Image src={Logo} alt="Envitefy" width={32} height={32} />
-            <div className="min-w-0 leading-tight">
-              <span className="text-base truncate block">
+            <div className="min-w-0 leading-relaxed overflow-visible">
+              <span className="block text-2xl md:text-4xl">
                 <span className="font-pacifico">
-                  <span className="text-[#0e7bc4]">env</span>
+                  <span className="text-[#0e7bc4]">Env</span>
                   <span className="text-[#ee3c2b]">i</span>
-                  <span className="text-[#0e7bc4]">tefy.com</span>
+                  <span className="text-[#0e7bc4]">tefy</span>
                 </span>
-              </span>
-              <span className="text-xs text-foreground/60 block truncate text-center">
-                Create. Share. Enjoy.
               </span>
             </div>
           </Link>
