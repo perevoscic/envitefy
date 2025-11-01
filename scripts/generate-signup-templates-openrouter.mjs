@@ -78,7 +78,7 @@ const TONE = {
   "school-and-education": "Friendly scholastic tone.",
   "church-and-community": "Welcoming community tone.",
   "sports-and-recreation": "Energetic yet tidy sports tone.",
-  "fundraising-food-and-events": "Inviting communal feel; uncluttered event layout.",
+  "fundraising-food": "Inviting communal feel; uncluttered event layout.", // Match folder name
   "family-and-personal": "Cozy celebration tone; relaxed, candid feel.",
   "business-and-professional": "Clean, modern professional tone.",
   "other-special-interest": "Neutral modern styling tailored to subject.",
@@ -279,27 +279,27 @@ const PROMPTS_SPORTS = {
     "Golf course—players taking turns on green; include youth alongside adults; bright sunny setting."
 };
 
-// -------------------- FUNDRAISING, FOOD, & EVENTS --------------------
+// -------------------- FUNDRAISING & FOOD --------------------
 const PROMPTS_FUNDRAISING = {
-  "fundraising-food-and-events::car-wash":
+  "fundraising-food::car-wash":
     "Sunny parking-lot fundraiser—kids washing cars with sponges and buckets; cheerful water splashes.",
-  "fundraising-food-and-events::bake-sale":
+  "fundraising-food::bake-sale":
     "Outdoor bake-sale table—cupcakes, cookies, pies; kids and adults selling/buying; no readable text on signs.",
-  "fundraising-food-and-events::charity-gala":
+  "fundraising-food::charity-gala":
     "Elegant indoor gala—round tables, subtle lighting, minimalist stage; friendly adults and teens.",
-  "fundraising-food-and-events::restaurant-night":
+  "fundraising-food::restaurant-night":
     "Restaurant fundraiser—families dining together; warm community vibe; simple décor; no brand logos.",
-  "fundraising-food-and-events::food-pantry":
+  "fundraising-food::food-pantry":
     "Assistance event—volunteers sorting canned and boxed food; adults and kids helping.",
-  "fundraising-food-and-events::auction-event":
+  "fundraising-food::auction-event":
     "Indoor auction—display tables with items; paddle shapes without text; attentive crowd.",
-  "fundraising-food-and-events::donation-drive":
+  "fundraising-food::donation-drive":
     "Community donation—labeled box shapes (no text), volunteers placing items; kids assisting.",
-  "fundraising-food-and-events::vendor-fair":
+  "fundraising-food::vendor-fair":
     "Outdoor vendor stalls—handmade crafts and baked goods; families browsing; no text on signs.",
-  "fundraising-food-and-events::raffle":
+  "fundraising-food::raffle":
     "Fundraiser booth—ticket box and strips (no text), balloons; kids helping with adults.",
-  "fundraising-food-and-events::potluck-dinner":
+  "fundraising-food::potluck-dinner":
     "Community potluck—buffet-style dishes and friendly conversation; families including kids."
 };
 
@@ -415,11 +415,50 @@ const PROMPTS = {
   ...PROMPTS_GENERAL
 };
 
+// Category to folder mapping (matches API route mapping and prompt keys)
+const CATEGORY_FOLDER_MAP = {
+  "Fall & Seasonal": "fall-and-seasonal",
+  "Winter & Holidays": "winter-and-holidays",
+  "Spring": "spring",
+  "Summer": "summer",
+  "School & Education": "school-and-education",
+  "Church & Community": "church-and-community",
+  "Sports & Recreation": "sports-and-recreation",
+  "Fundraising & Food": "fundraising-food", // Note: API uses "fundraising-food" not "fundraising-and-food"
+  "Family & Personal": "family-and-personal",
+  "Business & Professional": "business-and-professional",
+  "Other / Special Interest": "other-special-interest",
+  "General": "general",
+};
+
 // Final builder (explicit lookup; minimal default if a name is missing)
 export function buildPrompt(category, name) {
-  const key = `${slugify(category)}::${slugify(name)}`;
-  const tone = TONE[slugify(category)] || TONE["other-special-interest"];
+  // Use folder mapping to match prompt keys (some categories have non-standard slugs)
+  const folderKey = CATEGORY_FOLDER_MAP[category] || slugify(category);
+  const nameKey = slugify(name);
+  const key = `${folderKey}::${nameKey}`;
+
+  // Validate prompt exists
   const main = PROMPTS[key];
+  if (!main) {
+    console.warn(
+      `⚠️  WARNING: No specific prompt found for "${category}" → "${name}" (key: ${key}). Using generic fallback.`
+    );
+  } else {
+    // Validate prompt mentions the item name (case-insensitive)
+    const nameLower = name.toLowerCase();
+    const promptLower = main.toLowerCase();
+    const nameWords = nameLower.split(/\s+/).filter((w) => w.length > 2); // Ignore short words like "a", "an", "of"
+    const hasNameMatch = nameWords.some((word) => promptLower.includes(word));
+
+    if (!hasNameMatch) {
+      console.warn(
+        `⚠️  WARNING: Prompt for "${name}" doesn't seem to mention the item name. Prompt: "${main.substring(0, 60)}..."`
+      );
+    }
+  }
+
+  const tone = TONE[folderKey] || TONE[slugify(category)] || TONE["other-special-interest"];
   const common = `${tone} ${BASE_STYLE} ${PEOPLE_RULE} ${GUARDRAILS}`;
   if (main) return `${main} ${common}`.trim();
   return `Outdoor seasonal landscape with simple depth and balanced spacing; no text. ${common}`.trim();
@@ -542,7 +581,8 @@ async function run() {
   const manifest = {};
 
   for (const [category, items] of Object.entries(catalog)) {
-    const categorySlug = slugify(category);
+    // Use folder mapping for consistency with API routes (matches prompt keys)
+    const categorySlug = CATEGORY_FOLDER_MAP[category] || slugify(category);
     const categoryDir = path.join(outputBaseDir, categorySlug);
     await ensureDir(categoryDir);
 
@@ -556,7 +596,15 @@ async function run() {
 
       if (!(await fileExists(filePath))) {
         const prompt = buildPrompt(category, item.name);
-        console.log("Generating:", isNana ? "[nana]" : "[default]", "-", category, "-", item.name);
+        console.log(
+          "Generating:",
+          isNana ? "[nana]" : "[default]",
+          "-",
+          category,
+          "-",
+          item.name,
+          `(${categorySlug}/${filename})`
+        );
 
         let rawBuf;
         try {
@@ -569,8 +617,9 @@ async function run() {
 
         const finalBuf = await normalizeToFourThreePng(rawBuf);
         await fs.writeFile(filePath, finalBuf);
+        console.log(`✓ Generated: ${publicPath}`);
       } else {
-        console.log("Exists, skipping:", category, "-", item.name);
+        console.log("Exists, skipping:", category, "-", item.name, `(${categorySlug}/${filename})`);
       }
 
       if (!manifest[category]) manifest[category] = [];

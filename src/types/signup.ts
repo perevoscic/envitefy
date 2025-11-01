@@ -117,7 +117,7 @@ export type SignupDesignTheme =
   | "Winter & Holidays"
   | "Church & Community"
   | "Sports & Recreation"
-  | "Fundraising, Food, & Events"
+  | "Fundraising & Food"
   | "Family & Personal"
   | "Business & Professional"
   | "Parties & Events"

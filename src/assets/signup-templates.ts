@@ -427,7 +427,7 @@ export const SIGNUP_TEMPLATES: SignupTemplateManifest =
       "path": "/templates/signup/sports-and-recreation/golf-tournament.png"
     }
   ],
-  "Fundraising, Food, & Events": [
+  "Fundraising & Food": [
     {
       "name": "Car Wash",
       "tier": "free",

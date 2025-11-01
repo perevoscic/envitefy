@@ -979,7 +979,7 @@ const SignupBuilder: React.FC<Props> = ({
             <rect x="46" y="22" width="20" height="4" fill="#22C55E" />
           </svg>
         );
-      case "Fundraising, Food, & Events":
+      case "Fundraising & Food":
         return (
           <svg
             viewBox="0 0 80 48"

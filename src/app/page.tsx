@@ -69,6 +69,50 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [, setOcrText] = useState<string>("");
 
+  const logUploadIssue = useCallback(
+    (err: unknown, stage: string, details?: Record<string, unknown>) => {
+      const payload: Record<string, unknown> = {
+        stage,
+        details,
+        timestamp: new Date().toISOString(),
+      };
+      if (err instanceof Error) {
+        payload.errorName = err.name;
+        payload.errorMessage = err.message;
+        payload.errorStack = err.stack;
+      }
+      if (typeof window !== "undefined") {
+        const globalNavigator = window.navigator as Navigator & {
+          connection?: {
+            effectiveType?: string;
+            downlink?: number;
+            rtt?: number;
+            saveData?: boolean;
+          };
+        };
+        payload.onLine = globalNavigator.onLine;
+        payload.userAgent = globalNavigator.userAgent;
+        if (globalNavigator.connection) {
+          payload.connection = {
+            effectiveType: globalNavigator.connection.effectiveType,
+            downlink: globalNavigator.connection.downlink,
+            rtt: globalNavigator.connection.rtt,
+            saveData: globalNavigator.connection.saveData,
+          };
+        }
+      }
+      if (err && typeof err === "object") {
+        try {
+          Reflect.set(err as object, "__snapUploadLogged", true);
+        } catch {
+          // ignore reflecting failures
+        }
+      }
+      console.error("[snap-upload]", payload, err);
+    },
+    []
+  );
+
   const connected = useMemo(
     () => ({
       google: Boolean((session as any)?.providers?.google),
@@ -180,8 +224,11 @@ export default function Home() {
         clearTimeout(timeoutId);
       } catch (fetchErr) {
         clearTimeout(timeoutId);
-        // Log the actual error for debugging
-        console.error("Upload fetch error:", fetchErr);
+        logUploadIssue(fetchErr, "fetch", {
+          fileName: incoming.name,
+          fileSize: incoming.size,
+          fileType: incoming.type,
+        });
         if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
           throw new Error(
             "Upload timed out. Please check your connection and try again."
@@ -200,7 +247,13 @@ export default function Home() {
         const errorMsg =
           (payload as { error?: string })?.error ||
           `Server error (${res.status})`;
-        console.error("OCR API error:", res.status, errorMsg);
+        logUploadIssue(new Error(errorMsg || "HTTP error"), "http", {
+          status: res.status,
+          statusText: res.statusText,
+          fileName: incoming.name,
+          fileSize: incoming.size,
+          fileType: incoming.type,
+        });
         throw new Error(errorMsg || "Failed to scan file");
       }
 
@@ -241,6 +294,18 @@ export default function Home() {
     } catch (err) {
       setEvent(null);
       setModalOpen(false);
+      const alreadyLogged =
+        err instanceof Error &&
+        Boolean(
+          (err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged
+        );
+      if (!alreadyLogged) {
+        logUploadIssue(err, "ingest-final", {
+          fileName: incoming.name,
+          fileSize: incoming.size,
+          fileType: incoming.type,
+        });
+      }
       if (err instanceof Error) {
         setError(err.message);
       } else {

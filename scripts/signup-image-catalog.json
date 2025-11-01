@@ -102,7 +102,7 @@
     { "name": "Golf Tournament", "tier": "premium" }
   ],
 
-  "Fundraising, Food, & Events": [
+  "Fundraising & Food": [
     { "name": "Car Wash", "tier": "free" },
     { "name": "Bake Sale", "tier": "free" },
     { "name": "Charity Gala", "tier": "premium" },
