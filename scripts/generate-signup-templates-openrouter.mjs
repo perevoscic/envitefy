@@ -83,6 +83,7 @@ const TONE = {
   "business-and-professional": "Clean, modern professional tone.",
   "health-fitness": "Active, energetic tone; clean modern fitness space.",
   "parties-and-events": "Celebratory, festive tone; party decorations, joyful atmosphere.",
+  "clubs-groups": "Friendly group activity tone; shared interest, community gathering.",
   "other-special-interest": "Neutral modern styling tailored to subject.",
   "general": "Clean, inclusive tone for organizational and community gatherings."
 };
@@ -463,6 +464,71 @@ const PROMPTS_GENERAL = {
     "Workshop registration—table with clipboards or laptops (no text), participants checking in or signing up; organized welcoming tone."
 };
 
+// -------------------------------- CLUBS & GROUPS --------------------------------
+const PROMPTS_CLUBS_GROUPS = {
+  "clubs-groups::book-club":
+    "Book club meeting—people seated in circle or around table with books visible; participants discussing; cozy reading atmosphere; indoor setting.",
+  "clubs-groups::running-club":
+    "Outdoor running group—runners on path or track wearing running gear; group running together; athletic club atmosphere.",
+  "clubs-groups::bike-club":
+    "Outdoor cycling group—cyclists with bikes on path or road; cycling gear and helmets visible; friendly group ride atmosphere.",
+  "clubs-groups::hiking-club":
+    "Outdoor hiking group—hikers on trail with backpacks; natural landscape backdrop; hiking boots and gear visible; outdoor adventure atmosphere.",
+  "clubs-groups::rock-climbing-club":
+    "Indoor or outdoor rock climbing—climbers on climbing wall or rock face; climbing gear and harnesses visible; group climbing together; active club atmosphere.",
+  "clubs-groups::swim-club":
+    "Swimming pool—swim lanes visible; swimmers in pool with caps and goggles; swimming club atmosphere; aquatic facility.",
+  "clubs-groups::soccer-club":
+    "Soccer field—players with soccer ball, goals visible, team uniforms; soccer club practice or game; outdoor or indoor facility.",
+  "clubs-groups::baseball-club":
+    "Baseball field—players with baseball equipment, bases and diamond visible; baseball club activity; outdoor ballfield atmosphere.",
+  "clubs-groups::basketball-club":
+    "Basketball court—players with basketball, hoops visible; basketball club practice; indoor or outdoor court atmosphere.",
+  "clubs-groups::football-club":
+    "Football field—players with football, field markings visible; football club practice or game; outdoor field atmosphere.",
+  "clubs-groups::tennis-club":
+    "Tennis courts—players with tennis rackets, nets and courts visible; tennis club activity; outdoor or indoor facility atmosphere.",
+  "clubs-groups::volleyball-club":
+    "Volleyball court—net visible, players with volleyball; volleyball club practice; sand or indoor court atmosphere.",
+  "clubs-groups::golf-club":
+    "Golf course—golfers with golf clubs, putting green or fairway visible; golf club activity; outdoor golf course atmosphere.",
+  "clubs-groups::cheerleading-club":
+    "Gym or field—cheerleaders in formation with pom-poms; cheerleading squad practicing; friendly athletic atmosphere.",
+  "clubs-groups::dance-club":
+    "Dance studio—dancers in formation or practicing moves; dance club rehearsal; mirrored walls and dance floor visible; artistic club atmosphere.",
+  "clubs-groups::drive-group":
+    "Outdoor driving group—cars or vehicles visible, group members with vehicles; driving club meetup; automotive club atmosphere.",
+  "clubs-groups::fisherman-group":
+    "Outdoor fishing group—fishermen with fishing rods by water; fishing gear visible; fishing club activity; lakeside or riverside atmosphere.",
+  "clubs-groups::horseback-riding-group":
+    "Outdoor horseback riding—riders on horses, equestrian gear visible; horseback riding club activity; outdoor equestrian atmosphere.",
+  "clubs-groups::bird-watching-group":
+    "Outdoor bird watching—birdwatchers with binoculars in natural setting; bird watching group observing; nature club atmosphere; outdoor wildlife scene.",
+  "clubs-groups::gardening-group":
+    "Outdoor gardening group—gardeners with tools in garden setting; raised beds or plants visible; gardening club activity; community garden atmosphere.",
+  "clubs-groups::reading-group":
+    "Reading group meeting—people with books seated together; reading materials visible; cozy literary discussion atmosphere; indoor setting.",
+  "clubs-groups::writing-group":
+    "Writing group meeting—writers with notebooks or laptops; writing club gathering; creative writing atmosphere; indoor setting with writing materials.",
+  "clubs-groups::cooking-group":
+    "Cooking group—people in kitchen setting with cooking equipment; ingredients and utensils visible; cooking club activity; culinary group atmosphere.",
+  "clubs-groups::baking-group":
+    "Baking group—bakers with baking equipment, mixing bowls and ingredients visible; baking club activity; kitchen setting with baked goods.",
+  "clubs-groups::painting-group":
+    "Painting group—artists with easels and canvases, paint brushes and palettes visible; painting club activity; art studio atmosphere.",
+  "clubs-groups::pottery-group":
+    "Pottery group—pottery wheels and clay work visible; pottery club members creating; ceramic studio atmosphere; pottery tools and materials.",
+  "clubs-groups::knitting-group":
+    "Knitting group—knitters with yarn and knitting needles, projects in progress; knitting club meeting; cozy crafting atmosphere; indoor setting.",
+  "clubs-groups::crocheting-group":
+    "Crocheting group—crocheters with yarn and crochet hooks, crochet projects visible; crocheting club meeting; crafting group atmosphere.",
+  "clubs-groups::sewing-group":
+    "Sewing group—sewers with fabric and sewing machines or hand-sewing; sewing club activity; textile craft atmosphere; sewing supplies visible.",
+  "clubs-groups::quilting-group":
+    "Quilting group—quilters with fabric pieces and quilting tools, quilt projects visible; quilting club meeting; textile art atmosphere; quilting materials and patterns."
+};
+
+
 // Merge all per-name prompts into one lookup
 const PROMPTS = {
   ...PROMPTS_FALL,
@@ -478,6 +544,7 @@ const PROMPTS = {
   ...PROMPTS_OTHER,
   ...PROMPTS_HEALTH_FITNESS,
   ...PROMPTS_PARTIES,
+  ...PROMPTS_CLUBS_GROUPS,
   ...PROMPTS_GENERAL
 };
 
@@ -495,6 +562,7 @@ const CATEGORY_FOLDER_MAP = {
   "Business & Professional": "business-and-professional",
   "Health & Fitness": "health-fitness",
   "Parties & Events": "parties-and-events",
+  "Clubs & Groups": "clubs-groups",
   "Other / Special Interest": "other-special-interest",
   "General": "general",
 };
