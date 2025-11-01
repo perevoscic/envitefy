@@ -78,9 +78,10 @@ const TONE = {
   "school-and-education": "Friendly scholastic tone.",
   "church-and-community": "Welcoming community tone.",
   "sports-and-recreation": "Energetic yet tidy sports tone.",
-  "fundraising-food": "Inviting communal feel; uncluttered event layout.", // Match folder name
+  "fundraising-and-food": "Inviting communal feel; uncluttered event layout.", // Match folder name
   "family-and-personal": "Cozy celebration tone; relaxed, candid feel.",
   "business-and-professional": "Clean, modern professional tone.",
+  "health-fitness": "Active, energetic tone; clean modern fitness space.",
   "other-special-interest": "Neutral modern styling tailored to subject.",
   "general": "Clean, inclusive tone for organizational and community gatherings."
 };
@@ -281,25 +282,25 @@ const PROMPTS_SPORTS = {
 
 // -------------------- FUNDRAISING & FOOD --------------------
 const PROMPTS_FUNDRAISING = {
-  "fundraising-food::car-wash":
+  "fundraising--and-food::car-wash":
     "Sunny parking-lot fundraiser—kids washing cars with sponges and buckets; cheerful water splashes.",
-  "fundraising-food::bake-sale":
+  "fundraising--and-food::bake-sale":
     "Outdoor bake-sale table—cupcakes, cookies, pies; kids and adults selling/buying; no readable text on signs.",
-  "fundraising-food::charity-gala":
+  "fundraising--and-food::charity-gala":
     "Elegant indoor gala—round tables, subtle lighting, minimalist stage; friendly adults and teens.",
-  "fundraising-food::restaurant-night":
+  "fundraising--and-food::restaurant-night":
     "Restaurant fundraiser—families dining together; warm community vibe; simple décor; no brand logos.",
-  "fundraising-food::food-pantry":
+  "fundraising--and-food::food-pantry":
     "Assistance event—volunteers sorting canned and boxed food; adults and kids helping.",
-  "fundraising-food::auction-event":
+  "fundraising--and-food::auction-event":
     "Indoor auction—display tables with items; paddle shapes without text; attentive crowd.",
-  "fundraising-food::donation-drive":
+  "fundraising--and-food::donation-drive":
     "Community donation—labeled box shapes (no text), volunteers placing items; kids assisting.",
-  "fundraising-food::vendor-fair":
+  "fundraising--and-food::vendor-fair":
     "Outdoor vendor stalls—handmade crafts and baked goods; families browsing; no text on signs.",
-  "fundraising-food::raffle":
+  "fundraising--and-food::raffle":
     "Fundraiser booth—ticket box and strips (no text), balloons; kids helping with adults.",
-  "fundraising-food::potluck-dinner":
+  "fundraising--and-food::potluck-dinner":
     "Community potluck—buffet-style dishes and friendly conversation; families including kids."
 };
 
@@ -371,6 +372,44 @@ const PROMPTS_OTHER = {
     "Pet adoption/community pet day—volunteers with leashes/carriers, families greeting pets; outdoor or indoor shelter vibe."
 };
 
+// ------------------------- HEALTH & FITNESS -------------------------
+const PROMPTS_HEALTH_FITNESS = {
+  "health-fitness::fitness-class":
+    "Indoor fitness studio—mixed ages doing light stretches or aerobics on mats; clean minimal room; friendly instructor guiding.",
+  "health-fitness::yoga-class":
+    "Indoor yoga studio—mats arranged in rows, people in yoga poses; calm peaceful atmosphere; instructor at front.",
+  "health-fitness::pilates-class":
+    "Pilates studio—reformers or mats, participants with instructor; focused workout session; clean modern space.",
+  "health-fitness::spin-class":
+    "Indoor cycling studio—stationary bikes in rows, participants cycling; energetic instructor at front; bright motivational atmosphere.",
+  "health-fitness::zumba-class":
+    "Dance fitness class—participants following energetic instructor, upbeat music vibe; diverse group; fun active mood.",
+  "health-fitness::bootcamp-class":
+    "Outdoor bootcamp—participants doing exercises in park or field; trainer leading group; energetic workout session.",
+  "health-fitness::dance-class":
+    "Dance studio—mirrored walls, participants learning choreography; dance instructor teaching; friendly artistic atmosphere.",
+  "health-fitness::morning-run":
+    "Outdoor morning run—runners on park trail or sidewalk; early light; mixed group including kids and adults.",
+  "health-fitness::cycling-club":
+    "Outdoor cycling group—cyclists with bikes on path or road; cycling gear; friendly group ride atmosphere.",
+  "health-fitness::crossfit-session":
+    "CrossFit gym—equipment visible (bars, weights, boxes); participants doing high-intensity exercises; coach supervising; energetic vibe.",
+  "health-fitness::martial-arts-class":
+    "Martial arts dojo—participants in uniform practicing moves; instructor demonstrating; respectful disciplined atmosphere.",
+  "health-fitness::boxing-class":
+    "Boxing gym—punching bags and gloves; participants training with coach; focused workout session; energetic atmosphere.",
+  "health-fitness::swimming-lessons":
+    "Swimming pool—swim lanes visible; instructor teaching kids or adults; swimming aids visible; clean aquatic facility.",
+  "health-fitness::tennis-club":
+    "Tennis courts—players on courts with rackets; nets and court lines visible; friendly competitive atmosphere; outdoor or indoor facility.",
+  "health-fitness::basketball-league":
+    "Basketball court—players shooting or dribbling; hoops and court markings visible; league game atmosphere; indoor or outdoor court.",
+  "health-fitness::volleyball-league":
+    "Volleyball court—net visible, players in position; volleyball in play; league match atmosphere; sand or indoor court.",
+  "health-fitness::wellness-workshop":
+    "Wellness workshop—participants seated in circle or rows; instructor presenting; calm educational atmosphere; wellness-focused setting."
+};
+
 // -------------------------------- GENERAL --------------------------------
 const PROMPTS_GENERAL = {
   "general::hoa-meeting":
@@ -412,6 +451,7 @@ const PROMPTS = {
   ...PROMPTS_FAMILY,
   ...PROMPTS_BUSINESS,
   ...PROMPTS_OTHER,
+  ...PROMPTS_HEALTH_FITNESS,
   ...PROMPTS_GENERAL
 };
 
@@ -424,9 +464,10 @@ const CATEGORY_FOLDER_MAP = {
   "School & Education": "school-and-education",
   "Church & Community": "church-and-community",
   "Sports & Recreation": "sports-and-recreation",
-  "Fundraising & Food": "fundraising-food", // Note: API uses "fundraising-food" not "fundraising-and-food"
+  "Fundraising & Food": "fundraising--and-food", // Note: API uses "fundraising--and-food" not "fundraising-and-food"
   "Family & Personal": "family-and-personal",
   "Business & Professional": "business-and-professional",
+  "Health & Fitness": "health-fitness",
   "Other / Special Interest": "other-special-interest",
   "General": "general",
 };
