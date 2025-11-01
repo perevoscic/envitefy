@@ -33,10 +33,18 @@ async function main() {
     pngBuffers.push(buf);
   }
 
+  // Generate favicon.ico in src/app (Next.js App Router)
   const icoOutput = path.join(outDir, "favicon.ico");
   const icoBuffer = await toIco(pngBuffers);
   await fs.promises.writeFile(icoOutput, icoBuffer);
   console.log(`[favicon] Done → ${icoOutput}`);
+
+  // Also copy to public/ for compatibility with legacy paths
+  const publicDir = path.resolve(__dirname, "../public");
+  await ensureDir(publicDir);
+  const publicIcoOutput = path.join(publicDir, "favicon.ico");
+  await fs.promises.writeFile(publicIcoOutput, icoBuffer);
+  console.log(`[favicon] Done → ${publicIcoOutput}`);
 }
 
 main().catch((err) => {

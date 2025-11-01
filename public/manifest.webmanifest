@@ -32,6 +32,15 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "file_handlers": [
+    {
+      "action": "/?action=upload",
+      "accept": {
+        "image/*": [".png", ".jpg", ".jpeg", ".webp"],
+        "application/pdf": [".pdf"]
+      }
+    }
   ]
 }
 

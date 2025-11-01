@@ -1,19 +1,23 @@
-import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
+import { corsJson, corsPreflight } from "@/lib/cors";
 
 export const runtime = "nodejs";
+
+export function OPTIONS(request: Request) {
+  return corsPreflight(request);
+}
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: "No file" }, { status: 400 });
+      return corsJson(request, { error: "No file" }, { status: 400 });
     }
 
     const mime = file.type || "";
@@ -94,7 +98,7 @@ export async function POST(request: Request) {
       }
     } catch {}
 
-    return NextResponse.json({
+    return corsJson(request, {
       ocrText: raw,
       event: {
         title,
@@ -110,6 +114,6 @@ export async function POST(request: Request) {
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return corsJson(request, { error: message }, { status: 500 });
   }
 }

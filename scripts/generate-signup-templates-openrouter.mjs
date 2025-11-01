@@ -82,6 +82,7 @@ const TONE = {
   "family-and-personal": "Cozy celebration tone; relaxed, candid feel.",
   "business-and-professional": "Clean, modern professional tone.",
   "health-fitness": "Active, energetic tone; clean modern fitness space.",
+  "parties-and-events": "Celebratory, festive tone; party decorations, joyful atmosphere.",
   "other-special-interest": "Neutral modern styling tailored to subject.",
   "general": "Clean, inclusive tone for organizational and community gatherings."
 };
@@ -282,25 +283,25 @@ const PROMPTS_SPORTS = {
 
 // -------------------- FUNDRAISING & FOOD --------------------
 const PROMPTS_FUNDRAISING = {
-  "fundraising--and-food::car-wash":
+  "fundraising-and-food::car-wash":
     "Sunny parking-lot fundraiser—kids washing cars with sponges and buckets; cheerful water splashes.",
-  "fundraising--and-food::bake-sale":
+  "fundraising-and-food::bake-sale":
     "Outdoor bake-sale table—cupcakes, cookies, pies; kids and adults selling/buying; no readable text on signs.",
-  "fundraising--and-food::charity-gala":
+  "fundraising-and-food::charity-gala":
     "Elegant indoor gala—round tables, subtle lighting, minimalist stage; friendly adults and teens.",
-  "fundraising--and-food::restaurant-night":
+  "fundraising-and-food::restaurant-night":
     "Restaurant fundraiser—families dining together; warm community vibe; simple décor; no brand logos.",
-  "fundraising--and-food::food-pantry":
+  "fundraising-and-food::food-pantry":
     "Assistance event—volunteers sorting canned and boxed food; adults and kids helping.",
-  "fundraising--and-food::auction-event":
+  "fundraising-and-food::auction-event":
     "Indoor auction—display tables with items; paddle shapes without text; attentive crowd.",
-  "fundraising--and-food::donation-drive":
+  "fundraising-and-food::donation-drive":
     "Community donation—labeled box shapes (no text), volunteers placing items; kids assisting.",
-  "fundraising--and-food::vendor-fair":
+  "fundraising-and-food::vendor-fair":
     "Outdoor vendor stalls—handmade crafts and baked goods; families browsing; no text on signs.",
-  "fundraising--and-food::raffle":
+  "fundraising-and-food::raffle":
     "Fundraiser booth—ticket box and strips (no text), balloons; kids helping with adults.",
-  "fundraising--and-food::potluck-dinner":
+  "fundraising-and-food::potluck-dinner":
     "Community potluck—buffet-style dishes and friendly conversation; families including kids."
 };
 
@@ -410,6 +411,30 @@ const PROMPTS_HEALTH_FITNESS = {
     "Wellness workshop—participants seated in circle or rows; instructor presenting; calm educational atmosphere; wellness-focused setting."
 };
 
+// ------------------------- PARTIES & EVENTS -------------------------
+const PROMPTS_PARTIES = {
+  "parties-and-events::birthday-party":
+    "Indoor or outdoor birthday party—birthday cake with candles on table, colorful balloons, wrapped presents, party decorations like streamers or banners; kids and adults celebrating; festive birthday atmosphere; NOT a park walk or family outing.",
+  "parties-and-events::wedding":
+    "Wedding ceremony or reception—wedding arch or floral backdrop, bride and groom, guests seated or mingling; elegant decorations; indoor or outdoor wedding venue; sophisticated celebration atmosphere.",
+  "parties-and-events::baby-shower":
+    "Baby shower celebration—pastel decorations, baby-themed decorations, gifts table with wrapped presents, baby items visible; expectant parents with family and friends; joyful anticipation atmosphere.",
+  "parties-and-events::game-night":
+    "Indoor casual game night—tabletop games and board games on table; friends and family playing together; snacks and drinks visible; cozy social gathering atmosphere.",
+  "parties-and-events::bridal-shower":
+    "Bridal shower celebration—floral decorations, gifts table with wrapped presents, elegant party setup; bride-to-be with friends; feminine celebration atmosphere.",
+  "parties-and-events::family-holiday":
+    "Family holiday gathering—holiday decorations like garlands or festive table settings; extended family together; seasonal celebration atmosphere; cozy warm feeling.",
+  "parties-and-events::holiday-party":
+    "Holiday party—holiday decorations like lights, garlands, or themed decorations; party attendees mingling; festive holiday atmosphere; indoor or outdoor celebration.",
+  "parties-and-events::graduation-party":
+    "Graduation celebration—graduation caps visible, decorated party area, congratulations decorations; graduate with family and friends; achievement celebration atmosphere.",
+  "parties-and-events::retirement-party":
+    "Retirement celebration—party decorations, congratulations cards or banners, cake; retiree with colleagues or family; milestone celebration atmosphere.",
+  "parties-and-events::engagement-party":
+    "Engagement party—celebration decorations, engagement ring visible or suggested, party setup; engaged couple with family and friends; romantic celebration atmosphere."
+};
+
 // -------------------------------- GENERAL --------------------------------
 const PROMPTS_GENERAL = {
   "general::hoa-meeting":
@@ -452,6 +477,7 @@ const PROMPTS = {
   ...PROMPTS_BUSINESS,
   ...PROMPTS_OTHER,
   ...PROMPTS_HEALTH_FITNESS,
+  ...PROMPTS_PARTIES,
   ...PROMPTS_GENERAL
 };
 
@@ -464,10 +490,11 @@ const CATEGORY_FOLDER_MAP = {
   "School & Education": "school-and-education",
   "Church & Community": "church-and-community",
   "Sports & Recreation": "sports-and-recreation",
-  "Fundraising & Food": "fundraising--and-food", // Note: API uses "fundraising--and-food" not "fundraising-and-food"
+  "Fundraising & Food": "fundraising-and-food",
   "Family & Personal": "family-and-personal",
   "Business & Professional": "business-and-professional",
   "Health & Fitness": "health-fitness",
+  "Parties & Events": "parties-and-events",
   "Other / Special Interest": "other-special-interest",
   "General": "general",
 };

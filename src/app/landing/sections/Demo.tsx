@@ -33,6 +33,8 @@ export default function Demo() {
         method: "POST",
         body: form,
         signal: controller.signal,
+        mode: "cors",
+        credentials: "include",
       });
       clearTimeout(timeoutId);
     } catch (e) {

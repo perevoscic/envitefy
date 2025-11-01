@@ -218,6 +218,7 @@ export default function Home() {
           method: "POST",
           body: form,
           signal: controller.signal,
+          mode: "cors",
           // Ensure credentials are included for authenticated requests
           credentials: "include",
         });

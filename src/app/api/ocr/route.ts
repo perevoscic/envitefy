@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
@@ -6,12 +5,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
 import { GoogleAuth } from "google-auth-library";
+import { corsJson, corsPreflight } from "@/lib/cors";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 /** Give the route more time for large images + Vision */
 export const maxDuration = 60;
+
+export function OPTIONS(request: Request) {
+  return corsPreflight(request);
+}
 
 const DEFAULT_OCR_MODEL = "gpt-4o";
 
@@ -1484,7 +1488,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: "No file" }, { status: 400 });
+      return corsJson(request, { error: "No file" }, { status: 400 });
     }
 
     const mime = file.type || "";
@@ -2806,12 +2810,13 @@ export async function POST(request: Request) {
       }
     } catch {}
 
-    return NextResponse.json(
+    return corsJson(
+      request,
       { intakeId, ocrText: raw, fieldsGuess, practiceSchedule, schedule, events, category, ocrSource },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "OCR route failed", detail: message }, { status: 500 });
+    return corsJson(request, { error: "OCR route failed", detail: message }, { status: 500 });
   }
 }
