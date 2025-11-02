@@ -153,6 +153,7 @@ export default function EventCreateModal({
   const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
   const [rsvp, setRsvp] = useState("");
+  const [numberOfGuests, setNumberOfGuests] = useState<number>(0);
   const [category, setCategory] = useState<string>("");
   const [customCategory, setCustomCategory] = useState<string>("");
   const [showCustomCategory, setShowCustomCategory] = useState(false);
@@ -357,6 +358,7 @@ export default function EventCreateModal({
     setVenue("");
     setDescription("");
     setRsvp("");
+    setNumberOfGuests(0);
     setCategory("");
     setCustomCategory("");
     setShowCustomCategory(false);
@@ -556,6 +558,7 @@ export default function EventCreateModal({
           location: location || undefined,
           description: description || undefined,
           rsvp: trimmedRsvp || undefined,
+          numberOfGuests: numberOfGuests || 0,
           allDay: fullDay || undefined,
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
@@ -697,12 +700,8 @@ export default function EventCreateModal({
   const normalizedCategory = (category || "").toLowerCase();
   const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
   const allowsRegistrySection = isRegistryCategory;
-  const showRsvpField =
-    isRegistryCategory ||
-    normalizedCategory.includes("birthday") ||
-    normalizedCategory.includes("wedding") ||
-    normalizedCategory.includes("baby shower") ||
-    Boolean(trimmedRsvp);
+  // RSVP field should ALWAYS show - users may want to add RSVP for any event type
+  const showRsvpField = true;
 
   if (!open) return null;
 
@@ -838,6 +837,26 @@ export default function EventCreateModal({
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-3 py-2 rounded-md border border-border bg-background"
               placeholder="Where is it?"
+            />
+          </div>
+          <div>
+            <label
+              className="block text-sm mb-1"
+              htmlFor="evt-number-of-guests"
+            >
+              Number of guests <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="evt-number-of-guests"
+              type="number"
+              min="1"
+              required
+              value={numberOfGuests || ""}
+              onChange={(e) =>
+                setNumberOfGuests(Number.parseInt(e.target.value, 10) || 0)
+              }
+              className="w-full px-3 py-2 rounded-md border border-border bg-background"
+              placeholder="Enter number of guests"
             />
           </div>
           <div>

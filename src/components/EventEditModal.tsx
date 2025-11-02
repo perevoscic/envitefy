@@ -1,5 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import RegistryLinksEditor, {
@@ -78,7 +84,9 @@ export default function EventEditModal({
         url: typeof item?.url === "string" ? item.url : "",
       }))
     );
-    return base.map((link) => createRegistryEntryFromLink(link.label, link.url));
+    return base.map((link) =>
+      createRegistryEntryFromLink(link.label, link.url)
+    );
   }, [eventData]);
   const [registryEntries, setRegistryEntries] = useState<RegistryFormEntry[]>(
     buildInitialRegistries
@@ -115,9 +123,9 @@ export default function EventEditModal({
     return null;
   }, [initialAttachment, eventData?.thumbnail]);
   const [attachment, setAttachment] = useState(initialAttachment);
-  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(
-    initialPreview
-  );
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
+    string | null
+  >(initialPreview);
   const [attachmentDirty, setAttachmentDirty] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
@@ -260,7 +268,9 @@ export default function EventEditModal({
           const validation = validateRegistryUrl(trimmedUrl);
           return {
             ...entry,
-            error: validation.ok ? null : validation.error || "Enter a valid https:// link",
+            error: validation.ok
+              ? null
+              : validation.error || "Enter a valid https:// link",
             detectedLabel:
               validation.ok && validation.brand
                 ? validation.brand.defaultLabel
@@ -273,8 +283,9 @@ export default function EventEditModal({
     }
 
     const normalizedCategoryForSubmit = (formData.category || "").toLowerCase();
-    const allowsRegistriesForSubmit =
-      REGISTRY_CATEGORY_KEYS.has(normalizedCategoryForSubmit);
+    const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
+      normalizedCategoryForSubmit
+    );
     const sanitizedRegistries = allowsRegistriesForSubmit
       ? normalizeRegistryLinks(
           registryEntries.map((entry) => ({
@@ -322,7 +333,8 @@ export default function EventEditModal({
       const prevRsvp = eventData?.rsvp ? String(eventData.rsvp).trim() : null;
       if (nextRsvp !== prevRsvp) dataUpdate.rsvp = nextRsvp;
       const registriesChanged = (() => {
-        if (sanitizedRegistries.length !== previousRegistries.length) return true;
+        if (sanitizedRegistries.length !== previousRegistries.length)
+          return true;
         return (
           JSON.stringify(sanitizedRegistries) !==
           JSON.stringify(previousRegistries)
@@ -377,12 +389,8 @@ export default function EventEditModal({
   const normalizedCategory = (formData.category || "").toLowerCase();
   const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
   const allowsRegistrySection = isRegistryCategory;
-  const showRsvpField =
-    isRegistryCategory ||
-    normalizedCategory.includes("birthday") ||
-    normalizedCategory.includes("wedding") ||
-    normalizedCategory.includes("baby shower") ||
-    Boolean(trimmedRsvp);
+  // RSVP field should ALWAYS show - users may want to add RSVP for any event type
+  const showRsvpField = true;
 
   if (!session) return null;
 
@@ -656,7 +664,9 @@ export default function EventEditModal({
                     className="hidden"
                   />
                   {attachmentError && (
-                    <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
+                    <p className="mt-2 text-xs text-red-600">
+                      {attachmentError}
+                    </p>
                   )}
                   {attachment && (
                     <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">

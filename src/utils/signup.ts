@@ -416,7 +416,8 @@ export const remainingCapacityForSlot = (
 export const findSignupResponseForUser = (
   form: SignupForm,
   userId?: string | null,
-  email?: string | null
+  email?: string | null,
+  phone?: string | null
 ): SignupResponse | null => {
   if (userId) {
     const byUserId =
@@ -436,6 +437,19 @@ export const findSignupResponseForUser = (
           response.email.toLowerCase() === lower
       ) ?? null;
     if (byEmail) return byEmail;
+  }
+  if (phone) {
+    const normalizedPhone = phone.trim().replace(/\D/g, ""); // Normalize phone: remove non-digits
+    if (normalizedPhone) {
+      const byPhone =
+        form.responses.find(
+          (response) =>
+            response.status !== "cancelled" &&
+            typeof response.phone === "string" &&
+            response.phone.trim().replace(/\D/g, "") === normalizedPhone
+        ) ?? null;
+      if (byPhone) return byPhone;
+    }
   }
   return null;
 };

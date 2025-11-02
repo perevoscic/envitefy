@@ -157,6 +157,7 @@ const SignupViewer: React.FC<Props> = ({
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
 
   const feedback = useStatusMessage(serverMessage, 4000);
   const canInteract = viewerKind !== "readonly";
@@ -196,7 +197,8 @@ const SignupViewer: React.FC<Props> = ({
       findSignupResponseForUser(
         form,
         viewerId || undefined,
-        viewerEmail || undefined
+        viewerEmail || undefined,
+        undefined // phone not available in viewer props initially
       ),
     [form, viewerId, viewerEmail]
   );
@@ -400,9 +402,10 @@ const SignupViewer: React.FC<Props> = ({
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
-        setError(
-          (data && data.error) || "Could not save your sign-up. Try again."
-        );
+        const errorMessage =
+          (data && data.error) || "Could not save your sign-up. Try again.";
+        setError(errorMessage);
+        setErrorOpen(true);
         return;
       }
       setForm(data.signupForm);
@@ -420,7 +423,9 @@ const SignupViewer: React.FC<Props> = ({
       setConfirmOpen(true);
     } catch (err: unknown) {
       console.error("Failed to submit signup:", err);
-      setError("Unexpected error. Please try again.");
+      const errorMessage = "Unexpected error. Please try again.";
+      setError(errorMessage);
+      setErrorOpen(true);
     } finally {
       setLoading(false);
     }
@@ -693,137 +698,141 @@ const SignupViewer: React.FC<Props> = ({
 
       {canInteract && (
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">
-              Your details
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
+          {(viewerKind === "owner" ||
+            Object.keys(selectedSlots).length > 0 ||
+            myResponse) && (
+            <div className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">
+                Your details
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs text-foreground/60 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    disabled={loading}
+                  />
+                </div>
+                {form.settings.collectEmail && (
+                  <div>
+                    <label className="block text-xs text-foreground/60 mb-1">
+                      Email for reminders
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+                {form.settings.collectPhone && (
+                  <div>
+                    <label className="block text-xs text-foreground/60 mb-1">
+                      Mobile number
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+                {maxGuests > 1 && (
+                  <div>
+                    <label className="block text-xs text-foreground/60 mb-1">
+                      Extra guests (for headcount)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxGuests}
+                      value={guests}
+                      onChange={(event) =>
+                        setGuests(
+                          Math.max(
+                            0,
+                            Math.min(
+                              maxGuests,
+                              Number.parseInt(event.target.value, 10) || 0
+                            )
+                          )
+                        )
+                      }
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {form.questions.length > 0 && (
+                <div className="space-y-3">
+                  {form.questions.map((question) => {
+                    const value = answers[question.id] || "";
+                    return (
+                      <div key={question.id}>
+                        <label className="block text-xs text-foreground/60 mb-1">
+                          {question.prompt}
+                          {question.required && (
+                            <span className="ml-1 text-red-500">*</span>
+                          )}
+                        </label>
+                        {question.multiline ? (
+                          <textarea
+                            value={value}
+                            onChange={(event) =>
+                              setAnswers((prev) => ({
+                                ...prev,
+                                [question.id]: event.target.value,
+                              }))
+                            }
+                            rows={3}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            disabled={loading}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={value}
+                            onChange={(event) =>
+                              setAnswers((prev) => ({
+                                ...prev,
+                                [question.id]: event.target.value,
+                              }))
+                            }
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            disabled={loading}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs text-foreground/60 mb-1">
-                  Name
+                  Notes for the host (optional)
                 </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={2}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                   disabled={loading}
                 />
               </div>
-              {form.settings.collectEmail && (
-                <div>
-                  <label className="block text-xs text-foreground/60 mb-1">
-                    Email for reminders
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    disabled={loading}
-                  />
-                </div>
-              )}
-              {form.settings.collectPhone && (
-                <div>
-                  <label className="block text-xs text-foreground/60 mb-1">
-                    Mobile number
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    disabled={loading}
-                  />
-                </div>
-              )}
-              {maxGuests > 1 && (
-                <div>
-                  <label className="block text-xs text-foreground/60 mb-1">
-                    Extra guests (for headcount)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={maxGuests}
-                    value={guests}
-                    onChange={(event) =>
-                      setGuests(
-                        Math.max(
-                          0,
-                          Math.min(
-                            maxGuests,
-                            Number.parseInt(event.target.value, 10) || 0
-                          )
-                        )
-                      )
-                    }
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    disabled={loading}
-                  />
-                </div>
-              )}
             </div>
-
-            {form.questions.length > 0 && (
-              <div className="space-y-3">
-                {form.questions.map((question) => {
-                  const value = answers[question.id] || "";
-                  return (
-                    <div key={question.id}>
-                      <label className="block text-xs text-foreground/60 mb-1">
-                        {question.prompt}
-                        {question.required && (
-                          <span className="ml-1 text-red-500">*</span>
-                        )}
-                      </label>
-                      {question.multiline ? (
-                        <textarea
-                          value={value}
-                          onChange={(event) =>
-                            setAnswers((prev) => ({
-                              ...prev,
-                              [question.id]: event.target.value,
-                            }))
-                          }
-                          rows={3}
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                          disabled={loading}
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          value={value}
-                          onChange={(event) =>
-                            setAnswers((prev) => ({
-                              ...prev,
-                              [question.id]: event.target.value,
-                            }))
-                          }
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                          disabled={loading}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs text-foreground/60 mb-1">
-                Notes for the host (optional)
-              </label>
-              <textarea
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                rows={2}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                disabled={loading}
-              />
-            </div>
-          </div>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs text-foreground/60">
@@ -1039,32 +1048,114 @@ const SignupViewer: React.FC<Props> = ({
           />
           <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-background shadow-lg">
             <div className="p-4 sm:p-5 space-y-3">
-              <h3 className="text-base sm:text-lg font-semibold text-foreground">
-                {feedback?.includes("waitlist")
-                  ? "You're on the waitlist"
-                  : "Sign-up saved"}
-              </h3>
-              <p className="text-sm text-foreground/70">
-                {feedback?.includes("waitlist")
-                  ? "We'll promote you automatically if spots open up."
-                  : `We've saved your sign-up${
-                      form.settings.collectEmail &&
-                      (email?.trim() || myResponse?.email)
-                        ? ` and sent a confirmation to ${(
-                            email ||
-                            myResponse?.email ||
-                            ""
-                          ).trim()}.`
-                        : "."
-                    }`}
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-6 w-6 text-emerald-600"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                    {feedback?.includes("waitlist")
+                      ? "You're on the waitlist"
+                      : "Sign-up confirmed!"}
+                  </h3>
+                  <p className="text-sm text-foreground/70">
+                    {feedback?.includes("waitlist") ? (
+                      <>
+                        Your sign-up went through successfully! We'll promote
+                        you automatically if spots open up.
+                      </>
+                    ) : (
+                      <>
+                        Your sign-up went through successfully!
+                        {form.settings.collectEmail &&
+                        (email?.trim() || myResponse?.email) ? (
+                          <>
+                            {" "}
+                            We'll send you an email with the details at{" "}
+                            <strong>
+                              {(email || myResponse?.email || "").trim()}
+                            </strong>
+                            .
+                          </>
+                        ) : (
+                          " Your sign-up has been saved."
+                        )}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                  className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface transition-colors"
                   onClick={() => setConfirmOpen(false)}
                 >
-                  Close
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {errorOpen && error && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setErrorOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-red-500/50 bg-background shadow-lg">
+            <div className="p-4 sm:p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-6 w-6 text-red-600"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                    Sign-up failed
+                  </h3>
+                  <p className="text-sm text-foreground/70">{error}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface transition-colors"
+                  onClick={() => {
+                    setErrorOpen(false);
+                    setError(null);
+                  }}
+                >
+                  Got it
                 </button>
               </div>
             </div>

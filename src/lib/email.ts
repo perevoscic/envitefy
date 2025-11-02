@@ -536,8 +536,14 @@ export async function sendSignupConfirmationEmail(params: {
   form: SignupForm;
   response: SignupResponse;
 }): Promise<void> {
-  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
-  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  // Use dedicated signup forms email if available, otherwise fall back to no-reply
+  const signupFrom = process.env.SES_FROM_EMAIL_FROMS || process.env.SES_FROM_EMAIL_SIGNUP;
+  const fromCandidate = signupFrom || process.env.SES_FROM_EMAIL_NO_REPLY;
+  assertEnv(
+    signupFrom ? "SES_FROM_EMAIL_FROMS or SES_FROM_EMAIL_SIGNUP" : "SES_FROM_EMAIL_NO_REPLY",
+    fromCandidate
+  );
+  const from = fromCandidate as string;
   const to = params.toEmail;
 
   const status = params.response.status === "waitlisted" ? "Waitlisted" : "Confirmed";

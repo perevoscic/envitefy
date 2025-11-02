@@ -13,10 +13,11 @@ type StoredSender = {
 };
 
 type EventRsvpPromptProps = {
+  eventId?: string | null;
   rsvpName?: string | null;
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
-  eventTitle: string;
+  eventTitle?: string | null;
   shareUrl?: string | null;
 };
 
@@ -40,6 +41,7 @@ const initialSender: StoredSender = {
 };
 
 export default function EventRsvpPrompt({
+  eventId,
   rsvpName,
   rsvpPhone,
   rsvpEmail,
@@ -85,7 +87,25 @@ export default function EventRsvpPrompt({
 
   const contactMode: "sms" | "email" = hasPhone ? "sms" : "email";
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
+    // Submit "no" RSVP to API if eventId is available
+    if (eventId) {
+      try {
+        await fetch(`/api/events/${eventId}/rsvp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            response: "no",
+            email: rsvpEmail || undefined,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to submit RSVP to API:", err);
+        // Continue with decline flow even if API call fails
+      }
+    }
+
     setModalOpen(false);
     const eventLabel = eventTitle?.trim() || "the event";
     const guest = sender.forWho.trim();
@@ -114,7 +134,7 @@ export default function EventRsvpPrompt({
     setError(null);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!intent) return;
     if (!sender.firstName.trim() || !sender.lastName.trim()) {
@@ -131,6 +151,29 @@ export default function EventRsvpPrompt({
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sender));
       }
     } catch {}
+
+    // Submit RSVP to API if eventId is available
+    if (eventId && intent !== "decline") {
+      try {
+        const senderName =
+          `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
+        const rsvpResponse =
+          intent === "attend" ? "yes" : intent === "maybe" ? "maybe" : "no";
+        await fetch(`/api/events/${eventId}/rsvp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            response: rsvpResponse,
+            name: senderName,
+            email: sender.phone.trim() ? undefined : rsvpEmail || undefined,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to submit RSVP to API:", err);
+        // Continue with SMS/email flow even if API call fails
+      }
+    }
 
     const eventLabel = eventTitle?.trim() || "the event";
     const salutation = rsvpName?.trim() || "there";
@@ -163,8 +206,33 @@ export default function EventRsvpPrompt({
     setIntent(null);
   };
 
-  const handleEmailIntent = (nextIntent: ResponseIntent) => {
+  const handleEmailIntent = async (nextIntent: ResponseIntent) => {
     if (!rsvpEmail || !nextIntent) return;
+
+    // Submit RSVP to API if eventId is available
+    if (eventId && nextIntent !== "decline") {
+      try {
+        const rsvpResponse =
+          nextIntent === "attend"
+            ? "yes"
+            : nextIntent === "maybe"
+            ? "maybe"
+            : "no";
+        await fetch(`/api/events/${eventId}/rsvp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            response: rsvpResponse,
+            email: rsvpEmail,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to submit RSVP to API:", err);
+        // Continue with email flow even if API call fails
+      }
+    }
+
     const eventLabel = eventTitle?.trim() || "the event";
     const salutation = rsvpName?.trim() || "there";
     let bodyCore = "";
@@ -365,4 +433,3 @@ export default function EventRsvpPrompt({
     </div>
   );
 }
-

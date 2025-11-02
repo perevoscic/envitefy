@@ -34,17 +34,12 @@ async function main() {
   }
 
   // Generate favicon.ico in src/app (Next.js App Router)
+  // Note: Do NOT also create public/favicon.ico as it conflicts with Next.js App Router's
+  // automatic serving of src/app/favicon.ico at /favicon.ico
   const icoOutput = path.join(outDir, "favicon.ico");
   const icoBuffer = await toIco(pngBuffers);
   await fs.promises.writeFile(icoOutput, icoBuffer);
   console.log(`[favicon] Done → ${icoOutput}`);
-
-  // Also copy to public/ for compatibility with legacy paths
-  const publicDir = path.resolve(__dirname, "../public");
-  await ensureDir(publicDir);
-  const publicIcoOutput = path.join(publicDir, "favicon.ico");
-  await fs.promises.writeFile(publicIcoOutput, icoBuffer);
-  console.log(`[favicon] Done → ${publicIcoOutput}`);
 }
 
 main().catch((err) => {

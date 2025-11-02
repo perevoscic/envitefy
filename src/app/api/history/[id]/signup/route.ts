@@ -130,9 +130,6 @@ export async function POST(
     const sessionUser: Session["user"] | null = session?.user ?? null;
     const sessionEmail = (sessionUser?.email as string | undefined) || null;
     const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const body = (await req.json().catch(() => null)) as RequestPayload | null;
     if (!body || typeof body.action !== "string") {
@@ -144,15 +141,19 @@ export async function POST(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const ownerId = row.user_id || null;
-    const isOwner = Boolean(ownerId && ownerId === userId);
-    let allowed = isOwner;
-    if (!allowed) {
-      const shared = await isEventSharedWithUser(id, userId);
-      allowed = shared === true;
-    }
-    if (!allowed) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check access: if authenticated, must be owner or shared recipient
+    // If unauthenticated, allow sign-ups for public forms (anyone with the link)
+    if (userId) {
+      const ownerId = row.user_id || null;
+      const isOwner = Boolean(ownerId && ownerId === userId);
+      let allowed = isOwner;
+      if (!allowed) {
+        const shared = await isEventSharedWithUser(id, userId);
+        allowed = shared === true;
+      }
+      if (!allowed) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const existingData = (row.data ?? null) as Record<string, unknown> | null;
@@ -230,11 +231,41 @@ export async function POST(
 
       const signupId =
         typeof body.signupId === "string" ? body.signupId.trim() : "";
+      // For unauthenticated users, use email from body; for authenticated, prefer session email
+      const lookupEmail = 
+        sessionEmail || 
+        (settings.collectEmail && typeof body.email === "string" && body.email.trim()
+          ? body.email.trim()
+          : null);
+      const lookupPhone = 
+        settings.collectPhone && typeof body.phone === "string" && body.phone.trim()
+          ? body.phone.trim()
+          : null;
+      
+      // Find existing response by signupId first (allows updates), then by email/phone/userId
       const existingResponse =
         (signupId
           ? form.responses.find((response) => response.id === signupId)
           : null) ||
-        findSignupResponseForUser(form, userId, sessionEmail);
+        findSignupResponseForUser(form, userId, lookupEmail, lookupPhone);
+      
+      // Prevent duplicate sign-ups: if an existing active response is found and it's not the one being updated
+      if (existingResponse && !signupId && existingResponse.status !== "cancelled") {
+        const emailMatch = lookupEmail && existingResponse.email && 
+          existingResponse.email.toLowerCase() === lookupEmail.toLowerCase();
+        const phoneMatch = lookupPhone && existingResponse.phone && 
+          existingResponse.phone.trim().replace(/\D/g, "") === lookupPhone.trim().replace(/\D/g, "");
+        return NextResponse.json(
+          { 
+            error: emailMatch
+              ? "You've already signed up for this event with this email address."
+              : phoneMatch
+              ? "You've already signed up for this event with this phone number."
+              : "You've already signed up for this event."
+          },
+          { status: 409 }
+        );
+      }
 
       const remainingBaseForm: SignupForm = {
         ...form,
@@ -402,6 +433,10 @@ export async function POST(
           { status: 404 }
         );
       }
+      
+      // Check ownership: owners can cancel any, others can only cancel their own
+      const ownerId = row.user_id || null;
+      const isOwner = Boolean(ownerId && ownerId === userId);
       if (!isOwner && target.userId && target.userId !== userId) {
         return NextResponse.json(
           {

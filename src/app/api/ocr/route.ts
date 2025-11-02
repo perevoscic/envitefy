@@ -30,54 +30,18 @@ function isTitleLowConfidence(title: string): boolean {
   if (!title) return true;
   const t = title.trim();
   if (t.length < 6) return true;
+  // Check if title contains a month name (e.g., "April 10th" or "Birthday Party April 10th")
   const month = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
   if (month.test(t)) return true;
+  // Generic placeholder titles
   if (/^event from flyer$/i.test(t)) return true;
+  // Exact single-word generic titles only (e.g., "Party" or "Birthday" alone)
+  // DO NOT flag titles like "Dominic's 7th Birthday Party" - those are good!
   if (/^(party|birthday|event|celebration|invitation|invitation\s*card)$/i.test(t)) return true;
-  if (/\b\d{1,2}(st|nd|rd|th)\b$/i.test(t)) return true;
+  // Title is ONLY a date ordinal (e.g., "10th", "7th")
+  if (/^\d{1,2}(st|nd|rd|th)$/i.test(t)) return true;
   return false;
 }
-
-async function llmExtractEvent(raw: string): Promise<{
-  title?: string;
-  start?: string | null;
-  end?: string | null;
-  address?: string;
-  description?: string;
-  rsvp?: string | null;
-} | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  const model = resolveOcrModel();
-  const system = "You extract calendar events from noisy OCR text. For medical/dental appointments, use ONLY clinical factual language - NEVER invitation phrases like 'Please join us', 'You're invited'. Return strict JSON only.";
-  const user = `OCR TEXT:\n${raw}\n\nExtract fields as JSON with keys: title (string), start (ISO 8601 if possible or null), end (ISO 8601 or null), address (string), description (string), rsvp (string or null).\nRules:\n- For invitations, ignore boilerplate like 'Invitation', 'Invitation Card', 'You're invited'. Prefer a specific human title such as '<Name>'s Birthday Party' or '<Name> & <Name> Wedding'.\n- Parse dates and times; also handle spelled-out time phrases like 'four o'clock in the afternoon'.\n- Keep address concise (street/city/state if present).\n- CRITICAL: Extract RSVP contact info into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: contact@example.com'. Return null if no RSVP info found.\n- Description should NOT include RSVP contact info (it goes in the separate rsvp field).\n- For MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital/Ascension/Sacred Heart):\n  * DO NOT use DOB/Date of Birth as the event date.\n  * Prefer the labeled lines 'Appointment Date' and 'Appointment Time'.\n  * Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit').\n  * Description: Read the image and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a MEDICAL/DENTAL appointment, NOT a social event. NEVER EVER write invitation phrases like 'Please join us for', 'You're invited to', 'Join us', 'please', 'welcome'. These are medical appointments, not parties. WRONG: 'Please join us for a Dental Cleaning on...'. CORRECT: 'Dental cleaning appointment.' or 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on what's visible, each fact on its own line. Be strictly factual and clinical.\n- Respond with ONLY JSON.`;
-
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-      }),
-    });
-    if (!res.ok) return null;
-    const j: any = await res.json();
-    const text = j?.choices?.[0]?.message?.content || "";
-    if (!text) return null;
-    try {
-      return JSON.parse(text) as any;
-    } catch {
-      return null;
-    }
-  } catch {
-    return null;
-  }
-}
-
-// Football schedule extraction removed
 
 async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promise<{
   title?: string;
@@ -98,33 +62,56 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   const model = resolveOcrModel();
   console.log(">>> Using OpenAI model:", model);
   const base64 = imageBytes.toString("base64");
-  const system =
-    "You are a careful assistant that reads invitations and appointment slips from images. You transcribe ALL text accurately including decorative cursive, handwritten notes, and printed labels. CRITICAL: For medical/dental appointment cards, use ONLY clinical, factual language. NEVER use invitation phrases like 'Please join us', 'You're invited', 'Join us' for medical appointments. These are appointments, not social events. Carefully read the handwritten appointment type (e.g., 'Dental Cleaning', 'Annual Visit'). Return only clean JSON fields for calendar creation.";
   const todayIso = new Date().toISOString().slice(0, 10);
-  const userText =
-    [
-      "Task: From the image, extract a single calendar event as strict JSON with keys {title,start,end,address,description,category,rsvp}.",
-      "General rules:",
-      "- Read ornate/cursive fonts carefully (names often appear in large script).",
-      "- Treat boilerplate headers like 'Invitation', 'Invitation Card', 'You're Invited' as NOT the title.",
-      "- Build a specific, human title without dates, e.g., '<Name> & <Name> Wedding' or " +
-        "'<Name>'s Birthday Party'.",
-      "- Parse spelled-out times such as 'four o'clock in the afternoon' and combine with any nearby date text.",
-      "- Copy the exact hour/minute markers from the flyer (e.g., '7 p.m.' -> 19:00, '7:00 PM' -> 19:00). Never invent a time or flip AM/PM—only output a time when the flyer clearly shows it.",
-      "- Before finalizing, double-check that the chosen time matches the flyer; if uncertain, leave the time off (set start to the date at 00:00).",
-      "- Use ISO 8601 for start/end when possible. If only a date is present, set start to that date at 00:00 and leave end null.",
-      "- Keep address concise (street, city, state). Remove leading labels like 'Venue:', 'Address:', 'Location:'.",
-      "- ALWAYS separate the physical venue from activities or course names. Build the address from the block that includes the venue label or street/city/state (e.g., 'US Gold Gym, 12432 Emerald Coast Pkwy, Miramar Beach, FL 32550').",
-      "- If activity phrases like 'Ninja Warrior Course', 'STEM Lab', or 'Birthday Pavilion' appear outside the address block, keep them in the title or description only. Do NOT place those activity names in the address unless they literally appear inside the labeled address/venue line.",
-      "- When both a venue name and an address line are shown, include the venue first, followed by the street/city/state. Avoid duplicating the activity wording in the venue portion.",
-      "- Description must mention standout features or activity areas printed on the flyer (e.g., 'Ninja Warrior Course', 'Splash Pad', 'STEM Lab') when they exist, in addition to the title.",
-      "- CRITICAL RSVP RULE: Extract RSVP contact information into the 'rsvp' field. Look for patterns like 'RSVP <Name> <Phone>', 'RSVP: <Name> <Phone>', 'RSVP to <Name> at <Phone/Email>'. Format as 'RSVP: <Name> <Phone>' or 'RSVP: <Email>'. Examples: 'RSVP: Jennifer 555-895-9741', 'RSVP: Sarah Jones 212-555-1234', 'RSVP: contact@example.com'. Return null if no RSVP info visible.",
-      "- Description should NOT include RSVP contact info (it goes in the separate rsvp field).",
-      "- category should be one of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.",
-      `- Today's date is ${todayIso}. If the flyer does NOT display the event year, choose the next occurrence on or after today and set start accordingly. Do NOT reuse a past year like 2023 unless the flyer explicitly shows it.`,
-      "- Add a boolean field yearVisible. Set yearVisible=true only when the flyer explicitly prints a 4-digit year next to the event date. When the year is missing and you infer it, set yearVisible=false.",
-      "Special cases — MEDICAL/DENTAL APPOINTMENTS (doctor/dentist/dental cleaning/clinic/hospital): never use DOB/Date of Birth as the event date; instead use the labeled 'Appointment Date/Time'. Title: Extract the exact appointment type visible on the image (e.g., 'Dental Cleaning', 'Annual Visit'). For description, read the image carefully and extract ONLY the clinical information that is actually visible. Include only what you see: appointment type, provider name (if shown), facility/location (if shown), time, or other relevant details. DO NOT use a template. DO NOT include patient name or DOB. DO NOT invent information. CRITICAL: This is a medical/dental appointment, NOT a social event. NEVER EVER write invitation-style descriptions like 'Please join us for a Dental Cleaning' or 'You're invited to'. These are MEDICAL appointments, not parties. WRONG examples: 'Please join us for a Dental Cleaning on...', 'You're invited to a dental cleaning appointment...'. CORRECT examples: 'Dental cleaning appointment.', 'Scheduled for October 6, 2023 at 10:30 AM.'. Write naturally based on the actual visible content, each fact on its own line. Be strictly factual and clinical.",
-    ].join("\n");
+  const system = `
+  You read invitations/appointment cards from images and output one clean JSON object.
+  
+  CRITICAL BIRTHDAY RULES (highest priority):
+  1) VISUAL SCAN FIRST. If there is a big decorative number (e.g., 7/5/10) anywhere, that is the AGE.
+  2) Use ORDINAL age (7th, 10th, 5th).
+  3) Name + Age + "Birthday Party" must be in the title. If a venue name is visible, append " at <Venue>" OR " at the <venue kind>" (e.g., "at the Gym").
+  4) If a big number is visible but the title lacks the number, DO NOT return JSON. Recompose the title to include the age and then return.
+  
+  DESCRIPTION (birthday only):
+  • EXACT sentence template (no variations): 
+    "Join us to celebrate <Name>'s <AgeOrdinal> Birthday at <Venue>."
+  • If venue isn't visible, drop the "at <Venue>" part.
+  
+  ADDRESS:
+  • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:".
+  
+  RSVP:
+  • If "RSVP" + phone/email appears, put it in rsvp (e.g., "RSVP: 555-123-4567"). Else null.
+  
+  DATE/TIME:
+  • Use the date from the flyer. If no year is printed, pick the next occurrence on/after today and set yearVisible=false.
+  • Only include a time if clearly shown.
+  
+  CATEGORIES:
+  • One of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.
+  
+  MEDICAL/DENTAL (strict):
+  • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
+  
+  OUTPUT (must be valid JSON, no extra text):
+  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean }
+  `;
+  
+  const userText = `
+  Task: From the image, return exactly one event as strict JSON
+  {title,start,end,address,description,category,rsvp,yearVisible}.
+  
+  Hard requirements for birthday flyers:
+  - Do a visual scan first to find the huge decorative number → age → ordinal.
+  - Title must include "<Name>'s <AgeOrdinal> Birthday Party" (+ " at <Venue>" when visible).
+  - Never put months/dates/times in the title.
+  - Description sentence: "Join us to celebrate <Name>'s <AgeOrdinal> Birthday at <Venue>."
+  - RSVP goes only in rsvp.
+  - Address formatted cleanly, venue first if present.
+  - category="Birthdays".
+  - If year missing, pick the next occurrence on/after ${todayIso} and set yearVisible=false.
+  
+  Return only the JSON object.`;
   try {
     console.log(">>> Making OpenAI Vision API call...");
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -162,6 +149,12 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     try {
       const parsed = JSON.parse(text) as any;
       console.log(">>> OpenAI extracted data:", parsed);
+      console.log(">>> OpenAI title:", parsed.title);
+      console.log(">>> OpenAI description:", parsed.description);
+      // DEBUG: Check if birthday title is missing age
+      if (parsed.title && /birthday/i.test(parsed.title) && !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)) {
+        console.log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
+      }
       return parsed;
     } catch (parseErr) {
       console.error(">>> Failed to parse OpenAI JSON:", parseErr, "Raw:", text);
@@ -1179,13 +1172,22 @@ function extractRsvpCompact(rawText: string, fallbackText?: string): string | nu
     const text = [rawText || "", fallbackText || ""].join("\n");
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
     const phoneRe = /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
-    // Prefer explicit RSVP line
+    // Prefer explicit RSVP line - handle both "RSVP to Name: Phone" and "RSVP: Name Phone"
     const rsvpLine = lines.find((l) => /\brsvp\b/i.test(l));
     if (rsvpLine) {
-      const nameMatch = rsvpLine.match(/rsvp[^a-z0-9]*to\s+([^,|]+?)(?:\s+at|\s*[-:,.]|$)/i);
+      // Try "RSVP to Name: Phone" or "RSVP to Name Phone" pattern
+      const nameMatch = rsvpLine.match(/rsvp[^a-z0-9]*to\s+([^:|\d]+?)(?:\s*[-:,.]|$)/i);
       const phoneMatch = rsvpLine.match(phoneRe);
-      const name = (nameMatch?.[1] || "").replace(/\s{2,}/g, " ").trim();
+      let name = (nameMatch?.[1] || "").replace(/\s{2,}/g, " ").trim();
+      // Clean up name (remove any trailing punctuation or numbers)
+      name = name.replace(/[:,\d]+$/, "").trim();
       if (name && phoneMatch) return `RSVP: ${name} ${phoneMatch[0]}`.trim();
+      // Try "RSVP: Name Phone" pattern
+      const colonPattern = rsvpLine.match(/rsvp\s*:\s*([^:\d]+?)\s*(\d)/i);
+      if (colonPattern && phoneMatch) {
+        const colonName = colonPattern[1].replace(/\s{2,}/g, " ").trim().replace(/[:,\d]+$/, "").trim();
+        if (colonName) return `RSVP: ${colonName} ${phoneMatch[0]}`.trim();
+      }
       if (phoneMatch) return `RSVP: ${phoneMatch[0]}`;
     }
     // Otherwise, scan any line that has a phone + contact verb
@@ -1220,8 +1222,8 @@ async function llmRewriteBirthdayDescription(
   // Give the model explicit guidance so it standardizes the sentence while adapting to available fields
   const user =
     `TITLE: ${title || ""}\nLOCATION: ${location || ""}\nNOTES: ${description || ""}\n\n` +
-    "Task: If this is a birthday party, write ONE friendly sentence like: '<Name>'s Birthday Party at <Location>'. " +
-    "Rules: Prefer a concise venue/business name (e.g., 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. Avoid phrases such as 'Join us' or 'You're invited'. Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
+    "Task: If this is a birthday party, write ONE friendly, inviting sentence in this format: 'Join us to celebrate <Name>'s <Age>th Birthday at <Location>'. " +
+    "Rules: Extract the person's name from the TITLE (e.g., if title is 'Gemma's 7th Birthday Party at US Gym', use 'Gemma'). Extract the age ordinal from the TITLE (e.g., '7th', '10th', '5th') and include it as '<Age>th'. Format: 'Join us to celebrate Gemma's 7th Birthday at US Gym'. Prefer a concise venue/business name (e.g., 'US Gym', 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. ALWAYS start with 'Join us to celebrate' for birthday parties. Include the age ordinal if present in the title (e.g., '7th', '10th'). Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1927,6 +1929,37 @@ export async function POST(request: Request) {
       };
       
       finalTitle = (typeof llmImage.title === "string" && llmImage.title.trim()) ? llmImage.title.trim() : title;
+      
+      // IMMEDIATE FIX: If birthday title is missing age, try to extract it NOW from OCR text
+      if (/birthday/i.test(finalTitle) && !/\b\d{1,2}(st|nd|rd|th)\b/i.test(finalTitle)) {
+        console.log(">>> 🔧 FIXING: Birthday title missing age, searching OCR text...");
+        // Look for standalone number 1-19 in raw OCR
+        const agePattern = /\b([1-9]|1[0-9])\b/g;
+        const ageMatches = [...raw.matchAll(agePattern)];
+        // Filter out date-like numbers (check context around them)
+        const candidateAges = ageMatches
+          .map(m => ({ num: parseInt(m[1], 10), pos: m.index! }))
+          .filter(({ num, pos }) => {
+            // Check if number is near date indicators (Dec, Jan, etc.) - if so, skip it
+            const context = raw.substring(Math.max(0, pos - 20), Math.min(raw.length, pos + 20));
+            const isDate = /\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|20th|21st|22nd|23rd|24th|25th|26th|27th|28th|29th|30th|31st)\b/i.test(context);
+            return !isDate && num >= 1 && num <= 19;
+          })
+          .map(({ num }) => num)
+          .filter((num, idx, arr) => arr.indexOf(num) === idx); // unique
+        
+        if (candidateAges.length > 0) {
+          const age = candidateAges.sort((a, b) => a - b)[0]; // Take smallest (most likely to be age)
+          const suffixes = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th"];
+          const ageOrdinal = `${age}${suffixes[age]}`;
+          // Insert age: "Gemma's Birthday Party" → "Gemma's 7th Birthday Party"
+          finalTitle = finalTitle.replace(/(\w+['']s)\s+(Birthday\s+Party)/i, `$1 ${ageOrdinal} $2`);
+          console.log(`>>> ✅ FIXED: Inserted ${ageOrdinal} into title: "${finalTitle}"`);
+        } else {
+          console.log(">>> ❌ Could not find age number in OCR text");
+        }
+      }
+      
       finalAddress = (typeof llmImage.address === "string" && llmImage.address.trim()) ? cleanAddressLabel(llmImage.address) : addressOnly;
       finalDescription = (typeof llmImage.description === "string" && llmImage.description.trim()) ? llmImage.description.trim() : cleanDescription;
       finalStart = safeDate(llmImage.start) ?? start;
@@ -1948,22 +1981,106 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    if (isTitleLowConfidence(finalTitle)) {
-      const llm = await llmExtractEvent(raw);
-      if (llm) {
-        if (llm.title?.trim()) finalTitle = llm.title.trim();
-        if (llm.address?.trim()) finalAddress = cleanAddressLabel(llm.address);
-        if (llm.description?.trim()) finalDescription = llm.description.trim();
-        if (llm.rsvp?.trim()) deferredRsvp = llm.rsvp.trim();
-        const safeDate = (s?: string | null) => {
-          if (!s) return null;
-          const d = new Date(s);
-          return isNaN(d.getTime()) ? null : d;
-        };
-        finalStart = safeDate(llm.start) ?? finalStart;
-        finalEnd = safeDate(llm.end) ?? finalEnd;
+    // Fallback LLM extraction removed - we only use Vision API now
+
+    // Post-process title to remove any dates/months that slipped through
+    // BUT preserve age ordinals (like "7th", "10th") in birthday titles
+    const isBirthdayTitle = /birthday/i.test(finalTitle);
+    let ageOrdinal = "";
+    if (isBirthdayTitle) {
+      // Extract and preserve age ordinals before cleaning (e.g., "7th", "10th", "5th")
+      const ageMatch = finalTitle.match(/\b(\d{1,2})(st|nd|rd|th)\s+(Birthday|Party)/i);
+      if (ageMatch) {
+        ageOrdinal = ageMatch[1] + ageMatch[2]; // e.g., "7th"
+      } else {
+        // FALLBACK: Age missing from title - try to extract from raw OCR text, image response, or standalone numbers
+        // The Vision API should have extracted it, but if not, try these patterns:
+        const agePatterns = [
+          /\b(\d{1,2})(st|nd|rd|th)\b/i, // "7th", "10th", "5th"
+          /\b(turning|age|aged)\s+(\d{1,2})\b/i, // "turning 7", "age 7"
+          /\b(\d{1,2})\s+(years?\s+old|years?)\b/i, // "7 years old", "7 years"
+        ];
+        
+        // Also check for standalone numbers (1-20) that might be the age
+        // Look for single-digit or two-digit numbers that are NOT dates (not 20-31 for days, not 4-digit years)
+        const standaloneNumber = /\b([1-9]|1[0-9]|20)\b/g;
+        const matches = [...raw.matchAll(standaloneNumber)];
+        
+        let extractedAge: number | null = null;
+        
+        // First try explicit age patterns
+        for (const pattern of agePatterns) {
+          const match = raw.match(pattern);
+          if (match) {
+            if (match[1] && match[2]) {
+              if (match[2].match(/^(st|nd|rd|th)$/i)) {
+                extractedAge = parseInt(match[1], 10);
+              } else if (match[1].match(/^(turning|age|aged)$/i) && match[2]) {
+                extractedAge = parseInt(match[2], 10);
+              } else if (match[2].match(/^years?/i)) {
+                extractedAge = parseInt(match[1], 10);
+              }
+            }
+            if (extractedAge) break;
+          }
+        }
+        
+        // If no explicit pattern found, check standalone numbers
+        // Prefer numbers that appear near birthday-related text or are prominent
+        if (!extractedAge && matches.length > 0) {
+          // Filter out date-like numbers (20-31, 4-digit years)
+          const candidateNumbers = matches
+            .map(m => parseInt(m[1], 10))
+            .filter(n => n >= 1 && n <= 20 && n !== 20) // Exclude 20+ (likely dates)
+            .filter(n => !raw.match(new RegExp(`\\b${n}\\s*(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|202[0-9]|203[0-9])`, "i"))); // Not near dates
+          
+          if (candidateNumbers.length > 0) {
+            // Prefer smaller numbers (more likely to be ages than dates)
+            extractedAge = candidateNumbers.sort((a, b) => a - b)[0];
+          }
+        }
+        
+        // If we found an age, convert to ordinal and insert it into the title
+        if (extractedAge && extractedAge >= 1 && extractedAge <= 19) {
+          const suffixes = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th"];
+          ageOrdinal = `${extractedAge}${suffixes[extractedAge]}`;
+          // Insert age into title: "Gemma's Birthday Party" → "Gemma's 7th Birthday Party"
+          finalTitle = finalTitle.replace(/(\w+['']s)\s+(Birthday\s+Party)/i, `$1 ${ageOrdinal} $2`);
+          console.log(`>>> [AGE FALLBACK] Extracted age ${extractedAge} (${ageOrdinal}) from OCR text, inserted into title: ${finalTitle}`);
+        } else {
+          console.log(`>>> [AGE FALLBACK] Could not extract age from OCR text for birthday title: "${finalTitle}"`);
+        }
       }
     }
+    
+    // Remove month names and date patterns from title
+    const monthPatterns = [
+      /\b(December|January|February|March|April|May|June|July|August|September|October|November)\b/gi,
+      /\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov)\.?\b/gi,
+    ];
+    for (const pattern of monthPatterns) {
+      finalTitle = finalTitle.replace(pattern, "").trim();
+    }
+    // Remove date patterns like "20th", "Dec 20", "2025" BUT preserve age ordinals
+    if (isBirthdayTitle && ageOrdinal) {
+      // Temporarily replace age ordinal to protect it
+      finalTitle = finalTitle.replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, (match, num, suffix) => {
+        return match === ageOrdinal ? `__AGE__${num}${suffix}__` : "";
+      }).trim();
+    } else {
+      // Remove all ordinals if not a birthday (date ordinals like "20th")
+      finalTitle = finalTitle.replace(/\b\d{1,2}(st|nd|rd|th)\b/gi, "").trim();
+    }
+    finalTitle = finalTitle.replace(/\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov)\.?\s+\d{1,2}\b/gi, "").trim(); // Remove "Dec 20"
+    finalTitle = finalTitle.replace(/\b\d{4}\b/g, "").trim(); // Remove year like "2025"
+    // Restore age ordinal if we protected it
+    if (isBirthdayTitle && ageOrdinal) {
+      finalTitle = finalTitle.replace(/__AGE__(\d+)(st|nd|rd|th)__/gi, ageOrdinal);
+    }
+    // Clean up extra spaces
+    finalTitle = finalTitle.replace(/\s{2,}/g, " ").trim();
+    // Remove trailing punctuation that might be left
+    finalTitle = finalTitle.replace(/[,\.;:]+$/, "").trim();
 
     const isMedicalAppointment =
       /(appointment|appt)/i.test(raw) && /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
@@ -2096,7 +2213,9 @@ export async function POST(request: Request) {
       : addressWithVenue || finalAddress;
 
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
-    if (/(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle)) {
+    // IMPORTANT: Description should NOT repeat the title - just mention venue/activity if needed
+    const isBirthdayForDesc = /(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle);
+    if (isBirthdayForDesc) {
       try {
         const venueLabel =
           finalVenue ||
@@ -2104,8 +2223,31 @@ export async function POST(request: Request) {
           pickVenueLabelForSentence(finalAddress, finalDescription, raw) ||
           "";
         const venueForSentence = venueLabel || locationForNarrative || finalAddress;
-        // First attempt: deterministic human sentence without LLM.
-        const deterministic = buildFriendlyBirthdaySentence(finalTitle, venueForSentence);
+        // Extract name and age from title for description
+        // Pattern: "Gemma's 7th Birthday Party" → name="Gemma", age="7th"
+        const nameMatch = finalTitle.match(/^([A-Z][A-Za-z’'\-]+)['’]s/i);
+        const ageOrdinalInTitle = finalTitle.match(/\b(\d{1,2})(st|nd|rd|th)\s+Birthday/i);
+        let age = ageOrdinalInTitle ? `${ageOrdinalInTitle[1]}${ageOrdinalInTitle[2]}` : null;
+        if (!age) {
+        // fallback: cardinal in title (e.g., "Gemma's 7 Birthday Party")
+          const ageCardinal = finalTitle.match(/\b(\d{1,2})\s+Birthday/i)?.[1];
+          if (ageCardinal) {
+            const suf = ["th","st","nd","rd"][Math.min(Number(ageCardinal) % 10, 4)] || "th";
+            const ord = (ageCardinal === "11" || ageCardinal === "12" || ageCardinal === "13") ? "th" : suf;
+            age = `${ageCardinal}${ord}`;
+          }
+        }        
+        const name = nameMatch ? nameMatch[1] : null;
+        const venue = venueForSentence ? venueForSentence : "";
+        // Build inviting description: "Join us to celebrate [Name]'s [Age]th Birthday at [Venue]"
+        // Format: "Join us to celebrate Gemma's 7th Birthday at US Gym"
+        const deterministic = name
+          ? `Join us to celebrate ${name}'s ${age ? `${age} ` : ""}Birthday${venue ? ` at ${venue}` : ""}.`
+          : age
+            ? `Join us to celebrate a ${age} Birthday${venue ? ` at ${venue}` : ""}.`
+            : venue
+              ? `Join us to celebrate a Birthday at ${venue}.`
+              : "Join us to celebrate a Birthday.";
         finalDescription = deterministic;
         // Second attempt: let LLM refine; fall back to deterministic if LLM returns weird multiline text
         const rewritten = await llmRewriteBirthdayDescription(
@@ -2114,8 +2256,18 @@ export async function POST(request: Request) {
           deterministic
         );
         const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
+        // Remove any title repetition from the rewritten description
         if (cleaned && /\.$/.test(cleaned) && cleaned.length >= 20 && cleaned.length <= 200) {
-          finalDescription = cleaned;
+          // Check if rewritten description contains the full title and remove it
+          const titleLower = finalTitle.toLowerCase();
+          const cleanedLower = cleaned.toLowerCase();
+          if (cleanedLower.includes(titleLower)) {
+            // Remove title from description
+            const withoutTitle = cleaned.replace(new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "").trim();
+            finalDescription = withoutTitle.replace(/^[\s\n.,;:!?-]+/, "").replace(/[\s\n.,;:!?-]+$/, "").trim() || deterministic;
+          } else {
+            finalDescription = cleaned;
+          }
         }
       } catch {}
     }
@@ -2140,9 +2292,9 @@ export async function POST(request: Request) {
     }
 
     // Generic rewrite for non-birthday/wedding flyers or when current description is long/multiline
-    const isBirthday = /(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle);
+    // Reuse isBirthdayForDesc from above - already checked if it's a birthday
     const isWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
-    if (!isBirthday && !isWedding && !isMedicalAppointment) {
+    if (!isBirthdayForDesc && !isWedding && !isMedicalAppointment) {
       try {
         const looksMultiline = /\n/.test(finalDescription) || (finalDescription || "").length > 180;
         const refined = await llmRewriteSmartDescription(
@@ -2227,13 +2379,33 @@ export async function POST(request: Request) {
       finalDescription = stripJoinUsLanguage(finalDescription.trim());
     }
 
-    const descriptionHasTitle =
-      (finalTitle || "").trim().length > 0 &&
-      (finalDescription || "").toLowerCase().includes((finalTitle || "").toLowerCase());
-
-    const descriptionWithTitle = descriptionHasTitle
-      ? (finalDescription || "")
-      : [finalTitle, finalDescription].filter((s) => (s || "").trim().length > 0).join("\n\n");
+    // Remove title from description if it appears there - description should be standalone
+    if (finalTitle && finalDescription) {
+      const titleLower = finalTitle.toLowerCase().trim();
+      const descLower = finalDescription.toLowerCase();
+      
+      // Check if description starts with or contains the title
+      if (descLower.startsWith(titleLower)) {
+        // Remove title from start
+        finalDescription = finalDescription.substring(titleLower.length).trim();
+        // Remove leading punctuation/whitespace
+        finalDescription = finalDescription.replace(/^[\s\n.,;:!?-]+/, "").trim();
+      } else if (descLower.includes(titleLower)) {
+        // Remove title from anywhere in description
+        const titleRegex = new RegExp(
+          finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "gi"
+        );
+        finalDescription = finalDescription.replace(titleRegex, "").trim();
+        // Clean up extra whitespace/punctuation
+        finalDescription = finalDescription.replace(/\s{2,}/g, " ").trim();
+        finalDescription = finalDescription.replace(/^[\s\n.,;:!?-]+/, "").trim();
+        finalDescription = finalDescription.replace(/[\s\n.,;:!?-]+$/, "").trim();
+      }
+    }
+    
+    // Description is now clean (title removed if present)
+    const description = finalDescription || "";
     // Do NOT adjust for timezones: preserve the time exactly as it appears on
     // the flyer/invite. Downstream clients can treat it as a floating time.
     const toLocalNoZ = (d: Date | null) => {
@@ -2254,7 +2426,7 @@ export async function POST(request: Request) {
       end: toLocalNoZ(finalEnd),
       location: finalAddress,
       venue: finalVenue || null,
-      description: descriptionWithTitle,
+      description: description,
       timezone: "", // omit timezone; UI will show times as typed
       rsvp: deferredRsvp || null, // Store RSVP separately
     };
@@ -2774,7 +2946,7 @@ export async function POST(request: Request) {
         if (/(practice\s*schedule|team\s*practice|school\s*year\s*.*practice|group\s+.*\b\d{1,2}:\d{2})/i.test(fullText)) {
           return "Sport Events";
         }
-        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball|football)/i.test(fullText)) {
+        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball)/i.test(fullText)) {
           return "Sport Events";
         }
         if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {

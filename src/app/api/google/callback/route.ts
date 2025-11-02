@@ -2,7 +2,7 @@ import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
 import { absoluteUrl } from "@/lib/absolute-url";
-import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
+import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail, getUserIdByEmail, insertEventHistory } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -153,6 +153,51 @@ export async function GET(request: Request) {
         const requestBody = toGoogleEvent(normalized);
         const created = await calendar.events.insert({ calendarId: "primary", requestBody });
         const link = created.data.htmlLink || "/";
+
+        // Save to Envitefy history
+        try {
+          let userId: string | null = null;
+          if (sessionEmail) {
+            userId = await getUserIdByEmail(sessionEmail);
+          }
+          // Try to detect category from the normalized event data
+          let category: string | null = null;
+          try {
+            const titleLower = (normalized.title || "").toLowerCase();
+            const descLower = (normalized.description || "").toLowerCase();
+            const combined = `${titleLower} ${descLower}`;
+            if (/birthday|b-day|turns\s+\d+|party for/.test(combined)) {
+              category = "Birthdays";
+            } else if (/wedding|marriage|ceremony|reception|bride|groom|nupti(al)?|bridal/.test(combined)) {
+              category = "Weddings";
+            } else if (/baby[-\s]?shower|sprinkle/.test(combined)) {
+              category = "Baby Showers";
+            } else if (/(doctor|dentist|appointment|check[- ]?up|clinic)/i.test(combined)) {
+              category = "Doctor Appointments";
+            } else if (/(appointment|meeting|consult)/i.test(combined)) {
+              category = "Appointments";
+            }
+          } catch {}
+          
+          await insertEventHistory({
+            userId,
+            title: normalized.title || "Event",
+            data: {
+              category: category || undefined,
+              startISO: normalized.start,
+              endISO: normalized.end,
+              location: normalized.location || undefined,
+              description: normalized.description || undefined,
+              timezone: normalized.timezone || undefined,
+              reminders: normalized.reminders || undefined,
+              createdVia: "ocr",
+            },
+          });
+        } catch (err) {
+          // History save is best-effort; continue even if it fails
+          console.error("[google/callback] Failed to save to history:", err);
+        }
+
         const openUrl = new URL(await absoluteUrl("/open"));
         openUrl.searchParams.set("url", link);
         const redirectResp = NextResponse.redirect(openUrl);

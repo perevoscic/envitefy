@@ -23,6 +23,9 @@ import {
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
+import { extractFirstPhoneNumber } from "@/utils/phone";
+import { findFirstEmail } from "@/utils/contact";
 
 type EventFields = {
   title: string;
@@ -31,7 +34,9 @@ type EventFields = {
   location: string;
   description: string;
   timezone: string;
+  numberOfGuests: number;
   reminders?: { minutes: number }[] | null;
+  rsvp?: string | null;
 };
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
@@ -68,6 +73,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setOcrText] = useState<string>("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [ocrCategory, setOcrCategory] = useState<string | null>(null);
 
   const logUploadIssue = useCallback(
     (err: unknown, stage: string, details?: Record<string, unknown>) => {
@@ -150,6 +157,8 @@ export default function Home() {
     setModalOpen(false);
     setError(null);
     setOcrText("");
+    setUploadedFile(null);
+    setOcrCategory(null);
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
@@ -317,17 +326,53 @@ export default function Home() {
           return iso;
         }
       };
+      // Clean RSVP field: extract ONLY phone number (digits only) or email (no "RSVP:", names, etc.)
+      // This ensures the field contains ONLY the contact info that can be used directly for SMS/email
+      const cleanRsvp = (
+        rsvpText: string | null | undefined
+      ): string | null => {
+        if (!rsvpText) return null;
+        // Try to extract phone number first
+        const phone = extractFirstPhoneNumber(rsvpText);
+        if (phone) {
+          // Return only digits (no formatting, no prefixes) - ready for SMS links
+          const digits = phone.replace(/\D/g, "");
+          if (digits.length === 11 && digits.startsWith("1")) {
+            // Remove leading 1, return 10 digits only
+            return digits.slice(1);
+          }
+          if (digits.length >= 10) {
+            // Return last 10 digits only
+            return digits.slice(-10);
+          }
+          return digits;
+        }
+        // Try to extract email (just the email address, no prefixes)
+        const email = findFirstEmail(rsvpText);
+        if (email) return email;
+        // If neither found, return null
+        return null;
+      };
+
+      const cleanedRsvp = data?.fieldsGuess?.rsvp
+        ? cleanRsvp(data.fieldsGuess.rsvp)
+        : null;
+
       const adjusted = data?.fieldsGuess
         ? {
             ...data.fieldsGuess,
             start: formatIsoForInput(data.fieldsGuess.start, tz),
             end: formatIsoForInput(data.fieldsGuess.end, tz),
             reminders: [{ minutes: 1440 }],
+            numberOfGuests: 0, // Keep in state for compatibility, but won't be saved
+            rsvp: cleanedRsvp,
           }
         : null;
       setEvent(adjusted);
       setModalOpen(Boolean(adjusted));
       setOcrText(data.ocrText || "");
+      setUploadedFile(fileToUpload);
+      setOcrCategory(data?.category || null);
     } catch (err) {
       setEvent(null);
       setModalOpen(false);
@@ -478,8 +523,35 @@ export default function Home() {
   }, [event, buildSubmissionEvent]);
 
   const connectGoogle = useCallback(() => {
-    window.open("/api/google/auth", "_blank");
-  }, []);
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) {
+      setError("Missing start time for Google Calendar");
+      return;
+    }
+
+    // Encode event data as base64 JSON for OAuth state
+    const eventData = {
+      title: ready.title || "Event",
+      start: ready.start,
+      end: ready.end,
+      location: ready.location || "",
+      description: event.description || "",
+      timezone: ready.timezone || "UTC",
+      reminders: event.reminders || null,
+      allDay: false,
+      recurrence: null,
+    };
+    // Browser-compatible base64 encoding matching callback's decodeURIComponent expectation
+    // The callback decodes: Buffer.from(state, "base64").toString("utf8") then JSON.parse(decodeURIComponent(json))
+    const jsonStr = JSON.stringify(eventData);
+    // Use btoa with encodeURIComponent for proper UTF-8 handling
+    const stateParam = btoa(encodeURIComponent(jsonStr));
+    window.open(
+      `/api/google/auth?state=${encodeURIComponent(stateParam)}`,
+      "_blank"
+    );
+  }, [event, buildSubmissionEvent, setError]);
 
   const connectOutlook = useCallback(() => {
     window.open("/api/outlook/auth", "_blank");
@@ -494,14 +566,38 @@ export default function Home() {
     }
 
     // Save to Envitefy history first
+    let eventId: string | undefined;
     try {
       const timezone =
         event.timezone ||
         Intl.DateTimeFormat().resolvedOptions().timeZone ||
         "UTC";
+
+      // Create thumbnail if file is an image
+      let thumbnail: string | undefined;
+      let attachment:
+        | { name: string; type: string; dataUrl: string }
+        | undefined;
+      if (uploadedFile && uploadedFile.type.startsWith("image/")) {
+        try {
+          thumbnail =
+            (await createThumbnailDataUrl(uploadedFile, 1200, 0.85)) ||
+            undefined;
+          const dataUrl = await readFileAsDataUrl(uploadedFile);
+          attachment = {
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            dataUrl,
+          };
+        } catch (err) {
+          console.error("Failed to create thumbnail:", err);
+        }
+      }
+
       const payload: any = {
         title: event.title || "Event",
         data: {
+          category: ocrCategory || undefined,
           startISO: ready.start,
           endISO: ready.end,
           location: ready.location || undefined,
@@ -509,6 +605,8 @@ export default function Home() {
           timezone,
           reminders: event.reminders || undefined,
           createdVia: "ocr",
+          thumbnail,
+          attachment,
         },
       };
 
@@ -520,7 +618,7 @@ export default function Home() {
       });
 
       const historyData = await historyRes.json().catch(() => ({}));
-      const eventId = (historyData as any)?.id as string | undefined;
+      eventId = (historyData as any)?.id as string | undefined;
 
       // Emit event for sidebar refresh
       if (eventId && typeof window !== "undefined") {
@@ -531,7 +629,7 @@ export default function Home() {
               title: historyData?.title || payload.title,
               created_at: historyData?.created_at || new Date().toISOString(),
               start: ready.start,
-              category: null,
+              category: ocrCategory || null,
               data: payload.data,
             },
           })
@@ -559,10 +657,27 @@ export default function Home() {
       setError(payload?.error || "Failed to add to Google Calendar");
       return;
     }
+
+    // Open Google Calendar in a new tab
     if (payload?.htmlLink) {
       window.open(payload.htmlLink, "_blank");
     }
-  }, [event, buildSubmissionEvent]);
+
+    // Close modal and navigate to event page
+    if (eventId) {
+      resetForm();
+      window.location.href = `/event/${eventId}?created=1`;
+    } else {
+      resetForm();
+    }
+  }, [
+    event,
+    buildSubmissionEvent,
+    uploadedFile,
+    ocrCategory,
+    setError,
+    resetForm,
+  ]);
 
   const addOutlook = useCallback(async () => {
     if (!event?.start) return;
@@ -573,14 +688,38 @@ export default function Home() {
     }
 
     // Save to Envitefy history first
+    let eventId: string | undefined;
     try {
       const timezone =
         event.timezone ||
         Intl.DateTimeFormat().resolvedOptions().timeZone ||
         "UTC";
+
+      // Create thumbnail if file is an image
+      let thumbnail: string | undefined;
+      let attachment:
+        | { name: string; type: string; dataUrl: string }
+        | undefined;
+      if (uploadedFile && uploadedFile.type.startsWith("image/")) {
+        try {
+          thumbnail =
+            (await createThumbnailDataUrl(uploadedFile, 1200, 0.85)) ||
+            undefined;
+          const dataUrl = await readFileAsDataUrl(uploadedFile);
+          attachment = {
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            dataUrl,
+          };
+        } catch (err) {
+          console.error("Failed to create thumbnail:", err);
+        }
+      }
+
       const payload: any = {
         title: event.title || "Event",
         data: {
+          category: ocrCategory || undefined,
           startISO: ready.start,
           endISO: ready.end,
           location: ready.location || undefined,
@@ -588,6 +727,8 @@ export default function Home() {
           timezone,
           reminders: event.reminders || undefined,
           createdVia: "ocr",
+          thumbnail,
+          attachment,
         },
       };
 
@@ -599,7 +740,7 @@ export default function Home() {
       });
 
       const historyData = await historyRes.json().catch(() => ({}));
-      const eventId = (historyData as any)?.id as string | undefined;
+      eventId = (historyData as any)?.id as string | undefined;
 
       // Emit event for sidebar refresh
       if (eventId && typeof window !== "undefined") {
@@ -610,7 +751,7 @@ export default function Home() {
               title: historyData?.title || payload.title,
               created_at: historyData?.created_at || new Date().toISOString(),
               start: ready.start,
-              category: null,
+              category: ocrCategory || null,
               data: payload.data,
             },
           })
@@ -637,10 +778,27 @@ export default function Home() {
       setError(payload?.error || "Failed to add to Outlook Calendar");
       return;
     }
+
+    // Open Outlook Calendar in a new tab
     if (payload?.webLink) {
       window.open(payload.webLink, "_blank");
     }
-  }, [event, buildSubmissionEvent]);
+
+    // Close modal and navigate to event page
+    if (eventId) {
+      resetForm();
+      window.location.href = `/event/${eventId}?created=1`;
+    } else {
+      resetForm();
+    }
+  }, [
+    event,
+    buildSubmissionEvent,
+    uploadedFile,
+    ocrCategory,
+    setError,
+    resetForm,
+  ]);
 
   const saveToEnvitefy = useCallback(async () => {
     if (!event?.start) return;
@@ -655,16 +813,43 @@ export default function Home() {
         event.timezone ||
         Intl.DateTimeFormat().resolvedOptions().timeZone ||
         "UTC";
+
+      // Create thumbnail if file is an image
+      let thumbnail: string | undefined;
+      let attachment:
+        | { name: string; type: string; dataUrl: string }
+        | undefined;
+      if (uploadedFile && uploadedFile.type.startsWith("image/")) {
+        try {
+          thumbnail =
+            (await createThumbnailDataUrl(uploadedFile, 1200, 0.85)) ||
+            undefined;
+          const dataUrl = await readFileAsDataUrl(uploadedFile);
+          attachment = {
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            dataUrl,
+          };
+        } catch (err) {
+          console.error("Failed to create thumbnail:", err);
+        }
+      }
+
       const payload: any = {
         title: event.title || "Event",
         data: {
+          category: ocrCategory || undefined,
           startISO: ready.start,
           endISO: ready.end,
           location: ready.location || undefined,
           description: event.description || undefined,
+          rsvp: event.rsvp || undefined,
           timezone,
+          numberOfGuests: event.numberOfGuests || 0,
           reminders: event.reminders || undefined,
           createdVia: "ocr",
+          thumbnail,
+          attachment,
         },
       };
 
@@ -687,7 +872,7 @@ export default function Home() {
               title: historyData?.title || payload.title,
               created_at: historyData?.created_at || new Date().toISOString(),
               start: ready.start,
-              category: null,
+              category: ocrCategory || null,
               data: payload.data,
             },
           })
@@ -704,7 +889,14 @@ export default function Home() {
       console.error("Failed to save event:", err);
       setError(err?.message || "Failed to save event. Please try again.");
     }
-  }, [event, buildSubmissionEvent, setError, resetForm]);
+  }, [
+    event,
+    buildSubmissionEvent,
+    setError,
+    resetForm,
+    uploadedFile,
+    ocrCategory,
+  ]);
 
   useEffect(() => {
     // Touch the session so provider connections hydrate promptly
@@ -1051,46 +1243,27 @@ function SnapEventModal({
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1">
-              <label
-                htmlFor="snap-event-location"
-                className="text-sm text-muted-foreground"
-              >
-                Location
-              </label>
-              <input
-                id="snap-event-location"
-                className="w-full rounded border border-border bg-surface text-foreground p-2"
-                value={event.location}
-                onChange={(e) =>
-                  updateEvent((current) => ({
-                    ...current,
-                    location: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="snap-event-timezone"
-                className="text-sm text-muted-foreground"
-              >
-                Timezone
-              </label>
-              <input
-                id="snap-event-timezone"
-                className="w-full rounded border border-border bg-surface text-foreground p-2"
-                value={event.timezone}
-                onChange={(e) =>
-                  updateEvent((current) => ({
-                    ...current,
-                    timezone: e.target.value,
-                  }))
-                }
-              />
-            </div>
+          <div className="space-y-1">
+            <label
+              htmlFor="snap-event-location"
+              className="text-sm text-muted-foreground"
+            >
+              Location
+            </label>
+            <input
+              id="snap-event-location"
+              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              value={event.location}
+              onChange={(e) =>
+                updateEvent((current) => ({
+                  ...current,
+                  location: e.target.value,
+                }))
+              }
+            />
           </div>
+
+          {/* Number of guests field removed - not needed for scanned events */}
 
           <div className="space-y-1">
             <label
@@ -1111,6 +1284,32 @@ function SnapEventModal({
                 }))
               }
             />
+          </div>
+
+          <div className="space-y-1">
+            <label
+              htmlFor="snap-event-rsvp"
+              className="text-sm text-muted-foreground"
+            >
+              RSVP (Phone or Email)
+            </label>
+            <input
+              id="snap-event-rsvp"
+              type="text"
+              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              placeholder="e.g., RSVP: Taya 850-555-8888 or contact@example.com"
+              value={event.rsvp || ""}
+              onChange={(e) =>
+                updateEvent((current) => ({
+                  ...current,
+                  rsvp: e.target.value || null,
+                }))
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Phone number or email for RSVP. If detected from scan, it will be
+              filled automatically.
+            </p>
           </div>
 
           <div className="space-y-1">
