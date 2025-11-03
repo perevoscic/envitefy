@@ -13,6 +13,7 @@ import {
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { CalendarIconGoogle } from "@/components/CalendarIcons";
 import Logo from "@/assets/logo.png";
 import {
   CreateEventIllustration,
@@ -1404,12 +1405,7 @@ function SnapEventModal({
                 onClick={addGoogle}
               >
                 <span>Add to</span>
-                <Image
-                  src="/brands/google-white.svg"
-                  alt="Google"
-                  width={20}
-                  height={20}
-                />
+                <CalendarIconGoogle className="h-5 w-5 text-white" />
               </button>
             ) : (
               <button
@@ -1418,12 +1414,7 @@ function SnapEventModal({
                 onClick={connectGoogle}
               >
                 <span>Connect to</span>
-                <Image
-                  src="/brands/google-white.svg"
-                  alt="Google"
-                  width={20}
-                  height={20}
-                />
+                <CalendarIconGoogle className="h-5 w-5 text-white" />
               </button>
             )}
             {connected.microsoft ? (

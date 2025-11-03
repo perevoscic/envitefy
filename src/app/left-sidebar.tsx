@@ -15,6 +15,7 @@ import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
 import Logo from "@/assets/logo.png";
 import { getCategoryIcon } from "@/lib/event-colors";
+import { CalendarIconGoogle } from "@/components/CalendarIcons";
 
 declare global {
   interface Window {
@@ -4801,51 +4802,17 @@ export default function LeftSidebar() {
                             className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
                           >
                             <div className="flex items-center gap-3">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                width="16"
-                                height="16"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  fill="currentColor"
-                                  d="M12 5.2c1.7 0 3.2.6 4.4 1.6l-1.8 1.8c-.7-.6-1.6-1-2.6-1-2.2 0-4 1.5-4.7 3.5L4.4 10C5.6 7.2 8.6 5.2 12 5.2z"
-                                />
-                                <path
-                                  fill="currentColor"
-                                  d="M4.4 10l2.9.9c-.2.6-.3 1.3-.3 2.1s.1 1.5.3 2.1l-2.9.9C4 14.9 3.8 14 3.8 13s.2-1.9.6-3z"
-                                />
-                                <path
-                                  fill="currentColor"
-                                  d="M12 20.8c-3.4 0-6.4-2-7.6-4.8l2.9-.9c.7 2.1 2.5 3.5 4.7 3.5 1.1 0 2.2-.4 3-.9l2 1.6c-1.4 1-3.2 1.5-5 1.5z"
-                                />
-                                <path
-                                  fill="currentColor"
-                                  d="M20.2 12c0-.5-.1-1-.2-1.5H12v3h4.7c-.2 1.1-.8 2-1.8 2.6l2 1.6c1.7-1.3 2.7-3.3 2.7-5.7z"
-                                />
-                              </svg>
+                              <CalendarIconGoogle className="h-4 w-4" />
                               <span className="text-sm">Google</span>
                             </div>
-                            {connectedCalendars.google ? (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 text-green-500"
-                                aria-hidden="true"
-                              >
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            ) : (
-                              <span className="text-xs text-foreground/50">
-                                Not connected
-                              </span>
-                            )}
+                            <div
+                              className={`h-3 w-3 rounded-full ${
+                                connectedCalendars.google
+                                  ? "bg-green-500"
+                                  : "bg-gray-400 dark:bg-gray-500"
+                              }`}
+                              aria-hidden="true"
+                            />
                           </button>
                           <button
                             type="button"
@@ -4895,25 +4862,14 @@ export default function LeftSidebar() {
                               </svg>
                               <span className="text-sm">Outlook</span>
                             </div>
-                            {connectedCalendars.microsoft ? (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 text-green-500"
-                                aria-hidden="true"
-                              >
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            ) : (
-                              <span className="text-xs text-foreground/50">
-                                Not connected
-                              </span>
-                            )}
+                            <div
+                              className={`h-3 w-3 rounded-full ${
+                                connectedCalendars.microsoft
+                                  ? "bg-green-500"
+                                  : "bg-gray-400 dark:bg-gray-500"
+                              }`}
+                              aria-hidden="true"
+                            />
                           </button>
                           <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90">
                             <div className="flex items-center gap-3">
@@ -4933,25 +4889,14 @@ export default function LeftSidebar() {
                               </svg>
                               <span className="text-sm">Apple</span>
                             </div>
-                            {connectedCalendars.apple ? (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 text-green-500"
-                                aria-hidden="true"
-                              >
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            ) : (
-                              <span className="text-xs text-foreground/50">
-                                Not connected
-                              </span>
-                            )}
+                            <div
+                              className={`h-3 w-3 rounded-full ${
+                                connectedCalendars.apple
+                                  ? "bg-green-500"
+                                  : "bg-gray-400 dark:bg-gray-500"
+                              }`}
+                              aria-hidden="true"
+                            />
                           </div>
                         </div>
                       )}
