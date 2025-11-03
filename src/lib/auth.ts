@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken } from "@/lib/db";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken } from "@/lib/db";
 
 export function getAuthOptions(): NextAuthOptions {
   const secret =
@@ -114,6 +114,7 @@ async authorize(credentials) {
           tokenAny.providers = tokenAny.providers || {};
 
           if (account?.provider) {
+            // OAuth sign-in: store provider tokens from the OAuth account
             tokenAny.provider = account.provider;
             const prev = tokenAny.providers[account.provider] || {};
             const accessToken = (account as any)?.access_token ?? prev.accessToken;
@@ -140,6 +141,31 @@ async authorize(credentials) {
               } catch (err) {
                 console.error('[auth] saveGoogleRefreshToken failed', err);
               }
+            }
+          }
+          
+          // Load stored provider tokens from database if not already in JWT
+          // This ensures connection status syncs across devices (credentials sign-in or token refresh)
+          if (email && (!tokenAny.providers?.google?.refreshToken || !tokenAny.providers?.microsoft?.refreshToken)) {
+            try {
+              if (!tokenAny.providers?.google?.refreshToken) {
+                const googleRefresh = await getGoogleRefreshToken(email);
+                if (googleRefresh) {
+                  tokenAny.providers.google = tokenAny.providers.google || {};
+                  tokenAny.providers.google.refreshToken = googleRefresh;
+                }
+              }
+              if (!tokenAny.providers?.microsoft?.refreshToken) {
+                const microsoftRefresh = await getMicrosoftRefreshToken(email);
+                if (microsoftRefresh) {
+                  tokenAny.providers.microsoft = tokenAny.providers.microsoft || {};
+                  tokenAny.providers.microsoft.refreshToken = microsoftRefresh;
+                  tokenAny.providers.microsoft.connected = true;
+                }
+              }
+            } catch (err) {
+              console.error('[auth] failed to load stored provider tokens', err);
+              // Continue even if loading fails - database lookup in /api/calendars will handle it
             }
           }
         } catch (err) {
