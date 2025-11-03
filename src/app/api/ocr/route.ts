@@ -2215,6 +2215,7 @@ export async function POST(request: Request) {
     // If this looks like a birthday, let the LLM rewrite the description into a single polite sentence
     // IMPORTANT: Description should NOT repeat the title - just mention venue/activity if needed
     const isBirthdayForDesc = /(birthday|b-?day)/i.test(raw) || /(birthday)/i.test(finalTitle);
+    let descriptionWasGeneratedAsBirthday = false;
     if (isBirthdayForDesc) {
       try {
         const venueLabel =
@@ -2249,6 +2250,7 @@ export async function POST(request: Request) {
               ? `Join us to celebrate a Birthday at ${venue}.`
               : "Join us to celebrate a Birthday.";
         finalDescription = deterministic;
+        descriptionWasGeneratedAsBirthday = true;
         // Second attempt: let LLM refine; fall back to deterministic if LLM returns weird multiline text
         const rewritten = await llmRewriteBirthdayDescription(
           finalTitle,
@@ -2375,7 +2377,8 @@ export async function POST(request: Request) {
 
     // RSVP is now stored in a separate field, no longer appended to description
 
-    if (typeof finalDescription === "string" && finalDescription.trim()) {
+    // Don't strip "Join us" from birthday descriptions - we explicitly generate them with "Join us to celebrate"
+    if (typeof finalDescription === "string" && finalDescription.trim() && !descriptionWasGeneratedAsBirthday) {
       finalDescription = stripJoinUsLanguage(finalDescription.trim());
     }
 
