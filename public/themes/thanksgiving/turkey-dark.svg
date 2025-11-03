@@ -1,54 +1,54 @@
 <svg width="240" height="120" viewBox="0 0 240 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Cornucopia base -->
-  <path d="M20 80 Q15 75, 10 85 Q12 95, 20 100 Q25 105, 30 100 Q35 95, 38 90 Q35 85, 30 85 Q25 85, 20 80 Z" fill="#92400E" opacity="0.9"/>
-  <path d="M10 85 Q12 95, 20 100 Q25 105, 30 100 Q35 95, 38 90 Q35 85, 30 85 Q25 85, 20 80 Q15 75, 10 85" stroke="#78350F" stroke-width="2" fill="#B45309"/>
+  <!-- Turkey tail feathers (fan) - darker, more saturated for dark mode -->
+  <path d="M120 60 Q100 40, 80 45 Q85 50, 90 55 Q95 60, 100 58 Q105 56, 110 58 Q115 60, 120 60" fill="#B91C1C" opacity="0.95"/>
+  <path d="M120 60 Q110 35, 90 40 Q95 45, 100 50 Q105 55, 110 53 Q115 51, 120 60" fill="#DC2626" opacity="0.95"/>
+  <path d="M120 60 Q115 30, 95 35 Q100 40, 105 45 Q110 50, 115 48 Q120 46, 120 60" fill="#EA580C" opacity="0.95"/>
+  <path d="M120 60 Q118 28, 100 32 Q105 37, 110 42 Q115 47, 118 45 Q120 43, 120 60" fill="#F59E0B" opacity="0.95"/>
+  <path d="M120 60 Q120 25, 105 30 Q108 35, 112 40 Q116 45, 118 43 Q120 41, 120 60" fill="#FBBF24" opacity="0.95"/>
   
-  <!-- Cornucopia opening -->
-  <ellipse cx="35" cy="88" rx="12" ry="8" fill="#451A03"/>
-  <ellipse cx="35" cy="88" rx="10" ry="6" fill="#92400E"/>
+  <!-- Tail feather details -->
+  <path d="M95 35 Q100 42, 105 48" stroke="#78350F" stroke-width="1" opacity="0.8"/>
+  <path d="M90 40 Q95 47, 100 53" stroke="#78350F" stroke-width="1" opacity="0.8"/>
+  <path d="M85 45 Q90 52, 95 58" stroke="#78350F" stroke-width="1" opacity="0.8"/>
   
-  <!-- Pumpkins flowing out -->
-  <ellipse cx="55" cy="75" rx="18" ry="20" fill="#DC2626"/>
-  <path d="M45 75 Q55 65, 65 75" stroke="#B91C1C" stroke-width="2" fill="none"/>
-  <path d="M50 70 Q55 65, 60 70" stroke="#78350F" stroke-width="1.5" fill="none"/>
-  <path d="M52 80 Q55 75, 58 80" stroke="#78350F" stroke-width="1.5" fill="none"/>
+  <!-- Turkey body - darker for contrast -->
+  <ellipse cx="140" cy="70" rx="25" ry="20" fill="#451A03"/>
+  <ellipse cx="138" cy="68" rx="22" ry="18" fill="#78350F"/>
   
-  <ellipse cx="85" cy="68" rx="16" ry="18" fill="#EA580C"/>
-  <path d="M77 68 Q85 60, 93 68" stroke="#DC2626" stroke-width="2" fill="none"/>
+  <!-- Wing -->
+  <ellipse cx="130" cy="72" rx="12" ry="15" fill="#92400E" opacity="0.9"/>
+  <path d="M125 72 Q130 65, 135 72" stroke="#78350F" stroke-width="1.5" fill="none" opacity="0.9"/>
   
-  <!-- Fall leaves -->
-  <path d="M105 55 Q110 50, 115 60 Q112 65, 108 62 Q105 58, 105 55" fill="#B91C1C" opacity="0.9"/>
-  <path d="M110 60 Q115 55, 120 65 Q117 70, 113 67 Q110 63, 110 60" fill="#EA580C" opacity="0.9"/>
+  <!-- Turkey head and neck -->
+  <ellipse cx="165" cy="55" rx="8" ry="10" fill="#451A03"/>
+  <path d="M165 45 Q170 40, 175 45" stroke="#451A03" stroke-width="2" fill="#78350F"/>
   
-  <path d="M125 50 Q130 45, 135 55 Q132 60, 128 57 Q125 53, 125 50" fill="#DC2626" opacity="0.9"/>
-  <path d="M130 58 Q135 53, 140 63 Q137 68, 133 65 Q130 61, 130 58" fill="#B91C1C" opacity="0.8"/>
+  <!-- Beak -->
+  <path d="M175 45 L180 47 L175 49 Z" fill="#D97706"/>
   
-  <!-- Small pumpkins/gourds -->
-  <ellipse cx="155" cy="65" rx="10" ry="12" fill="#EA580C"/>
-  <path d="M150 65 Q155 60, 160 65" stroke="#DC2626" stroke-width="1.5" fill="none"/>
+  <!-- Wattle (red hanging skin) - brighter for dark mode -->
+  <ellipse cx="170" cy="52" rx="3" ry="5" fill="#B91C1C"/>
+  <ellipse cx="172" cy="55" rx="2.5" ry="4" fill="#DC2626"/>
   
-  <ellipse cx="175" cy="72" rx="8" ry="10" fill="#F59E0B"/>
-  <path d="M171 72 Q175 68, 179 72" stroke="#EA580C" stroke-width="1.2" fill="none"/>
+  <!-- Eye - lighter for dark mode -->
+  <circle cx="167" cy="50" r="2" fill="#FEF3C7"/>
+  <circle cx="167.5" cy="49.5" r="0.8" fill="#1F2937"/>
   
-  <!-- Wheat stalks -->
-  <path d="M195 45 L195 60 M195 50 L198 48 M195 50 L192 48 M195 55 L198 53 M195 55 L192 53" stroke="#FACC15" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="195" cy="45" r="3" fill="#FBBF24"/>
+  <!-- Legs -->
+  <path d="M130 88 L130 100 M128 100 L132 100" stroke="#D97706" stroke-width="3" stroke-linecap="round"/>
+  <path d="M145 88 L145 100 M143 100 L147 100" stroke="#D97706" stroke-width="3" stroke-linecap="round"/>
   
-  <path d="M210 50 L210 65 M210 55 L213 53 M210 55 L207 53 M210 60 L213 58 M210 60 L207 58" stroke="#FACC15" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="210" cy="50" r="3" fill="#FBBF24"/>
+  <!-- Feet -->
+  <path d="M130 100 L125 105 M130 100 L135 105" stroke="#D97706" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M145 100 L140 105 M145 100 L150 105" stroke="#D97706" stroke-width="2.5" stroke-linecap="round"/>
   
-  <!-- Grapes -->
-  <circle cx="160" cy="55" r="4" fill="#78350F"/>
-  <circle cx="165" cy="53" r="4" fill="#92400E"/>
-  <circle cx="162" cy="50" r="4" fill="#78350F"/>
-  <circle cx="167" cy="57" r="4" fill="#92400E"/>
+  <!-- Fall leaves around turkey - more saturated for dark mode -->
+  <path d="M50 50 Q55 45, 58 52 Q56 55, 53 53 Q50 51, 50 50" fill="#B91C1C" opacity="0.85"/>
+  <path d="M65 45 Q70 40, 73 47 Q71 50, 68 48 Q65 46, 65 45" fill="#EA580C" opacity="0.85"/>
+  <path d="M180 30 Q185 25, 188 32 Q186 35, 183 33 Q180 31, 180 30" fill="#DC2626" opacity="0.85"/>
+  <path d="M195 35 Q200 30, 203 37 Q201 40, 198 38 Q195 36, 195 35" fill="#B91C1C" opacity="0.85"/>
   
-  <!-- Autumn berries/leaves scattered -->
-  <circle cx="80" cy="45" r="3" fill="#B91C1C"/>
-  <circle cx="95" cy="40" r="2.5" fill="#DC2626"/>
-  <circle cx="145" cy="50" r="2.5" fill="#EA580C"/>
-  
-  <!-- Maple leaves -->
-  <path d="M180 40 Q185 35, 188 42 Q186 45, 183 43 Q180 41, 180 40" fill="#B91C1C" opacity="0.8"/>
-  <path d="M200 35 Q205 30, 208 37 Q206 40, 203 38 Q200 36, 200 35" fill="#EA580C" opacity="0.8"/>
+  <!-- Small decorative elements -->
+  <circle cx="60" cy="70" r="2" fill="#EA580C" opacity="0.75"/>
+  <circle cx="200" cy="60" r="2" fill="#DC2626" opacity="0.75"/>
 </svg>
