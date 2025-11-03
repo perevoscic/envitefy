@@ -523,6 +523,35 @@ export default function Home() {
     window.location.href = `/api/ics?${q}`;
   }, [event, buildSubmissionEvent]);
 
+  const addAppleCalendar = useCallback(() => {
+    if (!event?.start) return;
+    const ready = buildSubmissionEvent(event);
+    if (!ready) {
+      setError("Missing start time for calendar export");
+      return;
+    }
+    const q = new URLSearchParams({
+      title: ready.title || "Event",
+      start: ready.start ?? "",
+      end: ready.end ?? "",
+      location: ready.location || "",
+      description: ready.description || "",
+      timezone: ready.timezone || "America/Chicago",
+      disposition: "inline",
+      ...(ready.reminders && ready.reminders.length
+        ? {
+            reminders: ready.reminders.map((r) => String(r.minutes)).join(","),
+          }
+        : {}),
+    }).toString();
+
+    // On macOS Safari, opening the ICS endpoint with disposition=inline
+    // in a new window should trigger Calendar.app
+    // Using window.open() gives Safari a better chance to intercept and open natively
+    const url = `${window.location.origin}/api/ics?${q}`;
+    window.open(url, "_blank");
+  }, [event, buildSubmissionEvent, setError]);
+
   const connectGoogle = useCallback(() => {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
@@ -1004,6 +1033,7 @@ export default function Home() {
           addOutlook={addOutlook}
           connectOutlook={connectOutlook}
           dlIcs={dlIcs}
+          addAppleCalendar={addAppleCalendar}
           buildSubmissionEvent={buildSubmissionEvent}
           setError={setError}
           saveToEnvitefy={saveToEnvitefy}
@@ -1025,6 +1055,7 @@ type SnapEventModalProps = {
   addOutlook: () => void;
   connectOutlook: () => void;
   dlIcs: () => void;
+  addAppleCalendar?: () => void;
   buildSubmissionEvent: (input: EventFields) => any;
   setError: (error: string | null) => void;
   saveToEnvitefy: () => void;
@@ -1042,6 +1073,7 @@ function SnapEventModal({
   addOutlook,
   connectOutlook,
   dlIcs,
+  addAppleCalendar,
   buildSubmissionEvent,
   setError,
   saveToEnvitefy,
@@ -1449,24 +1481,15 @@ function SnapEventModal({
             {isAppleDevice && (
               <button
                 type="button"
-                className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80 flex items-center gap-2 disabled:opacity-50"
-                onClick={dlIcs}
+                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
+                onClick={addAppleCalendar || dlIcs}
               >
-                <span>Connect to</span>
+                <span>Add to</span>
                 <Image
-                  src="/brands/apple-black.svg"
+                  src="/brands/apple-white.svg"
                   alt="Apple"
                   width={20}
                   height={20}
-                  className="show-light"
-                />
-                <Image
-                  src="/brands/apple-white.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="show-dark"
-                  aria-hidden="true"
                 />
               </button>
             )}
@@ -1475,7 +1498,7 @@ function SnapEventModal({
             <button
               type="button"
               disabled={!event?.start}
-              className="rounded border border-border bg-surface px-4 py-2 text-foreground hover:bg-surface/80 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={saveToEnvitefy}
             >
               <span>Save to</span>
@@ -1484,12 +1507,12 @@ function SnapEventModal({
                 alt="Envitefy"
                 width={20}
                 height={20}
-                className="brightness-0 dark:brightness-100"
+                className="brightness-0 invert"
               />
             </button>
             <button
               type="button"
-              className="rounded border border-border bg-surface px-4 py-2 text-sm hover:opacity-80 disabled:opacity-50"
+              className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm disabled:opacity-50"
               onClick={onClose}
             >
               Cancel
