@@ -155,8 +155,6 @@ export default async function RootLayout({
     Object.entries(cssVariables).map(([key, value]) => [key, value])
   ) as CSSProperties;
 
-  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-
   return (
     <html
       lang="en"
@@ -220,20 +218,18 @@ export default async function RootLayout({
             } catch (e) {}
           })();
         `}</Script>
-        {gaMeasurementId ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga4-init" strategy="afterInteractive">{`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaMeasurementId}');
-            `}</Script>
-          </>
-        ) : null}
+        {/* Google tag (gtag.js) */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-3X25SZMRFY"
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-3X25SZMRFY');
+        `}</Script>
         <Providers
           session={session}
           initialTheme={initialThemeVariant}
