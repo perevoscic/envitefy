@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, revokeEventShare, getEventHistoryById } from "@/lib/db";
+import { invalidateUserHistory } from "@/lib/history-cache";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,15 @@ export async function POST(request: NextRequest) {
     if (!existing) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
     const count = await revokeEventShare({ eventId, byUserId, recipientUserId });
+    
+    // Invalidate cache for both owner and recipient (if specified)
+    if (existing.user_id) {
+      invalidateUserHistory(existing.user_id);
+    }
+    if (recipientUserId) {
+      invalidateUserHistory(recipientUserId);
+    }
+    
     return NextResponse.json({ ok: true, revoked: count });
   } catch (err: any) {
     try { console.error("[share remove] POST error", err); } catch {}

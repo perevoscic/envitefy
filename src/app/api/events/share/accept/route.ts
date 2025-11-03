@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { acceptEventShare, getUserIdByEmail } from "@/lib/db";
+import { acceptEventShare, getUserIdByEmail, getEventHistoryById } from "@/lib/db";
+import { invalidateUserHistory } from "@/lib/history-cache";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,18 @@ export async function POST(request: NextRequest) {
 
     const updated = await acceptEventShare({ eventId, recipientUserId });
     if (!updated) return NextResponse.json({ error: "No pending invite found" }, { status: 404 });
+    
+    // Invalidate recipient's cache (they now see the shared event)
+    invalidateUserHistory(recipientUserId);
+    
+    // Also invalidate owner's cache (share status changed)
+    try {
+      const event = await getEventHistoryById(eventId);
+      if (event?.user_id) {
+        invalidateUserHistory(event.user_id);
+      }
+    } catch {}
+    
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     try { console.error("[share accept] POST error", err); } catch {}

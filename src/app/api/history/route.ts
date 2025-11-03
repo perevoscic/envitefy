@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents, upsertSignupForm } from "@/lib/db";
+import { getCachedHistory, setCachedHistory, invalidateUserHistory } from "@/lib/history-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,34 +27,53 @@ export async function GET() {
       } catch {}
       return NextResponse.json({ items: [] });
     }
-    const own = await listEventHistoryByUser(userId, 100);
+    
+    // Check cache first
+    const cached = getCachedHistory(userId);
+    if (cached) {
+      try {
+        console.log("[history] GET: returning cached data", { userId, count: cached.length });
+      } catch {}
+      return NextResponse.json({ items: cached });
+    }
+    
+    // Run independent queries in parallel for better performance
+    const [own, shared] = await Promise.all([
+      listEventHistoryByUser(userId, 100),
+      (async () => {
+        try {
+          return await listAcceptedSharedEventsForUser(userId);
+        } catch (e: any) {
+          try {
+            console.warn("[history] GET: shared events unavailable (likely no event_shares table yet)", String(e?.message || e));
+          } catch {}
+          return [];
+        }
+      })(),
+    ]);
     // Annotate own rows that have outgoing shares (pending or accepted)
     let ownWithShareOut = own;
     try {
-      const ids = own.map((r: any) => r.id);
-      const stats = await listSharesByOwnerForEvents(userId, ids);
-      const sharedOutSet = new Set(
-        (stats || [])
-          .filter(
-            (s) => Number(s.accepted_count || 0) + Number(s.pending_count || 0) > 0
-          )
-          .map((s) => s.event_id)
-      );
-      ownWithShareOut = own.map((r: any) =>
-        sharedOutSet.has(r.id)
-          ? { ...r, data: { ...(r.data || {}), sharedOut: true } }
-          : r
-      );
+      if (own.length === 0) {
+        // Skip share stats query if there are no events
+        ownWithShareOut = own;
+      } else {
+        const ids = own.map((r: any) => r.id);
+        const stats = await listSharesByOwnerForEvents(userId, ids);
+        const sharedOutSet = new Set(
+          (stats || [])
+            .filter(
+              (s) => Number(s.accepted_count || 0) + Number(s.pending_count || 0) > 0
+            )
+            .map((s) => s.event_id)
+        );
+        ownWithShareOut = own.map((r: any) =>
+          sharedOutSet.has(r.id)
+            ? { ...r, data: { ...(r.data || {}), sharedOut: true } }
+            : r
+        );
+      }
     } catch {}
-    let shared: any[] = [];
-    try {
-      shared = await listAcceptedSharedEventsForUser(userId);
-    } catch (e: any) {
-      try {
-        console.warn("[history] GET: shared events unavailable (likely no event_shares table yet)", String(e?.message || e));
-      } catch {}
-      shared = [];
-    }
     // Annotate shared items with marker for UI and force category to Shared events
     const annotatedShared = (shared || []).map((r) => ({
       ...r,
@@ -68,6 +88,10 @@ export async function GET() {
       const tb = new Date(b.created_at || 0).getTime();
       return tb - ta;
     });
+    
+    // Cache the results
+    setCachedHistory(userId, items);
+    
     try {
       console.log(
         "[history] GET: returning items",
@@ -116,6 +140,12 @@ export async function POST(req: Request) {
       );
     } catch {}
     const row = await insertEventHistory({ userId, title, data });
+    
+    // Invalidate cache for this user since we just added a new event
+    if (userId) {
+      invalidateUserHistory(userId);
+    }
+    
     // Only upsert into signup_forms when payload clearly includes a signup form
     try {
       const sf = data && typeof data === "object" ? (data as any).signupForm : null;

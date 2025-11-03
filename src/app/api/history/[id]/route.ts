@@ -8,6 +8,7 @@ import {
   getUserIdByEmail,
   updateEventHistoryDataMerge,
 } from "@/lib/db";
+import { invalidateUserHistory } from "@/lib/history-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,6 +45,10 @@ export async function PATCH(
   // Support updating title or merging into data (e.g., category fix)
   if (typeof body.title === "string" && body.title.trim().length > 0) {
     const updated = await updateEventHistoryTitle(id, String(body.title).trim());
+    // Invalidate cache for the owner
+    if (existing.user_id) {
+      invalidateUserHistory(existing.user_id);
+    }
     return NextResponse.json(updated);
   }
   if (body && (body.category != null || body.data != null)) {
@@ -51,6 +56,10 @@ export async function PATCH(
     if (body.category != null) patch.category = String(body.category);
     if (body.data && typeof body.data === "object") Object.assign(patch, body.data);
     const updated = await updateEventHistoryDataMerge(id, patch);
+    // Invalidate cache for the owner
+    if (existing.user_id) {
+      invalidateUserHistory(existing.user_id);
+    }
     return NextResponse.json(updated);
   }
   return NextResponse.json({ error: "No updatable fields" }, { status: 400 });
@@ -75,6 +84,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   await deleteEventHistoryById(id);
+  // Invalidate cache for the owner
+  if (existing.user_id) {
+    invalidateUserHistory(existing.user_id);
+  }
   return NextResponse.json({ ok: true });
 }
 
