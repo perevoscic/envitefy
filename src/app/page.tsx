@@ -1190,13 +1190,13 @@ function SnapEventModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center px-4 py-4 sm:py-10 md:px-8">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:py-10 md:px-8">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
-        className="relative z-10 flex w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex-col gap-5 overflow-hidden rounded-3xl border border-border bg-surface/95 p-6 shadow-[0_45px_90px_-40px_rgba(0,0,0,0.6)] backdrop-blur"
+        className="relative z-10 flex w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[85vh] flex-col gap-5 overflow-hidden rounded-3xl border border-border bg-surface/95 p-6 shadow-[0_45px_90px_-40px_rgba(0,0,0,0.6)] backdrop-blur"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 shrink-0">
@@ -1218,7 +1218,7 @@ function SnapEventModal({
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 overflow-y-auto pr-1 min-h-0 flex-1 max-h-[calc(90vh-240px)] sm:max-h-[60vh]">
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1 min-h-0 flex-1">
           <div className="space-y-1">
             <label
               htmlFor="snap-event-title"

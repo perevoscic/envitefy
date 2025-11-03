@@ -709,7 +709,7 @@ export default function EventCreateModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0"
       onClick={() => !submitting && onClose()}
     >
       <div className="absolute inset-0 bg-black/40" />
@@ -717,7 +717,7 @@ export default function EventCreateModal({
         className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border shadow-xl sm:mx-auto max-h-[calc(100vh-2rem)] flex flex-col min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
+        <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 shrink-0">
           <h3 className="text-base sm:text-lg font-semibold">New event</h3>
           <button
             type="button"
