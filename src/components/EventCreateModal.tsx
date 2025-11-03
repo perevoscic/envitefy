@@ -709,7 +709,7 @@ export default function EventCreateModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       onClick={() => !submitting && onClose()}
     >
       <div className="absolute inset-0 bg-black/40" />
@@ -717,7 +717,7 @@ export default function EventCreateModal({
         className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border shadow-xl sm:mx-auto max-h-[calc(100vh-2rem)] flex flex-col min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
           <h3 className="text-base sm:text-lg font-semibold">New event</h3>
           <button
             type="button"
@@ -1042,8 +1042,16 @@ export default function EventCreateModal({
                     }
                   }}
                 />
-                <div className="block h-8 w-14 rounded-full bg-foreground/15 transition-colors duration-200 ease-out dark:bg-surface/60 peer-checked:bg-primary/60 border border-border/70 shadow-inner" />
-                <div className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-all duration-200 ease-out peer-checked:translate-x-full peer-checked:bg-primary peer-checked:shadow-md dark:bg-surface dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
+                <div className="h-5 w-14 rounded-full shadow-inner transition peer-checked:bg-[#EAEEFB] bg-foreground dark:bg-surface peer-checked:dark:bg-surface/80" />
+                <div className="absolute left-0 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-white transition shadow-[0_2px_4px_rgba(0,0,0,0.15)] peer-checked:translate-x-full peer-checked:bg-primary dark:bg-surface">
+                  <span
+                    className={`h-4 w-4 rounded-full border ${
+                      repeat
+                        ? "bg-primary border-white"
+                        : "bg-white border-foreground dark:border-surface-foreground"
+                    }`}
+                  />
+                </div>
               </div>
             </label>
           </div>
