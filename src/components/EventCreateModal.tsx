@@ -13,6 +13,7 @@ import {
   validateRegistryUrl,
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
+import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 
 type Props = {
   open: boolean;
@@ -168,6 +169,7 @@ export default function EventCreateModal({
     string | null
   >(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   // Smart sign-up configuration moved to its own modal
 
@@ -246,6 +248,7 @@ export default function EventCreateModal({
     if (!file) {
       setAttachment(null);
       setAttachmentPreviewUrl(null);
+      setImageColors(null);
       setAttachmentError(null);
       return;
     }
@@ -265,14 +268,24 @@ export default function EventCreateModal({
     try {
       const dataUrl = await readFileAsDataUrl(file);
       let previewUrl: string | null = null;
+      let colors: ImageColors | null = null;
       if (isImage) {
         previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+        // Extract colors from the image for gradient background
+        try {
+          colors = await extractColorsFromImage(dataUrl);
+        } catch (err) {
+          console.error("Failed to extract colors from image:", err);
+          // Continue without colors if extraction fails
+        }
       }
       setAttachment({ name: file.name, type: file.type, dataUrl });
       setAttachmentPreviewUrl(previewUrl);
+      setImageColors(colors);
     } catch {
       setAttachment(null);
       setAttachmentPreviewUrl(null);
+      setImageColors(null);
       setAttachmentError("Could not process the file");
       event.target.value = "";
     }
@@ -281,6 +294,7 @@ export default function EventCreateModal({
   const clearFlyer = () => {
     setAttachment(null);
     setAttachmentPreviewUrl(null);
+    setImageColors(null);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
   };
@@ -575,6 +589,7 @@ export default function EventCreateModal({
                 dataUrl: attachment.dataUrl,
               }
             : undefined,
+          imageColors: imageColors || undefined,
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
           signupForm: undefined,
@@ -1119,13 +1134,13 @@ export default function EventCreateModal({
             />
           </div>
           <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
+            <div className="mb-2 flex items-center justify-between text-sm text-foreground">
               <span>Upload a file (optional)</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => flyerInputRef.current?.click()}
-                  className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground/80 hover:bg-surface"
+                  className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
                 >
                   {attachment ? "Replace file" : "Upload file"}
                 </button>
@@ -1133,7 +1148,7 @@ export default function EventCreateModal({
                   <button
                     type="button"
                     onClick={clearFlyer}
-                    className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                    className="text-xs font-medium text-foreground hover:text-foreground/80"
                   >
                     Remove
                   </button>
@@ -1179,7 +1194,7 @@ export default function EventCreateModal({
             <button
               type="button"
               onClick={() => !submitting && onClose()}
-              className="px-4 py-2 text-sm border border-border rounded-md hover:bg-surface"
+              className="px-4 py-2 text-sm text-foreground border border-border rounded-md hover:bg-surface"
             >
               Cancel
             </button>

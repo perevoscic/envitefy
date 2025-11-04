@@ -34,7 +34,7 @@ export default function RegistryLinksEditor({
           type="button"
           onClick={onAdd}
           disabled={entries.length >= maxLinks}
-          className="inline-flex items-center justify-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground/80 hover:text-foreground hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:text-foreground hover:bg-surface hover:border-foreground/20 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Add link
         </button>
@@ -50,7 +50,7 @@ export default function RegistryLinksEditor({
               <button
                 type="button"
                 onClick={() => onRemove(entry.key)}
-                className="absolute right-2 top-2 text-xs text-foreground/50 transition-colors hover:text-foreground"
+                className="absolute right-2 top-2 text-xs text-foreground transition-colors hover:text-foreground/80"
               >
                 Remove
               </button>

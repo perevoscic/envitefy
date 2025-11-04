@@ -316,6 +316,28 @@ body {
   color: var(--event-text-dark);
 }
 
+/* Header buttons styling when image background is used */
+.header-with-image-buttons button {
+  color: white !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(4px);
+}
+
+.header-with-image-buttons button:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+}
+
+.header-with-image-buttons button.text-red-600,
+.header-with-image-buttons button:hover.text-red-700 {
+  color: white !important;
+  background-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.header-with-image-buttons button:hover.text-red-700 {
+  background-color: rgba(239, 68, 68, 0.4) !important;
+}
+
 
 /* Consistent responsive horizontal gutters for layouts */
 @layer utilities {
@@ -384,8 +406,8 @@ body {
 :root[data-theme$="-dark"] {
   --background: #1C1B1A;
   --surface: #2E2C2D;
-  --foreground: #F5F5F7;
-  --muted-foreground: #CCCCCC;
+  --foreground: #E5E5E7;
+  --muted-foreground: #B3B3B3;
   --border: #3A3A3A;
 
   --primary: #2DD4BF;
@@ -396,6 +418,28 @@ body {
   --info: #60A5FA;
   --warning: #F59E0B;
   --error: #F43F5E;
+}
+
+/* Ensure good contrast in dark theme modals */
+:root[data-theme$="-dark"] .bg-background,
+:root[data-theme$="-dark"] .bg-surface {
+  color: var(--foreground);
+}
+
+/* Ensure buttons and text are visible in dark theme */
+:root[data-theme$="-dark"] button.text-foreground,
+:root[data-theme$="-dark"] .text-foreground {
+  color: var(--foreground) !important;
+}
+
+/* Event detail page text in dark theme */
+:root[data-theme$="-dark"] .event-theme-card {
+  color: var(--foreground);
+}
+
+:root[data-theme$="-dark"] .event-theme-card dt,
+:root[data-theme$="-dark"] .event-theme-card dd {
+  color: var(--foreground);
 }
 
 /* Scan overlay animation */

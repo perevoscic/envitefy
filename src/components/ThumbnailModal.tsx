@@ -35,7 +35,7 @@ export default function ThumbnailModal({
         <img
           src={src}
           alt={alt || "Flyer thumbnail"}
-          className="h-38 w-auto  object-cover rounded"
+          className={`w-auto object-cover rounded ${className?.includes('max-w') ? 'max-h-48' : 'h-38'}`}
         />
       </button>
 

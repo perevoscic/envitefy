@@ -17,6 +17,7 @@ import {
   validateRegistryUrl,
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
+import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 
 interface EventEditModalProps {
   eventId: string;
@@ -122,10 +123,25 @@ export default function EventEditModal({
     }
     return null;
   }, [initialAttachment, eventData?.thumbnail]);
+  const initialImageColors = useMemo(() => {
+    const raw = eventData?.imageColors;
+    if (
+      raw &&
+      typeof raw === "object" &&
+      typeof raw.headerLight === "string" &&
+      typeof raw.headerDark === "string"
+    ) {
+      return raw as ImageColors;
+    }
+    return null;
+  }, [eventData?.imageColors]);
   const [attachment, setAttachment] = useState(initialAttachment);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(initialPreview);
+  const [imageColors, setImageColors] = useState<ImageColors | null>(
+    initialImageColors
+  );
   const [attachmentDirty, setAttachmentDirty] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
@@ -189,6 +205,7 @@ export default function EventEditModal({
     if (!file) {
       setAttachment(null);
       setAttachmentPreviewUrl(null);
+      setImageColors(null);
       setAttachmentDirty(true);
       setAttachmentError(null);
       return;
@@ -209,16 +226,26 @@ export default function EventEditModal({
     try {
       const dataUrl = await readFileAsDataUrl(file);
       let previewUrl: string | null = null;
+      let colors: ImageColors | null = null;
       if (isImage) {
         previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+        // Extract colors from the image for gradient background
+        try {
+          colors = await extractColorsFromImage(dataUrl);
+        } catch (err) {
+          console.error("Failed to extract colors from image:", err);
+          // Continue without colors if extraction fails
+        }
       }
       setAttachment({ name: file.name, type: file.type, dataUrl });
       setAttachmentPreviewUrl(previewUrl);
+      setImageColors(colors);
       setAttachmentDirty(true);
     } catch {
       setAttachmentError("Could not process the file");
       setAttachment(null);
       setAttachmentPreviewUrl(null);
+      setImageColors(null);
       event.target.value = "";
     }
   };
@@ -226,6 +253,7 @@ export default function EventEditModal({
   const clearFlyer = () => {
     setAttachment(null);
     setAttachmentPreviewUrl(null);
+    setImageColors(null);
     setAttachmentDirty(true);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
@@ -356,6 +384,8 @@ export default function EventEditModal({
         dataUpdate.thumbnail = attachment?.type.startsWith("image/")
           ? attachmentPreviewUrl || attachment?.dataUrl || null
           : null;
+        // Update image colors if attachment changed
+        dataUpdate.imageColors = imageColors || null;
       }
 
       if (Object.keys(dataUpdate).length > 0) {
@@ -634,13 +664,13 @@ export default function EventEditModal({
                 </div>
 
                 <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
+                  <div className="mb-2 flex items-center justify-between text-sm text-foreground">
                     <span>Upload a file (optional)</span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => flyerInputRef.current?.click()}
-                        className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground/80 hover:bg-surface"
+                        className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
                       >
                         {attachment ? "Replace file" : "Upload file"}
                       </button>
@@ -648,7 +678,7 @@ export default function EventEditModal({
                         <button
                           type="button"
                           onClick={clearFlyer}
-                          className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                          className="text-xs font-medium text-foreground hover:text-foreground/80"
                         >
                           Remove
                         </button>
@@ -697,7 +727,7 @@ export default function EventEditModal({
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 text-sm text-foreground/70 hover:text-foreground border border-border rounded-md hover:bg-surface transition-colors"
+                    className="px-4 py-2 text-sm text-foreground border border-border rounded-md hover:bg-surface transition-colors"
                   >
                     Cancel
                   </button>

@@ -6,7 +6,8 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import LocationLink from "@/components/LocationLink";
 import ReadOnlyBanner from "./ReadOnlyBanner";
-import ReadOnlyEventLogo from "@/components/ReadOnlyEventLogo";
+import Image from "next/image";
+import Logo from "@/assets/logo.png";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import {
   isEventSharedWithUser,
@@ -32,6 +33,7 @@ import {
   normalizeRegistryLinks,
 } from "@/utils/registry-links";
 import type { CSSProperties } from "react";
+import type { ImageColors } from "@/utils/image-colors";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
@@ -560,27 +562,90 @@ export default async function EventPage({
     (data?.category as string | undefined) || null
   );
   const categoryLabel = eventTheme.categoryLabel;
-  const themeStyleVars = {
-    "--event-header-gradient-light": eventTheme.headerLight,
-    "--event-header-gradient-dark": eventTheme.headerDark,
-    "--event-card-bg-light": eventTheme.cardLight,
-    "--event-card-bg-dark": eventTheme.cardDark,
-    "--event-border-light": eventTheme.borderLight,
-    "--event-border-dark": eventTheme.borderDark,
-    "--event-chip-light": eventTheme.chipLight,
-    "--event-chip-dark": eventTheme.chipDark,
-    "--event-text-light": eventTheme.textLight,
-    "--event-text-dark": eventTheme.textDark,
-  } satisfies Record<string, string>;
 
-  // Now finalize header style: default to category color when no explicit signup header background is set
+  // Check if image colors are available (from uploaded image)
+  const imageColors = (() => {
+    const raw = data?.imageColors;
+    if (
+      raw &&
+      typeof raw === "object" &&
+      typeof raw.headerLight === "string" &&
+      typeof raw.headerDark === "string"
+    ) {
+      return raw as ImageColors;
+    }
+    return null;
+  })();
+
+  // Use image colors if available, otherwise fall back to category theme
+  const themeStyleVars = (
+    imageColors
+      ? {
+          "--event-header-gradient-light": imageColors.headerLight,
+          "--event-header-gradient-dark": imageColors.headerDark,
+          "--event-card-bg-light": imageColors.cardLight,
+          "--event-card-bg-dark": imageColors.cardDark,
+          "--event-border-light": imageColors.borderLight,
+          "--event-border-dark": imageColors.borderDark,
+          "--event-chip-light": imageColors.chipLight,
+          "--event-chip-dark": imageColors.chipDark,
+          "--event-text-light": imageColors.textLight,
+          "--event-text-dark": imageColors.textDark,
+        }
+      : {
+          "--event-header-gradient-light": eventTheme.headerLight,
+          "--event-header-gradient-dark": eventTheme.headerDark,
+          "--event-card-bg-light": eventTheme.cardLight,
+          "--event-card-bg-dark": eventTheme.cardDark,
+          "--event-border-light": eventTheme.borderLight,
+          "--event-border-dark": eventTheme.borderDark,
+          "--event-chip-light": eventTheme.chipLight,
+          "--event-chip-dark": eventTheme.chipDark,
+          "--event-text-light": eventTheme.textLight,
+          "--event-text-dark": eventTheme.textDark,
+        }
+  ) satisfies Record<string, string>;
+
+  // Now finalize header style: use flyer image as background if available, otherwise use gradient
   const headerUserStyle: CSSProperties = {
-    backgroundColor:
-      headerUserStyleSeed.backgroundColor || eventTheme.headerLight,
-    backgroundImage: headerUserStyleSeed.backgroundImage,
-    backgroundSize: headerUserStyleSeed.backgroundSize,
-    backgroundPosition: headerUserStyleSeed.backgroundPosition,
+    backgroundImage:
+      attachmentInfo?.type.startsWith("image/") && attachmentInfo.dataUrl
+        ? `url(${attachmentInfo.dataUrl})`
+        : headerUserStyleSeed.backgroundImage ||
+          (imageColors ? imageColors.headerLight : eventTheme.headerLight),
+    backgroundSize: attachmentInfo?.type.startsWith("image/")
+      ? "cover"
+      : undefined,
+    backgroundPosition: attachmentInfo?.type.startsWith("image/")
+      ? "center"
+      : undefined,
+    backgroundRepeat: attachmentInfo?.type.startsWith("image/")
+      ? "no-repeat"
+      : undefined,
+    backgroundColor: attachmentInfo?.type.startsWith("image/")
+      ? undefined
+      : headerUserStyleSeed.backgroundColor ||
+        (imageColors ? imageColors.headerLight : eventTheme.headerLight),
+    position: "relative",
   } as CSSProperties;
+
+  // Add overlay for readability when image is used as background
+  const headerOverlayStyle: CSSProperties = attachmentInfo?.type.startsWith(
+    "image/"
+  )
+    ? {
+        position: "absolute",
+        inset: 0,
+        background: "rgba(0, 0, 0, 0.3)",
+        borderRadius: "inherit",
+      }
+    : {};
+
+  // Header content should be relative to overlay
+  const headerContentStyle: CSSProperties = {
+    position: "relative",
+    zIndex: 1,
+  };
 
   // Determine whether the event is in the future for conditional rendering
   const isFutureEvent = (() => {
@@ -644,8 +709,7 @@ export default async function EventPage({
     : "guest";
 
   return (
-    <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
-      {isReadOnly && <ReadOnlyEventLogo />}
+    <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]">
       <div
         className="event-theme-scope space-y-6"
         style={themeStyleVars as CSSProperties}
@@ -654,33 +718,74 @@ export default async function EventPage({
           className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-6 py-6 sm:px-8"
           style={headerUserStyle}
         >
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold leading-tight sm:text-2xl">
-                {title}
-              </h1>
-            </div>
-            {!isReadOnly && isOwner && (
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <EventEditModal
-                  eventId={row.id}
-                  eventData={data}
-                  eventTitle={title}
-                />
-                <EventDeleteModal eventId={row.id} eventTitle={title} />
+          {attachmentInfo?.type.startsWith("image/") && (
+            <div style={headerOverlayStyle} />
+          )}
+          <div style={headerContentStyle}>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <h1
+                  className={`text-xl font-semibold leading-tight sm:text-2xl ${
+                    attachmentInfo?.type.startsWith("image/")
+                      ? "text-white drop-shadow-lg"
+                      : ""
+                  }`}
+                >
+                  {title}
+                </h1>
               </div>
+              {!isReadOnly && isOwner && (
+                <div
+                  className={`flex items-center gap-2 text-sm font-medium ${
+                    attachmentInfo?.type.startsWith("image/")
+                      ? "header-with-image-buttons"
+                      : ""
+                  }`}
+                  style={
+                    attachmentInfo?.type.startsWith("image/")
+                      ? { color: "white" }
+                      : undefined
+                  }
+                >
+                  <EventEditModal
+                    eventId={row.id}
+                    eventData={data}
+                    eventTitle={title}
+                  />
+                  <EventDeleteModal eventId={row.id} eventTitle={title} />
+                </div>
+              )}
+            </div>
+            {createdAt && isSignedIn && (
+              <p
+                className={`text-sm opacity-80 ${
+                  attachmentInfo?.type.startsWith("image/")
+                    ? "text-white drop-shadow"
+                    : ""
+                }`}
+              >
+                Created{" "}
+                {new Intl.DateTimeFormat("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }).format(new Date(createdAt))}
+              </p>
             )}
           </div>
-          {createdAt && isSignedIn && (
-            <p className="text-sm opacity-80">
-              Created {new Date(createdAt).toLocaleString()}
-            </p>
-          )}
           {/* Removed extra host label */}
         </section>
 
         <section
           className={`event-theme-card rounded-2xl border px-6 py-6 shadow-sm`}
+          style={{
+            backgroundImage: imageColors
+              ? imageColors.headerLight
+              : eventTheme.headerLight,
+          }}
         >
           <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
             {data?.allDay && (
@@ -744,7 +849,7 @@ export default async function EventPage({
                     (typeof data?.location === "string" && data.location) ||
                       null
                   )}
-                  className="text-2xl font-semibold"
+                  className="text-base font-semibold"
                 />
               </dd>
             </div>
@@ -831,33 +936,29 @@ export default async function EventPage({
           )}
           {(data?.description || data?.thumbnail) && (
             <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {data?.description && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      Description
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap">
-                      {data.description}
-                    </p>
-                  </div>
-                )}
-                {data?.thumbnail && (
-                  <div
-                    className={
-                      data?.description
-                        ? "flex justify-center"
-                        : "md:col-start-1 flex justify-center"
-                    }
-                  >
-                    <ThumbnailModal
-                      src={data.thumbnail as string}
-                      alt={`${title} flyer`}
-                      className="relative rounded w-full max-w-full"
-                    />
-                  </div>
-                )}
-              </div>
+              {data?.description && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                    Description
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
+                </div>
+              )}
+              {data?.thumbnail && (
+                <div
+                  className={
+                    data?.description
+                      ? "mt-6 flex justify-center"
+                      : "flex justify-center"
+                  }
+                >
+                  <ThumbnailModal
+                    src={data.thumbnail as string}
+                    alt={`${title} flyer`}
+                    className="relative rounded max-w-md w-auto"
+                  />
+                </div>
+              )}
             </div>
           )}
           {signupForm && (
@@ -1059,10 +1160,25 @@ export default async function EventPage({
           <ReadOnlyBanner />
         </div>
       )}
+      {isReadOnly && (
+        <div className="mt-4 md:mt-6 flex flex-row items-center justify-center gap-4 text-center">
+          <Image src={Logo} alt="Envitefy logo" width={25} height={25} />
+          <p
+            className="text-3xl md:text-4xl tracking-tight text-foreground pb-3 pt-2"
+            role="heading"
+            aria-level={1}
+          >
+            <span className="font-pacifico">
+              <span className="text-[#0e7bc4]">Env</span>
+              <span className="text-[#ee3c2b]">i</span>
+              <span className="text-[#0e7bc4]">tefy</span>
+            </span>
+          </p>
+        </div>
+      )}
     </main>
   );
 }
-
 type CalendarLinkArgs = {
   title: string;
   description: string;
