@@ -55,6 +55,7 @@ export default function SubscriptionPage() {
     yearly: 1999,
   });
   const purchaseTrackedRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     const plan = params?.get?.("plan") ?? null;
@@ -83,6 +84,7 @@ export default function SubscriptionPage() {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     let ignore = false;
     async function load() {
       try {
@@ -92,7 +94,7 @@ export default function SubscriptionPage() {
         ]);
         const planJson = await planRes.json().catch(() => ({}));
         const profileJson = await profileRes.json().catch(() => ({}));
-        if (ignore) return;
+        if (ignore || !isMountedRef.current) return;
         setIsAuthed(planRes.ok);
         const plan = planJson?.plan;
         if (planRes.ok) {
@@ -137,6 +139,7 @@ export default function SubscriptionPage() {
     load();
     return () => {
       ignore = true;
+      isMountedRef.current = false;
     };
   }, [reloadKey]);
 
@@ -211,7 +214,8 @@ export default function SubscriptionPage() {
     let cancelled = false;
 
     const cleanup = () => {
-      if (cancelled || typeof window === "undefined") return;
+      if (cancelled || !isMountedRef.current || typeof window === "undefined")
+        return;
       const url = new URL(window.location.href);
       url.searchParams.delete("checkout");
       url.searchParams.delete("order");
@@ -267,6 +271,7 @@ export default function SubscriptionPage() {
 
     return () => {
       cancelled = true;
+      isMountedRef.current = false;
     };
   }, [params, router, pricing, currentPlan, reportSubscriptionPurchase]);
 
@@ -364,15 +369,21 @@ export default function SubscriptionPage() {
       <h1 className="text-2xl font-semibold text-muted-foreground mt-4 mb-6 text-center">
         Thank you for supporting
       </h1>
-      <Link
-        href="/"
-        className="mx-auto flex items-center gap-4 mb-6 justify-center"
-      >
-        <Image src={Logo} alt="Envitefy" width={64} height={64} />
-        <span className="text-4xl sm:text-5xl md:text-6xl text-foreground">
-          <span className="font-montserrat font-semibold">Envitefy</span>
-        </span>
-      </Link>
+      <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
+        <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
+        <p
+          className="mt-2 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-2"
+          role="heading"
+          aria-level={1}
+        >
+          <span className="font-pacifico">
+            <span className="text-[#0e7bc4]">Env</span>
+            <span className="text-[#ee3c2b]">i</span>
+            <span className="text-[#0e7bc4]">tefy</span>
+          </span>
+        </p>
+      </div>
+
       <h4 className="text-l text-muted-foreground mb-6 text-center">
         Your contribution helps keep the lights on and new features coming.
       </h4>

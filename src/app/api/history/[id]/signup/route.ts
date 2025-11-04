@@ -367,10 +367,27 @@ export async function POST(
         ...(existingData ?? {}),
         signupForm: normalizedNext,
       };
+      
+      // Update both stores; if normalized table fails, log error but continue
+      // The legacy JSON is authoritative for backward compatibility
       const updatedRow = await updateEventHistoryData(id, mergedData);
+      let normalizedUpdateSuccess = false;
       try {
-        await upsertSignupForm(id, normalizedNext);
-      } catch {}
+        const normalizedResult = await upsertSignupForm(id, normalizedNext);
+        normalizedUpdateSuccess = !!normalizedResult;
+      } catch (normalizedErr: any) {
+        // Log error but don't fail the request - legacy JSON is updated
+        console.error("[signup] Failed to sync to normalized table:", {
+          eventId: id,
+          error: normalizedErr?.message || String(normalizedErr),
+        });
+      }
+      
+      // If normalized update failed, log warning but use legacy data
+      if (!normalizedUpdateSuccess) {
+        console.warn("[signup] Normalized table update failed, using legacy JSON data");
+      }
+      
       const updatedData = (updatedRow?.data ?? null) as
         | Record<string, unknown>
         | null;

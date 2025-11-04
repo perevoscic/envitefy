@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!refreshToken && !accessToken) {
+      // Check if token exists but expired
+      const isTokenExpired = expiresAt && expiresAt < Date.now();
+      if (tokenData && isTokenExpired) {
+        return NextResponse.json({ error: "Token expired, please reconnect" }, { status: 401 });
+      }
       const reason = tokenData ? "Google not connected" : "Unauthorized";
       const status = tokenData ? 400 : 401;
       return NextResponse.json({ error: reason }, { status });
@@ -52,10 +57,27 @@ export async function POST(request: NextRequest) {
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.GOOGLE_REDIRECT_URI!
     );
+    
+    // Check if access token is expired and refresh if needed
+    const isAccessTokenExpired = expiresAt && expiresAt < Date.now();
     if (refreshToken) {
       oAuth2Client.setCredentials({ refresh_token: refreshToken });
-    } else if (accessToken) {
+      // If access token expired, refresh it automatically
+      if (isAccessTokenExpired && accessToken) {
+        try {
+          const { credentials } = await oAuth2Client.refreshAccessToken();
+          oAuth2Client.setCredentials(credentials);
+        } catch (refreshErr: any) {
+          // Refresh failed - token may be revoked
+          console.warn("[google/events] Token refresh failed:", refreshErr?.message);
+          return NextResponse.json({ error: "Token expired, please reconnect" }, { status: 401 });
+        }
+      }
+    } else if (accessToken && !isAccessTokenExpired) {
       oAuth2Client.setCredentials({ access_token: accessToken, expiry_date: expiresAt });
+    } else if (accessToken && isAccessTokenExpired) {
+      // Access token expired but no refresh token available
+      return NextResponse.json({ error: "Token expired, please reconnect" }, { status: 401 });
     }
 
     const calendar = google.calendar({ version: "v3", auth: oAuth2Client });

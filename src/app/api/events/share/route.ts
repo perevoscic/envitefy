@@ -38,13 +38,16 @@ export async function POST(request: NextRequest) {
         recipientFirstName,
         recipientLastName,
       });
-      // Increment owner's shares_sent counter
-      await incrementUserSharesSent({ userId: ownerUserId, delta: 1 });
-      // Invalidate owner's cache since share status changed
-      invalidateUserHistory(ownerUserId);
+      // Only increment counter if share was successfully created
+      if (share) {
+        await incrementUserSharesSent({ userId: ownerUserId, delta: 1 });
+        // Invalidate owner's cache since share status changed
+        invalidateUserHistory(ownerUserId);
+      }
     } catch (err: any) {
       // If event_shares table is not present yet, bypass DB share and still email the recipient
       try { console.warn("[share] falling back to email only:", err?.message || err); } catch {}
+      // Don't increment counter if share creation failed
     }
 
     // Email notification to recipient (from no-reply)
