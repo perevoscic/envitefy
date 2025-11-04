@@ -453,7 +453,7 @@ export default function EventEditModal({
           <div className="bg-background border border-border rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Edit Event</h2>
+                <h2 className="text-lg font-semibold text-foreground">Edit Event</h2>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
@@ -671,6 +671,7 @@ export default function EventEditModal({
                         type="button"
                         onClick={() => flyerInputRef.current?.click()}
                         className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
+                        style={{ color: 'var(--foreground)' }}
                       >
                         {attachment ? "Replace file" : "Upload file"}
                       </button>
@@ -679,6 +680,7 @@ export default function EventEditModal({
                           type="button"
                           onClick={clearFlyer}
                           className="text-xs font-medium text-foreground hover:text-foreground/80"
+                          style={{ color: 'var(--foreground)' }}
                         >
                           Remove
                         </button>
@@ -727,7 +729,8 @@ export default function EventEditModal({
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 text-sm text-foreground border border-border rounded-md hover:bg-surface transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-foreground border border-border rounded-md hover:bg-surface transition-colors"
+                    style={{ color: 'var(--foreground)' }}
                   >
                     Cancel
                   </button>

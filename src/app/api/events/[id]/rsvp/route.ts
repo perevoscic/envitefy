@@ -177,12 +177,37 @@ export async function GET(
 
     const remaining = Math.max(0, numberOfGuests - stats.yes);
 
+    // Get individual RSVP responses
+    const responsesRes = await query(
+      `
+      SELECT 
+        name,
+        email,
+        response,
+        created_at,
+        updated_at
+      FROM rsvp_responses
+      WHERE event_id = $1
+      ORDER BY created_at DESC
+      `,
+      [eventId]
+    );
+
+    const responses = responsesRes.rows.map((row) => ({
+      name: row.name || null,
+      email: row.email || null,
+      response: String(row.response || ""),
+      createdAt: row.created_at || null,
+      updatedAt: row.updated_at || null,
+    }));
+
     return NextResponse.json({
       ok: true,
       stats,
       numberOfGuests,
       remaining,
       filled: stats.yes,
+      responses,
     });
   } catch (err: any) {
     console.error("[rsvp] GET error:", err);

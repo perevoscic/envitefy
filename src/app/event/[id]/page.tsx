@@ -390,6 +390,10 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+  const numberOfGuests =
+    typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0
+      ? data.numberOfGuests
+      : 0;
   const attachmentInfo = (() => {
     const raw = data?.attachment;
     if (raw && typeof raw === "object" && typeof raw.dataUrl === "string") {
@@ -578,6 +582,9 @@ export default async function EventPage({
   })();
 
   // Use image colors if available, otherwise fall back to category theme
+  const cardBackgroundImage =
+    imageColors?.headerLight || eventTheme.headerLight;
+
   const themeStyleVars = (
     imageColors
       ? {
@@ -782,9 +789,7 @@ export default async function EventPage({
         <section
           className={`event-theme-card rounded-2xl border px-6 py-6 shadow-sm`}
           style={{
-            backgroundImage: imageColors
-              ? imageColors.headerLight
-              : eventTheme.headerLight,
+            backgroundImage: cardBackgroundImage,
           }}
         >
           <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
@@ -1014,7 +1019,7 @@ export default async function EventPage({
                       href={decorated}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-foreground/40 hover:bg-surface/80"
+                      className="group flex items-start gap-3 rounded-lg border border-border bg-surface/30 p-3 transition-colors hover:border-foreground/40 hover:bg-surface/50"
                     >
                       <span
                         className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold"
@@ -1043,7 +1048,7 @@ export default async function EventPage({
                             <path d="M8.5 5.5L12.5 10l-4 4.5" />
                           </svg>
                         </span>
-                        <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                        <span className="mt-0.5 block truncate text-xs text-foreground">
                           {link.host}
                         </span>
                       </span>
@@ -1051,10 +1056,12 @@ export default async function EventPage({
                   );
                 })}
               </div>
-              <p className="mt-3 text-xs text-foreground/60">
-                These links open in a new tab. Registries must stay public or
-                shareable so guests can view them.
-              </p>
+              {!isReadOnly && (
+                <p className="mt-3 text-xs text-foreground/60">
+                  These links open in a new tab. Registries must stay public or
+                  shareable so guests can view them.
+                </p>
+              )}
             </div>
           )}
 
@@ -1068,7 +1075,12 @@ export default async function EventPage({
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
-        {/* EventRsvpDashboard removed - RSVP tracking table hidden */}
+        {isOwner && numberOfGuests > 0 && (
+          <EventRsvpDashboard
+            eventId={row.id}
+            initialNumberOfGuests={numberOfGuests}
+          />
+        )}
         {/* +Add has been moved to the Shared with box header */}
         {!isReadOnly && !isOwner ? (
           <section className="rounded border border-border p-3 bg-surface">

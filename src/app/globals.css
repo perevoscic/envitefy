@@ -457,6 +457,12 @@ body {
   color: var(--foreground);
 }
 
+/* Ensure buttons and text are visible in light theme */
+:root[data-theme$="-light"] button.text-foreground,
+:root[data-theme$="-light"] .text-foreground {
+  color: var(--foreground) !important;
+}
+
 /* Ensure buttons and text are visible in dark theme */
 :root[data-theme$="-dark"] button.text-foreground,
 :root[data-theme$="-dark"] .text-foreground {

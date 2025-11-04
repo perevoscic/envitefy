@@ -11,6 +11,14 @@ type RsvpStats = {
   numberOfGuests: number;
 };
 
+type RsvpResponse = {
+  name: string | null;
+  email: string | null;
+  response: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
 export default function EventRsvpDashboard({
   eventId,
   initialNumberOfGuests = 0,
@@ -19,6 +27,7 @@ export default function EventRsvpDashboard({
   initialNumberOfGuests?: number;
 }) {
   const [stats, setStats] = useState<RsvpStats | null>(null);
+  const [responses, setResponses] = useState<RsvpResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +46,7 @@ export default function EventRsvpDashboard({
             remaining: data.remaining || 0,
             numberOfGuests: data.numberOfGuests || initialNumberOfGuests,
           });
+          setResponses(Array.isArray(data.responses) ? data.responses : []);
         }
       } catch (err) {
         console.error("Failed to fetch RSVP stats:", err);
@@ -74,74 +84,103 @@ export default function EventRsvpDashboard({
       : 0;
 
   return (
-    <section className="rounded border border-border p-4 bg-surface">
-      <div className="mb-3">
-        <h3 className="text-sm font-semibold text-foreground/80 mb-1">
+    <section className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground">
           Host dashboard
         </h3>
-      </div>
-      {displayStats.numberOfGuests > 0 ? (
-        <>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+        {displayStats.numberOfGuests > 0 && (
+          <div className="flex items-end gap-4 sm:gap-5">
+            <div className="text-center leading-none">
+              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-sky-600">
                 {displayStats.numberOfGuests}
               </div>
-              <div className="text-xs text-foreground/60 mt-1">TOTAL</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {displayStats.filled}
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                Total
               </div>
-              <div className="text-xs text-foreground/60 mt-1">FILLED</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-center leading-none">
+              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-600">
+                {displayStats.yes}
+              </div>
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                Yes
+              </div>
+            </div>
+            <div className="text-center leading-none">
+              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-yellow-600">
+                {displayStats.maybe}
+              </div>
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                Maybe
+              </div>
+            </div>
+            <div className="text-center leading-none">
+              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-red-600">
+                {displayStats.no}
+              </div>
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                No
+              </div>
+            </div>
+            <div className="text-center leading-none">
+              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-violet-600">
                 {displayStats.remaining}
               </div>
-              <div className="text-xs text-foreground/60 mt-1">REMAINING</div>
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                Remaining
+              </div>
             </div>
           </div>
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-foreground/70 mb-1">
-              <span>Progress</span>
-              <span>{percentage}%</span>
-            </div>
-            <div className="w-full bg-foreground/10 rounded-full h-2">
-              <div
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(percentage, 100)}%` }}
-              />
-            </div>
-          </div>
-        </>
-      ) : null}
-      <div
-        className={`mt-4 ${
-          displayStats.numberOfGuests > 0 ? "pt-3 border-t border-border" : ""
-        }`}
-      >
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="text-center">
-            <span className="text-green-600 dark:text-green-400 font-semibold">
-              ✅ {displayStats.yes}
-            </span>
-            <div className="text-foreground/60 mt-1">Yes</div>
-          </div>
-          <div className="text-center">
-            <span className="text-red-600 dark:text-red-400 font-semibold">
-              ❌ {displayStats.no}
-            </span>
-            <div className="text-foreground/60 mt-1">No</div>
-          </div>
-          <div className="text-center">
-            <span className="text-yellow-600 dark:text-yellow-400 font-semibold">
-              🤔 {displayStats.maybe}
-            </span>
-            <div className="text-foreground/60 mt-1">Maybe</div>
+        )}
+      </header>
+      {responses.length > 0 && (
+        <div className="pt-3 border-t border-border space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-2">
+            Responses
+          </h4>
+          <div className="space-y-1.5">
+            {responses.map((rsvp, index) => {
+              const displayName = rsvp.name || rsvp.email || "Anonymous";
+              const responseColor =
+                rsvp.response === "yes"
+                  ? "text-emerald-600"
+                  : rsvp.response === "no"
+                  ? "text-red-600"
+                  : "text-yellow-600";
+              const responseIcon =
+                rsvp.response === "yes"
+                  ? "✅"
+                  : rsvp.response === "no"
+                  ? "❌"
+                  : "🤔";
+              const responseLabel =
+                rsvp.response === "yes"
+                  ? "Yes"
+                  : rsvp.response === "no"
+                  ? "No"
+                  : "Maybe";
+
+              return (
+                <div
+                  key={`${rsvp.email || "anon"}-${rsvp.createdAt || index}`}
+                  className="flex items-center justify-between text-sm py-1.5 px-2 rounded border border-border/50 bg-background/50"
+                >
+                  <span className="text-foreground truncate flex-1">
+                    {displayName}
+                  </span>
+                  <span
+                    className={`${responseColor} font-medium flex items-center gap-1.5 ml-2`}
+                  >
+                    <span>{responseIcon}</span>
+                    <span>{responseLabel}</span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

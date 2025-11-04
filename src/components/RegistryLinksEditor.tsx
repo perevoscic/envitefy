@@ -29,12 +29,13 @@ export default function RegistryLinksEditor({
   return (
     <div className="rounded-md border border-dashed border-border/60 bg-background/60 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <p className="text-sm font-medium">Registry links</p>
+        <p className="text-sm font-medium text-foreground">Registry links</p>
         <button
           type="button"
           onClick={onAdd}
           disabled={entries.length >= maxLinks}
           className="inline-flex items-center justify-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:text-foreground hover:bg-surface hover:border-foreground/20 disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ color: 'var(--foreground)' }}
         >
           Add link
         </button>
@@ -50,7 +51,8 @@ export default function RegistryLinksEditor({
               <button
                 type="button"
                 onClick={() => onRemove(entry.key)}
-                className="absolute right-2 top-2 text-xs text-foreground transition-colors hover:text-foreground/80"
+                className="absolute right-2 top-2 text-xs font-medium text-foreground transition-colors hover:text-foreground/80"
+                style={{ color: 'var(--foreground)' }}
               >
                 Remove
               </button>
@@ -64,7 +66,7 @@ export default function RegistryLinksEditor({
                     value={entry.label}
                     onChange={(event) => onChange(entry.key, "label", event.target.value)}
                     placeholder={entry.detectedLabel || "Amazon"}
-                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                   />
                 </div>
                 <div>
@@ -76,7 +78,7 @@ export default function RegistryLinksEditor({
                     value={entry.url}
                     onChange={(event) => onChange(entry.key, "url", event.target.value)}
                     placeholder="https://www.amazon.com/..."
-                    className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
+                    className={`mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground ${
                       entry.error ? "border-red-500 focus:border-red-500" : "border-border"
                     } bg-background`}
                     inputMode="url"

@@ -111,8 +111,8 @@ export default function EventRsvpPrompt({
     const guest = sender.forWho.trim();
     const declineParts: string[] = [
       guest
-        ? `We're sorry ${guest} can't make it to ${eventLabel}.`
-        : `We're sorry you can't make it to ${eventLabel}.`,
+        ? `We're sorry, unfortunately, ${guest} can't make it to ${eventLabel}.`
+        : `We're sorry, unfortunately, you can't make it to ${eventLabel}.`,
     ];
     if (rsvpName && rsvpPhone) {
       declineParts.push(
