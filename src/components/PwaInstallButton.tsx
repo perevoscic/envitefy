@@ -386,7 +386,10 @@ export default function PwaInstallButton({
         const fullscreenMatch = window.matchMedia(
           "(display-mode: fullscreen)"
         ).matches;
-        if (!standaloneMatch && !fullscreenMatch) return false;
+        const minimalUiMatch = window.matchMedia(
+          "(display-mode: minimal-ui)"
+        ).matches;
+        if (!standaloneMatch && !fullscreenMatch && !minimalUiMatch) return false;
         const isAndroid = /Android/i.test(navigator.userAgent || "");
         // Chrome on Android reports standalone for launched PWAs; check referrer to
         // avoid false positives when the page loads in a normal browser tab.
@@ -394,22 +397,31 @@ export default function PwaInstallButton({
         const androidStandalone =
           ref.startsWith("android-app://") ||
           ref.startsWith("chrome-extension://");
+        // Also check if we're in standalone mode via window.matchMedia
         return isAndroid
-          ? androidStandalone
-          : standaloneMatch || fullscreenMatch;
+          ? androidStandalone || standaloneMatch || fullscreenMatch
+          : standaloneMatch || fullscreenMatch || minimalUiMatch;
       } catch {
         // best effort only
       }
       return false;
     };
 
-    const standalone = isStandalone();
-    if (standalone) {
-      setCanInstall(false);
-      setHideUi(true);
-      pushDebug("display-mode standalone detected; hiding CTA", {
-        referrer: document.referrer || "",
-      });
+    const checkInstalled = () => {
+      const standalone = isStandalone();
+      if (standalone) {
+        setCanInstall(false);
+        setHideUi(true);
+        pushDebug("display-mode standalone detected; hiding CTA", {
+          referrer: document.referrer || "",
+        });
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkInstalled()) {
       return;
     }
 
@@ -417,14 +429,31 @@ export default function PwaInstallButton({
     const mql = window.matchMedia
       ? window.matchMedia("(display-mode: standalone)")
       : null;
+    const mqlFullscreen = window.matchMedia
+      ? window.matchMedia("(display-mode: fullscreen)")
+      : null;
+    const mqlMinimalUi = window.matchMedia
+      ? window.matchMedia("(display-mode: minimal-ui)")
+      : null;
     const onChange = () => {
-      if (isStandalone()) setCanInstall(false);
+      checkInstalled();
     };
     try {
       mql?.addEventListener("change", onChange);
+      mqlFullscreen?.addEventListener("change", onChange);
+      mqlMinimalUi?.addEventListener("change", onChange);
     } catch {
       (mql as any)?.addListener?.(onChange);
+      (mqlFullscreen as any)?.addListener?.(onChange);
+      (mqlMinimalUi as any)?.addListener?.(onChange);
     }
+
+    // Periodic check for installed state (in case detection missed it initially)
+    const intervalId = setInterval(() => {
+      if (checkInstalled()) {
+        clearInterval(intervalId);
+      }
+    }, 2000); // Check every 2 seconds
 
     // Optional: check for installed related apps (best-effort)
     const maybeCheckRelated = async () => {
@@ -435,6 +464,11 @@ export default function PwaInstallButton({
           if (Array.isArray(related) && related.length > 0) {
             setCanInstall(false);
             setHideUi(true);
+            pushDebug("checked installed related apps; hiding CTA", {
+              count: Array.isArray(related) ? related.length : null,
+            });
+            clearInterval(intervalId);
+            return;
           }
           pushDebug("checked installed related apps", {
             count: Array.isArray(related) ? related.length : null,
@@ -459,10 +493,15 @@ export default function PwaInstallButton({
     } catch {}
 
     return () => {
+      clearInterval(intervalId);
       try {
         mql?.removeEventListener("change", onChange);
+        mqlFullscreen?.removeEventListener("change", onChange);
+        mqlMinimalUi?.removeEventListener("change", onChange);
       } catch {
         (mql as any)?.removeListener?.(onChange);
+        (mqlFullscreen as any)?.removeListener?.(onChange);
+        (mqlMinimalUi as any)?.removeListener?.(onChange);
       }
     };
   }, []);
@@ -723,6 +762,22 @@ export default function PwaInstallButton({
     const timer = window.setTimeout(() => setGuidePulse(false), 1400);
     return () => window.clearTimeout(timer);
   }, [guidePulse]);
+
+  // Additional safety check: hide if running in standalone mode
+  if (typeof window !== "undefined") {
+    try {
+      if ((window.navigator as any).standalone === true) return null;
+      if (window.matchMedia) {
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.matchMedia("(display-mode: fullscreen)").matches ||
+          window.matchMedia("(display-mode: minimal-ui)").matches;
+        if (isStandalone) return null;
+      }
+    } catch {
+      // best effort only
+    }
+  }
 
   if (hideUi) return null;
 
