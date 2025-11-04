@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import RegistryLinksEditor, {
   RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
+import Toggle from "@/components/Toggle";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
   MAX_REGISTRY_LINKS,
@@ -1023,38 +1024,19 @@ export default function EventCreateModal({
           )}
           {/* Smart sign-up builder moved to SmartSignupModal */}
 
-          <div className="flex items-center gap-3">
-            <span className="text-sm">Repeats</span>
-            <label className="flex items-center cursor-pointer select-none text-foreground dark:text-white">
-              <span className="sr-only">Toggle repeats</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={repeat}
-                  onChange={(e) => {
-                    const next = e.target.checked;
-                    setRepeat(next);
-                    if (!next) {
-                      setRepeatDays([]);
-                    } else {
-                      setRepeatFrequency((prev) => (prev ? prev : "weekly"));
-                    }
-                  }}
-                />
-                <div className="h-5 w-14 rounded-full shadow-inner transition peer-checked:bg-[#EAEEFB] bg-foreground dark:bg-surface peer-checked:dark:bg-surface/80" />
-                <div className="absolute left-0 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-white transition shadow-[0_2px_4px_rgba(0,0,0,0.15)] peer-checked:translate-x-full peer-checked:bg-primary dark:bg-surface">
-                  <span
-                    className={`h-4 w-4 rounded-full border ${
-                      repeat
-                        ? "bg-primary border-white"
-                        : "bg-white border-foreground dark:border-surface-foreground"
-                    }`}
-                  />
-                </div>
-              </div>
-            </label>
-          </div>
+          <Toggle
+            label="Repeats"
+            checked={repeat}
+            onChange={(next) => {
+              setRepeat(next);
+              if (!next) {
+                setRepeatDays([]);
+              } else {
+                setRepeatFrequency((prev) => (prev ? prev : "weekly"));
+              }
+            }}
+            size="md"
+          />
           {repeat && (
             <div className="space-y-3">
               <div>
