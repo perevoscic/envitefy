@@ -687,159 +687,159 @@
     {
       "name": "Birthday Party",
       "tier": "free",
-      "path": "/templates/signup/parties-events/birthday-party.png"
+      "path": "/templates/signup/parties-and-events/birthday-party.png"
     },
     {
       "name": "Wedding",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/wedding.png"
+      "path": "/templates/signup/parties-and-events/wedding.png"
     },
     {
       "name": "Baby Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/baby-shower.png"
+      "path": "/templates/signup/parties-and-events/baby-shower.png"
     },
     {
       "name": "Game Night",
       "tier": "free",
-      "path": "/templates/signup/parties-events/game-night.png"
+      "path": "/templates/signup/parties-and-events/game-night.png"
     },
     {
       "name": "Bridal Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/bridal-shower.png"
+      "path": "/templates/signup/parties-and-events/bridal-shower.png"
     },
     {
       "name": "Family Holiday",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/family-holiday.png"
+      "path": "/templates/signup/parties-and-events/family-holiday.png"
     },
     {
       "name": "Holiday Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/holiday-party.png"
+      "path": "/templates/signup/parties-and-events/holiday-party.png"
     },
     {
       "name": "Graduation Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/graduation-party.png"
+      "path": "/templates/signup/parties-and-events/graduation-party.png"
     },
     {
       "name": "Retirement Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/retirement-party.png"
+      "path": "/templates/signup/parties-and-events/retirement-party.png"
     },
     {
       "name": "Engagement Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/engagement-party.png"
+      "path": "/templates/signup/parties-and-events/engagement-party.png"
     },
     {
       "name": "Baby Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/baby-shower.png"
+      "path": "/templates/signup/parties-and-events/baby-shower.png"
     },
     {
       "name": "Game Night",
       "tier": "free",
-      "path": "/templates/signup/parties-events/game-night.png"
+      "path": "/templates/signup/parties-and-events/game-night.png"
     },
     {
       "name": "Bridal Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/bridal-shower.png"
+      "path": "/templates/signup/parties-and-events/bridal-shower.png"
     },
     {
       "name": "Family Holiday",
       "tier": "premium",
-      "path": "/templates/signup/parties-events/family-holiday.png"
+      "path": "/templates/signup/parties-and-events/family-holiday.png"
     }
   ],
   "Health & Fitness": [
     {
       "name": "Fitness Class",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/fitness-class.png"
+      "path": "/templates/signup/health-and-fitness/fitness-class.png"
     },
     {
       "name": "Yoga Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/yoga-class.png"
+      "path": "/templates/signup/health-and-fitness/yoga-class.png"
     },
     {
       "name": "Pilates Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/pilates-class.png"
+      "path": "/templates/signup/health-and-fitness/pilates-class.png"
     },
     {
       "name": "Spin Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/spin-class.png"
+      "path": "/templates/signup/health-and-fitness/spin-class.png"
     },
     {
       "name": "Zumba Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/zumba-class.png"
+      "path": "/templates/signup/health-and-fitness/zumba-class.png"
     },
     {
       "name": "Bootcamp Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/bootcamp-class.png"
+      "path": "/templates/signup/health-and-fitness/bootcamp-class.png"
     },
     {
       "name": "Dance Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/dance-class.png"
+      "path": "/templates/signup/health-and-fitness/dance-class.png"
     },
     {
       "name": "Morning Run",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/morning-run.png"
+      "path": "/templates/signup/health-and-fitness/morning-run.png"
     },
     {
       "name": "Cycling Club",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/cycling-club.png"
+      "path": "/templates/signup/health-and-fitness/cycling-club.png"
     },
     {
       "name": "CrossFit Session",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/crossfit-session.png"
+      "path": "/templates/signup/health-and-fitness/crossfit-session.png"
     },
     {
       "name": "Martial Arts Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/martial-arts-class.png"
+      "path": "/templates/signup/health-and-fitness/martial-arts-class.png"
     },
     {
       "name": "Boxing Class",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/boxing-class.png"
+      "path": "/templates/signup/health-and-fitness/boxing-class.png"
     },
     {
       "name": "Swimming Lessons",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/swimming-lessons.png"
+      "path": "/templates/signup/health-and-fitness/swimming-lessons.png"
     },
     {
       "name": "Tennis Club",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/tennis-club.png"
+      "path": "/templates/signup/health-and-fitness/tennis-club.png"
     },
     {
       "name": "Basketball League",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/basketball-league.png"
+      "path": "/templates/signup/health-and-fitness/basketball-league.png"
     },
     {
       "name": "Volleyball League",
       "tier": "free",
-      "path": "/templates/signup/health-fitness/volleyball-league.png"
+      "path": "/templates/signup/health-and-fitness/volleyball-league.png"
     },
     {
       "name": "Wellness Workshop",
       "tier": "premium",
-      "path": "/templates/signup/health-fitness/wellness-workshop.png"
+      "path": "/templates/signup/health-and-fitness/wellness-workshop.png"
     }
   ],
   "Clubs & Groups": [
