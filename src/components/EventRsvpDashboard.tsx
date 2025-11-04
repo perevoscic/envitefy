@@ -57,9 +57,20 @@ export default function EventRsvpDashboard({
 
     if (eventId) {
       fetchStats();
-      // Refresh stats every 10 seconds
-      const interval = setInterval(fetchStats, 10000);
-      return () => clearInterval(interval);
+      // Refresh stats every 2 seconds for more responsive updates
+      const interval = setInterval(fetchStats, 2000);
+
+      // Also listen for custom RSVP submission events
+      const handleRsvpSubmit = () => {
+        // Small delay to ensure API has processed the request
+        setTimeout(fetchStats, 500);
+      };
+      window.addEventListener("rsvp-submitted", handleRsvpSubmit);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("rsvp-submitted", handleRsvpSubmit);
+      };
     }
   }, [eventId, initialNumberOfGuests]);
 

@@ -91,7 +91,7 @@ export default function EventRsvpPrompt({
     // Submit "no" RSVP to API if eventId is available
     if (eventId) {
       try {
-        await fetch(`/api/events/${eventId}/rsvp`, {
+        const res = await fetch(`/api/events/${eventId}/rsvp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -100,6 +100,10 @@ export default function EventRsvpPrompt({
             email: rsvpEmail || undefined,
           }),
         });
+        if (res.ok) {
+          // Dispatch event to refresh dashboard
+          window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
         // Continue with decline flow even if API call fails
@@ -159,7 +163,7 @@ export default function EventRsvpPrompt({
           `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
         const rsvpResponse =
           intent === "attend" ? "yes" : intent === "maybe" ? "maybe" : "no";
-        await fetch(`/api/events/${eventId}/rsvp`, {
+        const res = await fetch(`/api/events/${eventId}/rsvp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -169,6 +173,10 @@ export default function EventRsvpPrompt({
             email: sender.phone.trim() ? undefined : rsvpEmail || undefined,
           }),
         });
+        if (res.ok) {
+          // Dispatch event to refresh dashboard
+          window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
         // Continue with SMS/email flow even if API call fails
@@ -218,7 +226,7 @@ export default function EventRsvpPrompt({
             : nextIntent === "maybe"
             ? "maybe"
             : "no";
-        await fetch(`/api/events/${eventId}/rsvp`, {
+        const res = await fetch(`/api/events/${eventId}/rsvp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -227,6 +235,10 @@ export default function EventRsvpPrompt({
             email: rsvpEmail,
           }),
         });
+        if (res.ok) {
+          // Dispatch event to refresh dashboard
+          window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
         // Continue with email flow even if API call fails
