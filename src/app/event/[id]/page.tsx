@@ -862,7 +862,7 @@ export default async function EventPage({
                   <div className="flex flex-wrap items-center gap-3">
                     <a
                       href={calendarLinks.appleInline}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground/80 transition-colors hover:bg-foreground/5"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
                       aria-label="Add to Apple Calendar"
                       title="Apple Calendar"
                     >
@@ -872,7 +872,7 @@ export default async function EventPage({
                       href={calendarLinks.google}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground/80 transition-colors hover:bg-foreground/5"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
                       aria-label="Add to Google Calendar"
                       title="Google Calendar"
                     >
@@ -882,7 +882,7 @@ export default async function EventPage({
                       href={calendarLinks.outlook}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground/80 transition-colors hover:bg-foreground/5"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
                       aria-label="Add to Outlook Calendar"
                       title="Outlook Calendar"
                     >

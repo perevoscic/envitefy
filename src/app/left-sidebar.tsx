@@ -1310,6 +1310,8 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     let cancelled = false;
+    const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
+
     const onCreated = async (e: Event) => {
       try {
         const anyEvent = e as any;
@@ -1319,8 +1321,10 @@ export default function LeftSidebar() {
         } catch {}
         if (detail && detail.id) {
           // Optimistically prepend; avoid duplicates
+          // Use immediate state update (React 18+ auto-batches, but we ensure it happens)
           setHistory((prev) => {
             const exists = prev.some((r) => r.id === detail.id);
+            if (exists) return prev; // Already added, skip duplicate
             const detailData =
               detail.data && typeof detail.data === "object" ? detail.data : {};
             const nextItem = {
@@ -1335,7 +1339,7 @@ export default function LeftSidebar() {
                   : {}),
               },
             } as { id: string; title: string; created_at?: string; data?: any };
-            const next = exists ? prev : [nextItem, ...prev];
+            const next = [nextItem, ...prev];
             const sorted = sortHistoryRows(next as any).slice(0, 200);
             try {
               const top = sorted?.[0] || null;
@@ -1346,31 +1350,73 @@ export default function LeftSidebar() {
             } catch {}
             return sorted;
           });
-          return;
+
+          // Background refetch to ensure counts stay in sync with server
+          // This ensures category counts and other computed values are accurate
+          // Use a small delay to let server-side cache invalidation propagate
+          const refetchTimeout = setTimeout(async () => {
+            pendingTimeouts.delete(refetchTimeout as any);
+            if (cancelled) return;
+            try {
+              // Add cache-busting query param to force fresh fetch
+              const res = await fetch(`/api/history?t=${Date.now()}`, {
+                cache: "no-store",
+                credentials: "include",
+              });
+              const j = await res.json().catch(() => ({ items: [] }));
+              if (!cancelled) {
+                setHistory(
+                  sortHistoryRows(
+                    (j.items || []).map((r: any) => ({
+                      id: r.id,
+                      title: r.title,
+                      created_at: r.created_at || undefined,
+                      data: r.data,
+                    }))
+                  )
+                );
+                try {
+                  console.debug("[sidebar] history refreshed from server", {
+                    count: j.items?.length || 0,
+                  });
+                } catch {}
+              }
+            } catch (err) {
+              try {
+                console.debug("[sidebar] background refetch failed", err);
+              } catch {}
+            }
+          }, 1000); // 1 second delay - enough for cache invalidation, fast enough for UX
+
+          pendingTimeouts.add(refetchTimeout as any);
+        } else {
+          // Fallback: full refetch
+          const res = await fetch("/api/history", {
+            cache: "no-store",
+            credentials: "include",
+          });
+          const j = await res.json().catch(() => ({ items: [] }));
+          if (!cancelled)
+            setHistory(
+              sortHistoryRows(
+                (j.items || []).map((r: any) => ({
+                  id: r.id,
+                  title: r.title,
+                  created_at: r.created_at || undefined,
+                  data: r.data,
+                }))
+              )
+            );
         }
-        // Fallback: full refetch
-        const res = await fetch("/api/history", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        const j = await res.json().catch(() => ({ items: [] }));
-        if (!cancelled)
-          setHistory(
-            sortHistoryRows(
-              (j.items || []).map((r: any) => ({
-                id: r.id,
-                title: r.title,
-                created_at: r.created_at || undefined,
-                data: r.data,
-              }))
-            )
-          );
       } catch {}
     };
     window.addEventListener("history:created", onCreated as any);
     return () => {
       cancelled = true;
       window.removeEventListener("history:created", onCreated as any);
+      // Clear any pending timeouts
+      pendingTimeouts.forEach((timeout) => clearTimeout(timeout as any));
+      pendingTimeouts.clear();
     };
   }, []);
 

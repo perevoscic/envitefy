@@ -280,8 +280,8 @@ body {
   --event-border-dark: var(--event-border-dark, var(--border));
   --event-chip-light: var(--event-chip-light, rgba(255, 255, 255, 0.85));
   --event-chip-dark: var(--event-chip-dark, rgba(18, 18, 18, 0.85));
-  --event-text-light: var(--event-text-light, var(--foreground));
-  --event-text-dark: var(--event-text-dark, var(--foreground));
+  --event-text-light: var(--foreground);
+  --event-text-dark: var(--foreground);
 }
 
 .event-theme-header {
@@ -297,13 +297,38 @@ body {
 .event-theme-card {
   background: var(--event-card-bg-light);
   border-color: var(--event-border-light);
-  color: var(--event-text-light);
+  color: var(--foreground);
 }
 
 .dark .event-theme-card {
   background: var(--event-card-bg-dark);
   border-color: var(--event-border-dark);
-  color: var(--event-text-dark);
+  color: var(--foreground);
+}
+
+/* Ensure all text in event-theme-card is visible - override any inline styles */
+:root[data-theme$="-light"] .event-theme-card,
+:root[data-theme$="-light"] .event-theme-card *,
+:root[data-theme$="-light"] .event-theme-scope .event-theme-card,
+:root[data-theme$="-light"] .event-theme-scope .event-theme-card * {
+  color: var(--foreground) !important;
+}
+
+/* Dark theme: use black text for event page */
+:root[data-theme$="-dark"] .event-theme-card,
+:root[data-theme$="-dark"] .event-theme-card *,
+:root[data-theme$="-dark"] .event-theme-scope .event-theme-card,
+:root[data-theme$="-dark"] .event-theme-scope .event-theme-card * {
+  color: #000000 !important;
+}
+
+/* Force event text variables */
+:root[data-theme$="-light"] .event-theme-scope {
+  --event-text-light: var(--foreground) !important;
+}
+
+:root[data-theme$="-dark"] .event-theme-scope {
+  --event-text-dark: #000000 !important;
 }
 
 .event-theme-chip {
@@ -420,6 +445,12 @@ body {
   --error: #F43F5E;
 }
 
+/* Event page: use dark text in dark theme */
+:root[data-theme$="-dark"] .event-theme-scope {
+  --event-text-light: #000000;
+  --event-text-dark: #000000;
+}
+
 /* Ensure good contrast in dark theme modals */
 :root[data-theme$="-dark"] .bg-background,
 :root[data-theme$="-dark"] .bg-surface {
@@ -432,15 +463,6 @@ body {
   color: var(--foreground) !important;
 }
 
-/* Event detail page text in dark theme */
-:root[data-theme$="-dark"] .event-theme-card {
-  color: var(--foreground);
-}
-
-:root[data-theme$="-dark"] .event-theme-card dt,
-:root[data-theme$="-dark"] .event-theme-card dd {
-  color: var(--foreground);
-}
 
 /* Scan overlay animation */
 @layer utilities {

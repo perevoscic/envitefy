@@ -389,18 +389,24 @@ export default function PwaInstallButton({
         const minimalUiMatch = window.matchMedia(
           "(display-mode: minimal-ui)"
         ).matches;
-        if (!standaloneMatch && !fullscreenMatch && !minimalUiMatch) return false;
+        
+        // If any display-mode indicates standalone, trust it (app is installed)
+        // This is especially important for Android where referrer checks can be unreliable
+        if (standaloneMatch || fullscreenMatch || minimalUiMatch) {
+          return true;
+        }
+        
+        // Additional Android-specific check: if referrer indicates app launch
         const isAndroid = /Android/i.test(navigator.userAgent || "");
-        // Chrome on Android reports standalone for launched PWAs; check referrer to
-        // avoid false positives when the page loads in a normal browser tab.
-        const ref = document.referrer || "";
-        const androidStandalone =
-          ref.startsWith("android-app://") ||
-          ref.startsWith("chrome-extension://");
-        // Also check if we're in standalone mode via window.matchMedia
-        return isAndroid
-          ? androidStandalone || standaloneMatch || fullscreenMatch
-          : standaloneMatch || fullscreenMatch || minimalUiMatch;
+        if (isAndroid) {
+          const ref = document.referrer || "";
+          const androidStandalone =
+            ref.startsWith("android-app://") ||
+            ref.startsWith("chrome-extension://");
+          if (androidStandalone) return true;
+        }
+        
+        return false;
       } catch {
         // best effort only
       }
@@ -449,13 +455,20 @@ export default function PwaInstallButton({
     }
 
     // Periodic check for installed state (in case detection missed it initially)
-    const intervalId = setInterval(() => {
-      if (checkInstalled()) {
-        clearInterval(intervalId);
-      }
-    }, 2000); // Check every 2 seconds
+    let intervalId: NodeJS.Timeout | null = null;
+    const startInterval = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        if (checkInstalled()) {
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        }
+      }, 2000); // Check every 2 seconds
+    };
 
-    // Optional: check for installed related apps (best-effort)
+    // Check for installed related apps immediately (best-effort)
     const maybeCheckRelated = async () => {
       try {
         const anyNav = navigator as any;
@@ -467,16 +480,26 @@ export default function PwaInstallButton({
             pushDebug("checked installed related apps; hiding CTA", {
               count: Array.isArray(related) ? related.length : null,
             });
-            clearInterval(intervalId);
-            return;
+            if (intervalId) {
+              clearInterval(intervalId);
+              intervalId = null;
+            }
+            return true;
           }
           pushDebug("checked installed related apps", {
             count: Array.isArray(related) ? related.length : null,
           });
         }
       } catch {}
+      return false;
     };
-    maybeCheckRelated();
+    
+    // Call immediately and start interval if not installed
+    maybeCheckRelated().then((installed) => {
+      if (!installed) {
+        startInterval();
+      }
+    });
 
     // Heuristic: mark as maybe-installable for fallback flows on browsers
     // that don't expose beforeinstallprompt or haven't fired it yet
@@ -492,8 +515,12 @@ export default function PwaInstallButton({
       }
     } catch {}
 
+    // Cleanup function
     return () => {
-      clearInterval(intervalId);
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
       try {
         mql?.removeEventListener("change", onChange);
         mqlFullscreen?.removeEventListener("change", onChange);
