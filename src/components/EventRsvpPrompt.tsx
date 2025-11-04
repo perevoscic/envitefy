@@ -91,6 +91,17 @@ export default function EventRsvpPrompt({
     // Submit "no" RSVP to API if eventId is available
     if (eventId) {
       try {
+        const senderName =
+          sender.firstName && sender.lastName
+            ? `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim()
+            : undefined;
+
+        console.log("[RSVP] Submitting decline:", {
+          eventId,
+          email: rsvpEmail,
+          name: senderName,
+        });
+
         const res = await fetch(`/api/events/${eventId}/rsvp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -98,11 +109,25 @@ export default function EventRsvpPrompt({
           body: JSON.stringify({
             response: "no",
             email: rsvpEmail || undefined,
+            name: senderName || undefined,
           }),
         });
-        if (res.ok) {
+        const data = await res.json();
+        console.log("[RSVP] Decline response:", {
+          ok: res.ok,
+          status: res.status,
+          data,
+        });
+        if (res.ok && data.ok) {
           // Dispatch event to refresh dashboard
+          console.log("[RSVP] Dispatching rsvp-submitted event");
           window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        } else {
+          console.error(
+            "RSVP submission failed:",
+            data.error || "Unknown error"
+          );
+          // Still continue with decline flow even if API call fails
         }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
@@ -173,9 +198,15 @@ export default function EventRsvpPrompt({
             email: sender.phone.trim() ? undefined : rsvpEmail || undefined,
           }),
         });
-        if (res.ok) {
+        const data = await res.json();
+        if (res.ok && data.ok) {
           // Dispatch event to refresh dashboard
           window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        } else {
+          console.error(
+            "RSVP submission failed:",
+            data.error || "Unknown error"
+          );
         }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
@@ -235,9 +266,15 @@ export default function EventRsvpPrompt({
             email: rsvpEmail,
           }),
         });
-        if (res.ok) {
+        const data = await res.json();
+        if (res.ok && data.ok) {
           // Dispatch event to refresh dashboard
           window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        } else {
+          console.error(
+            "RSVP submission failed:",
+            data.error || "Unknown error"
+          );
         }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);

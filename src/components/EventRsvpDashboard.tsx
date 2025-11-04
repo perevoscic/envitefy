@@ -35,9 +35,11 @@ export default function EventRsvpDashboard({
       try {
         const res = await fetch(`/api/events/${eventId}/rsvp`, {
           credentials: "include",
+          cache: "no-store",
         });
         const data = await res.json();
         if (data.ok) {
+          console.log("[RSVP Dashboard] Stats updated:", data);
           setStats({
             yes: data.stats?.yes || 0,
             no: data.stats?.no || 0,
@@ -47,6 +49,8 @@ export default function EventRsvpDashboard({
             numberOfGuests: data.numberOfGuests || initialNumberOfGuests,
           });
           setResponses(Array.isArray(data.responses) ? data.responses : []);
+        } else {
+          console.error("Failed to fetch RSVP stats:", data.error);
         }
       } catch (err) {
         console.error("Failed to fetch RSVP stats:", err);
@@ -57,13 +61,19 @@ export default function EventRsvpDashboard({
 
     if (eventId) {
       fetchStats();
-      // Refresh stats every 2 seconds for more responsive updates
-      const interval = setInterval(fetchStats, 2000);
+      // Refresh stats every 5 minutes to save resources
+      // Immediate updates still happen via custom event listener when users RSVP
+      const interval = setInterval(fetchStats, 5 * 60 * 1000);
 
       // Also listen for custom RSVP submission events
       const handleRsvpSubmit = () => {
+        console.log(
+          "[RSVP Dashboard] RSVP submitted event received, refreshing..."
+        );
         // Small delay to ensure API has processed the request
-        setTimeout(fetchStats, 500);
+        setTimeout(() => {
+          fetchStats();
+        }, 500);
       };
       window.addEventListener("rsvp-submitted", handleRsvpSubmit);
 
