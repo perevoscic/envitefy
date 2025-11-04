@@ -225,13 +225,13 @@ const PROMPTS_SCHOOL = {
   "school-and-education::open-house":
     "School open house—classroom/hall with display boards (no text), parents and students chatting; all people with fully visible heads and faces, no heads cropped.",
   "school-and-education::parent-teacher-conference":
-    "Quiet meeting—teacher and parent at table, child nearby with book; all people with fully visible heads and faces, no heads cropped; calm professional tone.",
+    "Parent-Teacher Conference celebration—Parent-Teacher Conference quiet meeting with teacher and parent at table, child nearby with book for Parent-Teacher Conference; all people with fully visible heads and faces, no heads cropped; Parent-Teacher Conference calm professional tone.",
   "school-and-education::classroom-helpers":
-    "Classroom activity—students assisting teacher with supplies or bulletin board; all people with fully visible heads and faces, no heads cropped; friendly.",
+    "Classroom Helpers celebration—Classroom Helpers activity with students assisting teacher with supplies or bulletin board for Classroom Helpers; all people with fully visible heads and faces, no heads cropped; Classroom Helpers friendly activity.",
   "school-and-education::school-spirit":
     "School spirit scene—students in school-color shirts, pennant shapes with no text, gym/bleachers hint; all people with fully visible heads and faces, no heads cropped.",
   "school-and-education::student-volunteers":
-    "Volunteer activity—students organizing supplies at tables with an adult supervisor; all people with fully visible heads and faces, no heads cropped."
+    "Student Volunteers celebration—Student Volunteers volunteer activity with students organizing supplies at tables with an adult supervisor for Student Volunteers; all people with fully visible heads and faces, no heads cropped; Student Volunteers activity.",
 };
 
 // ------------------------- CHURCH & COMMUNITY -------------------------
@@ -247,9 +247,9 @@ const PROMPTS_CHURCH = {
   "church-and-community::church-gathering":
     "Church Gathering celebration—Church Gathering indoor fellowship with coffee and pastry table for Church Gathering; all people with fully visible heads and faces, no heads cropped; warm conversation at Church Gathering; inclusive.",
   "church-and-community::volunteer-sign-up":
-    "Volunteer table—clipboards and bins (no text); friendly mix of ages; all people with fully visible heads and faces, no heads cropped; approachable.",
+    "Volunteer Sign-Up celebration—Volunteer Sign-Up table with clipboards and bins (no text) for Volunteer Sign-Up; friendly mix of ages at Volunteer Sign-Up; all people with fully visible heads and faces, no heads cropped; Volunteer Sign-Up approachable activity.",
   "church-and-community::worship-team":
-    "Indoor rehearsal—microphones and music stands (no text), simple stage lighting; friendly faces; all people with fully visible heads and faces, no heads cropped.",
+    "Worship Team celebration—Worship Team indoor rehearsal with microphones and music stands (no text), simple stage lighting for Worship Team; friendly faces at Worship Team; all people with fully visible heads and faces, no heads cropped; Worship Team activity.",
   "church-and-community::sunday-school":
     "Sunday School celebration—Sunday School children's class with kids at craft or story circle with teacher for Sunday School; all people with fully visible heads and faces, no heads cropped; Sunday School welcoming room.",
   "church-and-community::fundraiser":
@@ -263,13 +263,13 @@ const PROMPTS_SPORTS = {
   "sports-and-recreation::swim-team":
     "Swimming pool with lane lines—swimmers practicing, coach signaling; kids in team suits; all people with fully visible heads and faces, no heads cropped.",
   "sports-and-recreation::cheer-squad":
-    "Gym or field—cheerleaders in formation with pom-poms; smiling faces; a few younger members; all people with fully visible heads and faces, no heads cropped.",
+    "Cheer Squad celebration—Cheer Squad gym or field with cheerleaders in formation with pom-poms for Cheer Squad; smiling faces at Cheer Squad; all people with fully visible heads and faces, no heads cropped; Cheer Squad activity.",
   "sports-and-recreation::track-meet":
-    "Outdoor track—runners at start or mid-race with lane markings; coach nearby; all people with fully visible heads and faces, no heads cropped.",
+    "Track Meet celebration—Track Meet outdoor track with runners at start or mid-race with lane markings for Track Meet; coach nearby at Track Meet; all people with fully visible heads and faces, no heads cropped; Track Meet activity.",
   "sports-and-recreation::baseball-team":
     "Baseball Team celebration—Baseball Team ballfield with pitcher, batter, outfielders for Baseball Team; kids and adults playing together for Baseball Team; all people with fully visible heads and faces, no heads cropped; Baseball Team activity.",
   "sports-and-recreation::sports-banquet":
-    "Indoor banquet—round tables, trophy centerpiece; friendly crowd; all people with fully visible heads and faces, no heads cropped; no text banners.",
+    "Sports Banquet celebration—Sports Banquet indoor banquet with round tables, trophy centerpiece for Sports Banquet; friendly crowd at Sports Banquet; all people with fully visible heads and faces, no heads cropped; Sports Banquet activity; no text banners.",
   "sports-and-recreation::gymnastics":
     "Gymnastics celebration—Gymnastics gym with mats and balance beam for Gymnastics; children practicing with instructor for Gymnastics; all people with fully visible heads and faces, no heads cropped; Gymnastics activity.",
   "sports-and-recreation::fitness-class":
@@ -303,21 +303,21 @@ const PROMPTS_FUNDRAISING = {
   "fundraising-and-food::raffle":
     "Raffle celebration—Raffle fundraiser booth with ticket box and strips (no text), balloons for Raffle; kids helping with adults at Raffle; all people with fully visible heads and faces, no heads cropped; Raffle activity.",
   "fundraising-and-food::potluck-dinner":
-    "Community potluck—buffet-style dishes and friendly conversation; families including kids; all people with fully visible heads and faces, no heads cropped."
+    "Potluck Dinner celebration—Potluck Dinner community potluck with buffet-style dishes and friendly conversation for Potluck Dinner; families including kids at Potluck Dinner; all people with fully visible heads and faces, no heads cropped; Potluck Dinner activity.",
 };
 
 // ------------------------ FAMILY & PERSONAL ------------------------
 const PROMPTS_FAMILY = {
   "family-and-personal::anniversary-celebration":
-    "Celebration—cake on table, candles/lanterns, warm romantic tone; adults with family present; all people with fully visible heads and faces, no heads cropped.",
+    "Anniversary Celebration celebration—Anniversary Celebration with cake on table, candles/lanterns, warm romantic tone for Anniversary Celebration; adults with family present at Anniversary Celebration; all people with fully visible heads and faces, no heads cropped; Anniversary Celebration activity.",
   "family-and-personal::family-event":
-    "General family gathering—casual seating, snacks, simple crafts or games; mix of ages; all people with fully visible heads and faces, no heads cropped.",
+    "Family Event celebration—Family Event general family gathering with casual seating, snacks, simple crafts or games for Family Event; mix of ages at Family Event; all people with fully visible heads and faces, no heads cropped; Family Event activity.",
   "family-and-personal::housewarming":
     "Housewarming celebration—Housewarming home gathering with entry with boxes or plants, snacks on counter for Housewarming; smiling guests at Housewarming; all people with fully visible heads and faces, no heads cropped; Housewarming activity.",
   "family-and-personal::birthday-party":
     "Birthday party—balloons, confetti, cake; kids and adults; all people with fully visible heads and faces, no heads cropped; no character IP.",
   "family-and-personal::block-party":
-    "Outdoor neighborhood party—string lights across street, food tables; families mingling; all people with fully visible heads and faces, no heads cropped.",
+    "Block Party celebration—Block Party outdoor neighborhood party with string lights across street, food tables for Block Party; families mingling at Block Party; all people with fully visible heads and faces, no heads cropped; Block Party activity.",
   "family-and-personal::wedding":
     "Wedding ceremony—arch or floral backdrop; guests seated; all people with fully visible heads and faces, no heads cropped; elegant but minimal.",
   "family-and-personal::baby-shower":
@@ -333,7 +333,7 @@ const PROMPTS_FAMILY = {
 // ------------------- BUSINESS & PROFESSIONAL -------------------
 const PROMPTS_BUSINESS = {
   "business-and-professional::conference-schedule":
-    "Conference venue hall—registration desk, signage shapes without text, attendees conversing; all people with fully visible heads and faces, no heads cropped.",
+    "Conference Schedule celebration—Conference Schedule venue hall with registration desk, signage shapes without text, attendees conversing for Conference Schedule; all people with fully visible heads and faces, no heads cropped; Conference Schedule activity.",
   "business-and-professional::client-meeting":
     "Client meeting—small table with laptops/tablets (blank screens), friendly discussion; all people with fully visible heads and faces, no heads cropped; modern space.",
   "business-and-professional::team-lunch":
@@ -343,11 +343,11 @@ const PROMPTS_BUSINESS = {
   "business-and-professional::workshop":
     "Hands-on workshop—tables with laptops (blank), sticky-note shapes (no text), facilitator guiding; all people with fully visible heads and faces, no heads cropped.",
   "business-and-professional::networking-night":
-    "Evening mixer—string lights, name-tag shapes (no text), handshake moments; all people with fully visible heads and faces, no heads cropped.",
+    "Networking Night celebration—Networking Night evening mixer with string lights, name-tag shapes (no text), handshake moments for Networking Night; all people with fully visible heads and faces, no heads cropped; Networking Night activity.",
   "business-and-professional::professional-gathering":
-    "Professional mixer—clean décor, coffee station; friendly conversations; all people with fully visible heads and faces, no heads cropped.",
+    "Professional Gathering celebration—Professional Gathering mixer with clean décor, coffee station for Professional Gathering; friendly conversations at Professional Gathering; all people with fully visible heads and faces, no heads cropped; Professional Gathering activity.",
   "business-and-professional::office-meeting":
-    "Conference room—whiteboard shapes (no text), laptops (blank screens); collaborative energy; all people with fully visible heads and faces, no heads cropped.",
+    "Office Meeting celebration—Office Meeting in conference room with whiteboard shapes (no text), laptops (blank screens) for Office Meeting; collaborative energy at Office Meeting; all people with fully visible heads and faces, no heads cropped; Office Meeting activity.",
   "business-and-professional::training-session":
     "Training session—rows of seats with laptops (blank), instructor at front; all people with fully visible heads and faces, no heads cropped; minimal visuals."
 };
@@ -355,23 +355,23 @@ const PROMPTS_BUSINESS = {
 // ---------------------- OTHER / SPECIAL INTEREST ----------------------
 const PROMPTS_OTHER = {
   "other-special-interest::tech-event":
-    "Tech meetup—screens with abstract UI shapes (no readable text), demo tables, attendees chatting; all people with fully visible heads and faces, no heads cropped.",
+    "Tech Event celebration—Tech Event meetup with screens with abstract UI shapes (no readable text), demo tables, attendees chatting for Tech Event; all people with fully visible heads and faces, no heads cropped; Tech Event activity.",
   "other-special-interest::political-campaign":
-    "Neutral civic event—podium or lawn-sign shapes with no text, volunteers handing flyers; inclusive crowd; all people with fully visible heads and faces, no heads cropped; strictly nonpartisan.",
+    "Political Campaign celebration—Political Campaign neutral civic event with podium or lawn-sign shapes with no text, volunteers handing flyers for Political Campaign; inclusive crowd at Political Campaign; all people with fully visible heads and faces, no heads cropped; Political Campaign activity; strictly nonpartisan.",
   "other-special-interest::gaming-tournament":
-    "Esports vibe—big screen with abstract game graphics (no IP), players at stations, audience cheering; all people with fully visible heads and faces, no heads cropped.",
+    "Gaming Tournament celebration—Gaming Tournament esports vibe with big screen with abstract game graphics (no IP), players at stations, audience cheering for Gaming Tournament; all people with fully visible heads and faces, no heads cropped; Gaming Tournament activity.",
   "other-special-interest::environment-and-cleanup":
-    "Park cleanup—volunteers with grabbers and bags; piles of leaves; kids helping; all people with fully visible heads and faces, no heads cropped; bright natural light.",
+    "Environment and Cleanup celebration—Environment and Cleanup park cleanup with volunteers with grabbers and bags for Environment and Cleanup; piles of leaves; kids helping at Environment and Cleanup; all people with fully visible heads and faces, no heads cropped; Environment and Cleanup activity; bright natural light.",
   "other-special-interest::senior-services":
-    "Community assistance—friendly staff helping seniors with blank forms/resources; all people with fully visible heads and faces, no heads cropped; warm approachable room.",
+    "Senior Services celebration—Senior Services community assistance with friendly staff helping seniors with blank forms/resources for Senior Services; all people with fully visible heads and faces, no heads cropped; Senior Services activity; warm approachable room.",
   "other-special-interest::travel-group":
-    "Tour meetup—guide with flag shape, group with backpacks; all people with fully visible heads and faces, no heads cropped; city or nature backdrop.",
+    "Travel Group celebration—Travel Group tour meetup with guide with flag shape, group with backpacks for Travel Group; all people with fully visible heads and faces, no heads cropped; Travel Group activity; city or nature backdrop.",
   "other-special-interest::real-estate-open-house":
-    "Open house—entry table with brochures (no text), staged living room, smiling agent with visitors; all people with fully visible heads and faces, no heads cropped.",
+    "Real Estate Open House celebration—Real Estate Open House open house with entry table with brochures (no text), staged living room, smiling agent with visitors for Real Estate Open House; all people with fully visible heads and faces, no heads cropped; Real Estate Open House activity.",
   "other-special-interest::arts-and-culture":
-    "Community arts fair—easels or craft tables, small stage; families browsing; all people with fully visible heads and faces, no heads cropped; no text banners.",
+    "Arts and Culture celebration—Arts and Culture community arts fair with easels or craft tables, small stage for Arts and Culture; families browsing at Arts and Culture; all people with fully visible heads and faces, no heads cropped; Arts and Culture activity; no text banners.",
   "other-special-interest::pets-and-animals":
-    "Pet adoption/community pet day—volunteers with leashes/carriers, families greeting pets; all people with fully visible heads and faces, no heads cropped; outdoor or indoor shelter vibe."
+    "Pets and Animals celebration—Pets and Animals pet adoption/community pet day with volunteers with leashes/carriers, families greeting pets for Pets and Animals; all people with fully visible heads and faces, no heads cropped; Pets and Animals activity; outdoor or indoor shelter vibe.",
 };
 
 // ------------------------- HEALTH & FITNESS -------------------------
