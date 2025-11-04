@@ -2720,24 +2720,8 @@ export async function POST(request: Request) {
         schedule.homeTeam = (llmSched.homeTeam as any) || schedule.homeTeam;
         schedule.season = (llmSched.season as any) || schedule.season;
 
-        // Minimal geocode helper for away meets when location missing
-        const geocode = async (query: string): Promise<string | null> => {
-          try {
-            const ac = new AbortController();
-            const timer = setTimeout(() => ac.abort(), 2500);
-            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-            const r = await fetch(url, {
-              headers: { "Accept-Language": "en", "User-Agent": "snapmydate/1.0 (+https://snapmydate.app)" },
-              signal: ac.signal,
-            });
-            clearTimeout(timer);
-            const j: any[] = await r.json().catch(() => []);
-            const top = Array.isArray(j) && j.length ? j[0] : null;
-            return top?.display_name || null;
-          } catch {
-            return null;
-          }
-        };
+        // Away meet geocode disabled (no external lookups)
+        const geocode = async (): Promise<string | null> => null;
 
         const homeAddress = (llmSched.homeAddress as any) || "";
         const filled: any[] = [];
@@ -2752,10 +2736,7 @@ export async function POST(request: Request) {
               // Try to infer opponent from title after 'at'
               const m = t.split(/\bat\b/i)[1];
               const opponent = m ? m.replace(/\*/g, "").trim() : "";
-              if (opponent) {
-                const addr = await geocode(`${opponent} gymnastics`);
-                if (addr) ev.location = addr;
-              }
+              // External venue lookup removed; leave location empty when unknown
             }
           }
           filled.push({ ...ev, category: "Sport Events" });
@@ -2833,25 +2814,9 @@ export async function POST(request: Request) {
         return { homeAway, opponents: finalOpponents.length ? finalOpponents : [cleaned], label: cleaned };
       };
 
-      // Optional away geocode using Nominatim with tight timeout
-      const geocode = async (query: string): Promise<{ label: string; confidence: number } | null> => {
-        try {
-          const ac = new AbortController();
-          const timer = setTimeout(() => ac.abort(), 2500);
-          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-          const r = await fetch(url, {
-            headers: { "Accept-Language": "en", "User-Agent": "snapmydate/1.0 (+https://snapmydate.app)" },
-            signal: ac.signal,
-          });
-          clearTimeout(timer);
-          const j: any[] = await r.json().catch(() => []);
-          const top = Array.isArray(j) && j.length ? j[0] : null;
-          if (!top) return null;
-          const disp = (top.display_name as string) || "";
-          return { label: disp, confidence: 0.6 };
-        } catch {
-          return null;
-        }
+      // External geocode disabled; return null so away venues remain unchanged
+      const geocode = async (_query: string): Promise<{ label: string; confidence: number } | null> => {
+        return null;
       };
 
       for (const b of blocks) {

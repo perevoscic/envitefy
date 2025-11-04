@@ -135,30 +135,8 @@ export default function EventRsvpPrompt({
       }
     }
 
+    // Close any modal and finish silently (no second prompt)
     setModalOpen(false);
-    const eventLabel = eventTitle?.trim() || "the event";
-    const guest = sender.forWho.trim();
-    const declineParts: string[] = [
-      guest
-        ? `We're sorry, unfortunately, ${guest} can't make it to ${eventLabel}.`
-        : `We're sorry, unfortunately, you can't make it to ${eventLabel}.`,
-    ];
-    if (rsvpName && rsvpPhone) {
-      declineParts.push(
-        `If plans change, you can reach out to ${rsvpName.trim()} at ${rsvpPhone}.`
-      );
-    } else if (rsvpPhone) {
-      declineParts.push(
-        `If plans change, you can let the host know at ${rsvpPhone}.`
-      );
-    } else if (rsvpName) {
-      declineParts.push(
-        `If plans change, you can let ${rsvpName.trim()} know.`
-      );
-    }
-    declineParts.push("Thank you for letting us know.");
-    setDeclineLines(declineParts);
-    setDeclineModalOpen(true);
     setIntent(null);
     setError(null);
   };
@@ -170,7 +148,7 @@ export default function EventRsvpPrompt({
       setError("Please enter both first and last name.");
       return;
     }
-    if (contactMode === "sms" && !sender.phone.trim()) {
+    if (contactMode === "sms" && intent !== "decline" && !sender.phone.trim()) {
       setError("Please enter a phone number we can share with the host.");
       return;
     }
@@ -182,7 +160,7 @@ export default function EventRsvpPrompt({
     } catch {}
 
     // Submit RSVP to API if eventId is available
-    if (eventId && intent !== "decline") {
+    if (eventId) {
       try {
         const senderName =
           `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
@@ -214,6 +192,13 @@ export default function EventRsvpPrompt({
       }
     }
 
+    // For decline, do not open composers; just close the modal
+    if (intent === "decline") {
+      setModalOpen(false);
+      setIntent(null);
+      return;
+    }
+
     const eventLabel = eventTitle?.trim() || "the event";
     const salutation = rsvpName?.trim() || "there";
     const senderName =
@@ -224,13 +209,35 @@ export default function EventRsvpPrompt({
       ? `${guest} might be able to attend`
       : "I might be able to attend";
 
+    if (contactMode === "email") {
+      let bodyCore = "";
+      if (intent === "attend") {
+        bodyCore = `I'm excited to attend ${eventLabel}.`;
+      } else if (intent === "maybe") {
+        bodyCore = `I might be able to attend ${eventLabel}, and I'll confirm soon.`;
+      }
+      const lines = [`Hi ${salutation},`, "", `${senderName}: ${bodyCore}`];
+      if (shareUrl) lines.push("", `Event link: ${shareUrl}`);
+      lines.push("", "Sent via SnapMyDate · envitefy.com");
+      const subject = `RSVP for ${eventTitle?.trim() || "your event"}`;
+      const mailto = `mailto:${encodeURIComponent(
+        rsvpEmail || ""
+      )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+        lines.join("\n")
+      )}`;
+      window.location.href = mailto;
+      setModalOpen(false);
+      setIntent(null);
+      return;
+    }
+
+    // SMS flow
     let bodyCore = "";
     if (intent === "attend") {
       bodyCore = `${guestPhraseAttend} ${eventLabel}! Looking forward to it.`;
     } else if (intent === "maybe") {
       bodyCore = `${guestPhraseMaybe} ${eventLabel}, but we're not sure yet. We'll confirm soon!`;
     }
-
     const intro = `Hi ${salutation}, this is ${senderName}.`;
     const contactLine = `You can reach me at ${sender.phone.trim()}.`;
     const footer = shareUrl ? `\n${shareUrl}` : "";
@@ -317,11 +324,70 @@ export default function EventRsvpPrompt({
   const openModalFor = (nextIntent: ResponseIntent) => {
     if (!nextIntent) return;
     if (contactMode === "email") {
-      handleEmailIntent(nextIntent);
+      if (nextIntent === "decline") {
+        // Build the apology card text and open decline card (combined flow)
+        const eventLabel = eventTitle?.trim() || "the event";
+        const guest = sender.forWho.trim();
+        const declineParts: string[] = [
+          guest
+            ? `We're sorry, unfortunately, ${guest} can't make it to ${eventLabel}.`
+            : `We're sorry, unfortunately, you can't make it to ${eventLabel}.`,
+        ];
+        if (rsvpName && rsvpPhone) {
+          declineParts.push(
+            `If plans change, you can reach out to ${rsvpName.trim()} at ${rsvpPhone}.`
+          );
+        } else if (rsvpPhone) {
+          declineParts.push(
+            `If plans change, you can let the host know at ${rsvpPhone}.`
+          );
+        } else if (rsvpName) {
+          declineParts.push(
+            `If plans change, you can let ${rsvpName.trim()} know.`
+          );
+        }
+        declineParts.push("Thank you for letting us know.");
+        setDeclineLines(declineParts);
+        setIntent(nextIntent);
+        setError(null);
+        setDeclineModalOpen(true);
+        setModalOpen(false);
+        return;
+      }
+      // For email + yes/maybe, collect name via the Introduce Yourself modal
+      setIntent(nextIntent);
+      setError(null);
+      setModalOpen(true);
       return;
     }
     if (nextIntent === "decline") {
-      handleDecline();
+      // Build the apology card text and open decline card (combined flow)
+      const eventLabel = eventTitle?.trim() || "the event";
+      const guest = sender.forWho.trim();
+      const declineParts: string[] = [
+        guest
+          ? `We're sorry, unfortunately, ${guest} can't make it to ${eventLabel}.`
+          : `We're sorry, unfortunately, you can't make it to ${eventLabel}.`,
+      ];
+      if (rsvpName && rsvpPhone) {
+        declineParts.push(
+          `If plans change, you can reach out to ${rsvpName.trim()} at ${rsvpPhone}.`
+        );
+      } else if (rsvpPhone) {
+        declineParts.push(
+          `If plans change, you can let the host know at ${rsvpPhone}.`
+        );
+      } else if (rsvpName) {
+        declineParts.push(
+          `If plans change, you can let ${rsvpName.trim()} know.`
+        );
+      }
+      declineParts.push("Thank you for letting us know.");
+      setDeclineLines(declineParts);
+      setIntent(nextIntent);
+      setError(null);
+      setDeclineModalOpen(true);
+      setModalOpen(false);
       return;
     }
     setIntent(nextIntent);
@@ -357,6 +423,27 @@ export default function EventRsvpPrompt({
             className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={closeDeclineModal}
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
             <h3 className="text-lg font-semibold text-foreground">
               Thanks for the RSVP
             </h3>
@@ -365,18 +452,141 @@ export default function EventRsvpPrompt({
                 <p key={index}>{line}</p>
               ))}
             </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={closeDeclineModal}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
-              >
-                Close
-              </button>
-            </div>
+            <form
+              className="mt-5 space-y-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                // Require first/last name before recording decline
+                if (!sender.firstName.trim() || !sender.lastName.trim()) {
+                  setError("Please enter both first and last name.");
+                  return;
+                }
+                setError(null);
+                try {
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem(
+                      STORAGE_KEY,
+                      JSON.stringify(sender)
+                    );
+                  }
+                } catch {}
+
+                // Submit RSVP 'no' to API
+                if (eventId) {
+                  try {
+                    const senderName =
+                      `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
+                    const res = await fetch(`/api/events/${eventId}/rsvp`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({
+                        response: "no",
+                        name: senderName,
+                        email: rsvpEmail || undefined,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.ok) {
+                      window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+                    }
+                  } catch {}
+                }
+                // Close immediately after sending (no second prompt)
+                setDeclineModalOpen(false);
+                setDeclineLines([]);
+                setIntent(null);
+              }}
+            >
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="text-sm">
+                  <span className="text-foreground/70">First name</span>
+                  <input
+                    type="text"
+                    required
+                    value={sender.firstName}
+                    onChange={(event) =>
+                      setSender((prev) => ({
+                        ...prev,
+                        firstName: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </label>
+                <label className="text-sm">
+                  <span className="text-foreground/70">Last name</span>
+                  <input
+                    type="text"
+                    required
+                    value={sender.lastName}
+                    onChange={(event) =>
+                      setSender((prev) => ({
+                        ...prev,
+                        lastName: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </label>
+              </div>
+              <label className="text-sm block">
+                <span className="text-foreground/70">RSVP for who?</span>
+                <input
+                  type="text"
+                  value={sender.forWho}
+                  onChange={(event) =>
+                    setSender((prev) => ({
+                      ...prev,
+                      forWho: event.target.value,
+                    }))
+                  }
+                  placeholder="Add the guest’s name (optional)"
+                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </label>
+              <label className="text-sm block">
+                <span className="text-foreground/70">Your phone number</span>
+                <input
+                  type="tel"
+                  value={sender.phone}
+                  onChange={(event) =>
+                    setSender((prev) => ({
+                      ...prev,
+                      phone: event.target.value,
+                    }))
+                  }
+                  placeholder="We’ll include this so the host can reach you"
+                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </label>
+              {error ? (
+                <p className="text-sm text-rose-600 dark:text-rose-300">
+                  {error}
+                </p>
+              ) : null}
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeDeclineModal}
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-foreground/5"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
+                >
+                  Send RSVP
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* Single modal handles name capture for Yes/Maybe and Decline.
+          When intent === 'decline', we hide the phone input and submit without opening SMS/email. */}
 
       {modalOpen && intent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -385,6 +595,27 @@ export default function EventRsvpPrompt({
             className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={clearAndClose}
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
             <h3 className="text-lg font-semibold text-foreground">
               Introduce yourself
             </h3>

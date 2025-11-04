@@ -35,11 +35,17 @@ export default function EventActions({
   event,
   className,
   historyId,
+  variant = "default",
+  tone = "default",
+  showLabels = false,
 }: {
   shareUrl: string;
   event: EventFields | null;
   className?: string;
   historyId?: string;
+  variant?: "default" | "compact";
+  tone?: "default" | "light";
+  showLabels?: boolean;
 }) {
   // No visible inputs; infer contact targets from event details
   const { data: session } = useSession();
@@ -313,14 +319,26 @@ export default function EventActions({
     } catch {}
   };
 
+  const innerClassName =
+    variant === "compact"
+      ? "flex items-center gap-2"
+      : "flex flex-wrap items-center justify-center gap-10";
+
+  const buttonClassName =
+    variant === "compact"
+      ? tone === "light"
+        ? "inline-flex items-center gap-2 px-3 py-1.5 text-sm text-white hover:text-white/90 hover:bg-white/15 drop-shadow transition-colors"
+        : "inline-flex items-center gap-2 px-3 py-1.5 text-sm text-foreground/70 hover:text-foreground hover:bg-surface transition-colors"
+      : tone === "light"
+      ? "inline-flex items-center gap-2 text-white hover:text-white/90 drop-shadow"
+      : "inline-flex items-center gap-2 text-foreground/90 hover:text-foreground";
+
+  const labelClassName = showLabels ? "inline" : "hidden sm:inline";
+
   return (
     <div className={className}>
-      <div className="flex flex-wrap items-center justify-center gap-10">
-        <button
-          type="button"
-          onClick={onShareLink}
-          className="inline-flex items-center gap-2 text-foreground/90 hover:text-foreground"
-        >
+      <div className={innerClassName}>
+        <button type="button" onClick={onShareLink} className={buttonClassName}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -338,14 +356,10 @@ export default function EventActions({
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-          <span className="hidden sm:inline">Share</span>
+          <span className={labelClassName}>Share</span>
         </button>
 
-        <button
-          type="button"
-          onClick={onEmail}
-          className="inline-flex items-center gap-2 text-foreground/90 hover:text-foreground"
-        >
+        <button type="button" onClick={onEmail} className={buttonClassName}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -360,7 +374,7 @@ export default function EventActions({
             <rect x="3" y="5" width="18" height="14" rx="2" />
             <polyline points="22,7 12,13 2,7" />
           </svg>
-          <span className="hidden sm:inline">Email</span>
+          <span className={labelClassName}>Email</span>
         </button>
 
         {/* RSVP button removed from bottom action bar - RSVP is now handled via EventRsvpPrompt component with Yes/No/Maybe buttons */}
@@ -391,26 +405,6 @@ export default function EventActions({
             </svg>
             <span className="hidden sm:inline">RSVP</span>
           </button>
-        )}
-
-        {mapsHref && (
-          <a
-            href={mapsHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-foreground/90 hover:text-foreground"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-4 w-4"
-              aria-hidden="true"
-            >
-              <path d="M13,24h-2v-7c0-2.8-2.1-5-4.8-5H3.7l3.2,3.3l-1.4,1.4L0,11l5.5-5.7l1.4,1.4L3.7,10h2.5c1.9,0,3.6,0.8,4.8,2.1V12 c0-3.9,3-7,6.8-7h2.5l-3.2-3.3l1.4-1.4L24,6l-5.5,5.7l-1.4-1.4L20.3,7h-2.5C15.1,7,13,9.2,13,12V24z" />
-            </svg>
-            <span className="hidden sm:inline">Directions</span>
-          </a>
         )}
       </div>
     </div>

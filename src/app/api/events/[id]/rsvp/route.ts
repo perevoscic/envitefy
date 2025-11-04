@@ -179,7 +179,7 @@ export async function POST(
         `
         INSERT INTO rsvp_responses (event_id, user_id, email, name, response, updated_at)
         VALUES ($1, $2, $3, $4, $5, now())
-        ON CONFLICT (event_id, user_id)
+        ON CONFLICT (event_id, user_id) WHERE user_id IS NOT NULL
         DO UPDATE SET
           response = EXCLUDED.response,
           email = EXCLUDED.email,
@@ -194,7 +194,7 @@ export async function POST(
         `
         INSERT INTO rsvp_responses (event_id, email, name, response, updated_at)
         VALUES ($1, $2, $3, $4, now())
-        ON CONFLICT (event_id, email)
+        ON CONFLICT (event_id, email) WHERE email IS NOT NULL
         DO UPDATE SET
           response = EXCLUDED.response,
           name = EXCLUDED.name,

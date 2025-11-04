@@ -389,13 +389,13 @@ export default function PwaInstallButton({
         const minimalUiMatch = window.matchMedia(
           "(display-mode: minimal-ui)"
         ).matches;
-        
+
         // If any display-mode indicates standalone, trust it (app is installed)
         // This is especially important for Android where referrer checks can be unreliable
         if (standaloneMatch || fullscreenMatch || minimalUiMatch) {
           return true;
         }
-        
+
         // Additional Android-specific check: if referrer indicates app launch
         const isAndroid = /Android/i.test(navigator.userAgent || "");
         if (isAndroid) {
@@ -405,7 +405,7 @@ export default function PwaInstallButton({
             ref.startsWith("chrome-extension://");
           if (androidStandalone) return true;
         }
-        
+
         return false;
       } catch {
         // best effort only
@@ -493,7 +493,7 @@ export default function PwaInstallButton({
       } catch {}
       return false;
     };
-    
+
     // Call immediately and start interval if not installed
     maybeCheckRelated().then((installed) => {
       if (!installed) {
@@ -861,7 +861,7 @@ export default function PwaInstallButton({
             setWasManuallyClosed(false);
             setExpanded(true);
           }}
-          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+          className="h-11 w-11 rounded-2xl bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
           aria-label="Open install options"
         >
           <svg

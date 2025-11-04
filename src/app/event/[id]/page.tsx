@@ -833,13 +833,13 @@ export default async function EventPage({
     : "guest";
 
   return (
-    <main className="max-w-3xl mx-auto px-10 py-14 ipad-gutters pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]">
+    <main className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]">
       <div
         className="event-theme-scope space-y-6"
         style={themeStyleVars as CSSProperties}
       >
         <section
-          className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-6 py-6 sm:px-8"
+          className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8"
           style={headerUserStyle}
         >
           {attachmentInfo?.type.startsWith("image/") && (
@@ -858,27 +858,42 @@ export default async function EventPage({
                   {title}
                 </h1>
               </div>
-              {!isReadOnly && isOwner && (
-                <div
-                  className={`flex items-center gap-2 text-sm font-medium ${
+              <div
+                className={`flex items-center gap-3 text-sm font-medium ${
+                  attachmentInfo?.type.startsWith("image/")
+                    ? "header-with-image-buttons"
+                    : ""
+                }`}
+                style={
+                  attachmentInfo?.type.startsWith("image/")
+                    ? { color: "white" }
+                    : undefined
+                }
+              >
+                {!isReadOnly && isOwner && (
+                  <>
+                    <EventEditModal
+                      eventId={row.id}
+                      eventData={data}
+                      eventTitle={title}
+                    />
+                    <EventDeleteModal eventId={row.id} eventTitle={title} />
+                  </>
+                )}
+                <EventActions
+                  shareUrl={shareUrl}
+                  event={data as any}
+                  historyId={!isReadOnly ? row.id : undefined}
+                  className=""
+                  variant="compact"
+                  tone={
                     attachmentInfo?.type.startsWith("image/")
-                      ? "header-with-image-buttons"
-                      : ""
-                  }`}
-                  style={
-                    attachmentInfo?.type.startsWith("image/")
-                      ? { color: "white" }
-                      : undefined
+                      ? ("light" as any)
+                      : ("default" as any)
                   }
-                >
-                  <EventEditModal
-                    eventId={row.id}
-                    eventData={data}
-                    eventTitle={title}
-                  />
-                  <EventDeleteModal eventId={row.id} eventTitle={title} />
-                </div>
-              )}
+                  showLabels
+                />
+              </div>
             </div>
             {createdAt && isSignedIn && (
               <p
@@ -896,6 +911,7 @@ export default async function EventPage({
                   hour: "numeric",
                   minute: "2-digit",
                   hour12: true,
+                  timeZone: "UTC",
                 }).format(new Date(createdAt))}
               </p>
             )}
@@ -904,14 +920,14 @@ export default async function EventPage({
         </section>
 
         <section
-          className={`event-theme-card rounded-2xl border px-6 py-6 shadow-sm`}
+          className={`event-theme-card rounded-2xl border px-3 sm:px-6 py-6 shadow-sm`}
           style={{
             backgroundImage: cardBackgroundImage,
           }}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left column: Event details */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
               <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
                 {data?.allDay && (
                   <div className="sm:col-span-2">
@@ -1035,66 +1051,11 @@ export default async function EventPage({
                     })()}
                   </dd>
                 </div>
-                {calendarLinks && (
-                  <div className="sm:col-start-1">
-                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      Add to calendar
-                    </dt>
-                    <dd className="mt-1  space-y-1">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <a
-                          href={calendarLinks.appleInline}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
-                          aria-label="Add to Apple Calendar"
-                          title="Apple Calendar"
-                        >
-                          <CalendarIconApple className="h-5 w-5" />
-                        </a>
-                        <a
-                          href={calendarLinks.google}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
-                          aria-label="Add to Google Calendar"
-                          title="Google Calendar"
-                        >
-                          <CalendarIconGoogle className="h-5 w-5" />
-                        </a>
-                        <a
-                          href={calendarLinks.outlook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
-                          aria-label="Add to Outlook Calendar"
-                          title="Outlook Calendar"
-                        >
-                          <CalendarIconOutlook className="h-5 w-5" />
-                        </a>
-                      </div>
-                    </dd>
-                  </div>
-                )}
-                {(rsvpName || rsvpPhone || rsvpEmail) && (
-                  <div className="sm:col-start-2">
-                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      RSVP
-                    </dt>
-                    <dd className="mt-1">
-                      <EventRsvpPrompt
-                        eventId={row.id}
-                        rsvpName={rsvpName}
-                        rsvpPhone={rsvpPhone}
-                        rsvpEmail={rsvpEmail}
-                        eventTitle={title}
-                        shareUrl={shareUrl}
-                      />
-                    </dd>
-                  </div>
-                )}
+                {/* Calendar + RSVP moved to separate two-column row below */}
               </dl>
             </div>
             {/* Right column: Map */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 lg:self-start">
               <EventMap
                 coordinates={data?.coordinates}
                 venue={data?.venue}
@@ -1103,6 +1064,66 @@ export default async function EventPage({
               />
             </div>
           </div>
+          {/* Second row: RSVP (left) and Add to calendar (right) */}
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {(rsvpName || rsvpPhone || rsvpEmail) && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  RSVP
+                </dt>
+                <dd className="mt-1">
+                  <EventRsvpPrompt
+                    eventId={row.id}
+                    rsvpName={rsvpName}
+                    rsvpPhone={rsvpPhone}
+                    rsvpEmail={rsvpEmail}
+                    eventTitle={title}
+                    shareUrl={shareUrl}
+                  />
+                </dd>
+              </div>
+            )}
+            {calendarLinks && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  Add to calendar
+                </dt>
+                <dd className="mt-1  space-y-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <a
+                      href={calendarLinks.appleInline}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                      aria-label="Add to Apple Calendar"
+                      title="Apple Calendar"
+                    >
+                      <CalendarIconApple className="h-5 w-5" />
+                    </a>
+                    <a
+                      href={calendarLinks.google}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                      aria-label="Add to Google Calendar"
+                      title="Google Calendar"
+                    >
+                      <CalendarIconGoogle className="h-5 w-5" />
+                    </a>
+                    <a
+                      href={calendarLinks.outlook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                      aria-label="Add to Outlook Calendar"
+                      title="Outlook Calendar"
+                    >
+                      <CalendarIconOutlook className="h-5 w-5" />
+                    </a>
+                  </div>
+                </dd>
+              </div>
+            )}
+          </div>
+          {/* Share/Email actions moved to header top-right */}
           {attachmentInfo && false && (
             <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
@@ -1252,13 +1273,6 @@ export default async function EventPage({
               )}
             </div>
           )}
-
-          <EventActions
-            shareUrl={shareUrl}
-            event={data as any}
-            className="mt-6 w-full"
-            historyId={!isReadOnly ? row.id : undefined}
-          />
         </section>
       </div>
 

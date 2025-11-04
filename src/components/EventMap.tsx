@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import MapEmbed from "@/components/MapEmbed";
+import StaticMap from "@/components/StaticMap";
 
 type EventMapProps = {
   coordinates?: { latitude: number; longitude: number } | null;
@@ -11,7 +10,8 @@ type EventMapProps = {
 };
 
 /**
- * EventMap component that automatically geocodes addresses if coordinates aren't available
+ * EventMap component that displays a Google Maps view using the address
+ * Google Maps handles geocoding automatically - no need for server-side geocoding!
  */
 export default function EventMap({
   coordinates,
@@ -19,12 +19,6 @@ export default function EventMap({
   location,
   className = "",
 }: EventMapProps) {
-  const [geocodedCoords, setGeocodedCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-  const [isGeocoding, setIsGeocoding] = useState(false);
-
   // Build location query string
   const locationQuery = (() => {
     const parts: string[] = [];
@@ -33,104 +27,15 @@ export default function EventMap({
     return parts.join(", ").trim() || null;
   })();
 
-  // Check if we have existing coordinates
-  const hasExistingCoords =
-    coordinates &&
-    typeof coordinates === "object" &&
-    typeof coordinates.latitude === "number" &&
-    typeof coordinates.longitude === "number" &&
-    !isNaN(coordinates.latitude) &&
-    !isNaN(coordinates.longitude);
-
-  // Geocode address if no coordinates but address exists
-  useEffect(() => {
-    if (hasExistingCoords || !locationQuery || isGeocoding) return;
-
-    setIsGeocoding(true);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-    fetch(`/api/geocode?q=${encodeURIComponent(locationQuery)}`, {
-      signal: controller.signal,
-    })
-      .then((res) => {
-        clearTimeout(timeoutId);
-        if (!res.ok) {
-          console.warn(
-            "[EventMap] Geocoding failed:",
-            res.status,
-            res.statusText
-          );
-          return null;
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (
-          data?.ok &&
-          typeof data.latitude === "number" &&
-          typeof data.longitude === "number"
-        ) {
-          setGeocodedCoords({
-            latitude: data.latitude,
-            longitude: data.longitude,
-          });
-        } else {
-          console.warn("[EventMap] Invalid geocoding response:", data);
-        }
-      })
-      .catch((err) => {
-        clearTimeout(timeoutId);
-        if (err.name !== "AbortError") {
-          console.warn("[EventMap] Geocoding error:", err);
-        }
-        // Silently fail - map just won't show
-      })
-      .finally(() => {
-        setIsGeocoding(false);
-      });
-
-    // Cleanup function to cancel request if component unmounts or dependencies change
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [hasExistingCoords, locationQuery]);
-
-  // Use existing coordinates or geocoded coordinates
-  const finalCoords = hasExistingCoords ? coordinates : geocodedCoords;
-
-  // Show loading state or map if we have coordinates or location to geocode
-  if (!finalCoords && !locationQuery) {
-    return null;
-  }
-
-  // Show loading placeholder while geocoding
-  if (!finalCoords && locationQuery && isGeocoding) {
-    return (
-      <div className={className}>
-        <div className="rounded-lg overflow-hidden border border-border bg-muted/50 h-64 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
-            <p className="text-sm text-muted-foreground">Loading map...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!finalCoords) {
+  // If we have coordinates, we could use them, but Google Maps works great with just addresses
+  // So we'll always use the address string and let Google handle it
+  if (!locationQuery) {
     return null;
   }
 
   return (
     <div className={className}>
-      <MapEmbed
-        latitude={finalCoords.latitude}
-        longitude={finalCoords.longitude}
-        query={locationQuery || undefined}
-        className="w-full"
-      />
+      <StaticMap address={locationQuery} zoom={17} height={420} />
     </div>
   );
 }

@@ -39,7 +39,7 @@ This document walks through everything that happens on `/snap`, from pressing **
 
 - For single events, set the main `event` state, assign a default 24 hour reminder, and reset the “already saved” guard (`lines 803-813`).
 - Show the editor tray so the user can adjust title, timing, recurrence, venue, RSVP, description, reminders, and category (`lines 1860-2580`).
-- Location edits trigger a debounced Nominatim lookup; selecting a suggestion stores both the formatted address and lat/lon (`lines 1036-1066`).
+- Location edits no longer trigger external geocoding; addresses are stored as entered and can be shown on a Google map using the Static Maps image.
 
 ## 6. Preparing an Event Payload
 

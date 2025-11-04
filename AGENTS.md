@@ -152,7 +152,7 @@ This document describes the app’s server-side agents (API routes) that extract
   2. **Fallback**: Google Cloud Vision API (used only if OpenAI fails or returns no results)
   3. **Enhancement**: Heuristic parsing and text-based LLM cleanup as needed
 - **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable, plus `ocrSource` indicating which OCR method was used (`"openai"`, `"google-sdk"`, or `"google-rest"`).
-- **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets attempt venue lookup via OpenStreetMap.
+- **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets leave location empty when unknown (no external geocoding).
 - **Practice schedules**: Recognizes weekly team practice tables (groups vs. days). The response adds a `practiceSchedule` object with the detected groups, their weekly sessions, and pre-built normalized events that include `RRULE:FREQ=WEEKLY` recurrences for each day/time block. When multiple groups are present, clients should prompt the user to pick one group before saving events.
 
 ```bash
