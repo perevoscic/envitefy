@@ -5,6 +5,7 @@ import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import LocationLink from "@/components/LocationLink";
+import EventMap from "@/components/EventMap";
 import ReadOnlyBanner from "./ReadOnlyBanner";
 import Image from "next/image";
 import Logo from "@/assets/logo.png";
@@ -218,6 +219,122 @@ const buildFallbackRangeLabel = (
 
   return `${trimmedStart} – ${trimmedEnd}`;
 };
+
+function formatTimeAndDate(
+  startInput: string | null | undefined,
+  endInput: string | null | undefined,
+  options?: { timeZone?: string | null; allDay?: boolean }
+): { time: string | null; date: string | null } {
+  const { timeZone, allDay } = options || {};
+  if (!startInput) return { time: null, date: null };
+
+  try {
+    const startParsed = parseDatePreserveFloating(startInput);
+    const start = startParsed.date;
+    const startFloating = startParsed.floating;
+    if (Number.isNaN(start.getTime())) throw new Error("invalid start");
+
+    const endParsed = endInput ? parseDatePreserveFloating(endInput) : null;
+    const end = endParsed ? endParsed.date : null;
+    const endFloating = endParsed ? endParsed.floating : false;
+    const sameDay =
+      !!end &&
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate();
+    const useFloatingTz = startFloating || endFloating;
+    const tz = useFloatingTz ? "UTC" : timeZone || undefined;
+
+    if (allDay) {
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: tz,
+      });
+      const dateLabel =
+        end && !sameDay
+          ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+          : dateFmt.format(start);
+      return { time: null, date: `${dateLabel} (all day)` };
+    }
+
+    const dateFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: tz,
+    });
+    const timeFmt = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: tz,
+    });
+
+    let time: string | null = null;
+    let date: string | null = null;
+
+    if (end) {
+      if (sameDay) {
+        time = `${timeFmt.format(start)} – ${timeFmt.format(end)}`;
+        date = dateFmt.format(start);
+      } else {
+        time = `${timeFmt.format(start)} – ${timeFmt.format(end)}`;
+        date = `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
+      }
+    } else {
+      time = timeFmt.format(start);
+      date = dateFmt.format(start);
+    }
+
+    return { time, date };
+  } catch {
+    return { time: null, date: null };
+  }
+}
+
+function splitAddress(address: string | null | undefined): {
+  street: string;
+  cityStateZip: string;
+} {
+  if (!address) return { street: "", cityStateZip: "" };
+
+  // Try to split by comma - usually address is "street, city, state zip"
+  const parts = address.split(",").map((p) => p.trim());
+
+  if (parts.length >= 3) {
+    // Likely "street, city, state zip"
+    const lastPart = parts[parts.length - 1];
+    // Check if last part has a zip code (5 digits)
+    const zipMatch = lastPart.match(/\b\d{5}(?:-\d{4})?\b/);
+
+    if (zipMatch) {
+      // Format: "street, city, state zip"
+      const street = parts[0]; // First part is street
+      const cityStateZip = parts.slice(1).join(", "); // Rest is city, state zip
+      return { street, cityStateZip };
+    }
+  }
+
+  if (parts.length >= 2) {
+    // Last part is usually "state zip" or just "city"
+    const lastPart = parts[parts.length - 1];
+    // Check if last part has a zip code (5 digits)
+    const zipMatch = lastPart.match(/\b\d{5}(?:-\d{4})?\b/);
+
+    if (zipMatch) {
+      // Format: "street, state zip" (no city, or city is in street)
+      const street = parts[0];
+      const cityStateZip = parts[parts.length - 1];
+      return { street, cityStateZip };
+    }
+  }
+
+  // Fallback: return as-is if we can't parse
+  return { street: address, cityStateZip: "" };
+}
 
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
@@ -792,129 +909,200 @@ export default async function EventPage({
             backgroundImage: cardBackgroundImage,
           }}
         >
-          <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
-            {data?.allDay && (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  When
-                </dt>
-                <dd className="mt-1 text-base font-semibold">All day event</dd>
-              </div>
-            )}
-            {whenLabel ? (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  When
-                </dt>
-                <dd className="mt-1 break-all text-base font-semibold">
-                  {whenLabel}
-                </dd>
-              </div>
-            ) : (
-              <>
-                {data?.start && (
-                  <div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left column: Event details */}
+            <div className="lg:col-span-2">
+              <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
+                {data?.allDay && (
+                  <div className="sm:col-span-2">
                     <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      Start
+                      When
                     </dt>
-                    <dd className="mt-1 break-all text-base font-semibold">
-                      {data.start}
+                    <dd className="mt-1 text-base font-semibold">
+                      All day event
                     </dd>
                   </div>
                 )}
-                {data?.end && (
-                  <div>
+                {whenLabel ? (
+                  (() => {
+                    const timeAndDate = formatTimeAndDate(
+                      startForDisplay,
+                      endForDisplay,
+                      {
+                        timeZone:
+                          (typeof data?.timezone === "string" &&
+                            data.timezone) ||
+                          undefined,
+                        allDay: Boolean(data?.allDay),
+                      }
+                    );
+
+                    return (
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                          When
+                        </dt>
+                        <dd className="mt-1 break-all text-base font-semibold">
+                          {timeAndDate.time && <div>{timeAndDate.time}</div>}
+                          {timeAndDate.date && (
+                            <div className="text-sm mt-1 opacity-80">
+                              {timeAndDate.date}
+                            </div>
+                          )}
+                          {!timeAndDate.time && !timeAndDate.date && whenLabel}
+                        </dd>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <>
+                    {data?.start && (
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                          Start
+                        </dt>
+                        <dd className="mt-1 break-all text-base font-semibold">
+                          {data.start}
+                        </dd>
+                      </div>
+                    )}
+                    {data?.end && (
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                          End
+                        </dt>
+                        <dd className="mt-1 break-all text-base font-semibold">
+                          {data.end}
+                        </dd>
+                      </div>
+                    )}
+                  </>
+                )}
+                {data?.venue && (
+                  <div className="sm:col-span-2">
                     <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      End
+                      Venue
                     </dt>
-                    <dd className="mt-1 break-all text-base font-semibold">
-                      {data.end}
+                    <dd className="mt-1 text-2xl font-semibold">
+                      {data.venue}
                     </dd>
                   </div>
                 )}
-              </>
-            )}
-            {data?.venue && (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  Venue
-                </dt>
-                <dd className="mt-1 text-2xl font-semibold">{data.venue}</dd>
-              </div>
-            )}
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                {data?.venue ? "Address" : "Location"}
-              </dt>
-              <dd className="mt-1">
-                <LocationLink
-                  location={data?.location}
-                  query={combineVenueAndLocation(
-                    (typeof data?.venue === "string" && data.venue) || null,
-                    (typeof data?.location === "string" && data.location) ||
-                      null
-                  )}
-                  className="text-base font-semibold"
-                />
-              </dd>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                    {data?.venue ? "Address" : "Location"}
+                  </dt>
+                  <dd className="mt-1">
+                    {(() => {
+                      const locationStr =
+                        typeof data?.location === "string" ? data.location : "";
+                      const { street, cityStateZip } =
+                        splitAddress(locationStr);
+                      const fullQuery = combineVenueAndLocation(
+                        (typeof data?.venue === "string" && data.venue) || null,
+                        locationStr || null
+                      );
+
+                      return (
+                        <>
+                          {street && (
+                            <div className="text-base font-semibold">
+                              <LocationLink
+                                location={street}
+                                query={fullQuery}
+                                className="font-semibold"
+                              />
+                            </div>
+                          )}
+                          {cityStateZip && (
+                            <div className="text-sm mt-1 opacity-80">
+                              <LocationLink
+                                location={cityStateZip}
+                                query={fullQuery}
+                                className=""
+                              />
+                            </div>
+                          )}
+                          {!street && !cityStateZip && locationStr && (
+                            <LocationLink
+                              location={locationStr}
+                              query={fullQuery}
+                              className="text-base font-semibold"
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
+                  </dd>
+                </div>
+                {calendarLinks && (
+                  <div className="sm:col-start-1">
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      Add to calendar
+                    </dt>
+                    <dd className="mt-1  space-y-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <a
+                          href={calendarLinks.appleInline}
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                          aria-label="Add to Apple Calendar"
+                          title="Apple Calendar"
+                        >
+                          <CalendarIconApple className="h-5 w-5" />
+                        </a>
+                        <a
+                          href={calendarLinks.google}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                          aria-label="Add to Google Calendar"
+                          title="Google Calendar"
+                        >
+                          <CalendarIconGoogle className="h-5 w-5" />
+                        </a>
+                        <a
+                          href={calendarLinks.outlook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                          aria-label="Add to Outlook Calendar"
+                          title="Outlook Calendar"
+                        >
+                          <CalendarIconOutlook className="h-5 w-5" />
+                        </a>
+                      </div>
+                    </dd>
+                  </div>
+                )}
+                {(rsvpName || rsvpPhone || rsvpEmail) && (
+                  <div className="sm:col-start-2">
+                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                      RSVP
+                    </dt>
+                    <dd className="mt-1">
+                      <EventRsvpPrompt
+                        eventId={row.id}
+                        rsvpName={rsvpName}
+                        rsvpPhone={rsvpPhone}
+                        rsvpEmail={rsvpEmail}
+                        eventTitle={title}
+                        shareUrl={shareUrl}
+                      />
+                    </dd>
+                  </div>
+                )}
+              </dl>
             </div>
-            {calendarLinks && (
-              <div className="sm:col-start-1">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  Add to calendar
-                </dt>
-                <dd className="mt-1  space-y-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <a
-                      href={calendarLinks.appleInline}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
-                      aria-label="Add to Apple Calendar"
-                      title="Apple Calendar"
-                    >
-                      <CalendarIconApple className="h-5 w-5" />
-                    </a>
-                    <a
-                      href={calendarLinks.google}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
-                      aria-label="Add to Google Calendar"
-                      title="Google Calendar"
-                    >
-                      <CalendarIconGoogle className="h-5 w-5" />
-                    </a>
-                    <a
-                      href={calendarLinks.outlook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
-                      aria-label="Add to Outlook Calendar"
-                      title="Outlook Calendar"
-                    >
-                      <CalendarIconOutlook className="h-5 w-5" />
-                    </a>
-                  </div>
-                </dd>
-              </div>
-            )}
-            {(rsvpName || rsvpPhone || rsvpEmail) && (
-              <div className="sm:col-start-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                  RSVP
-                </dt>
-                <dd className="mt-1">
-                  <EventRsvpPrompt
-                    eventId={row.id}
-                    rsvpName={rsvpName}
-                    rsvpPhone={rsvpPhone}
-                    rsvpEmail={rsvpEmail}
-                    eventTitle={title}
-                    shareUrl={shareUrl}
-                  />
-                </dd>
-              </div>
-            )}
-          </dl>
+            {/* Right column: Map */}
+            <div className="lg:col-span-1">
+              <EventMap
+                coordinates={data?.coordinates}
+                venue={data?.venue}
+                location={data?.location}
+                className="sticky top-4"
+              />
+            </div>
+          </div>
           {attachmentInfo && false && (
             <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">

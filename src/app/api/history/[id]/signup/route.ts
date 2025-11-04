@@ -409,6 +409,11 @@ export async function POST(
         try {
           const toEmail = (latestResponse.email || (sessionEmail as string | null)) as string | undefined;
           if (toEmail) {
+            console.log("[signup] Sending confirmation email", {
+              toEmail: toEmail.substring(0, 3) + "***@" + toEmail.split("@")[1],
+              eventId: id,
+              userName: latestResponse.name || null,
+            });
             await sendSignupConfirmationEmail({
               toEmail,
               userName: latestResponse.name || null,
@@ -417,9 +422,21 @@ export async function POST(
               form: persistedForm,
               response: latestResponse,
             });
+            console.log("[signup] Confirmation email sent successfully", {
+              toEmail: toEmail.substring(0, 3) + "***@" + toEmail.split("@")[1],
+            });
+          } else {
+            console.log("[signup] No email address available for confirmation", {
+              hasResponseEmail: !!latestResponse.email,
+              hasSessionEmail: !!sessionEmail,
+              collectEmail: persistedForm.settings.collectEmail,
+            });
           }
         } catch (err) {
-          console.error("[signup] failed to send confirmation email", err);
+          console.error("[signup] failed to send confirmation email", {
+            error: err instanceof Error ? err.message : String(err),
+            eventId: id,
+          });
         }
       })();
 

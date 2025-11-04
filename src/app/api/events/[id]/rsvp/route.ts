@@ -341,7 +341,7 @@ export async function GET(
       }
     }
 
-    const remaining = Math.max(0, numberOfGuests - stats.yes);
+    const remaining = Math.max(0, numberOfGuests - stats.yes - stats.maybe - stats.no);
 
     // Get individual RSVP responses
     const responsesRes = await query(

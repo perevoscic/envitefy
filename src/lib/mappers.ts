@@ -8,6 +8,7 @@ export type NormalizedEvent = {
   timezone: string; // IANA
   venue?: string;
   location?: string;
+  coordinates?: { latitude: number; longitude: number } | null;
   description?: string;
   recurrence?: string | null; // RRULE:...
   reminders?: { minutes: number }[] | null;

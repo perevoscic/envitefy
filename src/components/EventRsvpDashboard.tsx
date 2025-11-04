@@ -33,19 +33,25 @@ export default function EventRsvpDashboard({
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`/api/events/${eventId}/rsvp`, {
+        const res = await fetch(`/api/events/${eventId}/rsvp?t=${Date.now()}`, {
           credentials: "include",
           cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
         });
         const data = await res.json();
         if (data.ok) {
           console.log("[RSVP Dashboard] Stats updated:", data);
+          // Use API's calculated remaining value (now fixed to include all responses)
           setStats({
             yes: data.stats?.yes || 0,
             no: data.stats?.no || 0,
             maybe: data.stats?.maybe || 0,
             filled: data.filled || 0,
-            remaining: data.remaining || 0,
+            remaining:
+              data.remaining ?? (data.numberOfGuests || initialNumberOfGuests),
             numberOfGuests: data.numberOfGuests || initialNumberOfGuests,
           });
           setResponses(Array.isArray(data.responses) ? data.responses : []);
@@ -60,6 +66,7 @@ export default function EventRsvpDashboard({
     };
 
     if (eventId) {
+      // Fetch immediately without delay
       fetchStats();
       // Refresh stats every 5 minutes to save resources
       // Immediate updates still happen via custom event listener when users RSVP
@@ -85,12 +92,13 @@ export default function EventRsvpDashboard({
   }, [eventId, initialNumberOfGuests]);
 
   // Show dashboard even while loading, using initialNumberOfGuests
+  // Calculate remaining properly even in initial state
   const displayStats: RsvpStats = stats || {
     yes: 0,
     no: 0,
     maybe: 0,
     filled: 0,
-    remaining: initialNumberOfGuests,
+    remaining: initialNumberOfGuests, // Will update immediately when stats load
     numberOfGuests: initialNumberOfGuests,
   };
 

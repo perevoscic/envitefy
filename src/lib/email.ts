@@ -537,10 +537,10 @@ export async function sendSignupConfirmationEmail(params: {
   response: SignupResponse;
 }): Promise<void> {
   // Use dedicated signup forms email if available, otherwise fall back to no-reply
-  const signupFrom = process.env.SES_FROM_EMAIL_FROMS || process.env.SES_FROM_EMAIL_SIGNUP;
+  const signupFrom = process.env.SES_FROM_EMAIL_SIGNUP;
   const fromCandidate = signupFrom || process.env.SES_FROM_EMAIL_NO_REPLY;
   assertEnv(
-    signupFrom ? "SES_FROM_EMAIL_FROMS or SES_FROM_EMAIL_SIGNUP" : "SES_FROM_EMAIL_NO_REPLY",
+    signupFrom ? "SES_FROM_EMAIL_SIGNUP" : "SES_FROM_EMAIL_NO_REPLY",
     fromCandidate
   );
   const from = fromCandidate as string;
@@ -671,9 +671,27 @@ export async function sendSignupConfirmationEmail(params: {
       messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
     });
   } catch (err: any) {
+    const errorName = err?.name || "UnknownError";
+    const errorMessage = err?.message || String(err);
+    const statusCode = err?.$metadata?.httpStatusCode || null;
+    const requestId = err?.$metadata?.requestId || null;
+    
+    // Check for common AWS permission errors
+    const isPermissionError = 
+      errorName === "AccessDeniedException" ||
+      errorMessage.includes("not authorized") ||
+      errorMessage.includes("AccessDenied");
+    
     console.error("[email] sendSignupConfirmationEmail failed", {
       to: maskEmail(to),
-      error: err?.message,
+      error: errorMessage,
+      name: errorName,
+      statusCode,
+      requestId,
+      isPermissionError,
+      ...(isPermissionError ? {
+        suggestion: "Check AWS IAM permissions for SES SendEmail action. The IAM user/role needs ses:SendEmail permission for the SES identity."
+      } : {}),
     });
     throw err;
   }

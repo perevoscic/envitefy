@@ -158,6 +158,12 @@ const SignupViewer: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
+  const [editingResponse, setEditingResponse] = useState<SignupResponse | null>(
+    null
+  );
+  const [removingResponseId, setRemovingResponseId] = useState<string | null>(
+    null
+  );
 
   const feedback = useStatusMessage(serverMessage, 4000);
   const canInteract = viewerKind !== "readonly";
@@ -462,6 +468,128 @@ const SignupViewer: React.FC<Props> = ({
     }
   };
 
+  const handleRemoveResponse = async (responseId: string) => {
+    if (removingResponseId || loading) return;
+    if (!confirm("Are you sure you want to remove this sign-up?")) return;
+
+    setRemovingResponseId(responseId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/history/${eventId}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", signupId: responseId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
+      if (!res.ok || !data?.signupForm) {
+        setError((data && data.error) || "Couldn't remove sign-up. Try again.");
+        setErrorOpen(true);
+        return;
+      }
+      setForm(data.signupForm);
+    } catch (err: unknown) {
+      console.error("Failed to remove signup:", err);
+      setError("Unexpected error removing sign-up.");
+      setErrorOpen(true);
+    } finally {
+      setRemovingResponseId(null);
+    }
+  };
+
+  const handleEditResponse = (response: SignupResponse) => {
+    setEditingResponse(response);
+    // Pre-populate selected slots
+    const slotsMap: SlotSelectionMap = {};
+    for (const slot of response.slots || []) {
+      const key = slotKey(slot.sectionId, slot.slotId);
+      slotsMap[key] = normalizeSignupQuantity(slot.quantity ?? 1);
+    }
+    setSelectedSlots(slotsMap);
+    setName(response.name || "");
+    setEmail(response.email || "");
+    setPhone(response.phone || "");
+    setGuests(response.guests || 0);
+    setNote(response.note || "");
+    const answersMap: Record<string, string> = {};
+    for (const answer of response.answers || []) {
+      answersMap[answer.questionId] = answer.value;
+    }
+    setAnswers(answersMap);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingResponse || loading) return;
+
+    const slotsPayload = Object.entries(selectedSlots).map(
+      ([key, quantity]) => {
+        const [sectionId, slotId] = key.split("::");
+        return { sectionId, slotId, quantity };
+      }
+    );
+
+    if (slotsPayload.length === 0) {
+      setError("Select at least one slot.");
+      setErrorOpen(true);
+      return;
+    }
+
+    const answersPayload = form.questions
+      .map((question) => ({
+        questionId: question.id,
+        value: answers[question.id]?.trim() || "",
+      }))
+      .filter((entry) => entry.value);
+
+    const payload: ReserveRequestPayload = {
+      action: "reserve",
+      slots: slotsPayload,
+      name: name.trim(),
+      signupId: editingResponse.id,
+    };
+    if (note.trim()) payload.note = note.trim();
+    if (guests > 0) payload.guests = guests;
+    if (answersPayload.length > 0) payload.answers = answersPayload;
+    if (form.settings.collectEmail && email.trim())
+      payload.email = email.trim();
+    if (form.settings.collectPhone && phone.trim())
+      payload.phone = phone.trim();
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/history/${eventId}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
+      if (!res.ok || !data?.signupForm) {
+        const errorMessage =
+          (data && data.error) || "Could not update sign-up. Try again.";
+        setError(errorMessage);
+        setErrorOpen(true);
+        return;
+      }
+      setForm(data.signupForm);
+      setEditingResponse(null);
+      setSelectedSlots({});
+      setName("");
+      setEmail("");
+      setPhone("");
+      setNote("");
+      setGuests(0);
+      setAnswers({});
+      setServerMessage("Sign-up updated successfully!");
+      setConfirmOpen(true);
+    } catch (err: unknown) {
+      console.error("Failed to update signup:", err);
+      setError("Unexpected error updating sign-up.");
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const confirmedResponses = useMemo(
     () => form.responses.filter((response) => response.status === "confirmed"),
     [form.responses]
@@ -561,6 +689,32 @@ const SignupViewer: React.FC<Props> = ({
       {error && (
         <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600">
           {error}
+        </div>
+      )}
+
+      {editingResponse && (
+        <div className="rounded-md border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-sm text-blue-600 mb-4">
+          <div className="flex items-center justify-between">
+            <span>
+              Editing sign-up for <strong>{editingResponse.name}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingResponse(null);
+                setSelectedSlots({});
+                setName("");
+                setEmail("");
+                setPhone("");
+                setNote("");
+                setGuests(0);
+                setAnswers({});
+              }}
+              className="text-xs underline hover:no-underline"
+            >
+              Cancel edit
+            </button>
+          </div>
         </div>
       )}
 
@@ -696,11 +850,22 @@ const SignupViewer: React.FC<Props> = ({
         ))}
       </div>
 
-      {canInteract && (
-        <form className="space-y-4" onSubmit={handleSubmit}>
+      {canInteract && (!myResponse || editingResponse) && (
+        <form
+          className="space-y-4"
+          onSubmit={
+            editingResponse
+              ? (e) => {
+                  e.preventDefault();
+                  handleSaveEdit();
+                }
+              : handleSubmit
+          }
+        >
           {(viewerKind === "owner" ||
             Object.keys(selectedSlots).length > 0 ||
-            myResponse) && (
+            myResponse ||
+            editingResponse) && (
             <div className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
               <h3 className="text-sm font-semibold text-foreground">
                 Your details
@@ -852,7 +1017,7 @@ const SignupViewer: React.FC<Props> = ({
               before the event.
             </div>
             <div className="flex items-center gap-2">
-              {myResponse && (
+              {myResponse && !editingResponse && (
                 <button
                   type="button"
                   onClick={handleCancel}
@@ -862,12 +1027,37 @@ const SignupViewer: React.FC<Props> = ({
                   Cancel my spot
                 </button>
               )}
+              {editingResponse && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingResponse(null);
+                    setSelectedSlots({});
+                    setName("");
+                    setEmail("");
+                    setPhone("");
+                    setNote("");
+                    setGuests(0);
+                    setAnswers({});
+                  }}
+                  className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-surface disabled:opacity-50"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 type="submit"
                 className="rounded-md border border-primary bg-primary px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-primary/90 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? "Saving..." : "Save my sign-up"}
+                {loading
+                  ? editingResponse
+                    ? "Updating..."
+                    : "Saving..."
+                  : editingResponse
+                  ? "Update sign-up"
+                  : "Save my sign-up"}
               </button>
             </div>
           </div>
@@ -957,11 +1147,37 @@ const SignupViewer: React.FC<Props> = ({
                         <span className="font-medium text-foreground">
                           {response.name}
                         </span>
-                        <span className="text-xs text-foreground/60">
-                          {new Date(
-                            response.updatedAt || response.createdAt || ""
-                          ).toLocaleString()}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-foreground/60">
+                            {new Date(
+                              response.updatedAt || response.createdAt || ""
+                            ).toLocaleString()}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleEditResponse(response)}
+                            disabled={
+                              loading || removingResponseId === response.id
+                            }
+                            className="text-xs px-2 py-1 rounded border border-border bg-background hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Edit sign-up"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveResponse(response.id)}
+                            disabled={
+                              loading || removingResponseId === response.id
+                            }
+                            className="text-xs px-2 py-1 rounded border border-red-500/50 bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Remove sign-up"
+                          >
+                            {removingResponseId === response.id
+                              ? "Removing..."
+                              : "Remove"}
+                          </button>
+                        </div>
                       </div>
                       <div className="text-xs text-foreground/70 mt-1">
                         {summarizeResponseSlots(form, response) ||
