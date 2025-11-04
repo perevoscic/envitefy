@@ -861,7 +861,7 @@ export default function PwaInstallButton({
             setWasManuallyClosed(false);
             setExpanded(true);
           }}
-          className="h-11 w-11 rounded-2xl bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+          className="h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
           aria-label="Open install options"
         >
           <svg
