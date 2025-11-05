@@ -64,28 +64,37 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   const base64 = imageBytes.toString("base64");
   const todayIso = new Date().toISOString().slice(0, 10);
   const system = `
-  You read invitations/appointment cards from images and output one clean JSON object.
+  You read any kind of invitation or appointment card from an image and output one clean JSON object.
   
-  CRITICAL BIRTHDAY RULES (highest priority):
-  1) VISUAL SCAN FIRST. If there is a big decorative number (e.g., 7/5/10) anywhere, that is the AGE.
-  2) Use ORDINAL age (7th, 10th, 5th).
-  3) Name + Age + "Birthday Party" must be in the title. If a venue name is visible, append " at <Venue>" OR " at the <venue kind>" (e.g., "at the Gym").
-  4) If a big number is visible but the title lacks the number, DO NOT return JSON. Recompose the title to include the age and then return.
+  CURSIVE/HANDWRITING:
+  • Treat large cursive/handwritten/script text as real text (often names). Resolve ambiguous letters using surrounding context and repeated occurrences. Do not drop names because they are cursive.
+
+  BIRTHDAY ENHANCEMENTS (apply only when the flyer is a birthday):
+  • VISUAL SCAN FIRST for a large decorative number anywhere on the card; that number is the AGE.
+  • Convert the age to an ORDINAL (e.g., 7th, 10th, 5th) and include it in the title.
+  • If an age is visually present but missing from your title, recompute the title to include the age before returning JSON.
+  • Never put months/dates/times in the title.
   
-  DESCRIPTION (birthday only):
-  • EXACT sentence template (no variations): 
-    "Join us to celebrate <Name>'s <AgeOrdinal> Birthday at <Venue>."
-  • If venue isn't visible, drop the "at <Venue>" part.
+  TITLE (never include date/time or location; keep under 120 chars):
+  • Always include the occasion and honoree(s) when present.
+  • Baby Shower: "<FullName> Baby Shower" (prefer this), or "Baby Shower for <FullName>" if needed.
+  • Weddings: "<Name A> & <Name B> Wedding".
+  • Birthdays: "<Name>'s <AgeOrdinal> Birthday Party" when age is visible; otherwise "<Name>'s Birthday Party".
+  • Appointments: "<Appointment Type>" optionally "with Dr <Name>" when printed.
+  • Generic cases: "<Occasion> — <Name/Group>" or "<Name/Group> <Occasion>".
+  • Never reduce to a generic title (e.g., "Baby Shower") if a name is visible.
+  
+  DESCRIPTION (factual, concise):
+  • One short sentence (two at most) using only facts in the image: date, time, venue/address, city/state. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
   
   ADDRESS:
-  • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:".
+  • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:" or "At:".
   
   RSVP:
   • If "RSVP" + phone/email appears, put it in rsvp (e.g., "RSVP: 555-123-4567"). Else null.
   
   DATE/TIME:
-  • Use the date from the flyer. If no year is printed, pick the next occurrence on/after today and set yearVisible=false.
-  • Only include a time if clearly shown.
+  • Use the date/time from the flyer. If no year is printed, choose the next occurrence on/after today and set yearVisible=false. Only set end when a clear time range is printed.
   
   CATEGORIES:
   • One of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.
@@ -93,25 +102,17 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   MEDICAL/DENTAL (strict):
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
-  OUTPUT (must be valid JSON, no extra text):
+  OUTPUT (strict JSON only, no extra text):
   { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean }
   `;
   
   const userText = `
-  Task: From the image, return exactly one event as strict JSON
-  {title,start,end,address,description,category,rsvp,yearVisible}.
-  
-  Hard requirements for birthday flyers:
-  - Do a visual scan first to find the huge decorative number → age → ordinal.
-  - Title must include "<Name>'s <AgeOrdinal> Birthday Party" (+ " at <Venue>" when visible).
-  - Never put months/dates/times in the title.
-  - Description sentence: "Join us to celebrate <Name>'s <AgeOrdinal> Birthday at <Venue>."
-  - RSVP goes only in rsvp.
-  - Address formatted cleanly, venue first if present.
-  - category="Birthdays".
-  - If year missing, pick the next occurrence on/after ${todayIso} and set yearVisible=false.
-  
-  Return only the JSON object.`;
+  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible}.
+  If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include the age in the title. Do not include dates/times in the title.
+  Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
+  Keep RSVP only in rsvp (not in description). Prefer venue names over street addresses in description when both appear.
+  If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
+  `;
   try {
     console.log(">>> Making OpenAI Vision API call...");
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1361,7 +1362,7 @@ function pickTitle(lines: string[], raw: string): string {
   const weekdays = /^(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(r(s(day)?)?)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
   const months = /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)$/i;
   const badHints = /(invitation(\s*card)?|rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:\.]?\d{0,2}\b)/i;
-  const goodHints = /(birthday|party|anniversary|wedding|marriage|nupti(al)?|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration)/i;
+  const goodHints = /(baby\s*shower|bridal\s*shower|shower|birthday|party|anniversary|wedding|marriage|nupti(al)?|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration|quincea?ñera|graduation)/i;
   const ordinal = /\b\d{1,2}(st|nd|rd|th)\b/i;
 
   type Candidate = { text: string; score: number };
@@ -1399,14 +1400,14 @@ function pickTitle(lines: string[], raw: string): string {
 
   for (let i = 0; i < cleanedLines.length - 1; i++) {
     const combined = `${cleanedLines[i]} ${cleanedLines[i + 1]}`.replace(/\s+/g, " ").trim();
-    if (/(birthday|party|wedding|concert|festival)/i.test(combined) && combined.length <= 90) {
+    if (/(birthday|party|wedding|concert|festival|shower)/i.test(combined) && combined.length <= 90) {
       candidates.push({ text: combined, score: scoreLine(combined) + 1 });
     }
   }
   for (let i = 0; i < cleanedLines.length - 2; i++) {
     const triple = `${cleanedLines[i]} ${cleanedLines[i + 1]} ${cleanedLines[i + 2]}`
       .replace(/\s+/g, " ").trim();
-    if (/(birthday|party|wedding|concert|festival)/i.test(triple) && triple.length <= 120) {
+    if (/(birthday|party|wedding|concert|festival|shower)/i.test(triple) && triple.length <= 120) {
       let bonus = 2;
       if (/\b\w+(?:[’']s)?\s+birthday\s+party\b/i.test(triple)) bonus += 10;
       candidates.push({ text: triple, score: scoreLine(triple) + bonus });
@@ -1924,6 +1925,7 @@ export async function POST(request: Request) {
     let finalAddress = addressOnly;
     let finalVenue = "";
     let finalDescription = cleanDescription;
+    let keepTitleInDescription = false;
 
     if (ocrSource === "openai" && llmImage) {
       // OpenAI was primary - use its results directly, fall back to heuristics only if missing
@@ -2195,6 +2197,24 @@ export async function POST(request: Request) {
       finalDescription = improveJoinUsFor(finalDescription, finalTitle, finalAddress);
     }
 
+    // Build a concise, universal one-liner for invitations (non-medical):
+    // "Join <Title> on <Month Day[ordinal]> at <Time>." (omit address; it's shown elsewhere)
+    try {
+      if (!isMedicalAppointment && finalTitle && finalStart instanceof Date) {
+        const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const day = finalStart.getDate();
+        const ord = (n: number) => {
+          if (n % 100 >= 11 && n % 100 <= 13) return "th";
+          switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; }
+        };
+        const dateStr = `${monthNames[finalStart.getMonth()]} ${day}${ord(day)}`;
+        const timeStrRaw = finalStart.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+        const timeStr = timeStrRaw.replace(":00 ", " "); // 2:00 PM → 2 PM
+        finalDescription = `Join ${finalTitle} on ${dateStr}${timeStr ? ` at ${timeStr}` : ""}.`;
+        keepTitleInDescription = true;
+      }
+    } catch {}
+
     const addressWithVenue = finalAddress;
     const splitLocation = splitVenueFromAddress(finalAddress, finalDescription, raw);
     if (splitLocation) {
@@ -2284,7 +2304,7 @@ export async function POST(request: Request) {
       try {
         const wr = await llmRewriteWedding(raw, finalTitle, locationForNarrative || finalAddress);
         if (wr?.title) finalTitle = wr.title;
-        if (wr?.description) {
+    if (wr?.description) {
           let desc = wr.description;
           // If model produced a spelled-out phrase not present on the card, prefer numeric time if we have one
           if (!/o['’]?clock/i.test(raw) && /o['’]?clock/i.test(desc) && finalStart instanceof Date) {
@@ -2416,6 +2436,16 @@ export async function POST(request: Request) {
       }
     }
     
+    // Remove title from description unless we intentionally kept it
+    if (!keepTitleInDescription && finalTitle && finalDescription) {
+      try {
+        const titleRegex = new RegExp(
+          finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "gi"
+        );
+        finalDescription = finalDescription.replace(titleRegex, "").trim();
+      } catch {}
+    }
     // Description is now clean (title removed if present)
     const description = finalDescription || "";
     // Do NOT adjust for timezones: preserve the time exactly as it appears on

@@ -635,6 +635,46 @@ export default function LeftSidebar() {
     return "slate"; // neutral fallback
   };
 
+  // Normalize freeform/variant labels to our canonical sidebar categories
+  const normalizeCategoryLabel = (
+    raw: string | null | undefined
+  ): string | null => {
+    const s = String(raw || "").trim();
+    if (!s) return null;
+    const l = s.toLowerCase();
+    // Weddings
+    if (/^wedding(s)?$/.test(l)) return "Weddings";
+    // Birthdays
+    if (/^birthday(s)?$/.test(l) || /birthday\s*party/.test(l))
+      return "Birthdays";
+    // Baby Showers
+    if (/^baby\s*shower(s)?$/.test(l) || /\bbaby[-\s]?shower(s)?\b/.test(l))
+      return "Baby Showers";
+    // Doctor Appointments (medical)
+    if (
+      /^(doctor|dr|medical|dental)\s*appointment(s)?$/.test(l) ||
+      /\b(doctor|dr|medical|dental)\b.*\bappointment(s)?\b/.test(l)
+    )
+      return "Doctor Appointments";
+    // Generic appointments
+    if (/^appointment(s)?$/.test(l)) return "Appointments";
+    // Sports/Games
+    if (
+      /^sport(s)?\s*event(s)?$/.test(l) ||
+      /\b(sport|game|tournament|match)\b/.test(l)
+    )
+      return "Sport Events";
+    // Play Days
+    if (/^play\s*day(s)?$/.test(l) || /playdate(s)?/.test(l))
+      return "Play Days";
+    // Car Pool
+    if (/car\s*pool|carpool/.test(l)) return "Car Pool";
+    // General
+    if (/^general(\s*events?)?$/.test(l)) return "General Events";
+    // Fallback: title case
+    return s[0].toUpperCase() + s.slice(1);
+  };
+
   // Basic keyword-based category guesser when OCR did not set one
   const guessCategoryFromText = (text: string): string | null => {
     const s = String(text || "").toLowerCase();
@@ -2891,9 +2931,29 @@ export default function LeftSidebar() {
                                   .replace(/[^a-z0-9]+/g, "-")
                                   .replace(/^-+|-+$/g, "");
                                 const prettyHref = `/smart-signup-form/${h.id}`;
-                                const category = (h as any)?.data?.category as
-                                  | string
-                                  | null;
+                                const explicitCat = (h as any)?.data
+                                  ?.category as string | null;
+                                const effectiveCategory = (() => {
+                                  const explicit =
+                                    normalizeCategoryLabel(explicitCat);
+                                  if (explicit) return explicit;
+                                  try {
+                                    const text = [
+                                      String((h as any)?.title || ""),
+                                      String(
+                                        (h as any)?.data?.description || ""
+                                      ),
+                                      String((h as any)?.data?.rsvp || ""),
+                                      String((h as any)?.data?.location || ""),
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ");
+                                    const guessed = guessCategoryFromText(text);
+                                    return normalizeCategoryLabel(guessed);
+                                  } catch {
+                                    return null;
+                                  }
+                                })();
                                 const isShared = Boolean(
                                   (h as any)?.data?.shared ||
                                     (h as any)?.data?.sharedOut ||
@@ -2907,15 +2967,15 @@ export default function LeftSidebar() {
                                       badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
                                     };
                                   }
-                                  if (!category)
+                                  if (!effectiveCategory)
                                     return {
                                       row: "",
                                       badge:
                                         "bg-surface/70 text-foreground/70 border-border/70",
                                     };
                                   const color =
-                                    categoryColors[category] ||
-                                    defaultCategoryColor(category);
+                                    categoryColors[effectiveCategory] ||
+                                    defaultCategoryColor(effectiveCategory);
                                   const ccls = colorClasses(color);
                                   const row = ccls.tint;
                                   return { row, badge: ccls.badge };
@@ -3172,7 +3232,26 @@ export default function LeftSidebar() {
                 const categories = Array.from(
                   new Set(
                     history
-                      .map((h) => (h as any)?.data?.category as string | null)
+                      .map((h) => {
+                        try {
+                          const explicit = normalizeCategoryLabel(
+                            (h as any)?.data?.category as string | null
+                          );
+                          if (explicit) return explicit;
+                          const text = [
+                            String((h as any)?.title || ""),
+                            String((h as any)?.data?.description || ""),
+                            String((h as any)?.data?.rsvp || ""),
+                            String((h as any)?.data?.location || ""),
+                          ]
+                            .filter(Boolean)
+                            .join(" ");
+                          const guessed = guessCategoryFromText(text);
+                          return normalizeCategoryLabel(guessed);
+                        } catch {
+                          return null;
+                        }
+                      })
                       .filter((c): c is string => Boolean(c))
                   )
                 ).filter((c) => c.trim().toLowerCase() !== "shared events"); // Shared events section renders above with gradient treatment
@@ -3190,9 +3269,24 @@ export default function LeftSidebar() {
                       // Gather items under this category once to reuse below
                       const categoryItems = (() => {
                         try {
-                          return history.filter(
-                            (h) => (h as any)?.data?.category === c
-                          );
+                          return history.filter((h) => {
+                            const explicit = normalizeCategoryLabel(
+                              (h as any)?.data?.category as string | null
+                            );
+                            if (explicit) return explicit === c;
+                            const text = [
+                              String((h as any)?.title || ""),
+                              String((h as any)?.data?.description || ""),
+                              String((h as any)?.data?.rsvp || ""),
+                              String((h as any)?.data?.location || ""),
+                            ]
+                              .filter(Boolean)
+                              .join(" ");
+                            const guessed = normalizeCategoryLabel(
+                              guessCategoryFromText(text)
+                            );
+                            return guessed === c;
+                          });
                         } catch {
                           return [] as typeof history;
                         }
@@ -3824,9 +3918,36 @@ export default function LeftSidebar() {
                                       .toLowerCase()
                                       .replace(/[^a-z0-9]+/g, "-")
                                       .replace(/^-+|-+$/g, "");
-                                    const prettyHref = `/smart-signup-form/${h.id}`;
-                                    const category = (h as any)?.data
+                                    const dataObj: any = (h as any)?.data || {};
+                                    const prettyHref = dataObj?.signupForm
+                                      ? `/smart-signup-form/${h.id}`
+                                      : `/event/${slug}-${h.id}`;
+                                    const explicitCat = (h as any)?.data
                                       ?.category as string | null;
+                                    const effectiveCategory = (() => {
+                                      const explicit =
+                                        normalizeCategoryLabel(explicitCat);
+                                      if (explicit) return explicit;
+                                      try {
+                                        const text = [
+                                          String((h as any)?.title || ""),
+                                          String(
+                                            (h as any)?.data?.description || ""
+                                          ),
+                                          String((h as any)?.data?.rsvp || ""),
+                                          String(
+                                            (h as any)?.data?.location || ""
+                                          ),
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ");
+                                        const guessed =
+                                          guessCategoryFromText(text);
+                                        return normalizeCategoryLabel(guessed);
+                                      } catch {
+                                        return null;
+                                      }
+                                    })();
                                     const isShared = Boolean(
                                       (h as any)?.data?.shared ||
                                         (h as any)?.data?.sharedOut ||
@@ -3840,15 +3961,15 @@ export default function LeftSidebar() {
                                           badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
                                         };
                                       }
-                                      if (!category)
+                                      if (!effectiveCategory)
                                         return {
                                           row: "",
                                           badge:
                                             "bg-surface/70 text-foreground/70 border-border/70",
                                         };
                                       const color =
-                                        categoryColors[category] ||
-                                        defaultCategoryColor(category);
+                                        categoryColors[effectiveCategory] ||
+                                        defaultCategoryColor(effectiveCategory);
                                       const ccls = colorClasses(color);
                                       const row = ccls.tint;
                                       return { row, badge: ccls.badge };
@@ -4073,7 +4194,27 @@ export default function LeftSidebar() {
                 const prettyHref = dataObj?.signupForm
                   ? `/smart-signup-form/${h.id}`
                   : `/event/${slug}-${h.id}`;
-                const category = (h as any)?.data?.category as string | null;
+                const explicitCatRecent = (h as any)?.data?.category as
+                  | string
+                  | null;
+                const effectiveCategoryRecent = (() => {
+                  const explicit = normalizeCategoryLabel(explicitCatRecent);
+                  if (explicit) return explicit;
+                  try {
+                    const text = [
+                      String((h as any)?.title || ""),
+                      String((h as any)?.data?.description || ""),
+                      String((h as any)?.data?.rsvp || ""),
+                      String((h as any)?.data?.location || ""),
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+                    const guessed = guessCategoryFromText(text);
+                    return normalizeCategoryLabel(guessed);
+                  } catch {
+                    return null;
+                  }
+                })();
                 const isShared = Boolean(
                   (h as any)?.data?.shared ||
                     (h as any)?.data?.sharedOut ||
@@ -4086,14 +4227,15 @@ export default function LeftSidebar() {
                       badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
                     };
                   }
-                  if (!category)
+                  if (!effectiveCategoryRecent)
                     return {
                       row: "",
                       badge:
                         "bg-surface/70 text-foreground/70 border-border/70",
                     };
                   const color =
-                    categoryColors[category] || defaultCategoryColor(category);
+                    categoryColors[effectiveCategoryRecent] ||
+                    defaultCategoryColor(effectiveCategoryRecent);
                   const ccls = colorClasses(color);
                   const row = ccls.tint; // tint all categories, not just Birthdays
                   return { row, badge: ccls.badge };
@@ -4338,7 +4480,9 @@ export default function LeftSidebar() {
                                 {categoryMenuOpen && (
                                   <div className="mt-1 space-y-1 rounded-md border border-border/60 bg-surface/80 p-1.5 min-w-[180px]">
                                     {CATEGORY_OPTIONS.map((label) => {
-                                      const isActive = category === label;
+                                      const isActive =
+                                        (explicitCatRecent ||
+                                          effectiveCategoryRecent) === label;
                                       return (
                                         <button
                                           key={label}

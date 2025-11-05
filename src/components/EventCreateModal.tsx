@@ -726,12 +726,12 @@ export default function EventCreateModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[400] flex items-center justify-center"
       onClick={() => !submitting && onClose()}
     >
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border shadow-xl sm:mx-auto max-h-[calc(100vh-2rem)] flex flex-col min-h-0"
+        className="relative z-[401] w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border shadow-xl sm:mx-auto max-h-[calc(100vh-2rem)] flex flex-col min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
         <EventCreateForm defaultDate={defaultDate} onCancel={onClose} />

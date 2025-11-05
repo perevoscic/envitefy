@@ -64,7 +64,9 @@ export default function EventEditModal({
   eventData,
   eventTitle,
 }: EventEditModalProps) {
-  const normalizedExistingCategory = String(eventData?.category || "").toLowerCase();
+  const normalizedExistingCategory = String(
+    eventData?.category || ""
+  ).toLowerCase();
   const useTemplateEditor = normalizedExistingCategory.includes("birthday");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -492,11 +494,23 @@ export default function EventEditModal({
           if (useTemplateEditor) {
             try {
               // Route to the Birthday template editor in edit mode
-              (router as any).push(`/event/birthdays?edit=${encodeURIComponent(eventId)}`);
+              (router as any).push(
+                `/event/birthdays?edit=${encodeURIComponent(eventId)}`
+              );
               return;
             } catch {}
           }
-          setIsOpen(true);
+          try {
+            // If we're already on the event page, open the editor inline; otherwise navigate
+            const alreadyOnEventPage =
+              typeof window !== "undefined" &&
+              /^\/event\//.test(window.location.pathname);
+            if (alreadyOnEventPage) {
+              setIsOpen(true);
+              return;
+            }
+            (router as any).push(`/event/${encodeURIComponent(eventId)}`);
+          } catch {}
         }}
         className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
         title="Edit event"
@@ -518,11 +532,13 @@ export default function EventEditModal({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[400]">
           <div className="bg-background border border-border rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Edit Event</h2>
+                <h2 className="text-lg font-semibold text-foreground">
+                  Edit Event
+                </h2>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
@@ -740,16 +756,18 @@ export default function EventEditModal({
                         type="button"
                         onClick={() => headerInputRef.current?.click()}
                         className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
-                        style={{ color: 'var(--foreground)' }}
+                        style={{ color: "var(--foreground)" }}
                       >
-                        {headerPreviewUrl ? "Replace header image" : "Upload header image"}
+                        {headerPreviewUrl
+                          ? "Replace header image"
+                          : "Upload header image"}
                       </button>
                       {headerPreviewUrl && (
                         <button
                           type="button"
                           onClick={clearHeader}
                           className="text-xs font-medium text-foreground hover:text-foreground/80"
-                          style={{ color: 'var(--foreground)' }}
+                          style={{ color: "var(--foreground)" }}
                         >
                           Remove
                         </button>
@@ -778,7 +796,9 @@ export default function EventEditModal({
                     </div>
                   )}
                   {!headerPreviewUrl && !headerError && (
-                    <p className="mt-2 text-xs text-foreground/60">Images up to 10 MB.</p>
+                    <p className="mt-2 text-xs text-foreground/60">
+                      Images up to 10 MB.
+                    </p>
                   )}
                 </div>
 
@@ -790,7 +810,7 @@ export default function EventEditModal({
                         type="button"
                         onClick={() => flyerInputRef.current?.click()}
                         className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
-                        style={{ color: 'var(--foreground)' }}
+                        style={{ color: "var(--foreground)" }}
                       >
                         {attachment ? "Replace file" : "Upload file"}
                       </button>
@@ -799,7 +819,7 @@ export default function EventEditModal({
                           type="button"
                           onClick={clearFlyer}
                           className="text-xs font-medium text-foreground hover:text-foreground/80"
-                          style={{ color: 'var(--foreground)' }}
+                          style={{ color: "var(--foreground)" }}
                         >
                           Remove
                         </button>
@@ -849,7 +869,7 @@ export default function EventEditModal({
                     type="button"
                     onClick={() => setIsOpen(false)}
                     className="px-4 py-2 text-sm font-medium text-foreground border border-border rounded-md hover:bg-surface transition-colors"
-                    style={{ color: 'var(--foreground)' }}
+                    style={{ color: "var(--foreground)" }}
                   >
                     Cancel
                   </button>

@@ -106,17 +106,16 @@ const parseDatePreserveFloating = (
   return { date: parsed, floating: false };
 };
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }> | { id: string };
 }): Promise<Metadata> {
-  const row = await getEventHistoryBySlugOrId({ value: params.id });
+  const awaitedParams = await (props as any).params;
+  const row = await getEventHistoryBySlugOrId({ value: awaitedParams.id });
   const data: any = row?.data || {};
   const title =
     (typeof data?.title === "string" && data.title) || row?.title || "Event";
   const img = await absoluteUrl(
-    `/event/${encodeURIComponent(params.id)}/opengraph-image`
+    `/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`
   );
 
   return {
