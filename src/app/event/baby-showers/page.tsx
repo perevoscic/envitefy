@@ -16,6 +16,12 @@ export default function NewBabyShowerEventPage() {
       return undefined;
     }
   }, [search]);
+  const editEventId = useMemo(() => {
+    const id = search?.get("edit");
+    return id && id.trim() ? id.trim() : undefined;
+  }, [search]);
 
-  return <BabyShowersCreate defaultDate={defaultDate} />;
+  return (
+    <BabyShowersCreate defaultDate={defaultDate} editEventId={editEventId} />
+  );
 }

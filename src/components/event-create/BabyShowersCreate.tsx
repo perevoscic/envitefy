@@ -14,7 +14,7 @@ import {
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 
-type Props = { defaultDate?: Date };
+type Props = { defaultDate?: Date; editEventId?: string };
 
 const createRegistryEntry = () => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -103,7 +103,7 @@ function formatWhenSummary(
   }
 }
 
-export default function BabyShowersCreate({ defaultDate }: Props) {
+export default function BabyShowersCreate({ defaultDate, editEventId }: Props) {
   const router = useRouter();
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
@@ -157,6 +157,32 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
   );
   const profileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Title style controls (ported from Birthdays)
+  const [titleColor, setTitleColor] = useState<string | null>(null);
+  const [titleFont, setTitleFont] = useState<
+    | "auto"
+    | "montserrat"
+    | "pacifico"
+    | "geist"
+    | "mono"
+    | "serif"
+    | "system"
+    | "poppins"
+    | "raleway"
+    | "playfair"
+    | "dancing"
+  >("auto");
+  const [titleWeight, setTitleWeight] = useState<
+    "normal" | "semibold" | "bold"
+  >("semibold");
+  const [titleHAlign, setTitleHAlign] = useState<"left" | "center" | "right">(
+    "center"
+  );
+  const [titleVAlign, setTitleVAlign] = useState<"top" | "middle" | "bottom">(
+    "middle"
+  );
+  const [titleSize, setTitleSize] = useState<number>(28);
+
   const [repeat, setRepeat] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<
     "weekly" | "monthly" | "yearly"
@@ -181,6 +207,114 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   }, [description]);
+
+  // Edit mode: prefill fields from existing event
+  useEffect(() => {
+    if (!editEventId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/history/${editEventId}`, {
+          cache: "no-store",
+        });
+        const row = await r.json().catch(() => null);
+        if (!row || !row.data || cancelled) return;
+        const data = row.data as any;
+        // Title
+        setTitle(typeof row.title === "string" ? row.title : "Event");
+        // When
+        try {
+          const startIso = (data.startISO as string) || null;
+          const endIso = (data.endISO as string) || null;
+          const allDayInit = Boolean(data.allDay);
+          setFullDay(allDayInit);
+          if (startIso) {
+            const d = new Date(startIso);
+            setWhenDate(toLocalDateValue(d));
+            setStartTime(toLocalTimeValue(d));
+          }
+          if (endIso) {
+            const d2 = new Date(endIso);
+            setEndDate(toLocalDateValue(d2));
+            setEndTime(toLocalTimeValue(d2));
+          }
+        } catch {}
+        // Header customization + title style
+        setHeaderThemeId((data as any).headerThemeId || null);
+        setHeaderBgColor((data as any).headerBgColor || null);
+        setHeaderBgCss((data as any).headerBgCss || null);
+        const ts = (data as any).titleStyle || {};
+        try {
+          if (typeof ts.color === "string") setTitleColor(ts.color);
+          if (typeof ts.font === "string") setTitleFont(ts.font);
+          if (typeof ts.weight === "string") setTitleWeight(ts.weight);
+          if (typeof ts.hAlign === "string") setTitleHAlign(ts.hAlign);
+          if (typeof ts.vAlign === "string") setTitleVAlign(ts.vAlign);
+          if (typeof ts.size === "number") setTitleSize(ts.size);
+        } catch {}
+        // Basics
+        setVenue(typeof data.venue === "string" ? data.venue : "");
+        setLocation(typeof data.location === "string" ? data.location : "");
+        setDescription(
+          typeof data.description === "string" ? data.description : ""
+        );
+        setRsvp(typeof data.rsvp === "string" ? data.rsvp : "");
+        setNumberOfGuests(
+          typeof data.numberOfGuests === "number" ? data.numberOfGuests : 0
+        );
+        // Repeat
+        try {
+          const rf = (data.repeatFrequency as string) || "weekly";
+          setRepeat(Boolean(data.repeat) || Boolean(data.recurrence));
+          if (rf === "weekly" || rf === "monthly" || rf === "yearly")
+            setRepeatFrequency(rf as any);
+          const rec: string | undefined = data.recurrence;
+          if (rec && /BYDAY=/.test(rec)) {
+            const m = rec.match(/BYDAY=([A-Z,]+)/);
+            if (m && m[1]) setRepeatDays(m[1].split(","));
+          }
+        } catch {}
+        // Media/visuals
+        const attach = (data as any).attachment;
+        if (
+          attach &&
+          typeof attach === "object" &&
+          typeof attach.dataUrl === "string"
+        ) {
+          setAttachment({
+            name: attach.name || "file",
+            type: attach.type || "application/octet-stream",
+            dataUrl: attach.dataUrl,
+          });
+          setAttachmentPreviewUrl(
+            (typeof data.thumbnail === "string" && data.thumbnail) ||
+              (attach.type?.startsWith?.("image/") ? attach.dataUrl : null)
+          );
+        } else {
+          setAttachmentPreviewUrl(
+            typeof data.thumbnail === "string" ? data.thumbnail : null
+          );
+        }
+        const colors = (data as any).imageColors;
+        if (colors && typeof colors === "object") setImageColors(colors);
+        // Registries
+        if (Array.isArray((data as any).registries)) {
+          setRegistryLinks(
+            ((data as any).registries as any[]).map((link: any) => ({
+              key: `registry-${Math.random().toString(36).slice(2, 10)}`,
+              label: typeof link?.label === "string" ? link.label : "",
+              url: typeof link?.url === "string" ? link.url : "",
+              error: null,
+              detectedLabel: null,
+            }))
+          );
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventId]);
   useEffect(() => {
     (async () => {
       try {
@@ -469,6 +603,18 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
           recurrence: recurrenceRule || undefined,
+          // Persist title style and header customization
+          titleStyle: {
+            color: titleColor || null,
+            font: titleFont,
+            weight: titleWeight,
+            hAlign: titleHAlign,
+            vAlign: titleVAlign,
+            size: titleSize,
+          },
+          headerThemeId: headerThemeId || undefined,
+          headerBgColor: headerBgColor || undefined,
+          headerBgCss: headerBgCss || undefined,
           thumbnail:
             attachmentPreviewUrl && attachment?.type.startsWith("image/")
               ? attachmentPreviewUrl
@@ -486,14 +632,37 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
           signupForm: undefined,
         },
       };
-      const r = await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-      const j = await r.json().catch(() => ({}));
-      const id = (j as any)?.id as string | undefined;
+      let j: any = null;
+      let id: string | undefined = undefined;
+      if (editEventId) {
+        try {
+          await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: payload.title }),
+          });
+        } catch {}
+        try {
+          await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ data: payload.data }),
+          });
+        } catch {}
+        id = editEventId;
+        j = { id };
+      } else {
+        const r = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        j = await r.json().catch(() => ({}));
+        id = (j as any)?.id as string | undefined;
+      }
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedEvent: NormalizedEvent = {
@@ -539,7 +708,7 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
           }).catch(() => ({ ok: false }))
         );
       if (tasks.length) await Promise.allSettled(tasks);
-      if (id) router.push(`/event/${id}?created=1`);
+      if (id) router.push(`/event/${id}?created=${editEventId ? "0" : "1"}`);
     } catch (err: any) {
       alert(String(err?.message || err || "Failed to create event"));
     } finally {
@@ -626,11 +795,51 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Event title"
-              className={`w-full bg-transparent focus:outline-none text-2xl sm:text-3xl font-semibold ${
-                attachmentPreviewUrl
+              className={`w-full bg-transparent focus:outline-none text-2xl sm:text-3xl ${
+                titleWeight === "bold"
+                  ? "font-bold"
+                  : titleWeight === "semibold"
+                  ? "font-semibold"
+                  : "font-normal"
+              } ${
+                titleHAlign === "center"
+                  ? "text-center"
+                  : titleHAlign === "right"
+                  ? "text-right"
+                  : "text-left"
+              } ${
+                titleColor
+                  ? ""
+                  : attachmentPreviewUrl
                   ? "text-white placeholder-white/70"
                   : "text-foreground"
               }`}
+              style={{
+                color: titleColor || undefined,
+                fontFamily:
+                  titleFont === "pacifico"
+                    ? "var(--font-pacifico)"
+                    : titleFont === "montserrat"
+                    ? "var(--font-montserrat)"
+                    : titleFont === "geist"
+                    ? "var(--font-geist-sans)"
+                    : titleFont === "mono"
+                    ? "var(--font-geist-mono)"
+                    : titleFont === "poppins"
+                    ? "var(--font-poppins)"
+                    : titleFont === "raleway"
+                    ? "var(--font-raleway)"
+                    : titleFont === "playfair"
+                    ? "var(--font-playfair)"
+                    : titleFont === "dancing"
+                    ? "var(--font-dancing)"
+                    : titleFont === "serif"
+                    ? 'Georgia, Cambria, "Times New Roman", Times, serif'
+                    : titleFont === "system"
+                    ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
+                    : undefined,
+                fontSize: titleSize ? `${titleSize}px` : undefined,
+              }}
             />
             <div className="mt-2 flex items-center gap-2 text-xs">
               <button
@@ -741,6 +950,90 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
           </div>
         </section>
 
+        {/* Title style controls */}
+        <section className="rounded-xl">
+          <div className="w-full rounded-2xl border border-[#C9B8A4] bg-[#FFF9F6]/60 p-4 space-y-3">
+            <label className="font-semibold text-[#3A2C1E] text-base sm:text-lg block">
+              Title style:
+            </label>
+            <div className="flex flex-nowrap items-center gap-3 sm:gap-4 overflow-x-auto">
+              <input
+                type="color"
+                value={titleColor || "#333333"}
+                onChange={(e) => setTitleColor(e.target.value)}
+                className="w-10 h-10 rounded-md border border-[#E4CDB9] cursor-pointer bg-transparent"
+                aria-label="Title color"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[#7A6A5A]">Font</span>
+                <select
+                  value={titleFont}
+                  onChange={(e) => setTitleFont(e.target.value as any)}
+                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                >
+                  <option value="auto">Default</option>
+                  <option value="montserrat">Montserrat</option>
+                  <option value="pacifico">Pacifico</option>
+                  <option value="geist">Geist</option>
+                  <option value="mono">Mono</option>
+                  <option value="serif">Serif</option>
+                  <option value="system">System</option>
+                  <option value="poppins">Poppins</option>
+                  <option value="raleway">Raleway</option>
+                  <option value="playfair">Playfair</option>
+                  <option value="dancing">Dancing Script</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[#7A6A5A]">Size</span>
+                <select
+                  value={String(titleSize)}
+                  onChange={(e) =>
+                    setTitleSize(parseInt(e.target.value || "28", 10))
+                  }
+                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                >
+                  <option value="20">20 px</option>
+                  <option value="24">24 px</option>
+                  <option value="28">28 px</option>
+                  <option value="32">32 px</option>
+                  <option value="36">36 px</option>
+                  <option value="40">40 px</option>
+                  <option value="44">44 px</option>
+                  <option value="48">48 px</option>
+                  <option value="52">52 px</option>
+                  <option value="56">56 px</option>
+                  <option value="60">60 px</option>
+                  <option value="64">64 px</option>
+                  <option value="68">68 px</option>
+                  <option value="72">72 px</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[#7A6A5A]">Align</span>
+                <select
+                  value={titleHAlign}
+                  onChange={(e) => setTitleHAlign(e.target.value as any)}
+                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+                <select
+                  value={titleVAlign}
+                  onChange={(e) => setTitleVAlign(e.target.value as any)}
+                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                >
+                  <option value="top">Top</option>
+                  <option value="middle">Middle</option>
+                  <option value="bottom">Bottom</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {(() => {
           const editor: EditorBindings = {
             summary,
@@ -808,7 +1101,11 @@ export default function BabyShowersCreate({ defaultDate }: Props) {
             disabled={submitting}
             className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? "Saving…" : "Create event"}
+            {submitting
+              ? "Saving…"
+              : editEventId
+              ? "Save changes"
+              : "Create event"}
           </button>
         </div>
       </form>

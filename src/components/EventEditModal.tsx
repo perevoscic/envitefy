@@ -67,7 +67,30 @@ export default function EventEditModal({
   const normalizedExistingCategory = String(
     eventData?.category || ""
   ).toLowerCase();
-  const useTemplateEditor = normalizedExistingCategory.includes("birthday");
+  const templateEditorRoute = useMemo(() => {
+    try {
+      const title = String(eventTitle || "").toLowerCase();
+      const cat = normalizedExistingCategory;
+      // Birthdays
+      if (cat.includes("birthday") || /birthday|b[-\s]?day/.test(title))
+        return "/event/birthdays";
+      // Baby/Bridal showers
+      if (
+        cat.includes("baby") ||
+        cat.includes("shower") ||
+        title.includes("baby shower") ||
+        (title.includes("baby") && title.includes("shower")) ||
+        title.includes("bridal shower")
+      )
+        return "/event/baby-showers";
+      // Weddings
+      if (cat.includes("wedding") || title.includes("wedding"))
+        return "/event/weddings";
+      return null;
+    } catch {
+      return null;
+    }
+  }, [normalizedExistingCategory, eventTitle]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -491,11 +514,11 @@ export default function EventEditModal({
       <button
         type="button"
         onClick={() => {
-          if (useTemplateEditor) {
+          if (templateEditorRoute) {
             try {
-              // Route to the Birthday template editor in edit mode
+              // Route to the category template editor in edit mode
               (router as any).push(
-                `/event/birthdays?edit=${encodeURIComponent(eventId)}`
+                `${templateEditorRoute}?edit=${encodeURIComponent(eventId)}`
               );
               return;
             } catch {}
