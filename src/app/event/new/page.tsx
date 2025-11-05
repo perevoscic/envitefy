@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import EventCreateForm from "@/components/EventCreateForm";
+import EventCreateWysiwyg from "@/components/EventCreateWysiwyg";
 
 export default function NewEventPage() {
   const search = useSearchParams();
@@ -17,11 +17,5 @@ export default function NewEventPage() {
     }
   }, [search]);
 
-  return (
-    <div className="min-h-[60vh] p-4 sm:p-6">
-      <div className="mx-auto w-full sm:max-w-lg rounded-xl border border-border bg-surface shadow">
-        <EventCreateForm defaultDate={defaultDate} />
-      </div>
-    </div>
-  );
+  return <EventCreateWysiwyg defaultDate={defaultDate} />;
 }

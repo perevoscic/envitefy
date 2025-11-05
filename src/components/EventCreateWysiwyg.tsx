@@ -1,0 +1,1306 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { NormalizedEvent } from "@/lib/mappers";
+import { getEventTheme } from "@/lib/event-theme";
+import RegistryLinksEditor, {
+  type RegistryFormEntry,
+} from "@/components/RegistryLinksEditor";
+import Toggle from "@/components/Toggle";
+import {
+  MAX_REGISTRY_LINKS,
+  normalizeRegistryLinks,
+  validateRegistryUrl,
+} from "@/utils/registry-links";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
+import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+
+type ConnectedCalendars = {
+  google: boolean;
+  microsoft: boolean;
+  apple: boolean;
+};
+
+type Props = {
+  defaultDate?: Date;
+};
+
+const REGISTRY_CATEGORY_KEYS = new Set([
+  "birthdays",
+  "weddings",
+  "baby showers",
+]);
+
+const createRegistryEntry = (): RegistryFormEntry => ({
+  key: `registry-${Math.random().toString(36).slice(2, 10)}`,
+  label: "",
+  url: "",
+  error: null,
+  detectedLabel: null,
+});
+
+function toLocalDateValue(d: Date | null): string {
+  if (!d) return "";
+  try {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    return `${y}-${m}-${day}`;
+  } catch {
+    return "";
+  }
+}
+
+function toLocalTimeValue(d: Date | null): string {
+  if (!d) return "";
+  try {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    return `${hh}:${mm}`;
+  } catch {
+    return "";
+  }
+}
+
+function formatWhenSummary(
+  startIso: string | null,
+  endIso: string | null,
+  allDay: boolean
+): { time: string | null; date: string | null } {
+  if (!startIso) return { time: null, date: null };
+  try {
+    const start = new Date(startIso);
+    const end = endIso ? new Date(endIso) : null;
+    const sameDay =
+      !!end &&
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate();
+
+    if (allDay) {
+      const dateFmt = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const dateLabel =
+        end && !sameDay
+          ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+          : dateFmt.format(start);
+      return { time: null, date: `${dateLabel} (all day)` };
+    }
+
+    const dateFmt = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const timeFmt = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    if (end) {
+      if (sameDay) {
+        return {
+          time: `${timeFmt.format(start)} – ${timeFmt.format(end)}`,
+          date: dateFmt.format(start),
+        };
+      }
+      const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      return {
+        time: `${timeFmt.format(start)} – ${timeFmt.format(end)}`,
+        date: `${dateFmt.format(start)} – ${dateFmt.format(end)}`,
+      };
+    }
+    return { time: timeFmt.format(start), date: dateFmt.format(start) };
+  } catch {
+    return { time: null, date: null };
+  }
+}
+
+export default function EventCreateWysiwyg({ defaultDate }: Props) {
+  const router = useRouter();
+
+  const initialStart = useMemo(() => {
+    const base = defaultDate ? new Date(defaultDate) : new Date();
+    base.setSeconds(0, 0);
+    const rounded = new Date(base);
+    const minutes = rounded.getMinutes();
+    rounded.setMinutes(minutes - (minutes % 15));
+    return rounded;
+  }, [defaultDate]);
+
+  const initialEnd = useMemo(() => {
+    const d = new Date(initialStart);
+    d.setHours(d.getHours() + 1);
+    return d;
+  }, [initialStart]);
+
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<string>("");
+  const [customCategory, setCustomCategory] = useState<string>("");
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [whenDate, setWhenDate] = useState<string>(
+    toLocalDateValue(new Date(initialStart))
+  );
+  const [fullDay, setFullDay] = useState<boolean>(true);
+  const [startTime, setStartTime] = useState<string>(
+    toLocalTimeValue(initialStart)
+  );
+  const [endDate, setEndDate] = useState<string>(
+    toLocalDateValue(new Date(initialEnd))
+  );
+  const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
+  const [venue, setVenue] = useState("");
+  const [location, setLocation] = useState("");
+  const [description, setDescription] = useState("");
+  const [rsvp, setRsvp] = useState("");
+  const [numberOfGuests, setNumberOfGuests] = useState<number>(0);
+
+  const [registryLinks, setRegistryLinks] = useState<RegistryFormEntry[]>([]);
+  const [attachment, setAttachment] = useState<{
+    name: string;
+    type: string;
+    dataUrl: string;
+  } | null>(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
+    string | null
+  >(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [imageColors, setImageColors] = useState<ImageColors | null>(null);
+  const flyerInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [repeat, setRepeat] = useState<boolean>(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<
+    "weekly" | "monthly" | "yearly"
+  >("weekly");
+  const [repeatDays, setRepeatDays] = useState<string[]>([]);
+
+  const [connectedCalendars, setConnectedCalendars] =
+    useState<ConnectedCalendars>({
+      google: false,
+      microsoft: false,
+      apple: false,
+    });
+  const [selectedCalendars, setSelectedCalendars] = useState<{
+    google: boolean;
+    microsoft: boolean;
+    apple: boolean;
+  }>({ google: false, microsoft: false, apple: false });
+
+  // Autosize description
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
+
+  // Connected calendars
+  useEffect(() => {
+    const fetchConnected = async () => {
+      try {
+        const res = await fetch("/api/calendars", { credentials: "include" });
+        const data = await res.json();
+        setConnectedCalendars({
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+          apple: Boolean(data?.apple),
+        });
+        setSelectedCalendars({
+          google: Boolean(data?.google),
+          microsoft: Boolean(data?.microsoft),
+          apple: Boolean(data?.apple),
+        });
+      } catch (err) {
+        console.error("Failed to fetch connected calendars:", err);
+      }
+    };
+    fetchConnected();
+  }, []);
+
+  // Local autosave
+  const DRAFT_KEY = "envitefy:draft:event-new";
+  const [showRestoreBanner, setShowRestoreBanner] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) setShowRestoreBanner(true);
+    } catch {}
+  }, []);
+  const restoreDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      setTitle(d.title || "");
+      setCategory(d.category || "");
+      setCustomCategory(d.customCategory || "");
+      setShowCustomCategory(Boolean(d.customCategory && !d.category));
+      setWhenDate(d.whenDate || toLocalDateValue(new Date(initialStart)));
+      setFullDay(Boolean(d.fullDay));
+      setStartTime(d.startTime || toLocalTimeValue(initialStart));
+      setEndDate(d.endDate || toLocalDateValue(new Date(initialEnd)));
+      setEndTime(d.endTime || toLocalTimeValue(initialEnd));
+      setVenue(d.venue || "");
+      setLocation(d.location || "");
+      setDescription(d.description || "");
+      setRsvp(d.rsvp || "");
+      setNumberOfGuests(Number(d.numberOfGuests) || 0);
+      setRegistryLinks(Array.isArray(d.registryLinks) ? d.registryLinks : []);
+      setRepeat(Boolean(d.repeat));
+      setRepeatFrequency(d.repeatFrequency || "weekly");
+      setRepeatDays(Array.isArray(d.repeatDays) ? d.repeatDays : []);
+      setShowRestoreBanner(false);
+    } catch {}
+  };
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+    setShowRestoreBanner(false);
+  };
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const snapshot = {
+          title,
+          category,
+          customCategory,
+          whenDate,
+          fullDay,
+          startTime,
+          endDate,
+          endTime,
+          venue,
+          location,
+          description,
+          rsvp,
+          numberOfGuests,
+          registryLinks,
+          repeat,
+          repeatFrequency,
+          repeatDays,
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
+      } catch {}
+    };
+    const id = setInterval(handler, 2000);
+    window.addEventListener("beforeunload", handler as any);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("beforeunload", handler as any);
+    };
+  }, [
+    title,
+    category,
+    customCategory,
+    whenDate,
+    fullDay,
+    startTime,
+    endDate,
+    endTime,
+    venue,
+    location,
+    description,
+    rsvp,
+    numberOfGuests,
+    registryLinks,
+    repeat,
+    repeatFrequency,
+    repeatDays,
+  ]);
+
+  // Category color assignment (keeps UI consistent with rest of app)
+  const PALETTE = [
+    "red",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "green",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+  ] as const;
+  const maybeAssignCategoryColor = (cat: string) => {
+    if (!cat) return;
+    try {
+      const raw = localStorage.getItem("categoryColors");
+      const map = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      if (!map[cat]) {
+        const used = new Set(Object.values(map));
+        const unused = PALETTE.filter((c) => !used.has(c));
+        const pick = (arr: readonly string[]) =>
+          arr[Math.floor(Math.random() * arr.length)] as string;
+        const chosen = (unused.length ? pick(unused) : pick(PALETTE)) as string;
+        const next = { ...map, [cat]: chosen };
+        localStorage.setItem("categoryColors", JSON.stringify(next));
+        try {
+          window.dispatchEvent(
+            new CustomEvent("categoryColorsUpdated", { detail: next })
+          );
+        } catch {}
+      }
+    } catch {}
+  };
+
+  // Registry handlers
+  const addRegistryLink = () => {
+    setRegistryLinks((prev) => {
+      if (prev.length >= MAX_REGISTRY_LINKS) return prev;
+      return [...prev, createRegistryEntry()];
+    });
+  };
+  const removeRegistryLink = (key: string) => {
+    setRegistryLinks((prev) => prev.filter((entry) => entry.key !== key));
+  };
+  const handleRegistryFieldChange = (
+    key: string,
+    field: "label" | "url",
+    value: string
+  ) => {
+    const trimmed = field === "label" ? value.slice(0, 60) : value;
+    setRegistryLinks((prev) =>
+      prev.map((entry) => {
+        if (entry.key !== key) return entry;
+        const next: RegistryFormEntry = {
+          ...entry,
+          [field]: trimmed,
+        } as any;
+        if (field === "url") {
+          if (!trimmed.trim()) {
+            next.error = null;
+            next.detectedLabel = null;
+          } else {
+            const validation = validateRegistryUrl(trimmed);
+            next.error = validation.ok ? null : validation.error || null;
+            next.detectedLabel =
+              validation.ok && validation.brand
+                ? validation.brand.defaultLabel
+                : null;
+            if (
+              validation.ok &&
+              validation.brand &&
+              (!entry.label || !entry.label.trim())
+            ) {
+              next.label = validation.brand.defaultLabel;
+            }
+          }
+        }
+        if (field === "label" && !trimmed.trim() && entry.detectedLabel) {
+          next.label = "";
+        }
+        return next;
+      })
+    );
+  };
+
+  // Attachment handlers
+  const clearFlyer = () => {
+    setAttachment(null);
+    setAttachmentPreviewUrl(null);
+    setImageColors(null);
+    setAttachmentError(null);
+    if (flyerInputRef.current) flyerInputRef.current.value = "";
+  };
+  const handleFlyerChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setAttachment(null);
+      setAttachmentPreviewUrl(null);
+      setImageColors(null);
+      setAttachmentError(null);
+      return;
+    }
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      setAttachmentError("Upload an image or PDF file");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachmentError("File must be 10 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+    setAttachmentError(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      let previewUrl: string | null = null;
+      let colors: ImageColors | null = null;
+      if (isImage) {
+        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+        try {
+          colors = await extractColorsFromImage(dataUrl);
+        } catch (err) {
+          console.error("Failed to extract colors from image:", err);
+        }
+      }
+      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentPreviewUrl(previewUrl);
+      setImageColors(colors);
+    } catch {
+      setAttachment(null);
+      setAttachmentPreviewUrl(null);
+      setImageColors(null);
+      setAttachmentError("Could not process the file");
+      event.target.value = "";
+    }
+  };
+
+  // Derived theme (preview header background like final event page)
+  const eventTheme = getEventTheme((category as string) || null);
+  const headerBackground = attachmentPreviewUrl
+    ? {
+        backgroundImage: `url(${attachmentPreviewUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : { backgroundImage: imageColors?.headerLight || eventTheme.headerLight };
+
+  // Repeat helpers
+  useEffect(() => {
+    try {
+      if (
+        repeat &&
+        repeatFrequency === "weekly" &&
+        repeatDays.length === 0 &&
+        whenDate
+      ) {
+        const d = new Date(`${whenDate}T00:00:00`);
+        const codes = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
+        setRepeatDays([codes[d.getDay()]]);
+      }
+      if (repeatFrequency !== "weekly") setRepeatDays([]);
+    } catch {}
+  }, [repeat, repeatFrequency, whenDate]);
+
+  // Submit
+  const [submitting, setSubmitting] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    const invalidRegistries = registryLinks.filter((entry) => {
+      const trimmedUrl = entry.url.trim();
+      if (!trimmedUrl) return false;
+      return !validateRegistryUrl(trimmedUrl).ok;
+    });
+    if (invalidRegistries.length > 0) {
+      setRegistryLinks((prev) =>
+        prev.map((entry) => {
+          const trimmedUrl = entry.url.trim();
+          if (!trimmedUrl) return { ...entry, error: null };
+          const validation = validateRegistryUrl(trimmedUrl);
+          return {
+            ...entry,
+            error: validation.ok
+              ? null
+              : validation.error || "Enter a valid https:// link",
+            detectedLabel:
+              validation.ok && validation.brand
+                ? validation.brand.defaultLabel
+                : entry.detectedLabel,
+          };
+        })
+      );
+      alert("Fix the highlighted registry links before saving.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (whenDate) {
+        if (fullDay) {
+          const start = new Date(`${whenDate}T00:00:00`);
+          const now = new Date();
+          const todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
+          if (start < todayStart)
+            throw new Error("Start date cannot be in the past");
+          const end = new Date(start);
+          end.setDate(end.getDate() + 1);
+          startISO = start.toISOString();
+          endISO = end.toISOString();
+        } else {
+          const start = new Date(`${whenDate}T${startTime || "09:00"}:00`);
+          const endBase = endDate || whenDate;
+          const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
+          const now = new Date();
+          const todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
+          if (start < todayStart)
+            throw new Error("Start date cannot be in the past");
+          if (end < start) {
+            endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
+            startISO = start.toISOString();
+          } else {
+            startISO = start.toISOString();
+            endISO = end.toISOString();
+          }
+        }
+      }
+
+      const normalizedCategoryForSubmit = (category || "").toLowerCase();
+      const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
+        normalizedCategoryForSubmit
+      );
+      const sanitizedRegistries = allowsRegistriesForSubmit
+        ? normalizeRegistryLinks(
+            registryLinks.map((entry) => ({
+              label: entry.label,
+              url: entry.url,
+            }))
+          )
+        : [];
+
+      const deriveWeeklyDays = (): string[] => {
+        if (repeatDays.length) return repeatDays;
+        if (!whenDate) return [];
+        try {
+          const d = new Date(`${whenDate}T00:00:00`);
+          const codes = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
+          return [codes[d.getDay()]];
+        } catch {
+          return [];
+        }
+      };
+      const recurrenceSourceIso = startISO
+        ? startISO
+        : whenDate
+        ? new Date(`${whenDate}T00:00:00`).toISOString()
+        : null;
+      let recurrenceRule: string | null = null;
+      if (repeat) {
+        if (repeatFrequency === "weekly") {
+          const days = deriveWeeklyDays();
+          recurrenceRule = days.length
+            ? `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`
+            : "RRULE:FREQ=WEEKLY";
+        } else if (repeatFrequency === "monthly") {
+          if (recurrenceSourceIso) {
+            const d = new Date(recurrenceSourceIso);
+            const day = d.getUTCDate();
+            if (!Number.isNaN(day))
+              recurrenceRule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`;
+          }
+        } else if (repeatFrequency === "yearly") {
+          if (recurrenceSourceIso) {
+            const d = new Date(recurrenceSourceIso);
+            const month = d.getUTCMonth() + 1;
+            const day = d.getUTCDate();
+            if (!Number.isNaN(month) && !Number.isNaN(day))
+              recurrenceRule = `RRULE:FREQ=YEARLY;BYMONTH=${month};BYMONTHDAY=${day}`;
+          }
+        }
+      }
+
+      const payload: any = {
+        title: title || "Event",
+        data: {
+          category: customCategory.trim() || category || undefined,
+          createdVia: "manual",
+          createdManually: true,
+          startISO,
+          endISO,
+          venue: venue || undefined,
+          location: location || undefined,
+          description: description || undefined,
+          rsvp: (rsvp || "").trim() || undefined,
+          numberOfGuests: numberOfGuests || 0,
+          allDay: fullDay || undefined,
+          repeat: repeat || undefined,
+          repeatFrequency: repeat ? repeatFrequency : undefined,
+          recurrence: recurrenceRule || undefined,
+          thumbnail:
+            attachmentPreviewUrl && attachment?.type.startsWith("image/")
+              ? attachmentPreviewUrl
+              : undefined,
+          attachment: attachment
+            ? {
+                name: attachment.name,
+                type: attachment.type,
+                dataUrl: attachment.dataUrl,
+              }
+            : undefined,
+          imageColors: imageColors || undefined,
+          registries:
+            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
+          signupForm: undefined,
+        },
+      };
+
+      const r = await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => ({}));
+      const id = (j as any)?.id as string | undefined;
+
+      const timezone =
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const normalizedDescription = (rsvp || "").trim()
+        ? [description, (rsvp || "").trim()].filter(Boolean).join("\n\n")
+        : description;
+      const normalizedEvent: NormalizedEvent = {
+        title: title || "Event",
+        start: startISO || new Date().toISOString(),
+        end: endISO || new Date().toISOString(),
+        allDay: fullDay,
+        timezone,
+        venue: venue || undefined,
+        location: location || undefined,
+        description: normalizedDescription || undefined,
+        recurrence: recurrenceRule,
+        reminders: [{ minutes: 30 }],
+        registries: sanitizedRegistries.length ? sanitizedRegistries : null,
+        attachment: attachment
+          ? {
+              name: attachment.name,
+              type: attachment.type,
+              dataUrl: attachment.dataUrl,
+            }
+          : null,
+        signupForm: null,
+      };
+
+      const calendarPromises: Promise<any>[] = [];
+      if (selectedCalendars.google) {
+        calendarPromises.push(
+          fetch("/api/events/google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(normalizedEvent),
+          }).catch((err) => {
+            console.error("Failed to add to Google Calendar:", err);
+            return { ok: false };
+          })
+        );
+      }
+      if (selectedCalendars.microsoft) {
+        calendarPromises.push(
+          fetch("/api/events/outlook", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(normalizedEvent),
+          }).catch((err) => {
+            console.error("Failed to add to Microsoft Calendar:", err);
+            return { ok: false };
+          })
+        );
+      }
+      if (selectedCalendars.apple) {
+        console.log("Apple Calendar integration not yet implemented");
+      }
+      if (calendarPromises.length > 0)
+        await Promise.allSettled(calendarPromises);
+
+      try {
+        if (id && typeof window !== "undefined") {
+          const serverData =
+            (j as any)?.data && typeof (j as any)?.data === "object"
+              ? (j as any).data
+              : null;
+          const mergedData = { ...payload.data, ...(serverData || {}) };
+          window.dispatchEvent(
+            new CustomEvent("history:created", {
+              detail: {
+                id,
+                title: (j as any)?.title || payload.title,
+                created_at: (j as any)?.created_at || new Date().toISOString(),
+                start:
+                  (serverData && (serverData as any).start) ||
+                  (serverData && (serverData as any).startISO) ||
+                  startISO,
+                category: (mergedData as any).category || null,
+                data: mergedData,
+              },
+            })
+          );
+        }
+      } catch {}
+
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {}
+
+      if (id) router.push(`/event/${id}?created=1`);
+    } catch (err: any) {
+      const msg = String(err?.message || err || "Failed to create event");
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const summary = useMemo(() => {
+    let startISO: string | null = null;
+    let endISO: string | null = null;
+    if (whenDate) {
+      if (fullDay) {
+        const start = new Date(`${whenDate}T00:00:00`);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        startISO = start.toISOString();
+        endISO = end.toISOString();
+      } else {
+        const start = new Date(`${whenDate}T${startTime || "09:00"}:00`);
+        const endBase = endDate || whenDate;
+        const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
+        startISO = start.toISOString();
+        endISO = end.toISOString();
+      }
+    }
+    return formatWhenSummary(startISO, endISO, fullDay);
+  }, [whenDate, fullDay, startTime, endDate, endTime]);
+
+  const normalizedCategory = (category || "").toLowerCase();
+  const allowsRegistrySection = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
+  const showRsvpField = true;
+
+  return (
+    <main className="max-w-3xl mx-auto px-5 sm:px-10 py-10">
+      {showRestoreBanner && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20 flex items-center justify-between gap-3">
+          <div>Unsaved draft found.</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={restoreDraft}
+              className="px-3 py-1 rounded-md border border-border hover:bg-surface"
+            >
+              Restore
+            </button>
+            <button
+              onClick={discardDraft}
+              className="px-3 py-1 rounded-md border border-border hover:bg-surface"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={submit} className="space-y-6">
+        <section
+          className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8"
+          style={headerBackground as React.CSSProperties}
+        >
+          {attachmentPreviewUrl && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.3)",
+                borderRadius: "inherit",
+              }}
+            />
+          )}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Event title"
+              className={`w-full bg-transparent focus:outline-none text-2xl sm:text-3xl font-semibold ${
+                attachmentPreviewUrl
+                  ? "text-white placeholder-white/70"
+                  : "text-foreground"
+              }`}
+            />
+            <div className="mt-2 flex items-center gap-3 text-sm">
+              {!showCustomCategory ? (
+                <select
+                  value={category}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "__custom__") {
+                      setShowCustomCategory(true);
+                      setCategory("");
+                    } else {
+                      setCategory(v);
+                      maybeAssignCategoryColor(v);
+                    }
+                  }}
+                  className="rounded-md border border-border bg-white/80 px-3 py-1.5 text-sm backdrop-blur hover:bg-white/90"
+                >
+                  <option value="">Select category</option>
+                  <option value="Birthdays">Birthdays</option>
+                  <option value="Weddings">Weddings</option>
+                  <option value="Baby Showers">Baby Showers</option>
+                  <option value="Appointments">Appointments</option>
+                  <option value="Doctor Appointments">
+                    Doctor Appointments
+                  </option>
+                  <option value="Sport Events">Sport Events</option>
+                  <option value="General Events">General Events</option>
+                  <option value="__custom__">+ Add your own...</option>
+                </select>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    onBlur={() => {
+                      if (customCategory.trim()) {
+                        setCategory(customCategory.trim());
+                        maybeAssignCategoryColor(customCategory.trim());
+                      }
+                    }}
+                    placeholder="Enter category name"
+                    className="flex-1 rounded-md border border-border bg-white/80 px-3 py-1.5 text-sm backdrop-blur"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customCategory.trim()) {
+                        setCategory(customCategory.trim());
+                        maybeAssignCategoryColor(customCategory.trim());
+                        setShowCustomCategory(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomCategory(false);
+                      setCustomCategory("");
+                    }}
+                    className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-surface"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section
+          className="event-theme-card rounded-2xl border px-3 sm:px-6 py-6 shadow-sm"
+          style={
+            {
+              backgroundImage: imageColors?.cardLight || eventTheme.cardLight,
+            } as React.CSSProperties
+          }
+        >
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                When
+              </dt>
+              <dd className="mt-1 text-base font-semibold">
+                {summary.time && <div>{summary.time}</div>}
+                {summary.date && (
+                  <div className="text-sm mt-1 opacity-80">{summary.date}</div>
+                )}
+              </dd>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center justify-between sm:col-span-1">
+                  <label className="text-sm opacity-70">Full day</label>
+                  <input
+                    type="checkbox"
+                    checked={fullDay}
+                    onChange={(e) => setFullDay(e.target.checked)}
+                  />
+                </div>
+                {fullDay ? (
+                  <input
+                    type="date"
+                    value={whenDate}
+                    onChange={(e) => setWhenDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-background"
+                  />
+                ) : (
+                  <div className="col-span-3 grid grid-cols-1 gap-3">
+                    <div>
+                      <div className="text-xs text-foreground/70 mb-1">
+                        Start
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="date"
+                          value={whenDate}
+                          onChange={(e) => setWhenDate(e.target.value)}
+                          className="px-2 py-1 rounded-md border border-border bg-background"
+                        />
+                        <input
+                          type="time"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          className="px-2 py-1 rounded-md border border-border bg-background"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-foreground/70 mb-1">End</div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="px-2 py-1 rounded-md border border-border bg-background"
+                        />
+                        <input
+                          type="time"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          className="px-2 py-1 rounded-md border border-border bg-background"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                {venue ? "Address" : "Location"}
+              </dt>
+              <div className="mt-2 grid grid-cols-1 gap-2">
+                <input
+                  type="text"
+                  value={venue}
+                  onChange={(e) => setVenue(e.target.value)}
+                  placeholder="Venue name (optional)"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background"
+                />
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Street, City, State ZIP"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background"
+                />
+              </div>
+            </div>
+
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                Guests
+              </dt>
+              <input
+                type="number"
+                min={1}
+                required
+                value={numberOfGuests || ""}
+                onChange={(e) =>
+                  setNumberOfGuests(Number.parseInt(e.target.value, 10) || 0)
+                }
+                placeholder="Enter number of guests"
+                className="mt-2 w-full px-3 py-2 rounded-md border border-border bg-background"
+              />
+            </div>
+
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                Description
+              </dt>
+              <textarea
+                ref={descriptionRef}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="mt-2 w-full px-3 py-2 rounded-md border border-border bg-background"
+                placeholder="Add details for your guests"
+              />
+            </div>
+
+            {showRsvpField && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  RSVP
+                </dt>
+                <textarea
+                  value={rsvp}
+                  onChange={(e) => setRsvp(e.target.value)}
+                  rows={1}
+                  className="mt-2 w-full px-3 py-2 rounded-md border border-border bg-background"
+                  placeholder="Phone number or email address"
+                />
+              </div>
+            )}
+
+            {allowsRegistrySection && (
+              <RegistryLinksEditor
+                entries={registryLinks}
+                onAdd={addRegistryLink}
+                onRemove={removeRegistryLink}
+                onChange={handleRegistryFieldChange}
+                maxLinks={MAX_REGISTRY_LINKS}
+              />
+            )}
+
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm text-foreground">
+                <span>Upload a file (optional)</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => flyerInputRef.current?.click()}
+                    className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
+                  >
+                    {attachment ? "Replace file" : "Upload file"}
+                  </button>
+                  {attachment && (
+                    <button
+                      type="button"
+                      onClick={clearFlyer}
+                      className="text-xs font-medium text-foreground hover:text-foreground/80"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+              <input
+                ref={flyerInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleFlyerChange}
+                className="hidden"
+              />
+              {attachmentError && (
+                <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
+              )}
+              {attachment && (
+                <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
+                  {attachmentPreviewUrl ? (
+                    <img
+                      src={attachmentPreviewUrl}
+                      alt={attachment.name}
+                      className="h-16 w-16 rounded border border-border object-cover"
+                    />
+                  ) : (
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-foreground/70">
+                      📄
+                    </span>
+                  )}
+                  <span className="truncate" title={attachment.name}>
+                    {attachment.name}
+                  </span>
+                </div>
+              )}
+              {!attachment && !attachmentError && (
+                <p className="mt-2 text-xs text-foreground/60">
+                  Images or PDFs up to 10 MB.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Toggle
+                label="Repeats"
+                checked={repeat}
+                onChange={(next) => {
+                  setRepeat(next);
+                  if (!next) setRepeatDays([]);
+                }}
+                size="md"
+              />
+              {repeat && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <div className="text-xs text-foreground/70 mb-1">Every</div>
+                    <div className="flex gap-2">
+                      {(["weekly", "monthly", "yearly"] as const).map((key) => {
+                        const active = repeatFrequency === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setRepeatFrequency(key)}
+                            className={`rounded-md border px-3 py-1 text-xs font-medium transition ${
+                              active
+                                ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                                : "border-border bg-background text-foreground"
+                            }`}
+                          >
+                            {key === "weekly"
+                              ? "Week"
+                              : key === "monthly"
+                              ? "Month"
+                              : "Year"}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {repeatFrequency === "weekly" && (
+                    <div>
+                      <div className="text-xs text-foreground/70 mb-1">
+                        Repeat on
+                      </div>
+                      <div className="grid grid-cols-7 gap-2">
+                        {[
+                          { code: "SU", label: "Sun" },
+                          { code: "MO", label: "Mon" },
+                          { code: "TU", label: "Tue" },
+                          { code: "WE", label: "Wed" },
+                          { code: "TH", label: "Thu" },
+                          { code: "FR", label: "Fri" },
+                          { code: "SA", label: "Sat" },
+                        ].map((d) => {
+                          const active = repeatDays.includes(d.code);
+                          return (
+                            <button
+                              key={d.code}
+                              type="button"
+                              onClick={() =>
+                                setRepeatDays((prev) =>
+                                  active
+                                    ? prev.filter((c) => c !== d.code)
+                                    : [...prev, d.code]
+                                )
+                              }
+                              className={`h-8 rounded-md border text-xs font-medium transition ${
+                                active
+                                  ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                                  : "bg-background text-foreground border-border"
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {repeatFrequency === "monthly" && (
+                    <p className="text-xs text-foreground/60">
+                      Repeats each month on the event start date.
+                    </p>
+                  )}
+                  {repeatFrequency === "yearly" && (
+                    <p className="text-xs text-foreground/60">
+                      Repeats every year on the event start date.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {(connectedCalendars.google ||
+              connectedCalendars.microsoft ||
+              connectedCalendars.apple) && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                  Add to Calendar
+                </dt>
+                <div className="mt-2 space-y-2">
+                  {connectedCalendars.google && (
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCalendars.google}
+                        onChange={(e) =>
+                          setSelectedCalendars((prev) => ({
+                            ...prev,
+                            google: e.target.checked,
+                          }))
+                        }
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <span>Google Calendar</span>
+                    </label>
+                  )}
+                  {connectedCalendars.microsoft && (
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCalendars.microsoft}
+                        onChange={(e) =>
+                          setSelectedCalendars((prev) => ({
+                            ...prev,
+                            microsoft: e.target.checked,
+                          }))
+                        }
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <span>Outlook Calendar</span>
+                    </label>
+                  )}
+                  {connectedCalendars.apple && (
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCalendars.apple}
+                        onChange={(e) =>
+                          setSelectedCalendars((prev) => ({
+                            ...prev,
+                            apple: e.target.checked,
+                          }))
+                        }
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <span>Apple Calendar</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="flex flex-wrap justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-4 py-2 text-sm text-foreground border border-border rounded-md bg-surface hover:bg-surface/80"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Saving…" : "Create event"}
+          </button>
+        </div>
+      </form>
+    </main>
+  );
+}
