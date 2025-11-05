@@ -365,8 +365,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   };
 
   // Header image handlers
-  const clearFlyer = () => {
-    setAttachment(null);
+  const clearHeader = () => {
     setAttachmentPreviewUrl(null);
     setImageColors(null);
     setAttachmentError(null);
@@ -377,13 +376,12 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   ) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
-      clearFlyer();
+      clearHeader();
       return;
     }
     const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
+    if (!isImage) {
+      setAttachmentError("Upload an image file");
       event.target.value = "";
       return;
     }
@@ -397,19 +395,21 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
       const dataUrl = await readFileAsDataUrl(file);
       let previewUrl: string | null = null;
       let colors: ImageColors | null = null;
-      if (isImage) {
-        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
-        try {
-          colors = await extractColorsFromImage(dataUrl);
-        } catch {}
-      }
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      try {
+        colors = await extractColorsFromImage(dataUrl);
+      } catch {}
       setAttachmentPreviewUrl(previewUrl);
       setImageColors(colors);
     } catch {
-      clearFlyer();
+      clearHeader();
       event.target.value = "";
     }
+  };
+  // Flyer/invite clear (separate from header)
+  const clearFlyer = () => {
+    setAttachment(null);
+    if (attachmentInputRef.current) attachmentInputRef.current.value = "";
   };
 
   // Attachment-only (flyer/invite) upload – does not affect header background/colors
@@ -871,10 +871,8 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                 dataUrl: profileImage.dataUrl,
               }
             : undefined,
-          thumbnail:
-            attachmentPreviewUrl && attachment?.type.startsWith("image/")
-              ? attachmentPreviewUrl
-              : undefined,
+          // Always persist the header image as thumbnail, regardless of flyer type
+          thumbnail: attachmentPreviewUrl || undefined,
           attachment: attachment
             ? {
                 name: attachment.name,
@@ -1081,7 +1079,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      clearFlyer();
+                      clearHeader();
                       try {
                         if (flyerInputRef.current)
                           flyerInputRef.current.value = "";

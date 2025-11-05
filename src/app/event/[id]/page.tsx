@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import EventEditModal from "@/components/EventEditModal";
@@ -104,6 +105,34 @@ const parseDatePreserveFloating = (
   }
   return { date: parsed, floating: false };
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const row = await getEventHistoryBySlugOrId({ value: params.id });
+  const data: any = row?.data || {};
+  const title =
+    (typeof data?.title === "string" && data.title) || row?.title || "Event";
+  const img = await absoluteUrl(
+    `/event/${encodeURIComponent(params.id)}/opengraph-image`
+  );
+
+  return {
+    title: `${title} — Envitefy`,
+    openGraph: {
+      title: `${title} — Envitefy`,
+      images: [{ url: img, width: 1200, height: 630, alt: title }],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} — Envitefy`,
+      images: [img],
+    },
+  };
+}
 
 const TIME_TOKEN_GLOBAL_REGEX =
   /\b(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)\b|\b([01]?\d|2[0-3]):([0-5]\d)\b/gi;
@@ -794,37 +823,32 @@ export default async function EventPage({
       : (imageColors?.headerLight as string | undefined) ||
         (eventTheme.headerLight as string));
 
-  // Now finalize header style: use flyer image as background if available, otherwise use gradient
+  // Now finalize header style: prefer explicit header image (thumbnail) over flyer
+  const headerImageUrl: string | null =
+    typeof (data as any)?.thumbnail === "string"
+      ? ((data as any).thumbnail as string)
+      : null;
   const headerUserStyle: CSSProperties = {
-    backgroundImage:
-      attachmentInfo?.type.startsWith("image/") && attachmentInfo.dataUrl
-        ? `url(${attachmentInfo.dataUrl})`
-        : headerUserStyleSeed.backgroundImage ||
-          headerBgCss ||
-          (headerBgColor
-            ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
-            : imageColors
-            ? imageColors.headerLight
-            : eventTheme.headerLight),
-    backgroundSize: attachmentInfo?.type.startsWith("image/")
-      ? "cover"
-      : undefined,
-    backgroundPosition: attachmentInfo?.type.startsWith("image/")
-      ? "center"
-      : undefined,
-    backgroundRepeat: attachmentInfo?.type.startsWith("image/")
-      ? "no-repeat"
-      : undefined,
-    backgroundColor: attachmentInfo?.type.startsWith("image/")
+    backgroundImage: headerImageUrl
+      ? `url(${headerImageUrl})`
+      : headerUserStyleSeed.backgroundImage ||
+        headerBgCss ||
+        (headerBgColor
+          ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
+          : imageColors
+          ? imageColors.headerLight
+          : eventTheme.headerLight),
+    backgroundSize: headerImageUrl ? "cover" : undefined,
+    backgroundPosition: headerImageUrl ? "center" : undefined,
+    backgroundRepeat: headerImageUrl ? "no-repeat" : undefined,
+    backgroundColor: headerImageUrl
       ? undefined
       : headerUserStyleSeed.backgroundColor || headerBgColor || undefined,
     position: "relative",
   } as CSSProperties;
 
   // Add overlay for readability when image is used as background
-  const headerOverlayStyle: CSSProperties = attachmentInfo?.type.startsWith(
-    "image/"
-  )
+  const headerOverlayStyle: CSSProperties = headerImageUrl
     ? {
         position: "absolute",
         inset: 0,
@@ -931,9 +955,7 @@ export default async function EventPage({
           className="event-theme-header relative overflow-visible rounded-2xl border shadow-lg px-1 py-6 sm:px-2 min-h-[220px] sm:min-h-[280px]"
           style={headerUserStyle}
         >
-          {attachmentInfo?.type.startsWith("image/") && (
-            <div style={headerOverlayStyle} />
-          )}
+          {headerImageUrl && <div style={headerOverlayStyle} />}
           {/* Profile image should anchor to the header section bounds (not inner wrapper) */}
           {profileImageUrl && (
             <div
@@ -979,7 +1001,7 @@ export default async function EventPage({
                 } ${
                   titleColor
                     ? ""
-                    : attachmentInfo?.type.startsWith("image/")
+                    : headerImageUrl
                     ? "text-white drop-shadow-lg"
                     : "text-foreground"
                 }`}
@@ -1271,7 +1293,9 @@ export default async function EventPage({
               </a>
             </div>
           )}
-          {(data?.description || data?.thumbnail) && (
+          {(data?.description ||
+            (attachmentInfo?.type?.startsWith?.("image/") &&
+              attachmentInfo?.dataUrl)) && (
             <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
               {data?.description && (
                 <div>
@@ -1281,21 +1305,22 @@ export default async function EventPage({
                   <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
                 </div>
               )}
-              {data?.thumbnail && (
-                <div
-                  className={
-                    data?.description
-                      ? "mt-6 flex justify-center"
-                      : "flex justify-center"
-                  }
-                >
-                  <ThumbnailModal
-                    src={data.thumbnail as string}
-                    alt={`${title} flyer`}
-                    className="relative rounded max-w-md w-auto"
-                  />
-                </div>
-              )}
+              {attachmentInfo?.type?.startsWith?.("image/") &&
+                attachmentInfo?.dataUrl && (
+                  <div
+                    className={
+                      data?.description
+                        ? "mt-6 flex justify-center"
+                        : "flex justify-center"
+                    }
+                  >
+                    <ThumbnailModal
+                      src={attachmentInfo.dataUrl}
+                      alt={`${title} flyer`}
+                      className="relative rounded max-w-md w-auto"
+                    />
+                  </div>
+                )}
             </div>
           )}
           {signupForm && (

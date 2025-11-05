@@ -440,7 +440,7 @@ export default function EventEditModal({
           }
           setIsOpen(true);
         }}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-foreground/70 hover:text-foreground hover:bg-surface transition-colors"
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
         title="Edit event"
       >
         <svg

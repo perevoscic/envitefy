@@ -1,5 +1,9 @@
 "use client";
+import type { Metadata } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 import { useEffect, useState } from "react";
 
 export default function ResetPasswordPage() {

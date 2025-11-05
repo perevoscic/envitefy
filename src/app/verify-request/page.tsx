@@ -1,3 +1,9 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
+
 export default function VerifyRequestPage() {
   return (
     <main className="mx-auto max-w-md p-6 space-y-4">

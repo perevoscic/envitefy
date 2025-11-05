@@ -151,6 +151,9 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
+  // Separate header image (independent from flyer/attachment)
+  const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(null);
+  const headerInputRef = useRef<HTMLInputElement | null>(null);
 
   const [connectedCalendars, setConnectedCalendars] =
     useState<ConnectedCalendars>({
@@ -223,9 +226,54 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const clearFlyer = () => {
     setAttachment(null);
     setAttachmentPreviewUrl(null);
-    setImageColors(null);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
+  };
+
+  // Header image controls (image-only)
+  const clearHeader = () => {
+    setHeaderPreviewUrl(null);
+    setImageColors(null);
+    setAttachmentError(null);
+    if (headerInputRef.current) headerInputRef.current.value = "";
+  };
+
+  const handleHeaderChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      clearHeader();
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setAttachmentError("Upload an image file");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachmentError("File must be 10 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+    setAttachmentError(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const previewUrl =
+        (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      let colors: ImageColors | null = null;
+      try {
+        colors = await extractColorsFromImage(dataUrl);
+      } catch (err) {
+        console.error("Failed to extract colors from image:", err);
+      }
+      setHeaderPreviewUrl(previewUrl);
+      setImageColors(colors);
+    } catch {
+      clearHeader();
+      setAttachmentError("Could not process the file");
+      event.target.value = "";
+    }
   };
 
   const handleFlyerChange = async (
@@ -235,7 +283,6 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     if (!file) {
       setAttachment(null);
       setAttachmentPreviewUrl(null);
-      setImageColors(null);
       setAttachmentError(null);
       return;
     }
@@ -255,22 +302,14 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     try {
       const dataUrl = await readFileAsDataUrl(file);
       let previewUrl: string | null = null;
-      let colors: ImageColors | null = null;
       if (isImage) {
         previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
-        try {
-          colors = await extractColorsFromImage(dataUrl);
-        } catch (err) {
-          console.error("Failed to extract colors from image:", err);
-        }
       }
       setAttachment({ name: file.name, type: file.type, dataUrl });
       setAttachmentPreviewUrl(previewUrl);
-      setImageColors(colors);
     } catch {
       setAttachment(null);
       setAttachmentPreviewUrl(null);
-      setImageColors(null);
       setAttachmentError("Could not process the file");
       event.target.value = "";
     }
@@ -505,10 +544,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
           recurrence: recurrenceRule || undefined,
-          thumbnail:
-            attachmentPreviewUrl && attachment?.type.startsWith("image/")
-              ? attachmentPreviewUrl
-              : undefined,
+          thumbnail: headerPreviewUrl || undefined,
           attachment: attachment
             ? {
                 name: attachment.name,
@@ -1019,6 +1055,49 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           rows={3}
           className="w-full px-3 py-2 rounded-md border border-border bg-background"
         />
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between text-sm text-foreground">
+          <span>Header image (optional)</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => headerInputRef.current?.click()}
+              className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
+            >
+              {headerPreviewUrl ? "Replace image" : "Upload image"}
+            </button>
+            {headerPreviewUrl && (
+              <button
+                type="button"
+                onClick={clearHeader}
+                className="text-xs font-medium text-foreground hover:text-foreground/80"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+        <input
+          ref={headerInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleHeaderChange}
+          className="hidden"
+        />
+        {headerPreviewUrl ? (
+          <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
+            <img
+              src={headerPreviewUrl}
+              alt="Header preview"
+              className="h-16 w-16 rounded border border-border object-cover"
+            />
+            <span className="truncate">Header image</span>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-foreground/60">Images up to 10 MB.</p>
+        )}
       </div>
 
       <div>

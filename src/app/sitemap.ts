@@ -13,25 +13,19 @@ const baseUrl = (
   "https://envitefy.com"
 ).replace(/\/+$/, "");
 
-const lastModified = new Date();
+const buildTime = process.env.BUILD_TIME ? new Date(process.env.BUILD_TIME) : new Date();
 
 const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
-  { path: "/landing", priority: 0.7, changeFrequency: "weekly" },
   { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
   { path: "/who-its-for", priority: 0.6, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
   { path: "/about", priority: 0.6, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.6, changeFrequency: "monthly" },
   { path: "/subscription", priority: 0.6, changeFrequency: "weekly" },
-  { path: "/snap", priority: 0.7, changeFrequency: "weekly" },
   { path: "/calendar", priority: 0.5, changeFrequency: "weekly" },
   { path: "/smart-signup-form", priority: 0.5, changeFrequency: "monthly" },
   { path: "/templates/signup", priority: 0.4, changeFrequency: "monthly" },
-  { path: "/forgot", priority: 0.3, changeFrequency: "yearly" },
-  { path: "/reset", priority: 0.3, changeFrequency: "yearly" },
-  { path: "/verify-request", priority: 0.2, changeFrequency: "yearly" },
-  { path: "/open", priority: 0.2, changeFrequency: "yearly" },
   { path: "/privacy", priority: 0.3, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
 ];
@@ -39,7 +33,7 @@ const staticEntries: StaticEntry[] = [
 export default function sitemap(): MetadataRoute.Sitemap {
   return staticEntries.map(({ path, priority, changeFrequency }) => ({
     url: `${baseUrl}${path}`,
-    lastModified,
+    lastModified: buildTime,
     changeFrequency,
     priority,
   }));

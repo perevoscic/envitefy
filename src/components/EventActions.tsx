@@ -328,10 +328,10 @@ export default function EventActions({
     variant === "compact"
       ? tone === "light"
         ? "inline-flex items-center gap-2 px-3 py-1.5 text-sm text-white hover:text-white/90 hover:bg-white/15 drop-shadow transition-colors"
-        : "inline-flex items-center gap-2 px-3 py-1.5 text-sm text-foreground/70 hover:text-foreground hover:bg-surface transition-colors"
+        : "inline-flex items-center gap-2 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
       : tone === "light"
       ? "inline-flex items-center gap-2 text-white hover:text-white/90 drop-shadow"
-      : "inline-flex items-center gap-2 text-foreground/90 hover:text-foreground";
+      : "inline-flex items-center gap-2 text-neutral-900 hover:text-black";
 
   const labelClassName = showLabels ? "inline" : "hidden sm:inline";
 
