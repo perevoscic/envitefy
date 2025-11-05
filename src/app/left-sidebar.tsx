@@ -2772,19 +2772,7 @@ export default function LeftSidebar() {
               )}
 
               {(() => {
-                const sharedCount = (() => {
-                  try {
-                    return history.filter((h) =>
-                      Boolean(
-                        (h as any)?.data?.shared ||
-                          (h as any)?.data?.sharedOut ||
-                          (h as any)?.data?.category === "Shared events"
-                      )
-                    ).length;
-                  } catch {
-                    return 0;
-                  }
-                })();
+                const sharedCount = 0; // Shared events disabled
                 if (sharedCount === 0) return null;
                 return (
                   <div className="">
