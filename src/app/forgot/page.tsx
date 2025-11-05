@@ -5,10 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/assets/logo.png";
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-};
-
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);

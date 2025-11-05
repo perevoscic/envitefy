@@ -621,7 +621,9 @@ export default function CalendarPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/history", { cache: "no-store" });
+        const res = await fetch("/api/history?view=calendar&limit=200", {
+          cache: "no-cache",
+        });
         const json = await res.json();
         if (cancelled) return;
         const items: HistoryItem[] = Array.isArray(json?.items)
@@ -656,7 +658,9 @@ export default function CalendarPage() {
         // Keep this lightweight: only refetch when user is on calendar page.
         (async () => {
           try {
-            const res = await fetch("/api/history", { cache: "no-store" });
+            const res = await fetch("/api/history?view=calendar&limit=200", {
+              cache: "no-cache",
+            });
             const json = await res.json().catch(() => ({ items: [] }));
             const items: HistoryItem[] = Array.isArray(json?.items)
               ? json.items

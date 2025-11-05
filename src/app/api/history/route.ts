@@ -3,12 +3,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents, upsertSignupForm } from "@/lib/db";
 import { getCachedHistory, setCachedHistory, invalidateUserHistory } from "@/lib/history-cache";
+import { createHash } from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const limitRaw = url.searchParams.get("limit");
+    const viewRaw = (url.searchParams.get("view") || "summary").toLowerCase();
+    const limit = Math.max(1, Math.min(200, Number.parseInt(limitRaw || "40", 10)));
+    const view: "summary" | "calendar" | "full" =
+      viewRaw === "full" || viewRaw === "calendar" ? (viewRaw as any) : "summary";
+
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
     let userId: string | null = (sessionUser?.id as string | undefined) || null;
@@ -17,94 +25,131 @@ export async function GET() {
     }
     if (!userId) {
       try {
-        console.log(
-          "[history] GET: no userId resolved",
-          {
-            hasSession: Boolean(sessionUser),
-            sessionEmail: sessionUser?.email || null,
-          }
-        );
+        console.log("[history] GET: no userId resolved", {
+          hasSession: Boolean(sessionUser),
+          sessionEmail: sessionUser?.email || null,
+        });
       } catch {}
       return NextResponse.json({ items: [] });
     }
-    
-    // Check cache first
+
+    // In-memory cache guards DB load
     const cached = getCachedHistory(userId);
+    let items: any[];
     if (cached) {
-      try {
-        console.log("[history] GET: returning cached data", { userId, count: cached.length });
-      } catch {}
-      return NextResponse.json({ items: cached });
-    }
-    
-    // Run independent queries in parallel for better performance
-    const [own, shared] = await Promise.all([
-      listEventHistoryByUser(userId, 100),
-      (async () => {
-        try {
-          return await listAcceptedSharedEventsForUser(userId);
-        } catch (e: any) {
+      items = cached;
+    } else {
+      const [own, shared] = await Promise.all([
+        listEventHistoryByUser(userId, limit),
+        (async () => {
           try {
-            console.warn("[history] GET: shared events unavailable (likely no event_shares table yet)", String(e?.message || e));
-          } catch {}
-          return [];
+            return await listAcceptedSharedEventsForUser(userId);
+          } catch (e: any) {
+            try {
+              console.warn(
+                "[history] GET: shared events unavailable (likely no event_shares table yet)",
+                String(e?.message || e)
+              );
+            } catch {}
+            return [];
+          }
+        })(),
+      ]);
+
+      let ownWithShareOut = own;
+      try {
+        if (own.length > 0) {
+          const ids = own.map((r: any) => r.id);
+          const stats = await listSharesByOwnerForEvents(userId, ids);
+          const sharedOutSet = new Set(
+            (stats || [])
+              .filter(
+                (s) => Number(s.accepted_count || 0) + Number(s.pending_count || 0) > 0
+              )
+              .map((s) => s.event_id)
+          );
+          ownWithShareOut = own.map((r: any) =>
+            sharedOutSet.has(r.id) ? { ...r, data: { ...(r.data || {}), sharedOut: true } } : r
+          );
         }
-      })(),
-    ]);
-    // Annotate own rows that have outgoing shares (pending or accepted)
-    let ownWithShareOut = own;
-    try {
-      if (own.length === 0) {
-        // Skip share stats query if there are no events
-        ownWithShareOut = own;
-      } else {
-        const ids = own.map((r: any) => r.id);
-        const stats = await listSharesByOwnerForEvents(userId, ids);
-        const sharedOutSet = new Set(
-          (stats || [])
-            .filter(
-              (s) => Number(s.accepted_count || 0) + Number(s.pending_count || 0) > 0
-            )
-            .map((s) => s.event_id)
-        );
-        ownWithShareOut = own.map((r: any) =>
-          sharedOutSet.has(r.id)
-            ? { ...r, data: { ...(r.data || {}), sharedOut: true } }
-            : r
-        );
+      } catch {}
+
+      const annotatedShared = (shared || []).map((r) => ({
+        ...r,
+        data: { ...(r.data || {}), shared: true, category: "Shared events" },
+      }));
+
+      items = [...ownWithShareOut, ...annotatedShared].sort((a: any, b: any) => {
+        const ta = new Date(a.created_at || 0).getTime();
+        const tb = new Date(b.created_at || 0).getTime();
+        return tb - ta;
+      });
+
+      setCachedHistory(userId, items);
+    }
+
+    // Scrub heavy fields based on view
+    const scrub = (data: any) => {
+      if (!data || typeof data !== "object") return data;
+      const out: any = { ...data };
+      if (view !== "full") {
+        if (typeof out.ocrText === "string") out.ocrText = undefined;
+        if (out.attachment && typeof out.attachment === "object") {
+          out.attachment = { ...out.attachment, dataUrl: undefined };
+        }
       }
-    } catch {}
-    // Annotate shared items with marker for UI and force category to Shared events
-    const annotatedShared = (shared || []).map((r) => ({
-      ...r,
-      data: {
-        ...(r.data || {}),
-        shared: true,
-        category: "Shared events",
-      },
+      if (view === "summary") {
+        return {
+          category: out.category ?? null,
+          shared: out.shared ?? false,
+          sharedOut: out.sharedOut ?? false,
+        };
+      }
+      return out;
+    };
+
+    const light = (items || []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      created_at: r.created_at || null,
+      data: scrub(r.data),
     }));
-    const items = [...ownWithShareOut, ...annotatedShared].sort((a: any, b: any) => {
-      const ta = new Date(a.created_at || 0).getTime();
-      const tb = new Date(b.created_at || 0).getTime();
-      return tb - ta;
-    });
-    
-    // Cache the results
-    setCachedHistory(userId, items);
-    
+
+    // Conditional response with ETag/Last-Modified
+    const seed = JSON.stringify(
+      light.map((i) => [
+        i.id,
+        i.created_at || null,
+        i.title || "",
+        i.data?.category ?? null,
+        i.data?.shared ?? false,
+        i.data?.sharedOut ?? false,
+      ])
+    );
+    const etag = '"h:' + createHash("sha1").update(seed).digest("hex") + '"';
+    const lastModifiedIso = light[0]?.created_at ? new Date(light[0].created_at) : new Date();
+    const headers: Record<string, string> = {
+      ETag: etag,
+      "Last-Modified": lastModifiedIso.toUTCString(),
+      "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+    };
+
+    const ifNoneMatch = req.headers.get("if-none-match");
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return new Response(null, { status: 304, headers });
+    }
+
     try {
-      console.log(
-        "[history] GET: returning items",
-        {
-          userId,
-          count: Array.isArray(items) ? items.length : 0,
-          top: items?.[0]
-            ? { id: items[0].id, created_at: items[0].created_at }
-            : null,
-        }
-      );
+      console.log("[history] GET: returning items", {
+        userId,
+        count: Array.isArray(light) ? light.length : 0,
+        top: light?.[0] ? { id: light[0].id, created_at: light[0].created_at } : null,
+        view,
+        limit,
+      });
     } catch {}
-    return NextResponse.json({ items });
+
+    return NextResponse.json({ items: light }, { headers });
   } catch (err: any) {
     try {
       console.error("[history] GET error", err);

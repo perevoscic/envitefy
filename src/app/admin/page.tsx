@@ -270,7 +270,7 @@ export default function AdminPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <StatCard
                 label="Total Users"
                 value={overview.totalUsers}
@@ -286,14 +286,6 @@ export default function AdminPage() {
                 gradient="from-emerald-500 to-teal-500"
                 onClick={() => handleStatClick("scans")}
                 isActive={activeStatView === "scans"}
-              />
-              <StatCard
-                label="Invites Send"
-                value={overview.totalShares}
-                icon="🔗"
-                gradient="from-orange-500 to-rose-500"
-                onClick={() => handleStatClick("shares")}
-                isActive={activeStatView === "shares"}
               />
               <StatCard
                 label="Paid Users"

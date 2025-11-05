@@ -1195,8 +1195,8 @@ export default function LeftSidebar() {
     if (status !== "authenticated") return;
     (async () => {
       try {
-        const res = await fetch("/api/history", {
-          cache: "no-store",
+        const res = await fetch("/api/history?view=summary&limit=40", {
+          cache: "no-cache",
           credentials: "include",
         });
         const j = await res.json().catch(() => ({ items: [] }));
@@ -1276,11 +1276,14 @@ export default function LeftSidebar() {
             pendingTimeouts.delete(refetchTimeout as any);
             if (cancelled) return;
             try {
-              // Add cache-busting query param to force fresh fetch
-              const res = await fetch(`/api/history?t=${Date.now()}`, {
-                cache: "no-store",
-                credentials: "include",
-              });
+              // Add cache-busting query param to force fresh fetch (slim view)
+              const res = await fetch(
+                `/api/history?view=summary&limit=40&t=${Date.now()}`,
+                {
+                  cache: "no-cache",
+                  credentials: "include",
+                }
+              );
               const j = await res.json().catch(() => ({ items: [] }));
               if (!cancelled) {
                 setHistory(
@@ -1308,9 +1311,9 @@ export default function LeftSidebar() {
 
           pendingTimeouts.add(refetchTimeout as any);
         } else {
-          // Fallback: full refetch
-          const res = await fetch("/api/history", {
-            cache: "no-store",
+          // Fallback: slim refetch
+          const res = await fetch("/api/history?view=summary&limit=40", {
+            cache: "no-cache",
             credentials: "include",
           });
           const j = await res.json().catch(() => ({ items: [] }));

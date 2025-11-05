@@ -1,10 +1,5 @@
 "use client";
-import type { Metadata } from "next";
 import { useEffect } from "react";
-
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-};
 
 export default function Open() {
   useEffect(() => {
