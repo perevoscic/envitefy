@@ -469,6 +469,23 @@ body {
   color: var(--foreground) !important;
 }
 
+/* Event page override: force black text inside event cards in dark theme */
+:root[data-theme$="-dark"] .event-theme-card .text-foreground,
+:root[data-theme$="-dark"] .event-theme-scope .event-theme-card .text-foreground {
+  color: #000000 !important;
+}
+
+/* Support Tailwind opacity utilities like text-foreground/60 and /80 */
+:root[data-theme$="-dark"] .event-theme-card .text-foreground\/60,
+:root[data-theme$="-dark"] .event-theme-scope .event-theme-card .text-foreground\/60 {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+:root[data-theme$="-dark"] .event-theme-card .text-foreground\/80,
+:root[data-theme$="-dark"] .event-theme-scope .event-theme-card .text-foreground\/80 {
+  color: rgba(0, 0, 0, 0.8) !important;
+}
+
 
 /* Scan overlay animation */
 @layer utilities {

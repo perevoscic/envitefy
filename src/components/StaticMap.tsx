@@ -15,28 +15,10 @@ export default function StaticMap({
   zoom = 14,
   className = "",
 }: StaticMapProps) {
-  const key =
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_STATIC_API_KEY ||
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-    "";
-
   const query = encodeURIComponent((address || "").trim());
   const searchUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
-
-  if (!key) {
-    // Fallback clickable area to open Google Maps when key is not configured
-    return (
-      <a
-        href={searchUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`rounded-lg grid place-items-center h-64 ${className}`}
-      ></a>
-    );
-  }
-
-  // Static Maps endpoint (image). We request scale=2 for crisp retina rendering
-  const src = `https://maps.googleapis.com/maps/api/staticmap?key=${key}&center=${query}&zoom=${zoom}&size=${width}x${height}&scale=2&maptype=roadmap&markers=size:mid|color:red|${query}`;
+  // Use internal proxy to avoid client-side blockers/CSP
+  const src = `/api/maps/static?q=${query}&zoom=${zoom}&width=${width}&height=${height}`;
 
   return (
     <div className={`rounded-lg overflow-hidden ${className}`}>
