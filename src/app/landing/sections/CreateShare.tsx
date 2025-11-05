@@ -142,17 +142,14 @@ const footerActions = [
 export default function CreateShare() {
   return (
     <section aria-labelledby="create-share" className="w-full">
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-6 pt-0 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
         <div>
           <h2
             id="create-share"
             className="text-2xl sm:text-3xl font-bold tracking-tight"
           >
-            Create &amp; Share Events in Seconds.
-          </h2>
-          <p className="mt-1 text-base sm:text-xl font-medium text-foreground/70">
             All in one event tool you need.
-          </p>
+          </h2>
           <ul className="mt-6 space-y-4 pb-10 text-foreground/75 text-base sm:text-lg">
             {points.map((point) => (
               <li key={point} className="flex items-start gap-3">

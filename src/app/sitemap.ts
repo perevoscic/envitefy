@@ -18,6 +18,9 @@ const lastModified = new Date();
 const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/landing", priority: 0.7, changeFrequency: "weekly" },
+  { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/who-its-for", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
   { path: "/about", priority: 0.6, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.6, changeFrequency: "monthly" },
   { path: "/subscription", priority: 0.6, changeFrequency: "weekly" },

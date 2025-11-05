@@ -83,9 +83,9 @@ const dancing = Dancing_Script({
 
 export const metadata: Metadata = {
   // Title must match Google OAuth consent screen app name exactly: "Envitefy"
-  title: "Envitefy",
+  title: "Envitefy | Create. Share. Enjoy.",
   description:
-    "Turn flyers, invites, and schedules into shareable plans in seconds. Create birthday, wedding, and other events and share them with your friends. Smart Sign-up forms for school, volunteer, and more.",
+    "Turn flyers, invites, schedules into shareable plans in seconds. Create birthday, wedding events and sign-up forms of any kind, then share with friends and colleagues.",
   manifest: "/manifest.webmanifest",
   other: {
     "google-adsense-account": "ca-pub-8853590530457369",
@@ -125,7 +125,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Envitefy | Create. Share. Enjoy.",
     description:
-      "Turn flyers, invites, and signup forms into shareable plans in seconds.",
+      "Turn flyers, invites, schedules into shareable plans in seconds. Create birthday, wedding events and sign-up forms of any kind, then share with friends and colleagues.",
     url: "https://envitefy.com",
     siteName: "Envitefy",
     images: [
@@ -206,6 +206,37 @@ export default async function RootLayout({
     >
       <head>
         <title>Envitefy | Create. Share. Enjoy.</title>
+        <Script
+          id="ld-website"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+        >
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "Envitefy",
+            url: "https://envitefy.com",
+            potentialAction: {
+              "@type": "SearchAction",
+              target:
+                "https://www.google.com/search?q=site%3Aenvitefy.com+{search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          })}
+        </Script>
+        <Script
+          id="ld-organization"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+        >
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Envitefy",
+            url: "https://envitefy.com",
+            logo: "https://envitefy.com/Logo_stacked.png",
+          })}
+        </Script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} ${poppins.variable} ${raleway.variable} ${playfair.variable} ${dancing.variable} antialiased`}
@@ -284,6 +315,27 @@ export default async function RootLayout({
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
                 <div className="w-full overflow-x-auto">
                   <p className="text-center whitespace-nowrap">
+                    <Link
+                      href="https://envitefy.com/how-it-works"
+                      className="hover:text-foreground"
+                    >
+                      How it works
+                    </Link>
+                    <span className="opacity-40 mx-2">•</span>
+                    <Link
+                      href="https://envitefy.com/who-its-for"
+                      className="hover:text-foreground"
+                    >
+                      Who it’s for
+                    </Link>
+                    <span className="opacity-40 mx-2">•</span>
+                    <Link
+                      href="https://envitefy.com/faq"
+                      className="hover:text-foreground"
+                    >
+                      FAQ
+                    </Link>
+                    <span className="opacity-40 mx-2">•</span>
                     <Link
                       href="https://envitefy.com/terms"
                       className="hover:text-foreground"
