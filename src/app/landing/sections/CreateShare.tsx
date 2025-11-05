@@ -142,7 +142,7 @@ const footerActions = [
 export default function CreateShare() {
   return (
     <section aria-labelledby="create-share" className="w-full">
-      <div className="max-w-7xl mx-auto px-6 pt-0 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <h2
             id="create-share"

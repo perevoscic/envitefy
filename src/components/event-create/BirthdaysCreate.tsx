@@ -16,6 +16,7 @@ import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 
 type Props = {
   defaultDate?: Date;
+  editEventId?: string;
 };
 
 const createRegistryEntry = () => ({
@@ -109,7 +110,7 @@ function formatWhenSummary(
   }
 }
 
-export default function BirthdaysCreate({ defaultDate }: Props) {
+export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   const router = useRouter();
 
   const initialStart = useMemo(() => {
@@ -186,6 +187,98 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
     microsoft: false,
     apple: false,
   });
+
+  // Edit mode: load existing event data by id and prefill state
+  useEffect(() => {
+    if (!editEventId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/history/${editEventId}`, {
+          cache: "no-store",
+        });
+        const row = await r.json().catch(() => null);
+        if (!row || !row.data) return;
+        if (cancelled) return;
+        const data = row.data as any;
+        setTitle(row.title || "Event");
+        try {
+          const startIso = (data.startISO as string) || null;
+          const endIso = (data.endISO as string) || null;
+          const allDayInit = Boolean(data.allDay);
+          setFullDay(allDayInit);
+          if (startIso) {
+            const d = new Date(startIso);
+            setWhenDate(toLocalDateValue(d));
+            setStartTime(toLocalTimeValue(d));
+          }
+          if (endIso) {
+            const d2 = new Date(endIso);
+            setEndDate(toLocalDateValue(d2));
+            setEndTime(toLocalTimeValue(d2));
+          }
+        } catch {}
+        setVenue(typeof data.venue === "string" ? data.venue : "");
+        setLocation(typeof data.location === "string" ? data.location : "");
+        setDescription(
+          typeof data.description === "string" ? data.description : ""
+        );
+        setRsvp(typeof data.rsvp === "string" ? data.rsvp : "");
+        setNumberOfGuests(
+          typeof data.numberOfGuests === "number" ? data.numberOfGuests : 0
+        );
+        // Header customizations
+        setHeaderThemeId((data as any).headerThemeId || null);
+        setHeaderBgColor((data as any).headerBgColor || null);
+        setHeaderBgCss((data as any).headerBgCss || null);
+        const profile = (data as any).profileImage;
+        if (
+          profile &&
+          typeof profile === "object" &&
+          typeof profile.dataUrl === "string"
+        ) {
+          setProfileImage({
+            name: profile.name || "profile",
+            type: profile.type || "image/png",
+            dataUrl: profile.dataUrl,
+          });
+          setProfilePreviewUrl(profile.dataUrl);
+        }
+        const attach = (data as any).attachment;
+        if (
+          attach &&
+          typeof attach === "object" &&
+          typeof attach.dataUrl === "string"
+        ) {
+          setAttachment({
+            name: attach.name || "file",
+            type: attach.type || "application/octet-stream",
+            dataUrl: attach.dataUrl,
+          });
+          setAttachmentPreviewUrl(
+            (typeof data.thumbnail === "string" && data.thumbnail) ||
+              (attach.type?.startsWith?.("image/") ? attach.dataUrl : null)
+          );
+        }
+        const colors = (data as any).imageColors;
+        if (colors && typeof colors === "object") setImageColors(colors);
+        if (Array.isArray((data as any).registries)) {
+          setRegistryLinks(
+            ((data as any).registries as any[]).map((link: any) => ({
+              key: `registry-${Math.random().toString(36).slice(2, 10)}`,
+              label: typeof link?.label === "string" ? link.label : "",
+              url: typeof link?.url === "string" ? link.url : "",
+              error: null,
+              detectedLabel: null,
+            }))
+          );
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventId]);
 
   // Autosize description
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
@@ -749,6 +842,17 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
           recurrence: recurrenceRule || undefined,
+          // Persist header customization so the final Birthday template matches the editor
+          headerThemeId: headerThemeId || undefined,
+          headerBgColor: headerBgColor || undefined,
+          headerBgCss: headerBgCss || undefined,
+          profileImage: profileImage
+            ? {
+                name: profileImage.name,
+                type: profileImage.type,
+                dataUrl: profileImage.dataUrl,
+              }
+            : undefined,
           thumbnail:
             attachmentPreviewUrl && attachment?.type.startsWith("image/")
               ? attachmentPreviewUrl
@@ -767,14 +871,38 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
         },
       };
 
-      const r = await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-      const j = await r.json().catch(() => ({}));
-      const id = (j as any)?.id as string | undefined;
+      let id: string | undefined = undefined;
+      let j: any = null;
+      if (editEventId) {
+        // Update existing event: merge data and title
+        try {
+          await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: payload.title }),
+          });
+        } catch {}
+        try {
+          await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ data: payload.data }),
+          });
+        } catch {}
+        id = editEventId;
+        j = { id };
+      } else {
+        const r = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        j = await r.json().catch(() => ({}));
+        id = (j as any)?.id as string | undefined;
+      }
 
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -852,7 +980,7 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
         }
       } catch {}
 
-      if (id) router.push(`/event/${id}?created=1`);
+      if (id) router.push(`/event/${id}?created=${editEventId ? "0" : "1"}`);
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
       alert(msg);
@@ -988,8 +1116,8 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
             )}
 
             <div
-              className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px]"
-              style={{ zIndex: 20 }}
+              className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px] z-40"
+              style={{ zIndex: 40 }}
             >
               <div
                 className="relative group cursor-pointer"
@@ -1090,7 +1218,7 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
             </div>
 
             <div
-              className={`absolute inset-0 z-10 flex h-full w-full px-1 sm:px-2 ${
+              className={`absolute inset-0 z-30 flex h-full w-full px-1 sm:px-2 pointer-events-none ${
                 titleVAlign === "top"
                   ? "items-start"
                   : titleVAlign === "middle"
@@ -1109,7 +1237,7 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Type event title here"
-                className={`title-color-inherit w-auto max-w-[90%] bg-transparent focus:outline-none text-2xl sm:text-3xl ${
+                className={`title-color-inherit w-auto max-w-[90%] bg-transparent focus:outline-none text-2xl sm:text-3xl pointer-events-auto ${
                   titleWeight === "bold"
                     ? "font-bold"
                     : titleWeight === "semibold"
@@ -1179,90 +1307,92 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
 
           {/* Title style (styled row) */}
           <section className="rounded-xl">
-            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 w-full rounded-2xl border border-[#C9B8A4] bg-[#FFF9F6]/60 p-4">
-              <label className="font-semibold text-[#3A2C1E] text-base sm:text-lg min-w-[90px]">
-                Title style
+            <div className="w-full rounded-2xl border border-[#C9B8A4] bg-[#FFF9F6]/60 p-4 space-y-3">
+              <label className="font-semibold text-[#3A2C1E] text-base sm:text-lg block">
+                Title style:
               </label>
 
-              {/* Color Picker */}
-              <input
-                type="color"
-                value={titleColor || "#333333"}
-                onChange={(e) => setTitleColor(e.target.value)}
-                className="w-10 h-10 rounded-md border border-[#E4CDB9] cursor-pointer bg-transparent"
-                aria-label="Title color"
-              />
+              <div className="flex flex-nowrap items-center gap-3 sm:gap-4 overflow-x-auto">
+                {/* Color Picker */}
+                <input
+                  type="color"
+                  value={titleColor || "#333333"}
+                  onChange={(e) => setTitleColor(e.target.value)}
+                  className="w-10 h-10 rounded-md border border-[#E4CDB9] cursor-pointer bg-transparent"
+                  aria-label="Title color"
+                />
 
-              {/* Font Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[#7A6A5A]">Font</span>
-                <select
-                  value={titleFont}
-                  onChange={(e) => setTitleFont(e.target.value as any)}
-                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
-                >
-                  <option value="auto">Default</option>
-                  <option value="montserrat">Montserrat</option>
-                  <option value="pacifico">Pacifico</option>
-                  <option value="geist">Geist</option>
-                  <option value="mono">Mono</option>
-                  <option value="serif">Serif</option>
-                  <option value="system">System</option>
-                  <option value="poppins">Poppins</option>
-                  <option value="raleway">Raleway</option>
-                  <option value="playfair">Playfair</option>
-                  <option value="dancing">Dancing Script</option>
-                </select>
-              </div>
+                {/* Font Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#7A6A5A]">Font</span>
+                  <select
+                    value={titleFont}
+                    onChange={(e) => setTitleFont(e.target.value as any)}
+                    className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value="auto">Default</option>
+                    <option value="montserrat">Montserrat</option>
+                    <option value="pacifico">Pacifico</option>
+                    <option value="geist">Geist</option>
+                    <option value="mono">Mono</option>
+                    <option value="serif">Serif</option>
+                    <option value="system">System</option>
+                    <option value="poppins">Poppins</option>
+                    <option value="raleway">Raleway</option>
+                    <option value="playfair">Playfair</option>
+                    <option value="dancing">Dancing Script</option>
+                  </select>
+                </div>
 
-              {/* Size Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[#7A6A5A]">Size</span>
-                <select
-                  value={String(titleSize)}
-                  onChange={(e) =>
-                    setTitleSize(parseInt(e.target.value || "28", 10))
-                  }
-                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
-                >
-                  <option value="20">20 px</option>
-                  <option value="24">24 px</option>
-                  <option value="28">28 px</option>
-                  <option value="32">32 px</option>
-                  <option value="36">36 px</option>
-                  <option value="40">40 px</option>
-                  <option value="44">44 px</option>
-                  <option value="48">48 px</option>
-                  <option value="52">52 px</option>
-                  <option value="56">56 px</option>
-                  <option value="60">60 px</option>
-                  <option value="64">64 px</option>
-                  <option value="68">68 px</option>
-                  <option value="72">72 px</option>
-                </select>
-              </div>
+                {/* Size Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#7A6A5A]">Size</span>
+                  <select
+                    value={String(titleSize)}
+                    onChange={(e) =>
+                      setTitleSize(parseInt(e.target.value || "28", 10))
+                    }
+                    className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value="20">20 px</option>
+                    <option value="24">24 px</option>
+                    <option value="28">28 px</option>
+                    <option value="32">32 px</option>
+                    <option value="36">36 px</option>
+                    <option value="40">40 px</option>
+                    <option value="44">44 px</option>
+                    <option value="48">48 px</option>
+                    <option value="52">52 px</option>
+                    <option value="56">56 px</option>
+                    <option value="60">60 px</option>
+                    <option value="64">64 px</option>
+                    <option value="68">68 px</option>
+                    <option value="72">72 px</option>
+                  </select>
+                </div>
 
-              {/* Alignment Controls */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[#7A6A5A]">Align</span>
-                <select
-                  value={titleHAlign}
-                  onChange={(e) => setTitleHAlign(e.target.value as any)}
-                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
-                >
-                  <option value="left">Left</option>
-                  <option value="center">Center</option>
-                  <option value="right">Right</option>
-                </select>
-                <select
-                  value={titleVAlign}
-                  onChange={(e) => setTitleVAlign(e.target.value as any)}
-                  className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
-                >
-                  <option value="top">Top</option>
-                  <option value="middle">Middle</option>
-                  <option value="bottom">Bottom</option>
-                </select>
+                {/* Alignment Controls */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#7A6A5A]">Align</span>
+                  <select
+                    value={titleHAlign}
+                    onChange={(e) => setTitleHAlign(e.target.value as any)}
+                    className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                  <select
+                    value={titleVAlign}
+                    onChange={(e) => setTitleVAlign(e.target.value as any)}
+                    className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value="top">Top</option>
+                    <option value="middle">Middle</option>
+                    <option value="bottom">Bottom</option>
+                  </select>
+                </div>
               </div>
             </div>
           </section>
@@ -1392,7 +1522,11 @@ export default function BirthdaysCreate({ defaultDate }: Props) {
               disabled={submitting}
               className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? "Saving…" : "Create event"}
+              {submitting
+                ? "Saving…"
+                : editEventId
+                ? "Save changes"
+                : "Create event"}
             </button>
           </div>
         </form>

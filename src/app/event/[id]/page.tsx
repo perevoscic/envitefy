@@ -698,9 +698,25 @@ export default async function EventPage({
     return null;
   })();
 
+  // Birthday editor can persist explicit gradient/color selections
+  const headerBgCss: string | null =
+    typeof (data as any)?.headerBgCss === "string" && (data as any).headerBgCss
+      ? ((data as any).headerBgCss as string)
+      : null;
+  const headerBgColor: string | null =
+    typeof (data as any)?.headerBgColor === "string" &&
+    (data as any).headerBgColor
+      ? ((data as any).headerBgColor as string)
+      : null;
+  const profileImageUrl: string | null =
+    typeof (data as any)?.profileImage === "object" &&
+    typeof (data as any)?.profileImage?.dataUrl === "string"
+      ? ((data as any).profileImage.dataUrl as string)
+      : null;
+
   // Use image colors if available, otherwise fall back to category theme
   const cardBackgroundImage =
-    imageColors?.headerLight || eventTheme.headerLight;
+    imageColors?.headerLight || headerBgCss || eventTheme.headerLight;
 
   const themeStyleVars = (
     imageColors
@@ -715,6 +731,23 @@ export default async function EventPage({
           "--event-chip-dark": imageColors.chipDark,
           "--event-text-light": imageColors.textLight,
           "--event-text-dark": imageColors.textDark,
+        }
+      : headerBgCss || headerBgColor
+      ? {
+          "--event-header-gradient-light":
+            headerBgCss ||
+            `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`,
+          "--event-header-gradient-dark":
+            headerBgCss ||
+            `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`,
+          "--event-card-bg-light": eventTheme.cardLight,
+          "--event-card-bg-dark": eventTheme.cardDark,
+          "--event-border-light": eventTheme.borderLight,
+          "--event-border-dark": eventTheme.borderDark,
+          "--event-chip-light": eventTheme.chipLight,
+          "--event-chip-dark": eventTheme.chipDark,
+          "--event-text-light": eventTheme.textLight,
+          "--event-text-dark": eventTheme.textDark,
         }
       : {
           "--event-header-gradient-light": eventTheme.headerLight,
@@ -736,7 +769,12 @@ export default async function EventPage({
       attachmentInfo?.type.startsWith("image/") && attachmentInfo.dataUrl
         ? `url(${attachmentInfo.dataUrl})`
         : headerUserStyleSeed.backgroundImage ||
-          (imageColors ? imageColors.headerLight : eventTheme.headerLight),
+          headerBgCss ||
+          (headerBgColor
+            ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
+            : imageColors
+            ? imageColors.headerLight
+            : eventTheme.headerLight),
     backgroundSize: attachmentInfo?.type.startsWith("image/")
       ? "cover"
       : undefined,
@@ -748,8 +786,7 @@ export default async function EventPage({
       : undefined,
     backgroundColor: attachmentInfo?.type.startsWith("image/")
       ? undefined
-      : headerUserStyleSeed.backgroundColor ||
-        (imageColors ? imageColors.headerLight : eventTheme.headerLight),
+      : headerUserStyleSeed.backgroundColor || headerBgColor || undefined,
     position: "relative",
   } as CSSProperties;
 
@@ -846,6 +883,18 @@ export default async function EventPage({
             <div style={headerOverlayStyle} />
           )}
           <div style={headerContentStyle}>
+            {profileImageUrl && (
+              <div
+                className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px]"
+                style={{ zIndex: 2 }}
+              >
+                <img
+                  src={profileImageUrl}
+                  alt="profile"
+                  className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl border-2 border-border object-cover shadow-md"
+                />
+              </div>
+            )}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <h1

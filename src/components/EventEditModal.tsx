@@ -64,6 +64,8 @@ export default function EventEditModal({
   eventData,
   eventTitle,
 }: EventEditModalProps) {
+  const normalizedExistingCategory = String(eventData?.category || "").toLowerCase();
+  const useTemplateEditor = normalizedExistingCategory.includes("birthday");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -428,7 +430,16 @@ export default function EventEditModal({
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          if (useTemplateEditor) {
+            try {
+              // Route to the Birthday template editor in edit mode
+              (router as any).push(`/event/birthdays?edit=${encodeURIComponent(eventId)}`);
+              return;
+            } catch {}
+          }
+          setIsOpen(true);
+        }}
         className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-foreground/70 hover:text-foreground hover:bg-surface transition-colors"
         title="Edit event"
       >

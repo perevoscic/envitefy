@@ -16,6 +16,10 @@ export default function NewBirthdayEventPage() {
       return undefined;
     }
   }, [search]);
+  const editEventId = useMemo(() => {
+    const id = search?.get("edit");
+    return id && id.trim() ? id.trim() : undefined;
+  }, [search]);
 
-  return <BirthdaysCreate defaultDate={defaultDate} />;
+  return <BirthdaysCreate defaultDate={defaultDate} editEventId={editEventId} />;
 }
