@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Pacifico, Montserrat } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Pacifico,
+  Montserrat,
+  Poppins,
+  Raleway,
+  Playfair_Display,
+  Dancing_Script,
+} from "next/font/google";
 import Script from "next/script";
 import Link from "next/link";
 import Providers from "./providers";
@@ -39,6 +48,34 @@ const pacifico = Pacifico({
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const raleway = Raleway({
+  variable: "--font-raleway",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const dancing = Dancing_Script({
+  variable: "--font-dancing",
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
@@ -171,7 +208,7 @@ export default async function RootLayout({
         <title>Envitefy | Create. Share. Enjoy.</title>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} ${poppins.variable} ${raleway.variable} ${playfair.variable} ${dancing.variable} antialiased`}
       >
         <Script id="theme-init" strategy="beforeInteractive">{`
           (function(){
@@ -239,7 +276,7 @@ export default async function RootLayout({
         >
           <LeftSidebar />
           <div
-            className="min-h-[100dvh] bg-background text-foreground flex flex-col"
+            className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
             data-static-illustration="true"
           >
             <div className="flex-1 min-w-0">{children}</div>
