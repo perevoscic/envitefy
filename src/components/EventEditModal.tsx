@@ -137,6 +137,9 @@ export default function EventEditModal({
     }
     return null;
   }, [eventData?.imageColors]);
+  // Header image (separate from flyer/attachment)
+  const initialHeaderUrl: string | null =
+    typeof eventData?.thumbnail === "string" ? eventData.thumbnail : null;
   const [attachment, setAttachment] = useState(initialAttachment);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
@@ -144,9 +147,15 @@ export default function EventEditModal({
   const [imageColors, setImageColors] = useState<ImageColors | null>(
     initialImageColors
   );
+  const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(
+    initialHeaderUrl
+  );
   const [attachmentDirty, setAttachmentDirty] = useState(false);
+  const [headerDirty, setHeaderDirty] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
+  const headerInputRef = useRef<HTMLInputElement | null>(null);
+  const [headerError, setHeaderError] = useState<string | null>(null);
 
   const addRegistryLink = () => {
     setRegistryEntries((prev) => {
@@ -228,26 +237,16 @@ export default function EventEditModal({
     try {
       const dataUrl = await readFileAsDataUrl(file);
       let previewUrl: string | null = null;
-      let colors: ImageColors | null = null;
       if (isImage) {
         previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
-        // Extract colors from the image for gradient background
-        try {
-          colors = await extractColorsFromImage(dataUrl);
-        } catch (err) {
-          console.error("Failed to extract colors from image:", err);
-          // Continue without colors if extraction fails
-        }
       }
       setAttachment({ name: file.name, type: file.type, dataUrl });
       setAttachmentPreviewUrl(previewUrl);
-      setImageColors(colors);
       setAttachmentDirty(true);
     } catch {
       setAttachmentError("Could not process the file");
       setAttachment(null);
       setAttachmentPreviewUrl(null);
-      setImageColors(null);
       event.target.value = "";
     }
   };
@@ -255,10 +254,60 @@ export default function EventEditModal({
   const clearFlyer = () => {
     setAttachment(null);
     setAttachmentPreviewUrl(null);
-    setImageColors(null);
     setAttachmentDirty(true);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
+  };
+
+  // Independent header image change handler (image-only)
+  const handleHeaderChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setHeaderPreviewUrl(null);
+      setHeaderDirty(true);
+      setHeaderError(null);
+      return;
+    }
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+      setHeaderError("Header must be an image file");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setHeaderError("File must be 10 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const previewUrl =
+        (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      let colors: ImageColors | null = null;
+      try {
+        colors = await extractColorsFromImage(dataUrl);
+      } catch (err) {
+        console.error("Failed to extract colors from header image:", err);
+      }
+      setHeaderError(null);
+      setHeaderPreviewUrl(previewUrl || dataUrl);
+      setImageColors(colors);
+      setHeaderDirty(true);
+    } catch {
+      setHeaderError("Could not process the image");
+      setHeaderPreviewUrl(null);
+      setHeaderDirty(true);
+      if (headerInputRef.current) headerInputRef.current.value = "";
+    }
+  };
+
+  const clearHeader = () => {
+    setHeaderPreviewUrl(null);
+    setHeaderDirty(true);
+    setHeaderError(null);
+    if (headerInputRef.current) headerInputRef.current.value = "";
   };
 
   useEffect(() => {
@@ -274,10 +323,20 @@ export default function EventEditModal({
     setRegistryEntries(buildInitialRegistries());
     setAttachment(initialAttachment);
     setAttachmentPreviewUrl(initialPreview);
+    setHeaderPreviewUrl(initialHeaderUrl);
     setAttachmentDirty(false);
+    setHeaderDirty(false);
     setAttachmentError(null);
+    setHeaderError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
-  }, [isOpen, buildInitialRegistries, initialAttachment, initialPreview]);
+    if (headerInputRef.current) headerInputRef.current.value = "";
+  }, [
+    isOpen,
+    buildInitialRegistries,
+    initialAttachment,
+    initialPreview,
+    initialHeaderUrl,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,10 +442,9 @@ export default function EventEditModal({
               dataUrl: attachment.dataUrl,
             }
           : null;
-        dataUpdate.thumbnail = attachment?.type.startsWith("image/")
-          ? attachmentPreviewUrl || attachment?.dataUrl || null
-          : null;
-        // Update image colors if attachment changed
+      }
+      if (headerDirty) {
+        dataUpdate.thumbnail = headerPreviewUrl || null;
         dataUpdate.imageColors = imageColors || null;
       }
 
@@ -672,6 +730,56 @@ export default function EventEditModal({
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ overflow: "hidden" }}
                   />
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm text-foreground">
+                    <span>Header image (optional)</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => headerInputRef.current?.click()}
+                        className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
+                        style={{ color: 'var(--foreground)' }}
+                      >
+                        {headerPreviewUrl ? "Replace header image" : "Upload header image"}
+                      </button>
+                      {headerPreviewUrl && (
+                        <button
+                          type="button"
+                          onClick={clearHeader}
+                          className="text-xs font-medium text-foreground hover:text-foreground/80"
+                          style={{ color: 'var(--foreground)' }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    id="edit-header"
+                    ref={headerInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleHeaderChange}
+                    className="hidden"
+                  />
+                  {headerError && (
+                    <p className="mt-2 text-xs text-red-600">{headerError}</p>
+                  )}
+                  {headerPreviewUrl && (
+                    <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
+                      <img
+                        src={headerPreviewUrl}
+                        alt="Header image"
+                        className="h-16 w-16 rounded border border-border object-cover"
+                      />
+                      <span className="truncate">Header image</span>
+                    </div>
+                  )}
+                  {!headerPreviewUrl && !headerError && (
+                    <p className="mt-2 text-xs text-foreground/60">Images up to 10 MB.</p>
+                  )}
                 </div>
 
                 <div>

@@ -357,6 +357,23 @@ body {
   color: var(--event-text-dark);
 }
 
+/* Editor: force a light palette within the editor body even if global theme is dark */
+:root[data-theme$="-dark"] .editor-force-light {
+  --background: #FFFBF7;
+  --surface: #FFFFFF;
+  --foreground: #4E4E50;
+  --muted-foreground: #737373;
+  --border: #E0E0E0;
+}
+.dark .editor-force-light .event-theme-card {
+  background: var(--event-card-bg-light);
+  border-color: var(--event-border-light);
+}
+:root[data-theme$="-dark"] .editor-force-light .event-theme-card,
+:root[data-theme$="-dark"] .editor-force-light .event-theme-card * {
+  color: var(--foreground) !important;
+}
+
 /* Header buttons styling when image background is used */
 .header-with-image-buttons button {
   color: white !important;

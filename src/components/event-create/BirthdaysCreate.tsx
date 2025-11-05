@@ -1029,7 +1029,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   return (
     <main className="max-w-3xl mx-auto px-5 sm:px-10 py-10">
       <div
-        className="event-theme-scope"
+        className="event-theme-scope editor-force-light"
         style={themeStyleVars as React.CSSProperties}
       >
         <form onSubmit={submit} className="space-y-6">
