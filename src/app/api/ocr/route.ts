@@ -85,7 +85,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   • Never reduce to a generic title (e.g., "Baby Shower") if a name is visible.
   
   DESCRIPTION (factual, concise):
-  • One short sentence (two at most) using only facts in the image: date, time, venue/address, city/state. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
+  • One short sentence (two at most) using only facts in the image: date, time, and place. Prefer venue/business names over street addresses; if both appear, use the venue and optionally city/state (omit the street). Do NOT repeat the title or honoree names in the description—make it a standalone sentence. Start the sentence with a capital letter. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
   
   ADDRESS:
   • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:" or "At:".
@@ -108,9 +108,10 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   
   const userText = `
   Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible}.
-  If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include the age in the title. Do not include dates/times in the title.
+  If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. Do not include dates/times in the title.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
-  Keep RSVP only in rsvp (not in description). Prefer venue names over street addresses in description when both appear.
+  The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
+  Keep RSVP only in rsvp (not in description).
   If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
   `;
   try {
@@ -2401,18 +2402,18 @@ export async function POST(request: Request) {
     }
 
     // RSVP is now stored in a separate field, no longer appended to description
-
-    // Don't strip "Join us/Invites you" from birthday or wedding descriptions
-    // For weddings, invitation phrasing often appears verbatim and reads naturally.
+    
+    // Don't strip "Join us/You're invited" when we intentionally keep the title in description
+    // (e.g., deterministic one-liner: "Join <Title> on <Date> at <Time>") or for weddings/birthdays.
     if (typeof finalDescription === "string" && finalDescription.trim()) {
       const looksWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
-      if (!descriptionWasGeneratedAsBirthday && !looksWedding) {
+      if (!descriptionWasGeneratedAsBirthday && !looksWedding && !keepTitleInDescription) {
         finalDescription = stripJoinUsLanguage(finalDescription.trim());
       }
     }
 
-    // Remove title from description if it appears there - description should be standalone
-    if (finalTitle && finalDescription) {
+    // Remove title from description if it appears there, unless we intentionally kept it
+    if (!keepTitleInDescription && finalTitle && finalDescription) {
       const titleLower = finalTitle.toLowerCase().trim();
       const descLower = finalDescription.toLowerCase();
       
@@ -2436,7 +2437,7 @@ export async function POST(request: Request) {
       }
     }
     
-    // Remove title from description unless we intentionally kept it
+    // Secondary guard: remove title unless we intentionally kept it
     if (!keepTitleInDescription && finalTitle && finalDescription) {
       try {
         const titleRegex = new RegExp(
@@ -2446,7 +2447,12 @@ export async function POST(request: Request) {
         finalDescription = finalDescription.replace(titleRegex, "").trim();
       } catch {}
     }
-    // Description is now clean (title removed if present)
+    // Description is now clean (title removed if present). Ensure sentence casing.
+    if (finalDescription) {
+      try {
+        finalDescription = finalDescription.replace(/^([a-z])/, (m: string) => m.toUpperCase());
+      } catch {}
+    }
     const description = finalDescription || "";
     // Do NOT adjust for timezones: preserve the time exactly as it appears on
     // the flyer/invite. Downstream clients can treat it as a floating time.

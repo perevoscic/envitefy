@@ -1057,7 +1057,6 @@ export default async function EventPage({
                 className=""
                 variant="compact"
                 tone={"default" as any}
-                showLabels
               />
             </div>
           </div>

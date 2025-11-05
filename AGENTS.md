@@ -565,6 +565,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2025-11-05: OCR descriptions no longer repeat the title by default. Prompt now instructs the LLM to produce a standalone, sentence-cased line that prefers venue names over street addresses. Exception: when the server builds a deterministic one‑liner (e.g., "Join <Title> on <Date> at <Time>"), we intentionally keep the title and skip stripping to preserve the natural invite phrasing present on many flyers. We also sentence‑case descriptions after cleanup to avoid lowercase starts like "on November…".
 - 2025-11-05: OCR (all invites) generalized: primary OpenAI prompt now emphasizes cursive/handwritten decoding, ensures titles include honorees (e.g., "<FullName> Baby Shower"), avoids generic titles when names are visible, and forbids placeholder phrases like "private residence" unless printed. Fallback title heuristics recognize baby/bridal showers.
 - 2025-11-05: OCR (weddings) tightened: title now uses "<Name A> & <Name B> Wedding" (never invitation wording). Descriptions may retain verbatim invitation phrasing like "invites you" when present, but otherwise keep only facts (names, venue/address, time). Added deterministic fallback when LLM rewrite fails and expanded invite-phrase stripping for titles.
 - 2025-10-25: Signup and OAuth user creation now leave the legacy `credits` column `NULL` (no default allotment) while keeping `subscription_plan = "freemium"`; update FAQ to reflect the retirement of credits.
