@@ -612,6 +612,10 @@ export default function LeftSidebar() {
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
     {}
   );
+  // Per Smart sign-up item gradient selections (keyed by history id)
+  const [signupItemColors, setSignupItemColors] = useState<
+    Record<string, string>
+  >({});
   const [colorMenuFor, setColorMenuFor] = useState<string | null>(null);
   const [colorMenuPos, setColorMenuPos] = useState<{
     left: number;
@@ -671,6 +675,13 @@ export default function LeftSidebar() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === "object") setCategoryColors(parsed);
+      }
+    } catch {}
+    try {
+      const rawItems = localStorage.getItem("signupItemColors");
+      if (rawItems) {
+        const parsed = JSON.parse(rawItems);
+        if (parsed && typeof parsed === "object") setSignupItemColors(parsed);
       }
     } catch {}
   }, []);
@@ -1041,150 +1052,18 @@ export default function LeftSidebar() {
   const sharedTextClass = "text-neutral-900 dark:text-foreground";
   const sharedMutedTextClass = "text-neutral-600 dark:text-foreground/70";
 
-  // Smart sign-up gradient palette (distinct from Shared Events)
-  // Includes legacy ids (signup-g1..6) and the full Create flow presets
+  // Smart sign-up gradient palette — reuse Shared Events palette to keep it simple
   const SIGNUP_GRADIENTS: {
     id: string;
-    swatch: string; // used for small square preview
-    lightRow: string; // applied to list row in light mode
-    darkRow: string; // applied to list row in dark mode
-  }[] = [
-    // Legacy options kept for backward-compatibility with stored values
-    {
-      id: "signup-g1",
-      swatch: "bg-gradient-to-br from-sky-400 to-emerald-400",
-      lightRow: "bg-gradient-to-br from-sky-200 via-teal-200 to-emerald-200",
-      darkRow: "bg-gradient-to-br from-sky-900 via-teal-900 to-emerald-900",
-    },
-    {
-      id: "signup-g2",
-      swatch: "bg-gradient-to-br from-fuchsia-400 to-rose-400",
-      lightRow: "bg-gradient-to-br from-fuchsia-200 via-pink-200 to-rose-200",
-      darkRow: "bg-gradient-to-br from-fuchsia-900 via-pink-900 to-rose-900",
-    },
-    {
-      id: "signup-g3",
-      swatch: "bg-gradient-to-br from-amber-400 to-indigo-400",
-      lightRow: "bg-gradient-to-br from-amber-200 via-yellow-200 to-indigo-200",
-      darkRow: "bg-gradient-to-br from-amber-900 via-yellow-900 to-indigo-900",
-    },
-    {
-      id: "signup-g4",
-      swatch: "bg-gradient-to-br from-cyan-400 to-violet-400",
-      lightRow: "bg-gradient-to-br from-cyan-200 via-blue-200 to-violet-200",
-      darkRow: "bg-gradient-to-br from-cyan-900 via-blue-900 to-violet-900",
-    },
-    {
-      id: "signup-g5",
-      swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
-      lightRow: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
-      darkRow: "bg-gradient-to-br from-lime-900 via-green-900 to-emerald-900",
-    },
-    {
-      id: "signup-g6",
-      swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
-      lightRow: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
-      darkRow: "bg-gradient-to-br from-slate-900 via-zinc-900 to-sky-900",
-    },
-    // Full Create a Smart sign-up Background color presets
-    {
-      id: "fall-fun",
-      swatch: "bg-gradient-to-br from-orange-700 to-amber-500",
-      lightRow: "bg-gradient-to-br from-orange-200 via-amber-200 to-rose-200",
-      darkRow: "bg-gradient-to-br from-orange-900 via-amber-900 to-rose-900",
-    },
-    {
-      id: "trusty-blue",
-      swatch: "bg-gradient-to-br from-blue-900 to-blue-700",
-      lightRow: "bg-gradient-to-br from-blue-200 via-sky-200 to-indigo-200",
-      darkRow: "bg-gradient-to-br from-blue-950 via-sky-950 to-indigo-900",
-    },
-    {
-      id: "mint-fresh",
-      swatch: "bg-gradient-to-br from-teal-200 to-emerald-100",
-      lightRow: "bg-gradient-to-br from-emerald-100 via-teal-100 to-white",
-      darkRow: "bg-gradient-to-br from-teal-900 via-emerald-900 to-slate-900",
-    },
-    {
-      id: "night-sky",
-      swatch: "bg-gradient-to-b from-slate-700 to-gray-900",
-      lightRow: "bg-gradient-to-b from-slate-300 to-gray-400",
-      darkRow: "bg-gradient-to-b from-slate-800 to-gray-950",
-    },
-    {
-      id: "sunset-blend",
-      swatch: "bg-gradient-to-br from-orange-500 via-rose-500 to-pink-600",
-      lightRow: "bg-gradient-to-br from-orange-200 via-rose-200 to-pink-200",
-      darkRow: "bg-gradient-to-br from-orange-900 via-rose-900 to-pink-900",
-    },
-    {
-      id: "ocean-wave",
-      swatch: "bg-gradient-to-r from-sky-500 to-blue-500",
-      lightRow: "bg-gradient-to-r from-sky-200 via-blue-200 to-cyan-200",
-      darkRow: "bg-gradient-to-r from-sky-900 via-blue-900 to-cyan-900",
-    },
-    {
-      id: "forest-mist",
-      swatch: "bg-gradient-to-br from-emerald-700 to-teal-600",
-      lightRow: "bg-gradient-to-br from-emerald-200 via-teal-200 to-green-200",
-      darkRow: "bg-gradient-to-br from-emerald-900 via-teal-900 to-green-900",
-    },
-    {
-      id: "royal-plum",
-      swatch: "bg-gradient-to-br from-violet-600 to-fuchsia-600",
-      lightRow:
-        "bg-gradient-to-br from-violet-200 via-fuchsia-200 to-purple-200",
-      darkRow:
-        "bg-gradient-to-br from-violet-900 via-fuchsia-900 to-purple-900",
-    },
-    {
-      id: "citrus-light",
-      swatch: "bg-gradient-to-br from-amber-200 to-rose-200",
-      lightRow: "bg-gradient-to-br from-amber-100 via-yellow-100 to-rose-100",
-      darkRow: "bg-gradient-to-br from-amber-800 via-yellow-800 to-rose-800",
-    },
-    {
-      id: "dawn-rose",
-      swatch: "bg-gradient-to-br from-pink-200 to-violet-200",
-      lightRow: "bg-gradient-to-br from-pink-100 via-violet-100 to-rose-100",
-      darkRow: "bg-gradient-to-br from-pink-800 via-violet-800 to-rose-900",
-    },
-    {
-      id: "steel-sky",
-      swatch: "bg-gradient-to-br from-sky-300 to-emerald-200",
-      lightRow: "bg-gradient-to-br from-sky-100 via-teal-100 to-emerald-100",
-      darkRow: "bg-gradient-to-br from-sky-900 via-teal-900 to-emerald-900",
-    },
-    {
-      id: "berry-splash",
-      swatch: "bg-gradient-to-br from-pink-400 to-indigo-400",
-      lightRow: "bg-gradient-to-br from-pink-200 via-indigo-200 to-violet-200",
-      darkRow: "bg-gradient-to-br from-pink-900 via-indigo-900 to-violet-900",
-    },
-    {
-      id: "charcoal-glow",
-      swatch: "bg-gradient-to-br from-gray-800 to-slate-600",
-      lightRow: "bg-gradient-to-br from-gray-400 via-slate-400 to-zinc-400",
-      darkRow: "bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900",
-    },
-    {
-      id: "emerald-glow",
-      swatch: "bg-gradient-to-br from-emerald-800 to-teal-600",
-      lightRow: "bg-gradient-to-br from-emerald-200 via-green-200 to-teal-200",
-      darkRow: "bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900",
-    },
-    {
-      id: "sunrise-peach",
-      swatch: "bg-gradient-to-br from-orange-300 to-pink-300",
-      lightRow: "bg-gradient-to-br from-orange-100 via-rose-100 to-pink-100",
-      darkRow: "bg-gradient-to-br from-orange-900 via-rose-900 to-pink-900",
-    },
-  ];
+    swatch: string;
+    lightRow: string;
+    darkRow: string;
+  }[] = SHARED_GRADIENTS;
 
   const getSignupGradientId = (): string => {
     const val = categoryColors["Smart sign-up"];
     const exists = SIGNUP_GRADIENTS.some((g) => g.id === val);
-    return exists ? (val as string) : "fall-fun";
+    return exists ? (val as string) : "shared-g1";
   };
 
   const signupGradientRowClass = (): string => {
@@ -1202,6 +1081,35 @@ export default function LeftSidebar() {
     const id = getSignupGradientId();
     const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
     return found?.swatch || SIGNUP_GRADIENTS[0].swatch;
+  };
+
+  // Item-specific Smart sign-up color helpers
+  const getSignupItemGradientId = (historyId: string): string => {
+    const val = signupItemColors[historyId];
+    const exists = SIGNUP_GRADIENTS.some((g) => g.id === val);
+    return exists ? (val as string) : getSignupGradientId();
+  };
+  const signupItemGradientRowClass = (historyId: string): string => {
+    const id = getSignupItemGradientId(historyId);
+    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
+    if (!found) {
+      return theme === "dark"
+        ? SIGNUP_GRADIENTS[0].darkRow
+        : SIGNUP_GRADIENTS[0].lightRow;
+    }
+    return theme === "dark" ? found.darkRow : found.lightRow;
+  };
+  const signupItemGradientSwatchClass = (historyId: string): string => {
+    const id = getSignupItemGradientId(historyId);
+    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
+    return found?.swatch || SIGNUP_GRADIENTS[0].swatch;
+  };
+
+  const setSignupItemColor = (historyId: string, color: string) => {
+    if (!historyId) return;
+    setSignupItemColors((prev) => ({ ...prev, [historyId]: color }));
+    setColorMenuFor(null);
+    setColorMenuPos(null);
   };
 
   const sharedGradientSwatchClass = (): string => {
@@ -1254,6 +1162,16 @@ export default function LeftSidebar() {
       }
     } catch {}
   }, [categoryColors]);
+
+  // Persist per-item Smart sign-up colors locally
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "signupItemColors",
+        JSON.stringify(signupItemColors)
+      );
+    } catch {}
+  }, [signupItemColors]);
 
   const sortHistoryRows = (
     rows: Array<{
@@ -2626,18 +2544,10 @@ export default function LeftSidebar() {
                             .replace(/[^a-z0-9]+/g, "-")
                             .replace(/^-+|-+$/g, "");
                           const prettyHref = `/smart-signup-form/${h.id}`;
-                          // Use the event's chosen category color for background tint
-                          const signupCategory = (h as any)?.data?.category as
-                            | string
-                            | null;
-                          const signupRowClass = (() => {
-                            if (!signupCategory) return "";
-                            const color =
-                              categoryColors[signupCategory] ||
-                              defaultCategoryColor(signupCategory);
-                            const ccls = colorClasses(color);
-                            return ccls.tint;
-                          })();
+                          // Item-specific gradient row style (falls back to Smart sign-up default)
+                          const signupRowClass = `${signupItemGradientRowClass(
+                            h.id
+                          )} ${sharedTextClass}`;
                           return (
                             <div
                               key={h.id}
@@ -2679,9 +2589,7 @@ export default function LeftSidebar() {
                               </Link>
                               <button
                                 type="button"
-                                aria-label={`Edit ${
-                                  signupCategory || "category"
-                                } color`}
+                                aria-label={`Edit form color`}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -2715,8 +2623,7 @@ export default function LeftSidebar() {
                                   } catch {
                                     setColorMenuPos(null);
                                   }
-                                  if (signupCategory)
-                                    setColorMenuFor(signupCategory);
+                                  setColorMenuFor(`signup-item:${h.id}`);
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
@@ -2724,15 +2631,9 @@ export default function LeftSidebar() {
                                     (e.currentTarget as HTMLElement).click();
                                   }
                                 }}
-                                className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${(() => {
-                                  const color = signupCategory
-                                    ? categoryColors[signupCategory] ||
-                                      defaultCategoryColor(signupCategory)
-                                    : null;
-                                  return color
-                                    ? colorClasses(color).swatch
-                                    : "bg-surface/70";
-                                })()} border`}
+                                className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${signupItemGradientSwatchClass(
+                                  h.id
+                                )} border-0`}
                                 title="Edit color"
                               />
                               <button
@@ -5138,18 +5039,13 @@ export default function LeftSidebar() {
                   );
                 })}
               </div>
-            ) : colorMenuFor === "Smart sign-up" ? (
+            ) : (colorMenuFor || "").startsWith("signup-item:") ? (
               <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
-                {SIGNUP_GRADIENTS.filter(
-                  (g) =>
-                    g.id !== "signup-g1" &&
-                    g.id !== "signup-g2" &&
-                    g.id !== "signup-g3" &&
-                    g.id !== "signup-g4" &&
-                    g.id !== "signup-g5" &&
-                    g.id !== "signup-g6"
-                ).map((g) => {
-                  const selected = getSignupGradientId() === g.id;
+                {SHARED_GRADIENTS.map((g) => {
+                  const historyId = String(
+                    (colorMenuFor || "").split(":")[1] || ""
+                  );
+                  const selected = getSignupItemGradientId(historyId) === g.id;
                   return (
                     <button
                       key={g.id}
@@ -5157,12 +5053,15 @@ export default function LeftSidebar() {
                       className={`h-6 w-6 rounded-[5px] border-0 ${g.swatch} ${
                         selected ? "ring-2 ring-foreground/80" : ""
                       }`}
-                      aria-label={`Choose ${g.id}`}
+                      aria-label={`Choose gradient`}
                       title={g.id}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setCategoryColor("Smart sign-up", g.id);
+                        const hid = String(
+                          (colorMenuFor || "").split(":")[1] || ""
+                        );
+                        setSignupItemColor(hid, g.id);
                       }}
                     />
                   );
