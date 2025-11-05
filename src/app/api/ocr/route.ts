@@ -1009,10 +1009,15 @@ function inferTimezoneFromAddress(addressOrText: string): string | null {
 
 function stripInvitePhrases(s: string): string {
   return s
+    // "You're invited" variations
     .replace(/^\s*(you\s+are\s+invited\s+to[:\s-]*)/i, "")
     .replace(/^\s*(you'?re\s+invited\s+to[:\s-]*)/i, "")
     .replace(/^\s*(you\s+are\s+invited[:\s-]*)/i, "")
     .replace(/^\s*(you'?re\s+invited[:\s-]*)/i, "")
+    // "invites you to (join)" / "cordially invite you to" variants
+    .replace(/^\s*\b(cordially\s+)?invites?\s+you\s+to(?:\s+join)?\b[:\s,-]*/i, "")
+    .replace(/^\s*\b(requests?\s+the\s+(honou?r|pleasure)\s+of\s+your\s+(presence|company))\b[:\s,-]*/i, "")
+    // "please join us" variations
     .replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,\-]*/i, "")
     .trim();
 }
@@ -2377,9 +2382,13 @@ export async function POST(request: Request) {
 
     // RSVP is now stored in a separate field, no longer appended to description
 
-    // Don't strip "Join us" from birthday descriptions - we explicitly generate them with "Join us to celebrate"
-    if (typeof finalDescription === "string" && finalDescription.trim() && !descriptionWasGeneratedAsBirthday) {
-      finalDescription = stripJoinUsLanguage(finalDescription.trim());
+    // Don't strip "Join us/Invites you" from birthday or wedding descriptions
+    // For weddings, invitation phrasing often appears verbatim and reads naturally.
+    if (typeof finalDescription === "string" && finalDescription.trim()) {
+      const looksWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
+      if (!descriptionWasGeneratedAsBirthday && !looksWedding) {
+        finalDescription = stripJoinUsLanguage(finalDescription.trim());
+      }
     }
 
     // Remove title from description if it appears there - description should be standalone
