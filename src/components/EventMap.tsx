@@ -1,5 +1,3 @@
-"use client";
-
 import StaticMap from "@/components/StaticMap";
 
 type EventMapProps = {

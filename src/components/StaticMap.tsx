@@ -52,7 +52,7 @@ export default function StaticMap({
           href={searchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-foreground/90 hover:text-foreground"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
