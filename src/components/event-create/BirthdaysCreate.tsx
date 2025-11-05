@@ -231,6 +231,15 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         setHeaderThemeId((data as any).headerThemeId || null);
         setHeaderBgColor((data as any).headerBgColor || null);
         setHeaderBgCss((data as any).headerBgCss || null);
+        const ts = (data as any).titleStyle || {};
+        if (ts) {
+          if (typeof ts.color === "string") setTitleColor(ts.color);
+          if (typeof ts.font === "string") setTitleFont(ts.font);
+          if (typeof ts.weight === "string") setTitleWeight(ts.weight);
+          if (typeof ts.hAlign === "string") setTitleHAlign(ts.hAlign);
+          if (typeof ts.vAlign === "string") setTitleVAlign(ts.vAlign);
+          if (typeof ts.size === "number") setTitleSize(ts.size);
+        }
         const profile = (data as any).profileImage;
         if (
           profile &&
@@ -842,6 +851,15 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
           recurrence: recurrenceRule || undefined,
+          // Title style to mirror editor → final view
+          titleStyle: {
+            color: titleColor || null,
+            font: titleFont,
+            weight: titleWeight,
+            hAlign: titleHAlign,
+            vAlign: titleVAlign,
+            size: titleSize,
+          },
           // Persist header customization so the final Birthday template matches the editor
           headerThemeId: headerThemeId || undefined,
           headerBgColor: headerBgColor || undefined,

@@ -714,6 +714,29 @@ export default async function EventPage({
       ? ((data as any).profileImage.dataUrl as string)
       : null;
 
+  // Title style from Birthday editor
+  const titleStyle: any = (data as any)?.titleStyle || {};
+  const titleColor: string | null =
+    typeof titleStyle?.color === "string" && titleStyle.color
+      ? (titleStyle.color as string)
+      : null;
+  const titleFont: string =
+    typeof titleStyle?.font === "string" ? (titleStyle.font as string) : "auto";
+  const titleWeight: string =
+    typeof titleStyle?.weight === "string"
+      ? (titleStyle.weight as string)
+      : "semibold";
+  const titleHAlign: "left" | "center" | "right" =
+    titleStyle?.hAlign === "left" || titleStyle?.hAlign === "right"
+      ? titleStyle.hAlign
+      : "center";
+  const titleVAlign: "top" | "middle" | "bottom" =
+    titleStyle?.vAlign === "top" || titleStyle?.vAlign === "bottom"
+      ? titleStyle.vAlign
+      : "middle";
+  const titleSize: number =
+    typeof titleStyle?.size === "number" ? (titleStyle.size as number) : 28;
+
   // Use image colors if available, otherwise fall back to category theme
   const cardBackgroundImage =
     imageColors?.headerLight || headerBgCss || eventTheme.headerLight;
@@ -762,6 +785,14 @@ export default async function EventPage({
           "--event-text-dark": eventTheme.textDark,
         }
   ) satisfies Record<string, string>;
+
+  // Mirror editor page background (hero) gradient
+  const heroGradient: string =
+    (headerBgCss as string | null) ||
+    (headerBgColor
+      ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
+      : (imageColors?.headerLight as string | undefined) ||
+        (eventTheme.headerLight as string));
 
   // Now finalize header style: use flyer image as background if available, otherwise use gradient
   const headerUserStyle: CSSProperties = {
@@ -870,102 +901,145 @@ export default async function EventPage({
     : "guest";
 
   return (
-    <main className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]">
+    <main
+      className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]"
+      style={
+        {
+          // Ensure the page background matches the editor's chosen header gradient
+          ["--theme-hero-gradient"]: heroGradient,
+        } as CSSProperties
+      }
+    >
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function(){
+              var value = ${JSON.stringify(heroGradient)};
+              function apply(){
+                try { document.documentElement.style.setProperty('--theme-hero-gradient', value); } catch {}
+              }
+              try { apply(); setTimeout(apply, 0); setTimeout(apply, 200); } catch {}
+            })();
+          `,
+        }}
+      />
       <div
         className="event-theme-scope space-y-6"
         style={themeStyleVars as CSSProperties}
       >
         <section
-          className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8"
+          className="event-theme-header relative overflow-visible rounded-2xl border shadow-lg px-1 py-6 sm:px-2 min-h-[220px] sm:min-h-[280px]"
           style={headerUserStyle}
         >
           {attachmentInfo?.type.startsWith("image/") && (
             <div style={headerOverlayStyle} />
           )}
-          <div style={headerContentStyle}>
-            {profileImageUrl && (
-              <div
-                className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px]"
-                style={{ zIndex: 2 }}
-              >
-                <img
-                  src={profileImageUrl}
-                  alt="profile"
-                  className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl border-2 border-border object-cover shadow-md"
-                />
-              </div>
-            )}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <h1
-                  className={`text-xl font-semibold leading-tight sm:text-2xl ${
-                    attachmentInfo?.type.startsWith("image/")
-                      ? "text-white drop-shadow-lg"
-                      : ""
-                  }`}
-                >
-                  {title}
-                </h1>
-              </div>
-              <div
-                className={`flex items-center gap-3 text-sm font-medium ${
-                  attachmentInfo?.type.startsWith("image/")
-                    ? "header-with-image-buttons"
-                    : ""
-                }`}
-                style={
-                  attachmentInfo?.type.startsWith("image/")
-                    ? { color: "white" }
-                    : undefined
-                }
-              >
-                {!isReadOnly && isOwner && (
-                  <>
-                    <EventEditModal
-                      eventId={row.id}
-                      eventData={data}
-                      eventTitle={title}
-                    />
-                    <EventDeleteModal eventId={row.id} eventTitle={title} />
-                  </>
-                )}
-                <EventActions
-                  shareUrl={shareUrl}
-                  event={data as any}
-                  historyId={!isReadOnly ? row.id : undefined}
-                  className=""
-                  variant="compact"
-                  tone={
-                    attachmentInfo?.type.startsWith("image/")
-                      ? ("light" as any)
-                      : ("default" as any)
-                  }
-                  showLabels
-                />
-              </div>
+          {/* Profile image should anchor to the header section bounds (not inner wrapper) */}
+          {profileImageUrl && (
+            <div
+              className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px]"
+              style={{ zIndex: 2 }}
+            >
+              <img
+                src={profileImageUrl}
+                alt="profile"
+                className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl border-2 border-border object-cover shadow-md"
+              />
             </div>
-            {createdAt && isSignedIn && (
-              <p
-                className={`text-sm opacity-80 ${
-                  attachmentInfo?.type.startsWith("image/")
-                    ? "text-white drop-shadow"
-                    : ""
+          )}
+          <div style={headerContentStyle}>
+            <div
+              className={`absolute inset-0 flex h-full w-full px-1 sm:px-2 ${
+                titleVAlign === "top"
+                  ? "items-start"
+                  : titleVAlign === "middle"
+                  ? "items-center"
+                  : "items-end"
+              } ${
+                titleHAlign === "left"
+                  ? "justify-start"
+                  : titleHAlign === "center"
+                  ? "justify-center"
+                  : "justify-end"
+              }`}
+            >
+              <h1
+                className={`${
+                  titleWeight === "bold"
+                    ? "font-bold"
+                    : titleWeight === "semibold"
+                    ? "font-semibold"
+                    : "font-normal"
+                } ${
+                  titleHAlign === "center"
+                    ? "text-center"
+                    : titleHAlign === "right"
+                    ? "text-right"
+                    : "text-left"
+                } ${
+                  titleColor
+                    ? ""
+                    : attachmentInfo?.type.startsWith("image/")
+                    ? "text-white drop-shadow-lg"
+                    : "text-foreground"
                 }`}
+                style={{
+                  color: titleColor || undefined,
+                  fontFamily:
+                    titleFont === "pacifico"
+                      ? "var(--font-pacifico)"
+                      : titleFont === "montserrat"
+                      ? "var(--font-montserrat)"
+                      : titleFont === "geist"
+                      ? "var(--font-geist-sans)"
+                      : titleFont === "mono"
+                      ? "var(--font-geist-mono)"
+                      : titleFont === "poppins"
+                      ? "var(--font-poppins)"
+                      : titleFont === "raleway"
+                      ? "var(--font-raleway)"
+                      : titleFont === "playfair"
+                      ? "var(--font-playfair)"
+                      : titleFont === "dancing"
+                      ? "var(--font-dancing)"
+                      : titleFont === "serif"
+                      ? 'Georgia, Cambria, "Times New Roman", Times, serif'
+                      : titleFont === "system"
+                      ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
+                      : undefined,
+                  fontSize: `${titleSize || 28}px`,
+                  transform:
+                    titleVAlign === "middle" ? "translateY(94px)" : undefined,
+                }}
               >
-                Created{" "}
-                {new Intl.DateTimeFormat("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                  timeZone: "UTC",
-                }).format(new Date(createdAt))}
-              </p>
-            )}
+                {title}
+              </h1>
+            </div>
           </div>
-          {/* Removed extra host label */}
+          {/* Actions pinned to bottom-right of header */}
+          <div className="absolute bottom-3 right-3 z-40">
+            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
+              {!isReadOnly && isOwner && (
+                <>
+                  <EventEditModal
+                    eventId={row.id}
+                    eventData={data}
+                    eventTitle={title}
+                  />
+                  <EventDeleteModal eventId={row.id} eventTitle={title} />
+                </>
+              )}
+              <EventActions
+                shareUrl={shareUrl}
+                event={data as any}
+                historyId={!isReadOnly ? row.id : undefined}
+                className=""
+                variant="compact"
+                tone={"default" as any}
+                showLabels
+              />
+            </div>
+          </div>
         </section>
 
         <section
