@@ -402,23 +402,17 @@ export default async function RootLayout({
                 <div className="w-full overflow-x-auto">
                   <p className="text-center whitespace-nowrap">
                     <Link
-                      href="https://envitefy.com/how-it-works"
+                      href="/how-it-works"
                       className="hover:text-foreground"
                     >
                       How it works
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
-                    <Link
-                      href="https://envitefy.com/who-its-for"
-                      className="hover:text-foreground"
-                    >
+                    <Link href="/who-its-for" className="hover:text-foreground">
                       Who it’s for
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
-                    <Link
-                      href="https://envitefy.com/faq"
-                      className="hover:text-foreground"
-                    >
+                    <Link href="/faq" className="hover:text-foreground">
                       FAQ
                     </Link>
                     <span className="opacity-40 mx-2">•</span>
