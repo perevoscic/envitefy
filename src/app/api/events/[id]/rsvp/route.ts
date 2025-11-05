@@ -383,3 +383,172 @@ export async function GET(
     );
   }
 }
+
+// PATCH /api/events/[id]/rsvp - Owner updates a specific RSVP's status
+export async function PATCH(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    await ensureRsvpTable();
+    const awaitedParams = await context.params;
+    const eventId = awaitedParams.id;
+    if (!eventId) {
+      return NextResponse.json({ error: "Event ID required" }, { status: 400 });
+    }
+
+    // Auth: must be the event owner
+    const session: any = await getServerSession(authOptions as any);
+    const email = (session?.user?.email as string | undefined) || null;
+    if (!email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const callerUserId = await getUserIdByEmail(email);
+    if (!callerUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const ownerCheck = await query<{ user_id: string | null }>(
+      `select user_id from event_history where id = $1 limit 1`,
+      [eventId]
+    );
+    const ownerUserId = ownerCheck.rows[0]?.user_id || null;
+    if (!ownerUserId || ownerUserId !== callerUserId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const response: string | undefined = body?.response;
+    const target = body?.target || {};
+    const targetEmail: string | null = (target?.email || null) as any;
+    const targetNameRaw: string | null = (target?.name || null) as any;
+    const targetName = targetNameRaw ? String(targetNameRaw).trim() : null;
+    const targetUserId: string | null = (target?.userId || null) as any;
+
+    if (!response || !["yes", "no", "maybe"].includes(response)) {
+      return NextResponse.json(
+        { error: "Valid response required (yes/no/maybe)" },
+        { status: 400 }
+      );
+    }
+
+    if (!targetUserId && !targetEmail && !targetName) {
+      return NextResponse.json(
+        { error: "A target identifier is required (userId/email/name)" },
+        { status: 400 }
+      );
+    }
+
+    if (targetUserId) {
+      await query(
+        `
+        update rsvp_responses
+        set response = $1, updated_at = now()
+        where event_id = $2 and user_id = $3
+        `,
+        [response, eventId, targetUserId]
+      );
+    } else if (targetEmail) {
+      await query(
+        `
+        update rsvp_responses
+        set response = $1, updated_at = now()
+        where event_id = $2 and lower(email) = lower($3)
+        `,
+        [response, eventId, targetEmail]
+      );
+    } else if (targetName) {
+      await query(
+        `
+        update rsvp_responses
+        set response = $1, updated_at = now()
+        where event_id = $2 and email is null and user_id is null and lower(trim(name)) = lower($3)
+        `,
+        [response, eventId, targetName]
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("[rsvp] PATCH error:", err);
+    return NextResponse.json(
+      { error: err?.message || "Failed to update RSVP" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/events/[id]/rsvp - Owner deletes a specific RSVP
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    await ensureRsvpTable();
+    const awaitedParams = await context.params;
+    const eventId = awaitedParams.id;
+    if (!eventId) {
+      return NextResponse.json({ error: "Event ID required" }, { status: 400 });
+    }
+
+    const session: any = await getServerSession(authOptions as any);
+    const email = (session?.user?.email as string | undefined) || null;
+    if (!email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const callerUserId = await getUserIdByEmail(email);
+    if (!callerUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const ownerCheck = await query<{ user_id: string | null }>(
+      `select user_id from event_history where id = $1 limit 1`,
+      [eventId]
+    );
+    const ownerUserId = ownerCheck.rows[0]?.user_id || null;
+    if (!ownerUserId || ownerUserId !== callerUserId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json().catch(() => ({} as any));
+    const target = body?.target || {};
+    const targetEmail: string | null = (target?.email || null) as any;
+    const targetNameRaw: string | null = (target?.name || null) as any;
+    const targetName = targetNameRaw ? String(targetNameRaw).trim() : null;
+    const targetUserId: string | null = (target?.userId || null) as any;
+
+    if (!targetUserId && !targetEmail && !targetName) {
+      return NextResponse.json(
+        { error: "A target identifier is required (userId/email/name)" },
+        { status: 400 }
+      );
+    }
+
+    let resultCount = 0;
+    if (targetUserId) {
+      const res = await query(
+        `delete from rsvp_responses where event_id = $1 and user_id = $2`,
+        [eventId, targetUserId]
+      );
+      resultCount = res.rowCount || 0;
+    } else if (targetEmail) {
+      const res = await query(
+        `delete from rsvp_responses where event_id = $1 and lower(email) = lower($2)`,
+        [eventId, targetEmail]
+      );
+      resultCount = res.rowCount || 0;
+    } else if (targetName) {
+      const res = await query(
+        `delete from rsvp_responses where event_id = $1 and email is null and user_id is null and lower(trim(name)) = lower($2)`,
+        [eventId, targetName]
+      );
+      resultCount = res.rowCount || 0;
+    }
+
+    return NextResponse.json({ ok: true, deleted: resultCount });
+  } catch (err: any) {
+    console.error("[rsvp] DELETE error:", err);
+    return NextResponse.json(
+      { error: err?.message || "Failed to delete RSVP" },
+      { status: 500 }
+    );
+  }
+}

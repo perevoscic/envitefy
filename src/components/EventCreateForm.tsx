@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import RegistryLinksEditor, {
-  RegistryFormEntry,
+  type RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
 import Toggle from "@/components/Toggle";
 import type { NormalizedEvent } from "@/lib/mappers";
@@ -14,12 +14,10 @@ import {
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
-import EventCreateForm from "@/components/EventCreateForm";
 
 type Props = {
-  open: boolean;
-  onClose: () => void;
   defaultDate?: Date;
+  onCancel?: () => void;
 };
 
 type ConnectedCalendars = {
@@ -41,21 +39,6 @@ const createRegistryEntry = (): RegistryFormEntry => ({
   error: null,
   detectedLabel: null,
 });
-
-function toLocalInputValue(d: Date | null): string {
-  if (!d) return "";
-  try {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const y = d.getFullYear();
-    const m = pad(d.getMonth() + 1);
-    const day = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const mm = pad(d.getMinutes());
-    return `${y}-${m}-${day}T${hh}:${mm}`;
-  } catch {
-    return "";
-  }
-}
 
 function toLocalDateValue(d: Date | null): string {
   if (!d) return "";
@@ -82,13 +65,9 @@ function toLocalTimeValue(d: Date | null): string {
   }
 }
 
-export default function EventCreateModal({
-  open,
-  onClose,
-  defaultDate,
-}: Props) {
+export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const router = useRouter();
-  // Category color helpers
+
   const PALETTE = [
     "red",
     "orange",
@@ -122,6 +101,7 @@ export default function EventCreateModal({
     { key: "monthly", label: "Month" },
     { key: "yearly", label: "Year" },
   ] as const;
+
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
     base.setSeconds(0, 0);
@@ -140,7 +120,6 @@ export default function EventCreateModal({
   const [submitting, setSubmitting] = useState(false);
   const todayMin = useMemo(() => toLocalDateValue(new Date()), []);
   const [title, setTitle] = useState("");
-  // Date/time inputs
   const [whenDate, setWhenDate] = useState<string>(
     toLocalDateValue(new Date(initialStart))
   );
@@ -172,9 +151,7 @@ export default function EventCreateModal({
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
-  // Smart sign-up configuration moved to its own modal
 
-  // Connected calendars state
   const [connectedCalendars, setConnectedCalendars] =
     useState<ConnectedCalendars>({
       google: false,
@@ -214,7 +191,7 @@ export default function EventCreateModal({
         const next: RegistryFormEntry = {
           ...entry,
           [field]: trimmed,
-        };
+        } as any;
         if (field === "url") {
           if (!trimmed.trim()) {
             next.error = null;
@@ -242,6 +219,15 @@ export default function EventCreateModal({
       })
     );
   };
+
+  const clearFlyer = () => {
+    setAttachment(null);
+    setAttachmentPreviewUrl(null);
+    setImageColors(null);
+    setAttachmentError(null);
+    if (flyerInputRef.current) flyerInputRef.current.value = "";
+  };
+
   const handleFlyerChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -272,12 +258,10 @@ export default function EventCreateModal({
       let colors: ImageColors | null = null;
       if (isImage) {
         previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
-        // Extract colors from the image for gradient background
         try {
           colors = await extractColorsFromImage(dataUrl);
         } catch (err) {
           console.error("Failed to extract colors from image:", err);
-          // Continue without colors if extraction fails
         }
       }
       setAttachment({ name: file.name, type: file.type, dataUrl });
@@ -292,20 +276,12 @@ export default function EventCreateModal({
     }
   };
 
-  const clearFlyer = () => {
-    setAttachment(null);
-    setAttachmentPreviewUrl(null);
-    setImageColors(null);
-    setAttachmentError(null);
-    if (flyerInputRef.current) flyerInputRef.current.value = "";
-  };
   const maybeAssignCategoryColor = (cat: string) => {
     if (!cat) return;
     try {
       const raw = localStorage.getItem("categoryColors");
       const map = raw ? (JSON.parse(raw) as Record<string, string>) : {};
       if (!map[cat]) {
-        // Prefer an unused color from the palette, else random
         const used = new Set(Object.values(map));
         const unused = PALETTE.filter((c) => !used.has(c));
         const pick = (arr: readonly string[]) =>
@@ -321,35 +297,26 @@ export default function EventCreateModal({
       }
     } catch {}
   };
+
   const [repeat, setRepeat] = useState<boolean>(false);
   const [repeatFrequency, setRepeatFrequency] = useState<
     "weekly" | "monthly" | "yearly"
   >("weekly");
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
-
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Fetch connected calendars when modal opens
+  // Fetch connected calendars on mount
   useEffect(() => {
-    if (!open) return;
-
     const fetchConnected = async () => {
       try {
         const res = await fetch("/api/calendars", { credentials: "include" });
         const data = await res.json();
-        console.log("[EventCreateModal] Connected calendars:", data);
         setConnectedCalendars({
           google: Boolean(data?.google),
           microsoft: Boolean(data?.microsoft),
           apple: Boolean(data?.apple),
         });
-        // Auto-select all connected calendars
         setSelectedCalendars({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
-          apple: Boolean(data?.apple),
-        });
-        console.log("[EventCreateModal] Set connected calendars:", {
           google: Boolean(data?.google),
           microsoft: Boolean(data?.microsoft),
           apple: Boolean(data?.apple),
@@ -358,35 +325,18 @@ export default function EventCreateModal({
         console.error("Failed to fetch connected calendars:", err);
       }
     };
-
     fetchConnected();
-  }, [open]);
+  }, []);
 
+  // Reset autosize on description
   useEffect(() => {
-    if (!open) return;
-    setTitle("");
-    setWhenDate(toLocalDateValue(new Date(initialStart)));
-    setFullDay(true);
-    setStartTime(toLocalTimeValue(initialStart));
-    setEndDate(toLocalDateValue(new Date(initialEnd)));
-    setEndTime(toLocalTimeValue(initialEnd));
-    setLocation("");
-    setVenue("");
-    setDescription("");
-    setRsvp("");
-    setNumberOfGuests(0);
-    setCategory("");
-    setCustomCategory("");
-    setShowCustomCategory(false);
-    setRepeat(false);
-    setRepeatFrequency("weekly");
-    setRepeatDays([]);
-    setRegistryLinks([]);
-    setAttachment(null);
-    setAttachmentPreviewUrl(null);
-    setAttachmentError(null);
-    if (flyerInputRef.current) flyerInputRef.current.value = "";
-  }, [open, initialStart, initialEnd]);
+    const el = descriptionRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
+
+  // Clear RSVP field if category not in the allowed set
   useEffect(() => {
     if (
       category === "Birthdays" ||
@@ -397,32 +347,11 @@ export default function EventCreateModal({
     if (rsvp) setRsvp("");
   }, [category]);
 
-  // When enabling repeat with no selected days, preselect the chosen date's weekday
-  useEffect(() => {
-    try {
-      if (
-        repeat &&
-        repeatFrequency === "weekly" &&
-        repeatDays.length === 0 &&
-        whenDate
-      ) {
-        const d = new Date(`${whenDate}T00:00:00`);
-        const code = DOW[d.getDay()].code;
-        setRepeatDays([code]);
-      }
-      if (repeatFrequency !== "weekly") {
-        setRepeatDays([]);
-      }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repeat, repeatFrequency]);
-
-  useEffect(() => {
-    const el = descriptionRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [description, open]);
+  const trimmedRsvp = rsvp.trim();
+  const normalizedCategory = (category || "").toLowerCase();
+  const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
+  const allowsRegistrySection = isRegistryCategory;
+  const showRsvpField = true;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,7 +424,6 @@ export default function EventCreateModal({
           const start = new Date(`${whenDate}T${startTime || "09:00"}:00`);
           const endBase = endDate || whenDate;
           const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
-          // Enforce non-past start and end >= start
           const now = new Date();
           const todayStart = new Date(
             now.getFullYear(),
@@ -508,14 +436,12 @@ export default function EventCreateModal({
           if (end < start) {
             endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
             startISO = start.toISOString();
-            // continue
           } else {
             startISO = start.toISOString();
             endISO = end.toISOString();
           }
         }
       }
-      // Use custom category if it was entered but not saved yet
       const finalCategory = customCategory.trim() || category || undefined;
 
       const deriveWeeklyDays = (): string[] => {
@@ -596,6 +522,7 @@ export default function EventCreateModal({
           signupForm: undefined,
         },
       };
+
       const r = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -605,7 +532,6 @@ export default function EventCreateModal({
       const j = await r.json().catch(() => ({}));
       const id = (j as any)?.id as string | undefined;
 
-      // Add to selected calendars
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedDescription = trimmedRsvp
@@ -634,7 +560,6 @@ export default function EventCreateModal({
       };
 
       const calendarPromises: Promise<any>[] = [];
-
       if (selectedCalendars.google) {
         calendarPromises.push(
           fetch("/api/events/google", {
@@ -648,7 +573,6 @@ export default function EventCreateModal({
           })
         );
       }
-
       if (selectedCalendars.microsoft) {
         calendarPromises.push(
           fetch("/api/events/outlook", {
@@ -662,14 +586,9 @@ export default function EventCreateModal({
           })
         );
       }
-
-      // Apple calendar would be handled similarly when the API is available
       if (selectedCalendars.apple) {
-        // TODO: Implement Apple Calendar API when available
         console.log("Apple Calendar integration not yet implemented");
       }
-
-      // Wait for all calendar operations to complete
       if (calendarPromises.length > 0) {
         await Promise.allSettled(calendarPromises);
       }
@@ -680,10 +599,7 @@ export default function EventCreateModal({
             (j as any)?.data && typeof (j as any)?.data === "object"
               ? (j as any).data
               : null;
-          const mergedData = {
-            ...payload.data,
-            ...(serverData || {}),
-          };
+          const mergedData = { ...payload.data, ...(serverData || {}) };
           window.dispatchEvent(
             new CustomEvent("history:created", {
               detail: {
@@ -691,20 +607,21 @@ export default function EventCreateModal({
                 title: (j as any)?.title || payload.title,
                 created_at: (j as any)?.created_at || new Date().toISOString(),
                 start:
-                  (serverData && serverData.start) ||
-                  (serverData && serverData.startISO) ||
+                  (serverData && (serverData as any).start) ||
+                  (serverData && (serverData as any).startISO) ||
                   startISO,
-                category: mergedData.category || null,
+                category: (mergedData as any).category || null,
                 data: mergedData,
               },
             })
           );
         }
       } catch {}
+
       if (id) {
         router.push(`/event/${id}?created=1`);
       }
-      onClose();
+      if (onCancel) onCancel();
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
       alert(msg);
@@ -713,29 +630,474 @@ export default function EventCreateModal({
     }
   };
 
-  const trimmedRsvp = rsvp.trim();
-  const normalizedCategory = (category || "").toLowerCase();
-  const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
-  const allowsRegistrySection = isRegistryCategory;
-  // RSVP field should ALWAYS show - users may want to add RSVP for any event type
-  const showRsvpField = true;
-
-  if (!open) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      onClick={() => !submitting && onClose()}
+    <form
+      className="flex-1 px-4 sm:px-5 pb-4 sm:pb-5 pt-1 space-y-3 overflow-y-auto min-h-0"
+      onSubmit={submit}
     >
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border shadow-xl sm:mx-auto max-h-[calc(100vh-2rem)] flex flex-col min-h-0"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <EventCreateForm defaultDate={defaultDate} onCancel={onClose} />
+      <div className="flex items-center justify-between pt-3 pb-2">
+        <h3 className="text-base sm:text-lg font-semibold">New event</h3>
       </div>
-    </div>
+      <div>
+        <label className="block text-sm mb-1" htmlFor="evt-title">
+          Title
+        </label>
+        <input
+          id="evt-title"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className="w-full px-3 py-2 rounded-md border border-border bg-background"
+          placeholder="Event title"
+        />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm" htmlFor="evt-when">
+            When
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={fullDay}
+              onChange={(e) => setFullDay(e.target.checked)}
+            />
+            <span>Full day</span>
+          </label>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+          {fullDay ? (
+            <input
+              id="evt-when"
+              type="date"
+              value={whenDate}
+              onChange={(e) => setWhenDate(e.target.value)}
+              min={todayMin}
+              className="w-full px-3 py-2 rounded-md border border-border bg-background min-w-0"
+            />
+          ) : (
+            <div className="col-span-3 grid grid-cols-1 gap-3">
+              <div>
+                <div className="text-xs text-foreground/70 mb-1">Start</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={whenDate}
+                    onChange={(e) => setWhenDate(e.target.value)}
+                    min={todayMin}
+                    className="px-2 py-1 rounded-md border border-border bg-background"
+                  />
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="px-2 py-1 rounded-md border border-border bg-background"
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-foreground/70 mb-1">End</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={whenDate || todayMin}
+                    className="px-2 py-1 rounded-md border border-border bg-background"
+                  />
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="px-2 py-1 rounded-md border border-border bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm mb-1" htmlFor="evt-venue">
+          Venue
+        </label>
+        <input
+          id="evt-venue"
+          type="text"
+          value={venue}
+          onChange={(e) => setVenue(e.target.value)}
+          className="w-full px-3 py-2 rounded-md border border-border bg-background"
+          placeholder="Venue name"
+        />
+      </div>
+      <div>
+        <label className="block text-sm mb-1" htmlFor="evt-location">
+          Address
+        </label>
+        <input
+          id="evt-location"
+          type="text"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="w-full px-3 py-2 rounded-md border border-border bg-background"
+          placeholder="Where is it?"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm mb-1" htmlFor="evt-number-of-guests">
+          Number of guests <span className="text-red-500">*</span>
+        </label>
+        <input
+          id="evt-number-of-guests"
+          type="number"
+          min="1"
+          required
+          value={numberOfGuests || ""}
+          onChange={(e) =>
+            setNumberOfGuests(Number.parseInt(e.target.value, 10) || 0)
+          }
+          className="w-full px-3 py-2 rounded-md border border-border bg-background"
+          placeholder="Enter number of guests"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm mb-1" htmlFor="evt-category">
+          Category
+        </label>
+        {!showCustomCategory ? (
+          <select
+            id="evt-category"
+            value={category}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "__custom__") {
+                setShowCustomCategory(true);
+                setCategory("");
+              } else {
+                setCategory(v);
+                maybeAssignCategoryColor(v);
+              }
+            }}
+            className="w-full px-3 py-2 rounded-md border border-border bg-background"
+          >
+            <option value="">Select category</option>
+            <option value="Birthdays">Birthdays</option>
+            <option value="Weddings">Weddings</option>
+            <option value="Baby Showers">Baby Showers</option>
+            <option value="Appointments">Appointments</option>
+            <option value="Doctor Appointments">Doctor Appointments</option>
+            <option value="Sport Events">Sport Events</option>
+            <option value="General Events">General Events</option>
+            <option value="__custom__">+ Add your own...</option>
+          </select>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              onBlur={() => {
+                if (customCategory.trim()) {
+                  setCategory(customCategory.trim());
+                  maybeAssignCategoryColor(customCategory.trim());
+                }
+              }}
+              placeholder="Enter category name"
+              className="flex-1 px-3 py-2 rounded-md border border-border bg-background"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (customCategory.trim()) {
+                  setCategory(customCategory.trim());
+                  maybeAssignCategoryColor(customCategory.trim());
+                  setShowCustomCategory(false);
+                }
+              }}
+              className="px-3 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            >
+              ✓
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCustomCategory(false);
+                setCustomCategory("");
+              }}
+              className="px-3 py-2 text-sm rounded-md border border-border hover:bg-surface"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        {category && !showCustomCategory && (
+          <div className="mt-2 text-sm text-foreground/70">
+            <span>Selected: {category}</span>
+          </div>
+        )}
+      </div>
+
+      {allowsRegistrySection && (
+        <RegistryLinksEditor
+          entries={registryLinks}
+          onAdd={addRegistryLink}
+          onRemove={removeRegistryLink}
+          onChange={handleRegistryFieldChange}
+          maxLinks={MAX_REGISTRY_LINKS}
+        />
+      )}
+
+      {showRsvpField && (
+        <div>
+          <label className="block text-sm mb-1" htmlFor="evt-rsvp">
+            RSVP
+          </label>
+          <textarea
+            id="evt-rsvp"
+            value={rsvp}
+            onChange={(e) => setRsvp(e.target.value)}
+            rows={1}
+            className="w-full px-3 py-2 rounded-md border border-border bg-background"
+            placeholder="Phone number or email address"
+          />
+        </div>
+      )}
+
+      {(connectedCalendars.google ||
+        connectedCalendars.microsoft ||
+        connectedCalendars.apple) && (
+        <div>
+          <label className="block text-sm mb-2">Add to Calendar</label>
+          <div className="space-y-2">
+            {connectedCalendars.google && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedCalendars.google}
+                  onChange={(e) =>
+                    setSelectedCalendars((prev) => ({
+                      ...prev,
+                      google: e.target.checked,
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-border"
+                />
+                <span>Google Calendar</span>
+              </label>
+            )}
+            {connectedCalendars.microsoft && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedCalendars.microsoft}
+                  onChange={(e) =>
+                    setSelectedCalendars((prev) => ({
+                      ...prev,
+                      microsoft: e.target.checked,
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-border"
+                />
+                <span>Outlook Calendar</span>
+              </label>
+            )}
+            {connectedCalendars.apple && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedCalendars.apple}
+                  onChange={(e) =>
+                    setSelectedCalendars((prev) => ({
+                      ...prev,
+                      apple: e.target.checked,
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-border"
+                />
+                <span>Apple Calendar</span>
+              </label>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Toggle
+        label="Repeats"
+        checked={repeat}
+        onChange={(next) => {
+          setRepeat(next);
+          if (!next) {
+            setRepeatDays([]);
+          } else {
+            setRepeatFrequency((prev) => (prev ? prev : "weekly"));
+          }
+        }}
+        size="md"
+      />
+      {repeat && (
+        <div className="space-y-3">
+          <div>
+            <div className="text-xs text-foreground/70 mb-1">Every</div>
+            <div className="flex gap-2">
+              {REPEAT_FREQUENCIES.map(({ key, label }) => {
+                const active = repeatFrequency === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setRepeatFrequency(key as any)}
+                    className={`rounded-md border px-3 py-1 text-xs font-medium transition ${
+                      active
+                        ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                        : "border-border bg-background text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {repeatFrequency === "weekly" && (
+            <div>
+              <div className="text-xs text-foreground/70 mb-1">Repeat on</div>
+              <div className="grid grid-cols-7 gap-2">
+                {DOW.map((d) => {
+                  const active = repeatDays.includes(d.code);
+                  return (
+                    <button
+                      key={d.code}
+                      type="button"
+                      onClick={() => {
+                        setRepeatDays((prev) =>
+                          active
+                            ? prev.filter((c) => c !== d.code)
+                            : [...prev, d.code]
+                        );
+                      }}
+                      className={`h-8 rounded-md border text-xs font-medium transition ${
+                        active
+                          ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
+                          : "bg-background text-foreground border-border"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {repeatFrequency === "monthly" && (
+            <p className="text-xs text-foreground/60">
+              Repeats each month on the event start date.
+            </p>
+          )}
+          {repeatFrequency === "yearly" && (
+            <p className="text-xs text-foreground/60">
+              Repeats every year on the event start date.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm mb-1" htmlFor="evt-desc">
+          Description
+        </label>
+        <textarea
+          id="evt-desc"
+          ref={descriptionRef}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="w-full px-3 py-2 rounded-md border border-border bg-background"
+        />
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between text-sm text-foreground">
+          <span>Upload a file (optional)</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => flyerInputRef.current?.click()}
+              className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface hover:border-foreground/20"
+            >
+              {attachment ? "Replace file" : "Upload file"}
+            </button>
+            {attachment && (
+              <button
+                type="button"
+                onClick={clearFlyer}
+                className="text-xs font-medium text-foreground hover:text-foreground/80"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+        <input
+          id="evt-flyer"
+          ref={flyerInputRef}
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={handleFlyerChange}
+          className="hidden"
+        />
+        {attachmentError && (
+          <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
+        )}
+        {attachment && (
+          <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
+            {attachmentPreviewUrl ? (
+              <img
+                src={attachmentPreviewUrl}
+                alt={attachment.name}
+                className="h-16 w-16 rounded border border-border object-cover"
+              />
+            ) : (
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-foreground/70">
+                📄
+              </span>
+            )}
+            <span className="truncate" title={attachment.name}>
+              {attachment.name}
+            </span>
+          </div>
+        )}
+        {!attachment && !attachmentError && (
+          <p className="mt-2 text-xs text-foreground/60">
+            Images or PDFs up to 10 MB.
+          </p>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (onCancel) onCancel();
+            else router.back();
+          }}
+          className="px-4 py-2 text-sm text-foreground border border-border rounded-md hover:bg-surface"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Saving…" : "Create event"}
+        </button>
+      </div>
+    </form>
   );
 }

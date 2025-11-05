@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import EventActions from "@/components/EventActions";
 import { getEventTheme } from "@/lib/event-theme";
 
@@ -556,6 +557,7 @@ function groupEventsByDay(
 
 export default function CalendarPage() {
   const { status } = useSession();
+  const router = useRouter();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -900,9 +902,9 @@ export default function CalendarPage() {
       return;
     }
     if (isPast) return; // do not allow creating events in the past from the calendar grid
-    // No items on this day (today or future) → open create modal with default date prefilled
+    // No items on this day (today or future) → navigate to create page with default date
     try {
-      (window as any).__openCreateEvent?.(date);
+      router.push(`/event/new?d=${encodeURIComponent(date.toISOString())}`);
     } catch {}
   };
 
@@ -1002,7 +1004,11 @@ export default function CalendarPage() {
                   window.dispatchEvent?.(new Event("closeSmartSignup"));
                 } catch {}
                 try {
-                  (window as any).__openCreateEvent?.(startOfDay(new Date()));
+                  router.push(
+                    `/event/new?d=${encodeURIComponent(
+                      startOfDay(new Date()).toISOString()
+                    )}`
+                  );
                 } catch {}
               }}
               title="New event"
@@ -1503,8 +1509,10 @@ export default function CalendarPage() {
                         window.dispatchEvent?.(new Event("closeSmartSignup"));
                       } catch {}
                       try {
-                        (window as any).__openCreateEvent?.(
-                          startOfDay(openDay.date)
+                        router.push(
+                          `/event/new?d=${encodeURIComponent(
+                            startOfDay(openDay.date).toISOString()
+                          )}`
                         );
                       } catch {}
                     }}

@@ -499,7 +499,7 @@ export default function LeftSidebar() {
   const triggerCreateEvent = () => {
     collapseSidebarOnTouch();
     try {
-      (window as any).__openCreateEvent?.();
+      router.push("/event/new");
     } catch {}
   };
   const handleSnapShortcutClick = (

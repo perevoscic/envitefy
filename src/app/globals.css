@@ -322,6 +322,22 @@ body {
   color: #000000 !important;
 }
 
+/* Exempt fixed overlays/modals rendered inside event page from the black-text rule */
+:root[data-theme$="-dark"] .event-theme-card .fixed,
+:root[data-theme$="-dark"] .event-theme-card .fixed * {
+  color: var(--foreground) !important;
+}
+
+/* RSVP modal titles: always white in dark theme */
+:root[data-theme$="-dark"] .event-theme-card .rsvp-heading {
+  color: #ffffff !important;
+}
+
+/* Cancel buttons in modals: white text in dark theme for contrast */
+:root[data-theme$="-dark"] .event-theme-card .btn-cancel-white {
+  color: #ffffff !important;
+}
+
 /* Force event text variables */
 :root[data-theme$="-light"] .event-theme-scope {
   --event-text-light: var(--foreground) !important;

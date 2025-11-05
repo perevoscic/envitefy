@@ -444,7 +444,7 @@ export default function EventRsvpPrompt({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="text-lg font-semibold text-foreground">
+            <h3 className="text-lg font-semibold rsvp-heading">
               Thanks for the RSVP
             </h3>
             <div className="mt-3 space-y-2 text-sm text-foreground/80">
@@ -542,7 +542,7 @@ export default function EventRsvpPrompt({
                     }))
                   }
                   placeholder="Add the guest’s name (optional)"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
               <label className="text-sm block">
@@ -557,7 +557,7 @@ export default function EventRsvpPrompt({
                     }))
                   }
                   placeholder="We’ll include this so the host can reach you"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
               {error ? (
@@ -569,7 +569,7 @@ export default function EventRsvpPrompt({
                 <button
                   type="button"
                   onClick={closeDeclineModal}
-                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-foreground/5"
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium btn-cancel-white hover:bg-foreground/5"
                 >
                   Cancel
                 </button>
@@ -616,7 +616,7 @@ export default function EventRsvpPrompt({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="text-lg font-semibold text-foreground">
+            <h3 className="text-lg font-semibold rsvp-heading">
               Introduce yourself
             </h3>
             <p className="mt-2 text-sm text-foreground/70">
@@ -667,7 +667,7 @@ export default function EventRsvpPrompt({
                     }))
                   }
                   placeholder="Add the guest’s name (optional)"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
               <label className="text-sm block">
@@ -683,7 +683,7 @@ export default function EventRsvpPrompt({
                     }))
                   }
                   placeholder="We’ll include this so the host can reach you"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
               {error ? (
@@ -695,7 +695,7 @@ export default function EventRsvpPrompt({
                 <button
                   type="button"
                   onClick={clearAndClose}
-                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-foreground/5"
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium btn-cancel-white hover:bg-foreground/5"
                 >
                   Cancel
                 </button>

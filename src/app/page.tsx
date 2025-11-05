@@ -145,13 +145,12 @@ export default function Home() {
     fetchConnected();
   }, [session]);
 
+  const router = useRouter();
   const openCreateEvent = useCallback(() => {
     try {
-      window.__openCreateEvent?.();
-    } catch {
-      // noop
-    }
-  }, []);
+      router.push("/event/new");
+    } catch {}
+  }, [router]);
 
   const resetForm = useCallback(() => {
     setEvent(null);

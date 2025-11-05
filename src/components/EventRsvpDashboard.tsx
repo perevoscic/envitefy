@@ -29,6 +29,7 @@ export default function EventRsvpDashboard({
   const [stats, setStats] = useState<RsvpStats | null>(null);
   const [responses, setResponses] = useState<RsvpResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -189,21 +190,162 @@ export default function EventRsvpDashboard({
                   : rsvp.response === "no"
                   ? "No"
                   : "Maybe";
+              const rsvpKey = `${rsvp.email || "anon"}-${
+                rsvp.createdAt || index
+              }`;
+              const isUpdating = updatingKey === rsvpKey;
 
               return (
                 <div
-                  key={`${rsvp.email || "anon"}-${rsvp.createdAt || index}`}
+                  key={rsvpKey}
                   className="flex items-center justify-between text-sm py-1.5 px-2 rounded border border-border/50 bg-background/50"
                 >
                   <span className="text-foreground truncate flex-1">
                     {displayName}
                   </span>
-                  <span
-                    className={`${responseColor} font-medium flex items-center gap-1.5 ml-2`}
-                  >
-                    <span>{responseIcon}</span>
-                    <span>{responseLabel}</span>
-                  </span>
+                  <div className="flex items-center gap-2 ml-2">
+                    <span
+                      className={`${responseColor} font-medium hidden sm:inline-flex items-center gap-1.5`}
+                    >
+                      <span>{responseIcon}</span>
+                      <span>{responseLabel}</span>
+                    </span>
+                    <select
+                      aria-label="Change RSVP status"
+                      className="h-8 rounded border border-border bg-background px-2 text-xs"
+                      value={rsvp.response}
+                      disabled={isUpdating}
+                      onChange={async (e) => {
+                        const next = e.target.value as "yes" | "no" | "maybe";
+                        setUpdatingKey(rsvpKey);
+                        try {
+                          await fetch(`/api/events/${eventId}/rsvp`, {
+                            method: "PATCH",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({
+                              response: next,
+                              target: rsvp.email
+                                ? { email: rsvp.email }
+                                : { name: rsvp.name },
+                            }),
+                            credentials: "include",
+                          });
+                        } catch (err) {
+                          console.error("Failed to update RSVP", err);
+                        } finally {
+                          setUpdatingKey(null);
+                          // Refresh list
+                          try {
+                            const res = await fetch(
+                              `/api/events/${eventId}/rsvp?t=${Date.now()}`,
+                              {
+                                cache: "no-store",
+                                credentials: "include",
+                              }
+                            );
+                            const data = await res.json();
+                            if (data.ok) {
+                              setStats({
+                                yes: data.stats?.yes || 0,
+                                no: data.stats?.no || 0,
+                                maybe: data.stats?.maybe || 0,
+                                filled: data.filled || 0,
+                                remaining:
+                                  data.remaining ??
+                                  (data.numberOfGuests ||
+                                    initialNumberOfGuests),
+                                numberOfGuests:
+                                  data.numberOfGuests || initialNumberOfGuests,
+                              });
+                              setResponses(
+                                Array.isArray(data.responses)
+                                  ? data.responses
+                                  : []
+                              );
+                            }
+                          } catch {}
+                        }
+                      }}
+                    >
+                      <option value="yes">Yes</option>
+                      <option value="maybe">Maybe</option>
+                      <option value="no">No</option>
+                    </select>
+                    <button
+                      type="button"
+                      aria-label="Delete RSVP"
+                      title="Delete RSVP"
+                      className="h-8 w-8 inline-flex items-center justify-center rounded border border-border hover:bg-red-500/10 text-red-600"
+                      disabled={isUpdating}
+                      onClick={async () => {
+                        if (isUpdating) return;
+                        setUpdatingKey(rsvpKey);
+                        try {
+                          await fetch(`/api/events/${eventId}/rsvp`, {
+                            method: "DELETE",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({
+                              target: rsvp.email
+                                ? { email: rsvp.email }
+                                : { name: rsvp.name },
+                            }),
+                            credentials: "include",
+                          });
+                        } catch (err) {
+                          console.error("Failed to delete RSVP", err);
+                        } finally {
+                          setUpdatingKey(null);
+                          try {
+                            const res = await fetch(
+                              `/api/events/${eventId}/rsvp?t=${Date.now()}`,
+                              {
+                                cache: "no-store",
+                                credentials: "include",
+                              }
+                            );
+                            const data = await res.json();
+                            if (data.ok) {
+                              setStats({
+                                yes: data.stats?.yes || 0,
+                                no: data.stats?.no || 0,
+                                maybe: data.stats?.maybe || 0,
+                                filled: data.filled || 0,
+                                remaining:
+                                  data.remaining ??
+                                  (data.numberOfGuests ||
+                                    initialNumberOfGuests),
+                                numberOfGuests:
+                                  data.numberOfGuests || initialNumberOfGuests,
+                              });
+                              setResponses(
+                                Array.isArray(data.responses)
+                                  ? data.responses
+                                  : []
+                              );
+                            }
+                          } catch {}
+                        }
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               );
             })}
