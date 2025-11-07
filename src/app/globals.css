@@ -888,3 +888,25 @@ body {
   }
 }
 
+/* Calendar icon theme styling for CreateShare preview */
+:root[data-theme="thanksgiving-light"] .calendar-icon-apple-black {
+  display: block;
+}
+:root[data-theme="thanksgiving-light"] .calendar-icon-apple-white {
+  display: none;
+}
+:root[data-theme="thanksgiving-dark"] .calendar-icon-apple-black {
+  display: none;
+}
+:root[data-theme="thanksgiving-dark"] .calendar-icon-apple-white {
+  display: block;
+}
+:root[data-theme="thanksgiving-light"] .calendar-icon-google,
+:root[data-theme="thanksgiving-light"] .calendar-icon-microsoft {
+  filter: invert(0%);
+}
+:root[data-theme="thanksgiving-dark"] .calendar-icon-google,
+:root[data-theme="thanksgiving-dark"] .calendar-icon-microsoft {
+  filter: invert(100%);
+}
+

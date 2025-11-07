@@ -223,20 +223,32 @@ export default function CreateShare() {
                             key={target.alt}
                             className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90"
                           >
-                            <Image
-                              src={target.light}
-                              alt={target.alt}
-                              width={22}
-                              height={22}
-                              className="h-5 w-5 dark:hidden"
-                            />
-                            <Image
-                              src={target.dark}
-                              alt={target.alt}
-                              width={22}
-                              height={22}
-                              className="hidden h-5 w-5 dark:block"
-                            />
+                            {target.alt === "Apple" ? (
+                              <>
+                                <Image
+                                  src={target.light}
+                                  alt={target.alt}
+                                  width={22}
+                                  height={22}
+                                  className="h-5 w-5 calendar-icon-apple-black"
+                                />
+                                <Image
+                                  src={target.dark}
+                                  alt={target.alt}
+                                  width={22}
+                                  height={22}
+                                  className="h-5 w-5 calendar-icon-apple-white"
+                                />
+                              </>
+                            ) : (
+                              <Image
+                                src={target.light}
+                                alt={target.alt}
+                                width={22}
+                                height={22}
+                                className={`h-5 w-5 calendar-icon-${target.alt.toLowerCase()}`}
+                              />
+                            )}
                           </span>
                         ))}
                       </div>
