@@ -1,13 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GiftSnapModal from "@/components/GiftSnapModal";
 import RedeemPromoModal from "@/components/RedeemPromoModal";
 import AuthModal from "@/components/auth/AuthModal";
-import Logo from "@/assets/logo.png";
 
 declare global {
   // Allow optional GA4/global site tag typings without forcing app-wide declarations
@@ -369,20 +367,17 @@ export default function SubscriptionPage() {
       <h1 className="text-2xl font-semibold text-muted-foreground mt-4 mb-6 text-center">
         Thank you for supporting
       </h1>
-      <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
-        <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
-        <p
-          className="mt-2 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-2"
-          role="heading"
-          aria-level={1}
-        >
-          <span className="font-pacifico">
-            <span className="text-[#0e7bc4]">Env</span>
-            <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#0e7bc4]">tefy</span>
-          </span>
-        </p>
-      </div>
+      <p
+        className="mb-8 md:mb-12 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-2 text-center"
+        role="heading"
+        aria-level={1}
+      >
+        <span className="font-pacifico">
+          <span className="text-[#0e7bc4]">Env</span>
+          <span className="text-[#ee3c2b]">i</span>
+          <span className="text-[#0e7bc4]">tefy</span>
+        </span>
+      </p>
 
       <h4 className="text-l text-muted-foreground mb-6 text-center">
         Your contribution helps keep the lights on and new features coming.

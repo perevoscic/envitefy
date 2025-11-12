@@ -7,13 +7,11 @@ import {
   PROFILE_CACHE_TTL_MS,
 } from "@/utils/profileCache";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
-import Logo from "@/assets/logo.png";
 import { getCategoryIcon } from "@/lib/event-colors";
 import {
   CalendarIconGoogle,
@@ -2239,21 +2237,13 @@ export default function LeftSidebar() {
         aria-label="Sidebar"
       >
         {/* Top: Logo + App name + close button */}
-        <div className="h-16 border-b border-border flex items-center gap-2 px-4 overflow-visible">
-          <Link
-            href="/"
-            className="flex items-center gap-2 min-w-0 overflow-visible"
-          >
-            <Image src={Logo} alt="Envitefy" width={32} height={32} />
-            <div className="min-w-0 leading-relaxed overflow-visible">
-              <span className="block text-2xl md:text-4xl">
-                <span className="font-pacifico">
-                  <span className="text-[#0e7bc4]">Env</span>
-                  <span className="text-[#ee3c2b]">i</span>
-                  <span className="text-[#0e7bc4]">tefy</span>
-                </span>
-              </span>
-            </div>
+        <div className="h-16 border-b border-border flex items-center px-4 overflow-visible">
+          <Link href="/" className="min-w-0 overflow-visible">
+            <span className="block text-2xl md:text-4xl leading-relaxed overflow-visible font-pacifico">
+              <span className="text-[#0e7bc4]">Env</span>
+              <span className="text-[#ee3c2b]">i</span>
+              <span className="text-[#0e7bc4]">tefy</span>
+            </span>
           </Link>
           <div className="ml-auto">
             <button

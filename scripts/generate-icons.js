@@ -1,5 +1,5 @@
 /*
-  Generate PWA icons from src/assets/LogoEonly.png (falls back to logo.png)
+  Generate PWA icons from src/assets/LogoEonly.png
   Requires: sharp (already in dependencies)
 */
 
@@ -11,23 +11,12 @@ async function ensureDir(dir) {
   await fs.promises.mkdir(dir, { recursive: true });
 }
 
-function resolveSource() {
-  const candidates = ["../src/assets/LogoEonly.png", "../src/assets/logo.png"];
-  for (const candidate of candidates) {
-    const fullPath = path.resolve(__dirname, candidate);
-    if (fs.existsSync(fullPath)) {
-      return fullPath;
-    }
-  }
-  return null;
-}
-
 async function generate() {
-  const srcPath = resolveSource();
+  const srcPath = path.resolve(__dirname, "../src/assets/LogoEonly.png");
   const outDir = path.resolve(__dirname, "../public/icons");
 
-  if (!srcPath) {
-    console.error("[icons] Source logo not found (expected LogoEonly.png or logo.png)");
+  if (!fs.existsSync(srcPath)) {
+    console.error("[icons] Source logo not found at src/assets/LogoEonly.png");
     process.exit(0);
   }
 

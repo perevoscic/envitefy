@@ -1,9 +1,7 @@
 "use client";
 import type { Metadata } from "next";
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import Logo from "@/assets/logo.png";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -37,16 +35,13 @@ export default function ForgotPasswordPage() {
   return (
     <main className="min-h-[100dvh] flex items-center justify-center p-6">
       <section className="w-full max-w-md rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-md">
-        <div className="flex flex-col items-center gap-2 mb-2">
-          <Link href="/">
-            <Image src={Logo} alt="Logo" height={56} className="rounded" />
-          </Link>
-          <h2 className="text-xl md:text-2xl font-semibold text-center">
+        <Link href="/" className="mb-2 block text-center">
+          <h2 className="text-xl md:text-2xl font-semibold">
             <span className="font-pacifico">Snap</span>
             <span> </span>
             <span className="font-montserrat">My Date</span>
           </h2>
-        </div>
+        </Link>
         <p className="text-sm text-foreground/70 text-center mb-2">
           From papers to reminders.
         </p>

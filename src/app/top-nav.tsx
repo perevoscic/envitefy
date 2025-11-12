@@ -1,9 +1,7 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "./providers";
-import Logo from "@/assets/logo.png";
 
 export default function TopNav() {
   const { data: session, status } = useSession();
@@ -15,8 +13,7 @@ export default function TopNav() {
     <header className="fixed top-0 inset-x-0 z-[300] h-16 border-b border-border bg-surface/60 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
       <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/" className="flex items-center gap-2 min-w-0">
-            <Image src={Logo} alt="Envitefy" className="h-9 w-9" />
+          <Link href="/" className="min-w-0">
             <span className="text-base text-foreground truncate leading-tight">
               <span className="block truncate font-montserrat font-semibold">
                 Envitefy

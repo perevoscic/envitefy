@@ -9,7 +9,6 @@ import LocationLink from "@/components/LocationLink";
 import EventMap from "@/components/EventMap";
 import ReadOnlyBanner from "./ReadOnlyBanner";
 import Image from "next/image";
-import Logo from "@/assets/logo.png";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import {
   isEventSharedWithUser,
@@ -1521,20 +1520,17 @@ export default async function EventPage({
         </div>
       )}
       {isReadOnly && (
-        <div className="mt-4 md:mt-6 flex flex-row items-center justify-center gap-4 text-center">
-          <Image src={Logo} alt="Envitefy logo" width={25} height={25} />
-          <p
-            className="text-3xl md:text-4xl tracking-tight text-foreground pb-3 pt-2"
-            role="heading"
-            aria-level={1}
-          >
-            <span className="font-pacifico">
-              <span className="text-[#0e7bc4]">Env</span>
-              <span className="text-[#ee3c2b]">i</span>
-              <span className="text-[#0e7bc4]">tefy</span>
-            </span>
-          </p>
-        </div>
+        <p
+          className="mt-4 md:mt-6 text-3xl md:text-4xl tracking-tight text-foreground pb-3 pt-2 text-center"
+          role="heading"
+          aria-level={1}
+        >
+          <span className="font-pacifico">
+            <span className="text-[#0e7bc4]">Env</span>
+            <span className="text-[#ee3c2b]">i</span>
+            <span className="text-[#0e7bc4]">tefy</span>
+          </span>
+        </p>
       )}
     </main>
   );

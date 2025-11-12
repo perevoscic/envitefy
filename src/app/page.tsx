@@ -14,7 +14,6 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
-import Logo from "@/assets/logo.png";
 import {
   CreateEventIllustration,
   ScanIllustration,
@@ -933,21 +932,18 @@ export default function Home() {
 
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <div className="mb-8 md:mb-12 flex flex-col items-center text-center">
-        <Image src={Logo} alt="Envitefy logo" width={100} height={100} />
-        <p
-          className="mt-2 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-2"
-          role="heading"
-          aria-level={1}
-        >
-          <span className="font-pacifico">
-            <span className="text-[#0e7bc4]">Env</span>
-            <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#0e7bc4]">tefy</span>
-          </span>
-        </p>
-      </div>
-      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4">
+      <p
+        className="mb-8 md:mb-12 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-15 text-center"
+        role="heading"
+        aria-level={1}
+      >
+        <span className="font-pacifico">
+          <span className="text-[#0e7bc4]">Env</span>
+          <span className="text-[#ee3c2b]">i</span>
+          <span className="text-[#0e7bc4]">tefy</span>
+        </span>
+      </p>
+      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10">
         <OptionCard
           title="Snap Event"
           details={[
@@ -1497,17 +1493,10 @@ function SnapEventModal({
             <button
               type="button"
               disabled={!event?.start}
-              className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={saveToEnvitefy}
             >
-              <span>Save to</span>
-              <Image
-                src={Logo}
-                alt="Envitefy"
-                width={20}
-                height={20}
-                className="brightness-0 invert"
-              />
+              <span>Save to Envitefy</span>
             </button>
             <button
               type="button"

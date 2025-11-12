@@ -2,8 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
-import Logo from "@/assets/logo.png";
 import BackgroundSlider from "@/components/BackgroundSlider";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -262,12 +260,6 @@ export default function LoginHero() {
         }`}
         style={{ bottom: "calc(8.5rem + env(safe-area-inset-bottom))" }}
       >
-        <Image
-          src={Logo}
-          alt="Envitefy logo"
-          height={84}
-          className="rounded mx-auto mt-1"
-        />
         <p className="text-3xl md:text-4xl text-white/90 font-montserrat">
           Welcome to
         </p>

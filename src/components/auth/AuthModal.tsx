@@ -4,8 +4,6 @@ import { useEffect, useRef } from "react";
 import { useSidebar } from "@/app/sidebar-context";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import Image from "next/image";
-import Logo from "@/assets/logo.png";
 
 export type AuthModalProps = {
   open: boolean;
@@ -86,39 +84,33 @@ export default function AuthModal({
       <div className="relative w-full sm:w-[480px] max-w-[92vw]">
         {/* Card */}
         <div className="relative bg-surface text-foreground border border-border rounded-3xl p-5 sm:p-6 shadow-2xl auth-card-gradient">
-          <div className="pt-2 pb-4 text-center">
-            <Image
-              src={Logo}
-              alt="envitefy.com"
-              height={60}
-              className="mx-auto rounded"
-            />
-            {mode === "login" ? (
-              <>
-                <p className="mt-3 text-base text-foreground/80">
-                  Welcome back to
-                </p>
-                <p className="mt-1 text-5xl tracking-tight text-foreground">
-                  <span className="font-pacifico">
-                    <span className="text-[#0e7bc4]">env</span>
-                    <span className="text-[#ee3c2b]">i</span>
-                    <span className="text-[#0e7bc4]">tefy</span>
-                  </span>
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mt-3 text-base text-foreground/80">Join</p>
-                <p className="mt-1 text-5xl tracking-tight text-foreground">
-                  <span className="font-pacifico">
-                    <span className="text-[#0e7bc4]">env</span>
-                    <span className="text-[#ee3c2b]">i</span>
-                    <span className="text-[#0e7bc4]">tefy</span>
-                  </span>
-                </p>
-              </>
-            )}
-          </div>
+          {mode === "login" ? (
+            <>
+              <p className="pt-2 pb-1 text-base text-foreground/80 text-center">
+                Welcome back to
+              </p>
+              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7">
+                <span className="font-pacifico">
+                  <span className="text-[#0e7bc4]">Env</span>
+                  <span className="text-[#ee3c2b]">i</span>
+                  <span className="text-[#0e7bc4]">tefy</span>
+                </span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="pt-2 pb-1 text-base text-foreground/80 text-center">
+                Join
+              </p>
+              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7">
+                <span className="font-pacifico">
+                  <span className="text-[#0e7bc4]">Env</span>
+                  <span className="text-[#ee3c2b]">i</span>
+                  <span className="text-[#0e7bc4]">tefy</span>
+                </span>
+              </p>
+            </>
+          )}
           {mode === "login" ? (
             <LoginForm
               onSuccess={onClose}
