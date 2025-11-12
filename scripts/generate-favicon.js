@@ -1,5 +1,5 @@
 /*
-  Generate a multi-size favicon.ico from src/assets/logo.png
+  Generate a multi-size favicon.ico from src/assets/LogoEonly.png (falls back to logo.png)
 */
 
 const fs = require("fs");
@@ -10,14 +10,25 @@ async function ensureDir(dir) {
   await fs.promises.mkdir(dir, { recursive: true });
 }
 
+function resolveSource() {
+  const candidates = ["../src/assets/LogoEonly.png", "../src/assets/logo.png"];
+  for (const candidate of candidates) {
+    const fullPath = path.resolve(__dirname, candidate);
+    if (fs.existsSync(fullPath)) {
+      return fullPath;
+    }
+  }
+  return null;
+}
+
 async function main() {
   const { default: toIco } = await import("png-to-ico");
-  const srcPath = path.resolve(__dirname, "../src/assets/logo.png");
+  const srcPath = resolveSource();
   const outDir = path.resolve(__dirname, "../src/app");
   const sizes = [16, 24, 32, 48, 64];
 
-  if (!fs.existsSync(srcPath)) {
-    console.error(`[favicon] Source logo not found at ${srcPath}`);
+  if (!srcPath) {
+    console.error("[favicon] Source logo not found (expected LogoEonly.png or logo.png)");
     process.exit(1);
   }
 
@@ -39,7 +50,7 @@ async function main() {
   const icoOutput = path.join(outDir, "favicon.ico");
   const icoBuffer = await toIco(pngBuffers);
   await fs.promises.writeFile(icoOutput, icoBuffer);
-  console.log(`[favicon] Done → ${icoOutput}`);
+  console.log(`[favicon] Source: ${path.relative(process.cwd(), srcPath)} → ${icoOutput}`);
 }
 
 main().catch((err) => {

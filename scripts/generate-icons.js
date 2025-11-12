@@ -1,5 +1,5 @@
 /*
-  Generate PWA icons from src/assets/logo.png
+  Generate PWA icons from src/assets/LogoEonly.png (falls back to logo.png)
   Requires: sharp (already in dependencies)
 */
 
@@ -11,20 +11,34 @@ async function ensureDir(dir) {
   await fs.promises.mkdir(dir, { recursive: true });
 }
 
-async function generate() {
-  const srcPath = path.resolve(__dirname, "../src/assets/logo.png");
-  const outDir = path.resolve(__dirname, "../public/icons");
-  await ensureDir(outDir);
+function resolveSource() {
+  const candidates = ["../src/assets/LogoEonly.png", "../src/assets/logo.png"];
+  for (const candidate of candidates) {
+    const fullPath = path.resolve(__dirname, candidate);
+    if (fs.existsSync(fullPath)) {
+      return fullPath;
+    }
+  }
+  return null;
+}
 
-  if (!fs.existsSync(srcPath)) {
-    console.error(`[icons] Source logo not found at ${srcPath}`);
+async function generate() {
+  const srcPath = resolveSource();
+  const outDir = path.resolve(__dirname, "../public/icons");
+
+  if (!srcPath) {
+    console.error("[icons] Source logo not found (expected LogoEonly.png or logo.png)");
     process.exit(0);
   }
+
+  await ensureDir(outDir);
 
   const iconSizes = [48, 72, 96, 120, 128, 144, 152, 167, 180, 192, 256, 384, 512];
   const maskableSizes = [192, 512];
 
-  console.log(`[icons] Generating ${iconSizes.length + maskableSizes.length} icons…`);
+  console.log(
+    `[icons] Source: ${path.relative(process.cwd(), srcPath)} — generating ${iconSizes.length + maskableSizes.length} icons…`
+  );
 
   await Promise.all(
     iconSizes.map(async (size) => {
