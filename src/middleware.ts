@@ -3,6 +3,61 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+const PUBLIC_UNAUTH_PATHS = new Set([
+  "/",
+  "/landing",
+  "/open",
+  "/about",
+  "/how-it-works",
+  "/who-its-for",
+  "/faq",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/verify-request",
+  "/forgot",
+  "/reset",
+  "/snap",
+]);
+
+const RESERVED_EVENT_PATHS = new Set([
+  "new",
+  "appointments",
+  "baby-showers",
+  "birthdays",
+  "sport-events",
+  "weddings",
+]);
+
+const stripTrailingSlash = (pathname: string) => {
+  if (!pathname || pathname === "/") return "/";
+  return pathname.replace(/\/+$/, "");
+};
+
+const isEventSharePath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  if (!normalized.startsWith("/event/")) return false;
+  const segments = normalized.split("/").filter(Boolean);
+  return (
+    segments.length === 2 &&
+    segments[0] === "event" &&
+    !RESERVED_EVENT_PATHS.has(segments[1])
+  );
+};
+
+const isSmartSignupSharePath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  return /^\/smart-signup-form\/[^/]+$/.test(normalized);
+};
+
+const isAllowedForUnauth = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  if (PUBLIC_UNAUTH_PATHS.has(normalized)) return true;
+  if (isEventSharePath(normalized)) return true;
+  if (isSmartSignupSharePath(normalized)) return true;
+  return false;
+};
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -75,6 +130,14 @@ export async function middleware(req: NextRequest) {
       req.cookies.get("__Host-next-auth.session-token") ??
       req.cookies.get("next-auth.session-token");
     hasSession = Boolean(sessionCookie?.value);
+  }
+
+  if (!hasSession) {
+    if (!isAllowedForUnauth(pathname)) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      return redirectWithMarker(url, 302);
+    }
   }
 
   // Allow direct access to /landing without redirecting back to /
