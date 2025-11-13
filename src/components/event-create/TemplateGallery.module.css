@@ -1,10 +1,10 @@
 .gallery {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1280px) {
   .gallery {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -34,36 +34,6 @@
   transform: translateY(-4px);
 }
 
-.hero {
-  min-height: 160px;
-  position: relative;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  background-size: cover;
-  background-position: center;
-}
-
-.heroLabel {
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 600;
-  align-self: flex-start;
-}
-
-.heroImageName {
-  margin-top: 0.6rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(20, 20, 20, 0.65);
-}
-
 .cardBody {
   padding: 1.25rem 1.5rem 1.5rem;
   display: flex;
@@ -90,7 +60,7 @@
   margin: 0.35rem 0 0;
   font-size: 0.85rem;
   color: rgba(31, 23, 21, 0.7);
-  max-width: 220px;
+  max-width: 240px;
 }
 
 .selectButton {
@@ -115,21 +85,17 @@
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
 }
 
-.menu {
+.variationSection {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(29, 21, 17, 0.6);
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
-.menuItem {
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+.variationKicker {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(29, 21, 17, 0.6);
 }
 
 .variationRow {
@@ -140,7 +106,7 @@
 
 .variationButton {
   flex: 1;
-  min-width: 140px;
+  min-width: 150px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 1rem;
   padding: 0.65rem;
@@ -182,11 +148,115 @@
   font-size: 0.65rem;
   line-height: 1.2;
   letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .variationLabel small {
   font-size: 0.6rem;
   color: rgba(21, 12, 9, 0.55);
+  text-transform: none;
+  letter-spacing: 0.05em;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.75rem;
+}
+
+.selectButtonSelected {
+  border-color: rgba(56, 40, 28, 0.9);
+  background: #fefcf8;
+}
+
+.previewFrame {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 12px 24px rgba(18, 12, 20, 0.08);
+  background: #fefcf8;
+}
+
+.previewHeader {
+  padding: 1.25rem 1.5rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: rgba(32, 26, 23, 0.85);
+  min-height: 140px;
+}
+
+.previewHeroTag {
+  align-self: flex-start;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.previewNames {
+  font-size: 1.45rem;
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.previewMeta {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.previewNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.previewNavItem {
+  position: relative;
+  padding-bottom: 0.15rem;
+}
+
+.previewNavItem::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.2;
+}
+
+.previewPhoto {
+  min-height: 160px;
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.4), transparent 55%),
+    linear-gradient(135deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.15)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Crect width='140' height='140' fill='%23d4d4d4'/%3E%3C/svg%3E");
+  background-size: cover;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.previewPhoto span {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
 }
 
 @media (max-width: 640px) {

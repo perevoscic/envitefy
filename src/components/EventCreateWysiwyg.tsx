@@ -23,6 +23,7 @@ import {
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import styles from "./EventCreateWysiwyg.module.css";
 
 type ConnectedCalendars = {
   google: boolean;
@@ -937,59 +938,66 @@ export default function EventCreateWysiwyg({
   };
 
   return (
-    <main className="max-w-3xl mx-auto px-5 sm:px-10 py-10">
+    <main className="px-5 py-10">
       {/* Autosave banner removed */}
 
-      <form onSubmit={submit} className="space-y-6">
-        {!categoryKey && (
-          <section className="rounded-3xl border shadow-sm px-6 sm:px-10 py-10 flex items-center justify-center min-h-[65vh] bg-gradient-to-b from-[#FFE6D4] to-[#FBE7F3]">
-            <div className="w-full max-w-5xl text-center">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-[#3A2C1E] mb-2">
-                Create an Event
-              </h1>
-              <p className="text-[#7A6A5A] mb-8 text-sm sm:text-base">
-                Pick a template to get the right fields and styling.
-              </p>
-              <div
-                id="template-grid"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mx-auto max-w-3xl"
-              >
+      <form onSubmit={submit}>
+        <section className="mx-auto w-full max-w-7xl space-y-5">
+          {!categoryKey && (
+            <>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#5D4736]">
+                  Event templates
+                </p>
+                <h1 className="text-3xl font-semibold text-[#2C1F19]">
+                  Create an Event
+                </h1>
+                <p className="text-sm text-[#63534A]">
+                  Pick a template to get the right fields and styling.
+                </p>
+              </div>
+              <div className={styles.gallery}>
                 {CATEGORIES.map((c) => (
                   <button
                     key={c.key}
                     type="button"
                     data-label={c.label}
                     onClick={() => handleSelectTemplate(c.key)}
-                    className={`${c.color} rounded-2xl border p-6 text-left shadow-sm cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5`}
+                    className={styles.templateCard}
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl" aria-hidden>
-                        {c.emoji}
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-base sm:text-lg">
-                          {c.label}
-                        </h3>
-                        {c.hint && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/70 border text-gray-600 inline-block mt-1">
-                            {c.hint}
-                          </span>
-                        )}
+                    <div className={styles.cardBody}>
+                      <div className={styles.cardHeader}>
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className={styles.emoji} aria-hidden>
+                              {c.emoji}
+                            </span>
+                            <h3 className={styles.cardTitle}>
+                              {c.label}
+                            </h3>
+                          </div>
+                          {c.hint && (
+                            <span className={styles.hint}>
+                              {c.hint}
+                            </span>
+                          )}
+                          <p className={styles.cardDescription}>
+                            {c.desc}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mt-3">{c.desc}</p>
                   </button>
                 ))}
               </div>
-            </div>
-          </section>
-        )}
+            </>
+          )}
 
-        {categoryKey && (
-          <section
-            className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8 min-h-[220px] sm:min-h-[280px]"
-            style={headerBackground as React.CSSProperties}
-          >
+          {categoryKey && (
+            <section
+              className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8 min-h-[220px] sm:min-h-[280px]"
+              style={headerBackground as React.CSSProperties}
+            >
             {attachmentPreviewUrl && (
               <div
                 style={{
@@ -1092,11 +1100,11 @@ export default function EventCreateWysiwyg({
               className="hidden"
             />
           </section>
-        )}
+          )}
 
-        {/* Background presets (choose gradient) */}
-        {categoryKey && (
-          <section className="rounded-xl border px-4 sm:px-5 py-4">
+          {/* Background presets (choose gradient) */}
+          {categoryKey && (
+            <section className="rounded-xl border px-4 sm:px-5 py-4">
             <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-2">
               Header background
             </label>
@@ -1152,9 +1160,9 @@ export default function EventCreateWysiwyg({
               </button>
             </div>
           </section>
-        )}
+          )}
 
-        {categoryKey &&
+          {categoryKey &&
           (() => {
             const editor: EditorBindings = {
               summary,
@@ -1217,8 +1225,8 @@ export default function EventCreateWysiwyg({
             return <GeneralEventsTemplate editor={editor} />;
           })()}
 
-        {categoryKey && (
-          <div className="flex flex-wrap justify-end gap-3 pt-2">
+          {categoryKey && (
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={() => router.back()}
@@ -1234,7 +1242,8 @@ export default function EventCreateWysiwyg({
               {submitting ? "Saving…" : "Create event"}
             </button>
           </div>
-        )}
+          )}
+        </section>
       </form>
     </main>
   );

@@ -1,148 +1,16 @@
 "use client";
 
 import React from "react";
-import styles from "./WeddingTemplateGallery.module.css";
-
-export type WeddingTitleFont =
-  | "auto"
-  | "montserrat"
-  | "pacifico"
-  | "geist"
-  | "mono"
-  | "serif"
-  | "system"
-  | "poppins"
-  | "raleway"
-  | "playfair"
-  | "dancing";
-
-type TitleWeight = "normal" | "semibold" | "bold";
-type TitleAlign = "left" | "center" | "right";
-
-export type TemplateVariation = {
-  id: string;
-  label: string;
-  tagline: string;
-  palette: string[];
-  background: string;
-  titleColor: string;
-  titleFont: WeddingTitleFont;
-  titleWeight?: TitleWeight;
-  titleAlign?: TitleAlign;
-};
-
-const variationLibrary: Record<string, TemplateVariation> = {
-  blushChampagne: {
-    id: "blush-champagne",
-    label: "Blush & Champagne",
-    tagline: "Soft rose-gold warmth",
-    palette: ["#FDF3EF", "#F5D6CA", "#E0B8A9", "#AC7F73", "#4A1E19"],
-    background: "linear-gradient(145deg, #FDF3EF, #E0B8A9)",
-    titleColor: "#3C1511",
-    titleFont: "playfair",
-    titleWeight: "semibold",
-    titleAlign: "center",
-  },
-  midnightNoir: {
-    id: "midnight-noir",
-    label: "Midnight Noir",
-    tagline: "Candlelit drama",
-    palette: ["#0F0D17", "#1F142E", "#30404F", "#7E5A8A", "#C7B5D4"],
-    background: "linear-gradient(160deg, #0F0D17, #30404F)",
-    titleColor: "#ECD7E7",
-    titleFont: "playfair",
-    titleWeight: "bold",
-    titleAlign: "center",
-  },
-  gardenEmerald: {
-    id: "garden-emerald",
-    label: "Garden Emerald",
-    tagline: "Botanical atelier",
-    palette: ["#F4F5F0", "#C6D8D1", "#93B4A9", "#577864", "#24382D"],
-    background: "linear-gradient(150deg, #F4F5F0, #93B4A9)",
-    titleColor: "#24382D",
-    titleFont: "raleway",
-    titleWeight: "semibold",
-    titleAlign: "center",
-  },
-  opalSand: {
-    id: "opal-sand",
-    label: "Opal Sand",
-    tagline: "Marble fresh neutrals",
-    palette: ["#FFF9F6", "#F3E2D7", "#D7B9A9", "#93756A", "#4B3A34"],
-    background: "linear-gradient(145deg, #FFF9F6, #D7B9A9)",
-    titleColor: "#4B3A34",
-    titleFont: "montserrat",
-    titleWeight: "normal",
-    titleAlign: "left",
-  },
-  moonlitLavender: {
-    id: "moonlit-lavender",
-    label: "Moonlit Lavender",
-    tagline: "Twilight whispers",
-    palette: ["#F0F2F7", "#D8D7E5", "#9FA6C8", "#676C95", "#1E1F3D"],
-    background: "linear-gradient(160deg, #F0F2F7, #9FA6C8)",
-    titleColor: "#1E1F3D",
-    titleFont: "playfair",
-    titleWeight: "semibold",
-    titleAlign: "center",
-  },
-  sunsetCoral: {
-    id: "sunset-coral",
-    label: "Sunset Coral",
-    tagline: "Bougainvillea glow",
-    palette: ["#FFF3EE", "#FFD1C1", "#FF9C8D", "#C75B40", "#481E16"],
-    background: "linear-gradient(145deg, #FFF3EE, #FF9C8D)",
-    titleColor: "#481E16",
-    titleFont: "dancing",
-    titleWeight: "bold",
-    titleAlign: "center",
-  },
-  goldenIvy: {
-    id: "golden-ivy",
-    label: "Golden Ivy",
-    tagline: "Gilded heirlooms",
-    palette: ["#F8F6EF", "#E4D4AF", "#C6B07E", "#6B5A3B", "#2E2518"],
-    background: "linear-gradient(135deg, #F8F6EF, #C6B07E)",
-    titleColor: "#2E2518",
-    titleFont: "poppins",
-    titleWeight: "semibold",
-    titleAlign: "center",
-  },
-  crimsonVelvet: {
-    id: "crimson-velvet",
-    label: "Crimson Velvet",
-    tagline: "Deep luxe hints",
-    palette: ["#F9F1EF", "#E9D7D4", "#CF4D53", "#7B1C26", "#2F0A0F"],
-    background: "linear-gradient(145deg, #F9F1EF, #CF4D53)",
-    titleColor: "#2F0A0F",
-    titleFont: "geist",
-    titleWeight: "bold",
-    titleAlign: "center",
-  },
-  seaGlass: {
-    id: "sea-glass",
-    label: "Sea Glass",
-    tagline: "Coastal shimmer",
-    palette: ["#F1FBFA", "#D0E5E3", "#9BC6C6", "#4B7E7F", "#1A3B3A"],
-    background: "linear-gradient(150deg, #F1FBFA, #9BC6C6)",
-    titleColor: "#1A3B3A",
-    titleFont: "montserrat",
-    titleWeight: "semibold",
-    titleAlign: "center",
-  },
-  desertAmber: {
-    id: "desert-amber",
-    label: "Desert Amber",
-    tagline: "Warm adobe glow",
-    palette: ["#FFF6ED", "#FAD4A5", "#CE8E5A", "#8A582F", "#35251D"],
-    background: "linear-gradient(150deg, #FFF6ED, #CE8E5A)",
-    titleColor: "#35251D",
-    titleFont: "raleway",
-    titleWeight: "normal",
-    titleAlign: "left",
-  },
-};
+import TemplateGallery, {
+  type TemplateGalleryTemplate,
+  type TemplateGalleryVariation,
+  type ResolvedTemplateVariation,
+} from "./TemplateGallery";
+import {
+  type TemplateTitleFont,
+  type TemplateFontTokenId,
+  type TemplatePaletteTokenId,
+} from "./templateDesignTokens";
 
 const baseMenu = [
   "Home",
@@ -155,15 +23,33 @@ const baseMenu = [
   "RSVP",
 ];
 
-export type WeddingTemplateDefinition = {
-  id: string;
-  name: string;
-  description: string;
-  heroImageName: string;
-  heroMood: string;
-  menu: string[];
-  variations: TemplateVariation[];
+export type WeddingTemplateDefinition = TemplateGalleryTemplate & {
+  preview?: {
+    coupleName: string;
+    dateLabel: string;
+    location: string;
+  };
 };
+export type TemplateVariation = ResolvedTemplateVariation;
+export type WeddingTitleFont = TemplateTitleFont;
+
+type StoryConfig = {
+  key: string;
+  paletteId: TemplatePaletteTokenId;
+  label: string;
+  tagline: string;
+  fontId: TemplateFontTokenId;
+  titleColorOverride?: string;
+};
+
+const buildStories = (
+  templateId: string,
+  configs: StoryConfig[]
+): TemplateGalleryVariation[] =>
+  configs.map(({ key, ...rest }) => ({
+    id: `${templateId}-${key}`,
+    ...rest,
+  }));
 
 export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
   {
@@ -172,15 +58,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Candlelit florals and contrasting serif lettering for after-dark celebrations.",
     heroImageName: "midnight-bloom-hero.jpg",
-    heroMood: "Velvet florals",
+    heroMood: "Velvet Florals",
     menu: [...baseMenu],
-    variations: [
-      variationLibrary.midnightNoir,
-      variationLibrary.blushChampagne,
-      variationLibrary.moonlitLavender,
-      variationLibrary.crimsonVelvet,
-      variationLibrary.goldenIvy,
-    ],
+    variations: buildStories("midnight-bloom", [
+      {
+        key: "velvet-midnight",
+        paletteId: "midnight-noir",
+        label: "Velvet Midnight",
+        tagline: "Plum velvet & ink nightfall",
+        fontId: "serif-bold-center",
+      },
+      {
+        key: "garnet-ember",
+        paletteId: "crimson-velvet",
+        label: "Garnet Ember",
+        tagline: "Wine-lit romance glow",
+        fontId: "script-center",
+      },
+      {
+        key: "moonlace",
+        paletteId: "moonlit-lavender",
+        label: "Moonlace",
+        tagline: "Lavender twilight lace",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "heirloom-brass",
+        paletteId: "golden-ivy",
+        label: "Heirloom Brass",
+        tagline: "Gilded metallic sheen",
+        fontId: "poppins-center",
+      },
+      {
+        key: "pearled-ash",
+        paletteId: "opal-sand",
+        label: "Pearled Ash",
+        tagline: "Modern neutral canvas",
+        fontId: "sans-classic-left",
+      },
+    ]),
+    preview: {
+      coupleName: "Ava & Mason",
+      dateLabel: "September 23, 2028",
+      location: "New York, NY",
+    },
   },
   {
     id: "ivory-ink",
@@ -188,15 +109,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Editorial black-and-white with bespoke typography revealing every detail.",
     heroImageName: "ivory-ink-hero.jpg",
-    heroMood: "Studio portrait",
+    heroMood: "Studio Portrait",
     menu: [...baseMenu, "Dress Code"],
-    variations: [
-      variationLibrary.opalSand,
-      variationLibrary.moonlitLavender,
-      variationLibrary.midnightNoir,
-      variationLibrary.gardenEmerald,
-      variationLibrary.seaGlass,
-    ],
+    variations: buildStories("ivory-ink", [
+      {
+        key: "gallery-ivory",
+        paletteId: "opal-sand",
+        label: "Gallery Ivory",
+        tagline: "Minimal parchment tones",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "rose-monogram",
+        paletteId: "blush-champagne",
+        label: "Rose Monogram",
+        tagline: "Soft blush serif flourishes",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "sea-salt",
+        paletteId: "sea-glass",
+        label: "Sea Salt Glass",
+        tagline: "Coastal ivory blend",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "gilt-frame",
+        paletteId: "golden-ivy",
+        label: "Gilt Frame",
+        tagline: "Editorial gold edges",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "evening-lilac",
+        paletteId: "moonlit-lavender",
+        label: "Evening Lilac",
+        tagline: "Periwinkle twilight glow",
+        fontId: "poppins-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Noah & Cam",
+      dateLabel: "June 15, 2029",
+      location: "Portland, OR",
+    },
   },
   {
     id: "garden-atelier",
@@ -204,15 +160,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Painterly leaves, hand-lettered cues, and lush directional layouts.",
     heroImageName: "garden-atelier-hero.jpg",
-    heroMood: "Botanical canopy",
+    heroMood: "Botanical Canopy",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.gardenEmerald,
-      variationLibrary.seaGlass,
-      variationLibrary.goldenIvy,
-      variationLibrary.blushChampagne,
-      variationLibrary.opalSand,
-    ],
+    variations: buildStories("garden-atelier", [
+      {
+        key: "verdant-atelier",
+        paletteId: "garden-emerald",
+        label: "Verdant Atelier",
+        tagline: "Botanical inked outlines",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "mist-coast",
+        paletteId: "sea-glass",
+        label: "Mist Coast",
+        tagline: "Cool greenhouse glass",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "trellis-brass",
+        paletteId: "golden-ivy",
+        label: "Trellis Brass",
+        tagline: "Gilded lattice cues",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "petal-script",
+        paletteId: "blush-champagne",
+        label: "Petal Script",
+        tagline: "Painterly blush swash",
+        fontId: "script-center",
+      },
+      {
+        key: "sage-dusk",
+        paletteId: "moonlit-lavender",
+        label: "Sage Dusk",
+        tagline: "Lavender twilight canopy",
+        fontId: "sans-classic-left",
+      },
+    ]),
+    preview: {
+      coupleName: "Priya & Ren",
+      dateLabel: "May 4, 2029",
+      location: "Santa Barbara, CA",
+    },
   },
   {
     id: "desert-lumiere",
@@ -220,15 +211,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Warm adobe hues with luxury metallic lines overlaid on sweeping dunes.",
     heroImageName: "desert-lumiere-hero.jpg",
-    heroMood: "Sun-bleached stone",
+    heroMood: "Sun-Bleached Stone",
     menu: [...baseMenu, "Weekend"],
-    variations: [
-      variationLibrary.desertAmber,
-      variationLibrary.blushChampagne,
-      variationLibrary.sunsetCoral,
-      variationLibrary.goldenIvy,
-      variationLibrary.opalSand,
-    ],
+    variations: buildStories("desert-lumiere", [
+      {
+        key: "adobe-ember",
+        paletteId: "desert-amber",
+        label: "Adobe Ember",
+        tagline: "Sun-warmed adobe stone",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "canyon-bloom",
+        paletteId: "sunset-coral",
+        label: "Canyon Bloom",
+        tagline: "Terracotta florals",
+        fontId: "script-center",
+      },
+      {
+        key: "brass-mirage",
+        paletteId: "golden-ivy",
+        label: "Brass Mirage",
+        tagline: "Gilded sand shimmer",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "linen-mesa",
+        paletteId: "opal-sand",
+        label: "Linen Mesa",
+        tagline: "Neutral sandstone fibers",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "saguaro-velvet",
+        paletteId: "crimson-velvet",
+        label: "Saguaro Velvet",
+        tagline: "Desert night velvet",
+        fontId: "geist-bold-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Elias & Mateo",
+      dateLabel: "October 12, 2028",
+      location: "Sedona, AZ",
+    },
   },
   {
     id: "coastal-pearl",
@@ -236,15 +262,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Soft ocean breezes, glassy gradients, and an airy serif for seaside vows.",
     heroImageName: "coastal-pearl-hero.jpg",
-    heroMood: "Ocean shimmer",
+    heroMood: "Ocean Shimmer",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.seaGlass,
-      variationLibrary.moonlitLavender,
-      variationLibrary.opalSand,
-      variationLibrary.midnightNoir,
-      variationLibrary.blushChampagne,
-    ],
+    variations: buildStories("coastal-pearl", [
+      {
+        key: "tidal-glass",
+        paletteId: "sea-glass",
+        label: "Tidal Glass",
+        tagline: "Mist and aquamarine",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "dusk-current",
+        paletteId: "moonlit-lavender",
+        label: "Dusk Current",
+        tagline: "Lilac shoreline haze",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "shell-linen",
+        paletteId: "opal-sand",
+        label: "Shell Linen",
+        tagline: "Pearled neutral drift",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "coral-petal",
+        paletteId: "blush-champagne",
+        label: "Coral Petal",
+        tagline: "Sunset blush foam",
+        fontId: "poppins-center",
+      },
+      {
+        key: "pier-gilt",
+        paletteId: "golden-ivy",
+        label: "Pier Gilt",
+        tagline: "Brassy pier lights",
+        fontId: "raleway-editorial",
+      },
+    ]),
+    preview: {
+      coupleName: "Lena & Harper",
+      dateLabel: "July 8, 2029",
+      location: "Martha's Vineyard, MA",
+    },
   },
   {
     id: "gilded-twilight",
@@ -252,15 +313,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Artful gold foils on charcoal backdrops with luxe art-deco flourishes.",
     heroImageName: "gilded-twilight-hero.jpg",
-    heroMood: "Gilded archway",
+    heroMood: "Gilded Archway",
     menu: [...baseMenu],
-    variations: [
-      variationLibrary.goldenIvy,
-      variationLibrary.midnightNoir,
-      variationLibrary.crimsonVelvet,
-      variationLibrary.moonlitLavender,
-      variationLibrary.blushChampagne,
-    ],
+    variations: buildStories("gilded-twilight", [
+      {
+        key: "gilded-twilight",
+        paletteId: "golden-ivy",
+        label: "Gilded Twilight",
+        tagline: "Deco brass luxe",
+        fontId: "serif-bold-center",
+      },
+      {
+        key: "ink-ballroom",
+        paletteId: "midnight-noir",
+        label: "Ink Ballroom",
+        tagline: "Charcoal evening drama",
+        fontId: "geist-bold-center",
+      },
+      {
+        key: "merlot-tux",
+        paletteId: "crimson-velvet",
+        label: "Merlot Tux",
+        tagline: "Burgundy gala flair",
+        fontId: "script-center",
+      },
+      {
+        key: "amethyst-spark",
+        paletteId: "moonlit-lavender",
+        label: "Amethyst Spark",
+        tagline: "Cool twilight sheen",
+        fontId: "poppins-center",
+      },
+      {
+        key: "ivory-foil",
+        paletteId: "opal-sand",
+        label: "Ivory Foil",
+        tagline: "Paperwhite shimmer",
+        fontId: "sans-classic-left",
+      },
+    ]),
+    preview: {
+      coupleName: "Jordan & Lee",
+      dateLabel: "December 1, 2028",
+      location: "Chicago, IL",
+    },
   },
   {
     id: "marble-whisper",
@@ -268,15 +364,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Textured stone, minimalist borders, and calm serif headings for grand halls.",
     heroImageName: "marble-whisper-hero.jpg",
-    heroMood: "Marble detail",
+    heroMood: "Marble Detail",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.opalSand,
-      variationLibrary.gardenEmerald,
-      variationLibrary.moonlitLavender,
-      variationLibrary.goldenIvy,
-      variationLibrary.seaGlass,
-    ],
+    variations: buildStories("marble-whisper", [
+      {
+        key: "carrara-veil",
+        paletteId: "opal-sand",
+        label: "Carrara Veil",
+        tagline: "Veined marble calm",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "atrium-fern",
+        paletteId: "garden-emerald",
+        label: "Atrium Fern",
+        tagline: "Emerald inlay wash",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "lilac-fresco",
+        paletteId: "moonlit-lavender",
+        label: "Lilac Fresco",
+        tagline: "Dusty mural hues",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "guilded-sconce",
+        paletteId: "golden-ivy",
+        label: "Guilded Sconce",
+        tagline: "Warm metallic halo",
+        fontId: "poppins-center",
+      },
+      {
+        key: "fountain-mist",
+        paletteId: "sea-glass",
+        label: "Fountain Mist",
+        tagline: "Cooling marble spray",
+        fontId: "sans-classic-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Serena & Quinn",
+      dateLabel: "April 19, 2029",
+      location: "Savannah, GA",
+    },
   },
   {
     id: "velvet-noir",
@@ -284,15 +415,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Dark luxury tinted with jewel-bright florals and a confident serif stack.",
     heroImageName: "velvet-noir-hero.jpg",
-    heroMood: "Noir petals",
+    heroMood: "Noir Petals",
     menu: [...baseMenu, "Dress Code"],
-    variations: [
-      variationLibrary.midnightNoir,
-      variationLibrary.crimsonVelvet,
-      variationLibrary.moonlitLavender,
-      variationLibrary.goldenIvy,
-      variationLibrary.blushChampagne,
-    ],
+    variations: buildStories("velvet-noir", [
+      {
+        key: "velvet-noir",
+        paletteId: "midnight-noir",
+        label: "Velvet Noir",
+        tagline: "Deep black-tie luxe",
+        fontId: "serif-bold-center",
+      },
+      {
+        key: "cabernet-bloom",
+        paletteId: "crimson-velvet",
+        label: "Cabernet Bloom",
+        tagline: "Wine-stained petals",
+        fontId: "script-center",
+      },
+      {
+        key: "iris-smoke",
+        paletteId: "moonlit-lavender",
+        label: "Iris Smoke",
+        tagline: "Cool lavender haze",
+        fontId: "poppins-center",
+      },
+      {
+        key: "brass-marquis",
+        paletteId: "golden-ivy",
+        label: "Brass Marquis",
+        tagline: "Golden marquee glow",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "blush-shadow",
+        paletteId: "blush-champagne",
+        label: "Blush Shadow",
+        tagline: "Soft neutral contrast",
+        fontId: "sans-classic-left",
+      },
+    ]),
+    preview: {
+      coupleName: "Cam & Jordan",
+      dateLabel: "February 9, 2029",
+      location: "Philadelphia, PA",
+    },
   },
   {
     id: "moonlit-terrace",
@@ -300,15 +466,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Crescent moons, soft gradients, and lyrical scripts for rooftop celebrations.",
     heroImageName: "moonlit-terrace-hero.jpg",
-    heroMood: "Moonlit terrace",
+    heroMood: "Moonlit Terrace",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.moonlitLavender,
-      variationLibrary.seaGlass,
-      variationLibrary.midnightNoir,
-      variationLibrary.opalSand,
-      variationLibrary.goldenIvy,
-    ],
+    variations: buildStories("moonlit-terrace", [
+      {
+        key: "moon-terrace",
+        paletteId: "moonlit-lavender",
+        label: "Moon Terrace",
+        tagline: "Rooftop lilac haze",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "city-tide",
+        paletteId: "sea-glass",
+        label: "City Tide",
+        tagline: "Skyline teal glimmer",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "starlit-slate",
+        paletteId: "midnight-noir",
+        label: "Starlit Slate",
+        tagline: "Inky midnight canopy",
+        fontId: "geist-bold-center",
+      },
+      {
+        key: "stone-balcony",
+        paletteId: "opal-sand",
+        label: "Stone Balcony",
+        tagline: "Pale limestone wash",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "lantern-gleam",
+        paletteId: "golden-ivy",
+        label: "Lantern Gleam",
+        tagline: "Warm brass balcony lights",
+        fontId: "poppins-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Noelle & Avery",
+      dateLabel: "June 30, 2029",
+      location: "Denver, CO",
+    },
   },
   {
     id: "champagne-skyline",
@@ -316,15 +517,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "City views, glass sparkle, and wide‐lettered tallcaps that echo skyline bars.",
     heroImageName: "champagne-skyline-hero.jpg",
-    heroMood: "City sparkle",
+    heroMood: "City Sparkle",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.blushChampagne,
-      variationLibrary.goldenIvy,
-      variationLibrary.midnightNoir,
-      variationLibrary.seaGlass,
-      variationLibrary.desertAmber,
-    ],
+    variations: buildStories("champagne-skyline", [
+      {
+        key: "champagne-glow",
+        paletteId: "blush-champagne",
+        label: "Champagne Glow",
+        tagline: "Skyline blush glass",
+        fontId: "poppins-center",
+      },
+      {
+        key: "city-gilt",
+        paletteId: "golden-ivy",
+        label: "City Gilt",
+        tagline: "Tower lights shimmer",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "penthouse-noir",
+        paletteId: "midnight-noir",
+        label: "Penthouse Noir",
+        tagline: "After-dark skyline",
+        fontId: "geist-bold-center",
+      },
+      {
+        key: "river-lights",
+        paletteId: "sea-glass",
+        label: "River Lights",
+        tagline: "Cool urban teal",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "sunset-highball",
+        paletteId: "desert-amber",
+        label: "Sunset Highball",
+        tagline: "Cocktail amber sheen",
+        fontId: "script-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Eleanor & Claire",
+      dateLabel: "November 14, 2028",
+      location: "San Francisco, CA",
+    },
   },
   {
     id: "art-deco-gala",
@@ -332,15 +568,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Geometric frames, metallic edges, and graceful type for ballroom dances.",
     heroImageName: "art-deco-gala-hero.jpg",
-    heroMood: "Deco geometry",
+    heroMood: "Deco Geometry",
     menu: [...baseMenu],
-    variations: [
-      variationLibrary.midnightNoir,
-      variationLibrary.crimsonVelvet,
-      variationLibrary.goldenIvy,
-      variationLibrary.gardenEmerald,
-      variationLibrary.moonlitLavender,
-    ],
+    variations: buildStories("art-deco-gala", [
+      {
+        key: "marquee-noir",
+        paletteId: "midnight-noir",
+        label: "Marquee Noir",
+        tagline: "Deco midnight stage",
+        fontId: "serif-bold-center",
+      },
+      {
+        key: "ruby-fanfare",
+        paletteId: "crimson-velvet",
+        label: "Ruby Fanfare",
+        tagline: "Ballroom ruby flourish",
+        fontId: "script-center",
+      },
+      {
+        key: "gatsby-brass",
+        paletteId: "golden-ivy",
+        label: "Gatsby Brass",
+        tagline: "Geometric gold lines",
+        fontId: "poppins-center",
+      },
+      {
+        key: "emerald-jazz",
+        paletteId: "garden-emerald",
+        label: "Emerald Jazz",
+        tagline: "Green deco notes",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "silver-overture",
+        paletteId: "moonlit-lavender",
+        label: "Silver Overture",
+        tagline: "Platinum prelude",
+        fontId: "sans-classic-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Milo & Ahmed",
+      dateLabel: "March 2, 2029",
+      location: "New Orleans, LA",
+    },
   },
   {
     id: "sunset-vineyard",
@@ -348,15 +619,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Dusty coral shades, leafy wreaths, and flowing serif lines for countryside vows.",
     heroImageName: "sunset-vineyard-hero.jpg",
-    heroMood: "Sunset over vines",
+    heroMood: "Sunset over Vines",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.sunsetCoral,
-      variationLibrary.blushChampagne,
-      variationLibrary.goldenIvy,
-      variationLibrary.desertAmber,
-      variationLibrary.gardenEmerald,
-    ],
+    variations: buildStories("sunset-vineyard", [
+      {
+        key: "rose-canopy",
+        paletteId: "sunset-coral",
+        label: "Rosé Canopy",
+        tagline: "Terracotta vines",
+        fontId: "script-center",
+      },
+      {
+        key: "peach-estate",
+        paletteId: "blush-champagne",
+        label: "Peach Estate",
+        tagline: "Summer orchard shimmer",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "treasure-harvest",
+        paletteId: "golden-ivy",
+        label: "Treasure Harvest",
+        tagline: "Golden vineyard light",
+        fontId: "poppins-center",
+      },
+      {
+        key: "amber-barrel",
+        paletteId: "desert-amber",
+        label: "Amber Barrel",
+        tagline: "Cask-aged warmth",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "vineyard-grove",
+        paletteId: "garden-emerald",
+        label: "Vineyard Grove",
+        tagline: "Leafy evening breeze",
+        fontId: "raleway-editorial",
+      },
+    ]),
+    preview: {
+      coupleName: "Bianca & Theo",
+      dateLabel: "August 18, 2029",
+      location: "Napa Valley, CA",
+    },
   },
   {
     id: "winter-chalet",
@@ -364,15 +670,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Snowy minimalism, frosted edges, and thin serif text ready for alpine invites.",
     heroImageName: "winter-chalet-hero.jpg",
-    heroMood: "Frosted lodge",
+    heroMood: "Frosted Lodge",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.moonlitLavender,
-      variationLibrary.midnightNoir,
-      variationLibrary.opalSand,
-      variationLibrary.seaGlass,
-      variationLibrary.goldenIvy,
-    ],
+    variations: buildStories("winter-chalet", [
+      {
+        key: "frosted-lilac",
+        paletteId: "moonlit-lavender",
+        label: "Frosted Lilac",
+        tagline: "Snowy dusk glow",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "glacier-ink",
+        paletteId: "midnight-noir",
+        label: "Glacier Ink",
+        tagline: "Nighttime alpine",
+        fontId: "geist-bold-center",
+      },
+      {
+        key: "linen-chalet",
+        paletteId: "opal-sand",
+        label: "Linen Chalet",
+        tagline: "Warm wool neutrals",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "icefall-mist",
+        paletteId: "sea-glass",
+        label: "Icefall Mist",
+        tagline: "Minted winter wash",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "hearth-brass",
+        paletteId: "golden-ivy",
+        label: "Hearth Brass",
+        tagline: "Copper firelight",
+        fontId: "poppins-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Kai & Max",
+      dateLabel: "January 10, 2029",
+      location: "Lake Tahoe, CA",
+    },
   },
   {
     id: "palais-moderne",
@@ -380,15 +721,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Modern symmetry, asymmetrical menus, and restrained palettes for bold couples.",
     heroImageName: "palais-moderne-hero.jpg",
-    heroMood: "Modern gallery",
+    heroMood: "Modern Gallery",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.seaGlass,
-      variationLibrary.gardenEmerald,
-      variationLibrary.opalSand,
-      variationLibrary.moonlitLavender,
-      variationLibrary.midnightNoir,
-    ],
+    variations: buildStories("palais-moderne", [
+      {
+        key: "gallery-mint",
+        paletteId: "sea-glass",
+        label: "Gallery Mint",
+        tagline: "Modern seafoam hue",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "atrium-green",
+        paletteId: "garden-emerald",
+        label: "Atrium Green",
+        tagline: "Museum atrium leaves",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "stucco-veil",
+        paletteId: "opal-sand",
+        label: "Stucco Veil",
+        tagline: "Soft sandstone wash",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "lilac-plinth",
+        paletteId: "moonlit-lavender",
+        label: "Lilac Plinth",
+        tagline: "Sculptural lilac shade",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "obsidian-wing",
+        paletteId: "midnight-noir",
+        label: "Obsidian Wing",
+        tagline: "Gallery noir accent",
+        fontId: "geist-bold-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Ivy & Lin",
+      dateLabel: "May 28, 2029",
+      location: "Los Angeles, CA",
+    },
   },
   {
     id: "evergreen-ballroom",
@@ -396,15 +772,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Dark green, gold leaf, and organic script for grand ballroom affairs.",
     heroImageName: "evergreen-ballroom-hero.jpg",
-    heroMood: "Emerald canopy",
+    heroMood: "Emerald Canopy",
     menu: [...baseMenu],
-    variations: [
-      variationLibrary.gardenEmerald,
-      variationLibrary.seaGlass,
-      variationLibrary.goldenIvy,
-      variationLibrary.midnightNoir,
-      variationLibrary.blushChampagne,
-    ],
+    variations: buildStories("evergreen-ballroom", [
+      {
+        key: "evergreen-waltz",
+        paletteId: "garden-emerald",
+        label: "Evergreen Waltz",
+        tagline: "Grand forest flair",
+        fontId: "serif-bold-center",
+      },
+      {
+        key: "azure-arbor",
+        paletteId: "sea-glass",
+        label: "Azure Arbor",
+        tagline: "Cool greenhouse tint",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "crown-brass",
+        paletteId: "golden-ivy",
+        label: "Crown Brass",
+        tagline: "Royal metallic edge",
+        fontId: "poppins-center",
+      },
+      {
+        key: "boxwood-night",
+        paletteId: "midnight-noir",
+        label: "Boxwood Night",
+        tagline: "Dark botanical hush",
+        fontId: "geist-bold-center",
+      },
+      {
+        key: "rosette-fern",
+        paletteId: "blush-champagne",
+        label: "Rosette Fern",
+        tagline: "Soft rose vines",
+        fontId: "script-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Riley & Sage",
+      dateLabel: "September 07, 2029",
+      location: "Seattle, WA",
+    },
   },
   {
     id: "tidal-opulence",
@@ -412,15 +823,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Pearlescent shells, gallery grids, and lavish serif type for oceanfront vows.",
     heroImageName: "tidal-opulence-hero.jpg",
-    heroMood: "Pearl tide",
+    heroMood: "Pearl Tide",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.seaGlass,
-      variationLibrary.desertAmber,
-      variationLibrary.blushChampagne,
-      variationLibrary.goldenIvy,
-      variationLibrary.moonlitLavender,
-    ],
+    variations: buildStories("tidal-opulence", [
+      {
+        key: "opaline-tide",
+        paletteId: "sea-glass",
+        label: "Opaline Tide",
+        tagline: "Glass tidepools",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "salted-amber",
+        paletteId: "desert-amber",
+        label: "Salted Amber",
+        tagline: "Beachfront amber sky",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "shell-blush",
+        paletteId: "blush-champagne",
+        label: "Shell Blush",
+        tagline: "Pearled rosy shell",
+        fontId: "poppins-center",
+      },
+      {
+        key: "harbor-gilt",
+        paletteId: "golden-ivy",
+        label: "Harbor Gilt",
+        tagline: "Pierside metallics",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "lilac-current",
+        paletteId: "moonlit-lavender",
+        label: "Lilac Current",
+        tagline: "Evening surf shimmer",
+        fontId: "script-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Nadia & Chen",
+      dateLabel: "April 27, 2029",
+      location: "Honolulu, HI",
+    },
   },
   {
     id: "starlight-ballroom",
@@ -428,15 +874,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Ink pulps, shooting stars, and illuminated script sections for starry affairs.",
     heroImageName: "starlight-ballroom-hero.jpg",
-    heroMood: "Star-etched sky",
+    heroMood: "Star-Etched Sky",
     menu: [...baseMenu],
-    variations: [
-      variationLibrary.midnightNoir,
-      variationLibrary.moonlitLavender,
-      variationLibrary.goldenIvy,
-      variationLibrary.crimsonVelvet,
-      variationLibrary.seaGlass,
-    ],
+    variations: buildStories("starlight-ballroom", [
+      {
+        key: "starliner-noir",
+        paletteId: "midnight-noir",
+        label: "Starliner Noir",
+        tagline: "Constellation black",
+        fontId: "serif-bold-center",
+      },
+      {
+        key: "nebula-lilac",
+        paletteId: "moonlit-lavender",
+        label: "Nebula Lilac",
+        tagline: "Celestial mauve",
+        fontId: "poppins-center",
+      },
+      {
+        key: "orbit-brass",
+        paletteId: "golden-ivy",
+        label: "Orbit Brass",
+        tagline: "Gilded starlight",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "comet-rouge",
+        paletteId: "crimson-velvet",
+        label: "Comet Rouge",
+        tagline: "Crimson shooting stars",
+        fontId: "script-center",
+      },
+      {
+        key: "aurora-mist",
+        paletteId: "sea-glass",
+        label: "Aurora Mist",
+        tagline: "Blue-green aurora glow",
+        fontId: "sans-classic-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Lucas & Owen",
+      dateLabel: "October 05, 2029",
+      location: "Austin, TX",
+    },
   },
   {
     id: "silken-alpine",
@@ -444,15 +925,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Snowy linen, glassy serif strokes, and alpine vistas for high-country vows.",
     heroImageName: "silken-alpine-hero.jpg",
-    heroMood: "Winter panorama",
+    heroMood: "Winter Panorama",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.opalSand,
-      variationLibrary.gardenEmerald,
-      variationLibrary.moonlitLavender,
-      variationLibrary.desertAmber,
-      variationLibrary.goldenIvy,
-    ],
+    variations: buildStories("silken-alpine", [
+      {
+        key: "silken-drift",
+        paletteId: "opal-sand",
+        label: "Silken Drift",
+        tagline: "Ivory snow textures",
+        fontId: "sans-classic-left",
+      },
+      {
+        key: "pinecrest",
+        paletteId: "garden-emerald",
+        label: "Pinecrest",
+        tagline: "Evergreen peaks",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "alpenglow-iris",
+        paletteId: "moonlit-lavender",
+        label: "Alpenglow Iris",
+        tagline: "Lavender mountain light",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "copper-chalet",
+        paletteId: "desert-amber",
+        label: "Copper Chalet",
+        tagline: "Warm timber glow",
+        fontId: "poppins-center",
+      },
+      {
+        key: "summit-brass",
+        paletteId: "golden-ivy",
+        label: "Summit Brass",
+        tagline: "Bold metallic summits",
+        fontId: "geist-bold-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Zara & Milo",
+      dateLabel: "December 21, 2028",
+      location: "Aspen, CO",
+    },
   },
   {
     id: "horizon-chateau",
@@ -460,15 +976,50 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Sunrise headlands, crisp script, and luminous galleries for chateau celebrations.",
     heroImageName: "horizon-chateau-hero.jpg",
-    heroMood: "Sunrise balcony",
+    heroMood: "Sunrise Balcony",
     menu: [...baseMenu, "Accommodations"],
-    variations: [
-      variationLibrary.blushChampagne,
-      variationLibrary.moonlitLavender,
-      variationLibrary.seaGlass,
-      variationLibrary.desertAmber,
-      variationLibrary.midnightNoir,
-    ],
+    variations: buildStories("horizon-chateau", [
+      {
+        key: "rose-horizon",
+        paletteId: "blush-champagne",
+        label: "Rose Horizon",
+        tagline: "Dawn pastel glow",
+        fontId: "script-center",
+      },
+      {
+        key: "violet-chateau",
+        paletteId: "moonlit-lavender",
+        label: "Violet Château",
+        tagline: "Evening lavender sky",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "azure-estate",
+        paletteId: "sea-glass",
+        label: "Azure Estate",
+        tagline: "Cool coastal castle",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "citrine-arch",
+        paletteId: "desert-amber",
+        label: "Citrine Arch",
+        tagline: "Golden archways",
+        fontId: "poppins-center",
+      },
+      {
+        key: "obsidian-cellar",
+        paletteId: "midnight-noir",
+        label: "Obsidian Cellar",
+        tagline: "Dramatic nightcap",
+        fontId: "geist-bold-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Amelia & Camille",
+      dateLabel: "May 12, 2029",
+      location: "Paris, France",
+    },
   },
   {
     id: "celestial-atelier",
@@ -476,112 +1027,62 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     description:
       "Star charts, moonbeams, and airy scripts that feel like a couture atelier.",
     heroImageName: "celestial-atelier-hero.jpg",
-    heroMood: "Celestial glow",
+    heroMood: "Celestial Glow",
     menu: [...baseMenu],
-    variations: [
-      variationLibrary.moonlitLavender,
-      variationLibrary.seaGlass,
-      variationLibrary.midnightNoir,
-      variationLibrary.goldenIvy,
-      variationLibrary.desertAmber,
-    ],
+    variations: buildStories("celestial-atelier", [
+      {
+        key: "celestial-violet",
+        paletteId: "moonlit-lavender",
+        label: "Celestial Violet",
+        tagline: "Star-mapped lilac",
+        fontId: "serif-regal-center",
+      },
+      {
+        key: "lunar-aqua",
+        paletteId: "sea-glass",
+        label: "Lunar Aqua",
+        tagline: "Cosmic teal gradient",
+        fontId: "sans-classic-center",
+      },
+      {
+        key: "orbit-noir",
+        paletteId: "midnight-noir",
+        label: "Orbit Noir",
+        tagline: "Deep cosmos ink",
+        fontId: "geist-bold-center",
+      },
+      {
+        key: "solar-gilt",
+        paletteId: "golden-ivy",
+        label: "Solar Gilt",
+        tagline: "Sunbeam metallic highlights",
+        fontId: "raleway-editorial",
+      },
+      {
+        key: "meteor-amber",
+        paletteId: "desert-amber",
+        label: "Meteor Amber",
+        tagline: "Falling ember trails",
+        fontId: "script-center",
+      },
+    ]),
+    preview: {
+      coupleName: "Robin & Theo",
+      dateLabel: "October 22, 2029",
+      location: "Boston, MA",
+    },
   },
 ];
 
-type WeddingTemplateGalleryProps = {
-  selectedTemplateId: string | null;
-  selectedVariationId: string | null;
-  onTemplateVariationPick: (
+type Props = {
+  appliedTemplateId: string | null;
+  appliedVariationId: string | null;
+  onApplyTemplate: (
     template: WeddingTemplateDefinition,
-    variation: TemplateVariation
+    variation: ResolvedTemplateVariation
   ) => void;
 };
 
-export default function WeddingTemplateGallery({
-  selectedTemplateId,
-  selectedVariationId,
-  onTemplateVariationPick,
-}: WeddingTemplateGalleryProps) {
-  return (
-    <div className={styles.gallery}>
-      {weddingTemplateCatalog.map((template) => {
-        const isSelected = template.id === selectedTemplateId;
-        const activeVariation =
-          template.variations.find((v) => v.id === selectedVariationId) ??
-          template.variations[0];
-
-        return (
-          <article
-            key={template.id}
-            className={styles.templateCard}
-            data-selected={isSelected ? "true" : undefined}
-          >
-            <div
-              className={styles.hero}
-              style={{ background: activeVariation.background }}
-            >
-              <span className={styles.heroLabel}>{template.heroMood}</span>
-              <p className={styles.heroImageName}>
-                Placeholder: {template.heroImageName}
-              </p>
-            </div>
-
-            <div className={styles.cardBody}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <p className={styles.cardTitle}>{template.name}</p>
-                  <p className={styles.cardDescription}>{template.description}</p>
-                </div>
-                <button
-                  type="button"
-                  className={styles.selectButton}
-                  onClick={() => onTemplateVariationPick(template, activeVariation)}
-                >
-                  {isSelected ? "Selected" : "Use template"}
-                </button>
-              </div>
-              <nav className={styles.menu} aria-label={`${template.name} menu`}>
-                {template.menu.map((item) => (
-                  <span key={item} className={styles.menuItem}>
-                    {item}
-                  </span>
-                ))}
-              </nav>
-              <div className={styles.variationRow}>
-                {template.variations.map((variation) => {
-                  const isActiveVariation =
-                    isSelected && variation.id === selectedVariationId;
-                  return (
-                    <button
-                      key={variation.id}
-                      type="button"
-                      aria-pressed={isActiveVariation}
-                      className={`${styles.variationButton} ${
-                        isActiveVariation ? styles.variationActive : ""
-                      }`}
-                      onClick={() => onTemplateVariationPick(template, variation)}
-                    >
-                      <div className={styles.variationSwatches}>
-                        {variation.palette.map((color) => (
-                          <span
-                            key={color}
-                            className={styles.paletteDot}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-                      <div className={styles.variationLabel}>
-                        <span>{variation.label}</span>
-                        <small>{variation.tagline}</small>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
+export default function WeddingTemplateGallery(props: Props) {
+  return <TemplateGallery templates={weddingTemplateCatalog} {...props} />;
 }
