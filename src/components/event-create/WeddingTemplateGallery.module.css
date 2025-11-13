@@ -1,0 +1,205 @@
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+  .gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+}
+
+.templateCard {
+  border-radius: 1.75rem;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 20px 45px rgba(18, 12, 20, 0.15);
+  overflow: hidden;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.templateCard[data-selected="true"] {
+  border-color: rgba(199, 153, 100, 0.95);
+  box-shadow: 0 30px 65px rgba(12, 0, 6, 0.4);
+  transform: translateY(-4px);
+}
+
+.hero {
+  min-height: 160px;
+  position: relative;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-size: cover;
+  background-position: center;
+}
+
+.heroLabel {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.heroImageName {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 20, 20, 0.65);
+}
+
+.cardBody {
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.cardTitle {
+  font-family: var(--font-playfair);
+  font-size: 1.4rem;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.cardDescription {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(31, 23, 21, 0.7);
+  max-width: 220px;
+}
+
+.selectButton {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+  color: #1b1208;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.templateCard[data-selected="true"] .selectButton {
+  border-color: rgba(199, 153, 100, 0.9);
+  box-shadow: 0 10px 25px rgba(199, 153, 100, 0.35);
+}
+
+.selectButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(29, 21, 17, 0.6);
+}
+
+.menuItem {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.variationRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.variationButton {
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1rem;
+  padding: 0.65rem;
+  background: #f7f4f0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  color: rgba(21, 12, 9, 0.9);
+}
+
+.variationButton:hover {
+  transform: translateY(-2px);
+  border-color: rgba(199, 153, 100, 0.6);
+}
+
+.variationActive {
+  border-color: rgba(199, 153, 100, 0.9);
+  box-shadow: 0 12px 30px rgba(12, 0, 6, 0.2);
+}
+
+.variationSwatches {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.paletteDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.variationLabel {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.65rem;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+}
+
+.variationLabel small {
+  font-size: 0.6rem;
+  color: rgba(21, 12, 9, 0.55);
+}
+
+@media (max-width: 640px) {
+  .cardHeader {
+    flex-direction: column;
+  }
+
+  .selectButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .cardDescription {
+    max-width: none;
+  }
+}
