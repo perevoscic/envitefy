@@ -1,6 +1,12 @@
 "use client";
 
-import React from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import TemplateGallery, {
   type TemplateGalleryTemplate,
   type TemplateGalleryVariation,
@@ -1432,5 +1438,105 @@ type Props = {
 };
 
 export default function WeddingTemplateGallery(props: Props) {
-  return <TemplateGallery templates={weddingTemplateCatalog} {...props} />;
+  const [customHeroImage, setCustomHeroImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
+
+  const handlePreviewUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+      const nextUrl = URL.createObjectURL(file);
+      objectUrlRef.current = nextUrl;
+      setCustomHeroImage(nextUrl);
+    },
+    []
+  );
+
+  const clearPreview = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setCustomHeroImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const selectedTemplate = useMemo(() => {
+    if (!props.appliedTemplateId) return weddingTemplateCatalog[0];
+    return (
+      weddingTemplateCatalog.find(
+        (template) => template.id === props.appliedTemplateId
+      ) ?? weddingTemplateCatalog[0]
+    );
+  }, [props.appliedTemplateId]);
+
+  return (
+    <div className="flex flex-col items-center gap-5">
+      <div className="max-w-2xl rounded-2xl border border-black/5 bg-white/80 p-4 shadow-sm">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-semibold text-stone-900">
+            Preview with your photo
+          </p>
+          <p className="text-xs text-stone-600">
+            Upload an inspiration image to visualize every template.
+          </p>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <input
+            ref={fileInputRef}
+            id="wedding-preview-upload"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePreviewUpload}
+          />
+          <label
+            htmlFor="wedding-preview-upload"
+            className="inline-flex cursor-pointer items-center justify-center rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-stone-700 transition hover:border-stone-400"
+          >
+            Choose image
+          </label>
+          {customHeroImage ? (
+            <>
+              <button
+                type="button"
+                onClick={clearPreview}
+                className="inline-flex items-center rounded-full bg-stone-900/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-stone-900"
+              >
+                Remove
+              </button>
+              <span className="text-xs text-stone-600">
+                Showing your uploaded photo across all templates.
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-stone-600">
+              No photo selected yet.
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="w-full max-w-6xl">
+        <TemplateGallery
+          templates={weddingTemplateCatalog}
+          previewHeroImageUrl={customHeroImage}
+          {...props}
+        />
+      </div>
+    </div>
+  );
 }

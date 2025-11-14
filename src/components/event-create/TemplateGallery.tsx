@@ -124,6 +124,7 @@ export type TemplateGalleryProps = {
   templates: TemplateGalleryTemplate[];
   appliedTemplateId: string | null;
   appliedVariationId: string | null;
+  previewHeroImageUrl?: string | null;
   onApplyTemplate: (
     template: TemplateGalleryTemplate,
     variation: ResolvedTemplateVariation
@@ -155,6 +156,7 @@ export default function TemplateGallery({
   templates,
   appliedTemplateId,
   appliedVariationId,
+  previewHeroImageUrl,
   onApplyTemplate,
 }: TemplateGalleryProps) {
   const [previewMap, setPreviewMap] = useState<Record<string, string>>({});
@@ -235,12 +237,20 @@ export default function TemplateGallery({
                 </div>
                 <div className={styles.previewPhoto}>
                   <Image
-                    src={`/templates/wedding-placeholders/${template.heroImageName}`}
-                    alt={`${template.name} placeholder`}
+                    src={
+                      previewHeroImageUrl ??
+                      `/templates/wedding-placeholders/${template.heroImageName}`
+                    }
+                    alt={
+                      previewHeroImageUrl
+                        ? `Uploaded preview for ${template.name}`
+                        : `${template.name} placeholder`
+                    }
                     width={640}
                     height={360}
                     className={styles.previewPhotoImage}
                     priority={false}
+                    unoptimized={Boolean(previewHeroImageUrl)}
                   />
                 </div>
               </div>
