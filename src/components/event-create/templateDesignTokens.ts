@@ -1,25 +1,12 @@
 "use client";
 
-export type TemplateTitleFont =
-  | "auto"
-  | "montserrat"
-  | "pacifico"
-  | "geist"
-  | "mono"
-  | "serif"
-  | "system"
-  | "poppins"
-  | "raleway"
-  | "playfair"
-  | "dancing";
-
 export type TitleWeight = "normal" | "semibold" | "bold";
 export type TitleAlign = "left" | "center" | "right";
 
 export type TemplateFontToken = {
   id: string;
   label: string;
-  font: TemplateTitleFont;
+  fontVar: string;
   weight: TitleWeight;
   align: TitleAlign;
 };
@@ -34,71 +21,242 @@ export type TemplatePaletteToken = {
   defaultFontId: TemplateFontTokenId;
 };
 
-export const TEMPLATE_FONT_TOKENS = {
+const BASE_FONT_TOKENS = {
   "serif-regal-center": {
     id: "serif-regal-center",
     label: "Regal Serif Centered",
-    font: "playfair",
+    fontVar: "var(--font-playfair)",
     weight: "semibold",
     align: "center",
   },
   "serif-bold-center": {
     id: "serif-bold-center",
     label: "Serif Bold Centered",
-    font: "playfair",
+    fontVar: "var(--font-playfair)",
     weight: "bold",
     align: "center",
   },
   "sans-classic-left": {
     id: "sans-classic-left",
     label: "Classic Sans Left",
-    font: "montserrat",
+    fontVar: "var(--font-montserrat)",
     weight: "normal",
     align: "left",
   },
   "sans-classic-center": {
     id: "sans-classic-center",
     label: "Classic Sans Center",
-    font: "montserrat",
+    fontVar: "var(--font-montserrat)",
     weight: "semibold",
     align: "center",
   },
   "raleway-editorial": {
     id: "raleway-editorial",
     label: "Editorial Raleway",
-    font: "raleway",
+    fontVar: "var(--font-raleway)",
     weight: "semibold",
     align: "center",
   },
   "raleway-luxe-left": {
     id: "raleway-luxe-left",
     label: "Luxe Raleway Left",
-    font: "raleway",
+    fontVar: "var(--font-raleway)",
     weight: "normal",
     align: "left",
   },
   "script-center": {
     id: "script-center",
     label: "Script Center",
-    font: "dancing",
+    fontVar: "var(--font-dancing)",
     weight: "bold",
     align: "center",
   },
   "poppins-center": {
     id: "poppins-center",
     label: "Poppins Center",
-    font: "poppins",
+    fontVar: "var(--font-poppins)",
     weight: "semibold",
     align: "center",
   },
   "geist-bold-center": {
     id: "geist-bold-center",
     label: "Geist Bold Center",
-    font: "geist",
+    fontVar: "var(--font-geist-sans)",
     weight: "bold",
     align: "center",
   },
-} as const satisfies Record<string, TemplateFontToken>;
+} satisfies Record<string, TemplateFontToken>;
+
+const SCRIPT_FONT_ENTRIES = [
+  {
+    id: "font-great-vibes",
+    label: "Great Vibes - beautifully flowing, formal script.",
+    varName: "var(--font-great-vibes)",
+  },
+  {
+    id: "font-allura",
+    label: "Allura - clean and legible with elegant script flourishes.",
+    varName: "var(--font-allura)",
+  },
+  {
+    id: "font-alex-brush",
+    label: "Alex Brush - flowing brush script, good for names on invites.",
+    varName: "var(--font-alex-brush)",
+  },
+  {
+    id: "font-parisienne",
+    label: "Parisienne - casual connecting script with a vintage feel.",
+    varName: "var(--font-parisienne)",
+  },
+  {
+    id: "font-luxurious-script",
+    label: "Luxurious Script - highly slanted, condensed formal script.",
+    varName: "var(--font-luxurious-script)",
+  },
+  {
+    id: "font-monte-carlo",
+    label: "Monte Carlo - formal connecting script, legible yet decorative.",
+    varName: "var(--font-monte-carlo)",
+  },
+  {
+    id: "font-tangerine",
+    label: "Tangerine - elegant calligraphic style with tall ascenders.",
+    varName: "var(--font-tangerine)",
+  },
+  {
+    id: "font-mr-de-haviland",
+    label: "Mr De Haviland - classic cursive with flourish, great for names.",
+    varName: "var(--font-mr-de-haviland)",
+  },
+  {
+    id: "font-rouge-script",
+    label: "Rouge Script - loose, stylish handwritten script.",
+    varName: "var(--font-rouge-script)",
+  },
+  {
+    id: "font-satisfy",
+    label: "Satisfy - charming handwriting-style script.",
+    varName: "var(--font-satisfy)",
+  },
+  {
+    id: "font-sacramento",
+    label: "Sacramento - refined thin cursive, formal yet readable.",
+    varName: "var(--font-sacramento)",
+  },
+  {
+    id: "font-yesteryear",
+    label: "Yesteryear - flat nib connecting script with vintage mood.",
+    varName: "var(--font-yesteryear)",
+  },
+  {
+    id: "font-arizonia",
+    label: "Arizonia - flowing sign-painter style script, decorative.",
+    varName: "var(--font-arizonia)",
+  },
+  {
+    id: "font-bilbo-swash-caps",
+    label: "Bilbo Swash Caps - decorative script with bold swashes.",
+    varName: "var(--font-bilbo-swash-caps)",
+  },
+  {
+    id: "font-la-belle-aurore",
+    label: "La Belle Aurore - delicate cursive, soft and elegant.",
+    varName: "var(--font-la-belle-aurore)",
+  },
+  {
+    id: "font-indie-flower",
+    label: "Indie Flower - casual handwritten style for relaxed invites.",
+    varName: "var(--font-indie-flower)",
+  },
+  {
+    id: "font-meddon",
+    label: "Meddon - handwritten cursive that feels personable and warm.",
+    varName: "var(--font-meddon)",
+  },
+  {
+    id: "font-cookie",
+    label: "Cookie - soft, friendly script ideal for names or headings.",
+    varName: "var(--font-cookie)",
+  },
+  {
+    id: "font-shadows-into-light",
+    label: "Shadows Into Light - neat handwritten style, simpler than ornate scripts.",
+    varName: "var(--font-shadows-into-light)",
+  },
+  {
+    id: "font-yellowtail",
+    label: "Yellowtail - retro brush script with smooth flow.",
+    varName: "var(--font-yellowtail)",
+  },
+  {
+    id: "font-dancing-script",
+    label: "Dancing Script - lively bouncing script that stays elegant.",
+    varName: "var(--font-dancing)",
+  },
+  {
+    id: "font-pacifico",
+    label: "Pacifico - beachy brush script for casual or semi-formal invites.",
+    varName: "var(--font-pacifico)",
+  },
+  {
+    id: "font-kalam",
+    label: "Kalam - flowing handwriting style that stays readable.",
+    varName: "var(--font-kalam)",
+  },
+  {
+    id: "font-kaushan-script",
+    label: "Kaushan Script - assertive yet elegant with dynamic edges.",
+    varName: "var(--font-kaushan-script)",
+  },
+  {
+    id: "font-meie-script",
+    label: "Meie Script - elegant flowing script suited for signatures.",
+    varName: "var(--font-meie-script)",
+  },
+  {
+    id: "font-niconne",
+    label: "Niconne - playful yet elegant script for decorative text.",
+    varName: "var(--font-niconne)",
+  },
+  {
+    id: "font-beth-ellen",
+    label: "Beth Ellen - relaxed handwritten style for less formal invites.",
+    varName: "var(--font-beth-ellen)",
+  },
+  {
+    id: "font-mrs-saint-delafield",
+    label: "Mrs Saint Delafield - ornate script with a formal flourish.",
+    varName: "var(--font-mrs-saint-delafield)",
+  },
+  {
+    id: "font-herr-von-muellerhoff",
+    label: "Herr Von Muellerhoff - decorative calligraphic style for headings.",
+    varName: "var(--font-herr-von-muellerhoff)",
+  },
+  {
+    id: "font-parisienne-accent",
+    label: "Parisienne Accent - casual yet elegant for highlight text.",
+    varName: "var(--font-parisienne)",
+  },
+] as const;
+
+const SCRIPT_FONT_TOKENS = SCRIPT_FONT_ENTRIES.reduce<
+  Record<string, TemplateFontToken>
+>((acc, entry) => {
+  acc[entry.id] = {
+    id: entry.id,
+    label: entry.label,
+    fontVar: entry.varName,
+    weight: "normal",
+    align: "center",
+  };
+  return acc;
+}, {});
+
+export const TEMPLATE_FONT_TOKENS = {
+  ...BASE_FONT_TOKENS,
+  ...SCRIPT_FONT_TOKENS,
+} satisfies Record<string, TemplateFontToken>;
 
 export type TemplateFontTokenId = keyof typeof TEMPLATE_FONT_TOKENS;
 

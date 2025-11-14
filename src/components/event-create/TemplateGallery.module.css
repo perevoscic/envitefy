@@ -199,16 +199,16 @@
 
 .previewNames {
   font-size: 1.45rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   margin: 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .previewMeta {
   margin: 0;
   font-size: 0.75rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-transform: none;
 }
 
 .previewNav {
@@ -216,8 +216,8 @@
   flex-wrap: wrap;
   gap: 0.35rem 0.75rem;
   font-size: 0.62rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-transform: none;
   opacity: 0.85;
 }
 

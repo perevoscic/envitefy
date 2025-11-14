@@ -7,14 +7,15 @@ import {
   getPaletteToken,
   type TemplateFontTokenId,
   type TemplatePaletteTokenId,
-  type TemplateTitleFont,
+  type TemplatePaletteToken,
   type TitleAlign,
   type TitleWeight,
 } from "./templateDesignTokens";
 
 export type TemplateGalleryVariation = {
   id: string;
-  paletteId: TemplatePaletteTokenId;
+  paletteId?: TemplatePaletteTokenId;
+  palette?: TemplatePaletteToken;
   fontId?: TemplateFontTokenId;
   label?: string;
   tagline?: string;
@@ -44,13 +45,76 @@ const DEFAULT_PREVIEW: TemplatePreviewData = {
   location: "New York, NY",
 };
 
+function hashSeed(seed: string) {
+  return seed.split("").reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
+}
+
+function tweakChannel(value: number, delta: number) {
+  const next = value + delta;
+  if (next < 0) return 0;
+  if (next > 255) return 255;
+  return next;
+}
+
+function adjustHex(hex: string, delta: number): string {
+  if (!/^#?[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  const normalized = hex.startsWith("#") ? hex.slice(1) : hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  const nextR = tweakChannel(r, delta);
+  const nextG = tweakChannel(g, Math.round(delta / 2));
+  const nextB = tweakChannel(b, -Math.round(delta / 3));
+  return `#${((nextR << 16) | (nextG << 8) | nextB).toString(16).padStart(6, "0")}`;
+}
+
+function adjustGradientStops(gradient: string, delta: number) {
+  return gradient.replace(/#([0-9a-fA-F]{6})/g, (match) => adjustHex(match, delta));
+}
+
+function rotateArray<T>(values: T[], shift: number): T[] {
+  if (!values.length) return values;
+  const normalized =
+    ((shift % values.length) + values.length) % values.length;
+  if (normalized === 0) return [...values];
+  return [...values.slice(normalized), ...values.slice(0, normalized)];
+}
+
+function applyUniquePalette(
+  base: TemplatePaletteToken,
+  seed: string
+): TemplatePaletteToken {
+  const hash = hashSeed(seed);
+  const primaryDelta = (hash % 90) - 45; // strong lighten/darken swing
+  const accentDelta = ((hash >> 5) % 70) - 35; // secondary variation
+  const waveFrequency = ((hash >> 9) % 4) + 2; // 2..5 for sine modulation
+  const rotateBy = base.swatches.length
+    ? (hash >> 2) % base.swatches.length
+    : 0;
+
+  const swatches = base.swatches.map((color, idx) => {
+    const waveShift = Math.sin((idx + 1) * waveFrequency) * accentDelta;
+    const idxBias = (idx - Math.floor(base.swatches.length / 2)) * 4;
+    const delta = Math.round(primaryDelta + waveShift + idxBias);
+    return adjustHex(color, delta);
+  });
+
+  const rotatedSwatches = rotateArray(swatches, rotateBy);
+  const backgroundDelta = Math.round((primaryDelta + accentDelta) / 3);
+  const titleDelta = Math.round(-(primaryDelta / 2));
+  const background = adjustGradientStops(base.background, backgroundDelta);
+  const titleColor = adjustHex(base.titleColor, titleDelta);
+
+  return { ...base, swatches: rotatedSwatches, background, titleColor };
+}
+
 export type ResolvedTemplateVariation = TemplateGalleryVariation & {
   label: string;
   tagline: string;
   background: string;
   swatches: string[];
   titleColor: string;
-  titleFont: TemplateTitleFont;
+  titleFontFamily: string | undefined;
   titleWeight: TitleWeight;
   titleAlign: TitleAlign;
 };
@@ -65,37 +129,13 @@ export type TemplateGalleryProps = {
   ) => void;
 };
 
-function getPreviewFontFamily(font: TemplateTitleFont) {
-  switch (font) {
-    case "pacifico":
-      return "var(--font-pacifico)";
-    case "montserrat":
-      return "var(--font-montserrat)";
-    case "geist":
-      return "var(--font-geist-sans)";
-    case "mono":
-      return "var(--font-geist-mono)";
-    case "serif":
-      return 'Georgia, Cambria, "Times New Roman", Times, serif';
-    case "system":
-      return 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", sans-serif';
-    case "poppins":
-      return "var(--font-poppins)";
-    case "raleway":
-      return "var(--font-raleway)";
-    case "playfair":
-      return "var(--font-playfair)";
-    case "dancing":
-      return "var(--font-dancing)";
-    default:
-      return undefined;
-  }
-}
-
 export function resolveTemplateVariation(
   variation: TemplateGalleryVariation
 ): ResolvedTemplateVariation {
-  const palette = getPaletteToken(variation.paletteId);
+  const basePalette =
+    variation.palette ??
+    (variation.paletteId ? getPaletteToken(variation.paletteId) : getPaletteToken(undefined));
+  const palette = applyUniquePalette(basePalette, variation.id);
   const fontToken = getFontToken(variation.fontId ?? palette.defaultFontId);
   return {
     ...variation,
@@ -104,7 +144,7 @@ export function resolveTemplateVariation(
     background: palette.background,
     swatches: palette.swatches,
     titleColor: variation.titleColorOverride ?? palette.titleColor,
-    titleFont: fontToken.font,
+    titleFontFamily: fontToken.fontVar,
     titleWeight: fontToken.weight,
     titleAlign: fontToken.align,
   };
@@ -140,9 +180,7 @@ export default function TemplateGallery({
         const activeVariation =
           resolvedVariations.find((v) => v.id === previewId) ??
           resolvedVariations[0];
-        const previewFontFamily = getPreviewFontFamily(
-          activeVariation.titleFont
-        );
+        const previewFontFamily = activeVariation.titleFontFamily;
         const previewInfo = template.preview ?? DEFAULT_PREVIEW;
         const previewTextColor = activeVariation.titleColor;
 
@@ -159,7 +197,7 @@ export default function TemplateGallery({
                   style={{ background: activeVariation.background }}
                 >
                   <span className={styles.previewHeroTag}>
-                    {`${template.heroMood} — ${template.name}`}
+                    {template.heroMood || template.name}
                   </span>
                   <p
                     className={styles.previewNames}

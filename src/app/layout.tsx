@@ -8,6 +8,55 @@ import {
   Raleway,
   Playfair_Display,
   Dancing_Script,
+  Parisienne,
+  Alex_Brush,
+  Allura,
+  Amita,
+  Arizonia,
+  Beth_Ellen,
+  Bilbo_Swash_Caps,
+  Cookie,
+  Courgette,
+  Euphoria_Script,
+  Great_Vibes,
+  Herr_Von_Muellerhoff,
+  Indie_Flower,
+  Italianno,
+  Kaushan_Script,
+  Kalam,
+  La_Belle_Aurore,
+  Marck_Script,
+  Meie_Script,
+  Meddon,
+  Monsieur_La_Doulaise,
+  Mr_De_Haviland,
+  Mrs_Saint_Delafield,
+  My_Soul,
+  Niconne,
+  Over_the_Rainbow,
+  Pinyon_Script,
+  Petit_Formal_Script,
+  Redressed,
+  Rouge_Script,
+  Satisfy,
+  Sacramento,
+  Shadows_Into_Light,
+  Shippori_Mincho,
+  Sofia,
+  Sonsie_One,
+  Style_Script,
+  Tangerine,
+  Yesteryear,
+  Yellowtail,
+  Zhi_Mang_Xing,
+  Miss_Fajardose,
+  Stalemate,
+  Dr_Sugiyama,
+  Caramel,
+  Kolker_Brush,
+  Love_Light,
+  Luxurious_Script,
+  MonteCarlo,
 } from "next/font/google";
 import Script from "next/script";
 import Link from "next/link";
@@ -80,6 +129,405 @@ const dancing = Dancing_Script({
   subsets: ["latin"],
   display: "swap",
 });
+
+const parisienne = Parisienne({
+  variable: "--font-parisienne",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const alexBrush = Alex_Brush({
+  variable: "--font-alex-brush",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const allura = Allura({
+  variable: "--font-allura",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const amita = Amita({
+  variable: "--font-amita",
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const arizonia = Arizonia({
+  variable: "--font-arizonia",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const bethEllen = Beth_Ellen({
+  variable: "--font-beth-ellen",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const bilboSwashCaps = Bilbo_Swash_Caps({
+  variable: "--font-bilbo-swash-caps",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const cookie = Cookie({
+  variable: "--font-cookie",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const courgette = Courgette({
+  variable: "--font-courgette",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const euphoriaScript = Euphoria_Script({
+  variable: "--font-euphoria-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const greatVibes = Great_Vibes({
+  variable: "--font-great-vibes",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const herrVonMuellerhoff = Herr_Von_Muellerhoff({
+  variable: "--font-herr-von-muellerhoff",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const indieFlower = Indie_Flower({
+  variable: "--font-indie-flower",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const italianno = Italianno({
+  variable: "--font-italianno",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const kaushanScript = Kaushan_Script({
+  variable: "--font-kaushan-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const kalam = Kalam({
+  variable: "--font-kalam",
+  weight: ["300", "400", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const laBelleAurore = La_Belle_Aurore({
+  variable: "--font-la-belle-aurore",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const marckScript = Marck_Script({
+  variable: "--font-marck-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const meieScript = Meie_Script({
+  variable: "--font-meie-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const meddon = Meddon({
+  variable: "--font-meddon",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const monsieurLaDoulaise = Monsieur_La_Doulaise({
+  variable: "--font-monsieur-la-doulaise",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const mrDeHaviland = Mr_De_Haviland({
+  variable: "--font-mr-de-haviland",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const mrsSaintDelafield = Mrs_Saint_Delafield({
+  variable: "--font-mrs-saint-delafield",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const mySoul = My_Soul({
+  variable: "--font-my-soul",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const niconne = Niconne({
+  variable: "--font-niconne",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const overTheRainbow = Over_the_Rainbow({
+  variable: "--font-over-the-rainbow",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const pinyonScript = Pinyon_Script({
+  variable: "--font-pinyon-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const petitFormalScript = Petit_Formal_Script({
+  variable: "--font-petit-formal-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const redressed = Redressed({
+  variable: "--font-redressed",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const rougeScript = Rouge_Script({
+  variable: "--font-rouge-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const satisfy = Satisfy({
+  variable: "--font-satisfy",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const sacramento = Sacramento({
+  variable: "--font-sacramento",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const shadowsIntoLight = Shadows_Into_Light({
+  variable: "--font-shadows-into-light",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const shipporiMincho = Shippori_Mincho({
+  variable: "--font-shippori-mincho",
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const sofia = Sofia({
+  variable: "--font-sofia",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const sonsieOne = Sonsie_One({
+  variable: "--font-sonsie-one",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const styleScript = Style_Script({
+  variable: "--font-style-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const tangerine = Tangerine({
+  variable: "--font-tangerine",
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const yesteryear = Yesteryear({
+  variable: "--font-yesteryear",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const yellowtail = Yellowtail({
+  variable: "--font-yellowtail",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const zhiMangXing = Zhi_Mang_Xing({
+  variable: "--font-zhi-mang-xing",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const missFajardose = Miss_Fajardose({
+  variable: "--font-miss-fajardose",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const stalemate = Stalemate({
+  variable: "--font-stalemate",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const drSugiyama = Dr_Sugiyama({
+  variable: "--font-dr-sugiyama",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const caramel = Caramel({
+  variable: "--font-caramel",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const kolkerBrush = Kolker_Brush({
+  variable: "--font-kolker-brush",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const loveLight = Love_Light({
+  variable: "--font-love-light",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const luxuriousScript = Luxurious_Script({
+  variable: "--font-luxurious-script",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const monteCarlo = MonteCarlo({
+  variable: "--font-monte-carlo",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const decorativeFonts = [
+  parisienne,
+  alexBrush,
+  allura,
+  amita,
+  arizonia,
+  bethEllen,
+  bilboSwashCaps,
+  cookie,
+  courgette,
+  euphoriaScript,
+  greatVibes,
+  herrVonMuellerhoff,
+  indieFlower,
+  italianno,
+  kaushanScript,
+  kalam,
+  laBelleAurore,
+  marckScript,
+  meieScript,
+  meddon,
+  monsieurLaDoulaise,
+  mrDeHaviland,
+  mrsSaintDelafield,
+  mySoul,
+  niconne,
+  overTheRainbow,
+  pinyonScript,
+  petitFormalScript,
+  redressed,
+  rougeScript,
+  satisfy,
+  sacramento,
+  shadowsIntoLight,
+  shipporiMincho,
+  sofia,
+  sonsieOne,
+  styleScript,
+  tangerine,
+  yesteryear,
+  yellowtail,
+  zhiMangXing,
+  missFajardose,
+  stalemate,
+  drSugiyama,
+  caramel,
+  kolkerBrush,
+  loveLight,
+  luxuriousScript,
+  monteCarlo,
+] as const;
+
+const decorativeFontVariables = decorativeFonts
+  .map((font) => font.variable)
+  .join(" ");
 
 export const metadata: Metadata = {
   // Title must match Google OAuth consent screen app name exactly: "Envitefy"
@@ -179,29 +627,29 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico?v=v5", sizes: "any" },
-      { url: "/icons/icon-192.png?v=v5", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png?v=v5", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=v6", sizes: "any" },
+      { url: "/icons/icon-192.png?v=v6", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=v6", sizes: "512x512", type: "image/png" },
       {
-        url: "/icons/maskable-icon-192.png?v=v5",
+        url: "/icons/maskable-icon-192.png?v=v6",
         sizes: "192x192",
         type: "image/png",
         rel: "mask-icon" as any,
       },
       {
-        url: "/icons/maskable-icon-512.png?v=v5",
+        url: "/icons/maskable-icon-512.png?v=v6",
         sizes: "512x512",
         type: "image/png",
         rel: "mask-icon" as any,
       },
     ],
     apple: [
-      { url: "/icons/apple-touch-icon-120.png?v=v5", sizes: "120x120" },
-      { url: "/icons/apple-touch-icon-152.png?v=v5", sizes: "152x152" },
-      { url: "/icons/apple-touch-icon-167.png?v=v5", sizes: "167x167" },
-      { url: "/icons/apple-touch-icon-180.png?v=v5", sizes: "180x180" },
+      { url: "/icons/apple-touch-icon-120.png?v=v6", sizes: "120x120" },
+      { url: "/icons/apple-touch-icon-152.png?v=v6", sizes: "152x152" },
+      { url: "/icons/apple-touch-icon-167.png?v=v6", sizes: "167x167" },
+      { url: "/icons/apple-touch-icon-180.png?v=v6", sizes: "180x180" },
     ],
-    shortcut: [{ url: "/favicon.ico?v=v5" }],
+    shortcut: [{ url: "/favicon.ico?v=v6" }],
   },
   appleWebApp: {
     capable: true,
@@ -325,7 +773,7 @@ export default async function RootLayout({
         </Script>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} ${poppins.variable} ${raleway.variable} ${playfair.variable} ${dancing.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} ${poppins.variable} ${raleway.variable} ${playfair.variable} ${dancing.variable} ${decorativeFontVariables} antialiased`}
       >
         <Script id="theme-init" strategy="beforeInteractive">{`
           (function(){
