@@ -80,7 +80,6 @@ const THEME_NAMES = [
   "Summer",
   "School & Education",
   "Fall & Seasonal",
-  "Winter & Holidays",
   "Church & Community",
   "Sports & Recreation",
   "Fundraising & Food",
@@ -979,21 +978,6 @@ const SignupBuilder: React.FC<Props> = ({
               fill="#F59E0B"
             />
             <rect x="10" y="34" width="60" height="6" fill="#FCD34D" />
-          </svg>
-        );
-      case "Winter & Holidays":
-        return (
-          <svg
-            viewBox="0 0 80 48"
-            className="w-full h-full"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="80" height="48" fill="#F8FAFC" />
-            <polygon points="40,8 48,22 32,22" fill="#22D3EE" />
-            <polygon points="40,14 46,24 34,24" fill="#38BDF8" />
-            <circle cx="20" cy="36" r="3" fill="#E5E7EB" />
-            <circle cx="40" cy="36" r="3" fill="#E5E7EB" />
-            <circle cx="60" cy="36" r="3" fill="#E5E7EB" />
           </svg>
         );
       case "Church & Community":

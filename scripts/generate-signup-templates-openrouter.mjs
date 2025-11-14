@@ -72,7 +72,6 @@ const GUARDRAILS =
 
 const TONE = {
   "fall-and-seasonal": "Warm autumn palette; soft golden light.",
-  "winter-and-holidays": "Crisp winter palette (soft whites, deep greens); subtle festive sparkle.",
   "spring": "Fresh pastels, flowering accents, airy light.",
   "summer": "Vibrant cheerful palette, sunny ambience.",
   "school-and-education": "Friendly scholastic tone.",
@@ -126,40 +125,6 @@ const PROMPTS_FALL = {
     "Fall festival celebration—outdoor fall festival with small fair booths, game-station cues, bunting; families mingling at fall festival; all people with fully visible heads and faces, no heads cropped; no corporate signage.",
   "fall-and-seasonal::fall-pumpkins":
     "Outdoor still life—cluster of pumpkins on hay with fallen leaves; no people or carving tools."
-};
-
-// --------------------------- WINTER & HOLIDAYS ---------------------------
-const PROMPTS_WINTER = {
-  "winter-and-holidays::winter-cabin":
-    "Outdoor winter landscape—cozy cabin with window glow, snow-dusted pines, distant mountains; no people.",
-  "winter-and-holidays::santa-s-workshop":
-    "Indoor toy workshop—cheerful stylized elves (simple pointed hats) with a few kids at toy benches; all people with fully visible heads and faces, no heads cropped; wooden toys and gift-wrap rolls; not a living room.",
-  "winter-and-holidays::ugly-sweater-party":
-    "Indoor cozy party—adults and kids in bold patterned sweaters, cocoa mugs, warm string lights; all people with fully visible heads and faces, no heads cropped.",
-  "winter-and-holidays::gingerbread-fun":
-    "Indoor decorating table—gingerbread houses, icing bags, candy bowls; kids decorating with adults; all people with fully visible heads and faces, no heads cropped; not tree-decorating.",
-  "winter-and-holidays::holiday-lights":
-    "Outdoor evening street—glowing string lights and decorated houses, gentle snowfall; families strolling; all people with fully visible heads and faces, no heads cropped.",
-  "winter-and-holidays::winter-wonderland":
-    "Winter Wonderland scene—outdoor sparkling snowy Winter Wonderland landscape with evergreens, frosty sky glow; Winter Wonderland atmosphere; no people.",
-  "winter-and-holidays::christmas-cookies":
-    "Indoor kitchen baking—cookie trays and cooling racks, rolling pins, icing and sprinkles; kids decorating cookies with adults; all people with fully visible heads and faces, no heads cropped; not tree-decorating.",
-  "winter-and-holidays::new-year-s-eve":
-    "New Year's Eve celebration—indoor New Year's Eve party with table, confetti, and clock; subtle skyline fireworks through window; adults and kids celebrating New Year's Eve together; all people with fully visible heads and faces, no heads cropped.",
-  "winter-and-holidays::christmas-tree-farm":
-    "Outdoor farm rows of pine trees; families with sleds or wagons choosing a tree; all people with fully visible heads and faces, no heads cropped; simple tree-netting stand.",
-  "winter-and-holidays::holiday-giving":
-    "Holiday Giving event—indoor Holiday Giving donation/wrapping scene with boxes of toys and coats; volunteers (adults and kids) wrapping together for Holiday Giving; all people with fully visible heads and faces, no heads cropped.",
-  "winter-and-holidays::christmas-village":
-    "Christmas Village scene—outdoor Christmas Village holiday market with small huts, garlands and wreaths, cocoa stand, warm window glow; families browsing Christmas Village; all people with fully visible heads and faces, no heads cropped.",
-  "winter-and-holidays::hanukkah-celebration":
-    "Indoor celebration—menorah with candles, dreidels and gelt on a table; blue and silver accents; adults and kids; all people with fully visible heads and faces, no heads cropped.",
-  "winter-and-holidays::snow-day":
-    "Outdoor winter play—adults and kids making a snowman or sledding among evergreens; all people with fully visible heads and faces, no heads cropped; wide, bright snowy field.",
-  "winter-and-holidays::snowflakes":
-    "Stylized outdoor winter scene—large decorative snowflakes over a soft gradient sky above snowy trees; no indoor crafts, no people.",
-  "winter-and-holidays::merry-christmas":
-    "Merry Christmas celebration—Merry Christmas festive still life scene with Merry Christmas theme; evergreen branches and ornaments with a subtle sparkle; Merry Christmas holiday atmosphere and Merry Christmas decorations; no text and no people."
 };
 
 // ------------------------------- SPRING -------------------------------
@@ -532,7 +497,6 @@ const PROMPTS_CLUBS_GROUPS = {
 // Merge all per-name prompts into one lookup
 const PROMPTS = {
   ...PROMPTS_FALL,
-  ...PROMPTS_WINTER,
   ...PROMPTS_SPRING,
   ...PROMPTS_SUMMER,
   ...PROMPTS_SCHOOL,
@@ -551,7 +515,6 @@ const PROMPTS = {
 // Category to folder mapping (matches API route mapping and prompt keys)
 const CATEGORY_FOLDER_MAP = {
   "Fall & Seasonal": "fall-and-seasonal",
-  "Winter & Holidays": "winter-and-holidays",
   "Spring": "spring",
   "Summer": "summer",
   "School & Education": "school-and-education",

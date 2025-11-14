@@ -19,24 +19,6 @@
     { "name": "Fall Pumpkins", "tier": "premium" }
   ],
 
-  "Winter & Holidays": [
-    { "name": "Winter Cabin", "tier": "free" },
-    { "name": "Santa’s Workshop", "tier": "premium" },
-    { "name": "Ugly Sweater Party", "tier": "free" },
-    { "name": "Gingerbread Fun", "tier": "premium" },
-    { "name": "Holiday Lights", "tier": "premium" },
-    { "name": "Winter Wonderland", "tier": "free" },
-    { "name": "Christmas Cookies", "tier": "free" },
-    { "name": "New Year’s Eve", "tier": "premium" },
-    { "name": "Christmas Tree Farm", "tier": "premium" },
-    { "name": "Holiday Giving", "tier": "free" },
-    { "name": "Christmas Village", "tier": "premium" },
-    { "name": "Hanukkah Celebration", "tier": "premium" },
-    { "name": "Snow Day", "tier": "free" },
-    { "name": "Snowflakes", "tier": "free" },
-    { "name": "Merry Christmas", "tier": "free" }
-  ],
-
   "Spring": [
     { "name": "Spring Hike", "tier": "free" },
     { "name": "Easter Bunnies", "tier": "premium" },

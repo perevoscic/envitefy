@@ -6,12 +6,7 @@ module.exports = {
   theme: {
     extend: {},
   },
-  plugins: [
-    function ({ addVariant }) {
-      addVariant('thanksgiving-light', '[data-theme="thanksgiving-light"] &');
-      addVariant('thanksgiving-dark', '[data-theme="thanksgiving-dark"] &');
-    },
-  ],
+  plugins: [],
   // Tailwind v4 reads content automatically; we only need a safelist here.
   safelist: [
     // Shared gradients (both 200 + 300 sets used in calendar/sidebar)

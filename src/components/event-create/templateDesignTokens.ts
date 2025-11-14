@@ -351,6 +351,24 @@ export const TEMPLATE_PALETTE_TOKENS = {
     titleColor: "#35251D",
     defaultFontId: "raleway-luxe-left",
   },
+  "celadon-cascade": {
+    id: "celadon-cascade",
+    label: "Celadon Cascade",
+    tagline: "Sunset champagne drift",
+    swatches: ["#FFF6EE", "#FBDCC5", "#C6E5D8", "#82B8BA", "#2F4B66"],
+    background: "linear-gradient(140deg, #FFF6EE, #82B8BA)",
+    titleColor: "#1F2A3A",
+    defaultFontId: "serif-regal-center",
+  },
+  "velour-waltz": {
+    id: "velour-waltz",
+    label: "Velour Waltz",
+    tagline: "Dreamy twilight glaze",
+    swatches: ["#F7F2FB", "#E2D4F0", "#C3A6DA", "#7C619F", "#2F1E44"],
+    background: "linear-gradient(155deg, #F7F2FB, #C3A6DA)",
+    titleColor: "#231434",
+    defaultFontId: "serif-bold-center",
+  },
 } as const satisfies Record<string, TemplatePaletteToken>;
 
 export type TemplatePaletteTokenId = keyof typeof TEMPLATE_PALETTE_TOKENS;

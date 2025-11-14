@@ -45,7 +45,7 @@ function relativeLuminance(r: number, g: number, b: number): number {
 }
 
 export default function ReadOnlyEventLogo() {
-  const { theme, themeKey } = useTheme();
+  const { theme } = useTheme();
   const [useLightVariant, setUseLightVariant] = useState<boolean>(
     () => theme === "dark"
   );
@@ -67,7 +67,7 @@ export default function ReadOnlyEventLogo() {
       // ignore parsing errors and fall back to theme variant
     }
     setUseLightVariant(shouldUseLight);
-  }, [theme, themeKey]);
+  }, [theme]);
 
   return (
     <div className="mb-6 flex justify-center">

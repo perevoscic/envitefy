@@ -114,7 +114,6 @@ export type SignupDesignTheme =
   | "Summer"
   | "School & Education"
   | "Fall & Seasonal"
-  | "Winter & Holidays"
   | "Church & Community"
   | "Sports & Recreation"
   | "Fundraising & Food"

@@ -54,7 +54,6 @@ function buildPrompt(category, name, tier) {
     "Lifestyle photography, candid wide shot from a moderate distance. Natural sunlight, side perspective, gentle depth of field, cinematic warm tone, authentic candid atmosphere. High-quality, clean readable scene, 1:1 composition.";
   const seasonAdds = {
     "Fall & Seasonal": "Warm autumn palette, oranges and ambers, cozy glow.",
-    "Winter & Holidays": "Crisp winter palette, soft whites and deep greens, gentle sparkle.",
     "Spring": "Fresh spring palette, soft pastels, lively and airy.",
     "Summer": "Vibrant summer palette, bright light, playful energy.",
     "School & Education": "Friendly scholastic vibe, simple props, approachable.",

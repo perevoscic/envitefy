@@ -64,6 +64,7 @@ export default function WeddingsCreate({ defaultDate }: Props) {
           appliedTemplateId={appliedTemplateId}
           appliedVariationId={appliedVariationId}
           onApplyTemplate={handleApplyTemplate}
+          showColorStories={false}
         />
       </section>
     </main>

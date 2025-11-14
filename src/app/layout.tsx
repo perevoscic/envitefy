@@ -66,15 +66,10 @@ import LeftSidebar from "./left-sidebar";
 import "./globals.css";
 import { cookies } from "next/headers";
 import {
-  resolveThemeForDate,
   resolveThemeCssVariables,
-  isValidThemeKey,
-  isValidVariant,
   ThemeKey,
   ThemeVariant,
-  ThemeOverride,
 } from "@/themes";
-import { getThemeOverrideByEmail } from "@/lib/db";
 import type { CSSProperties } from "react";
 
 const geistSans = Geist({
@@ -689,31 +684,12 @@ export default async function RootLayout({
       ? (themeCookie as ThemeVariant)
       : undefined;
 
-  const now = new Date();
-  const scheduledThemeKey = resolveThemeForDate(now);
-  const isAdmin = Boolean((session?.user as any)?.isAdmin);
-
-  let initialOverride: ThemeOverride | null = null;
-  if (isAdmin && session?.user?.email) {
-    const row = await getThemeOverrideByEmail(session.user.email);
-    if (row && isValidThemeKey(row.theme_key) && isValidVariant(row.variant)) {
-      initialOverride = {
-        themeKey: row.theme_key as ThemeKey,
-        variant: row.variant as ThemeVariant,
-        expiresAt: row.expires_at ?? null,
-      };
-    }
-  }
-
-  const initialThemeKey: ThemeKey =
-    initialOverride?.themeKey ?? scheduledThemeKey;
-  const overrideVariant = initialOverride?.variant;
-  const initialThemeVariant: ThemeVariant | undefined =
-    overrideVariant ?? cookieVariant;
-  const htmlVariant: ThemeVariant = overrideVariant ?? cookieVariant ?? "light";
-  const cssVariables = resolveThemeCssVariables(initialThemeKey, htmlVariant);
-  const cssVariablesLight = resolveThemeCssVariables(initialThemeKey, "light");
-  const cssVariablesDark = resolveThemeCssVariables(initialThemeKey, "dark");
+  const themeKey: ThemeKey = "general";
+  const initialThemeVariant: ThemeVariant | undefined = cookieVariant;
+  const htmlVariant: ThemeVariant = cookieVariant ?? "light";
+  const cssVariables = resolveThemeCssVariables(themeKey, htmlVariant);
+  const cssVariablesLight = resolveThemeCssVariables(themeKey, "light");
+  const cssVariablesDark = resolveThemeCssVariables(themeKey, "dark");
   const htmlStyle = Object.fromEntries(
     Object.entries(cssVariables).map(([key, value]) => [key, value])
   ) as CSSProperties;
@@ -721,9 +697,8 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      data-theme={`${initialThemeKey}-${htmlVariant}`}
-      data-theme-key={initialThemeKey}
-      data-override-variant={overrideVariant ?? undefined}
+      data-theme={`${themeKey}-${htmlVariant}`}
+      data-theme-key={themeKey}
       data-vars-light={JSON.stringify(cssVariablesLight)}
       data-vars-dark={JSON.stringify(cssVariablesDark)}
       className={htmlVariant === "dark" ? "dark" : undefined}
@@ -772,13 +747,10 @@ export default async function RootLayout({
             try {
               var root = document.documentElement;
               var key = root.getAttribute('data-theme-key') || 'general';
-              var override = root.getAttribute('data-override-variant');
               var stored = localStorage.getItem('theme');
-              var resolved = (override === 'light' || override === 'dark')
-                ? override
-                : ((stored === 'light' || stored === 'dark')
-                    ? stored
-                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+              var resolved = (stored === 'light' || stored === 'dark')
+                ? stored
+                : 'light';
               // Apply CSS variables immediately to avoid flash
               var varsAttr = resolved === 'dark' ? 'data-vars-dark' : 'data-vars-light';
               var raw = root.getAttribute(varsAttr) || '{}';
@@ -824,13 +796,7 @@ export default async function RootLayout({
           gtag('js', new Date());
           gtag('config', 'G-3X25SZMRFY');
         `}</Script>
-        <Providers
-          session={session}
-          initialTheme={initialThemeVariant}
-          initialThemeKey={initialThemeKey}
-          scheduledThemeKey={scheduledThemeKey}
-          initialOverride={initialOverride}
-        >
+        <Providers session={session} initialTheme={initialThemeVariant}>
           <LeftSidebar />
           <div
             className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"

@@ -19,9 +19,9 @@ import {
 
 const baseMenu = [
   "Home",
-  "Our Story",
   "Travel",
   "Things To Do",
+  "Our Story",
   "Photos",
   "Wedding Party",
   "Registry",
@@ -129,6 +129,18 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
           paletteId: "garden-emerald",
           label: "Nocturne Ivy",
           tagline: "Shadowed botanical depth",
+        },
+        {
+          key: "celadon-cascade",
+          paletteId: "celadon-cascade",
+          label: "Celadon Cascade",
+          tagline: "Sunset champagne drift",
+        },
+        {
+          key: "velour-waltz",
+          paletteId: "velour-waltz",
+          label: "Velour Waltz",
+          tagline: "Dreamy twilight glaze",
         },
       ]
     ),
@@ -1431,13 +1443,19 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
 type Props = {
   appliedTemplateId: string | null;
   appliedVariationId: string | null;
+  showColorStories?: boolean;
   onApplyTemplate: (
     template: WeddingTemplateDefinition,
     variation: ResolvedTemplateVariation
   ) => void;
 };
 
-export default function WeddingTemplateGallery(props: Props) {
+export default function WeddingTemplateGallery({
+  appliedTemplateId,
+  appliedVariationId,
+  showColorStories = true,
+  onApplyTemplate,
+}: Props) {
   const [customHeroImage, setCustomHeroImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -1474,15 +1492,6 @@ export default function WeddingTemplateGallery(props: Props) {
       fileInputRef.current.value = "";
     }
   }, []);
-
-  const selectedTemplate = useMemo(() => {
-    if (!props.appliedTemplateId) return weddingTemplateCatalog[0];
-    return (
-      weddingTemplateCatalog.find(
-        (template) => template.id === props.appliedTemplateId
-      ) ?? weddingTemplateCatalog[0]
-    );
-  }, [props.appliedTemplateId]);
 
   return (
     <div className="flex flex-col items-center gap-5">
@@ -1533,8 +1542,11 @@ export default function WeddingTemplateGallery(props: Props) {
       <div className="w-full max-w-6xl">
         <TemplateGallery
           templates={weddingTemplateCatalog}
+          appliedTemplateId={appliedTemplateId}
+          appliedVariationId={appliedVariationId}
+          onApplyTemplate={onApplyTemplate}
           previewHeroImageUrl={customHeroImage}
-          {...props}
+          showColorStories={showColorStories}
         />
       </div>
     </div>

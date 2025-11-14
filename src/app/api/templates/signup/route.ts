@@ -9,7 +9,6 @@ const THEME_FOLDER_MAP: Record<string, string> = {
   "Summer": "summer",
   "School & Education": "school-and-education",
   "Fall & Seasonal": "fall-and-seasonal",
-  "Winter & Holidays": "winter-and-holidays",
   "Church & Community": "church-and-community",
   "Sports & Recreation": "sports-and-recreation",
   "Fundraising & Food": "fundraising-and-food",
