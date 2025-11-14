@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
 import styles from "./TemplateGallery.module.css";
 import {
   getFontToken,
@@ -159,17 +158,6 @@ export default function TemplateGallery({
   previewHeroImageUrl,
   onApplyTemplate,
 }: TemplateGalleryProps) {
-  const [previewMap, setPreviewMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (appliedTemplateId && appliedVariationId) {
-      setPreviewMap((prev) => {
-        if (prev[appliedTemplateId] === appliedVariationId) return prev;
-        return { ...prev, [appliedTemplateId]: appliedVariationId };
-      });
-    }
-  }, [appliedTemplateId, appliedVariationId]);
-
   return (
     <div className={styles.gallery}>
       {templates.map((template) => {
@@ -177,11 +165,8 @@ export default function TemplateGallery({
           resolveTemplateVariation(v)
         );
         const isSelected = template.id === appliedTemplateId;
-        const previewId =
-          previewMap[template.id] ??
-          (template.id === appliedTemplateId ? appliedVariationId ?? undefined : undefined);
         const activeVariation =
-          resolvedVariations.find((v) => v.id === previewId) ??
+          resolvedVariations.find((v) => v.id === appliedVariationId) ??
           resolvedVariations[0];
         const previewFontFamily = activeVariation.titleFontFamily;
         const previewInfo = template.preview ?? DEFAULT_PREVIEW;
@@ -257,45 +242,6 @@ export default function TemplateGallery({
               <div className={styles.cardHeader}>
                 <div>
                   <p className={styles.cardTitle}>{template.name}</p>
-                </div>
-              </div>
-              <div className={styles.variationSection}>
-                <span className={styles.variationKicker}>Color stories</span>
-                <div className={styles.variationRow}>
-                  {resolvedVariations.map((variation) => {
-                    const isActiveVariation =
-                      variation.id === activeVariation.id;
-                    return (
-                      <button
-                        key={variation.id}
-                        type="button"
-                        aria-pressed={isActiveVariation}
-                        className={`${styles.variationButton} ${
-                          isActiveVariation ? styles.variationActive : ""
-                        }`}
-                        onClick={() =>
-                          setPreviewMap((prev) => ({
-                            ...prev,
-                            [template.id]: variation.id,
-                          }))
-                        }
-                      >
-                        <div className={styles.variationSwatches}>
-                          {variation.swatches.map((color) => (
-                            <span
-                              key={color}
-                              className={styles.paletteDot}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                        <div className={styles.variationLabel}>
-                          <span>{variation.label}</span>
-                          <small>{variation.tagline}</small>
-                        </div>
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
               <div className={styles.cardFooter}>

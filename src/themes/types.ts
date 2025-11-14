@@ -9,7 +9,7 @@ export type ThemeCssVariables = Record<string, string>;
 export type ThemeVariantDefinition = {
   label: string;
   cssVariables: ThemeCssVariables;
-  accentIcon: string; // relative path to svg/png served from /public
+  accentIcon?: string; // relative path to svg/png served from /public
   accentAlt: string;
 };
 

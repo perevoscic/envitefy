@@ -1539,14 +1539,13 @@ export default function WeddingTemplateGallery({
           )}
         </div>
       </div>
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-7xl">
         <TemplateGallery
           templates={weddingTemplateCatalog}
           appliedTemplateId={appliedTemplateId}
           appliedVariationId={appliedVariationId}
           onApplyTemplate={onApplyTemplate}
           previewHeroImageUrl={customHeroImage}
-          showColorStories={showColorStories}
         />
       </div>
     </div>

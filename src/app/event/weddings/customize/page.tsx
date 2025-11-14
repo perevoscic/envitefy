@@ -8,170 +8,11 @@ import {
   DEFAULT_PREVIEW,
   resolveTemplateVariation,
   type ResolvedTemplateVariation,
-  type TemplateGalleryVariation,
 } from "@/components/event-create/TemplateGallery";
 import {
   type WeddingTemplateDefinition,
   weddingTemplateCatalog,
 } from "@/components/event-create/WeddingTemplateGallery";
-import {
-  getPaletteToken,
-  type TemplatePaletteToken,
-} from "@/components/event-create/templateDesignTokens";
-
-const NAME_ADJECTIVES = [
-  "Aurora",
-  "Solstice",
-  "Moonlit",
-  "Gilded",
-  "Velour",
-  "Opaline",
-  "Celadon",
-  "Saffron",
-  "Marigold",
-  "Azure",
-  "Petal",
-  "Ivory",
-];
-
-const NAME_NOUNS = [
-  "Prism",
-  "Veil",
-  "Serenade",
-  "Waltz",
-  "Grove",
-  "Cascade",
-  "Fable",
-  "Chateau",
-  "Harbor",
-  "Symphony",
-  "Garden",
-  "Canvas",
-];
-
-const TAGLINE_VARIANTS = [
-  "Dreamy twilight glaze",
-  "Sunset champagne drift",
-  "Candlelit linen wash",
-  "Deep emerald flourish",
-  "Dusky heirloom luster",
-  "Opal shoreline shimmer",
-  "Moonbeam botanical glow",
-  "Velvet midnight bloom",
-  "Amber orchard radiance",
-  "Iridescent gallery haze",
-  "Rosy garden lanterns",
-  "Silvered skyline gleam",
-];
-
-function hashSeed(seed: string) {
-  return seed
-    .split("")
-    .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
-}
-
-function clampChannel(value: number) {
-  return Math.min(255, Math.max(0, value));
-}
-
-function adjustHex(hex: string, delta: number) {
-  if (!/^#?[0-9a-fA-F]{6}$/.test(hex)) return hex;
-  const normalized = hex.startsWith("#") ? hex.slice(1) : hex;
-  const r = parseInt(normalized.slice(0, 2), 16);
-  const g = parseInt(normalized.slice(2, 4), 16);
-  const b = parseInt(normalized.slice(4, 6), 16);
-  const nextR = clampChannel(r + delta);
-  const nextG = clampChannel(g + Math.round(delta * 0.6));
-  const nextB = clampChannel(b - Math.round(delta * 0.4));
-  return `#${((nextR << 16) | (nextG << 8) | nextB)
-    .toString(16)
-    .padStart(6, "0")}`;
-}
-
-function adjustGradientStops(gradient: string, delta: number) {
-  return gradient.replace(/#([0-9a-fA-F]{6})/g, (match) =>
-    adjustHex(match, delta)
-  );
-}
-
-function generateLabel(seed: string) {
-  const hash = Math.abs(hashSeed(seed));
-  const adjective = NAME_ADJECTIVES[hash % NAME_ADJECTIVES.length];
-  const noun = NAME_NOUNS[(hash >> 3) % NAME_NOUNS.length];
-  const tagline = TAGLINE_VARIANTS[(hash >> 5) % TAGLINE_VARIANTS.length];
-  return { label: `${adjective} ${noun}`, tagline };
-}
-
-function buildAlternatePalette(
-  base: TemplatePaletteToken,
-  seed: string,
-  label: string
-): TemplatePaletteToken {
-  const hash = hashSeed(seed);
-  const rotation = base.swatches.length ? hash % base.swatches.length : 0;
-  const shift = (hash % 120) - 60;
-  const swatches = base.swatches.map((color, idx) =>
-    adjustHex(color, shift + (idx - rotation) * 9)
-  );
-  const rotated =
-    rotation === 0
-      ? swatches
-      : [...swatches.slice(rotation), ...swatches.slice(0, rotation)];
-  const background = adjustGradientStops(base.background, shift * 0.9);
-  const titleColor = adjustHex(base.titleColor, -shift * 0.7);
-  return {
-    ...base,
-    id: `${base.id}-alt-${seed.slice(-5)}`,
-    label,
-    tagline: base.tagline,
-    swatches: rotated,
-    background,
-    titleColor,
-  };
-}
-
-function createExtraVariations(
-  templateId: string,
-  variations: TemplateGalleryVariation[]
-): TemplateGalleryVariation[] {
-  const uniqueBaseIds = new Set<string>();
-  const deterministicSources = [...variations].sort((a, b) => {
-    const aKey = (a.paletteId ?? a.id).toString();
-    const bKey = (b.paletteId ?? b.id).toString();
-    return aKey.localeCompare(bKey);
-  });
-  const selected: TemplateGalleryVariation[] = [];
-  for (const variation of deterministicSources) {
-    const baseId = variation.paletteId ?? variation.id;
-    if (!uniqueBaseIds.has(baseId)) {
-      selected.push(variation);
-      uniqueBaseIds.add(baseId);
-    }
-    if (selected.length === Math.min(variations.length, 2)) break;
-  }
-  while (selected.length < Math.min(variations.length, 2)) {
-    selected.push(variations[selected.length % variations.length]);
-  }
-
-  return selected.map((variation, idx) => {
-    const seed = `${templateId}-${variation.id}-alt-${idx}`;
-    const basePalette =
-      variation.palette ??
-      (variation.paletteId
-        ? getPaletteToken(variation.paletteId)
-        : getPaletteToken(undefined));
-    const { label, tagline } = generateLabel(seed);
-    const palette = buildAlternatePalette(basePalette, seed, label);
-    return {
-      ...variation,
-      id: `alt-${templateId}-${idx}-${seed.slice(-4)}`,
-      label,
-      tagline,
-      palette,
-      paletteId: undefined,
-    };
-  });
-}
 
 function parseDateInput(label?: string | null) {
   if (!label) return "";
@@ -208,56 +49,71 @@ export default function WeddingTemplateCustomizePage() {
   const router = useRouter();
 
   const templateId = search?.get("templateId") ?? weddingTemplateCatalog[0].id;
-  const variationId = search?.get("variationId") ?? "";
   const defaultDate = search?.get("d") ?? undefined;
 
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
-
-  const extraVariations = useMemo(
-    () => createExtraVariations(template.id, template.variations),
-    [template]
-  );
-
-  const resolvedVariations = useMemo(
-    () =>
-      [...template.variations, ...extraVariations].map((variation) =>
-        resolveTemplateVariation(variation)
-      ),
-    [template, extraVariations]
-  );
-
-  const [activeVariationId, setActiveVariationId] = useState(
-    variationId || resolvedVariations[0]?.id
+  const variationParam = search?.get("variationId") ?? "";
+  const firstVariationId = template.variations[0]?.id ?? "";
+  const [selectedVariationId, setSelectedVariationId] = useState(
+    variationParam || firstVariationId
   );
 
   useEffect(() => {
-    setActiveVariationId(variationId || resolvedVariations[0]?.id);
-  }, [variationId, resolvedVariations]);
+    if (variationParam) {
+      setSelectedVariationId(variationParam);
+      return;
+    }
+    if (firstVariationId) {
+      setSelectedVariationId(firstVariationId);
+    }
+  }, [variationParam, firstVariationId]);
 
-  const activeVariation: ResolvedTemplateVariation =
-    resolvedVariations.find((v) => v.id === activeVariationId) ??
-    resolvedVariations[0];
+  const resolvedVariation: ResolvedTemplateVariation = useMemo(() => {
+    const variation =
+      template.variations.find((v) => v.id === selectedVariationId) ??
+      template.variations[0];
+    return resolveTemplateVariation(variation);
+  }, [template, selectedVariationId]);
 
-  const previewNames =
-    template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
-  const [defaultLeft, defaultRight] = previewNames
-    .split("&")
-    .map((s) => s.trim());
+  const resolvedVariations = useMemo(
+    () => template.variations.map((variation) => resolveTemplateVariation(variation)),
+    [template.variations]
+  );
+
+  const displayVariations = useMemo(() => {
+    const trimmed = resolvedVariations.slice(0, 6);
+    if (
+      trimmed.some((variation) => variation.id === selectedVariationId) ||
+      trimmed.length < 6
+    ) {
+      return trimmed;
+    }
+    const selected = resolvedVariations.find(
+      (variation) => variation.id === selectedVariationId
+    );
+    if (!selected) {
+      return trimmed;
+    }
+    return [...trimmed.slice(0, trimmed.length - 1), selected];
+  }, [resolvedVariations, selectedVariationId]);
+
+  const previewNames = template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
+  const [defaultLeft, defaultRight] = previewNames.split("&").map((s) => s.trim());
   const location = template.preview?.location ?? DEFAULT_PREVIEW.location;
   const [defaultCity, defaultState] = location.split(",").map((s) => s.trim());
 
   const [partnerOne, setPartnerOne] = useState(defaultLeft ?? "");
   const [partnerTwo, setPartnerTwo] = useState(defaultRight ?? "");
   const [eventDate, setEventDate] = useState(
-    parseDateInput(
-      defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel
-    )
+    parseDateInput(defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel)
   );
   const [city, setCity] = useState(defaultCity ?? "");
   const [state, setState] = useState(defaultState ?? "");
 
   const previewCoupleName =
-    partnerOne && partnerTwo ? `${partnerOne} & ${partnerTwo}` : previewNames;
+    partnerOne && partnerTwo
+      ? `${partnerOne} & ${partnerTwo}`
+      : previewNames;
   const previewDateLabel =
     formatDateLabel(eventDate) ??
     template.preview?.dateLabel ??
@@ -270,7 +126,7 @@ export default function WeddingTemplateCustomizePage() {
   const handleContinue = useCallback(() => {
     const params = new URLSearchParams();
     params.set("templateId", template.id);
-    params.set("variationId", activeVariation.id);
+    params.set("variationId", resolvedVariation.id);
     if (eventDate) {
       try {
         const iso = new Date(eventDate).toISOString();
@@ -280,7 +136,7 @@ export default function WeddingTemplateCustomizePage() {
       params.set("d", defaultDate);
     }
     router.push(`/event/new?${params.toString()}`);
-  }, [template.id, activeVariation.id, eventDate, defaultDate, router]);
+  }, [template.id, resolvedVariation.id, eventDate, defaultDate, router]);
 
   return (
     <main className="px-5 py-10">
@@ -291,18 +147,17 @@ export default function WeddingTemplateCustomizePage() {
               <div className={styles.previewFrame}>
                 <div
                   className={styles.previewHeader}
-                  style={{ background: activeVariation.background }}
+                  style={{ background: resolvedVariation.background }}
                 >
                   <p
                     className={styles.previewNames}
                     style={{
-                      color: activeVariation.titleColor,
-                      fontFamily: activeVariation.titleFontFamily,
-                      fontSize: "2rem",
+                      color: resolvedVariation.titleColor,
+                      fontFamily: resolvedVariation.titleFontFamily,
                       fontWeight:
-                        activeVariation.titleWeight === "bold"
+                        resolvedVariation.titleWeight === "bold"
                           ? 700
-                          : activeVariation.titleWeight === "semibold"
+                          : resolvedVariation.titleWeight === "semibold"
                           ? 600
                           : 400,
                     }}
@@ -311,15 +166,15 @@ export default function WeddingTemplateCustomizePage() {
                   </p>
                   <p
                     className={styles.previewMeta}
-                    style={{ color: activeVariation.titleColor }}
+                    style={{ color: resolvedVariation.titleColor }}
                   >
                     {previewDateLabel} • {previewLocation}
                   </p>
                   <div
                     className={styles.previewNav}
-                    style={{ color: activeVariation.titleColor }}
+                    style={{ color: resolvedVariation.titleColor }}
                   >
-                    {template.menu.slice(0, 8).map((item) => (
+                    {template.menu.slice(0, 7).map((item) => (
                       <span key={item} className={styles.previewNavItem}>
                         {item}
                       </span>
@@ -345,17 +200,17 @@ export default function WeddingTemplateCustomizePage() {
               <div className={styles.variationSection}>
                 <span className={styles.variationKicker}>Color stories</span>
                 <div className={styles.variationRow}>
-                  {resolvedVariations.map((variation) => {
-                    const isActive = variation.id === activeVariation.id;
+                  {displayVariations.map((variation) => {
+                    const isActiveVariation = variation.id === selectedVariationId;
                     return (
                       <button
                         key={variation.id}
                         type="button"
-                        aria-pressed={isActive}
+                        aria-pressed={isActiveVariation}
                         className={`${styles.variationButton} ${
-                          isActive ? styles.variationActive : ""
+                          isActiveVariation ? styles.variationActive : ""
                         }`}
-                        onClick={() => setActiveVariationId(variation.id)}
+                        onClick={() => setSelectedVariationId(variation.id)}
                       >
                         <div className={styles.variationSwatches}>
                           {variation.swatches.map((color) => (
@@ -387,8 +242,7 @@ export default function WeddingTemplateCustomizePage() {
               Add your details
             </h2>
             <p className="text-sm text-stone-600">
-              Personalize the headline information before continuing to full
-              event setup.
+              Personalize the headline information before continuing to full event setup.
             </p>
           </div>
           <div className="space-y-4">

@@ -42,9 +42,8 @@ const generalLight: ThemeVariantDefinition = {
       "theme-hero-gradient":
         "radial-gradient(120% 120% at 10% -10%, rgba(99,102,241,0.12), transparent 60%), radial-gradient(80% 60% at 80% 0%, rgba(45,212,191,0.18), transparent 70%)",
     }),
-    "--theme-illustration": "url('/themes/general/confetti.svg')",
   },
-  accentIcon: "/themes/general/burst.svg",
+  accentIcon: undefined,
   accentAlt: "Confetti illustration",
 };
 
@@ -74,9 +73,8 @@ const generalDark: ThemeVariantDefinition = {
       "theme-hero-gradient":
         "radial-gradient(140% 140% at 0% -10%, rgba(192,132,252,0.28), transparent 70%), radial-gradient(100% 80% at 90% 10%, rgba(45,212,191,0.24), transparent 75%)",
     }),
-    "--theme-illustration": "url('/themes/general/confetti-dark.svg')",
   },
-  accentIcon: "/themes/general/burst-dark.svg",
+  accentIcon: undefined,
   accentAlt: "Night confetti illustration",
 };
 

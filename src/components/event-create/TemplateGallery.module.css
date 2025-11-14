@@ -50,10 +50,12 @@
 }
 
 .cardTitle {
-  font-family: var(--font-playfair);
+  font-family: var(--font-playfair) !important;
   font-size: 1.4rem;
   margin: 0;
   letter-spacing: 0.05em;
+  /* Prevent font inheritance from variation styles */
+  font-weight: 400;
 }
 
 .cardDescription {
@@ -198,7 +200,7 @@
 }
 
 .previewNames {
-  font-size: 1.45rem;
+  font-size: 2rem;
   letter-spacing: 0.08em;
   margin: 0;
   text-transform: none;
@@ -206,7 +208,7 @@
 
 .previewMeta {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   letter-spacing: 0.12em;
   text-transform: none;
 }
@@ -215,7 +217,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 0.75rem;
-  font-size: 0.62rem;
+  font-size: 0.85rem;
   letter-spacing: 0.12em;
   text-transform: none;
   opacity: 0.85;
