@@ -39,7 +39,9 @@ export default function WeddingsCreate({ defaultDate }: Props) {
     params.set("variationId", variation.id);
     if (defaultDateIso) params.set("d", defaultDateIso);
     const query = params.toString();
-    const destination = query ? `/event/new?${query}` : "/event/new";
+    const destination = query
+      ? `/event/weddings/customize?${query}`
+      : "/event/weddings/customize";
     router.push(destination);
   };
 

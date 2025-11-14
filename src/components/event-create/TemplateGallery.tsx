@@ -40,7 +40,7 @@ export type TemplatePreviewData = {
   location: string;
 };
 
-const DEFAULT_PREVIEW: TemplatePreviewData = {
+export const DEFAULT_PREVIEW: TemplatePreviewData = {
   coupleName: "Ava & Mason",
   dateLabel: "September 23, 2028",
   location: "New York, NY",
