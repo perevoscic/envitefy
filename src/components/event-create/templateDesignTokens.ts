@@ -251,7 +251,7 @@ const SCRIPT_FONT_TOKENS = SCRIPT_FONT_ENTRIES.reduce<
     align: "center",
   };
   return acc;
-}, {});
+}, {}) as Record<(typeof SCRIPT_FONT_ENTRIES)[number]["id"], TemplateFontToken>;
 
 export const TEMPLATE_FONT_TOKENS = {
   ...BASE_FONT_TOKENS,

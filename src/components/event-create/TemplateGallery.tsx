@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import styles from "./TemplateGallery.module.css";
 import {
@@ -196,9 +197,6 @@ export default function TemplateGallery({
                   className={styles.previewHeader}
                   style={{ background: activeVariation.background }}
                 >
-                  <span className={styles.previewHeroTag}>
-                    {template.heroMood || template.name}
-                  </span>
                   <p
                     className={styles.previewNames}
                     style={{
@@ -236,15 +234,19 @@ export default function TemplateGallery({
                   </div>
                 </div>
                 <div className={styles.previewPhoto}>
-                  <span>
-                    Placeholder: {template.heroImageName.replace(".jpg", "")}
-                  </span>
+                  <Image
+                    src={`/templates/wedding-placeholders/${template.heroImageName}`}
+                    alt={`${template.name} placeholder`}
+                    width={640}
+                    height={360}
+                    className={styles.previewPhotoImage}
+                    priority={false}
+                  />
                 </div>
               </div>
               <div className={styles.cardHeader}>
                 <div>
                   <p className={styles.cardTitle}>{template.name}</p>
-                  <p className={styles.cardDescription}>{template.description}</p>
                 </div>
               </div>
               <div className={styles.variationSection}>

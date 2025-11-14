@@ -1,4 +1,4 @@
-const CACHE_NAME = "smd-static-v6";
+const CACHE_NAME = "smd-static-v7";
 const APP_SHELL = [
   "/",
   "/landing",

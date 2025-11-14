@@ -33,7 +33,6 @@ import {
   Mrs_Saint_Delafield,
   My_Soul,
   Niconne,
-  Over_the_Rainbow,
   Pinyon_Script,
   Petit_Formal_Script,
   Redressed,
@@ -305,12 +304,6 @@ const niconne = Niconne({
   display: "swap",
 });
 
-const overTheRainbow = Over_the_Rainbow({
-  variable: "--font-over-the-rainbow",
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 const pinyonScript = Pinyon_Script({
   variable: "--font-pinyon-script",
@@ -499,7 +492,6 @@ const decorativeFonts = [
   mrsSaintDelafield,
   mySoul,
   niconne,
-  overTheRainbow,
   pinyonScript,
   petitFormalScript,
   redressed,
