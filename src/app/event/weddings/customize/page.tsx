@@ -76,12 +76,15 @@ export default function WeddingTemplateCustomizePage() {
   }, [template, selectedVariationId]);
 
   const resolvedVariations = useMemo(
-    () => template.variations.map((variation) => resolveTemplateVariation(variation)),
+    () =>
+      template.variations.map((variation) =>
+        resolveTemplateVariation(variation)
+      ),
     [template.variations]
   );
 
   const displayVariations = useMemo(() => {
-    const trimmed = resolvedVariations.slice(0, 6);
+    const trimmed = resolvedVariations.slice(0, 8);
     if (
       trimmed.some((variation) => variation.id === selectedVariationId) ||
       trimmed.length < 6
@@ -97,23 +100,26 @@ export default function WeddingTemplateCustomizePage() {
     return [...trimmed.slice(0, trimmed.length - 1), selected];
   }, [resolvedVariations, selectedVariationId]);
 
-  const previewNames = template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
-  const [defaultLeft, defaultRight] = previewNames.split("&").map((s) => s.trim());
+  const previewNames =
+    template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
+  const [defaultLeft, defaultRight] = previewNames
+    .split("&")
+    .map((s) => s.trim());
   const location = template.preview?.location ?? DEFAULT_PREVIEW.location;
   const [defaultCity, defaultState] = location.split(",").map((s) => s.trim());
 
   const [partnerOne, setPartnerOne] = useState(defaultLeft ?? "");
   const [partnerTwo, setPartnerTwo] = useState(defaultRight ?? "");
   const [eventDate, setEventDate] = useState(
-    parseDateInput(defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel)
+    parseDateInput(
+      defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel
+    )
   );
   const [city, setCity] = useState(defaultCity ?? "");
   const [state, setState] = useState(defaultState ?? "");
 
   const previewCoupleName =
-    partnerOne && partnerTwo
-      ? `${partnerOne} & ${partnerTwo}`
-      : previewNames;
+    partnerOne && partnerTwo ? `${partnerOne} & ${partnerTwo}` : previewNames;
   const previewDateLabel =
     formatDateLabel(eventDate) ??
     template.preview?.dateLabel ??
@@ -201,7 +207,8 @@ export default function WeddingTemplateCustomizePage() {
                 <span className={styles.variationKicker}>Color stories</span>
                 <div className={styles.variationRow}>
                   {displayVariations.map((variation) => {
-                    const isActiveVariation = variation.id === selectedVariationId;
+                    const isActiveVariation =
+                      variation.id === selectedVariationId;
                     return (
                       <button
                         key={variation.id}
@@ -242,7 +249,8 @@ export default function WeddingTemplateCustomizePage() {
               Add your details
             </h2>
             <p className="text-sm text-stone-600">
-              Personalize the headline information before continuing to full event setup.
+              Personalize the headline information before continuing to full
+              event setup.
             </p>
           </div>
           <div className="space-y-4">

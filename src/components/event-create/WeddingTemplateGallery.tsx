@@ -90,10 +90,10 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     heroImageName: "midnight-bloom-hero.jpeg",
     heroMood: "Velvet Florals",
     menu: [...baseMenu],
-    variations: buildStories(
-      "midnight-bloom",
-      TEMPLATE_FONT_ASSIGNMENTS["midnight-bloom"],
-      [
+      variations: buildStories(
+        "midnight-bloom",
+        TEMPLATE_FONT_ASSIGNMENTS["midnight-bloom"],
+        [
         {
           key: "velvet-midnight",
           paletteId: "midnight-noir",
@@ -142,8 +142,8 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
           label: "Velour Waltz",
           tagline: "Dreamy twilight glaze",
         },
-      ]
-    ),
+        ]
+      ),
     preview: {
       coupleName: "Ava & Mason",
       dateLabel: "September 23, 2028",
