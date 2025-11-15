@@ -14,13 +14,16 @@ export default function ContactPage() {
     <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
       <section className="w-full max-w-2xl">
         <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-8 border border-border">
-          <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible text-center">
-            <span className="bg-clip-text pb-10 text-transparent bg-gradient-to-r from-cyan-600 via-sky-500 to-fuchsia-600 dark:from-cyan-300 dark:via-sky-200 dark:to-fuchsia-300">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible text-center">
+            <span
+              className="text-foreground"
+              style={{
+                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+              }}
+            >
               Contact
               <span> </span>
-              <span className="font-pacifico inline-block pb-1"> Snap</span>
-              <span> </span>
-              <span className="font-montserrat">My Date</span>
+              <span style={{ color: "#f4d9a4" }}>Envitefy</span>
             </span>
           </h1>
           <p className="mt-3 text-foreground/80 text-center">
@@ -124,7 +127,10 @@ export default function ContactPage() {
             <div className="pt-2 flex items-center gap-3">
               <button
                 disabled={submitting}
-                className="inline-flex items-center justify-center rounded-2xl px-6 py-3 text-base font-semibold bg-teal-500 hover:bg-teal-400 active:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed text-neutral-900 shadow-lg shadow-teal-500/25"
+                className="inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                style={{
+                  backgroundColor: "#14b8a6",
+                }}
               >
                 {submitting ? "Sending..." : "Send message"}
               </button>

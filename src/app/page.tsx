@@ -947,7 +947,7 @@ export default function Home() {
 
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-6 py-5 w-full max-w-2xl mb-10">
+      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-6 py-5 w-full max-w-2xl mb-6 md:mb-10">
         <p
           className="text-5xl md:text-7xl text-white overflow-visible"
           role="heading"
@@ -978,10 +978,11 @@ export default function Home() {
           </span>
         </p>
       </div>
-      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10 mt-10">
+      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-6 mt-6 md:pt-10 md:mt-20">
         <OptionCard
           title="Snap Event"
           ctaLabel="Open Camera"
+          ctaColor="#5fb1ff"
           details={[
             "Use your camera to",
             "Extracts dates, locations, and RSVP details automatically.",
@@ -1014,7 +1015,7 @@ export default function Home() {
         />
         <OptionCard
           title="Sign-Up Form"
-          ctaLabel="Open Form Builder"
+          ctaLabel="Form Builder"
           details={[
             "Build RSVP and volunteer sheets with slot limits and questions.",
             "Share a single link that syncs responses in real time.",
@@ -1600,6 +1601,7 @@ function OptionCard({
   details,
   tone = "primary",
   ctaLabel,
+  ctaColor,
   onClick,
 }: {
   href?: string;
@@ -1608,13 +1610,15 @@ function OptionCard({
   details?: string[];
   tone?: HighlightTone;
   ctaLabel?: string;
+  ctaColor?: string;
   onClick?: () => void;
 }) {
   const toneClass = TONE_STYLES[tone] ?? TONE_STYLES.primary;
+  const [showDetails, setShowDetails] = useState(false);
   const buttonLabel = ctaLabel ?? title;
 
   const iconWrapperClass = [
-    "mx-auto flex h-28 w-28 items-center justify-center rounded-3xl border border-dashed bg-white/90 text-foreground/80 shadow-inner transition group-hover:scale-[1.02]",
+    "mx-auto flex h-28 w-28 items-center justify-center rounded-3xl border border-dashed bg-white/90 text-foreground/80 shadow-inner transition group-hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
     toneClass.iconBg,
   ]
     .filter(Boolean)
@@ -1631,32 +1635,153 @@ function OptionCard({
   const buttonClass =
     "inline-flex items-center justify-center rounded-full px-6 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70";
 
-  const buttonStyle = { backgroundColor: toneClass.accent };
+  const buttonStyle = { backgroundColor: ctaColor ?? toneClass.accent };
+
+  const handlePrimaryAction = (
+    event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>
+  ) => {
+    if (showDetails) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    onClick?.();
+  };
 
   const cta = href ? (
-    <Link href={href} className={buttonClass} style={buttonStyle}>
+    <Link
+      href={href}
+      className={buttonClass}
+      style={buttonStyle}
+      onClick={handlePrimaryAction}
+      tabIndex={showDetails ? -1 : undefined}
+    >
       {buttonLabel}
     </Link>
   ) : (
     <button
       type="button"
-      onClick={onClick}
+      onClick={handlePrimaryAction}
       className={buttonClass}
       style={buttonStyle}
+      tabIndex={showDetails ? -1 : undefined}
     >
       {buttonLabel}
     </button>
   );
 
-  return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[32px] bg-white/95 text-foreground shadow-[0_25px_80px_rgba(15,13,9,0.35)] ring-1 ring-black/5 backdrop-blur-sm">
+  const openDetails = () => setShowDetails(true);
+
+  const handleInfoPointer = (
+    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openDetails();
+  };
+
+  const handleInfoKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      handleInfoPointer(event);
+    }
+  };
+
+  const closeDetails = (
+    event?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
+  ) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setShowDetails(false);
+  };
+
+  const baseCardClass =
+    "group relative flex h-full flex-col overflow-hidden rounded-[32px] border text-foreground shadow-[0_25px_80px_rgba(15,13,9,0.35)] ring-1 ring-black/5 backdrop-blur-sm";
+
+  const frontCard = (
+    <article
+      className={baseCardClass}
+      style={{
+        borderColor: toneClass.accent,
+        background: toneClass.cardSurface,
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Show details"
+        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/70 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        onClick={handleInfoPointer}
+        onKeyDown={handleInfoKeyDown}
+      >
+        <FlipHintIcon className="h-4 w-4" />
+      </button>
       <div className="flex flex-1 flex-col items-center gap-5 px-6 pb-4 pt-8 text-center">
-        <div
-          className={iconWrapperClass}
-          style={{ borderColor: toneClass.accent }}
-        >
-          <div className="w-20">{artwork}</div>
+        {href ? (
+          <Link
+            href={href}
+            className={iconWrapperClass}
+            style={{ borderColor: toneClass.accent }}
+            onClick={handlePrimaryAction}
+            tabIndex={showDetails ? -1 : undefined}
+            aria-label={buttonLabel}
+          >
+            <div className="w-20">{artwork}</div>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className={iconWrapperClass}
+            style={{ borderColor: toneClass.accent }}
+            onClick={handlePrimaryAction}
+            tabIndex={showDetails ? -1 : undefined}
+            aria-label={buttonLabel}
+          >
+            <div className="w-20">{artwork}</div>
+          </button>
+        )}
+        <div className="flex flex-col items-center gap-3">
+          <h2
+            className="text-xl font-semibold text-foreground"
+            style={{
+              fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+            }}
+          >
+            {title}
+          </h2>
         </div>
+      </div>
+      <div className="flex items-center justify-center border-t border-white/50 bg-white/40 px-6 py-4">
+        {cta}
+      </div>
+    </article>
+  );
+
+  const backCard = (
+    <article
+      className={baseCardClass}
+      style={{
+        borderColor: toneClass.accent,
+        background: toneClass.cardSurface,
+      }}
+      role="button"
+      tabIndex={0}
+      onClick={closeDetails}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          closeDetails(event);
+        }
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Hide details"
+        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/70 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        onClick={closeDetails}
+      >
+        <CloseIcon className="h-4 w-4" />
+      </button>
+      <div className="flex flex-1 flex-col items-center gap-4 px-6 pb-4 pt-8 text-center">
         <div className="flex flex-col items-center gap-3">
           <h2
             className="text-xl font-semibold text-foreground"
@@ -1669,9 +1794,35 @@ function OptionCard({
           {description}
         </div>
       </div>
-      <div className="flex items-center justify-center border-t border-black/5 bg-gradient-to-r from-white/95 via-white/85 to-white/95 px-6 py-4">
-        {cta}
-      </div>
     </article>
+  );
+
+  return (
+    <div className="relative h-full w-full [perspective:2000px]">
+      <div
+        className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]"
+        style={{ transform: showDetails ? "rotateY(180deg)" : "rotateY(0deg)" }}
+      >
+        <div
+          className="relative h-full w-full"
+          style={{
+            backfaceVisibility: "hidden",
+            pointerEvents: showDetails ? "none" : "auto",
+          }}
+        >
+          {frontCard}
+        </div>
+        <div
+          className="absolute inset-0 h-full w-full"
+          style={{
+            transform: "rotateY(180deg)",
+            backfaceVisibility: "hidden",
+            pointerEvents: showDetails ? "auto" : "none",
+          }}
+        >
+          {backCard}
+        </div>
+      </div>
+    </div>
   );
 }
