@@ -947,7 +947,7 @@ export default function Home() {
 
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-6 py-5 w-full max-w-3xl mb-10">
+      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-6 py-5 w-full max-w-2xl mb-10">
         <p
           className="text-5xl md:text-7xl text-white overflow-visible"
           role="heading"
@@ -955,7 +955,7 @@ export default function Home() {
         >
           <span className="inline-flex items-center gap-3">
             <Image
-              src="/E.png"
+              src="/LogoEonly.png"
               alt="Envitefy emblem"
               width={88}
               height={88}
@@ -1696,7 +1696,12 @@ function OptionCard({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white via-transparent to-white/40 opacity-0 transition-opacity duration-300 group-hover:opacity-80" />
           <div className="relative w-full">{artwork}</div>
         </div>
-        <h2 className="text-base md:text-lg font-semibold text-foreground/85">
+        <h2
+          className="text-base md:text-lg font-semibold text-foreground/85"
+          style={{
+            fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+          }}
+        >
           {title}
         </h2>
       </div>

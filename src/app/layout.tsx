@@ -64,12 +64,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
 import "./globals.css";
-import { cookies } from "next/headers";
-import {
-  resolveThemeCssVariables,
-  ThemeKey,
-  ThemeVariant,
-} from "@/themes";
+import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import type { CSSProperties } from "react";
 
 const geistSans = Geist({
@@ -677,19 +672,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("theme")?.value;
-  const cookieVariant: ThemeVariant | undefined =
-    themeCookie === "light" || themeCookie === "dark"
-      ? (themeCookie as ThemeVariant)
-      : undefined;
-
   const themeKey: ThemeKey = "general";
-  const initialThemeVariant: ThemeVariant | undefined = cookieVariant;
-  const htmlVariant: ThemeVariant = cookieVariant ?? "light";
+  const htmlVariant: ThemeVariant = "light";
   const cssVariables = resolveThemeCssVariables(themeKey, htmlVariant);
-  const cssVariablesLight = resolveThemeCssVariables(themeKey, "light");
-  const cssVariablesDark = resolveThemeCssVariables(themeKey, "dark");
   const htmlStyle = Object.fromEntries(
     Object.entries(cssVariables).map(([key, value]) => [key, value])
   ) as CSSProperties;
@@ -699,9 +684,6 @@ export default async function RootLayout({
       lang="en"
       data-theme={`${themeKey}-${htmlVariant}`}
       data-theme-key={themeKey}
-      data-vars-light={JSON.stringify(cssVariablesLight)}
-      data-vars-dark={JSON.stringify(cssVariablesDark)}
-      className={htmlVariant === "dark" ? "dark" : undefined}
       style={htmlStyle}
       suppressHydrationWarning
     >
@@ -742,30 +724,6 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} ${montserrat.variable} ${poppins.variable} ${raleway.variable} ${playfair.variable} ${dancing.variable} ${decorativeFontVariables} antialiased`}
       >
-        <Script id="theme-init" strategy="beforeInteractive">{`
-          (function(){
-            try {
-              var root = document.documentElement;
-              var key = root.getAttribute('data-theme-key') || 'general';
-              var stored = localStorage.getItem('theme');
-              var resolved = (stored === 'light' || stored === 'dark')
-                ? stored
-                : 'light';
-              // Apply CSS variables immediately to avoid flash
-              var varsAttr = resolved === 'dark' ? 'data-vars-dark' : 'data-vars-light';
-              var raw = root.getAttribute(varsAttr) || '{}';
-              try {
-                var tokens = JSON.parse(raw);
-                for (var k in tokens) { if (Object.prototype.hasOwnProperty.call(tokens, k)) { root.style.setProperty(k, tokens[k]); } }
-              } catch {}
-              root.setAttribute('data-theme', key + '-' + resolved);
-              root.classList.toggle('dark', resolved === 'dark');
-              root.style.colorScheme = resolved;
-            } catch (e) {
-              // noop
-            }
-          })();
-        `}</Script>
         <Script id="pwa-bridge" strategy="beforeInteractive">{`
           (function(){
             try {
@@ -796,7 +754,7 @@ export default async function RootLayout({
           gtag('js', new Date());
           gtag('config', 'G-3X25SZMRFY');
         `}</Script>
-        <Providers session={session} initialTheme={initialThemeVariant}>
+        <Providers session={session}>
           <LeftSidebar />
           <div
             className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
@@ -805,39 +763,39 @@ export default async function RootLayout({
             <div className="flex-1 min-w-0">{children}</div>
             <footer>
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
-                <div className="w-full overflow-x-auto">
-                  <p className="text-center whitespace-nowrap">
+                <div className="w-full">
+                  <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1 sm:whitespace-nowrap">
                     <Link
                       href="/how-it-works"
                       className="hover:text-foreground"
                     >
                       How it works
                     </Link>
-                    <span className="opacity-40 mx-2">•</span>
+                    <span className="opacity-40 hidden sm:inline">•</span>
                     <Link href="/who-its-for" className="hover:text-foreground">
-                      Who it’s for
+                      Who it's for
                     </Link>
-                    <span className="opacity-40 mx-2">•</span>
+                    <span className="opacity-40 hidden sm:inline">•</span>
                     <Link href="/faq" className="hover:text-foreground">
                       FAQ
                     </Link>
-                    <span className="opacity-40 mx-2">•</span>
+                    <span className="opacity-40 hidden sm:inline">•</span>
                     <Link
                       href="https://envitefy.com/terms"
                       className="hover:text-foreground"
                     >
                       Terms of Use
                     </Link>
-                    <span className="opacity-40 mx-2">•</span>
+                    <span className="opacity-40 hidden sm:inline">•</span>
                     <Link
                       href="https://envitefy.com/privacy"
                       className="hover:text-foreground"
                     >
                       Privacy Policy
                     </Link>
-                    <span className="opacity-40 mx-2">•</span>
+                    <span className="opacity-40 hidden sm:inline">•</span>
                     <span>© {new Date().getFullYear()} Envitefy</span>
-                  </p>
+                  </div>
                 </div>
               </div>
             </footer>

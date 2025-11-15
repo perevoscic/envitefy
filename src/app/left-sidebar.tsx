@@ -155,7 +155,7 @@ export default function LeftSidebar() {
       profileEmailRef.current = profileEmail;
     }
   }, [profileEmail]);
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   // When building a Smart sign-up, hide Rename/Change actions to avoid confusing edits
@@ -1447,12 +1447,10 @@ export default function LeftSidebar() {
   };
 
   const MenuItems = (props: {
-    isDark: boolean;
-    toggleTheme: () => void;
     onCloseMenu: () => void;
     isAdmin: boolean;
   }) => {
-    const { isDark, toggleTheme, onCloseMenu, isAdmin } = props;
+    const { onCloseMenu, isAdmin } = props;
     return (
       <div className="p-2">
         <Link
@@ -1500,80 +1498,6 @@ export default function LeftSidebar() {
           </svg>
           <span className="text-sm">Subscription</span>
         </Link>
-
-        <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface">
-          <div className="flex items-center gap-3">
-            {isDark ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M22 12h-2M4 12H2M17.657 6.343l-1.414 1.414M7.757 16.243l-1.414 1.414M17.657 17.657l-1.414-1.414M7.757 7.757L6.343 6.343" />
-              </svg>
-            )}
-            <span className="text-sm">Theme</span>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isDark}
-            aria-label="Toggle theme"
-            onClick={() => toggleTheme()}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              isDark ? "bg-primary/60" : "bg-foreground/20"
-            }`}
-          >
-            <span
-              className={`inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-background shadow transition-transform ${
-                isDark ? "translate-x-5" : "translate-x-1"
-              }`}
-            >
-              {isDark ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
-                >
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="4" />
-                </svg>
-              )}
-            </span>
-          </button>
-        </div>
 
         <Link
           href="/about"
@@ -1962,80 +1886,6 @@ export default function LeftSidebar() {
                       </div>
                     </div>
                   )}
-                </div>
-
-                <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface">
-                  <div className="flex items-center gap-3">
-                    {isDark ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="12" r="4" />
-                        <path d="M12 2v2M12 20v2M22 12h-2M4 12H2M17.657 6.343l-1.414 1.414M7.757 16.243l-1.414 1.414M17.657 17.657l-1.414-1.414M7.757 7.757L6.343 6.343" />
-                      </svg>
-                    )}
-                    <span className="text-sm">Theme</span>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={isDark}
-                    aria-label="Toggle theme"
-                    onClick={() => toggleTheme()}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      isDark ? "bg-primary/60" : "bg-foreground/20"
-                    }`}
-                  >
-                    <span
-                      className={`inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-background shadow transition-transform ${
-                        isDark ? "translate-x-5" : "translate-x-1"
-                      }`}
-                    >
-                      {isDark ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="h-3.5 w-3.5"
-                          aria-hidden="true"
-                        >
-                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                        </svg>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="h-3.5 w-3.5"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="12" r="4" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
                 </div>
 
                 <Link
@@ -4815,80 +4665,6 @@ export default function LeftSidebar() {
                           </div>
                         </div>
                       )}
-                    </div>
-
-                    <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface">
-                      <div className="flex items-center gap-3">
-                        {isDark ? (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                          </svg>
-                        ) : (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="12" r="4" />
-                            <path d="M12 2v2M12 20v2M22 12h-2M4 12H2M17.657 6.343l-1.414 1.414M7.757 16.243l-1.414 1.414M17.657 17.657l-1.414-1.414M7.757 7.757L6.343 6.343" />
-                          </svg>
-                        )}
-                        <span className="text-sm">Theme</span>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={isDark}
-                        aria-label="Toggle theme"
-                        onClick={() => toggleTheme()}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          isDark ? "bg-primary/60" : "bg-foreground/20"
-                        }`}
-                      >
-                        <span
-                          className={`inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-background shadow transition-transform ${
-                            isDark ? "translate-x-5" : "translate-x-1"
-                          }`}
-                        >
-                          {isDark ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            >
-                              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                            </svg>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            >
-                              <circle cx="12" cy="12" r="4" />
-                            </svg>
-                          )}
-                        </span>
-                      </button>
                     </div>
 
                     <Link

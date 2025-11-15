@@ -9,8 +9,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
-  useState,
 } from "react";
 import { usePathname } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
@@ -19,16 +17,10 @@ import GlobalSmartSignup from "./GlobalSmartSignup";
 import PwaInstallButton from "@/components/PwaInstallButton";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
 
-const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
-
-type SetThemeOptions = {
-  persist?: boolean;
-};
-
 type ThemeContextValue = {
   theme: ThemeVariant;
   themeKey: ThemeKey;
-  setTheme: (variant: ThemeVariant, options?: SetThemeOptions) => void;
+  setTheme: (variant: ThemeVariant) => void;
   toggleTheme: () => void;
 };
 
@@ -36,7 +28,6 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 type ThemeProviderProps = {
   children: ReactNode;
-  initialTheme?: ThemeVariant;
 };
 
 function applyCssVariables(themeKey: ThemeKey, variant: ThemeVariant) {
@@ -48,80 +39,21 @@ function applyCssVariables(themeKey: ThemeKey, variant: ThemeVariant) {
   }
   root.setAttribute("data-theme", `${themeKey}-${variant}`);
   root.setAttribute("data-theme-key", themeKey);
-  root.classList.toggle("dark", variant === "dark");
-  root.style.colorScheme = variant;
+  root.classList.remove("dark");
+  root.style.colorScheme = "light";
 }
 
-function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
+function ThemeProvider({ children }: ThemeProviderProps) {
   const themeKey: ThemeKey = "general";
-  const [theme, setThemeState] = useState<ThemeVariant>(
-    initialTheme ?? "light"
-  );
-  const [isThemeHydrated, setIsThemeHydrated] = useState(
-    initialTheme !== undefined
-  );
-  const setThemeCookie = useCallback((value: ThemeVariant | null) => {
-    if (typeof document === "undefined") return;
-    try {
-      if (value) {
-        document.cookie = `theme=${value}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`;
-      } else {
-        document.cookie = "theme=; path=/; max-age=0; SameSite=Lax";
-      }
-    } catch {}
-  }, []);
+  const theme: ThemeVariant = "light";
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("theme") as ThemeVariant | null;
-
-    if (stored === "light" || stored === "dark") {
-      setThemeState(stored);
-      setIsThemeHydrated(true);
-      setThemeCookie(stored);
-      return;
-    }
-
-    if (initialTheme === "light" || initialTheme === "dark") {
-      setThemeState(initialTheme);
-      setIsThemeHydrated(true);
-      setThemeCookie(initialTheme);
-      return;
-    }
-
-    setThemeCookie(null);
-    setThemeState("light");
-    setIsThemeHydrated(true);
-  }, [initialTheme, setThemeCookie]);
-
-  useEffect(() => {
-    if (!isThemeHydrated) return;
     applyCssVariables(themeKey, theme);
-  }, [themeKey, theme, isThemeHydrated]);
+  }, [themeKey, theme]);
 
-  const setTheme = useCallback(
-    (variant: ThemeVariant, options?: SetThemeOptions) => {
-      const persist = options?.persist ?? true;
-      setThemeState(variant);
-      if (persist) {
-        try {
-          window.localStorage.setItem("theme", variant);
-        } catch {}
-        setThemeCookie(variant);
-      } else {
-        try {
-          window.localStorage.removeItem("theme");
-        } catch {}
-        setThemeCookie(null);
-      }
-      setIsThemeHydrated(true);
-    },
-    [setThemeCookie]
-  );
+  const setTheme = useCallback((_variant: ThemeVariant) => {}, []);
 
-  const toggleTheme = useCallback(() => {
-    setTheme(theme === "light" ? "dark" : "light");
-  }, [theme, setTheme]);
+  const toggleTheme = useCallback(() => {}, []);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
@@ -130,7 +62,7 @@ function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
       setTheme,
       toggleTheme,
     }),
-    [theme, themeKey, setTheme, toggleTheme]
+    [themeKey, setTheme, toggleTheme]
   );
 
   return (
@@ -148,11 +80,9 @@ export function useTheme() {
 export default function Providers({
   children,
   session,
-  initialTheme,
 }: {
   children: ReactNode;
   session?: Session | null;
-  initialTheme?: ThemeVariant;
 }) {
   const pathname = usePathname();
   const installStartExpanded = pathname?.startsWith("/landing") ?? false;
@@ -160,9 +90,7 @@ export default function Providers({
   return (
     <SessionProvider session={session}>
       <SidebarProvider>
-        <ThemeProvider
-          initialTheme={initialTheme}
-        >
+        <ThemeProvider>
           <RegisterServiceWorker />
           {children}
           <GlobalEventCreate />
