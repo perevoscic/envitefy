@@ -350,10 +350,10 @@ h5 {
   .main-brand-panel {
     background: linear-gradient(
         120deg,
-        rgba(219, 104, 162, 0.897),
-        rgba(10, 70, 199, 0.774)
+        rgba(125, 104, 219, 0.349),
+        rgba(10, 70, 199, 0.582)
       ),
-      rgba(14, 8, 6, 0.25);
+      rgba(14, 8, 6, 0.116);
     border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 2.75rem;
     backdrop-filter: blur(24px);

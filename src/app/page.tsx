@@ -978,9 +978,10 @@ export default function Home() {
           </span>
         </p>
       </div>
-      <div className="grid max-w-8xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10 mt-10">
+      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10 mt-10">
         <OptionCard
           title="Snap Event"
+          ctaLabel="Open Camera"
           details={[
             "Use your camera to",
             "Extracts dates, locations, and RSVP details automatically.",
@@ -991,6 +992,7 @@ export default function Home() {
         />
         <OptionCard
           title="Upload Event"
+          ctaLabel="Choose File"
           details={[
             "Drop PDFs, screenshots, or photos from your library.",
             "Smart cleanup handles decorative fonts and tricky layouts.",
@@ -1001,6 +1003,7 @@ export default function Home() {
         />
         <OptionCard
           title="Create Event"
+          ctaLabel="Start Draft"
           details={[
             "Start from scratch with precise times, reminders, and notes.",
             "Add recurrence rules, categories, and custom reminders.",
@@ -1011,6 +1014,7 @@ export default function Home() {
         />
         <OptionCard
           title="Sign-Up Form"
+          ctaLabel="Open Form Builder"
           details={[
             "Build RSVP and volunteer sheets with slot limits and questions.",
             "Share a single link that syncs responses in real time.",
@@ -1595,6 +1599,7 @@ function OptionCard({
   artwork,
   details,
   tone = "primary",
+  ctaLabel,
   onClick,
 }: {
   href?: string;
@@ -1602,204 +1607,71 @@ function OptionCard({
   artwork: ReactNode;
   details?: string[];
   tone?: HighlightTone;
+  ctaLabel?: string;
   onClick?: () => void;
 }) {
   const toneClass = TONE_STYLES[tone] ?? TONE_STYLES.primary;
-  const [showDetails, setShowDetails] = useState(false);
+  const buttonLabel = ctaLabel ?? title;
 
-  const handlePrimaryAction = (
-    event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>
-  ) => {
-    if (showDetails) {
-      event.preventDefault();
-      setShowDetails(false);
-      return;
-    }
-    onClick?.();
-  };
-
-  const openDetails = () => setShowDetails(true);
-
-  const handleInfoPointer = (
-    event: MouseEvent<HTMLSpanElement> | KeyboardEvent<HTMLSpanElement>
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!showDetails) {
-      openDetails();
-    }
-  };
-
-  const handleInfoKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      handleInfoPointer(event);
-    }
-  };
-
-  const closeDetails = (
-    event?:
-      | MouseEvent<HTMLButtonElement | HTMLDivElement>
-      | KeyboardEvent<HTMLDivElement>
-  ) => {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    setShowDetails(false);
-  };
-
-  const primaryWrapperClass = [
-    "group block h-full w-full text-left focus:outline-none",
-    showDetails ? "pointer-events-none select-none" : "",
+  const iconWrapperClass = [
+    "mx-auto flex h-28 w-28 items-center justify-center rounded-3xl border border-dashed bg-white/90 text-foreground/80 shadow-inner transition group-hover:scale-[1.02]",
+    toneClass.iconBg,
   ]
     .filter(Boolean)
     .join(" ");
 
-  const primaryTabIndex = showDetails ? -1 : undefined;
-
-  const frontCard = (
-    <div
-      className="relative overflow-hidden rounded-[28px] border px-4 py-5 shadow-[0_32px_80px_rgba(43,27,22,0.12)] backdrop-blur-xl transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_40px_95px_rgba(43,27,22,0.18)]"
-      data-card-tone={tone}
-      style={{
-        background: toneClass.cardSurface,
-        borderColor: toneClass.accent,
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-70"
-        style={{
-          background:
-            "radial-gradient(140% 140% at 50% 5%, rgba(255,255,255,0.65), transparent 55%)",
-        }}
-        aria-hidden
-      />
-      <span
-        role="button"
-        tabIndex={showDetails ? -1 : 0}
-        aria-label="Show details"
-        className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/60 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        onClick={handleInfoPointer}
-        onKeyDown={handleInfoKeyDown}
-      >
-        <FlipHintIcon className="h-5 w-5" />
-      </span>
-      <div className="relative flex flex-col items-center space-y-1.5 md:space-y-2 text-center">
-        <div
-          className={[
-            "relative flex w-full max-w-[120px] md:max-w-[140px] items-center justify-center overflow-hidden rounded-2xl bg-white/80 p-2 transition-all duration-300 group-hover:scale-[1.03]",
-            toneClass.iconBg,
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white via-transparent to-white/40 opacity-0 transition-opacity duration-300 group-hover:opacity-80" />
-          <div className="relative w-full">{artwork}</div>
-        </div>
-        <h2
-          className="text-base md:text-lg font-semibold text-foreground/85"
-          style={{
-            fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-          }}
-        >
-          {title}
-        </h2>
-      </div>
+  const description = details?.length ? (
+    <div className="space-y-1 text-sm leading-relaxed text-muted-foreground">
+      {details.map((item, index) => (
+        <p key={`${title}-${index}`}>{item}</p>
+      ))}
     </div>
-  );
+  ) : null;
 
-  const backCard = (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={closeDetails}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          closeDetails(event);
-        }
-      }}
-      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-[28px] border px-4 py-4 text-left shadow-[0_32px_80px_rgba(43,27,22,0.12)] backdrop-blur-xl transition-transform duration-300 hover:shadow-[0_40px_95px_rgba(43,27,22,0.18)]"
-      data-card-tone={tone}
-      style={{
-        transform: "rotateY(180deg)",
-        backfaceVisibility: "hidden",
-        background: toneClass.cardSurface,
-        borderColor: toneClass.accent,
-      }}
-    >
-      <button
-        type="button"
-        aria-label="Hide details"
-        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/60 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        onClick={closeDetails}
-      >
-        <CloseIcon className="h-4 w-4" />
-      </button>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            "radial-gradient(160% 160% at 50% 15%, rgba(255,255,255,0.75) 0%, transparent 65%)",
-        }}
-        aria-hidden
-      />
-      <div className="relative mx-auto flex max-w-xs flex-1 flex-col justify-center gap-3 md:gap-4 text-center">
-        <div className="space-y-1.5 md:space-y-2">
-          <h2 className="text-base md:text-lg font-semibold text-foreground">
-            {title}
-          </h2>
-        </div>
-        {details?.length ? (
-          <ul className="space-y-1.5 md:space-y-2 text-left text-sm md:text-base text-muted-foreground">
-            {details.map((item) => (
-              <li key={item} className="flex items-start gap-2">
-                <span
-                  className="mt-[0.35rem] md:mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full opacity-80"
-                  style={{ backgroundColor: toneClass.accent }}
-                />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </div>
-  );
+  const buttonClass =
+    "inline-flex items-center justify-center rounded-full px-6 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70";
 
-  const frontWrapper = href ? (
-    <Link
-      href={href}
-      onClick={handlePrimaryAction}
-      className={primaryWrapperClass}
-      tabIndex={primaryTabIndex}
-    >
-      {frontCard}
+  const buttonStyle = { backgroundColor: toneClass.accent };
+
+  const cta = href ? (
+    <Link href={href} className={buttonClass} style={buttonStyle}>
+      {buttonLabel}
     </Link>
   ) : (
     <button
       type="button"
-      onClick={handlePrimaryAction}
-      className={primaryWrapperClass}
-      tabIndex={showDetails ? -1 : 0}
+      onClick={onClick}
+      className={buttonClass}
+      style={buttonStyle}
     >
-      {frontCard}
+      {buttonLabel}
     </button>
   );
 
   return (
-    <div className="relative h-full w-full [perspective:2000px]">
-      <div
-        className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]"
-        style={{ transform: showDetails ? "rotateY(180deg)" : "rotateY(0deg)" }}
-      >
+    <article className="group flex h-full flex-col overflow-hidden rounded-[32px] bg-white/95 text-foreground shadow-[0_25px_80px_rgba(15,13,9,0.35)] ring-1 ring-black/5 backdrop-blur-sm">
+      <div className="flex flex-1 flex-col items-center gap-5 px-6 pb-4 pt-8 text-center">
         <div
-          className="relative h-full w-full"
-          style={{ backfaceVisibility: "hidden" }}
+          className={iconWrapperClass}
+          style={{ borderColor: toneClass.accent }}
         >
-          {frontWrapper}
+          <div className="w-20">{artwork}</div>
         </div>
-        {backCard}
+        <div className="flex flex-col items-center gap-3">
+          <h2
+            className="text-xl font-semibold text-foreground"
+            style={{
+              fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+            }}
+          >
+            {title}
+          </h2>
+          {description}
+        </div>
       </div>
-    </div>
+      <div className="flex items-center justify-center border-t border-black/5 bg-gradient-to-r from-white/95 via-white/85 to-white/95 px-6 py-4">
+        {cta}
+      </div>
+    </article>
   );
 }
