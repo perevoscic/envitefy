@@ -19,6 +19,11 @@ export default function AuthModal({
   onClose,
   onModeChange,
 }: AuthModalProps) {
+  const isLogin = mode === "login";
+  const heroKicker = isLogin ? "Welcome back" : "You're invited";
+  const heroBlurb = isLogin
+    ? "Pick up right where you left off—your saved invitations, RSVP dashboards, and calendars are waiting."
+    : "Create a planning home that feels as bespoke as the new wedding templates, from invites to guest logistics.";
   const { setIsCollapsed } = useSidebar();
   // Broadcast global open/close so other components (e.g., background slider)
   // can react when any auth modal is shown anywhere on the page.
@@ -78,87 +83,29 @@ export default function AuthModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-transparent backdrop-blur-[3px] backdrop-saturate-125"
+        className="absolute inset-0 bg-[rgba(24,14,10,0.45)] backdrop-blur-[6px] backdrop-saturate-150"
         onClick={onClose}
       />
       {/* Wrapper creates a stacking context for a top-most close button */}
       <div className="relative w-full sm:w-[480px] max-w-[92vw]">
         {/* Card */}
-        <div className="relative bg-surface text-foreground border border-border rounded-3xl p-5 sm:p-6 shadow-2xl auth-card-gradient">
-          {mode === "login" ? (
-            <>
-              <p className="pt-2 pb-1 text-base text-foreground/80 text-center">
-                Welcome back to
-              </p>
-              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7 overflow-visible">
-                <span className="inline-flex items-center gap-2 justify-center">
-                  <Image
-                    src="/E.png"
-                    alt="E"
-                    width={56}
-                    height={56}
-                    className="h-10 w-10 md:h-14 md:w-14"
-                    quality={100}
-                    unoptimized
-                  />
-                  <span
-                    className="text-5xl"
-                    style={{
-                      fontFamily:
-                        '"Venturis ADF", "Venturis ADF Fallback", serif',
-                      background:
-                        "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
-                      backgroundClip: "text",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      lineHeight: "1.2",
-                      display: "inline-block",
-                      paddingBottom: "0.1em",
-                    }}
-                  >
-                    nvitefy
-                  </span>
-                </span>
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="pt-2 pb-1 text-base text-foreground/80 text-center">
-                Join
-              </p>
-              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7 overflow-visible">
-                <span className="inline-flex items-center gap-2 justify-center">
-                  <Image
-                    src="/E.png"
-                    alt="E"
-                    width={56}
-                    height={56}
-                    className="h-10 w-10 md:h-14 md:w-14"
-                    quality={100}
-                    unoptimized
-                  />
-                  <span
-                    className="text-5xl"
-                    style={{
-                      fontFamily:
-                        '"Venturis ADF", "Venturis ADF Fallback", serif',
-                      background:
-                        "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
-                      backgroundClip: "text",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      lineHeight: "1.2",
-                      display: "inline-block",
-                      paddingBottom: "0.1em",
-                    }}
-                  >
-                    nvitefy
-                  </span>
-                </span>
-              </p>
-            </>
-          )}
-          {mode === "login" ? (
+        <div className="relative bg-surface/95 text-foreground rounded-3xl p-6 sm:p-8 wedding-glow-card auth-card-gradient">
+          <div className="flex flex-col items-center gap-3 pb-7 text-center">
+            <p className="wedding-kicker">{heroKicker}</p>
+            <div className="wedding-brand-lockup">
+              <Image
+                src="/E.png"
+                alt="Envitefy emblem"
+                width={48}
+                height={48}
+                quality={100}
+                unoptimized
+              />
+              <span className="wedding-brand-mark">nvitefy</span>
+            </div>
+            <p className="text-sm text-foreground/70 max-w-sm">{heroBlurb}</p>
+          </div>
+          {isLogin ? (
             <LoginForm
               onSuccess={onClose}
               onSwitchMode={() => onModeChange?.("signup")}
@@ -175,7 +122,7 @@ export default function AuthModal({
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center justify-center h-10 w-10 rounded-2xl border border-border bg-surface/70 text-foreground/80 hover:text-foreground hover:bg-surface/90 shadow-sm z-20 pointer-events-auto touch-manipulation"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 flex h-11 w-11 items-center justify-center wedding-icon-button text-foreground/70 hover:text-foreground"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

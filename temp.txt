@@ -261,18 +261,10 @@ export default function LoginHero() {
         }`}
         style={{ bottom: "calc(4rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="hero-brand-panel flex flex-col items-center gap-5 text-center px-6 py-5 w-full max-w-3xl">
+        <div className="hero-brand-panel flex flex-col items-center gap-5 text-center px-8 py-6 w-full max-w-4xl">
+          <p className="wedding-kicker text-white">You&apos;re invited to</p>
           <p
-            className="wedding-kicker"
-            style={{
-              color: "#fff",
-              textShadow: "0 0 8px rgba(179, 175, 175, 0.35)",
-            }}
-          >
-            You&apos;re invited to
-          </p>
-          <p
-            className="text-4xl md:text-7xl tracking-tight text-white pb-1 text-center overflow-visible"
+            className="text-5xl md:text-8xl tracking-tight text-white pb-1 text-center overflow-visible"
             role="heading"
             aria-level={1}
           >
@@ -282,22 +274,25 @@ export default function LoginHero() {
                 alt="Envitefy emblem"
                 width={88}
                 height={88}
+                className="h-24 w-24 md:h-32 md:w-32 rounded-full bg-white/90 p-2 shadow-xl"
                 quality={100}
                 priority
                 unoptimized
               />
               <span
-                className="text-4xl md:text-8xl"
+                className="text-5xl md:text-8xl"
                 style={{
-                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
                   backgroundImage:
-                    "linear-gradient(to bottom, #d4ae51 0%, #9a7b2f 100%)",
+                    "linear-gradient(150deg, #f4d7c0 0%, #d19a73 55%, #885739 100%)",
                   backgroundClip: "text",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
-                  lineHeight: "1.2",
+                  fontFamily: 'var(--font-playfair), "Times New Roman", serif',
+                  lineHeight: "1.1",
                   display: "inline-block",
-                  paddingBottom: "0.1em",
+                  paddingBottom: "0.05em",
+                  textShadow:
+                    "0 8px 30px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.35)",
                 }}
               >
                 nvitefy
@@ -337,3 +332,4 @@ export default function LoginHero() {
     </section>
   );
 }
+

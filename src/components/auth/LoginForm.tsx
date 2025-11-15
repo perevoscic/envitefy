@@ -61,7 +61,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         type="button"
         onClick={onGoogleSignIn}
         disabled={submitting}
-        className="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-2xl bg-white dark:bg-surface/50 text-gray-700 dark:text-foreground border border-gray-300 dark:border-border hover:bg-gray-50 dark:hover:bg-surface/70 disabled:opacity-70 transition-colors font-medium"
+        className="btn btn-outline w-full justify-center gap-3"
       >
         <svg
           width="18"
@@ -99,7 +99,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
       <input
         id="login-email-input"
         type="email"
-        className="w-full border border-border bg-surface text-foreground p-2 rounded"
+        className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -109,7 +109,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         <input
           id="login-password-input"
           type={showPassword ? "text" : "password"}
-          className={`w-full border border-border bg-surface text-foreground p-2 rounded pr-10${
+          className={`w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition${
             message ? " input-error" : ""
           }${shake ? " input-shake" : ""}`}
           placeholder="Password"
@@ -125,7 +125,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
           type="button"
           aria-label={showPassword ? "Hide password" : "Show password"}
           aria-pressed={showPassword}
-          className="absolute inset-y-0 right-2 my-auto h-8 w-8 rounded-full text-muted-foreground hover:bg-foreground/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)]"
           onClick={() => setShowPassword((v) => !v)}
         >
           <svg
@@ -171,7 +171,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-1/2 block mx-auto px-4 py-2 rounded-2xl bg-[#A259FF] text-white disabled:opacity-70"
+        className="btn btn-primary w-full justify-center"
       >
         {submitting ? "Signing in..." : "Sign in"}
       </button>

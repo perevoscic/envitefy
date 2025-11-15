@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FFFBF7;
-  --surface: #FFFFFF;
-  --surface-alt: #F8F5F1;
-  --foreground: #3F3C3C;
-  --muted-foreground: #6F6C69;
-  --border: #E4DED4;
-  --primary: #2DD4BF;
-  --secondary: #6366F1;
-  --accent: #A855F7;
-  --success: #22C55E;
-  --info: #3B82F6;
-  --warning: #F97316;
-  --error: #EF4444;
+  --background: #FDF6F0;
+  --surface: #FFFBF7;
+  --surface-alt: #F5E9DF;
+  --foreground: #2B1B16;
+  --muted-foreground: #7A5F52;
+  --border: #E6D7CB;
+  --primary: #C98F6B;
+  --secondary: #6B4C3F;
+  --accent: #E7C9B9;
+  --success: #3F8A7A;
+  --info: #5F7CB5;
+  --warning: #D17A45;
+  --error: #C15F5A;
   --on-primary: #FFFFFF;
-  --on-secondary: #FFFFFF;
-  --on-accent: #FFFFFF;
-  --theme-overlay: rgba(45, 212, 191, 0.12);
-  --theme-overlay-secondary: rgba(99, 102, 241, 0.10);
-  --theme-card-glow: rgba(168, 85, 247, 0.16);
-  --theme-hero-gradient: radial-gradient(120% 120% at 10% -10%, rgba(99, 102, 241, 0.12), transparent 60%), radial-gradient(80% 60% at 80% 0%, rgba(45, 212, 191, 0.18), transparent 70%);
+  --on-secondary: #FDF6F0;
+  --on-accent: #2B1B16;
+  --theme-overlay: rgba(201, 143, 107, 0.12);
+  --theme-overlay-secondary: rgba(107, 76, 63, 0.12);
+  --theme-card-glow: rgba(231, 201, 185, 0.35);
+  --theme-hero-gradient:
+    radial-gradient(120% 120% at 10% -20%, rgba(233, 205, 189, 0.65), transparent 60%),
+    radial-gradient(80% 60% at 80% 0%, rgba(107, 76, 63, 0.25), transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 229, 217, 0.96));
 }
 
 @theme inline {
@@ -99,15 +102,40 @@ input[type="submit"][disabled] {
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  /* Subtle grain texture */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.045'/></svg>");
-  background-size: 180px 180px;
-  background-repeat: repeat;
-  background-attachment: fixed;
-  background-blend-mode: multiply;
+  font-family: var(--font-raleway), var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  position: relative;
+  background-image:
+    radial-gradient(110% 140% at 0% 0%, rgba(233, 205, 189, 0.35), transparent 55%),
+    radial-gradient(120% 120% at 100% 0%, rgba(107, 76, 63, 0.2), transparent 65%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.045'/></svg>");
+  background-size: 160% 160%, 120% 120%, 180px 180px;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-attachment: fixed, fixed, fixed;
+  background-blend-mode: soft-light, multiply, normal;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: var(--theme-hero-gradient);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: -1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-playfair), "Times New Roman", serif;
+  letter-spacing: 0.02em;
+  color: color-mix(in oklab, var(--foreground) 92%, white 8%);
 }
 
 @layer utilities {
@@ -141,78 +169,173 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    border-radius: 0.75rem; /* 12px ~ rounded-2xl */
-    padding-left: 0.75rem; /* px-3 */
-    padding-right: 0.75rem;
-    padding-top: 0.5rem; /* py-2 */
-    padding-bottom: 0.5rem;
-    font-size: 0.875rem; /* text-sm */
-    font-weight: 600; /* font-semibold */
-    transition: box-shadow 120ms ease, opacity 120ms ease, transform 80ms ease, background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+    gap: 0.75rem;
+    border-radius: 999px;
+    padding: 0.65rem 1.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease, border-color 160ms ease;
     outline: none;
-    /* Safari/iOS minimal reset without leaving @layer */
     -webkit-appearance: none;
     appearance: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     white-space: nowrap;
+    background-clip: padding-box;
   }
-  .btn:active { transform: translateY(1px) scale(0.98); }
-  .btn:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent); }
+  .btn:active { transform: translateY(1px) scale(0.985); }
+  .btn:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 30%, transparent);
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
 
   .btn-primary {
-    background: var(--color-primary);
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-primary) 90%, white 10%),
+      color-mix(in oklab, var(--color-secondary) 20%, var(--color-primary) 80%)
+    );
     color: var(--color-on-primary);
-    box-shadow: 0 6px 14px color-mix(in oklab, var(--color-primary) 28%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-primary) 60%, transparent);
+    box-shadow: 0 18px 40px rgba(107, 76, 63, 0.22);
   }
-  .btn-primary:hover { opacity: 0.95; }
-  .btn-primary:active { opacity: 0.9; }
+  .btn-primary:hover {
+    filter: brightness(1.03);
+  }
 
   .btn-secondary {
-    background: color-mix(in oklab, var(--surface) 70%, var(--foreground) 30%);
-    color: var(--foreground);
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    background: color-mix(in oklab, var(--color-background) 85%, var(--color-foreground) 15%);
+    color: color-mix(in oklab, var(--color-foreground) 80%, black 20%);
+    border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+    box-shadow: 0 12px 25px rgba(43, 27, 22, 0.12);
   }
-  .btn-secondary:hover { background: color-mix(in oklab, var(--surface) 80%, var(--foreground) 20%); }
+  .btn-secondary:hover {
+    background: color-mix(in oklab, var(--color-background) 70%, var(--color-foreground) 30%);
+  }
 
   .btn-outline {
     background: transparent;
-    color: color-mix(in oklab, var(--foreground) 80%, transparent);
-    border: 1px solid var(--border);
+    color: color-mix(in oklab, var(--color-foreground) 80%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-border) 65%, transparent);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
   }
   .btn-outline:hover {
-    color: var(--foreground);
-    background: color-mix(in oklab, var(--surface) 70%, transparent);
+    background: color-mix(in oklab, var(--color-surface) 85%, transparent);
+    color: var(--color-foreground);
+  }
+
+  .btn-outline-light {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      0 12px 25px rgba(0, 0, 0, 0.25);
+  }
+  .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.8);
   }
 
   .btn-danger {
-    background: var(--color-error);
-    color: white;
-    box-shadow: 0 6px 14px color-mix(in oklab, var(--color-error) 30%, transparent);
+    background-image: linear-gradient(
+      125deg,
+      color-mix(in oklab, var(--color-error) 90%, white 10%),
+      color-mix(in oklab, var(--color-error) 70%, black 5%)
+    );
+    color: var(--color-on-primary);
+    border: 1px solid color-mix(in oklab, var(--color-error) 60%, transparent);
+    box-shadow: 0 16px 32px rgba(97, 34, 38, 0.28);
   }
-  .btn-danger:hover { opacity: 0.95; }
+  .btn-danger:hover { filter: brightness(1.02); }
 
   /* Size variants */
   .btn-lg {
-    padding-left: 1.75rem; /* px-7 */
-    padding-right: 1.75rem;
-    padding-top: 0.875rem; /* py-3.5 */
-    padding-bottom: 0.875rem;
-    font-size: 1.125rem; /* text-lg */
+    padding: 0.9rem 2.2rem;
+    font-size: 0.92rem;
+    letter-spacing: 0.32em;
   }
   .btn-md { /* default .btn metrics already apply */ }
   .btn-sm {
-    padding-left: 0.5rem; /* px-2 */
-    padding-right: 0.5rem;
-    padding-top: 0.375rem; /* py-1.5 */
-    padding-bottom: 0.375rem;
-    font-size: 0.8125rem; /* ~text-sm slightly smaller */
+    padding: 0.45rem 1.1rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.24em;
   }
 
   /* Icon size helper */
   .btn > svg { width: 1rem; height: 1rem; }
+
+  .wedding-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.4em;
+    font-size: 0.65rem;
+    color: color-mix(in oklab, var(--color-muted-foreground) 85%, white 15%);
+  }
+
+  .wedding-brand-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 12px 35px rgba(43, 27, 22, 0.14);
+  }
+
+  .wedding-brand-mark {
+    font-family: var(--font-playfair), "Venturis ADF", serif;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 500;
+    background-image: linear-gradient(180deg, #f0d2a9, #b27c43 65%, #7a5131);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: 0.08em;
+  }
+
+  .wedding-glow-card {
+    border-radius: 1.75rem;
+    border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+    background: color-mix(in oklab, var(--color-surface) 95%, white 5%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      0 25px 70px rgba(43, 27, 22, 0.28);
+    backdrop-filter: blur(18px);
+  }
+
+  .wedding-icon-button {
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+    background: color-mix(in oklab, var(--color-surface) 90%, white 10%);
+    box-shadow: 0 15px 30px rgba(27, 16, 12, 0.15);
+    transition: transform 100ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  }
+  .wedding-icon-button:hover {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--color-surface) 95%, white 5%);
+  }
+
+  .hero-brand-panel {
+    background: linear-gradient(
+        120deg,
+        rgba(34, 118, 197, 0.35),
+        rgba(10, 70, 199, 0.678)
+      ),
+      rgba(14, 8, 6, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 2.75rem;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+  }
   .no-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
@@ -259,10 +382,20 @@ body {
     position: absolute;
     inset: 0;
     background-image:
-      radial-gradient(120% 70% at 10% -20%, color-mix(in oklab, var(--accent) 22%, transparent) 0%, transparent 60%),
-      radial-gradient(120% 70% at 90% -15%, color-mix(in oklab, var(--secondary) 20%, transparent) 0%, transparent 62%),
-      radial-gradient(120% 80% at 50% 120%, color-mix(in oklab, var(--primary) 18%, transparent) 0%, transparent 72%);
-    opacity: 0.22;
+      radial-gradient(100% 80% at 15% -20%, color-mix(in oklab, var(--color-accent) 50%, transparent) 0%, transparent 70%),
+      radial-gradient(120% 80% at 85% -25%, color-mix(in oklab, var(--color-primary) 35%, transparent) 5%, transparent 75%),
+      radial-gradient(160% 140% at 50% 120%, color-mix(in oklab, var(--color-secondary) 22%, transparent) 0%, transparent 70%);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .auth-card-gradient::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.25), transparent 40%);
+    mix-blend-mode: screen;
+    opacity: 0.6;
     pointer-events: none;
     z-index: 0;
   }

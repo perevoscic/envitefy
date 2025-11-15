@@ -34,26 +34,41 @@ const calendarTargets = [
 ];
 
 const rsvpStatuses = [
-  { label: "Yes", icon: "\u{2705}" },
-  { label: "No", icon: "\u{274C}" },
-  { label: "Maybe", icon: "\u{1F914}" },
+  {
+    label: "Yes",
+    icon: "\u{2705}",
+    chipClass: "bg-[#e6f6ef] text-[#1f3b32] border border-[#c1eadb]",
+  },
+  {
+    label: "No",
+    icon: "\u{274C}",
+    chipClass: "bg-[#fde6e4] text-[#591c1c] border border-[#f3c3be]",
+  },
+  {
+    label: "Maybe",
+    icon: "\u{1F914}",
+    chipClass: "bg-[#fff1da] text-[#5a3a11] border border-[#f4d6a7]",
+  },
 ];
 
 const registries = [
   {
     label: "Amazon",
     badge: "A",
-    badgeClass: "bg-foreground/10 text-xs font-bold",
+    badgeClass:
+      "bg-[#f4e4d6] text-[#7b4d2a] text-xs font-semibold tracking-wide",
   },
   {
     label: "Target",
     badge: "T",
-    badgeClass: "bg-primary/10 text-xs font-bold text-primary",
+    badgeClass:
+      "bg-[#fce9ef] text-[#7a2f47] text-xs font-semibold tracking-wide",
   },
   {
     label: "Walmart",
     badge: "W",
-    badgeClass: "bg-blue-100 text-xs font-bold text-blue-700",
+    badgeClass:
+      "bg-[#e8f0ff] text-[#1f498a] text-xs font-semibold tracking-wide",
   },
 ];
 
@@ -142,30 +157,42 @@ const footerActions = [
 export default function CreateShare() {
   return (
     <section aria-labelledby="create-share" className="w-full">
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div>
+      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+        <div className="space-y-6 text-center lg:text-left">
+          <p className="wedding-kicker text-foreground/60">
+            Share one elegant link
+          </p>
           <h2
             id="create-share"
-            className="text-2xl sm:text-3xl font-bold tracking-tight"
+            className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground"
+            style={{
+              fontFamily: 'var(--font-playfair), "Times New Roman", serif',
+            }}
           >
-            All in one event tool you need.
+            All-in-one event tools without the spreadsheets.
           </h2>
-          <ul className="mt-6 space-y-4 pb-10 text-foreground/75 text-base sm:text-lg">
-            {points.map((point) => (
-              <li key={point} className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-primary/80" />
-                <span>{point}</span>
+          <p className="text-base sm:text-lg text-foreground/70 max-w-2xl mx-auto lg:mx-0">
+            Envitefy keeps RSVPs, directions, registries, and travel info in one
+            polished place, so guests always see the latest details.
+          </p>
+          <ul className="mt-8 space-y-4 pb-4 text-foreground/85 text-base sm:text-lg leading-relaxed">
+            {points.map((point, index) => (
+              <li key={point} className="flex items-start gap-4 text-left">
+                <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#f6dcc7] via-[#e8c2a4] to-[#c8916a] text-[0.65rem] font-semibold text-white tracking-[0.25em] shadow-md">
+                  {(index + 1).toString().padStart(2, "0")}
+                </span>
+                <span className="flex-1">{point}</span>
               </li>
             ))}
           </ul>
           <CreateShareCta />
         </div>
         <div className="mx-auto w-full max-w-2xl">
-          <p className="text-center text-sm font-medium text-primary">
+          <p className="text-center wedding-kicker text-secondary/80">
             Event preview
           </p>
-          <div className="mt-4 border border-border/70 bg-surface/95 shadow-md text-left">
-            <div className="bg-gradient-to-r from-rose-100 via-amber-100 to-orange-50 dark:bg-gradient-to-r dark:from-rose-900/40 dark:via-amber-900/30 dark:to-orange-900/40 px-6 py-5">
+          <div className="mt-6 rounded-[32px] wedding-glow-card border border-border/60 bg-surface/95 text-left overflow-hidden shadow-[0_35px_80px_rgba(43,27,22,0.15)]">
+            <div className="px-6 py-6 bg-gradient-to-r from-[#f9e8dc] via-[#f3d5c1] to-[#e2c0a5] border-b border-border/60">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
@@ -178,7 +205,7 @@ export default function CreateShare() {
                     Hosted by Russell Jason
                   </p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-2xl shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-2xl shadow-md">
                   {"\u{1F382}"}
                 </div>
               </div>
@@ -221,7 +248,7 @@ export default function CreateShare() {
                         {calendarTargets.map((target) => (
                           <span
                             key={target.alt}
-                            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90"
+                            className="flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-white/90 shadow-sm"
                           >
                             {target.alt === "Apple" ? (
                               <>
@@ -262,7 +289,7 @@ export default function CreateShare() {
                       {rsvpStatuses.map((status) => (
                         <span
                           key={status.label}
-                          className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900"
+                          className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${status.chipClass}`}
                         >
                           <span className="text-base" aria-hidden="true">
                             {status.icon}
@@ -286,11 +313,11 @@ export default function CreateShare() {
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
                   Registries
                 </h4>
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   {registries.map((registry) => (
                     <span
                       key={registry.label}
-                      className="flex items-center gap-1.5 rounded-xl border border-border bg-background/90 px-2.5 py-1 text-xs sm:text-sm font-semibold text-foreground max-w-[38%] truncate"
+                      className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-white/90 px-2.5 py-1 text-xs sm:text-sm font-semibold text-foreground max-w-[46%] truncate shadow-sm"
                     >
                       <span
                         className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${registry.badgeClass}`}
@@ -318,7 +345,7 @@ export default function CreateShare() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center justify-center border-t border-border/60 px-6 py-4 text-sm font-medium text-foreground/80">
+            <div className="flex items-center justify-center border-t border-border/60 px-6 py-4 text-sm font-medium text-foreground/80 bg-white/80">
               <div className="flex items-center gap-6">
                 {footerActions.map((action) => (
                   <span key={action.label} className="flex items-center gap-2">

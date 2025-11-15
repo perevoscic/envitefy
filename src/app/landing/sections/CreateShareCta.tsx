@@ -11,8 +11,11 @@ export default function CreateShareCta() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center rounded-2xl px-6 py-3 text-base font-semibold bg-primary text-on-primary hover:opacity-95"
+        onClick={() => {
+          setMode("signup");
+          setOpen(true);
+        }}
+        className="btn btn-primary btn-lg"
       >
         Create your first event
       </button>
