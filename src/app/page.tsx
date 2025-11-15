@@ -41,18 +41,33 @@ type EventFields = {
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
 
-const TONE_STYLES: Record<HighlightTone, { iconBg: string }> = {
+const TONE_STYLES: Record<
+  HighlightTone,
+  { iconBg: string; cardSurface: string; accent: string }
+> = {
   primary: {
-    iconBg: "bg-primary/15",
+    iconBg: "bg-[#e6f3ee]",
+    cardSurface:
+      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(171, 208, 193, 0.25))",
+    accent: "rgba(105, 166, 159, 0.65)",
   },
   secondary: {
-    iconBg: "bg-secondary/15",
+    iconBg: "bg-[#ede8fb]",
+    cardSurface:
+      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(183, 171, 220, 0.25))",
+    accent: "rgba(123, 104, 196, 0.55)",
   },
   accent: {
-    iconBg: "bg-accent/15",
+    iconBg: "bg-[#fde8f1]",
+    cardSurface:
+      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(238, 169, 183, 0.25))",
+    accent: "rgba(210, 105, 140, 0.58)",
   },
   success: {
-    iconBg: "bg-success/15",
+    iconBg: "bg-[#e6f6f0]",
+    cardSurface:
+      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(170, 214, 196, 0.25))",
+    accent: "rgba(94, 154, 127, 0.55)",
   },
 };
 
@@ -932,40 +947,38 @@ export default function Home() {
 
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <p
-        className="mb-8 md:mb-12 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-15 text-center overflow-visible"
-        role="heading"
-        aria-level={1}
-      >
-        <span className="inline-flex items-center gap-2">
-          <Image
-            src="/E.png"
-            alt="E"
-            width={88}
-            height={88}
-            className="h-24 w-24 md:h-32 md:w-32"
-            quality={100}
-            priority
-            unoptimized
-          />
-          <span
-            className="text-6xl md:text-8xl"
-            style={{
-              fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-              background: "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              lineHeight: "1.2",
-              display: "inline-block",
-              paddingBottom: "0.1em",
-            }}
-          >
-            nvitefy
+      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-6 py-5 w-full max-w-3xl mb-10">
+        <p
+          className="text-5xl md:text-7xl text-white overflow-visible"
+          role="heading"
+          aria-level={1}
+        >
+          <span className="inline-flex items-center gap-3">
+            <Image
+              src="/E.png"
+              alt="Envitefy emblem"
+              width={88}
+              height={88}
+              quality={100}
+              priority
+              unoptimized
+            />
+            <span
+              className="text-5xl md:text-7xl"
+              style={{
+                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                lineHeight: "1.1",
+                display: "inline-block",
+                paddingBottom: "0.05em",
+                color: "#f4d9a4",
+              }}
+            >
+              nvitefy
+            </span>
           </span>
-        </span>
-      </p>
-      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10 mt-10">
+        </p>
+      </div>
+      <div className="grid max-w-8xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10 mt-10">
         <OptionCard
           title="Snap Event"
           details={[
@@ -1646,14 +1659,18 @@ function OptionCard({
 
   const frontCard = (
     <div
-      className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/90 px-2 py-2 md:px-2.5 md:py-2.5 shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      className="relative overflow-hidden rounded-[28px] border px-4 py-5 shadow-[0_32px_80px_rgba(43,27,22,0.12)] backdrop-blur-xl transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_40px_95px_rgba(43,27,22,0.18)]"
       data-card-tone={tone}
+      style={{
+        background: toneClass.cardSurface,
+        borderColor: toneClass.accent,
+      }}
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-70"
         style={{
           background:
-            "radial-gradient(120% 120% at 50% 0%, var(--theme-overlay) 0%, transparent 60%)",
+            "radial-gradient(140% 140% at 50% 5%, rgba(255,255,255,0.65), transparent 55%)",
         }}
         aria-hidden
       />
@@ -1661,7 +1678,7 @@ function OptionCard({
         role="button"
         tabIndex={showDetails ? -1 : 0}
         aria-label="Show details"
-        className="absolute right-2 top-2 z-10 inline-flex items-center justify-center bg-transparent p-1 text-[#0e7bc4] transition hover:text-[#0e7bc4] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[#0e7bc4]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-[#0e7bc4] dark:hover:text-[#0e7bc4] dark:focus-visible:ring-[#0e7bc4]/60 dark:focus-visible:ring-offset-0"
+        className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/60 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         onClick={handleInfoPointer}
         onKeyDown={handleInfoKeyDown}
       >
@@ -1670,16 +1687,16 @@ function OptionCard({
       <div className="relative flex flex-col items-center space-y-1.5 md:space-y-2 text-center">
         <div
           className={[
-            "relative flex w-full max-w-[120px] md:max-w-[140px] items-center justify-center overflow-hidden rounded-xl bg-surface/70 p-1.5 md:p-2 transition-all duration-300 group-hover:scale-[1.02]",
+            "relative flex w-full max-w-[120px] md:max-w-[140px] items-center justify-center overflow-hidden rounded-2xl bg-white/80 p-2 transition-all duration-300 group-hover:scale-[1.03]",
             toneClass.iconBg,
           ]
             .filter(Boolean)
             .join(" ")}
         >
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white via-transparent to-white/40 opacity-0 transition-opacity duration-300 group-hover:opacity-80" />
           <div className="relative w-full">{artwork}</div>
         </div>
-        <h2 className="text-xs md:text-sm font-semibold text-foreground">
+        <h2 className="text-base md:text-lg font-semibold text-foreground/85">
           {title}
         </h2>
       </div>
@@ -1696,14 +1713,19 @@ function OptionCard({
           closeDetails(event);
         }
       }}
-      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-surface/95 px-2 py-2 md:px-2.5 md:py-2.5 text-left shadow-[0_24px_50px_-32px_var(--theme-card-glow)] backdrop-blur-sm transition-transform duration-300 hover:shadow-[0_32px_65px_-28px_var(--theme-card-glow)]"
+      className="absolute inset-0 flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-[28px] border px-4 py-4 text-left shadow-[0_32px_80px_rgba(43,27,22,0.12)] backdrop-blur-xl transition-transform duration-300 hover:shadow-[0_40px_95px_rgba(43,27,22,0.18)]"
       data-card-tone={tone}
-      style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+      style={{
+        transform: "rotateY(180deg)",
+        backfaceVisibility: "hidden",
+        background: toneClass.cardSurface,
+        borderColor: toneClass.accent,
+      }}
     >
       <button
         type="button"
         aria-label="Hide details"
-        className="absolute right-2 top-2 inline-flex items-center justify-center bg-transparent p-1 text-[#0e7bc4] transition hover:text-[#0e7bc4] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[#0e7bc4]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:text-[#0e7bc4] dark:hover:text-[#0e7bc4] dark:focus-visible:ring-[#0e7bc4]/60 dark:focus-visible:ring-offset-0"
+        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/60 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         onClick={closeDetails}
       >
         <CloseIcon className="h-4 w-4" />
@@ -1712,21 +1734,24 @@ function OptionCard({
         className="pointer-events-none absolute inset-0 opacity-60"
         style={{
           background:
-            "radial-gradient(140% 140% at 50% 15%, var(--theme-overlay) 0%, transparent 65%)",
+            "radial-gradient(160% 160% at 50% 15%, rgba(255,255,255,0.75) 0%, transparent 65%)",
         }}
         aria-hidden
       />
       <div className="relative mx-auto flex max-w-xs flex-1 flex-col justify-center gap-3 md:gap-4 text-center">
         <div className="space-y-1.5 md:space-y-2">
-          <h2 className="text-sm md:text-base font-semibold text-foreground">
+          <h2 className="text-base md:text-lg font-semibold text-foreground">
             {title}
           </h2>
         </div>
         {details?.length ? (
-          <ul className="space-y-1.5 md:space-y-2 text-left text-xs text-muted-foreground">
+          <ul className="space-y-1.5 md:space-y-2 text-left text-sm md:text-base text-muted-foreground">
             {details.map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <span className="mt-[0.35rem] md:mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-current opacity-60" />
+                <span
+                  className="mt-[0.35rem] md:mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full opacity-80"
+                  style={{ backgroundColor: toneClass.accent }}
+                />
                 <span>{item}</span>
               </li>
             ))}

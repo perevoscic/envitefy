@@ -2198,71 +2198,20 @@ export default function LeftSidebar() {
 
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 h-full z-[6000] border-r border-border bg-surface/70 backdrop-blur supports-[backdrop-filter]:bg-surface/70 flex flex-col ${
+        className={`fixed left-0 top-0 h-full z-[6000] border-r border-border backdrop-blur flex flex-col ${
           isOpen ? "overflow-visible" : "overflow-hidden"
         } transition-[width,opacity] duration-200 ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
-        style={{ width: isOpen ? "16rem" : "0rem", opacity: isOpen ? 1 : 0 }}
+        style={{
+          width: isOpen ? "16rem" : "0rem",
+          opacity: isOpen ? 1 : 0,
+          backgroundImage:
+            "linear-gradient(180deg, rgba(171, 203, 235, 0.95), rgba(226, 151, 11, 0.28))",
+          backgroundColor: "rgba(255, 255, 255, 0.7)",
+        }}
         aria-label="Sidebar"
       >
-        {/* Top: Logo + App name + close button */}
-        <div className="h-16 border-b border-border flex items-center px-4 overflow-visible">
-          <Link href="/" className="min-w-0 overflow-visible">
-            <span className="inline-flex items-end gap-1.5 overflow-visible">
-              <Image
-                src="/E.png"
-                alt="E"
-                width={48}
-                height={48}
-                className="h-8 w-8 md:h-12 md:w-12"
-                quality={100}
-                unoptimized
-              />
-              <span
-                className="text-xl md:text-5xl leading-relaxed overflow-visible"
-                style={{
-                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-                  background:
-                    "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  lineHeight: "1.2",
-                  display: "inline-block",
-                  paddingBottom: "0.1em",
-                  transform: "translateY(8px)",
-                }}
-              >
-                nvitefy
-              </span>
-            </span>
-          </Link>
-          <div className="ml-auto">
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setIsCollapsed(true)}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-md border border-border bg-surface/80 hover:bg-surface"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
         {/* Middle: Event history */}
         <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
           <div className="p-3 space-y-2">
@@ -2288,113 +2237,27 @@ export default function LeftSidebar() {
                     </svg>
                     <span>Home</span>
                   </Link>
-                  <div className="flex items-center gap-1">
-                    <Link
-                      href="/?action=camera"
-                      onClick={(event) =>
-                        handleSnapShortcutClick(event, "camera")
-                      }
-                      className="p-1 rounded hover:bg-surface/50"
-                      aria-label="Snap with camera"
+                  <button
+                    type="button"
+                    aria-label="Close menu"
+                    onClick={() => setIsCollapsed(true)}
+                    className="inline-flex items-center justify-center h-6 w-6 rounded-md border border-border bg-surface/80 hover:bg-surface"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3 w-3"
+                      aria-hidden="true"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 16C13.6569 16 15 14.6569 15 13C15 11.3431 13.6569 10 12 10C10.3431 10 9 11.3431 9 13C9 14.6569 10.3431 16 12 16Z" />
-                        <path d="M3 16.8V9.2C3 8.0799 3 7.51984 3.21799 7.09202C3.40973 6.71569 3.71569 6.40973 4.09202 6.21799C4.51984 6 5.0799 6 6.2 6H7.25464C7.37758 6 7.43905 6 7.49576 5.9935C7.79166 5.95961 8.05705 5.79559 8.21969 5.54609C8.25086 5.49827 8.27836 5.44328 8.33333 5.33333C8.44329 5.11342 8.49827 5.00346 8.56062 4.90782C8.8859 4.40882 9.41668 4.08078 10.0085 4.01299C10.1219 4 10.2448 4 10.4907 4H13.5093C13.7552 4 13.8781 4 13.9915 4.01299C14.5833 4.08078 15.1141 4.40882 15.4394 4.90782C15.5017 5.00345 15.5567 5.11345 15.6667 5.33333C15.7216 5.44329 15.7491 5.49827 15.7803 5.54609C15.943 5.79559 16.2083 5.95961 16.5042 5.9935C16.561 6 16.6224 6 16.7454 6H17.8C18.9201 6 19.4802 6 19.908 6.21799C20.2843 6.40973 20.5903 6.71569 20.782 7.09202C21 7.51984 21 8.0799 21 9.2V16.8C21 17.9201 21 18.4802 20.782 18.908C20.5903 19.2843 20.2843 19.5903 19.908 19.782C19.4802 20 18.9201 20 17.8 20H6.2C5.0799 20 4.51984 20 4.09202 19.782C3.71569 19.5903 3.40973 19.2843 3.21799 18.908C3 18.4802 3 17.9201 3 16.8Z" />
-                      </svg>
-                    </Link>
-                    <Link
-                      href="/?action=upload"
-                      onClick={(event) =>
-                        handleSnapShortcutClick(event, "upload")
-                      }
-                      className="p-1 rounded hover:bg-surface/50"
-                      aria-label="Upload file"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                        <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                      </svg>
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        triggerCreateEvent();
-                      }}
-                      className="p-1 rounded hover:bg-surface/50"
-                      aria-label="Create event"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <rect
-                          x="3"
-                          y="4"
-                          width="18"
-                          height="18"
-                          rx="2"
-                          ry="2"
-                        />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                        <line x1="12" y1="14" x2="12" y2="18" />
-                        <line x1="10" y1="16" x2="14" y2="16" />
-                      </svg>
-                    </button>
-                    <Link
-                      href="/smart-signup-form"
-                      onClick={collapseSidebarOnTouch}
-                      className="p-1 rounded hover:bg-surface/50"
-                      aria-label="Create signup form"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M9 11h6" />
-                        <path d="M9 15h6" />
-                        <path d="M12 7h3" />
-                        <rect x="4" y="3" width="16" height="18" rx="2" />
-                        <path d="M8 3v2a2 2 0 0 1-2 2H4" />
-                      </svg>
-                    </Link>
-                  </div>
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">

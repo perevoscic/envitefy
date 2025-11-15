@@ -17,375 +17,335 @@ export function ScanIllustration({
 }: IllustrationProps) {
   const id = useId();
   const bg = `${id}-bg`;
-  const beam = `${id}-beam`;
-  const lens = `${id}-lens`;
-
-  return (
-    <svg
-      viewBox="0 0 180 140"
-      role="img"
-      aria-labelledby={`${id}-title`}
-      className={cx("h-auto w-full max-w-[180px]", className)}
-    >
-      <title id={`${id}-title`}>{title}</title>
+  const tile = `${id}-tile`;
+  const accent = `${id}-accent`;
+  const ring = `${id}-ring`;
+  const glyph = `${id}-glyph`;
+
+  return (
+    <svg
+      viewBox="0 0 180 140"
+      role="img"
+      aria-labelledby={`${id}-title`}
+      className={cx("h-auto w-full max-w-[180px]", className)}
+    >
+      <title id={`${id}-title`}>{title}</title>
       <defs>
         <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#D3E4FF" />
-          <stop offset="100%" stopColor="#F3F6FF" />
+          <stop offset="0%" stopColor="#F9F1EC" />
+          <stop offset="100%" stopColor="#ECE3DE" />
         </linearGradient>
-        <linearGradient id={beam} x1="0%" y1="30%" x2="100%" y2="70%">
-          <stop offset="0%" stopColor="rgba(34,116,255,0.0)" />
-          <stop offset="35%" stopColor="rgba(34,116,255,0.3)" />
-          <stop offset="100%" stopColor="rgba(34,116,255,0.0)" />
+        <linearGradient id={tile} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#A6BCCD" />
+          <stop offset="100%" stopColor="#D1DCE5" />
         </linearGradient>
-        <radialGradient id={lens} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#4D7CFF" />
-          <stop offset="60%" stopColor="#2859E6" />
-          <stop offset="100%" stopColor="#0E2A80" />
+        <linearGradient id={accent} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#B6C7D7" stopOpacity="0.35" />
+        </linearGradient>
+        <radialGradient id={ring} cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </radialGradient>
-      </defs>
-
-      <rect x="8" y="10" width="164" height="120" rx="26" fill={`url(#${bg})`} />
-      <rect
-        x="28"
-        y="34"
-        width="124"
-        height="76"
-        rx="18"
-        fill="#0E1C3B"
-        opacity="0.12"
-      />
-      <rect
-        x="40"
-        y="42"
-        width="100"
-        height="60"
-        rx="14"
-        fill="#FFFFFF"
-        stroke="#E1E8FF"
-        strokeWidth="2"
-      />
-      <rect
-        x="40"
-        y="67"
-        width="100"
-        height="10"
-        fill={`url(#${beam})`}
-        opacity="0.9"
-      />
-      <path
-        d="M78 52h24"
-        stroke="#1C46FF"
-        strokeWidth="3"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
-      <rect
-        x="58"
-        y="30"
-        width="64"
-        height="12"
-        rx="6"
-        fill="#244DFF"
-        opacity="0.25"
-      />
-      <circle cx="52" cy="72" r="12" fill="#E8EEFF" />
-      <path
-        d="M46 72h12"
-        stroke="#1F3DE6"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
-      <path
-        d="M58 68v8"
-        stroke="#1F3DE6"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
-      <circle cx="128" cy="72" r="18" fill="#132B70" />
-      <circle cx="128" cy="72" r="12" fill={`url(#${lens})`} />
-      <circle
-        cx="124"
-        cy="68"
-        r="4"
-        fill="#C7D8FF"
-        opacity="0.6"
-      />
-      <circle
-        cx="134"
-        cy="78"
-        r="3"
-        fill="#FFFFFF"
-        opacity="0.3"
-      />
-      <rect
-        x="20"
-        y="100"
-        width="140"
-        height="10"
-        rx="5"
-        fill="#1F3DE6"
-        opacity="0.08"
-      />
-    </svg>
-  );
-}
-
-export function UploadIllustration({
-  className,
-  title = "Upload to the cloud",
-}: IllustrationProps) {
-  const id = useId();
-  const bg = `${id}-bg`;
-  const cloud = `${id}-cloud`;
-  const arrow = `${id}-arrow`;
-
-  return (
-    <svg
-      viewBox="0 0 180 140"
-      role="img"
-      aria-labelledby={`${id}-title`}
-      className={cx("h-auto w-full max-w-[180px]", className)}
-    >
-      <title id={`${id}-title`}>{title}</title>
-      <defs>
-        <linearGradient id={bg} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#F7F4FF" />
-          <stop offset="100%" stopColor="#ECE6FF" />
-        </linearGradient>
-        <radialGradient id={cloud} cx="50%" cy="40%" r="70%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="90%" stopColor="#E5DFFF" />
-          <stop offset="100%" stopColor="#DBD3FF" />
-        </radialGradient>
-        <linearGradient id={arrow} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#6F55FF" />
-          <stop offset="100%" stopColor="#4B2FE3" />
+        <linearGradient id={glyph} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="rgba(32,32,32,0.68)" />
+          <stop offset="100%" stopColor="rgba(32,32,32,0.35)" />
         </linearGradient>
       </defs>
-
-      <rect x="10" y="12" width="160" height="116" rx="24" fill={`url(#${bg})`} />
+
+      <rect x="6" y="8" width="168" height="124" rx="32" fill={`url(#${bg})`} />
+      <rect
+        x="22"
+        y="20"
+        width="136"
+        height="100"
+        rx="28"
+        fill={`url(#${tile})`}
+        stroke="rgba(255,255,255,0.65)"
+        strokeWidth="2"
+      />
+      <circle cx="90" cy="70" r="58" fill={`url(#${ring})`} opacity="0.35" />
+      <circle
+        cx="90"
+        cy="70"
+        r="42"
+        fill="none"
+        stroke="rgba(255,255,255,0.35)"
+        strokeWidth="1.5"
+        strokeDasharray="6 8"
+      />
+      <rect
+        x="48"
+        y="48"
+        width="84"
+        height="48"
+        rx="18"
+        fill="rgba(255,255,255,0.15)"
+        stroke="rgba(255,255,255,0.65)"
+        strokeWidth="2"
+      />
+      <rect
+        x="60"
+        y="36"
+        width="60"
+        height="10"
+        rx="5"
+        fill="rgba(255,255,255,0.25)"
+      />
+      <rect x="70" y="58" width="40" height="4" rx="2" fill="rgba(255,255,255,0.7)" />
+      <rect x="64" y="66" width="52" height="4" rx="2" fill="rgba(255,255,255,0.55)" />
+      <circle
+        cx="90"
+        cy="72"
+        r="19"
+        fill="rgba(255,255,255,0.12)"
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth="2"
+      />
+      <circle cx="90" cy="72" r="12" fill={`url(#${accent})`} />
       <path
-        d="M48 90c-10 0-18-8.28-18-18 0-8.54 5.88-15.72 13.82-17.49C47.94 43.8 60.6 36 74.5 36c12.7 0 23.7 6.74 29.5 16.72 1.8-0.48 3.67-0.72 5.58-0.72 13.36 0 24.2 10.84 24.2 24.2S122.94 100.4 109.6 100.4H48z"
-        fill={`url(#${cloud})`}
-      />
-      <path
-        d="M90 58l0 46"
-        stroke="rgba(105,86,255,0.35)"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray="6 10"
-      />
-      <rect
-        x="70"
-        y="66"
-        width="40"
-        height="36"
-        rx="12"
-        fill="#EFE8FF"
-        stroke="#D4C9FF"
-        strokeWidth="2"
-      />
-      <path
-        d="M90 54l-16 18h10v20h12V72h10L90 54z"
-        fill={`url(#${arrow})`}
-      />
-      <circle cx="60" cy="92" r="6" fill="#C6B6FF" opacity="0.6" />
-      <circle cx="120" cy="84" r="10" fill="#D6CBFF" opacity="0.4" />
-      <rect
-        x="38"
-        y="102"
-        width="104"
-        height="8"
-        rx="4"
-        fill="#6F55FF"
-        opacity="0.12"
-      />
-    </svg>
-  );
-}
-
-export function CreateEventIllustration({
-  className,
-  title = "Create a calendar event",
-}: IllustrationProps) {
-  const id = useId();
-  const bg = `${id}-bg`;
-  const header = `${id}-header`;
-  const plus = `${id}-plus`;
-
-  return (
-    <svg
-      viewBox="0 0 180 140"
-      role="img"
-      aria-labelledby={`${id}-title`}
-      className={cx("h-auto w-full max-w-[180px]", className)}
-    >
-      <title id={`${id}-title`}>{title}</title>
-      <defs>
-        <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFE8F0" />
-          <stop offset="100%" stopColor="#FDF2FF" />
-        </linearGradient>
-        <linearGradient id={header} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#FF7AB5" />
-          <stop offset="100%" stopColor="#FF4D8D" />
-        </linearGradient>
-        <linearGradient id={plus} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FF4F93" />
-          <stop offset="100%" stopColor="#D72670" />
-        </linearGradient>
-      </defs>
-
-      <rect x="8" y="12" width="164" height="116" rx="22" fill={`url(#${bg})`} />
-      <rect
-        x="30"
-        y="34"
-        width="120"
-        height="84"
-        rx="18"
-        fill="#FFFFFF"
-        stroke="#FFD0DF"
-        strokeWidth="2"
-      />
-      <rect
-        x="30"
-        y="34"
-        width="120"
-        height="28"
-        rx="14"
-        fill={`url(#${header})`}
-      />
-      <circle cx="54" cy="48" r="6" fill="#FFFFFF" opacity="0.9" />
-      <circle cx="72" cy="48" r="6" fill="#FFFFFF" opacity="0.75" />
-      <circle cx="90" cy="48" r="6" fill="#FFFFFF" opacity="0.5" />
-      <rect x="44" y="70" width="92" height="8" rx="4" fill="#FFC0D4" />
-      <rect x="44" y="84" width="72" height="8" rx="4" fill="#FFE0EC" />
-      <rect
-        x="44"
-        y="98"
-        width="48"
-        height="8"
-        rx="4"
-        fill="#FFE6F1"
-      />
-      <circle cx="122" cy="92" r="18" fill="#FFE0EC" />
-      <path
-        d="M122 82v20"
-        stroke={`url(#${plus})`}
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M112 92h20"
-        stroke={`url(#${plus})`}
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-      <rect
-        x="24"
-        y="110"
-        width="132"
-        height="10"
-        rx="5"
-        fill="#FF4F93"
-        opacity="0.08"
-      />
-    </svg>
-  );
-}
-
-export function SignUpIllustration({
-  className,
-  title = "Smart sign-up form",
-}: IllustrationProps) {
-  const id = useId();
-  const bg = `${id}-bg`;
-  const sheet = `${id}-sheet`;
-  const check = `${id}-check`;
-
-  return (
-    <svg
-      viewBox="0 0 180 140"
-      role="img"
-      aria-labelledby={`${id}-title`}
-      className={cx("h-auto w-full max-w-[180px]", className)}
-    >
-      <title id={`${id}-title`}>{title}</title>
-      <defs>
-        <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#E5FFF3" />
-          <stop offset="100%" stopColor="#F2FFF9" />
-        </linearGradient>
-        <linearGradient id={sheet} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#E2F9ED" />
-        </linearGradient>
-        <linearGradient id={check} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#28C98A" />
-          <stop offset="100%" stopColor="#11A66B" />
-        </linearGradient>
-      </defs>
-
-      <rect x="8" y="12" width="164" height="116" rx="22" fill={`url(#${bg})`} />
-      <rect
-        x="42"
-        y="30"
-        width="96"
-        height="96"
-        rx="18"
-        fill={`url(#${sheet})`}
-        stroke="#CDEEDC"
-        strokeWidth="2"
-      />
-      <rect
-        x="54"
-        y="38"
-        width="72"
-        height="8"
-        rx="4"
-        fill="#C6F0DE"
-        opacity="0.8"
-      />
-      <rect x="54" y="54" width="56" height="8" rx="4" fill="#DDF7EA" />
-      <rect x="54" y="70" width="60" height="8" rx="4" fill="#D4F4E5" />
-      <rect x="54" y="86" width="48" height="8" rx="4" fill="#E9FBF3" />
-      <rect x="54" y="102" width="64" height="8" rx="4" fill="#DDF7EA" />
-      <rect
-        x="36"
-        y="24"
-        width="108"
-        height="16"
-        rx="8"
-        fill="#B9EFD7"
-        opacity="0.6"
-      />
-      <path
-        d="M120 48l24 16-10 38-32-20z"
-        fill="#12B577"
-        opacity="0.12"
-      />
-      <circle cx="120" cy="92" r="20" fill="#D4F7E7" />
-      <circle cx="120" cy="92" r="14" fill="#FFFFFF" />
-      <path
-        d="M114 92l4 4 8-10"
+        d="M90 62c5 0 9 4.1 9 9.2a1 1 0 01-1 1H82a1 1 0 01-1-1c0-5.1 4.1-9.2 9-9.2z"
         fill="none"
-        stroke={`url(#${check})`}
-        strokeWidth="4"
+        stroke={`url(#${glyph})`}
+        strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
-      <rect
-        x="26"
-        y="110"
-        width="128"
-        height="8"
-        rx="4"
-        fill="#28C98A"
-        opacity="0.1"
-      />
-    </svg>
-  );
-}
+      <circle cx="90" cy="73" r="6" fill={`url(#${glyph})`} opacity="0.3" />
+      <rect x="44" y="78" width="20" height="12" rx="6" fill="rgba(255,255,255,0.5)" />
+      <rect x="116" y="78" width="20" height="12" rx="6" fill="rgba(255,255,255,0.5)" />
+    </svg>
+  );
+}
+
+
+export function UploadIllustration({
+  className,
+  title = "Upload invite screenshot",
+}: IllustrationProps) {
+  const id = useId();
+  const bg = `${id}-bg`;
+  const tile = `${id}-tile`;
+  const cloud = `${id}-cloud`;
+  const accents = `${id}-accents`;
+
+  return (
+    <svg
+      viewBox="0 0 180 140"
+      role="img"
+      aria-labelledby={`${id}-title`}
+      className={cx("h-auto w-full max-w-[180px]", className)}
+    >
+      <title id={`${id}-title`}>{title}</title>
+      <defs>
+        <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FBF4FF" />
+          <stop offset="100%" stopColor="#F3F5FF" />
+        </linearGradient>
+        <linearGradient id={tile} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#CCBFF4" />
+          <stop offset="100%" stopColor="#E4DAFF" />
+        </linearGradient>
+        <linearGradient id={cloud} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F0E9FF" />
+          <stop offset="100%" stopColor="#C9B9F3" />
+        </linearGradient>
+        <linearGradient id={accents} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#D7CBFF" />
+        </linearGradient>
+      </defs>
+
+      <rect x="6" y="8" width="168" height="124" rx="32" fill={`url(#${bg})`} />
+      <rect
+        x="22"
+        y="20"
+        width="136"
+        height="100"
+        rx="28"
+        fill={`url(#${tile})`}
+        stroke="rgba(255,255,255,0.65)"
+        strokeWidth="2"
+      />
+      <circle
+        cx="90"
+        cy="70"
+        r="40"
+        fill="none"
+        stroke="rgba(255,255,255,0.35)"
+        strokeWidth="1.5"
+        strokeDasharray="4 10"
+      />
+      <path
+        d="M54 84c0-12 9.5-20 22-20 3.8 0 7.4 0.7 10.6 2 4.7-7.4 12.7-12 22.4-12 14 0 25 11 25 25s-11 25-25 25H70c-8.8 0-16-8-16-20z"
+        fill={`url(#${cloud})`}
+        opacity="0.9"
+      />
+      <path d="M90 93V69" stroke={`url(#${accents})`} strokeWidth="5" strokeLinecap="round" />
+      <path
+        d="M78 80l12-12 12 12"
+        stroke={`url(#${accents})`}
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="38" y="40" width="104" height="16" rx="8" fill="rgba(255,255,255,0.22)" />
+      <rect x="38" y="58" width="70" height="10" rx="5" fill="rgba(255,255,255,0.18)" />
+    </svg>
+  );
+}
+
+
+export function CreateEventIllustration({
+  className,
+  title = "Create Event UI",
+}: IllustrationProps) {
+  const id = useId();
+  const bg = `${id}-bg`;
+  const tile = `${id}-tile`;
+  const accent = `${id}-accent`;
+  const stroke = `${id}-stroke`;
+
+  return (
+    <svg
+      viewBox="0 0 180 140"
+      role="img"
+      aria-labelledby={`${id}-title`}
+      className={cx("h-auto w-full max-w-[180px]", className)}
+    >
+      <title id={`${id}-title`}>{title}</title>
+      <defs>
+        <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFF5F8" />
+          <stop offset="100%" stopColor="#FFF0F4" />
+        </linearGradient>
+        <linearGradient id={tile} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F5C0D3" />
+          <stop offset="100%" stopColor="#FFDDE8" />
+        </linearGradient>
+        <linearGradient id={accent} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#FFE4EE" />
+        </linearGradient>
+        <linearGradient id={stroke} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#FFC3D7" />
+        </linearGradient>
+      </defs>
+
+      <rect x="6" y="8" width="168" height="124" rx="32" fill={`url(#${bg})`} />
+      <rect
+        x="22"
+        y="20"
+        width="136"
+        height="100"
+        rx="28"
+        fill={`url(#${tile})`}
+        stroke="rgba(255,255,255,0.65)"
+        strokeWidth="2"
+      />
+      <path d="M40 44h100" stroke="rgba(255,255,255,0.5)" strokeLinecap="round" />
+      <rect x="40" y="52" width="52" height="12" rx="6" fill="rgba(255,255,255,0.25)" />
+      <rect x="40" y="70" width="84" height="8" rx="4" fill="rgba(255,255,255,0.35)" />
+      <rect x="40" y="86" width="68" height="8" rx="4" fill="rgba(255,255,255,0.3)" />
+      <rect x="40" y="102" width="54" height="8" rx="4" fill="rgba(255,255,255,0.25)" />
+      <rect
+        x="108"
+        y="64"
+        width="30"
+        height="30"
+        rx="12"
+        fill="rgba(255,255,255,0.18)"
+        stroke="rgba(255,255,255,0.65)"
+        strokeWidth="2"
+      />
+      <path d="M101 58l-8 8" stroke={`url(#${stroke})`} strokeWidth="3" strokeLinecap="round" />
+      <path d="M68 96c18-10 32-26 42-46" stroke={`url(#${stroke})`} strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="120" y="90" width="28" height="12" rx="6" fill="rgba(255,255,255,0.28)" />
+    </svg>
+  );
+}
+
+
+export function SignUpIllustration({
+  className,
+  title = "Smart sign-up form",
+}: IllustrationProps) {
+  const id = useId();
+  const bg = `${id}-bg`;
+  const tile = `${id}-tile`;
+  const accent = `${id}-accent`;
+  const check = `${id}-check`;
+
+  return (
+    <svg
+      viewBox="0 0 180 140"
+      role="img"
+      aria-labelledby={`${id}-title`}
+      className={cx("h-auto w-full max-w-[180px]", className)}
+    >
+      <title id={`${id}-title`}>{title}</title>
+      <defs>
+        <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F5FFF8" />
+          <stop offset="100%" stopColor="#F0FBF3" />
+        </linearGradient>
+        <linearGradient id={tile} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#C7EEDB" />
+          <stop offset="100%" stopColor="#E3F8EF" />
+        </linearGradient>
+        <linearGradient id={accent} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#D9F6E6" />
+        </linearGradient>
+        <linearGradient id={check} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#43D69F" />
+          <stop offset="100%" stopColor="#1AA46F" />
+        </linearGradient>
+      </defs>
+
+      <rect x="6" y="8" width="168" height="124" rx="32" fill={`url(#${bg})`} />
+      <rect
+        x="22"
+        y="20"
+        width="136"
+        height="100"
+        rx="28"
+        fill={`url(#${tile})`}
+        stroke="rgba(255,255,255,0.65)"
+        strokeWidth="2"
+      />
+      <rect
+        x="38"
+        y="36"
+        width="104"
+        height="68"
+        rx="16"
+        fill="rgba(255,255,255,0.75)"
+        stroke="rgba(255,255,255,0.5)"
+        strokeWidth="1.5"
+      />
+      <rect x="50" y="46" width="64" height="8" rx="4" fill="rgba(0,0,0,0.05)" />
+      <rect x="50" y="60" width="72" height="8" rx="4" fill="rgba(0,0,0,0.04)" />
+      <rect x="50" y="74" width="58" height="8" rx="4" fill="rgba(0,0,0,0.03)" />
+      <rect x="50" y="88" width="70" height="8" rx="4" fill="rgba(0,0,0,0.03)" />
+      <circle
+        cx="122"
+        cy="92"
+        r="20"
+        fill="rgba(255,255,255,0.35)"
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth="2"
+      />
+      <circle cx="122" cy="92" r="13" fill={`url(#${accent})`} />
+      <path
+        d="M116 92l4 4 8-10"
+        fill="none"
+        stroke={`url(#${check})`}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="40" y="110" width="100" height="10" rx="5" fill="rgba(255,255,255,0.3)" />
+    </svg>
+  );
+}
