@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import {
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  type ChangeEvent,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "@/components/event-create/TemplateGallery.module.css";
 import {
@@ -44,6 +50,51 @@ function getTemplateById(id?: string | null): WeddingTemplateDefinition {
   );
 }
 
+const infoSections = [
+  {
+    key: "headline",
+    label: "Headline",
+    description:
+      "Set your names, event date, and city/state for the hero header.",
+  },
+  {
+    key: "travel",
+    label: "Travel",
+    description:
+      "Share arrival guidance, airport tips, shuttles, and parking info so guests travel with confidence.",
+  },
+  {
+    key: "things-to-do",
+    label: "Things To Do",
+    description:
+      "Highlight nearby activities, restaurants, or guided experiences that pair well with your weekend.",
+  },
+  {
+    key: "our-story",
+    label: "Our Story",
+    description:
+      "Tell the story of how you met, what you love about each other, and why this day is special.",
+  },
+  {
+    key: "photos",
+    label: "Photos",
+    description:
+      "Upload up to five gallery photos. Landscape-oriented shots keep the layout tidy.",
+  },
+  {
+    key: "wedding-party",
+    label: "Wedding Party",
+    description:
+      "Introduce the people standing with you—names, roles, and a short note about their connection.",
+  },
+  {
+    key: "registry",
+    label: "Registry",
+    description:
+      "Drop your registry links here. We’ll feature them on a dedicated page once the site is live.",
+  },
+];
+
 export default function WeddingTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
@@ -57,6 +108,13 @@ export default function WeddingTemplateCustomizePage() {
   const [selectedVariationId, setSelectedVariationId] = useState(
     variationParam || firstVariationId
   );
+  const [activeSection, setActiveSection] = useState(infoSections[0].key);
+  const [sectionNotes, setSectionNotes] = useState<Record<string, string>>({});
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    setPhotoFiles(files.slice(0, 5));
+  };
 
   useEffect(() => {
     if (variationParam) {
@@ -99,6 +157,114 @@ export default function WeddingTemplateCustomizePage() {
     }
     return [...trimmed.slice(0, trimmed.length - 1), selected];
   }, [resolvedVariations, selectedVariationId]);
+
+  const renderSectionContent = (sectionKey: string) => {
+    if (sectionKey === "headline") {
+      return (
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-stone-700">
+            Partner one
+            <input
+              type="text"
+              value={partnerOne}
+              onChange={(e) => setPartnerOne(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              placeholder="First partner name"
+            />
+          </label>
+          <label className="block text-sm font-medium text-stone-700">
+            Partner two
+            <input
+              type="text"
+              value={partnerTwo}
+              onChange={(e) => setPartnerTwo(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              placeholder="Second partner name"
+            />
+          </label>
+          <label className="block text-sm font-medium text-stone-700">
+            Event date
+            <input
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block text-sm font-medium text-stone-700">
+              City
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              />
+            </label>
+            <label className="block text-sm font-medium text-stone-700">
+              State
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              />
+            </label>
+          </div>
+        </div>
+      );
+    }
+    const value = sectionNotes[sectionKey] ?? "";
+    if (sectionKey === "photos") {
+      return (
+        <>
+          <label className="block text-sm font-medium text-stone-700">
+            Upload gallery photos
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoChange}
+              className="mt-2"
+            />
+          </label>
+          <p className={styles.photoUploadInfo}>
+            Selected {photoFiles.length}{" "}
+            {photoFiles.length === 1 ? "photo" : "photos"} (max 5).
+          </p>
+        </>
+      );
+    }
+    if (sectionKey === "registry") {
+      return (
+        <label className="block text-sm font-medium text-stone-700">
+          Registry link
+          <input
+            type="url"
+            placeholder="https://www.example.com/your-registry"
+            className="mt-2"
+          />
+        </label>
+      );
+    }
+    return (
+      <label className="block text-sm font-medium text-stone-700">
+        Details
+        <textarea
+          rows={3}
+          value={value}
+          onChange={(event) =>
+            setSectionNotes((prev) => ({
+              ...prev,
+              [sectionKey]: event.target.value,
+            }))
+          }
+          placeholder="Share a short description to appear on the page."
+          className="mt-2"
+        />
+      </label>
+    );
+  };
 
   const previewNames =
     template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
@@ -248,68 +414,68 @@ export default function WeddingTemplateCustomizePage() {
             <h2 className="text-2xl font-semibold text-stone-900">
               Add your details
             </h2>
-            <p className="text-sm text-stone-600">
-              Personalize the headline information before continuing to full
-              event setup.
-            </p>
           </div>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-stone-700">
-              Partner one
-              <input
-                type="text"
-                value={partnerOne}
-                onChange={(e) => setPartnerOne(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                placeholder="First partner name"
-              />
-            </label>
-            <label className="block text-sm font-medium text-stone-700">
-              Partner two
-              <input
-                type="text"
-                value={partnerTwo}
-                onChange={(e) => setPartnerTwo(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                placeholder="Second partner name"
-              />
-            </label>
-            <label className="block text-sm font-medium text-stone-700">
-              Event date
-              <input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-              />
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block text-sm font-medium text-stone-700">
-                City
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                />
-              </label>
-              <label className="block text-sm font-medium text-stone-700">
-                State
-                <input
-                  type="text"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                />
-              </label>
-            </div>
+          <div className={styles.accordionContainer}>
+            {infoSections.map((section) => {
+              const isOpen = activeSection === section.key;
+              return (
+                <div key={section.key}>
+                  <h2 id={`heading-${section.key}`}>
+                    <button
+                      type="button"
+                      className={`${styles.accordionButton} ${
+                        isOpen ? styles.accordionButtonActive : ""
+                      }`}
+                      aria-controls={`body-${section.key}`}
+                      aria-expanded={isOpen}
+                      onClick={() =>
+                        setActiveSection(isOpen ? "" : section.key)
+                      }
+                    >
+                      <span>{section.label}</span>
+                      <svg
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className={`${styles.accordionIcon} ${
+                          isOpen ? styles.accordionIconOpen : ""
+                        }`}
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="m5 15 7-7 7 7"
+                        />
+                      </svg>
+                    </button>
+                  </h2>
+                  <div
+                    id={`body-${section.key}`}
+                    className={`${styles.accordionBody} ${
+                      isOpen ? styles.accordionBodyOpen : ""
+                    }`}
+                    aria-labelledby={`heading-${section.key}`}
+                  >
+                    <div className={styles.accordionBodyInner}>
+                      <p>{section.description}</p>
+                      {renderSectionContent(section.key)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <button
             type="button"
             onClick={handleContinue}
             className="w-full rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-stone-800"
           >
-            Continue to details
+            Preview and publish
           </button>
         </div>
       </section>

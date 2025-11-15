@@ -65,6 +65,88 @@
   max-width: 240px;
 }
 
+.accordionContainer {
+  margin-top: 1.5rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(246, 242, 239, 0.8);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(18, 12, 6, 0.09);
+}
+
+.accordionItem h2 {
+  margin: 0;
+}
+
+.accordionButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(32, 26, 23, 0.75);
+  cursor: pointer;
+}
+
+.accordionButton:not(:last-of-type) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.accordionButtonActive {
+  background: #fff;
+  color: rgba(20, 14, 9, 0.9);
+}
+
+.accordionIcon {
+  transition: transform 200ms ease;
+}
+
+.accordionIconOpen {
+  transform: rotate(180deg);
+}
+
+.accordionBody {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 260ms ease;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.accordionBodyOpen {
+  max-height: 1200px;
+}
+
+.accordionBodyInner {
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: rgba(23, 16, 10, 0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.accordionBodyInner textarea,
+.accordionBodyInner input[type="text"],
+.accordionBodyInner input[type="url"] {
+  width: 100%;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-family: "Inter", system-ui, sans-serif;
+  resize: none;
+}
+
+.accordionBodyInner .photoUploadInfo {
+  font-size: 0.75rem;
+  color: rgba(23, 16, 10, 0.55);
+}
 .selectButton {
   font-size: 0.75rem;
   text-transform: uppercase;
