@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { useSidebar } from "@/app/sidebar-context";
 import LoginForm from "./LoginForm";
@@ -89,11 +90,34 @@ export default function AuthModal({
               <p className="pt-2 pb-1 text-base text-foreground/80 text-center">
                 Welcome back to
               </p>
-              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7">
-                <span className="font-pacifico">
-                  <span className="text-[#0e7bc4]">Env</span>
-                  <span className="text-[#ee3c2b]">i</span>
-                  <span className="text-[#0e7bc4]">tefy</span>
+              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7 overflow-visible">
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <Image
+                    src="/E.png"
+                    alt="E"
+                    width={56}
+                    height={56}
+                    className="h-10 w-10 md:h-14 md:w-14"
+                    quality={100}
+                    unoptimized
+                  />
+                  <span
+                    className="text-5xl"
+                    style={{
+                      fontFamily:
+                        '"Venturis ADF", "Venturis ADF Fallback", serif',
+                      background:
+                        "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+                      backgroundClip: "text",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      lineHeight: "1.2",
+                      display: "inline-block",
+                      paddingBottom: "0.1em",
+                    }}
+                  >
+                    nvitefy
+                  </span>
                 </span>
               </p>
             </>
@@ -102,11 +126,34 @@ export default function AuthModal({
               <p className="pt-2 pb-1 text-base text-foreground/80 text-center">
                 Join
               </p>
-              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7">
-                <span className="font-pacifico">
-                  <span className="text-[#0e7bc4]">Env</span>
-                  <span className="text-[#ee3c2b]">i</span>
-                  <span className="text-[#0e7bc4]">tefy</span>
+              <p className="mt-1 text-5xl tracking-tight text-foreground text-center pb-7 overflow-visible">
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <Image
+                    src="/E.png"
+                    alt="E"
+                    width={56}
+                    height={56}
+                    className="h-10 w-10 md:h-14 md:w-14"
+                    quality={100}
+                    unoptimized
+                  />
+                  <span
+                    className="text-5xl"
+                    style={{
+                      fontFamily:
+                        '"Venturis ADF", "Venturis ADF Fallback", serif',
+                      background:
+                        "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+                      backgroundClip: "text",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      lineHeight: "1.2",
+                      display: "inline-block",
+                      paddingBottom: "0.1em",
+                    }}
+                  >
+                    nvitefy
+                  </span>
                 </span>
               </p>
             </>

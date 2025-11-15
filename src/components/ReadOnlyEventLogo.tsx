@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";
 
@@ -74,18 +74,32 @@ export default function ReadOnlyEventLogo() {
       <Link
         href="/"
         aria-label="Envitefy home"
-        className="inline-flex rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-visible"
       >
-        <img
-          src="/Logo_stacked.png"
-          alt="Envitefy tag line"
-          className={`h-24 w-auto ${useLightVariant ? "hidden" : "block"}`}
+        <Image
+          src="/E.png"
+          alt="E"
+          width={48}
+          height={48}
+          className="h-12 w-12"
+          quality={100}
+          unoptimized
         />
-        <img
-          src="/Logo_stacked.png"
-          alt="Envitefy tag line"
-          className={`h-24 w-auto ${useLightVariant ? "block" : "hidden"}`}
-        />
+        <span
+          className="text-3xl leading-relaxed overflow-visible"
+          style={{
+            fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+            background: "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+            backgroundClip: "text",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            lineHeight: "1.2",
+            display: "inline-block",
+            paddingBottom: "0.1em",
+          }}
+        >
+          nvitefy
+        </span>
       </Link>
     </div>
   );

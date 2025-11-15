@@ -65,75 +65,107 @@
   max-width: 240px;
 }
 
-.accordionContainer {
-  margin-top: 1.5rem;
-  border-radius: 1.4rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(246, 242, 239, 0.8);
+.accordionWrapper {
+  position: relative;
+  min-height: 360px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(18, 12, 6, 0.09);
 }
 
-.accordionItem h2 {
-  margin: 0;
-}
-
-.accordionButton {
-  width: 100%;
+.menuView {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.85rem;
+  transition: transform 240ms ease;
+}
+
+.menuHidden {
+  transform: translateX(-100%);
+}
+
+.menuItem {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(18, 12, 6, 0.08);
+}
+
+.menuButton {
+  width: 100%;
+  text-align: left;
   padding: 1rem 1.25rem;
-  background: transparent;
   border: 0;
-  font-size: 0.85rem;
-  letter-spacing: 0.2em;
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: rgba(32, 26, 23, 0.75);
+  color: rgba(28, 20, 12, 0.85);
+  border-radius: 1.1rem;
   cursor: pointer;
 }
 
-.accordionButton:not(:last-of-type) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.accordionButtonActive {
-  background: #fff;
-  color: rgba(20, 14, 9, 0.9);
-}
-
-.accordionIcon {
+.menuButtonIcon {
   transition: transform 200ms ease;
 }
 
-.accordionIconOpen {
-  transform: rotate(180deg);
-}
-
-.accordionBody {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 260ms ease;
-  background: #fff;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.accordionBodyOpen {
-  max-height: 1200px;
-}
-
-.accordionBodyInner {
-  padding: 1rem 1.25rem;
+.menuItem p {
+  margin: 0;
+  padding: 0 1.25rem 0.75rem;
   font-size: 0.9rem;
-  color: rgba(23, 16, 10, 0.75);
+  color: rgba(34, 20, 12, 0.7);
+}
+
+.detailPanel {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.3rem;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 50px rgba(18, 12, 6, 0.18);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transform: translateX(100%);
+  transition: transform 260ms ease;
+}
+
+.detailPanelOpen {
+  transform: translateX(0);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detailTitle {
+  font-size: 0.85rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(25, 17, 9, 0.75);
+  margin: 0;
+}
+
+.detailDesc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(20, 14, 10, 0.7);
+}
+
+.detailContent {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
 }
 
-.accordionBodyInner textarea,
-.accordionBodyInner input[type="text"],
-.accordionBodyInner input[type="url"] {
+.detailContent textarea,
+.detailContent input[type="text"],
+.detailContent input[type="url"],
+.detailContent input[type="date"] {
   width: 100%;
   border-radius: 0.85rem;
   border: 1px solid rgba(0, 0, 0, 0.12);
@@ -143,7 +175,7 @@
   resize: none;
 }
 
-.accordionBodyInner .photoUploadInfo {
+.photoUploadInfo {
   font-size: 0.75rem;
   color: rgba(23, 16, 10, 0.55);
 }

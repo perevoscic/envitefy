@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import {
   readProfileCache,
   writeProfileCache,
@@ -2208,10 +2209,33 @@ export default function LeftSidebar() {
         {/* Top: Logo + App name + close button */}
         <div className="h-16 border-b border-border flex items-center px-4 overflow-visible">
           <Link href="/" className="min-w-0 overflow-visible">
-            <span className="block text-2xl md:text-4xl leading-relaxed overflow-visible font-pacifico">
-              <span className="text-[#0e7bc4]">Env</span>
-              <span className="text-[#ee3c2b]">i</span>
-              <span className="text-[#0e7bc4]">tefy</span>
+            <span className="inline-flex items-end gap-1.5 overflow-visible">
+              <Image
+                src="/E.png"
+                alt="E"
+                width={48}
+                height={48}
+                className="h-8 w-8 md:h-12 md:w-12"
+                quality={100}
+                unoptimized
+              />
+              <span
+                className="text-xl md:text-5xl leading-relaxed overflow-visible"
+                style={{
+                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                  background:
+                    "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  lineHeight: "1.2",
+                  display: "inline-block",
+                  paddingBottom: "0.1em",
+                  transform: "translateY(8px)",
+                }}
+              >
+                nvitefy
+              </span>
             </span>
           </Link>
           <div className="ml-auto">

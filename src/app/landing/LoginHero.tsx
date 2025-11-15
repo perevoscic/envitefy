@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -264,14 +265,43 @@ export default function LoginHero() {
           Welcome to
         </p>
         <p
-          className="mt-2 text-6xl md:text-9xl tracking-tight text-white pb-3"
+          className="mt-2 text-6xl md:text-9xl tracking-tight text-white pb-3 pt-15 text-center overflow-visible"
           role="heading"
           aria-level={1}
         >
-          <span className="font-pacifico">
-            <span className="text-[#ffffff]">Env</span>
-            <span className="text-[#ee3c2b]">i</span>
-            <span className="text-[#ffffff]">tefy</span>
+          <span className="inline-flex items-center gap-2">
+            <Image
+              src="/E.png"
+              alt="E"
+              width={88}
+              height={88}
+              className="h-32 w-32 md:h-48 md:w-48"
+              quality={100}
+              priority
+              unoptimized
+              style={{
+                filter:
+                  "drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.7)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))",
+              }}
+            />
+            <span
+              className="text-6xl md:text-9xl"
+              style={{
+                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                background: "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                WebkitTextStroke: "0.5px rgba(255, 255, 255, 0.9)",
+                lineHeight: "1.2",
+                display: "inline-block",
+                paddingBottom: "0.1em",
+                filter:
+                  "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))",
+              }}
+            >
+              nvitefy
+            </span>
           </span>
         </p>
       </div>

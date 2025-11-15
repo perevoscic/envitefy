@@ -277,7 +277,6 @@ export default function CampaignsPage() {
     } catch {
       baseUrl = "https://envitefy.com";
     }
-    const logoUrl = `${baseUrl}/Logo_stacked.png`;
     const socialIcons = [
       {
         href: "https://www.instagram.com/envitefy/",
@@ -337,7 +336,18 @@ export default function CampaignsPage() {
         <td align="center" style="background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
           <!-- Logo on beige background -->
           <div style="padding: 0 0 24px 0; background-color: #FFFBF7 !important; text-align: center;" bgcolor="#FFFBF7">
-            <img src="${logoUrl}" alt="Envitefy" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
+            <a href="${baseUrl}" target="_blank" style="display:inline-block; background-color: #FFFBF7 !important; text-decoration: none;" bgcolor="#FFFBF7">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 8px;">
+                    <img src="${baseUrl}/E.png" width="40" height="40" alt="E" style="display:block; max-width: 100%;" />
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #9a7b2f; letter-spacing: 0.02em;">nvitefy</span>
+                  </td>
+                </tr>
+              </table>
+            </a>
           </div>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #FFFFFF !important; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" bgcolor="#FFFFFF">
             <!-- Content -->

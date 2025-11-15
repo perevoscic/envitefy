@@ -55,6 +55,57 @@ const buildStories = (
     ...rest,
   }));
 
+const EXTRA_COLOR_STORIES: StoryConfig[] = [
+  {
+    key: "shimmering-sea",
+    paletteId: "sea-glass",
+    label: "Shimmering Sea",
+    tagline: "Coastal mist & glitter",
+  },
+  {
+    key: "amber-sunset",
+    paletteId: "desert-amber",
+    label: "Amber Sunset",
+    tagline: "Warm adobe glow",
+  },
+  {
+    key: "coral-lyric",
+    paletteId: "sunset-coral",
+    label: "Coral Lyric",
+    tagline: "Bougainvillea promise",
+  },
+  {
+    key: "velvet-gold",
+    paletteId: "golden-ivy",
+    label: "Velvet Gold",
+    tagline: "Gilded foliage shine",
+  },
+  {
+    key: "tramontane",
+    paletteId: "midnight-noir",
+    label: "Tramontane",
+    tagline: "Noir dusk breeze",
+  },
+  {
+    key: "garden-bloom",
+    paletteId: "garden-emerald",
+    label: "Garden Bloom",
+    tagline: "Lush emerald gathers",
+  },
+  {
+    key: "opal-mist",
+    paletteId: "opal-sand",
+    label: "Opal Mist",
+    tagline: "Limestone whispers",
+  },
+  {
+    key: "moonlit-drizzle",
+    paletteId: "moonlit-lavender",
+    label: "Moonlit Drizzle",
+    tagline: "Lavender twilight hush",
+  },
+];
+
 const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "ivory-ink": "font-alex-brush",
   "garden-atelier": "font-allura",
@@ -81,7 +132,7 @@ const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "carriage-house": "font-parisienne",
 };
 
-export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
+const baseWeddingTemplateCatalog: WeddingTemplateDefinition[] = [
   {
     id: "midnight-bloom",
     name: "Midnight Bloom",
@@ -90,10 +141,10 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     heroImageName: "midnight-bloom-hero.jpeg",
     heroMood: "Velvet Florals",
     menu: [...baseMenu],
-      variations: buildStories(
-        "midnight-bloom",
-        TEMPLATE_FONT_ASSIGNMENTS["midnight-bloom"],
-        [
+    variations: buildStories(
+      "midnight-bloom",
+      TEMPLATE_FONT_ASSIGNMENTS["midnight-bloom"],
+      [
         {
           key: "velvet-midnight",
           paletteId: "midnight-noir",
@@ -1439,6 +1490,20 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = [
     },
   },
 ];
+
+export const weddingTemplateCatalog: WeddingTemplateDefinition[] = baseWeddingTemplateCatalog.map(
+  (template) => ({
+    ...template,
+    variations: [
+      ...template.variations,
+      ...buildStories(
+        template.id,
+        TEMPLATE_FONT_ASSIGNMENTS[template.id],
+        EXTRA_COLOR_STORIES
+      ),
+    ],
+  })
+);
 
 type Props = {
   appliedTemplateId: string | null;

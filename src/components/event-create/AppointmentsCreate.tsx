@@ -8,6 +8,7 @@ import type { EditorBindings } from "@/components/event-templates/EventTemplateB
 import AppointmentsTemplate from "@/components/event-templates/AppointmentsTemplate";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 
 type Props = { defaultDate?: Date };
 
@@ -486,7 +487,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
                     className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100"
                     aria-label="Replace profile image"
                   >
-                    ✏️
+                    <EditSquareIcon className="h-4 w-4" />
                   </button>
                   <button
                     type="button"

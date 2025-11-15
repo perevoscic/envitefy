@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "./providers";
 
@@ -14,12 +15,31 @@ export default function TopNav() {
       <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <Link href="/" className="min-w-0">
-            <span className="text-base text-foreground truncate leading-tight">
-              <span className="block truncate font-montserrat font-semibold">
-                Envitefy
-              </span>
-              <span className="block text-xs text-foreground/60 truncate">
-                Create. Share. Enjoy.
+            <span className="inline-flex items-center gap-1.5">
+              <Image
+                src="/E.png"
+                alt="E"
+                width={24}
+                height={24}
+                className="h-5 w-5 md:h-6 md:w-6"
+                quality={100}
+                unoptimized
+              />
+              <span
+                className="text-base md:text-lg leading-tight"
+                style={{
+                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                  background:
+                    "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  lineHeight: "1.2",
+                  display: "inline-block",
+                  paddingBottom: "0.05em",
+                }}
+              >
+                nvitefy
               </span>
             </span>
           </Link>

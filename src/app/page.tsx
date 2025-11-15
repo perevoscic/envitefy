@@ -933,17 +933,39 @@ export default function Home() {
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
       <p
-        className="mb-8 md:mb-12 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-15 text-center"
+        className="mb-8 md:mb-12 text-6xl md:text-7xl tracking-tight text-white pb-3 pt-15 text-center overflow-visible"
         role="heading"
         aria-level={1}
       >
-        <span className="font-pacifico">
-          <span className="text-[#0e7bc4]">Env</span>
-          <span className="text-[#ee3c2b]">i</span>
-          <span className="text-[#0e7bc4]">tefy</span>
+        <span className="inline-flex items-center gap-2">
+          <Image
+            src="/E.png"
+            alt="E"
+            width={88}
+            height={88}
+            className="h-24 w-24 md:h-32 md:w-32"
+            quality={100}
+            priority
+            unoptimized
+          />
+          <span
+            className="text-6xl md:text-8xl"
+            style={{
+              fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+              background: "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              lineHeight: "1.2",
+              display: "inline-block",
+              paddingBottom: "0.1em",
+            }}
+          >
+            nvitefy
+          </span>
         </span>
       </p>
-      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10">
+      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-10 mt-10">
         <OptionCard
           title="Snap Event"
           details={[
