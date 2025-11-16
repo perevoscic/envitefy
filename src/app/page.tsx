@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type MouseEvent,
   type KeyboardEvent,
+  type CSSProperties,
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -1633,13 +1634,22 @@ function OptionCard({
   ) : null;
 
   const buttonClass =
-    "inline-flex items-center justify-center rounded-full px-6 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70";
+    "inline-flex items-center justify-center rounded-full px-6 py-2 text-center text-xs font-semibold uppercase tracking-wide text-white whitespace-nowrap shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70";
 
   const buttonStyle = { backgroundColor: ctaColor ?? toneClass.accent };
+
+  const cardSurfaceStyle: CSSProperties = {
+    borderColor: toneClass.accent,
+    background: toneClass.cardSurface,
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+    transform: "translateZ(0)",
+  };
 
   const handlePrimaryAction = (
     event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>
   ) => {
+    event.stopPropagation();
     if (showDetails) {
       event.preventDefault();
       event.stopPropagation();
@@ -1672,6 +1682,12 @@ function OptionCard({
 
   const openDetails = () => setShowDetails(true);
 
+  const handleFrontCardClick = () => {
+    if (!showDetails) {
+      openDetails();
+    }
+  };
+
   const handleInfoPointer = (
     event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>
   ) => {
@@ -1702,10 +1718,8 @@ function OptionCard({
   const frontCard = (
     <article
       className={baseCardClass}
-      style={{
-        borderColor: toneClass.accent,
-        background: toneClass.cardSurface,
-      }}
+      style={cardSurfaceStyle}
+      onClick={handleFrontCardClick}
     >
       <button
         type="button"
@@ -1742,7 +1756,7 @@ function OptionCard({
         )}
         <div className="flex flex-col items-center gap-3">
           <h2
-            className="text-xl font-semibold text-foreground"
+            className="text-base font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-xl sm:tracking-tight whitespace-nowrap"
             style={{
               fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
             }}
@@ -1760,10 +1774,7 @@ function OptionCard({
   const backCard = (
     <article
       className={baseCardClass}
-      style={{
-        borderColor: toneClass.accent,
-        background: toneClass.cardSurface,
-      }}
+      style={cardSurfaceStyle}
       role="button"
       tabIndex={0}
       onClick={closeDetails}
@@ -1784,7 +1795,7 @@ function OptionCard({
       <div className="flex flex-1 flex-col items-center gap-4 px-6 pb-4 pt-8 text-center">
         <div className="flex flex-col items-center gap-3">
           <h2
-            className="text-xl font-semibold text-foreground"
+            className="text-base font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-xl sm:tracking-tight whitespace-nowrap"
             style={{
               fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
             }}
@@ -1801,12 +1812,16 @@ function OptionCard({
     <div className="relative h-full w-full [perspective:2000px]">
       <div
         className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]"
-        style={{ transform: showDetails ? "rotateY(180deg)" : "rotateY(0deg)" }}
+        style={{
+          transform: showDetails ? "rotateY(180deg)" : "rotateY(0deg)",
+          willChange: "transform",
+        }}
       >
         <div
           className="relative h-full w-full"
           style={{
             backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
             pointerEvents: showDetails ? "none" : "auto",
           }}
         >
@@ -1817,6 +1832,7 @@ function OptionCard({
           style={{
             transform: "rotateY(180deg)",
             backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
             pointerEvents: showDetails ? "auto" : "none",
           }}
         >
