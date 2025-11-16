@@ -202,9 +202,43 @@ export default function LeftSidebar() {
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
+  const scrollIdleTimeoutRef = useRef<number | null>(null);
+  const [openButtonVisible, setOpenButtonVisible] = useState(true);
 
   useEffect(() => {
     if (!isOpen) setMenuOpen(false);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isOpen) {
+      setOpenButtonVisible(true);
+      if (scrollIdleTimeoutRef.current !== null) {
+        window.clearTimeout(scrollIdleTimeoutRef.current);
+        scrollIdleTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const onScroll = () => {
+      setOpenButtonVisible((visible) => (visible ? false : visible));
+      if (scrollIdleTimeoutRef.current !== null) {
+        window.clearTimeout(scrollIdleTimeoutRef.current);
+      }
+      scrollIdleTimeoutRef.current = window.setTimeout(() => {
+        setOpenButtonVisible(true);
+      }, 180);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollIdleTimeoutRef.current !== null) {
+        window.clearTimeout(scrollIdleTimeoutRef.current);
+        scrollIdleTimeoutRef.current = null;
+      }
+      setOpenButtonVisible(true);
+    };
   }, [isOpen]);
 
   // Fetch connected calendars status
@@ -1609,7 +1643,9 @@ export default function LeftSidebar() {
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          className="fixed top-3 left-3 z-[400] inline-flex items-center justify-center h-9 w-9"
+          className={`fixed top-3 left-3 z-[400] inline-flex items-center justify-center h-9 w-9 transition-opacity duration-200 ${
+            openButtonVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
           suppressHydrationWarning
         >
           <svg
