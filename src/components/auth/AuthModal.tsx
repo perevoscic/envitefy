@@ -21,9 +21,6 @@ export default function AuthModal({
 }: AuthModalProps) {
   const isLogin = mode === "login";
   const heroKicker = isLogin ? "Welcome back" : "You're invited";
-  const heroBlurb = isLogin
-    ? "Pick up right where you left off—your saved invitations, RSVP dashboards, and calendars are waiting."
-    : "Create a planning home that feels as bespoke as the new wedding templates, from invites to guest logistics.";
   const { setIsCollapsed } = useSidebar();
   // Broadcast global open/close so other components (e.g., background slider)
   // can react when any auth modal is shown anywhere on the page.
@@ -102,7 +99,6 @@ export default function AuthModal({
                 unoptimized
               />
             </div>
-            <p className="text-sm text-foreground/70 max-w-sm">{heroBlurb}</p>
           </div>
           {isLogin ? (
             <LoginForm
