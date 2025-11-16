@@ -977,11 +977,18 @@ export default function EventCreateWysiwyg({
                   const buttonLabel = c.hint ? "Select" : "Create";
 
                   return (
-                    <button
+                    <article
                       key={c.key}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       data-label={c.label}
                       onClick={() => handleSelectTemplate(c.key)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectTemplate(c.key);
+                        }
+                      }}
                       className={styles.templateCard}
                     >
                       <div className={styles.cardBody}>
@@ -1017,7 +1024,7 @@ export default function EventCreateWysiwyg({
                           {buttonLabel}
                         </button>
                       </div>
-                    </button>
+                    </article>
                   );
                 })}
               </div>
