@@ -25,7 +25,7 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
 
   return (
     <div className="relative">
-      <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
+      <div className="mt-8 flex flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
         <button
           className="btn btn-primary btn-lg"
           onClick={() => {

@@ -261,7 +261,7 @@ export default function LoginHero() {
         }`}
         style={{ bottom: "calc(4rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="hero-brand-panel flex flex-col items-center gap-5 text-center px-6 py-5 w-full max-w-3xl">
+        <div className="hero-brand-panel flex flex-col items-center gap-5 text-center px-6 py-5 w-auto">
           <p
             className="wedding-kicker"
             style={{
@@ -304,9 +304,9 @@ export default function LoginHero() {
               </span>
             </span>
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+          <div className="flex flex-row items-center justify-center gap-3">
             <button
-              className="btn btn-outline btn-outline-light btn-lg w-full sm:w-auto"
+              className="btn btn-outline btn-outline-light btn-lg"
               onClick={() => {
                 setMode("login");
                 setModalOpen(true);
@@ -315,7 +315,7 @@ export default function LoginHero() {
               Log in
             </button>
             <button
-              className="btn btn-primary btn-lg w-full sm:w-auto shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
+              className="btn btn-primary btn-lg shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
               onClick={() => {
                 setMode("signup");
                 setModalOpen(true);
