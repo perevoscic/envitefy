@@ -2117,6 +2117,10 @@ export default function LeftSidebar() {
                 </div>
               </div>
             </div>
+            {/* Separator line */}
+            <div className="px-4 py-2">
+              <div className="h-px bg-gray-300/60 dark:bg-gray-600/60"></div>
+            </div>
             <div className="px-0">
               <div className="block px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
                 <div className="flex items-center justify-between pl-0">
