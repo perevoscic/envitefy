@@ -762,10 +762,9 @@ export default async function RootLayout({
         <Providers session={session}>
           <LeftSidebar />
           <div
-            className="min-h-[100dvh] h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
+            className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
             style={{
               minHeight: "100dvh",
-              height: "100dvh",
               paddingTop: "max(0px, env(safe-area-inset-top))",
               paddingBottom: "max(0px, env(safe-area-inset-bottom))",
             }}

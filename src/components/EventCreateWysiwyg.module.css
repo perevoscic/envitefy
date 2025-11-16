@@ -1,10 +1,16 @@
 .gallery {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
 }
 
 @media (max-width: 1280px) {
+  .gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
   .gallery {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -67,6 +73,35 @@
 .cardIcon svg {
   width: 24px;
   height: 24px;
+}
+
+/* Desktop: Stack icon on top, category name below */
+@media (min-width: 641px) {
+  .cardHeader {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .cardBody {
+    align-items: center;
+    text-align: center;
+  }
+
+  .cardText {
+    align-items: center;
+  }
+
+  .cardIcon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .cardIcon svg {
+    width: 28px;
+    height: 28px;
+  }
 }
 
 .cardText {

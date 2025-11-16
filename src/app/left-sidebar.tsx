@@ -1480,10 +1480,7 @@ export default function LeftSidebar() {
     } catch {}
   };
 
-  const MenuItems = (props: {
-    onCloseMenu: () => void;
-    isAdmin: boolean;
-  }) => {
+  const MenuItems = (props: { onCloseMenu: () => void; isAdmin: boolean }) => {
     const { onCloseMenu, isAdmin } = props;
     return (
       <div className="p-2">
@@ -2101,6 +2098,12 @@ export default function LeftSidebar() {
         {/* Middle: Event history */}
         <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
           <div className="p-3 space-y-2">
+            {/* CREATE | SHARE | ENJOY */}
+            <div className="px-2 pb-2">
+              <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
+                CREATE | SHARE | ENJOY
+              </div>
+            </div>
             <div className="px-0">
               <div className="block px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
                 <div className="flex items-center justify-between pl-0">
