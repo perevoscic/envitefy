@@ -304,7 +304,8 @@ if (typeof window !== "undefined") {
     w.__snapInstallBridgeReady = true;
     window.addEventListener("beforeinstallprompt", (event: Event) => {
       const bip = event as BeforeInstallPromptEvent;
-      bip.preventDefault?.();
+      // Don't preventDefault - let the native prompt show automatically
+      // bip.preventDefault?.();
       w.__snapInstallDeferredPrompt = bip;
       window.dispatchEvent(
         new CustomEvent<BeforeInstallPromptEvent | null>(BRIDGE_EVENT_NAME, {

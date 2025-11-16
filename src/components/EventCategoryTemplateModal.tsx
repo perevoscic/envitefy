@@ -1,47 +1,14 @@
 "use client";
 
 import React from "react";
+import styles from "@/components/EventCreateWysiwyg.module.css";
+import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSelect: (category: string) => void;
 };
-
-const CATEGORIES: Array<{
-  key: string;
-  label: string;
-  emoji: string;
-  hint?: string;
-}> = [
-  {
-    key: "birthdays",
-    label: "Birthdays",
-    emoji: "🎂",
-    hint: "Registry supported",
-  },
-  {
-    key: "weddings",
-    label: "Weddings",
-    emoji: "💍",
-    hint: "Registry supported",
-  },
-  {
-    key: "baby_showers",
-    label: "Baby Showers",
-    emoji: "👶",
-    hint: "Registry supported",
-  },
-  {
-    key: "sex_reveal",
-    label: "Sex Reveal",
-    emoji: "🍼",
-    hint: "Registry supported",
-  },
-  { key: "appointments", label: "Appointments", emoji: "🩺" },
-  { key: "sport_events", label: "Sport Events", emoji: "🏟️" },
-  { key: "general", label: "General Events", emoji: "📅" },
-];
 
 export default function EventCategoryTemplateModal({
   open,
@@ -70,15 +37,15 @@ export default function EventCategoryTemplateModal({
           </p>
         </div>
         <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {CATEGORIES.map((c) => (
+          {EVENT_CATEGORIES.map((c) => (
             <button
               key={c.key}
               type="button"
               onClick={() => onSelect(c.key)}
               className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-3 text-left hover:border-foreground/40 hover:bg-surface"
             >
-              <span className="text-xl" aria-hidden>
-                {c.emoji}
+              <span className={styles.cardIcon} aria-hidden="true">
+                {c.icon}
               </span>
               <span className="flex-1">
                 <span className="block text-sm font-semibold">{c.label}</span>

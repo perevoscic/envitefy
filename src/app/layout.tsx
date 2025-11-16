@@ -660,7 +660,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#F6ECE1" },
     { media: "(prefers-color-scheme: dark)", color: "#0b0b0f" },
   ],
 };
@@ -688,6 +688,11 @@ export default async function RootLayout({
     >
       <head>
         <title>Envitefy | Create. Share. Enjoy.</title>
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <Script
           id="ld-website"
           type="application/ld+json"
@@ -730,7 +735,8 @@ export default async function RootLayout({
               if (!w.__snapInstallBridgeReady) {
                 w.__snapInstallBridgeReady = true;
                 window.addEventListener('beforeinstallprompt', function(event){
-                  try { if (event && event.preventDefault) event.preventDefault(); } catch (e) {}
+                  // Don't preventDefault - let the native prompt show automatically
+                  // try { if (event && event.preventDefault) event.preventDefault(); } catch (e) {}
                   try { w.__snapInstallDeferredPrompt = event; } catch (e) {}
                   try {
                     var ev = new CustomEvent('envitefy:beforeinstallprompt', { detail: event });
@@ -756,7 +762,13 @@ export default async function RootLayout({
         <Providers session={session}>
           <LeftSidebar />
           <div
-            className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
+            className="min-h-[100dvh] h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
+            style={{
+              minHeight: "100dvh",
+              height: "100dvh",
+              paddingTop: "max(0px, env(safe-area-inset-top))",
+              paddingBottom: "max(0px, env(safe-area-inset-bottom))",
+            }}
             data-static-illustration="true"
           >
             <div className="flex-1 min-w-0">{children}</div>

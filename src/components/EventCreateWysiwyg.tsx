@@ -25,6 +25,7 @@ import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 import styles from "./EventCreateWysiwyg.module.css";
+import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
 
 type ConnectedCalendars = {
   google: boolean;
@@ -43,6 +44,14 @@ const REGISTRY_CATEGORY_KEYS = new Set([
   "baby showers",
   "sex reveal",
 ]);
+
+const TEMPLATE_LABELS = EVENT_CATEGORIES.reduce<Record<string, string>>(
+  (acc, category) => {
+    acc[category.key] = category.label;
+    return acc;
+  },
+  {}
+);
 
 const createRegistryEntry = (): RegistryFormEntry => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -165,77 +174,6 @@ export default function EventCreateWysiwyg({
   }, [initialStart]);
 
   const [title, setTitle] = useState("");
-  const TEMPLATE_LABELS: Record<string, string> = {
-    birthdays: "Birthdays",
-    weddings: "Weddings",
-    baby_showers: "Baby Showers",
-    sex_reveal: "Sex Reveal",
-    appointments: "Appointments",
-    sport_events: "Sport Events",
-    general: "General Events",
-  } as const as Record<string, string>;
-  const CATEGORIES: Array<{
-    key: string;
-    label: string;
-    emoji: string;
-    hint?: string;
-    color: string;
-    desc: string;
-  }> = [
-    {
-      key: "birthdays",
-      label: "Birthdays",
-      emoji: "🎂",
-      hint: "Registry supported",
-      color: "bg-yellow-50 border-yellow-200",
-      desc: "Fun, casual celebrations",
-    },
-    {
-      key: "weddings",
-      label: "Weddings",
-      emoji: "💍",
-      hint: "Registry supported",
-      color: "bg-purple-50 border-purple-200",
-      desc: "Elegant & formal styling",
-    },
-    {
-      key: "baby_showers",
-      label: "Baby Showers",
-      emoji: "👶",
-      hint: "Registry supported",
-      color: "bg-pink-50 border-pink-200",
-      desc: "Sweet & joyful events",
-    },
-    {
-      key: "sex_reveal",
-      label: "Sex Reveal",
-      emoji: "🍼",
-      hint: "Registry supported",
-      color: "bg-rose-50 border-rose-200",
-      desc: "Celebrate the big surprise moment",
-    },
-    {
-      key: "appointments",
-      label: "Appointments",
-      emoji: "🩺",
-      color: "bg-blue-50 border-blue-200",
-      desc: "For scheduling personal or work meetings",
-    },
-    {
-      key: "sport_events",
-      label: "Sport Events",
-      emoji: "🏟️",
-      color: "bg-green-50 border-green-200",
-      desc: "For games, tournaments, or watch parties",
-    },
-    {
-      key: "general",
-      label: "General Events",
-      emoji: "📅",
-      color: "bg-neutral-50 border-neutral-200",
-      desc: "For any custom event",
-    },
-  ];
   // Background presets (mirrors signup builder look-and-feel)
   const BG_PRESETS: Array<{
     id: string;
@@ -933,6 +871,7 @@ export default function EventCreateWysiwyg({
         sex_reveal: "sex-reveal",
         appointments: "appointments",
         sport_events: "sport-events",
+        special_events: "special-events",
         general: "general",
       };
       const slug = slugMap[key] || key;
@@ -969,7 +908,7 @@ export default function EventCreateWysiwyg({
                 </p>
               </div>
               <div className={styles.gallery}>
-                {CATEGORIES.map((c) => (
+                {EVENT_CATEGORIES.map((c) => (
                   <button
                     key={c.key}
                     type="button"
@@ -979,23 +918,14 @@ export default function EventCreateWysiwyg({
                   >
                     <div className={styles.cardBody}>
                       <div className={styles.cardHeader}>
-                        <div>
-                          <div className={styles.cardTitleRow}>
-                            <span className={styles.emoji} aria-hidden>
-                              {c.emoji}
-                            </span>
-                            <h3 className={styles.cardTitle}>
-                              {c.label}
-                            </h3>
-                          </div>
+                        <span className={styles.cardIcon} aria-hidden="true">
+                          {c.icon}
+                        </span>
+                        <div className={styles.cardText}>
+                          <h3 className={styles.cardTitle}>{c.label}</h3>
                           {c.hint && (
-                            <span className={styles.hint}>
-                              {c.hint}
-                            </span>
+                            <span className={styles.hint}>{c.hint}</span>
                           )}
-                          <p className={styles.cardDescription}>
-                            {c.desc}
-                          </p>
                         </div>
                       </div>
                     </div>

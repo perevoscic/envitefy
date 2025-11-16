@@ -117,6 +117,8 @@ input[type="submit"][disabled] {
 
 html {
   /* Ensure fullscreen coverage including safe areas */
+  height: 100%;
+  height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
   /* Extend background to cover status bar area on iOS */
@@ -125,6 +127,9 @@ html {
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  /* Ensure html extends edge-to-edge */
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -139,18 +144,33 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
   /* Ensure body extends to full viewport including safe areas */
+  height: 100%;
+  height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
+  /* Remove default margins for fullscreen */
+  margin: 0;
+  padding: 0;
+  /* Extend to edges */
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body::before {
   content: "";
   position: fixed;
   inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-image: var(--theme-hero-gradient);
   opacity: 0.08;
   pointer-events: none;
   z-index: -1;
+  /* Ensure it covers safe areas */
+  margin: 0;
+  padding: 0;
 }
 
 h1,

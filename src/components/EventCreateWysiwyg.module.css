@@ -48,9 +48,32 @@
 
 .cardHeader {
   display: flex;
-  justify-content: space-between;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: center;
+}
+
+.cardIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  display: grid;
+  place-items: center;
+  color: #2c1f19;
+  flex-shrink: 0;
+}
+
+.cardIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
 }
 
 .cardTitle {
@@ -60,25 +83,9 @@
   letter-spacing: 0.05em;
   color: #2C1F19;
   font-weight: 600;
-}
-
-.cardDescription {
-  margin: 0.35rem 0 0;
-  font-size: 0.85rem;
-  color: rgba(31, 23, 21, 0.7);
-  max-width: 240px;
-}
-
-.cardTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.emoji {
-  font-size: 2rem;
-  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hint {
@@ -91,13 +98,14 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   display: inline-block;
-  margin-top: 0.5rem;
+  margin: 0;
 }
 
 @media (max-width: 640px) {
   .cardHeader {
     flex-direction: column;
     align-items: center;
+    text-align: center;
   }
 
   .cardBody {
@@ -105,16 +113,22 @@
     text-align: center;
   }
 
-  .cardTitleRow {
-    flex-direction: column;
-    gap: 0.25rem;
+  .cardText {
+    align-items: center;
+  }
+
+  .cardIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .cardTitle {
+    font-size: 1.15rem;
+    font-family: var(--font-raleway), var(--font-sans), sans-serif;
+    letter-spacing: 0.02em;
   }
 
   .hint {
     margin-top: 0;
-  }
-
-  .cardDescription {
-    max-width: none;
   }
 }
