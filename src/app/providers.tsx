@@ -15,6 +15,7 @@ import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
 import PwaInstallButton from "@/components/PwaInstallButton";
+import PwaInstallToast from "@/components/PwaInstallToast";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
 
 type ThemeContextValue = {
@@ -70,7 +71,6 @@ function ThemeProvider({ children }: ThemeProviderProps) {
   );
 }
 
-
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
@@ -92,6 +92,7 @@ export default function Providers({
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />
+          <PwaInstallToast />
           {children}
           <GlobalEventCreate />
           <GlobalSmartSignup />
