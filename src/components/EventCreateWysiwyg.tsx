@@ -279,6 +279,7 @@ export default function EventCreateWysiwyg({
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   // Header profile image (small overlay)
   const [profileImage, setProfileImage] = useState<{
     name: string;
@@ -446,6 +447,7 @@ export default function EventCreateWysiwyg({
     setImageColors(null);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
+    if (attachmentInputRef.current) attachmentInputRef.current.value = "";
   };
   const handleFlyerChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -494,6 +496,8 @@ export default function EventCreateWysiwyg({
       event.target.value = "";
     }
   };
+  // Separate handler for attachment-only upload (bottom flyer/invite)
+  const handleAttachmentOnlyChange = handleFlyerChange;
 
   const clearProfile = () => {
     setProfileImage(null);
@@ -908,29 +912,114 @@ export default function EventCreateWysiwyg({
                 </p>
               </div>
               <div className={styles.gallery}>
-                {EVENT_CATEGORIES.map((c) => (
-                  <button
-                    key={c.key}
-                    type="button"
-                    data-label={c.label}
-                    onClick={() => handleSelectTemplate(c.key)}
-                    className={styles.templateCard}
-                  >
-                    <div className={styles.cardBody}>
-                      <div className={styles.cardHeader}>
-                        <span className={styles.cardIcon} aria-hidden="true">
-                          {c.icon}
-                        </span>
-                        <div className={styles.cardText}>
-                          <h3 className={styles.cardTitle}>{c.label}</h3>
-                          {c.hint && (
-                            <span className={styles.hint}>{c.hint}</span>
-                          )}
+                {EVENT_CATEGORIES.map((c) => {
+                  // Assign button colors and icon backgrounds based on category
+                  const getCategoryStyles = (key: string) => {
+                    const styleMap: Record<
+                      string,
+                      {
+                        buttonColor: string;
+                        iconBg: string;
+                        borderColor: string;
+                      }
+                    > = {
+                      birthdays: {
+                        buttonColor: "#5fb1ff",
+                        iconBg: "#e6f3ee",
+                        borderColor: "rgba(105, 166, 159, 0.65)",
+                      },
+                      weddings: {
+                        buttonColor: "#a855f7",
+                        iconBg: "#ede8fb",
+                        borderColor: "rgba(123, 104, 196, 0.55)",
+                      },
+                      baby_showers: {
+                        buttonColor: "#ec4899",
+                        iconBg: "#fde8f1",
+                        borderColor: "rgba(210, 105, 140, 0.58)",
+                      },
+                      sex_reveal: {
+                        buttonColor: "#f59e0b",
+                        iconBg: "#fef3c7",
+                        borderColor: "rgba(245, 158, 11, 0.5)",
+                      },
+                      appointments: {
+                        buttonColor: "#3b82f6",
+                        iconBg: "#dbeafe",
+                        borderColor: "rgba(59, 130, 246, 0.5)",
+                      },
+                      sport_events: {
+                        buttonColor: "#10b981",
+                        iconBg: "#d1fae5",
+                        borderColor: "rgba(16, 185, 129, 0.5)",
+                      },
+                      general: {
+                        buttonColor: "#6366f1",
+                        iconBg: "#e0e7ff",
+                        borderColor: "rgba(99, 102, 241, 0.5)",
+                      },
+                      special_events: {
+                        buttonColor: "#f97316",
+                        iconBg: "#fed7aa",
+                        borderColor: "rgba(249, 115, 22, 0.5)",
+                      },
+                    };
+                    return (
+                      styleMap[key] || {
+                        buttonColor: "#6366f1",
+                        iconBg: "#e0e7ff",
+                        borderColor: "rgba(99, 102, 241, 0.5)",
+                      }
+                    );
+                  };
+
+                  const categoryStyles = getCategoryStyles(c.key);
+                  const buttonLabel = c.hint ? "Select" : "Create";
+
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      data-label={c.label}
+                      onClick={() => handleSelectTemplate(c.key)}
+                      className={styles.templateCard}
+                    >
+                      <div className={styles.cardBody}>
+                        <div className={styles.cardHeader}>
+                          <span
+                            className={styles.cardIcon}
+                            style={{
+                              backgroundColor: categoryStyles.iconBg,
+                              borderColor: categoryStyles.borderColor,
+                            }}
+                            aria-hidden="true"
+                          >
+                            {c.icon}
+                          </span>
+                          <div className={styles.cardText}>
+                            <h3 className={styles.cardTitle}>{c.label}</h3>
+                            {c.hint && (
+                              <span className={styles.hint}>{c.hint}</span>
+                            )}
+                          </div>
                         </div>
+                        <button
+                          type="button"
+                          className={styles.cardButton}
+                          style={{
+                            backgroundColor: categoryStyles.buttonColor,
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectTemplate(c.key);
+                          }}
+                        >
+                          {buttonLabel}
+                        </button>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}
@@ -940,250 +1029,253 @@ export default function EventCreateWysiwyg({
               className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8 min-h-[220px] sm:min-h-[280px]"
               style={headerBackground as React.CSSProperties}
             >
-            {attachmentPreviewUrl && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "rgba(0,0,0,0.3)",
-                  borderRadius: "inherit",
-                }}
-              />
-            )}
-            {profilePreviewUrl && (
-              <div
-                className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6"
-                style={{ zIndex: 2 }}
-              >
-                <div className="relative group">
-                  <img
-                    src={profilePreviewUrl}
-                    alt="profile"
-                    className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl border border-border object-cover shadow-md"
-                  />
-                  <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => profileInputRef.current?.click()}
-                      className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100"
-                      aria-label="Replace profile image"
-                    >
-                      <EditSquareIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={clearProfile}
-                      className="p-1.5 bg-white rounded-full shadow hover:bg-red-100"
-                      aria-label="Remove profile image"
-                    >
-                      ✖️
-                    </button>
+              {attachmentPreviewUrl && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(0,0,0,0.3)",
+                    borderRadius: "inherit",
+                  }}
+                />
+              )}
+              {profilePreviewUrl && (
+                <div
+                  className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6"
+                  style={{ zIndex: 2 }}
+                >
+                  <div className="relative group">
+                    <img
+                      src={profilePreviewUrl}
+                      alt="profile"
+                      className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl border border-border object-cover shadow-md"
+                    />
+                    <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => profileInputRef.current?.click()}
+                        className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100"
+                        aria-label="Replace profile image"
+                      >
+                        <EditSquareIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearProfile}
+                        className="p-1.5 bg-white rounded-full shadow hover:bg-red-100"
+                        aria-label="Remove profile image"
+                      >
+                        ✖️
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <div style={{ position: "relative", zIndex: 1 }}>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Event title"
-                className={`w-full bg-transparent focus:outline-none text-2xl sm:text-3xl font-semibold ${
-                  attachmentPreviewUrl
-                    ? "text-white placeholder-white/70"
-                    : "text-foreground"
-                }`}
-              />
-              {/* Header image controls (signup preview style) */}
-              <div className="mt-2 flex items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => flyerInputRef.current?.click()}
-                  className={`rounded-md border px-2 py-0.5 font-medium ${
+              )}
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Event title"
+                  className={`w-full bg-transparent focus:outline-none text-2xl sm:text-3xl font-semibold ${
                     attachmentPreviewUrl
-                      ? "bg-white/80 text-foreground hover:bg-white"
-                      : "bg-background text-foreground hover:bg-surface"
+                      ? "text-white placeholder-white/70"
+                      : "text-foreground"
                   }`}
-                >
-                  {attachmentPreviewUrl
-                    ? "Replace header image"
-                    : "Upload header image"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => profileInputRef.current?.click()}
-                  className={`rounded-md border px-2 py-0.5 font-medium ${
-                    profilePreviewUrl
-                      ? "bg-white/80 text-foreground hover:bg-white"
-                      : "bg-background text-foreground hover:bg-surface"
-                  }`}
-                >
-                  {profilePreviewUrl
-                    ? "Replace profile image"
-                    : "Add profile image"}
-                </button>
-                {attachmentPreviewUrl && (
+                />
+                {/* Header image controls (signup preview style) */}
+                <div className="mt-2 flex items-center gap-2 text-xs">
                   <button
                     type="button"
-                    onClick={clearFlyer}
-                    className="text-foreground/80 underline decoration-dotted underline-offset-4 hover:no-underline"
+                    onClick={() => flyerInputRef.current?.click()}
+                    className={`rounded-md border px-2 py-0.5 font-medium ${
+                      attachmentPreviewUrl
+                        ? "bg-white/80 text-foreground hover:bg-white"
+                        : "bg-background text-foreground hover:bg-surface"
+                    }`}
                   >
-                    Remove
+                    {attachmentPreviewUrl
+                      ? "Replace header image"
+                      : "Upload header image"}
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => profileInputRef.current?.click()}
+                    className={`rounded-md border px-2 py-0.5 font-medium ${
+                      profilePreviewUrl
+                        ? "bg-white/80 text-foreground hover:bg-white"
+                        : "bg-background text-foreground hover:bg-surface"
+                    }`}
+                  >
+                    {profilePreviewUrl
+                      ? "Replace profile image"
+                      : "Add profile image"}
+                  </button>
+                  {attachmentPreviewUrl && (
+                    <button
+                      type="button"
+                      onClick={clearFlyer}
+                      className="text-foreground/80 underline decoration-dotted underline-offset-4 hover:no-underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-            {/* Hidden inputs for header/profile images */}
-            <input
-              ref={profileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProfileChange}
-              className="hidden"
-            />
-          </section>
+              {/* Hidden inputs for header/profile images */}
+              <input
+                ref={profileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfileChange}
+                className="hidden"
+              />
+            </section>
           )}
 
           {/* Background presets (choose gradient) */}
           {categoryKey && (
             <section className="rounded-xl border px-4 sm:px-5 py-4">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-2">
-              Header background
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {BG_PRESETS.map((p) => (
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-2">
+                Header background
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {BG_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setHeaderThemeId(p.id);
+                      setHeaderBgColor(p.bgColor || null);
+                      setHeaderBgCss(p.bgCss || null);
+                    }}
+                    className={`relative w-full rounded-lg border ${
+                      headerThemeId === p.id
+                        ? "border-foreground"
+                        : "border-border"
+                    }`}
+                    title={p.name}
+                  >
+                    <div
+                      className="h-12 rounded-t-lg"
+                      style={{
+                        backgroundColor: p.bgColor,
+                        backgroundImage: p.bgCss,
+                      }}
+                    />
+                    <div className="px-2 py-1 text-left">
+                      <div className="text-[11px] font-semibold truncate">
+                        {p.name}
+                      </div>
+                    </div>
+                  </button>
+                ))}
                 <button
-                  key={p.id}
                   type="button"
                   onClick={() => {
-                    setHeaderThemeId(p.id);
-                    setHeaderBgColor(p.bgColor || null);
-                    setHeaderBgCss(p.bgCss || null);
+                    setHeaderThemeId(null);
+                    setHeaderBgColor(null);
+                    setHeaderBgCss(null);
                   }}
                   className={`relative w-full rounded-lg border ${
-                    headerThemeId === p.id
-                      ? "border-foreground"
-                      : "border-border"
+                    !headerThemeId ? "border-foreground" : "border-border"
                   }`}
-                  title={p.name}
+                  title="Default"
                 >
-                  <div
-                    className="h-12 rounded-t-lg"
-                    style={{
-                      backgroundColor: p.bgColor,
-                      backgroundImage: p.bgCss,
-                    }}
-                  />
+                  <div className="h-12 rounded-t-lg bg-surface" />
                   <div className="px-2 py-1 text-left">
                     <div className="text-[11px] font-semibold truncate">
-                      {p.name}
+                      Default
                     </div>
                   </div>
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  setHeaderThemeId(null);
-                  setHeaderBgColor(null);
-                  setHeaderBgCss(null);
-                }}
-                className={`relative w-full rounded-lg border ${
-                  !headerThemeId ? "border-foreground" : "border-border"
-                }`}
-                title="Default"
-              >
-                <div className="h-12 rounded-t-lg bg-surface" />
-                <div className="px-2 py-1 text-left">
-                  <div className="text-[11px] font-semibold truncate">
-                    Default
-                  </div>
-                </div>
-              </button>
-            </div>
-          </section>
+              </div>
+            </section>
           )}
 
           {categoryKey &&
-          (() => {
-            const editor: EditorBindings = {
-              summary,
-              whenDate,
-              setWhenDate,
-              fullDay,
-              setFullDay,
-              startTime,
-              setStartTime,
-              endDate,
-              setEndDate,
-              endTime,
-              setEndTime,
-              venue,
-              setVenue,
-              location,
-              setLocation,
-              numberOfGuests,
-              setNumberOfGuests,
-              description,
-              setDescription,
-              descriptionRef,
-              showRsvpField,
-              rsvp,
-              setRsvp,
-              allowsRegistrySection,
-              registryLinks,
-              addRegistryLink,
-              removeRegistryLink,
-              handleRegistryFieldChange,
-              MAX_REGISTRY_LINKS,
-              attachment,
-              attachmentPreviewUrl,
-              attachmentError,
-              flyerInputRef,
-              handleFlyerChange,
-              clearFlyer,
-              repeat,
-              setRepeat,
-              repeatFrequency,
-              setRepeatFrequency,
-              repeatDays,
-              setRepeatDays,
-              connectedCalendars,
-              selectedCalendars,
-              setSelectedCalendars,
-              cardBackgroundImage: (imageColors?.cardLight ||
-                eventTheme.cardLight) as string | undefined,
-            };
-            const cat = (categoryLabel || "Birthdays").toLowerCase();
-            if (cat === "birthdays")
-              return <BirthdaysTemplate editor={editor} />;
-            if (cat === "weddings") return <WeddingsTemplate editor={editor} />;
-            if (cat === "baby showers")
-              return <BabyShowersTemplate editor={editor} />;
-            if (cat === "appointments" || cat === "doctor appointments")
-              return <AppointmentsTemplate editor={editor} />;
-            if (cat === "sport events")
-              return <SportEventsTemplate editor={editor} />;
-            return <GeneralEventsTemplate editor={editor} />;
-          })()}
+            (() => {
+              const editor: EditorBindings = {
+                summary,
+                whenDate,
+                setWhenDate,
+                fullDay,
+                setFullDay,
+                startTime,
+                setStartTime,
+                endDate,
+                setEndDate,
+                endTime,
+                setEndTime,
+                venue,
+                setVenue,
+                location,
+                setLocation,
+                numberOfGuests,
+                setNumberOfGuests,
+                description,
+                setDescription,
+                descriptionRef,
+                showRsvpField,
+                rsvp,
+                setRsvp,
+                allowsRegistrySection,
+                registryLinks,
+                addRegistryLink,
+                removeRegistryLink,
+                handleRegistryFieldChange,
+                MAX_REGISTRY_LINKS,
+                attachment,
+                attachmentPreviewUrl,
+                attachmentError,
+                flyerInputRef,
+                handleFlyerChange,
+                clearFlyer,
+                attachmentInputRef,
+                handleAttachmentOnlyChange,
+                repeat,
+                setRepeat,
+                repeatFrequency,
+                setRepeatFrequency,
+                repeatDays,
+                setRepeatDays,
+                connectedCalendars,
+                selectedCalendars,
+                setSelectedCalendars,
+                cardBackgroundImage: (imageColors?.cardLight ||
+                  eventTheme.cardLight) as string | undefined,
+              };
+              const cat = (categoryLabel || "Birthdays").toLowerCase();
+              if (cat === "birthdays")
+                return <BirthdaysTemplate editor={editor} />;
+              if (cat === "weddings")
+                return <WeddingsTemplate editor={editor} />;
+              if (cat === "baby showers")
+                return <BabyShowersTemplate editor={editor} />;
+              if (cat === "appointments" || cat === "doctor appointments")
+                return <AppointmentsTemplate editor={editor} />;
+              if (cat === "sport events")
+                return <SportEventsTemplate editor={editor} />;
+              return <GeneralEventsTemplate editor={editor} />;
+            })()}
 
           {categoryKey && (
             <div className="flex flex-wrap justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-4 py-2 text-sm text-foreground border border-border rounded-md bg-surface hover:bg-surface/80"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Saving…" : "Create event"}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-4 py-2 text-sm text-foreground border border-border rounded-md bg-surface hover:bg-surface/80"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Saving…" : "Create event"}
+              </button>
+            </div>
           )}
         </section>
       </form>

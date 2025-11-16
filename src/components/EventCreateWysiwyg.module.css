@@ -23,33 +23,39 @@
 }
 
 .templateCard {
-  border-radius: 1.75rem;
-  background: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 20px 45px rgba(18, 12, 20, 0.15);
+  border-radius: 32px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(240, 240, 250, 0.3));
+  border: 1px solid rgba(200, 200, 220, 0.4);
+  box-shadow: 
+    0 25px 80px rgba(15, 13, 9, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   width: 100%;
   padding: 0;
+  position: relative;
 }
 
 .templateCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 30px 65px rgba(12, 0, 6, 0.25);
-  border-color: rgba(199, 153, 100, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 30px 90px rgba(15, 13, 9, 0.4);
+  border-color: rgba(150, 150, 180, 0.5);
 }
 
 .cardBody {
-  padding: 1.25rem 1.5rem 1.5rem;
+  padding: 2rem 1.5rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
   flex: 1;
+  align-items: center;
 }
 
 .cardHeader {
@@ -59,49 +65,35 @@
 }
 
 .cardIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.92);
+  width: 112px;
+  height: 112px;
+  border-radius: 24px;
+  border: 1px dashed;
+  border-color: rgba(100, 100, 120, 0.3);
+  background: rgba(255, 255, 255, 0.9);
   display: grid;
   place-items: center;
   color: #2c1f19;
   flex-shrink: 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  transition: transform 200ms ease, scale 200ms ease;
+}
+
+.templateCard:hover .cardIcon {
+  transform: scale(1.02);
 }
 
 .cardIcon svg {
-  width: 24px;
-  height: 24px;
+  width: 48px;
+  height: 48px;
 }
 
-/* Desktop: Stack icon on top, category name below */
-@media (min-width: 641px) {
-  .cardHeader {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 0.75rem;
-  }
-
-  .cardBody {
-    align-items: center;
-    text-align: center;
-  }
-
-  .cardText {
-    align-items: center;
-  }
-
-  .cardIcon {
-    width: 56px;
-    height: 56px;
-  }
-
-  .cardIcon svg {
-    width: 28px;
-    height: 28px;
-  }
+.cardHeader {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  width: 100%;
 }
 
 .cardText {
@@ -113,14 +105,43 @@
 
 .cardTitle {
   font-family: var(--font-playfair);
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   margin: 0;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: #2C1F19;
   font-weight: 600;
+  text-align: center;
+}
+
+.cardButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+  transition: all 200ms ease;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  max-width: 200px;
+  margin-top: auto;
+}
+
+.cardButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.45);
+}
+
+.cardButton:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
 }
 
 .hint {
@@ -146,24 +167,42 @@
   .cardBody {
     align-items: center;
     text-align: center;
+    padding: 1.5rem 1rem 1.25rem;
   }
 
   .cardText {
     align-items: center;
+    width: 100%;
   }
 
   .cardIcon {
-    width: 44px;
-    height: 44px;
+    width: 80px;
+    height: 80px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .cardIcon svg,
+  .cardIcon img {
+    width: 64px;
+    height: 64px;
   }
 
   .cardTitle {
-    font-size: 1.15rem;
+    font-size: 0.95rem;
     font-family: var(--font-raleway), var(--font-sans), sans-serif;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    max-width: 100%;
   }
 
   .hint {
     margin-top: 0;
+    font-size: 0.6rem;
+    padding: 0.25rem 0.6rem;
   }
 }

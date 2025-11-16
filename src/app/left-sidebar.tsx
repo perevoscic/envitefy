@@ -2100,8 +2100,21 @@ export default function LeftSidebar() {
           <div className="p-3 space-y-2">
             {/* CREATE | SHARE | ENJOY */}
             <div className="px-2 pb-2">
-              <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
-                CREATE | SHARE | ENJOY
+              <div className="flex flex-col items-center gap-2">
+                <Image
+                  src="/E.png"
+                  alt="E"
+                  width={36}
+                  height={36}
+                  className="opacity-80"
+                  style={{
+                    filter:
+                      "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
+                  }}
+                />
+                <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
+                  CREATE | SHARE | ENJOY
+                </div>
               </div>
             </div>
             <div className="px-0">
