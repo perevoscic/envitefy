@@ -25,9 +25,9 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
 
   return (
     <div className="relative">
-      <div className="mt-8 flex flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
+      <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
         <button
-          className="btn btn-primary btn-lg"
+          className="btn btn-primary btn-lg w-full sm:w-auto"
           onClick={() => {
             setMode("signup");
             setOpen(true);
@@ -36,7 +36,7 @@ export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
           Get started free
         </button>
         <button
-          className="btn btn-outline btn-lg"
+          className="btn btn-outline btn-lg w-full sm:w-auto !bg-surface/60 hover:!bg-surface/80 shadow-lg hover:shadow-xl transition-all"
           onClick={() => {
             setMode("login");
             setOpen(true);

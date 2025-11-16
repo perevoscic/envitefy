@@ -15,7 +15,7 @@ export default function CreateShareCta() {
           setMode("signup");
           setOpen(true);
         }}
-        className="btn btn-primary btn-lg"
+        className="btn btn-primary btn-lg w-full sm:w-auto"
       >
         Create your first event
       </button>
