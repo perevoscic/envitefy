@@ -115,6 +115,18 @@ input[type="submit"][disabled] {
   cursor: not-allowed;
 }
 
+html {
+  /* Ensure fullscreen coverage including safe areas */
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Extend background to cover status bar area on iOS */
+  background-color: var(--background);
+  background-image: var(--theme-hero-gradient);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -126,6 +138,9 @@ body {
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  /* Ensure body extends to full viewport including safe areas */
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 body::before {
