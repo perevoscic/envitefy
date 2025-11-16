@@ -92,16 +92,15 @@ export default function AuthModal({
         <div className="relative bg-surface/95 text-foreground rounded-3xl p-6 sm:p-8 wedding-glow-card auth-card-gradient">
           <div className="flex flex-col items-center gap-3 pb-7 text-center">
             <p className="wedding-kicker">{heroKicker}</p>
-            <div className="wedding-brand-lockup">
+            <div>
               <Image
                 src="/E.png"
                 alt="Envitefy emblem"
-                width={48}
+                width={150}
                 height={48}
                 quality={100}
                 unoptimized
               />
-              <span className="wedding-brand-mark">nvitefy</span>
             </div>
             <p className="text-sm text-foreground/70 max-w-sm">{heroBlurb}</p>
           </div>

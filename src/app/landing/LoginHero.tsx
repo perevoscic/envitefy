@@ -280,28 +280,12 @@ export default function LoginHero() {
               <Image
                 src="/E.png"
                 alt="Envitefy emblem"
-                width={88}
-                height={88}
+                width={150}
+                height={150}
                 quality={100}
                 priority
                 unoptimized
               />
-              <span
-                className="text-4xl md:text-8xl"
-                style={{
-                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-                  backgroundImage:
-                    "linear-gradient(to bottom, #d4ae51 0%, #9a7b2f 100%)",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  lineHeight: "1.2",
-                  display: "inline-block",
-                  paddingBottom: "0.1em",
-                }}
-              >
-                nvitefy
-              </span>
             </span>
           </p>
           <div className="flex flex-row items-center justify-center gap-3">

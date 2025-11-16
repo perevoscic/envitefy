@@ -948,36 +948,16 @@ export default function Home() {
 
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-6 py-5 w-full max-w-2xl mb-6 md:mb-10">
-        <p
-          className="text-5xl md:text-7xl text-white overflow-visible"
-          role="heading"
-          aria-level={1}
-        >
-          <span className="inline-flex items-center gap-3">
-            <Image
-              src="/LogoEonly.png"
-              alt="Envitefy emblem"
-              width={88}
-              height={88}
-              quality={100}
-              priority
-              unoptimized
-            />
-            <span
-              className="text-5xl md:text-7xl"
-              style={{
-                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-                lineHeight: "1.1",
-                display: "inline-block",
-                paddingBottom: "0.05em",
-                color: "#f4d9a4",
-              }}
-            >
-              nvitefy
-            </span>
-          </span>
-        </p>
+      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-8 py-5 w-auto mb-6 md:mb-10">
+        <Image
+          src="/E.png"
+          alt="Envitefy emblem"
+          width={200}
+          height={200}
+          quality={100}
+          priority
+          unoptimized
+        />
       </div>
       <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-6 mt-6 md:pt-10 md:mt-20">
         <OptionCard
