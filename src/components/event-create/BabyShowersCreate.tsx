@@ -15,7 +15,11 @@ import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 
-type Props = { defaultDate?: Date; editEventId?: string };
+type Props = {
+  defaultDate?: Date;
+  editEventId?: string;
+  variant?: "baby_showers" | "sex_reveal";
+};
 
 const createRegistryEntry = () => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -104,7 +108,13 @@ function formatWhenSummary(
   }
 }
 
-export default function BabyShowersCreate({ defaultDate, editEventId }: Props) {
+export default function BabyShowersCreate({
+  defaultDate,
+  editEventId,
+  variant,
+}: Props) {
+  const variantLabel =
+    variant === "sex_reveal" ? "Sex Reveal" : "Baby Showers";
   const router = useRouter();
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
@@ -477,7 +487,7 @@ export default function BabyShowersCreate({ defaultDate, editEventId }: Props) {
     }
   };
 
-  const eventTheme = getEventTheme("Baby Showers");
+  const eventTheme = getEventTheme(variantLabel);
   const [headerThemeId, setHeaderThemeId] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string | null>(null);
   const [headerBgCss, setHeaderBgCss] = useState<string | null>(null);
@@ -590,7 +600,7 @@ export default function BabyShowersCreate({ defaultDate, editEventId }: Props) {
       const payload: any = {
         title: title || "Event",
         data: {
-          category: "Baby Showers",
+          category: variantLabel,
           createdVia: "manual",
           createdManually: true,
           startISO,

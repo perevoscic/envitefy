@@ -41,6 +41,7 @@ const REGISTRY_CATEGORY_KEYS = new Set([
   "birthdays",
   "weddings",
   "baby showers",
+  "sex reveal",
 ]);
 
 const createRegistryEntry = (): RegistryFormEntry => ({
@@ -168,6 +169,7 @@ export default function EventCreateWysiwyg({
     birthdays: "Birthdays",
     weddings: "Weddings",
     baby_showers: "Baby Showers",
+    sex_reveal: "Sex Reveal",
     appointments: "Appointments",
     sport_events: "Sport Events",
     general: "General Events",
@@ -203,6 +205,14 @@ export default function EventCreateWysiwyg({
       hint: "Registry supported",
       color: "bg-pink-50 border-pink-200",
       desc: "Sweet & joyful events",
+    },
+    {
+      key: "sex_reveal",
+      label: "Sex Reveal",
+      emoji: "🍼",
+      hint: "Registry supported",
+      color: "bg-rose-50 border-rose-200",
+      desc: "Celebrate the big surprise moment",
     },
     {
       key: "appointments",
@@ -920,6 +930,7 @@ export default function EventCreateWysiwyg({
         birthdays: "birthdays",
         weddings: "weddings",
         baby_showers: "baby-showers",
+        sex_reveal: "sex-reveal",
         appointments: "appointments",
         sport_events: "sport-events",
         general: "general",
@@ -969,7 +980,7 @@ export default function EventCreateWysiwyg({
                     <div className={styles.cardBody}>
                       <div className={styles.cardHeader}>
                         <div>
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className={styles.cardTitleRow}>
                             <span className={styles.emoji} aria-hidden>
                               {c.emoji}
                             </span>

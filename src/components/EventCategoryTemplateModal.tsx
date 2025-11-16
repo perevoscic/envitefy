@@ -32,6 +32,12 @@ const CATEGORIES: Array<{
     emoji: "👶",
     hint: "Registry supported",
   },
+  {
+    key: "sex_reveal",
+    label: "Sex Reveal",
+    emoji: "🍼",
+    hint: "Registry supported",
+  },
   { key: "appointments", label: "Appointments", emoji: "🩺" },
   { key: "sport_events", label: "Sport Events", emoji: "🏟️" },
   { key: "general", label: "General Events", emoji: "📅" },
