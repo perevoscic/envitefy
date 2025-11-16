@@ -294,7 +294,6 @@ const niconne = Niconne({
   display: "swap",
 });
 
-
 const pinyonScript = Pinyon_Script({
   variable: "--font-pinyon-script",
   weight: "400",
