@@ -948,18 +948,23 @@ export default function Home() {
 
   return (
     <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <div className="main-brand-panel flex flex-col items-center gap-4 text-center px-8 py-5 w-auto mb-6 md:mb-10">
+      <div className="flex flex-col items-center gap-4 md:gap-6 text-center px-8 py-5 md:px-12 md:py-8 w-auto mb-6 md:mb-10 -mt-8 md:-mt-12">
         <Image
           src="/E.png"
-          alt="Envitefy emblem"
-          width={200}
-          height={200}
-          quality={100}
-          priority
-          unoptimized
+          alt="E"
+          width={108}
+          height={108}
+          className="opacity-80 w-[108px] h-[108px] md:w-[180px] md:h-[180px]"
+          style={{
+            filter:
+              "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
+          }}
         />
+        <div className="text-xs md:text-sm font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
+          CREATE | SHARE | ENJOY
+        </div>
       </div>
-      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-6 mt-6 md:pt-10 md:mt-20">
+      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-2 mt-2 md:pt-4 md:mt-4">
         <OptionCard
           title="Snap Event"
           ctaLabel="Open Camera"
