@@ -86,8 +86,12 @@ const babyIcon = createIcon(
   </g>
 );
 
-// Sex reveal icon - using PNG image (larger size)
-const sexRevealIcon = createImageIcon("/sex-reveal.png", "Sex Reveal", 48);
+// Gender reveal icon - using PNG image (larger size)
+const genderRevealIcon = createImageIcon(
+  "/gender-reveal.png",
+  "Gender Reveal",
+  48
+);
 
 // Appointments icon - calendar with clock
 const appointmentIcon = createIcon(
@@ -157,10 +161,10 @@ export const EVENT_CATEGORIES: EventCategoryConfig[] = [
     icon: babyIcon,
   },
   {
-    key: "sex_reveal",
-    label: "Sex Reveal",
+    key: "gender_reveal",
+    label: "Gender Reveal",
     hint: "Registry supported",
-    icon: sexRevealIcon,
+    icon: genderRevealIcon,
   },
   {
     key: "appointments",

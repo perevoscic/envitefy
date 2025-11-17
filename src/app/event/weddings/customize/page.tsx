@@ -152,7 +152,11 @@ export default function WeddingTemplateCustomizePage() {
   );
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [sectionNotes, setSectionNotes] = useState<Record<string, string>>({});
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<
+    Array<{ file: File; previewUrl: string }>
+  >([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [customTitles, setCustomTitles] = useState<Record<string, string>>({});
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
@@ -172,15 +176,29 @@ export default function WeddingTemplateCustomizePage() {
   const [partyMembers, setPartyMembers] = useState<PartyMember[]>([]);
   const [storyEntries, setStoryEntries] = useState<StoryEntry[]>([]);
   const storyEntriesRef = useRef<StoryEntry[]>([]);
+  const photoFilesRef = useRef<Array<{ file: File; previewUrl: string }>>([]);
   useEffect(() => {
     storyEntriesRef.current = storyEntries;
   }, [storyEntries]);
+  useEffect(() => {
+    photoFilesRef.current = photoFiles;
+    // Reset carousel index if current index is out of bounds
+    if (currentPhotoIndex >= photoFiles.length && photoFiles.length > 0) {
+      setCurrentPhotoIndex(photoFiles.length - 1);
+    } else if (photoFiles.length === 0) {
+      setCurrentPhotoIndex(0);
+    }
+  }, [photoFiles, currentPhotoIndex]);
   useEffect(() => {
     return () => {
       storyEntriesRef.current.forEach((entry) => {
         if (entry.photoUrl) {
           URL.revokeObjectURL(entry.photoUrl);
         }
+      });
+      // Clean up photo preview URLs
+      photoFilesRef.current.forEach((photo) => {
+        URL.revokeObjectURL(photo.previewUrl);
       });
     };
   }, []);
@@ -230,7 +248,46 @@ export default function WeddingTemplateCustomizePage() {
   };
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
-    setPhotoFiles(files.slice(0, 5));
+    const remainingSlots = 5 - photoFiles.length;
+    if (remainingSlots <= 0) return;
+
+    const filesToAdd = files.slice(0, remainingSlots);
+    const newPhotos = filesToAdd.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPhotoFiles((prev) => [...prev, ...newPhotos]);
+
+    // Reset input to allow selecting the same file again if needed
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoFiles((prev) => {
+      const photo = prev[index];
+      if (photo) {
+        URL.revokeObjectURL(photo.previewUrl);
+      }
+      const newPhotos = prev.filter((_, i) => i !== index);
+      // Adjust carousel index if needed
+      if (currentPhotoIndex >= newPhotos.length && newPhotos.length > 0) {
+        setCurrentPhotoIndex(newPhotos.length - 1);
+      } else if (newPhotos.length === 0) {
+        setCurrentPhotoIndex(0);
+      }
+      return newPhotos;
+    });
+  };
+
+  const nextPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev + 1) % photoFiles.length);
+  };
+  const prevPhoto = () => {
+    setCurrentPhotoIndex(
+      (prev) => (prev - 1 + photoFiles.length) % photoFiles.length
+    );
   };
 
   useEffect(() => {
@@ -730,6 +787,10 @@ export default function WeddingTemplateCustomizePage() {
                         handleStoryPhotoChange(entry.id, event)
                       }
                     />
+                    <p className="mt-1.5 text-xs text-stone-500">
+                      Recommended: Landscape orientation (16:9 or 4:3),
+                      1920×1080px or larger. JPG or PNG format, under 10MB.
+                    </p>
                   </label>
                   {entry.photoUrl && (
                     <div className="mt-3 space-y-2">
@@ -763,22 +824,91 @@ export default function WeddingTemplateCustomizePage() {
     }
     if (sectionKey === "photos") {
       return (
-        <>
-          <label className="block text-sm font-medium text-stone-700">
-            Upload gallery photos
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2">
             <input
+              ref={photoInputRef}
               type="file"
               accept="image/*"
               multiple
               onChange={handlePhotoChange}
-              className="mt-2"
+              className="hidden"
+              id="photo-upload-input"
+              disabled={photoFiles.length >= 5}
             />
-          </label>
-          <p className={styles.photoUploadInfo}>
-            Selected {photoFiles.length}{" "}
-            {photoFiles.length === 1 ? "photo" : "photos"} (max 5).
-          </p>
-        </>
+            <label
+              htmlFor="photo-upload-input"
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 ${
+                photoFiles.length >= 5 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <rect
+                  x="3"
+                  y="3"
+                  width="18"
+                  height="18"
+                  rx="2"
+                  strokeWidth="1.6"
+                />
+                <circle cx="8.5" cy="8.5" r="1.5" strokeWidth="1.6" />
+                <path
+                  d="M21 15l-5-5L5 21"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Choose Files</span>
+            </label>
+            <p className="text-xs text-stone-500">
+              Selected {photoFiles.length}{" "}
+              {photoFiles.length === 1 ? "photo" : "photos"} (max 5).
+            </p>
+            <p className="text-xs text-stone-500">
+              💡 Best results: Landscape photos (16:9 or 4:3), 1920×1080px or
+              larger. JPG or PNG, under 10MB per image.
+            </p>
+          </div>
+          {photoFiles.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+              {photoFiles.map((photo, index) => (
+                <div
+                  key={index}
+                  className="relative group rounded-lg overflow-hidden border border-stone-200 bg-white"
+                >
+                  <img
+                    src={photo.previewUrl}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-32 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(index)}
+                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove photo"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      className="h-4 w-4"
+                      strokeWidth="2"
+                    >
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
     if (sectionKey === "wedding-party") {
@@ -937,6 +1067,7 @@ export default function WeddingTemplateCustomizePage() {
     travelDirections.length > 0;
   const hasActivityHighlights = activities.length > 0;
   const hasWeddingParty = partyMembers.length > 0;
+  const hasPhotos = photoFiles.length > 0;
 
   const previewNames =
     template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
@@ -1174,31 +1305,32 @@ export default function WeddingTemplateCustomizePage() {
               {(hasStoryDetails ||
                 hasTravelDetails ||
                 hasActivityHighlights ||
-                hasWeddingParty) && (
+                hasWeddingParty ||
+                hasPhotos) && (
                 <div className="mt-4 space-y-4">
-                {hasStoryDetails && (
-                  <PreviewCard title={menuLabel("our-story", "Our Story")}>
-                    <div className="space-y-4">
-                      {storyPreviewEntries.map((entry) => (
-                        <div key={entry.id} className="space-y-2">
-                          {entry.photoUrl && (
-                            <img
-                              src={entry.photoUrl}
-                              alt="Our story preview"
-                              className="h-40 w-full rounded-2xl object-cover"
-                            />
-                          )}
-                          {entry.title && (
-                            <p className="text-base font-semibold text-stone-900">
-                              {entry.title}
-                            </p>
-                          )}
-                          {entry.text && <p>{entry.text}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </PreviewCard>
-                )}
+                  {hasStoryDetails && (
+                    <PreviewCard title={menuLabel("our-story", "Our Story")}>
+                      <div className="space-y-4">
+                        {storyPreviewEntries.map((entry) => (
+                          <div key={entry.id} className="space-y-2">
+                            {entry.photoUrl && (
+                              <img
+                                src={entry.photoUrl}
+                                alt="Our story preview"
+                                className="h-40 w-full rounded-2xl object-cover"
+                              />
+                            )}
+                            {entry.title && (
+                              <p className="text-base font-semibold text-stone-900">
+                                {entry.title}
+                              </p>
+                            )}
+                            {entry.text && <p>{entry.text}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </PreviewCard>
+                  )}
                   {hasTravelDetails && (
                     <PreviewCard title={menuLabel("travel", "Travel")}>
                       {travelHotels.length > 0 && (
@@ -1319,6 +1451,129 @@ export default function WeddingTemplateCustomizePage() {
                           </li>
                         ))}
                       </ul>
+                    </PreviewCard>
+                  )}
+                  {hasPhotos && (
+                    <PreviewCard title={menuLabel("photos", "Photos")}>
+                      <div className="relative w-full">
+                        {/* Main Carousel */}
+                        <div className="relative overflow-hidden rounded-2xl bg-stone-100 aspect-[4/3]">
+                          <div
+                            className="flex h-full transition-transform duration-500 ease-in-out"
+                            style={{
+                              transform: `translateX(-${
+                                currentPhotoIndex * 100
+                              }%)`,
+                            }}
+                          >
+                            {photoFiles.map((photo, index) => (
+                              <div
+                                key={index}
+                                className="min-w-full h-full relative"
+                              >
+                                <img
+                                  src={photo.previewUrl}
+                                  alt={`Gallery photo ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Navigation Arrows */}
+                          {photoFiles.length > 1 && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={prevPhoto}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-2 shadow-lg transition-all hover:scale-110"
+                                aria-label="Previous photo"
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="w-5 h-5 text-stone-700"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M15 18l-6-6 6-6" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={nextPhoto}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-2 shadow-lg transition-all hover:scale-110"
+                                aria-label="Next photo"
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="w-5 h-5 text-stone-700"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M9 18l6-6-6-6" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Dots Indicator */}
+                          {photoFiles.length > 1 && (
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                              {photoFiles.map((_, index) => (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={() => setCurrentPhotoIndex(index)}
+                                  className={`h-2 rounded-full transition-all ${
+                                    index === currentPhotoIndex
+                                      ? "w-8 bg-white"
+                                      : "w-2 bg-white/60 hover:bg-white/80"
+                                  }`}
+                                  aria-label={`Go to photo ${index + 1}`}
+                                />
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Photo Counter */}
+                          {photoFiles.length > 1 && (
+                            <div className="absolute top-4 right-4 z-10 bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                              {currentPhotoIndex + 1} / {photoFiles.length}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Thumbnail Strip */}
+                        {photoFiles.length > 1 && (
+                          <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {photoFiles.map((photo, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                onClick={() => setCurrentPhotoIndex(index)}
+                                className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                                  index === currentPhotoIndex
+                                    ? "border-stone-400 scale-105 shadow-md"
+                                    : "border-stone-200 hover:border-stone-300 opacity-70 hover:opacity-100"
+                                }`}
+                              >
+                                <img
+                                  src={photo.previewUrl}
+                                  alt={`Thumbnail ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </PreviewCard>
                   )}
                 </div>

@@ -735,8 +735,8 @@ export default async function RootLayout({
               if (!w.__snapInstallBridgeReady) {
                 w.__snapInstallBridgeReady = true;
                 window.addEventListener('beforeinstallprompt', function(event){
-                  // Don't preventDefault - let the native prompt show automatically
-                  // try { if (event && event.preventDefault) event.preventDefault(); } catch (e) {}
+                  // Prevent default to show custom toast instead of browser's native prompt
+                  try { if (event && event.preventDefault) event.preventDefault(); } catch (e) {}
                   try { w.__snapInstallDeferredPrompt = event; } catch (e) {}
                   try {
                     var ev = new CustomEvent('envitefy:beforeinstallprompt', { detail: event });

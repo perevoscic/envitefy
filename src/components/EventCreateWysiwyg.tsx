@@ -42,7 +42,7 @@ const REGISTRY_CATEGORY_KEYS = new Set([
   "birthdays",
   "weddings",
   "baby showers",
-  "sex reveal",
+  "gender reveal",
 ]);
 
 const TEMPLATE_LABELS = EVENT_CATEGORIES.reduce<Record<string, string>>(
@@ -872,7 +872,7 @@ export default function EventCreateWysiwyg({
         birthdays: "birthdays",
         weddings: "weddings",
         baby_showers: "baby-showers",
-        sex_reveal: "sex-reveal",
+        gender_reveal: "gender-reveal",
         appointments: "appointments",
         sport_events: "sport-events",
         special_events: "special-events",
@@ -938,7 +938,7 @@ export default function EventCreateWysiwyg({
                         iconBg: "#fde8f1",
                         borderColor: "rgba(210, 105, 140, 0.58)",
                       },
-                      sex_reveal: {
+                      gender_reveal: {
                         buttonColor: "#f59e0b",
                         iconBg: "#fef3c7",
                         borderColor: "rgba(245, 158, 11, 0.5)",

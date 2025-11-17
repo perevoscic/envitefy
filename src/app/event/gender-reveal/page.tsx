@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import BabyShowersCreate from "@/components/event-create/BabyShowersCreate";
 
-export default function NewSexRevealEventPage() {
+export default function NewGenderRevealEventPage() {
   const search = useSearchParams();
   const defaultDate = useMemo(() => {
     const d = search?.get("d");
@@ -25,7 +25,7 @@ export default function NewSexRevealEventPage() {
     <BabyShowersCreate
       defaultDate={defaultDate}
       editEventId={editEventId}
-      variant="sex_reveal"
+      variant="gender_reveal"
     />
   );
 }

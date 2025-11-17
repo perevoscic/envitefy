@@ -18,7 +18,7 @@ import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 type Props = {
   defaultDate?: Date;
   editEventId?: string;
-  variant?: "baby_showers" | "sex_reveal";
+  variant?: "baby_showers" | "gender_reveal";
 };
 
 const createRegistryEntry = () => ({
@@ -114,7 +114,7 @@ export default function BabyShowersCreate({
   variant,
 }: Props) {
   const variantLabel =
-    variant === "sex_reveal" ? "Sex Reveal" : "Baby Showers";
+    variant === "gender_reveal" ? "Gender Reveal" : "Baby Showers";
   const router = useRouter();
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
