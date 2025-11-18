@@ -242,6 +242,43 @@ export default function BabyShowersCreate({
     setTemplateVariationState(templateVariationId ?? null);
   }, [templateId, templateVariationId, editEventId]);
 
+  const selectedTemplate = useMemo<BabyShowerTemplateDefinition | null>(() => {
+    if (!templateIdState) return null;
+    return (
+      babyShowerTemplateCatalog.find((tpl) => tpl.id === templateIdState) ??
+      null
+    );
+  }, [templateIdState]);
+
+  const selectedVariation = useMemo(() => {
+    if (!selectedTemplate) return null;
+    const rawVariation =
+      selectedTemplate.variations.find(
+        (v) => v.id === templateVariationState
+      ) ?? selectedTemplate.variations[0];
+    return resolveTemplateVariation(rawVariation);
+  }, [selectedTemplate, templateVariationState]);
+
+  const templateBackgroundCss = selectedVariation?.background ?? null;
+  const templateTitleColor = selectedVariation?.titleColor ?? null;
+
+  useEffect(() => {
+    const key = `${templateIdState || "none"}@${
+      templateVariationState || "default"
+    }`;
+    if (templateSelectionKeyRef.current === key) return;
+    templateSelectionKeyRef.current = key;
+    if (!editEventId) {
+      setTitleColorTouched(false);
+    }
+  }, [templateIdState, templateVariationState, editEventId]);
+
+  useEffect(() => {
+    if (!templateTitleColor) return;
+    if (titleColorTouched) return;
+    setTitleColor(templateTitleColor);
+  }, [templateTitleColor, titleColorTouched]);
+
   // Edit mode: prefill fields from existing event
   useEffect(() => {
     if (!editEventId) return;
@@ -1191,39 +1228,3 @@ export default function BabyShowersCreate({
     </main>
   );
 }
-  const selectedTemplate = useMemo<BabyShowerTemplateDefinition | null>(() => {
-    if (!templateIdState) return null;
-    return (
-      babyShowerTemplateCatalog.find((tpl) => tpl.id === templateIdState) ??
-      null
-    );
-  }, [templateIdState]);
-
-  const selectedVariation = useMemo(() => {
-    if (!selectedTemplate) return null;
-    const rawVariation =
-      selectedTemplate.variations.find(
-        (v) => v.id === templateVariationState
-      ) ?? selectedTemplate.variations[0];
-    return resolveTemplateVariation(rawVariation);
-  }, [selectedTemplate, templateVariationState]);
-
-  const templateBackgroundCss = selectedVariation?.background ?? null;
-  const templateTitleColor = selectedVariation?.titleColor ?? null;
-
-  useEffect(() => {
-    const key = `${templateIdState || "none"}@${
-      templateVariationState || "default"
-    }`;
-    if (templateSelectionKeyRef.current === key) return;
-    templateSelectionKeyRef.current = key;
-    if (!editEventId) {
-      setTitleColorTouched(false);
-    }
-  }, [templateIdState, templateVariationState, editEventId]);
-
-  useEffect(() => {
-    if (!templateTitleColor) return;
-    if (titleColorTouched) return;
-    setTitleColor(templateTitleColor);
-  }, [templateTitleColor, titleColorTouched]);
