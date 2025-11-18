@@ -1415,85 +1415,6 @@ export default function WeddingTemplateCustomizePage() {
               </div>
             </div>
           </div>
-          <PartyModuleCard title="Wedding party grid" removable={false}>
-            <TileButton
-              icon={tileIcons.attendant}
-              label="Add attendant"
-              onClick={() =>
-                setPartyMembers((prev) => [
-                  ...prev,
-                  { id: generateId(), name: "", role: "", bio: "" },
-                ])
-              }
-            />
-            {partyMembers.length > 0 && (
-              <div className="space-y-3">
-                {partyMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={member.name}
-                      onChange={(event) =>
-                        setPartyMembers((prev) =>
-                          prev.map((entry) =>
-                            entry.id === member.id
-                              ? { ...entry, name: event.target.value }
-                              : entry
-                          )
-                        )
-                      }
-                      className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Role (Maid of Honor, Best Man)"
-                      value={member.role}
-                      onChange={(event) =>
-                        setPartyMembers((prev) =>
-                          prev.map((entry) =>
-                            entry.id === member.id
-                              ? { ...entry, role: event.target.value }
-                              : entry
-                          )
-                        )
-                      }
-                      className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                    />
-                    <textarea
-                      placeholder="Share a fun fact or connection story"
-                      value={member.bio}
-                      onChange={(event) =>
-                        setPartyMembers((prev) =>
-                          prev.map((entry) =>
-                            entry.id === member.id
-                              ? { ...entry, bio: event.target.value }
-                              : entry
-                          )
-                        )
-                      }
-                      rows={2}
-                      className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
-                      onClick={() =>
-                        setPartyMembers((prev) =>
-                          prev.filter((entry) => entry.id !== member.id)
-                        )
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </PartyModuleCard>
           {activePartyModules.length === 0 && (
             <p className="text-center text-sm text-stone-500">
               Tap a tile above to insert optional sections like hero, featured,
@@ -2968,7 +2889,7 @@ export default function WeddingTemplateCustomizePage() {
             </div>
           </article>
         </div>
-        <div className="w-full max-w-md space-y-5 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
+        <div className="w-full max-w-md flex flex-col gap-5 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-stone-500">
               Customize
@@ -2977,7 +2898,7 @@ export default function WeddingTemplateCustomizePage() {
               Add your details
             </h2>
           </div>
-          <div className={styles.accordionWrapper}>
+          <div className={`${styles.accordionWrapper} flex-1`}>
             <div
               className={`${styles.menuView} ${
                 activeSection ? styles.menuHidden : ""
@@ -2991,7 +2912,6 @@ export default function WeddingTemplateCustomizePage() {
                     onClick={() => setActiveSection(section.key)}
                   >
                     <span>{menuLabel(section.key, section.label)}</span>
-                    <span className={styles.menuButtonIcon}>➤</span>
                   </button>
                   <p>{section.description}</p>
                 </div>

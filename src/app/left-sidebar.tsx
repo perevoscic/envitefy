@@ -2120,7 +2120,11 @@ export default function LeftSidebar() {
           </button>
           {/* CREATE | SHARE | ENJOY */}
           <div className="px-2 pb-2">
-            <div className="flex flex-col items-center gap-2">
+            <Link
+              href="/"
+              onClick={collapseSidebarOnTouch}
+              className="flex flex-col items-center gap-2 hover:opacity-90 transition-opacity"
+            >
               <Image
                 src="/E.png"
                 alt="E"
@@ -2135,7 +2139,7 @@ export default function LeftSidebar() {
               <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
                 CREATE | SHARE | ENJOY
               </div>
-            </div>
+            </Link>
           </div>
         </div>
         {/* Middle: Event history */}
