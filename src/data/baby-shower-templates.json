@@ -1,0 +1,123 @@
+[
+  {
+    "templateId": "soft-neutrals-shower",
+    "description": "Soft Neutrals Shower – warm, minimal, gender-neutral baby shower background.",
+    "imagePrompt": "A styled baby shower table scene in warm beige and cream tones, with a linen tablecloth, simple white plates, soft beige napkins, and a few neutral ceramic vases with white flowers, photographed in soft window light from slightly above, composition leaving a large calm area of plain linen in the center for overlaying text, no printed words or lettering visible."
+  },
+  {
+    "templateId": "little-star-is-coming",
+    "description": "Little Star Is Coming – dreamy night-sky baby shower with tiny stars and a moon.",
+    "imagePrompt": "A cozy nursery corner at night with a crescent moon nightlight on the wall, tiny star fairy lights hanging softly, and a plush blanket draped over a chair, photographed so that the center of the image is a softly lit blank wall with gentle shadows, perfect as a text area, no text or lettering anywhere."
+  },
+  {
+    "templateId": "oh-baby-script",
+    "description": "Oh Baby Script – elegant blush and nude tones with an airy, feminine feel.",
+    "imagePrompt": "Flat-lay of a baby shower setup in blush and nude tones: silk ribbon, a few rose stems, a delicate teacup, and neutral stationery lying on a light blush background, arranged around a large empty area of the background kept clean and uncluttered for text placement, no visible writing on any objects."
+  },
+  {
+    "templateId": "sage-linen",
+    "description": "Sage & Linen – modern, neutral greenery with soft natural textures.",
+    "imagePrompt": "A linen-covered table with a few sprigs of eucalyptus and sage greenery laid along the edges, a neutral ceramic cup, and a folded muslin swaddle, shot from above, leaving a wide open area of plain linen in the center with only a soft shadow, no text or labels."
+  },
+  {
+    "templateId": "rainbow-baby-glow",
+    "description": "Rainbow Baby Glow – soft pastel rainbow for rainbow baby showers.",
+    "imagePrompt": "A soft pastel baby nursery shelf with small wooden toys in rainbow colors, a pastel rainbow wall hanging, and a few plush toys, photographed so that a large section of the wall above or beside the shelf is plain and softly lit to serve as a text area, absolutely no text or lettering in the scene."
+  },
+  {
+    "templateId": "wildflower-sprinkle",
+    "description": "Wildflower Sprinkle – delicate flowers and brunchy, sprinkle-style vibes.",
+    "imagePrompt": "A bright baby shower brunch table with simple white plates and glassware, small bud vases filled with wildflowers in soft pink, yellow, and white, photographed from above with flowers clustered near edges and a pale table surface left mostly empty in the center for text overlay, no menus, cards, or words present."
+  },
+  {
+    "templateId": "tiny-teddy",
+    "description": "Tiny Teddy – cozy, teddy-bear themed neutral invite background.",
+    "imagePrompt": "A cozy nursery chair with a soft knitted blanket and an adorable plush teddy bear sitting to one side, neutral wall and floor in beige tones, framed so that a large area of blank wall or blanket is visible for text placement, no printed phrases on pillows, toys, or artwork."
+  },
+  {
+    "templateId": "boho-arch-baby",
+    "description": "Boho Arch Baby – trendy boho decor with earthy tones and arches.",
+    "imagePrompt": "A boho-styled baby shower dessert table with dried pampas grass, terracotta vases, and neutral ceramics, plus a simple arched backdrop in earthy tones, shot so the central part of the backdrop is smooth and empty for text, no signage or words visible anywhere."
+  },
+  {
+    "templateId": "minimal-line-art-bump",
+    "description": "Minimal Line Art Bump – ultra-minimal, artsy, bump-focused aesthetic.",
+    "imagePrompt": "A softly lit studio scene with a simple off-white wall and a tasteful framed line-art drawing of a pregnant silhouette hanging off to one side, wooden stool with folded neutral blanket in the foreground, photo composed so most of the wall space is plain and open as a text area, the artwork itself contains no words."
+  },
+  {
+    "templateId": "little-clouds",
+    "description": "Little Clouds – airy, cloud-themed baby shower background.",
+    "imagePrompt": "A dreamy sky-themed baby room wall with fluffy cloud decals arranged near the top, pale blue paint fading to white near the center, photographed straight on so that the center of the wall is mostly empty and bright for text overlay, no framed quotes or lettering anywhere."
+  },
+  {
+    "templateId": "shes-on-her-way",
+    "description": "She’s On Her Way – soft feminine blush with a chic touch.",
+    "imagePrompt": "A stylish baby shower dessert table with blush pink macarons, a simple white cake with soft pink flowers, and rose gold cutlery on a blush table runner, photographed at an angle that leaves a large section of the pale wall behind the table empty and softly lit for text, with no banners or words visible."
+  },
+  {
+    "templateId": "hes-almost-here",
+    "description": "He’s Almost Here – soft blue-gray palette, modern and calm.",
+    "imagePrompt": "A minimal baby boy nursery dresser in pale blue-gray and white, with a few neatly folded baby clothes, tiny shoes, and a plush toy, photographed so that the upper wall is a smooth, mostly empty blue-gray surface ideal for text overlay, without any framed phrases or lettering."
+  },
+  {
+    "templateId": "gender-neutral-greenery",
+    "description": "Gender Neutral Greenery – eucalyptus and soft greens, works for any baby.",
+    "imagePrompt": "A white tabletop with eucalyptus branches and soft green leaves draped along the edges, a simple white ceramic mug and a folded neutral baby onesie placed off to one side, shot from above leaving a large clean white area in the middle for text, no tags, logos, or words visible on the fabric."
+  },
+  {
+    "templateId": "sip-see-soiree",
+    "description": "Sip & See Soirée – chic, slightly dressier celebration vibe.",
+    "imagePrompt": "A refined living room coffee table with sparkling water or light mocktails in elegant glasses, a small vase of pale roses, and a light throw over the arm of a sofa, shot in soft natural light with a large empty area of the tabletop or wall behind kept uncluttered for text placement, no books or items with visible titles."
+  },
+  {
+    "templateId": "virtual-baby-shower",
+    "description": "Virtual Baby Shower – cozy home workspace meets baby elements.",
+    "imagePrompt": "A laptop on a clean white desk showing a softly blurred video call screen, next to a small vase of flowers, a baby bottle, and a pair of tiny baby socks, photographed from above at an angle that leaves plenty of clean desk surface on one side for text overlay, no readable interface text or logos on the laptop."
+  },
+  {
+    "templateId": "twins-on-the-way",
+    "description": "Twins On The Way – pairs of baby items in a sweet, balanced scene.",
+    "imagePrompt": "A flat-lay of two matching baby onesies, two pairs of tiny socks, and two pacifiers in neutral pastels arranged symmetrically on a light fabric background, composition leaving a wide empty space in the center between the mirrored items for text, with no printed words on any of the clothing."
+  },
+  {
+    "templateId": "books-for-baby",
+    "description": "Books For Baby – reading-themed shower, warm and cozy.",
+    "imagePrompt": "A stack of pretty, unlabeled children’s books with pastel covers next to a plush toy on a soft rug, a mug of tea nearby, photographed from above so that a large area of the rug or floor around the books is open and uncluttered for text placement, no book titles or lettering visible on the covers."
+  },
+  {
+    "templateId": "baby-q-backyard",
+    "description": "Baby-Q Backyard – casual, slightly rustic cookout-style baby shower.",
+    "imagePrompt": "An outdoor picnic table with a simple checkered tablecloth in soft muted colors, a small bouquet of wildflowers in a jar, and a few baby items like a pacifier and bottle on the side, shot so that much of the table surface remains empty in the center for text, no printed signage or text on any dishes."
+  },
+  {
+    "templateId": "moon-back",
+    "description": "Moon & Back – emotional, moon and stars baby theme.",
+    "imagePrompt": "A nursery crib scene with a large crescent moon pillow, star-patterned bedding, and gentle fairy lights, photographed so that the wall above or beside the crib is mostly plain and softly glowing, providing ample negative space for text, with no framed quotes or writing on the wall."
+  },
+  {
+    "templateId": "little-wild-one",
+    "description": "Little Wild One – gentle safari baby animals, soft and playful.",
+    "imagePrompt": "A nursery shelf styled with small plush safari animals (lion, giraffe, elephant) in pastel colors, a potted plant, and neutral wooden toys, framed so that the upper wall or the area beside the shelf is a large clean surface ready for text overlay, with no posters or words displayed."
+  },
+  {
+    "templateId": "terracotta-bloom",
+    "description": "Terracotta Bloom – earthy florals and modern, warm tones.",
+    "imagePrompt": "A baby shower table decorated with terracotta vases holding dried flowers and greenery, neutral plates, and a soft cream tablecloth, photographed from an angle that leaves a broad expanse of plain tablecloth or wall free of clutter for text placement, no printed menus or cards in view."
+  },
+  {
+    "templateId": "scandinavian-baby",
+    "description": "Scandinavian Baby – simple, natural, Scandinavian nursery style.",
+    "imagePrompt": "A minimalist Scandinavian nursery corner with a light wooden crib, neutral bedding, a simple mobile made of natural materials, and a small plant, captured so that a large portion of the light-colored wall beside or above the crib remains empty and clean for text overlay, no wall art with words."
+  },
+  {
+    "templateId": "classic-baby-blue-blush-frame",
+    "description": "Classic Baby Frame – timeless pastel border feel, soft and traditional.",
+    "imagePrompt": "A classic baby shower table setting with white china, pastel napkins (blue or blush), a small bouquet of matching flowers, and a pale tablecloth, photographed from above so that the center of the tablecloth is mostly empty and softly lit as a text area, without printed invitations or wording in the scene."
+  },
+  {
+    "templateId": "botanical-bump-celebration",
+    "description": "Botanical Bump Celebration – nature-inspired, bump-centered mood.",
+    "imagePrompt": "An outdoor or sunlit indoor scene featuring a pregnant woman in a simple neutral dress gently holding her belly, surrounded by soft greenery and plants, photographed with her placed to one side so that a large blurred background area of greenery or wall on the other side is free for text, no text on clothing or decor."
+  }
+]
+

@@ -213,10 +213,21 @@ export default function BirthdayTemplateView({
     allDay: Boolean(eventData?.allDay),
   });
 
+  const heroImageBasePath = template.preview?.birthdayName
+    ? "/templates/birthdays/"
+    : "/templates/wedding-placeholders/";
   const heroImageSrc =
     (eventData?.customHeroImage as string) ||
-    `/templates/wedding-placeholders/${template.heroImageName}`;
+    `${heroImageBasePath}${template.heroImageName || `${template.id}.webp`}`;
   const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
+  const birthdayOverlay =
+    "linear-gradient(180deg, rgba(18, 12, 36, 0.78) 0%, rgba(18, 12, 36, 0.55) 45%, rgba(18, 12, 36, 0.2) 100%)";
+  const headerBackgroundStyle = {
+    backgroundImage: `${birthdayOverlay}, url(${backgroundImageSrc})`,
+    backgroundSize: "cover, cover",
+    backgroundPosition: "center, center",
+    backgroundRepeat: "no-repeat, no-repeat",
+  };
 
   const venue = eventData?.venue || "";
   const location = eventData?.location || "";
@@ -370,12 +381,7 @@ export default function BirthdayTemplateView({
               <div className={styles.previewFrame}>
                 <div
                   className={styles.previewHeader}
-                  style={{
-                    backgroundImage: `url(${backgroundImageSrc})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                  }}
+                  style={headerBackgroundStyle}
                   data-birthday="true"
                 >
                   <p
@@ -658,27 +664,30 @@ export default function BirthdayTemplateView({
             {/* RSVP section */}
             {(hasRsvpContact || rsvp || calendarLinks) && (
               <div id="rsvp" className="scroll-mt-20">
-                <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                    RSVP
-                  </h2>
-                  {hasRsvpContact && (
-                    <div className="mb-6">
-                      <EventRsvpPrompt
-                        eventId={eventId}
-                        rsvpName={rsvpName}
-                        rsvpPhone={rsvpPhone}
-                        rsvpEmail={rsvpEmail}
-                        eventTitle={eventTitle}
-                        shareUrl={shareUrl}
-                      />
+                <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                  {(hasRsvpContact || rsvp) && (
+                    <div className="flex-1 rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
+                        RSVP
+                      </p>
+                      {hasRsvpContact ? (
+                        <EventRsvpPrompt
+                          eventId={eventId}
+                          rsvpName={rsvpName}
+                          rsvpPhone={rsvpPhone}
+                          rsvpEmail={rsvpEmail}
+                          eventTitle={eventTitle}
+                          shareUrl={shareUrl}
+                        />
+                      ) : (
+                        rsvp && (
+                          <p className="text-base text-stone-900">{rsvp}</p>
+                        )
+                      )}
                     </div>
                   )}
-                  {rsvp && !hasRsvpContact && (
-                    <p className="text-base text-stone-900 mb-6">{rsvp}</p>
-                  )}
                   {calendarLinks && (
-                    <div>
+                    <div className="flex-1 rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm">
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
                         Add to calendar
                       </p>
@@ -712,10 +721,6 @@ export default function BirthdayTemplateView({
                           <CalendarIconOutlook className="h-5 w-5" />
                         </a>
                       </div>
-                      <p className="mt-2 text-xs text-stone-500">
-                        Guests can save the invite to Google, Outlook, or Apple
-                        in one tap.
-                      </p>
                     </div>
                   )}
                 </div>

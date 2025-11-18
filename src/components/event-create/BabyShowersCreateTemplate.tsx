@@ -125,7 +125,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "A warm, minimal design using beige, cream, and soft taupe. Simple shapes, generous white space, and a centered text area perfect for any baby shower.",
     bestFor: ["Baby Shower", "Baby Sprinkle", "Co-ed Shower"],
-    recommendedUse: ["Works great with a bump photo", "Designed for text-only invites"],
+    recommendedUse: [
+      "Works great with a bump photo",
+      "Designed for text-only invites",
+    ],
     imagePrompt:
       "Minimal baby shower background in warm beige and cream tones, soft rounded shapes around the borders, subtle speckles, large empty light center area for text, modern neutral aesthetic, no text.",
     previewImage: "/templates/baby-showers/soft-neutrals-shower.webp",
@@ -134,7 +137,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "little-star-is-coming",
     templateId: "little-star-is-coming",
     name: "Little Star Is Coming",
-    tagline: "Gentle night sky with tiny stars and a moon, designed so the middle feels calm and open for baby shower details.",
+    tagline:
+      "Gentle night sky with tiny stars and a moon, designed so the middle feels calm and open for baby shower details.",
     occasionTypes: ["Baby Shower", "Gender Reveal"],
     styles: ["Minimal", "Illustrated"],
     colorPalette: ["Blue tones"],
@@ -143,7 +147,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Gentle night sky with tiny stars and a moon, designed so the middle feels calm and open for baby shower details.",
     bestFor: ["Baby Shower", "Gender Reveal"],
-    recommendedUse: ["Ideal for evening showers", "Perfect for star-themed celebrations"],
+    recommendedUse: [
+      "Ideal for evening showers",
+      "Perfect for star-themed celebrations",
+    ],
     imagePrompt:
       "Soft navy to midnight-blue gradient sky with tiny golden or pale yellow stars near the edges and a small crescent moon in one corner, central area slightly lighter and mostly empty for text, dreamy and delicate, no text.",
     previewImage: "/templates/baby-showers/little-star-is-coming.webp",
@@ -152,7 +159,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "oh-baby-script",
     templateId: "oh-baby-script",
     name: "Oh Baby Script",
-    tagline: "Elegant script feel with a clean, airy layout. Background uses soft blush or nude tones with a light gradient.",
+    tagline:
+      "Elegant script feel with a clean, airy layout. Background uses soft blush or nude tones with a light gradient.",
     occasionTypes: ["Baby Shower", "Sip & See"],
     styles: ["Elegant"],
     colorPalette: ["Blush / Pink tones"],
@@ -161,7 +169,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Elegant script feel with a clean, airy layout. Background uses soft blush or nude tones with a light gradient.",
     bestFor: ["Baby Shower", "Sip & See"],
-    recommendedUse: ["Works great with elegant photos", "Perfect for sophisticated celebrations"],
+    recommendedUse: [
+      "Works great with elegant photos",
+      "Perfect for sophisticated celebrations",
+    ],
     imagePrompt:
       "Soft blush and nude gradient background with very subtle watercolor texture, gentle light vignette directing focus to the center, airy and elegant baby shower feel, no icons, no text.",
     previewImage: "/templates/baby-showers/oh-baby-script.webp",
@@ -170,7 +181,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "sage-linen",
     templateId: "sage-linen",
     name: "Sage & Linen",
-    tagline: "Sage green accents with a linen-style texture, ideal for a gender-neutral modern shower.",
+    tagline:
+      "Sage green accents with a linen-style texture, ideal for a gender-neutral modern shower.",
     occasionTypes: ["Baby Shower", "Co-ed Shower", "Baby Sprinkle"],
     styles: ["Minimal", "Modern"],
     colorPalette: ["Sage / Green"],
@@ -179,7 +191,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Sage green accents with a linen-style texture, ideal for a gender-neutral modern shower.",
     bestFor: ["Baby Shower", "Co-ed Shower", "Baby Sprinkle"],
-    recommendedUse: ["Ideal for gender-neutral celebrations", "Perfect for modern, minimal aesthetics"],
+    recommendedUse: [
+      "Ideal for gender-neutral celebrations",
+      "Perfect for modern, minimal aesthetics",
+    ],
     imagePrompt:
       "Neutral linen-style textured background with soft sage green abstract shapes and leaves touching the borders, large light center area left plain for text, minimal modern style, no text.",
     previewImage: "/templates/baby-showers/sage-linen.webp",
@@ -188,7 +203,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "rainbow-baby-glow",
     templateId: "rainbow-baby-glow",
     name: "Rainbow Baby Glow",
-    tagline: "Pastel rainbow arcs gently framing the invite, with a central glowing area where the event info will sit.",
+    tagline:
+      "Pastel rainbow arcs gently framing the invite, with a central glowing area where the event info will sit.",
     occasionTypes: ["Baby Shower", "Gender Reveal"],
     styles: ["Cute & Playful", "Illustrated"],
     colorPalette: ["Pastel Rainbow"],
@@ -197,7 +213,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Pastel rainbow arcs gently framing the invite, with a central glowing area where the event info will sit.",
     bestFor: ["Baby Shower", "Gender Reveal"],
-    recommendedUse: ["Perfect for colorful celebrations", "Great for gender reveal parties"],
+    recommendedUse: [
+      "Perfect for colorful celebrations",
+      "Great for gender reveal parties",
+    ],
     imagePrompt:
       "Soft pastel rainbow arcs (peach, lavender, mint, pale yellow) along the top and bottom edges, white or very pale center with a faint glowing effect, minimal details, baby theme, no text.",
     previewImage: "/templates/baby-showers/rainbow-baby-glow.webp",
@@ -206,7 +225,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "wildflower-sprinkle",
     templateId: "wildflower-sprinkle",
     name: "Wildflower Sprinkle",
-    tagline: "Delicate wildflowers around the border with a calm off-white interior for text—perfect for sprinkles and brunch-style showers.",
+    tagline:
+      "Delicate wildflowers around the border with a calm off-white interior for text—perfect for sprinkles and brunch-style showers.",
     occasionTypes: ["Baby Sprinkle", "Baby Shower"],
     styles: ["Elegant", "Illustrated"],
     colorPalette: ["Blush / Pink tones", "Sage / Green"],
@@ -215,7 +235,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Delicate wildflowers around the border with a calm off-white interior for text—perfect for sprinkles and brunch-style showers.",
     bestFor: ["Baby Sprinkle", "Baby Shower"],
-    recommendedUse: ["Perfect for brunch-style showers", "Ideal for garden-themed events"],
+    recommendedUse: [
+      "Perfect for brunch-style showers",
+      "Ideal for garden-themed events",
+    ],
     imagePrompt:
       "Light cream background with delicate thin wildflower illustrations (soft pink, yellow, lavender) forming a loose border, center area left mostly blank for text, airy and gentle, no text.",
     previewImage: "/templates/baby-showers/wildflower-sprinkle.webp",
@@ -224,7 +247,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "tiny-teddy",
     templateId: "tiny-teddy",
     name: "Tiny Teddy",
-    tagline: "Cute teddy bear illustration tucked into a corner with soft rounded shapes; the layout stays mostly minimal.",
+    tagline:
+      "Cute teddy bear illustration tucked into a corner with soft rounded shapes; the layout stays mostly minimal.",
     occasionTypes: ["Baby Shower"],
     styles: ["Cute & Playful", "Illustrated"],
     colorPalette: ["Neutral"],
@@ -233,7 +257,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Cute teddy bear illustration tucked into a corner with soft rounded shapes; the layout stays mostly minimal.",
     bestFor: ["Baby Shower"],
-    recommendedUse: ["Perfect for playful celebrations", "Great for first-time parents"],
+    recommendedUse: [
+      "Perfect for playful celebrations",
+      "Great for first-time parents",
+    ],
     imagePrompt:
       "Soft pastel background in beige and light brown tones, a small cute teddy bear illustration near one bottom corner, subtle rounded shapes near edges, large clear center area for text, cozy and simple, no text.",
     previewImage: "/templates/baby-showers/tiny-teddy.webp",
@@ -242,7 +269,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "boho-arch-baby",
     templateId: "boho-arch-baby",
     name: "Boho Arch Baby",
-    tagline: "Boho-style arches and terracotta tones with clean type space, trendy and Instagram-ish.",
+    tagline:
+      "Boho-style arches and terracotta tones with clean type space, trendy and Instagram-ish.",
     occasionTypes: ["Baby Shower", "Co-ed Shower"],
     styles: ["Boho", "Modern"],
     colorPalette: ["Terracotta / Earthy"],
@@ -251,7 +279,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Boho-style arches and terracotta tones with clean type space, trendy and Instagram-ish.",
     bestFor: ["Baby Shower", "Co-ed Shower"],
-    recommendedUse: ["Perfect for Instagram-worthy invites", "Ideal for boho-themed celebrations"],
+    recommendedUse: [
+      "Perfect for Instagram-worthy invites",
+      "Ideal for boho-themed celebrations",
+    ],
     imagePrompt:
       "Boho baby shower background with overlapping arches in terracotta, blush, and cream near the sides, subtle textured look, big blank light center space for text, stylish and modern, no text.",
     previewImage: "/templates/baby-showers/boho-arch-baby.webp",
@@ -260,7 +291,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "minimal-line-art-bump",
     templateId: "minimal-line-art-bump",
     name: "Minimal Line Art Bump",
-    tagline: "Ultra-minimal with a single line-art illustration of a pregnant silhouette near the edge and lots of whitespace.",
+    tagline:
+      "Ultra-minimal with a single line-art illustration of a pregnant silhouette near the edge and lots of whitespace.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Minimal", "Illustrated"],
     colorPalette: ["Neutral", "Blush / Pink tones"],
@@ -269,7 +301,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Ultra-minimal with a single line-art illustration of a pregnant silhouette near the edge and lots of whitespace.",
     bestFor: ["Baby Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for minimalist aesthetics", "Great for modern celebrations"],
+    recommendedUse: [
+      "Perfect for minimalist aesthetics",
+      "Great for modern celebrations",
+    ],
     imagePrompt:
       "Clean white or very pale blush background with a single simple line-art drawing of a pregnant silhouette near the left edge, very minimal accents, large empty space for text, elegant and quiet, no text.",
     previewImage: "/templates/baby-showers/minimal-line-art-bump.webp",
@@ -278,7 +313,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "little-clouds",
     templateId: "little-clouds",
     name: "Little Clouds",
-    tagline: "Fluffy clouds and soft blue or neutral sky, very calming, with a central clear area.",
+    tagline:
+      "Fluffy clouds and soft blue or neutral sky, very calming, with a central clear area.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Minimal", "Illustrated"],
     colorPalette: ["Blue tones", "Neutral"],
@@ -287,7 +323,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Fluffy clouds and soft blue or neutral sky, very calming, with a central clear area.",
     bestFor: ["Baby Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for calming, peaceful vibes", "Ideal for morning showers"],
+    recommendedUse: [
+      "Perfect for calming, peaceful vibes",
+      "Ideal for morning showers",
+    ],
     imagePrompt:
       "Baby shower sky background with soft fluffy clouds on a pale blue or light beige sky, clouds concentrated near upper edges, central area mostly empty for text, gentle and light, no text.",
     previewImage: "/templates/baby-showers/little-clouds.webp",
@@ -296,7 +335,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "shes-on-her-way",
     templateId: "shes-on-her-way",
     name: "She's On Her Way",
-    tagline: "Feminine-leaning but not overly pink—soft blush and gold speckles with a smooth central text panel.",
+    tagline:
+      "Feminine-leaning but not overly pink—soft blush and gold speckles with a smooth central text panel.",
     occasionTypes: ["Baby Shower", "Gender Reveal"],
     styles: ["Elegant"],
     colorPalette: ["Blush / Pink tones"],
@@ -314,7 +354,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "hes-almost-here",
     templateId: "hes-almost-here",
     name: "He's Almost Here",
-    tagline: "Soft blue-gray palette with simple abstract shapes framing the top and bottom.",
+    tagline:
+      "Soft blue-gray palette with simple abstract shapes framing the top and bottom.",
     occasionTypes: ["Baby Shower", "Gender Reveal"],
     styles: ["Minimal", "Modern"],
     colorPalette: ["Blue tones"],
@@ -332,7 +373,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "gender-neutral-greenery",
     templateId: "gender-neutral-greenery",
     name: "Gender Neutral Greenery",
-    tagline: "Eucalyptus leaves and soft greens, perfect for any baby, with a lightly framed center.",
+    tagline:
+      "Eucalyptus leaves and soft greens, perfect for any baby, with a lightly framed center.",
     occasionTypes: ["Baby Shower", "Co-ed Shower", "Baby Sprinkle"],
     styles: ["Minimal", "Modern"],
     colorPalette: ["Sage / Green"],
@@ -341,7 +383,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Eucalyptus leaves and soft greens, perfect for any baby, with a lightly framed center.",
     bestFor: ["Baby Shower", "Co-ed Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for gender-neutral celebrations", "Ideal for nature-themed events"],
+    recommendedUse: [
+      "Perfect for gender-neutral celebrations",
+      "Ideal for nature-themed events",
+    ],
     imagePrompt:
       "White background with simple eucalyptus leaves and green branches decorating the top and top corners, subtle greenery near sides, central area clean and empty for text, serene and gender-neutral, no text.",
     previewImage: "/templates/baby-showers/gender-neutral-greenery.webp",
@@ -350,7 +395,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "sip-see-soiree",
     templateId: "sip-see-soiree",
     name: "Sip & See Soirée",
-    tagline: "Chic, slightly more grown-up design with soft champagne and blush tones, ideal for post-birth meet-the-baby events.",
+    tagline:
+      "Chic, slightly more grown-up design with soft champagne and blush tones, ideal for post-birth meet-the-baby events.",
     occasionTypes: ["Sip & See"],
     styles: ["Elegant", "Modern"],
     colorPalette: ["Blush / Pink tones", "Neutral"],
@@ -359,7 +405,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Chic, slightly more grown-up design with soft champagne and blush tones, ideal for post-birth meet-the-baby events.",
     bestFor: ["Sip & See"],
-    recommendedUse: ["Perfect for post-birth celebrations", "Elegant and sophisticated"],
+    recommendedUse: [
+      "Perfect for post-birth celebrations",
+      "Elegant and sophisticated",
+    ],
     imagePrompt:
       "Elegant baby-themed background with soft champagne and blush gradient, subtle confetti dots near top border, faint light in center for text, modern and refined, no text.",
     previewImage: "/templates/baby-showers/sip-see-soiree.webp",
@@ -368,7 +417,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "virtual-baby-shower",
     templateId: "virtual-baby-shower",
     name: "Virtual Baby Shower",
-    tagline: "Screen-friendly layout with soft shapes hinting at video chat windows, but still simple and warm.",
+    tagline:
+      "Screen-friendly layout with soft shapes hinting at video chat windows, but still simple and warm.",
     occasionTypes: ["Virtual Shower"],
     styles: ["Modern", "Minimal"],
     colorPalette: ["Blue tones", "Sage / Green"],
@@ -377,7 +427,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Screen-friendly layout with soft shapes hinting at video chat windows, but still simple and warm.",
     bestFor: ["Virtual Shower"],
-    recommendedUse: ["Perfect for online celebrations", "Great for remote guests"],
+    recommendedUse: [
+      "Perfect for online celebrations",
+      "Great for remote guests",
+    ],
     imagePrompt:
       "Subtle abstract background with soft rounded rectangles suggesting screens or windows, in pastel blues and greens, white center space kept blank for text, gentle tech feel, no logos, no text.",
     previewImage: "/templates/baby-showers/virtual-baby-shower.webp",
@@ -386,7 +439,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "twins-on-the-way",
     templateId: "twins-on-the-way",
     name: "Twins On The Way",
-    tagline: "Symmetrical design with pairs of small icons—two stars, two clouds, two hearts—around a shared text block.",
+    tagline:
+      "Symmetrical design with pairs of small icons—two stars, two clouds, two hearts—around a shared text block.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Cute & Playful", "Illustrated"],
     colorPalette: ["Pastel Rainbow"],
@@ -404,7 +458,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "books-for-baby",
     templateId: "books-for-baby",
     name: "Books For Baby",
-    tagline: "Reading-themed invite with stack-of-books illustration and warm cozy tones, ideal for bring a book instead of a card.",
+    tagline:
+      "Reading-themed invite with stack-of-books illustration and warm cozy tones, ideal for bring a book instead of a card.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Cute & Playful", "Illustrated"],
     colorPalette: ["Neutral", "Terracotta / Earthy"],
@@ -413,7 +468,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Reading-themed invite with stack-of-books illustration and warm cozy tones, ideal for bring a book instead of a card.",
     bestFor: ["Baby Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for book-themed showers", "Ideal for registry-focused events"],
+    recommendedUse: [
+      "Perfect for book-themed showers",
+      "Ideal for registry-focused events",
+    ],
     imagePrompt:
       "Warm baby shower background in soft beige and muted colors with a small stack of cute illustrated books near one lower corner, light textured look, center and upper area mostly empty for text, cozy and inviting, no text.",
     previewImage: "/templates/baby-showers/books-for-baby.webp",
@@ -422,7 +480,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "baby-q-backyard",
     templateId: "baby-q-backyard",
     name: "Baby-Q Backyard",
-    tagline: "Casual, slightly rustic style that hints at a backyard BBQ vibe while still soft enough for baby.",
+    tagline:
+      "Casual, slightly rustic style that hints at a backyard BBQ vibe while still soft enough for baby.",
     occasionTypes: ["Baby Shower", "Co-ed Shower"],
     styles: ["Fun & Casual"],
     colorPalette: ["Terracotta / Earthy", "Sage / Green"],
@@ -431,7 +490,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Casual, slightly rustic style that hints at a backyard BBQ vibe while still soft enough for baby.",
     bestFor: ["Baby Shower", "Co-ed Shower"],
-    recommendedUse: ["Perfect for outdoor celebrations", "Great for casual gatherings"],
+    recommendedUse: [
+      "Perfect for outdoor celebrations",
+      "Great for casual gatherings",
+    ],
     imagePrompt:
       "Subtle outdoor backyard theme with light gingham or check pattern in very soft muted tones around edges, faint wooden or kraft-paper texture behind, central lighter panel for text, casual and friendly, no text.",
     previewImage: "/templates/baby-showers/baby-q-backyard.webp",
@@ -440,7 +502,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "moon-back",
     templateId: "moon-back",
     name: "Moon & Back",
-    tagline: "Soft moon and stars with gentle gradient, to the moon and back energy without actual wording.",
+    tagline:
+      "Soft moon and stars with gentle gradient, to the moon and back energy without actual wording.",
     occasionTypes: ["Baby Shower", "Gender Reveal"],
     styles: ["Elegant", "Illustrated"],
     colorPalette: ["Blue tones"],
@@ -449,7 +512,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Soft moon and stars with gentle gradient, to the moon and back energy without actual wording.",
     bestFor: ["Baby Shower", "Gender Reveal"],
-    recommendedUse: ["Perfect for emotional celebrations", "Dreamy and romantic"],
+    recommendedUse: [
+      "Perfect for emotional celebrations",
+      "Dreamy and romantic",
+    ],
     imagePrompt:
       "Baby shower night sky with large soft crescent moon near top corner, tiny scattered stars, deep but softened blue and purple gradient, glowing lighter circle in the center for text, dreamy and emotional, no text.",
     previewImage: "/templates/baby-showers/moon-back.webp",
@@ -458,7 +524,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "little-wild-one",
     templateId: "little-wild-one",
     name: "Little Wild One",
-    tagline: "Gentle safari baby animals with pastel tones, but plenty of central space left clean.",
+    tagline:
+      "Gentle safari baby animals with pastel tones, but plenty of central space left clean.",
     occasionTypes: ["Baby Shower", "Co-ed Shower"],
     styles: ["Cute & Playful", "Illustrated"],
     colorPalette: ["Sage / Green", "Terracotta / Earthy"],
@@ -467,7 +534,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Gentle safari baby animals with pastel tones, but plenty of central space left clean.",
     bestFor: ["Baby Shower", "Co-ed Shower"],
-    recommendedUse: ["Perfect for safari-themed celebrations", "Great for adventurous parents"],
+    recommendedUse: [
+      "Perfect for safari-themed celebrations",
+      "Great for adventurous parents",
+    ],
     imagePrompt:
       "Baby safari background with small pastel animal illustrations (baby lion, elephant, giraffe) near lower corners, soft beige and light green hues, upper and middle center area blank and bright for text, sweet and simple, no text.",
     previewImage: "/templates/baby-showers/little-wild-one.webp",
@@ -476,7 +546,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "terracotta-bloom",
     templateId: "terracotta-bloom",
     name: "Terracotta Bloom",
-    tagline: "Earthy terracotta and blush florals with a modern, editorial layout.",
+    tagline:
+      "Earthy terracotta and blush florals with a modern, editorial layout.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Boho", "Modern"],
     colorPalette: ["Terracotta / Earthy", "Blush / Pink tones"],
@@ -485,7 +556,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Earthy terracotta and blush florals with a modern, editorial layout.",
     bestFor: ["Baby Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for editorial-style invites", "Ideal for modern, stylish celebrations"],
+    recommendedUse: [
+      "Perfect for editorial-style invites",
+      "Ideal for modern, stylish celebrations",
+    ],
     imagePrompt:
       "Earthy baby shower background with terracotta and blush abstract shapes and minimal floral line-art near corners, textured off-white base, central area clean for text, stylish and contemporary, no text.",
     previewImage: "/templates/baby-showers/terracotta-bloom.webp",
@@ -494,7 +568,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "scandinavian-baby",
     templateId: "scandinavian-baby",
     name: "Scandinavian Baby",
-    tagline: "Scandi-inspired minimal geometric shapes, soft muted colors, very clean lines.",
+    tagline:
+      "Scandi-inspired minimal geometric shapes, soft muted colors, very clean lines.",
     occasionTypes: ["Baby Shower", "Co-ed Shower"],
     styles: ["Minimal", "Modern"],
     colorPalette: ["Neutral"],
@@ -503,7 +578,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Scandi-inspired minimal geometric shapes, soft muted colors, very clean lines.",
     bestFor: ["Baby Shower", "Co-ed Shower"],
-    recommendedUse: ["Perfect for minimalist aesthetics", "Ideal for Scandinavian-inspired celebrations"],
+    recommendedUse: [
+      "Perfect for minimalist aesthetics",
+      "Ideal for Scandinavian-inspired celebrations",
+    ],
     imagePrompt:
       "Scandinavian-inspired baby design with simple geometric shapes (circles, triangles, arches) in muted mustard, dusty blue, and soft gray near borders, white central area for text, ultra-minimal, no text.",
     previewImage: "/templates/baby-showers/scandinavian-baby.webp",
@@ -512,7 +590,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "classic-baby-blue-blush-frame",
     templateId: "classic-baby-blue-blush-frame",
     name: "Classic Baby Blue or Blush Frame",
-    tagline: "Timeless card with a thin colored border (blue or blush) around a crisp white interior.",
+    tagline:
+      "Timeless card with a thin colored border (blue or blush) around a crisp white interior.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Elegant", "Minimal"],
     colorPalette: ["Blue tones", "Blush / Pink tones"],
@@ -521,7 +600,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Timeless card with a thin colored border (blue or blush) around a crisp white interior.",
     bestFor: ["Baby Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for classic, timeless invites", "Great for traditional celebrations"],
+    recommendedUse: [
+      "Perfect for classic, timeless invites",
+      "Great for traditional celebrations",
+    ],
     imagePrompt:
       "Classic baby invite with a thin soft pastel border (blue or blush) around a clean white center, tiny baby-themed icons like a rattle or star in one corner, very simple and traditional, center empty for text, no text.",
     previewImage: "/templates/baby-showers/classic-baby-blue-blush-frame.webp",
@@ -530,7 +612,8 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     id: "botanical-bump-celebration",
     templateId: "botanical-bump-celebration",
     name: "Botanical Bump Celebration",
-    tagline: "Botanical illustrations and a soft oval area in the middle, perfect for showers focused on mom and self-care.",
+    tagline:
+      "Botanical illustrations and a soft oval area in the middle, perfect for showers focused on mom and self-care.",
     occasionTypes: ["Baby Shower", "Baby Sprinkle"],
     styles: ["Elegant", "Illustrated"],
     colorPalette: ["Sage / Green"],
@@ -539,7 +622,10 @@ const BABY_SHOWER_TEMPLATES: BabyShowerInviteTemplate[] = [
     description:
       "Botanical illustrations and a soft oval area in the middle, perfect for showers focused on mom and self-care.",
     bestFor: ["Baby Shower", "Baby Sprinkle"],
-    recommendedUse: ["Perfect for mom-focused celebrations", "Ideal for self-care themed events"],
+    recommendedUse: [
+      "Perfect for mom-focused celebrations",
+      "Ideal for self-care themed events",
+    ],
     imagePrompt:
       "Botanical baby shower background with delicate leafy line-art around edges in sage and dark green, soft off-white oval in the center for text, calm and nature-inspired, no text.",
     previewImage: "/templates/baby-showers/botanical-bump-celebration.webp",
@@ -611,10 +697,12 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
 
   const templateVariationMap = useMemo(() => {
     const map = new Map<string, string>();
-    babyShowerTemplateCatalog.forEach((template: BabyShowerTemplateDefinition) => {
-      const variation = template.variations?.[0];
-      if (variation) map.set(template.id, variation.id);
-    });
+    babyShowerTemplateCatalog.forEach(
+      (template: BabyShowerTemplateDefinition) => {
+        const variation = template.variations?.[0];
+        if (variation) map.set(template.id, variation.id);
+      }
+    );
     return map;
   }, []);
 
@@ -637,7 +725,8 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
       if (
         filters.colorPalette !== "all" &&
         !template.colorPalette.some(
-          (palette) => palette.toLowerCase() === filters.colorPalette.toLowerCase()
+          (palette) =>
+            palette.toLowerCase() === filters.colorPalette.toLowerCase()
         )
       ) {
         return false;
@@ -672,8 +761,9 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
   };
 
   const selectedTemplate = selectedTemplateId
-    ? BABY_SHOWER_TEMPLATES.find((template) => template.id === selectedTemplateId) ??
-      null
+    ? BABY_SHOWER_TEMPLATES.find(
+        (template) => template.id === selectedTemplateId
+      ) ?? null
     : null;
 
   return (
@@ -727,8 +817,8 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
                 Envitefy
               </p>
               <p className="mt-3 text-sm text-white/70">
-                Shareable baby shower invites with one smart link and add-to-calendar
-                buttons your guests will actually use.
+                Shareable baby shower invites with one smart link and
+                add-to-calendar buttons your guests will actually use.
               </p>
             </div>
             <FooterList
@@ -739,7 +829,10 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
               title="Company"
               items={["About", "Blog", "Privacy & Security"]}
             />
-            <FooterList title="Follow" items={["Instagram", "Facebook", "YouTube"]} />
+            <FooterList
+              title="Follow"
+              items={["Instagram", "Facebook", "YouTube"]}
+            />
           </div>
         </footer>
       </div>
@@ -773,10 +866,12 @@ function HeroSection({ onBrowse }: { onBrowse: () => void }) {
             Create a Beautiful Baby Shower Invite in Just a Few Clicks.
           </h1>
           <p className="text-lg text-[#4A403C]">
-            Celebrate your little one on the way with a shareable event page, simple RSVPs, and one smart link for all your guests.
+            Celebrate your little one on the way with a shareable event page,
+            simple RSVPs, and one smart link for all your guests.
           </p>
           <p className="text-sm font-semibold text-[#4A403C]">
-            No apps needed. Guests get one link with date, time, location, registry, and "Add to Calendar."
+            No apps needed. Guests get one link with date, time, location,
+            registry, and "Add to Calendar."
           </p>
           <div className="flex flex-wrap gap-4">
             <button
@@ -848,11 +943,26 @@ function HeroMockup() {
 
 function TrustBar() {
   const trustItems = [
-    { icon: <Share2 className="h-5 w-5" />, label: "Easy to share by text, email, or chat" },
-    { icon: <CalendarDays className="h-5 w-5" />, label: "1-click Add to Calendar" },
-    { icon: <Lock className="h-5 w-5" />, label: "Private, unlisted event links" },
-    { icon: <Gift className="h-5 w-5" />, label: "Registry links in one place" },
-    { icon: <Users className="h-5 w-5" />, label: "Works for in-person and virtual showers" },
+    {
+      icon: <Share2 className="h-5 w-5" />,
+      label: "Easy to share by text, email, or chat",
+    },
+    {
+      icon: <CalendarDays className="h-5 w-5" />,
+      label: "1-click Add to Calendar",
+    },
+    {
+      icon: <Lock className="h-5 w-5" />,
+      label: "Private, unlisted event links",
+    },
+    {
+      icon: <Gift className="h-5 w-5" />,
+      label: "Registry links in one place",
+    },
+    {
+      icon: <Users className="h-5 w-5" />,
+      label: "Works for in-person and virtual showers",
+    },
   ];
   return (
     <section className="rounded-[32px] border border-[#F4E7FF] bg-white/90 p-4 shadow-sm">
@@ -862,7 +972,9 @@ function TrustBar() {
             key={item.label}
             className="flex items-center gap-2 rounded-full bg-[#FAF5FF] px-4 py-2"
           >
-            <span aria-hidden className="text-[#9B7ED9]">{item.icon}</span>
+            <span aria-hidden className="text-[#9B7ED9]">
+              {item.icon}
+            </span>
             {item.label}
           </div>
         ))}
@@ -979,15 +1091,9 @@ function TemplateCard({
           <p className="text-sm text-[#6F6460]">{template.tagline}</p>
         </div>
         <div className="rounded-2xl border border-[#F2E6FF] bg-white/90 px-4 py-3 text-sm text-[#4A403C]">
-          <p>
-            Occasion: {template.occasionTypes.slice(0, 2).join(" / ")}
-          </p>
-          <p>
-            Style: {template.styles.join(" · ")}
-          </p>
-          <p>
-            Palette: {template.colorPalette.join(", ")}
-          </p>
+          <p>Occasion: {template.occasionTypes.slice(0, 2).join(" / ")}</p>
+          <p>Style: {template.styles.join(" · ")}</p>
+          <p>Palette: {template.colorPalette.join(", ")}</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold text-[#7B6D68]">
           {template.recommendedUse.slice(0, 2).map((text) => (
@@ -1155,7 +1261,8 @@ function HowItWorks() {
         ))}
       </div>
       <div className="rounded-2xl border border-[#E7F6FF] bg-[#F5FBFF] p-4 text-sm text-[#115575]">
-        Works just as well for baby sprinkles, gender reveals, and sip & see events.
+        Works just as well for baby sprinkles, gender reveals, and sip & see
+        events.
       </div>
     </section>
   );
@@ -1182,7 +1289,9 @@ function Testimonials() {
             className="min-w-[260px] flex-1 rounded-[28px] border border-[#F7E5FF] bg-white p-6 text-[#4A403C]"
           >
             <p className="text-base font-medium">"{testimonial.quote}"</p>
-            <p className="mt-2 text-sm text-[#85736D]">— {testimonial.author}</p>
+            <p className="mt-2 text-sm text-[#85736D]">
+              — {testimonial.author}
+            </p>
           </div>
         ))}
       </div>
@@ -1194,7 +1303,8 @@ function ParentsLove() {
   return (
     <section className="rounded-[36px] border border-[#F1E5FF] bg-white/95 p-6 shadow-sm">
       <div className="flex items-center gap-2 text-sm font-semibold text-[#7B6D68]">
-        <Wand2 className="h-4 w-4 text-[#9B7ED9]" /> Why hosts love Envitefy for baby showers
+        <Wand2 className="h-4 w-4 text-[#9B7ED9]" /> Why hosts love Envitefy for
+        baby showers
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {LOVE_REASONS.map((reason) => (
@@ -1207,7 +1317,7 @@ function ParentsLove() {
           </div>
         ))}
       </div>
-      </section>
+    </section>
   );
 }
 

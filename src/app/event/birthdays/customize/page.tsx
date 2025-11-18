@@ -192,7 +192,10 @@ export default function BirthdayTemplateCustomizePage() {
   );
   const [registries, setRegistries] = useState<RegistryEntry[]>([]);
   const scrollToForm = useCallback(() => {
-    formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    formSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, []);
 
   useEffect(() => {
@@ -707,8 +710,15 @@ export default function BirthdayTemplateCustomizePage() {
     return formatTimeForPreview(startTime);
   }, [fullDay, startTime]);
 
-  const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
-  const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
+  const heroImageBasePath = template.preview?.birthdayName
+    ? "/templates/birthdays/"
+    : "/templates/wedding-placeholders/";
+  const heroImageSrc = `${heroImageBasePath}${
+    template.heroImageName || `${template.id}.webp`
+  }`;
+  const headerBackgroundStyle = {
+    background: resolvedVariation.background,
+  };
 
   const handleReview = useCallback(() => {
     setShowReview(true);
@@ -890,10 +900,12 @@ export default function BirthdayTemplateCustomizePage() {
                 Create a beautiful birthday invite in minutes.
               </h1>
               <p className="text-lg text-[#4A403C]">
-                Add your party details, drop an RSVP link, and Envitefy shares one smart link with Add to Calendar buttons for every guest.
+                Add your party details, drop an RSVP link, and Envitefy shares
+                one smart link with Add to Calendar buttons for every guest.
               </p>
               <p className="text-sm font-semibold text-[#4A403C]">
-                No apps required. Works with Google, Apple, and Outlook calendars.
+                No apps required. Works with Google, Apple, and Outlook
+                calendars.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -918,13 +930,20 @@ export default function BirthdayTemplateCustomizePage() {
               </div>
               <div className="mt-4 space-y-3 text-sm text-[#4B3F39]">
                 <p>
-                  <span className="font-semibold text-[#2F2F2F]">Template:</span> {template.name}
+                  <span className="font-semibold text-[#2F2F2F]">
+                    Template:
+                  </span>{" "}
+                  {template.name}
                 </p>
                 <p>
-                  <span className="font-semibold text-[#2F2F2F]">Mood:</span> {template.heroMood}
+                  <span className="font-semibold text-[#2F2F2F]">Mood:</span>{" "}
+                  {template.heroMood}
                 </p>
                 <p>
-                  <span className="font-semibold text-[#2F2F2F]">Guest view:</span> Shareable link + RSVP + calendars
+                  <span className="font-semibold text-[#2F2F2F]">
+                    Guest view:
+                  </span>{" "}
+                  Shareable link + RSVP + calendars
                 </p>
               </div>
             </div>
@@ -953,105 +972,78 @@ export default function BirthdayTemplateCustomizePage() {
             <article className={styles.templateCard}>
               <div className={styles.cardBody}>
                 <div className={styles.previewFrame}>
-                <div
-                  className={styles.previewHeader}
-                  style={{
-                    backgroundImage: `url(${backgroundImageSrc})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                  data-birthday="true"
-                >
-                  <p
-                    className={styles.previewNames}
-                    style={{
-                      color: resolvedVariation.titleColor,
-                      fontFamily: resolvedVariation.titleFontFamily,
-                      fontWeight:
-                        resolvedVariation.titleWeight === "bold"
-                          ? 700
-                          : resolvedVariation.titleWeight === "semibold"
-                          ? 600
-                          : 400,
-                    }}
-                  >
-                    {previewName}
-                  </p>
-                  <p
-                    className={styles.previewMeta}
-                    style={{ color: resolvedVariation.titleColor }}
-                  >
-                    {previewDateLabel}
-                    {previewTime ? ` • ${previewTime}` : ""}
-                  </p>
                   <div
-                    className={styles.previewNav}
-                    style={{ color: resolvedVariation.titleColor }}
+                    className={styles.previewHeader}
+                    style={headerBackgroundStyle}
+                    data-birthday="true"
                   >
-                    {template.menu.map((item) => (
-                      <span key={item} className={styles.previewNavItem}>
-                        {item}
-                      </span>
-                    ))}
+                    <p
+                      className={styles.previewNames}
+                      style={{
+                        color: resolvedVariation.titleColor,
+                        fontFamily: resolvedVariation.titleFontFamily,
+                        fontWeight:
+                          resolvedVariation.titleWeight === "bold"
+                            ? 700
+                            : resolvedVariation.titleWeight === "semibold"
+                            ? 600
+                            : 400,
+                      }}
+                    >
+                      {previewName}
+                    </p>
+                    <p
+                      className={styles.previewMeta}
+                      style={{ color: resolvedVariation.titleColor }}
+                    >
+                      {previewDateLabel}
+                      {previewTime ? ` • ${previewTime}` : ""}
+                    </p>
+                    <div
+                      className={styles.previewNav}
+                      style={{ color: resolvedVariation.titleColor }}
+                    >
+                      {template.menu.map((item) => (
+                        <span key={item} className={styles.previewNavItem}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className={`${styles.previewPhoto} relative`}>
-                  {(customHeroImage?.previewUrl || heroImageSrc).startsWith(
-                    "data:"
-                  ) ? (
-                    <img
-                      src={customHeroImage?.previewUrl || heroImageSrc}
-                      alt={`${template.name} preview`}
-                      className={styles.previewPhotoImage}
-                    />
-                  ) : (
-                    <Image
-                      src={customHeroImage?.previewUrl || heroImageSrc}
-                      alt={`${template.name} preview`}
-                      width={640}
-                      height={360}
-                      className={styles.previewPhotoImage}
-                      priority={false}
-                    />
-                  )}
-                  {/* Image upload overlay */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-auto">
-                      <input
-                        ref={heroImageInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleHeroImageChange}
-                        className="hidden"
-                        id="hero-image-upload"
+                  <div className={`${styles.previewPhoto} relative`}>
+                    {(customHeroImage?.previewUrl || heroImageSrc).startsWith(
+                      "data:"
+                    ) ? (
+                      <img
+                        src={customHeroImage?.previewUrl || heroImageSrc}
+                        alt={`${template.name} preview`}
+                        className={styles.previewPhotoImage}
                       />
-                      <label
-                        htmlFor="hero-image-upload"
-                        className="cursor-pointer bg-white/90 hover:bg-white text-stone-700 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
-                        title="Change image"
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          className="h-5 w-5"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </label>
-                      {customHeroImage && (
-                        <button
-                          type="button"
-                          onClick={removeHeroImage}
-                          className="bg-white/90 hover:bg-white text-red-600 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
-                          title="Remove image"
-                          aria-label="Remove custom image"
+                    ) : (
+                      <Image
+                        src={customHeroImage?.previewUrl || heroImageSrc}
+                        alt={`${template.name} preview`}
+                        width={640}
+                        height={360}
+                        className={styles.previewPhotoImage}
+                        priority={false}
+                      />
+                    )}
+                    {/* Image upload overlay */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-auto">
+                        <input
+                          ref={heroImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleHeroImageChange}
+                          className="hidden"
+                          id="hero-image-upload"
+                        />
+                        <label
+                          htmlFor="hero-image-upload"
+                          className="cursor-pointer bg-white/90 hover:bg-white text-stone-700 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
+                          title="Change image"
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -1063,196 +1055,220 @@ export default function BirthdayTemplateCustomizePage() {
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
                           </svg>
-                        </button>
-                      )}
+                        </label>
+                        {customHeroImage && (
+                          <button
+                            type="button"
+                            onClick={removeHeroImage}
+                            className="bg-white/90 hover:bg-white text-red-600 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
+                            title="Remove image"
+                            aria-label="Remove custom image"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              className="h-5 w-5"
+                              strokeWidth="2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Fields Section */}
+                <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold text-stone-900 mb-4">
+                    Event Details
+                  </h2>
+                  <div className="space-y-4">
+                    {/* Venue */}
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">
+                        Venue
+                      </label>
+                      <input
+                        type="text"
+                        value={venue}
+                        onChange={(e) => setVenue(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                        placeholder="Venue name (optional)"
+                      />
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        value={streetAddress}
+                        onChange={(e) => setStreetAddress(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none mb-2"
+                        placeholder="Street address"
+                      />
+                    </div>
+
+                    {/* Guests */}
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">
+                        Guests
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={numberOfGuests || ""}
+                        onChange={(e) =>
+                          setNumberOfGuests(
+                            Number.parseInt(e.target.value, 10) || 0
+                          )
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                        placeholder="Enter number of guests"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        ref={descriptionRef}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows={4}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none resize-none"
+                        placeholder="Add details for your guests"
+                      />
+                    </div>
+
+                    {/* RSVP */}
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">
+                        RSVP
+                      </label>
+                      <input
+                        type="text"
+                        value={rsvp}
+                        onChange={(e) => setRsvp(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                        placeholder="Phone number or email for RSVP"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Event Fields Section */}
-              <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                  Event Details
-                </h2>
-                <div className="space-y-4">
-                  {/* Venue */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Venue
-                    </label>
-                    <input
-                      type="text"
-                      value={venue}
-                      onChange={(e) => setVenue(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Venue name (optional)"
-                    />
-                  </div>
-
-                  {/* Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={streetAddress}
-                      onChange={(e) => setStreetAddress(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none mb-2"
-                      placeholder="Street address"
-                    />
-                  </div>
-
-                  {/* Guests */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Guests
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={numberOfGuests || ""}
-                      onChange={(e) =>
-                        setNumberOfGuests(
-                          Number.parseInt(e.target.value, 10) || 0
-                        )
-                      }
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Enter number of guests"
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      ref={descriptionRef}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none resize-none"
-                      placeholder="Add details for your guests"
-                    />
-                  </div>
-
-                  {/* RSVP */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      RSVP
-                    </label>
-                    <input
-                      type="text"
-                      value={rsvp}
-                      onChange={(e) => setRsvp(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Phone number or email for RSVP"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </article>
-        </div>
-        <div className="w-full max-w-md flex flex-col rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-stone-500">
-              Customize
-            </p>
-            <h2 className="text-2xl font-semibold text-stone-900">
-              Add your details
-            </h2>
+            </article>
           </div>
-          <div className={`${styles.accordionWrapper} flex-1 min-h-0`}>
-            <div
-              className={`${styles.menuView} ${
-                activeSection ? styles.menuHidden : ""
-              }`}
-            >
-              {infoSections.map((section) => (
-                <div key={section.key} className={styles.menuItem}>
-                  <button
-                    type="button"
-                    className={styles.menuButton}
-                    onClick={() => setActiveSection(section.key)}
-                  >
-                    <span>{menuLabel(section.key, section.label)}</span>
-                    <span className={styles.menuButtonIcon}>➤</span>
-                  </button>
-                  <p>{section.description}</p>
-                </div>
-              ))}
+          <div className="w-full max-w-md flex flex-col rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-stone-500">
+                Customize
+              </p>
+              <h2 className="text-2xl font-semibold text-stone-900">
+                Add your details
+              </h2>
             </div>
-            {activeSectionData && (
+            <div className={`${styles.accordionWrapper} flex-1 min-h-0`}>
               <div
-                className={`${styles.detailPanel} ${styles.detailPanelOpen}`}
+                className={`${styles.menuView} ${
+                  activeSection ? styles.menuHidden : ""
+                }`}
               >
-                <div className={styles.detailHeader}>
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-stone-600"
-                    onClick={handleBack}
-                  >
-                    ← Back
-                  </button>
-                  <div className="flex items-center gap-2">
-                    {editingTitle === activeSection ? (
-                      <input
-                        value={renameDraft}
-                        onChange={(event) => setRenameDraft(event.target.value)}
-                        onBlur={saveTitle}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            saveTitle();
-                          }
-                        }}
-                        className="border-b border-stone-700 text-sm uppercase tracking-[0.3em] px-2 py-1"
-                        autoFocus
-                      />
-                    ) : (
-                      <h3 className={styles.detailTitle}>
-                        {menuLabel(
-                          activeSectionData.key,
-                          activeSectionData.label
-                        )}
-                      </h3>
-                    )}
-                    {editingTitle !== activeSection && (
-                      <button
-                        type="button"
-                        aria-label="Rename link"
-                        className="text-xs uppercase tracking-[0.3em] text-stone-500"
-                        onClick={startEditTitle}
-                      >
-                        <EditSquareIcon className="h-4 w-4" />
-                      </button>
-                    )}
+                {infoSections.map((section) => (
+                  <div key={section.key} className={styles.menuItem}>
+                    <button
+                      type="button"
+                      className={styles.menuButton}
+                      onClick={() => setActiveSection(section.key)}
+                    >
+                      <span>{menuLabel(section.key, section.label)}</span>
+                      <span className={styles.menuButtonIcon}>➤</span>
+                    </button>
+                    <p>{section.description}</p>
                   </div>
-                  <span />
-                </div>
-                <p className={styles.detailDesc}>
-                  {activeSectionData.description}
-                </p>
-                <div className={styles.detailContent}>
-                  {renderSectionContent(activeSectionData.key)}
-                </div>
+                ))}
               </div>
-            )}
+              {activeSectionData && (
+                <div
+                  className={`${styles.detailPanel} ${styles.detailPanelOpen}`}
+                >
+                  <div className={styles.detailHeader}>
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-stone-600"
+                      onClick={handleBack}
+                    >
+                      ← Back
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {editingTitle === activeSection ? (
+                        <input
+                          value={renameDraft}
+                          onChange={(event) =>
+                            setRenameDraft(event.target.value)
+                          }
+                          onBlur={saveTitle}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              saveTitle();
+                            }
+                          }}
+                          className="border-b border-stone-700 text-sm uppercase tracking-[0.3em] px-2 py-1"
+                          autoFocus
+                        />
+                      ) : (
+                        <h3 className={styles.detailTitle}>
+                          {menuLabel(
+                            activeSectionData.key,
+                            activeSectionData.label
+                          )}
+                        </h3>
+                      )}
+                      {editingTitle !== activeSection && (
+                        <button
+                          type="button"
+                          aria-label="Rename link"
+                          className="text-xs uppercase tracking-[0.3em] text-stone-500"
+                          onClick={startEditTitle}
+                        >
+                          <EditSquareIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <span />
+                  </div>
+                  <p className={styles.detailDesc}>
+                    {activeSectionData.description}
+                  </p>
+                  <div className={styles.detailContent}>
+                    {renderSectionContent(activeSectionData.key)}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleReview}
+              className="mt-5 w-full rounded-full bg-[#FF6FB1] px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:scale-[1.01]"
+            >
+              Preview invite link
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleReview}
-            className="mt-5 w-full rounded-full bg-[#FF6FB1] px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:scale-[1.01]"
-          >
-            Preview invite link
-          </button>
-        </div>
-      </section>
+        </section>
       </div>
 
       {/* Review/Preview Modal */}
@@ -1293,12 +1309,7 @@ export default function BirthdayTemplateCustomizePage() {
                     <div className={styles.previewFrame}>
                       <div
                         className={styles.previewHeader}
-                        style={{
-                          backgroundImage: `url(${backgroundImageSrc})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          backgroundRepeat: "no-repeat",
-                        }}
+                        style={headerBackgroundStyle}
                         data-birthday="true"
                       >
                         <p

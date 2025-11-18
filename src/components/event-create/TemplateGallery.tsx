@@ -182,9 +182,15 @@ export default function TemplateGallery({
         const previewInfo = { ...DEFAULT_PREVIEW, ...(template.preview ?? {}) };
         const previewTextColor = activeVariation.titleColor;
         const isBirthdayTemplate = !!(template.preview as any)?.birthdayName;
-        const backgroundImageSrc = isBirthdayTemplate
-          ? `/templates/birthdays/${template.id}.webp`
-          : null;
+        const heroImageBasePath = isBirthdayTemplate
+          ? "/templates/birthdays/"
+          : "/templates/wedding-placeholders/";
+        const heroImageFile = template.heroImageName || `${template.id}.webp`;
+        const heroImageSrc =
+          previewHeroImageUrl ?? `${heroImageBasePath}${heroImageFile}`;
+        const headerBackgroundStyle = {
+          background: activeVariation.background,
+        };
 
         return (
           <article
@@ -196,16 +202,7 @@ export default function TemplateGallery({
               <div className={styles.previewFrame}>
                 <div
                   className={styles.previewHeader}
-                  style={
-                    backgroundImageSrc
-                      ? {
-                          backgroundImage: `url(${backgroundImageSrc})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          backgroundRepeat: "no-repeat",
-                        }
-                      : { background: activeVariation.background }
-                  }
+                  style={headerBackgroundStyle}
                   data-birthday={isBirthdayTemplate ? "true" : undefined}
                 >
                   <p
@@ -230,9 +227,7 @@ export default function TemplateGallery({
                     style={{ color: previewTextColor }}
                   >
                     {previewInfo.dateLabel}
-                    {previewInfo.timeLabel
-                      ? ` • ${previewInfo.timeLabel}`
-                      : ""}
+                    {previewInfo.timeLabel ? ` • ${previewInfo.timeLabel}` : ""}
                   </p>
                   <div
                     className={styles.previewNav}
@@ -251,10 +246,7 @@ export default function TemplateGallery({
                 </div>
                 <div className={styles.previewPhoto}>
                   <Image
-                    src={
-                      previewHeroImageUrl ??
-                      `/templates/wedding-placeholders/${template.heroImageName}`
-                    }
+                    src={heroImageSrc}
                     alt={
                       previewHeroImageUrl
                         ? `Uploaded preview for ${template.name}`

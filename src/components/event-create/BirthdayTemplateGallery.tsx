@@ -796,7 +796,14 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
 ];
 
 export const birthdayTemplateCatalog: BirthdayTemplateDefinition[] =
-  baseBirthdayTemplateCatalog;
+  baseBirthdayTemplateCatalog.map((template) => {
+    const isBirthdayTemplate = Boolean(template.preview?.birthdayName);
+    if (!isBirthdayTemplate) return template;
+    return {
+      ...template,
+      heroImageName: `${template.id}.webp`,
+    };
+  });
 
 type Props = {
   appliedTemplateId: string | null;
