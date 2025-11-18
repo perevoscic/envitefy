@@ -406,6 +406,12 @@
 .previewNavItem {
   position: relative;
   padding-bottom: 0.15rem;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.previewNavItem:hover {
+  opacity: 1;
 }
 
 .previewNavItem::after {
@@ -417,6 +423,16 @@
   height: 1px;
   background: currentColor;
   opacity: 0.2;
+  transition: opacity 0.2s ease;
+}
+
+.previewNavItemActive {
+  opacity: 1;
+}
+
+.previewNavItemActive::after {
+  opacity: 0.6;
+  height: 2px;
 }
 
 .previewPhoto {

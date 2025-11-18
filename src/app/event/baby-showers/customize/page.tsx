@@ -10,6 +10,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Baloo_2, Poppins } from "next/font/google";
 import styles from "@/components/event-create/TemplateGallery.module.css";
 import {
   DEFAULT_PREVIEW,
@@ -21,6 +22,18 @@ import {
   babyShowerTemplateCatalog,
 } from "@/components/event-create/BabyShowersTemplateGallery";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
+
+const baloo = Baloo_2({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-baloo",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
 
 function parseDateInput(label?: string | null) {
   if (!label) return "";
@@ -312,17 +325,17 @@ export default function BabyShowerTemplateCustomizePage() {
     if (sectionKey === "headline") {
       return (
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-stone-700">
+          <label className="block text-sm font-medium text-[#4A403C]">
             Title
             <input
               type="text"
               value={eventTitle}
               onChange={(e) => setEventTitle(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[#E8D5FF] px-3 py-2 text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
               placeholder="Event Title"
             />
           </label>
-          <label className="block text-sm font-medium text-stone-700">
+          <label className="block text-sm font-medium text-[#4A403C]">
             Event date
             <input
               type="date"
@@ -331,26 +344,26 @@ export default function BabyShowerTemplateCustomizePage() {
                 setEventDate(e.target.value);
                 setWhenDate(e.target.value);
               }}
-              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[#E8D5FF] px-3 py-2 text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
             />
           </label>
           <div className="grid grid-cols-2 gap-4">
-            <label className="block text-sm font-medium text-stone-700">
+            <label className="block text-sm font-medium text-[#4A403C]">
               Start time
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-[#E8D5FF] px-3 py-2 text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
               />
             </label>
-            <label className="block text-sm font-medium text-stone-700">
+            <label className="block text-sm font-medium text-[#4A403C]">
               End time
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-[#E8D5FF] px-3 py-2 text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
               />
             </label>
           </div>
@@ -405,7 +418,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 { id: generateId(), label: "", url: "" },
               ])
             }
-            className="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[#E8D5FF] bg-white px-4 py-2 text-sm font-medium text-[#4A403C] transition hover:border-[#9B7ED9] hover:bg-[#F5E8FF]"
           >
             <svg
               viewBox="0 0 24 24"
@@ -423,7 +436,7 @@ export default function BabyShowerTemplateCustomizePage() {
               {registries.map((registry) => (
                 <div
                   key={registry.id}
-                  className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+                  className="rounded-2xl border border-[#E8D5FF] bg-white/95 p-4 shadow-sm"
                 >
                   <input
                     type="text"
@@ -438,7 +451,7 @@ export default function BabyShowerTemplateCustomizePage() {
                         )
                       )
                     }
-                    className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8D5FF] px-3 py-2 text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
                   />
                   <input
                     type="url"
@@ -453,11 +466,11 @@ export default function BabyShowerTemplateCustomizePage() {
                         )
                       )
                     }
-                    className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                    className="mt-2 w-full rounded-lg border border-[#E8D5FF] px-3 py-2 text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
                   />
                   <button
                     type="button"
-                    className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+                    className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#9B7ED9]"
                     onClick={() =>
                       setRegistries((prev) =>
                         prev.filter((entry) => entry.id !== registry.id)
@@ -861,110 +874,119 @@ export default function BabyShowerTemplateCustomizePage() {
   ]);
 
   return (
-    <main className="px-5 py-10">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:flex-row">
-        <div className="flex-1 space-y-6">
-          <article className={styles.templateCard}>
-            <div className={styles.cardBody}>
-              <div className={styles.previewFrame}>
-                <div
-                  className={styles.previewHeader}
-                  style={{
-                    backgroundImage: `url(${backgroundImageSrc})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                >
-                  <p
-                    className={styles.previewNames}
+    <main className={`${poppins.className} ${baloo.variable} bg-[#FAFAFA]`}>
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 py-10 sm:px-6 lg:px-10">
+        {/* Header Section */}
+        <div className="rounded-[40px] bg-gradient-to-br from-[#F5E8FF] via-[#E8F5F0] to-[#FFE8F5] p-8 shadow-2xl">
+          <div className="space-y-4 text-[#2F2F2F]">
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#9B7ED9]">
+              Customize your baby shower invite
+            </p>
+            <h1
+              style={{ fontFamily: "var(--font-baloo)" }}
+              className="text-3xl leading-tight sm:text-4xl"
+            >
+              {template.name}
+            </h1>
+            <p className="text-base text-[#4A403C]">{template.description}</p>
+          </div>
+        </div>
+
+        <section className="flex flex-col gap-8 lg:flex-row">
+          <div className="flex-1 space-y-6">
+            <article className={styles.templateCard}>
+              <div className={styles.cardBody}>
+                <div className={styles.previewFrame}>
+                  <div
+                    className={styles.previewHeader}
                     style={{
+                      background: resolvedVariation.background,
+                      position: "relative",
                       color: resolvedVariation.titleColor,
-                      fontFamily: resolvedVariation.titleFontFamily,
-                      fontWeight:
-                        resolvedVariation.titleWeight === "bold"
-                          ? 700
-                          : resolvedVariation.titleWeight === "semibold"
-                          ? 600
-                          : 400,
                     }}
                   >
-                    {previewName}
-                  </p>
-                  <p
-                    className={styles.previewMeta}
-                    style={{ color: resolvedVariation.titleColor }}
-                  >
-                    {previewDateLabel}
-                    {previewTime ? ` • ${previewTime}` : ""}
-                  </p>
-                  <div
-                    className={styles.previewNav}
-                    style={{ color: resolvedVariation.titleColor }}
-                  >
-                    {template.menu.map((item) => (
-                      <span key={item} className={styles.previewNavItem}>
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className={`${styles.previewPhoto} relative`}>
-                  {(customHeroImage?.previewUrl || heroImageSrc).startsWith(
-                    "data:"
-                  ) ? (
-                    <img
-                      src={customHeroImage?.previewUrl || heroImageSrc}
-                      alt={`${template.name} preview`}
-                      className={styles.previewPhotoImage}
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        backgroundImage: `url(${backgroundImageSrc})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundRepeat: "no-repeat",
+                        opacity: 0.4,
+                        zIndex: 0,
+                        pointerEvents: "none",
+                      }}
                     />
-                  ) : (
-                    <Image
-                      src={customHeroImage?.previewUrl || heroImageSrc}
-                      alt={`${template.name} preview`}
-                      width={640}
-                      height={360}
-                      className={styles.previewPhotoImage}
-                      priority={false}
-                    />
-                  )}
-                  {/* Image upload overlay */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-auto">
-                      <input
-                        ref={heroImageInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleHeroImageChange}
-                        className="hidden"
-                        id="hero-image-upload"
-                      />
-                      <label
-                        htmlFor="hero-image-upload"
-                        className="cursor-pointer bg-white/90 hover:bg-white text-stone-700 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
-                        title="Change image"
+                    <div style={{ position: "relative", zIndex: 1 }}>
+                      <p
+                        className={styles.previewNames}
+                        style={{
+                          color: resolvedVariation.titleColor,
+                          fontFamily: resolvedVariation.titleFontFamily,
+                          fontWeight:
+                            resolvedVariation.titleWeight === "bold"
+                              ? 700
+                              : resolvedVariation.titleWeight === "semibold"
+                              ? 600
+                              : 400,
+                        }}
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          className="h-5 w-5"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </label>
-                      {customHeroImage && (
-                        <button
-                          type="button"
-                          onClick={removeHeroImage}
-                          className="bg-white/90 hover:bg-white text-red-600 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
-                          title="Remove image"
-                          aria-label="Remove custom image"
+                        {previewName}
+                      </p>
+                      <p
+                        className={styles.previewMeta}
+                        style={{ color: resolvedVariation.titleColor }}
+                      >
+                        {previewDateLabel}
+                        {previewTime ? ` • ${previewTime}` : ""}
+                      </p>
+                      <div
+                        className={styles.previewNav}
+                        style={{ color: resolvedVariation.titleColor }}
+                      >
+                        {template.menu.map((item) => (
+                          <span key={item} className={styles.previewNavItem}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`${styles.previewPhoto} relative`}>
+                    {(customHeroImage?.previewUrl || heroImageSrc).startsWith(
+                      "data:"
+                    ) ? (
+                      <img
+                        src={customHeroImage?.previewUrl || heroImageSrc}
+                        alt={`${template.name} preview`}
+                        className={styles.previewPhotoImage}
+                      />
+                    ) : (
+                      <Image
+                        src={customHeroImage?.previewUrl || heroImageSrc}
+                        alt={`${template.name} preview`}
+                        width={640}
+                        height={360}
+                        className={styles.previewPhotoImage}
+                        priority={false}
+                      />
+                    )}
+                    {/* Image upload overlay */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-auto">
+                        <input
+                          ref={heroImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleHeroImageChange}
+                          className="hidden"
+                          id="hero-image-upload"
+                        />
+                        <label
+                          htmlFor="hero-image-upload"
+                          className="cursor-pointer bg-white/90 hover:bg-white text-stone-700 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
+                          title="Change image"
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -976,225 +998,259 @@ export default function BabyShowerTemplateCustomizePage() {
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
                           </svg>
+                        </label>
+                        {customHeroImage && (
+                          <button
+                            type="button"
+                            onClick={removeHeroImage}
+                            className="bg-white/90 hover:bg-white text-red-600 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
+                            title="Remove image"
+                            aria-label="Remove custom image"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              className="h-5 w-5"
+                              strokeWidth="2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Fields Section */}
+                <div className="mt-6 rounded-2xl border border-[#F1E5FF] bg-white/95 p-6 shadow-sm">
+                  <h2
+                    style={{ fontFamily: "var(--font-baloo)" }}
+                    className="text-xl font-semibold text-[#2F2F2F] mb-4"
+                  >
+                    Event Details
+                  </h2>
+                  <div className="space-y-4">
+                    {/* Venue */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A403C] mb-1">
+                        Venue
+                      </label>
+                      <input
+                        type="text"
+                        value={venue}
+                        onChange={(e) => setVenue(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
+                        placeholder="Venue name (optional)"
+                      />
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A403C] mb-1">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        value={streetAddress}
+                        onChange={(e) => setStreetAddress(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none mb-2 bg-white"
+                        placeholder="Street address"
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
+                          placeholder="City"
+                        />
+                        <input
+                          type="text"
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
+                          placeholder="State"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Guests */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A403C] mb-1">
+                        Guests
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={numberOfGuests || ""}
+                        onChange={(e) =>
+                          setNumberOfGuests(
+                            Number.parseInt(e.target.value, 10) || 0
+                          )
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
+                        placeholder="Enter number of guests"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A403C] mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        ref={descriptionRef}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows={4}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none resize-none bg-white"
+                        placeholder="Add details for your guests"
+                      />
+                    </div>
+
+                    {/* RSVP */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A403C] mb-1">
+                        RSVP
+                      </label>
+                      <input
+                        type="text"
+                        value={rsvp}
+                        onChange={(e) => setRsvp(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E8D5FF] text-sm focus:border-[#9B7ED9] focus:outline-none bg-white"
+                        placeholder="Phone number or email for RSVP"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+          <div className="w-full max-w-md flex flex-col rounded-2xl border border-[#F1E5FF] bg-white/95 p-6 shadow-md">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#9B7ED9]">
+                Customize
+              </p>
+              <h2
+                style={{ fontFamily: "var(--font-baloo)" }}
+                className="text-2xl font-semibold text-[#2F2F2F]"
+              >
+                Add your details
+              </h2>
+            </div>
+            <div className={`${styles.accordionWrapper} flex-1 min-h-0`}>
+              <div
+                className={`${styles.menuView} ${
+                  activeSection ? styles.menuHidden : ""
+                }`}
+              >
+                {infoSections.map((section) => (
+                  <div key={section.key} className={styles.menuItem}>
+                    <button
+                      type="button"
+                      className={styles.menuButton}
+                      onClick={() => setActiveSection(section.key)}
+                    >
+                      <span>{menuLabel(section.key, section.label)}</span>
+                      <span className={styles.menuButtonIcon}>➤</span>
+                    </button>
+                    <p>{section.description}</p>
+                  </div>
+                ))}
+              </div>
+              {activeSectionData && (
+                <div
+                  className={`${styles.detailPanel} ${styles.detailPanelOpen}`}
+                >
+                  <div className={styles.detailHeader}>
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-[#4A403C]"
+                      onClick={handleBack}
+                    >
+                      ← Back
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {editingTitle === activeSection ? (
+                        <input
+                          value={renameDraft}
+                          onChange={(event) =>
+                            setRenameDraft(event.target.value)
+                          }
+                          onBlur={saveTitle}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              saveTitle();
+                            }
+                          }}
+                          className="border-b border-[#9B7ED9] text-sm uppercase tracking-[0.3em] px-2 py-1 text-[#2F2F2F]"
+                          autoFocus
+                        />
+                      ) : (
+                        <h3 className={styles.detailTitle}>
+                          {menuLabel(
+                            activeSectionData.key,
+                            activeSectionData.label
+                          )}
+                        </h3>
+                      )}
+                      {editingTitle !== activeSection && (
+                        <button
+                          type="button"
+                          aria-label="Rename link"
+                          className="text-xs uppercase tracking-[0.3em] text-[#9B7ED9]"
+                          onClick={startEditTitle}
+                        >
+                          <EditSquareIcon className="h-4 w-4" />
                         </button>
                       )}
                     </div>
+                    <span />
+                  </div>
+                  <p className={styles.detailDesc}>
+                    {activeSectionData.description}
+                  </p>
+                  <div className={styles.detailContent}>
+                    {renderSectionContent(activeSectionData.key)}
                   </div>
                 </div>
-              </div>
-
-              {/* Event Fields Section */}
-              <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                  Event Details
-                </h2>
-                <div className="space-y-4">
-                  {/* Venue */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Venue
-                    </label>
-                    <input
-                      type="text"
-                      value={venue}
-                      onChange={(e) => setVenue(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Venue name (optional)"
-                    />
-                  </div>
-
-                  {/* Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={streetAddress}
-                      onChange={(e) => setStreetAddress(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none mb-2"
-                      placeholder="Street address"
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="City"
-                      />
-                      <input
-                        type="text"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="State"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Guests */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Guests
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={numberOfGuests || ""}
-                      onChange={(e) =>
-                        setNumberOfGuests(
-                          Number.parseInt(e.target.value, 10) || 0
-                        )
-                      }
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Enter number of guests"
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      ref={descriptionRef}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none resize-none"
-                      placeholder="Add details for your guests"
-                    />
-                  </div>
-
-                  {/* RSVP */}
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      RSVP
-                    </label>
-                    <input
-                      type="text"
-                      value={rsvp}
-                      onChange={(e) => setRsvp(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Phone number or email for RSVP"
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          </article>
-        </div>
-        <div className="w-full max-w-md flex flex-col rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-stone-500">
-              Customize
-            </p>
-            <h2 className="text-2xl font-semibold text-stone-900">
-              Add your details
-            </h2>
-          </div>
-          <div className={`${styles.accordionWrapper} flex-1 min-h-0`}>
-            <div
-              className={`${styles.menuView} ${
-                activeSection ? styles.menuHidden : ""
-              }`}
+            <button
+              type="button"
+              onClick={handleReview}
+              className="mt-5 w-full rounded-full bg-[#9B7ED9] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#9B7ED9]/40 transition hover:scale-[1.01]"
             >
-              {infoSections.map((section) => (
-                <div key={section.key} className={styles.menuItem}>
-                  <button
-                    type="button"
-                    className={styles.menuButton}
-                    onClick={() => setActiveSection(section.key)}
-                  >
-                    <span>{menuLabel(section.key, section.label)}</span>
-                    <span className={styles.menuButtonIcon}>➤</span>
-                  </button>
-                  <p>{section.description}</p>
-                </div>
-              ))}
-            </div>
-            {activeSectionData && (
-              <div
-                className={`${styles.detailPanel} ${styles.detailPanelOpen}`}
-              >
-                <div className={styles.detailHeader}>
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-stone-600"
-                    onClick={handleBack}
-                  >
-                    ← Back
-                  </button>
-                  <div className="flex items-center gap-2">
-                    {editingTitle === activeSection ? (
-                      <input
-                        value={renameDraft}
-                        onChange={(event) => setRenameDraft(event.target.value)}
-                        onBlur={saveTitle}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            saveTitle();
-                          }
-                        }}
-                        className="border-b border-stone-700 text-sm uppercase tracking-[0.3em] px-2 py-1"
-                        autoFocus
-                      />
-                    ) : (
-                      <h3 className={styles.detailTitle}>
-                        {menuLabel(
-                          activeSectionData.key,
-                          activeSectionData.label
-                        )}
-                      </h3>
-                    )}
-                    {editingTitle !== activeSection && (
-                      <button
-                        type="button"
-                        aria-label="Rename link"
-                        className="text-xs uppercase tracking-[0.3em] text-stone-500"
-                        onClick={startEditTitle}
-                      >
-                        <EditSquareIcon className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                  <span />
-                </div>
-                <p className={styles.detailDesc}>
-                  {activeSectionData.description}
-                </p>
-                <div className={styles.detailContent}>
-                  {renderSectionContent(activeSectionData.key)}
-                </div>
-              </div>
-            )}
+              Review
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleReview}
-            className="mt-5 w-full rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-stone-800"
-          >
-            Review
-          </button>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* Review/Preview Modal */}
       {showReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div className="sticky top-0 bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between z-10">
-              <h2 className="text-2xl font-semibold text-stone-900">
+            <div className="sticky top-0 bg-white border-b border-[#F1E5FF] px-6 py-4 flex items-center justify-between z-10">
+              <h2
+                style={{ fontFamily: "var(--font-baloo)" }}
+                className="text-2xl font-semibold text-[#2F2F2F]"
+              >
                 Review Your Event
               </h2>
               <button
                 type="button"
                 onClick={() => setShowReview(false)}
-                className="text-stone-500 hover:text-stone-700"
+                className="text-[#9B7ED9] hover:text-[#7B5FA3]"
                 aria-label="Close"
               >
                 <svg
@@ -1222,10 +1278,11 @@ export default function BabyShowerTemplateCustomizePage() {
                       <div
                         className={styles.previewHeader}
                         style={{
-                          backgroundImage: `url(${backgroundImageSrc})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          backgroundRepeat: "no-repeat",
+                          background: `${resolvedVariation.background}, url(${backgroundImageSrc})`,
+                          backgroundSize: "cover, cover",
+                          backgroundPosition: "center, center",
+                          backgroundRepeat: "no-repeat, no-repeat",
+                          backgroundBlendMode: "normal, normal",
                         }}
                       >
                         <p
@@ -1287,17 +1344,20 @@ export default function BabyShowerTemplateCustomizePage() {
               </div>
 
               {/* Event Details */}
-              <div className="rounded-2xl border border-stone-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-stone-900 mb-4">
+              <div className="rounded-2xl border border-[#F1E5FF] bg-white p-6">
+                <h3
+                  style={{ fontFamily: "var(--font-baloo)" }}
+                  className="text-lg font-semibold text-[#2F2F2F] mb-4"
+                >
                   Event Details
                 </h3>
                 <div className="space-y-4">
                   {(venue || streetAddress || city || state) && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#9B7ED9] mb-1">
                         Location
                       </p>
-                      <p className="text-base text-stone-900">
+                      <p className="text-base text-[#2F2F2F]">
                         {venue && <span className="font-medium">{venue}</span>}
                         {venue && (streetAddress || city || state) && (
                           <span>, </span>
@@ -1311,10 +1371,10 @@ export default function BabyShowerTemplateCustomizePage() {
 
                   {numberOfGuests > 0 && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#9B7ED9] mb-1">
                         Guests
                       </p>
-                      <p className="text-base text-stone-900">
+                      <p className="text-base text-[#2F2F2F]">
                         {numberOfGuests}
                       </p>
                     </div>
@@ -1322,10 +1382,10 @@ export default function BabyShowerTemplateCustomizePage() {
 
                   {description && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#9B7ED9] mb-1">
                         Description
                       </p>
-                      <p className="text-base text-stone-900 whitespace-pre-wrap">
+                      <p className="text-base text-[#2F2F2F] whitespace-pre-wrap">
                         {description}
                       </p>
                     </div>
@@ -1333,16 +1393,16 @@ export default function BabyShowerTemplateCustomizePage() {
 
                   {rsvp && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#9B7ED9] mb-1">
                         RSVP
                       </p>
-                      <p className="text-base text-stone-900">{rsvp}</p>
+                      <p className="text-base text-[#2F2F2F]">{rsvp}</p>
                     </div>
                   )}
 
                   {registries.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#9B7ED9] mb-2">
                         Registry Links
                       </p>
                       <div className="space-y-2">
@@ -1353,14 +1413,14 @@ export default function BabyShowerTemplateCustomizePage() {
                               key={registry.id}
                               className="flex items-center gap-2"
                             >
-                              <span className="text-sm text-stone-700">
+                              <span className="text-sm text-[#4A403C]">
                                 {registry.label || "Registry"}
                               </span>
                               <a
                                 href={registry.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:underline"
+                                className="text-sm text-[#9B7ED9] hover:underline"
                               >
                                 {registry.url}
                               </a>
@@ -1374,11 +1434,11 @@ export default function BabyShowerTemplateCustomizePage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="sticky bottom-0 bg-white border-t border-stone-200 px-6 py-4 flex items-center justify-end gap-3">
+            <div className="sticky bottom-0 bg-white border-t border-[#F1E5FF] px-6 py-4 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowReview(false)}
-                className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-md hover:bg-stone-50"
+                className="px-4 py-2 text-sm font-medium text-[#4A403C] bg-white border border-[#E8D5FF] rounded-full hover:bg-[#F5E8FF]"
               >
                 Back to Edit
               </button>
@@ -1386,7 +1446,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 type="button"
                 onClick={handlePublish}
                 disabled={submitting}
-                className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-6 py-2 text-sm font-semibold text-white bg-[#9B7ED9] rounded-full shadow-lg shadow-[#9B7ED9]/40 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed transition"
               >
                 {submitting ? "Publishing..." : "Publish Event"}
               </button>

@@ -10,6 +10,8 @@ import {
   type ChangeEvent,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Baloo_2, Poppins } from "next/font/google";
+import { ArrowLeft, ArrowRight, CalendarDays, Sparkles } from "lucide-react";
 import styles from "@/components/event-create/TemplateGallery.module.css";
 import {
   DEFAULT_PREVIEW,
@@ -92,22 +94,42 @@ function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
 const infoSections = [
   {
     key: "headline",
-    label: "Headline",
+    label: "Invite Header",
     description:
-      "Set the event title, event date, and time for the hero header.",
+      "Add the child’s name, age, and date/time so we can format the hero text for you.",
   },
   {
     key: "design",
-    label: "Design",
+    label: "Colors & Layout",
     description:
-      "Pick a color story that sets the palette for the hero preview.",
+      "Choose the palette and layout variation that matches your party vibe.",
   },
   {
     key: "registry",
-    label: "Registry",
+    label: "RSVP & Links",
     description:
-      "Drop your registry links here. We'll feature them on a dedicated page once the site is live.",
+      "Drop your RSVP contact or shareable links so guests can respond in one tap.",
   },
+];
+
+const baloo = Baloo_2({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-baloo",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
+
+const TRUST_ITEMS = [
+  { icon: "📅", label: "1-click Add to Calendar" },
+  { icon: "📱", label: "Works on every phone" },
+  { icon: "🔒", label: "Private share links" },
+  { icon: "🧁", label: "Kid-focused layouts" },
+  { icon: "⏱️", label: "Invite ready in minutes" },
 ];
 
 type RegistryEntry = {
@@ -150,6 +172,7 @@ export default function BirthdayTemplateCustomizePage() {
   >([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const formSectionRef = useRef<HTMLDivElement>(null);
   const [customHeroImage, setCustomHeroImage] = useState<{
     file: File;
     previewUrl: string;
@@ -168,6 +191,9 @@ export default function BirthdayTemplateCustomizePage() {
     []
   );
   const [registries, setRegistries] = useState<RegistryEntry[]>([]);
+  const scrollToForm = useCallback(() => {
+    formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -507,11 +533,8 @@ export default function BirthdayTemplateCustomizePage() {
 
   const hasPhotos = photoFiles.length > 0;
 
-  const templateLocation =
-    template.preview?.location ?? DEFAULT_PREVIEW.location ?? "City, State";
-  const [defaultCity, defaultState] = templateLocation
-    .split(",")
-    .map((s) => s.trim());
+  const defaultLocation =
+    template.preview?.location ?? DEFAULT_PREVIEW.location ?? "";
 
   const [birthdayName, setBirthdayName] = useState("");
   const [eventDate, setEventDate] = useState(
@@ -519,8 +542,6 @@ export default function BirthdayTemplateCustomizePage() {
       defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel
     )
   );
-  const [city, setCity] = useState(defaultCity ?? "");
-  const [state, setState] = useState(defaultState ?? "");
 
   // Event fields from old birthday form
   const initialStart = useMemo(() => {
@@ -563,7 +584,7 @@ export default function BirthdayTemplateCustomizePage() {
     }
   }, [whenDate]);
   const [venue, setVenue] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
+  const [streetAddress, setStreetAddress] = useState(defaultLocation);
   const [eventLocation, setEventLocation] = useState("");
   const [description, setDescription] = useState("");
   const [rsvp, setRsvp] = useState("");
@@ -646,25 +667,7 @@ export default function BirthdayTemplateCustomizePage() {
           setVenue(data.venue);
         }
         if (data.location) {
-          // Parse location into streetAddress, city, state
-          const parts = data.location.split(",").map((s: string) => s.trim());
-          if (parts.length >= 3) {
-            // Format: "Street, City, State"
-            setStreetAddress(parts[0]);
-            setCity(parts[1]);
-            setState(parts.slice(2).join(", "));
-          } else if (parts.length === 2) {
-            // Format: "City, State" (no street address)
-            setStreetAddress("");
-            setCity(parts[0]);
-            setState(parts[1]);
-          } else if (parts.length === 1) {
-            // Single part - could be street, city, or state
-            setStreetAddress(parts[0]);
-            setCity("");
-            setState("");
-          }
-          // Keep eventLocation for backward compatibility
+          setStreetAddress(data.location);
           setEventLocation(data.location);
         }
         if (data.description) {
@@ -762,10 +765,8 @@ export default function BirthdayTemplateCustomizePage() {
           url: r.url.trim(),
         }));
 
-      // Combine address parts into location
-      const locationParts = [streetAddress, city, state].filter(Boolean);
       const combinedLocation =
-        locationParts.length > 0 ? locationParts.join(", ") : undefined;
+        streetAddress.trim().length > 0 ? streetAddress.trim() : undefined;
 
       const payload: any = {
         title: title || birthdayName || "Event",
@@ -845,8 +846,6 @@ export default function BirthdayTemplateCustomizePage() {
     birthdayName,
     venue,
     streetAddress,
-    city,
-    state,
     description,
     rsvp,
     numberOfGuests,
@@ -876,12 +875,84 @@ export default function BirthdayTemplateCustomizePage() {
   );
 
   return (
-    <main className="px-5 py-10">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:flex-row">
-        <div className="flex-1 space-y-6">
-          <article className={styles.templateCard}>
-            <div className={styles.cardBody}>
-              <div className={styles.previewFrame}>
+    <main className={`${poppins.className} ${baloo.variable} bg-[#FAFAFA]`}>
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-10">
+        <section className="rounded-[40px] bg-gradient-to-br from-[#FFE0F0] via-[#D3F9F5] to-[#C7A7F8] p-8 shadow-2xl">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+            <div className="space-y-5 text-[#2F2F2F]">
+              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#FF6FB1]">
+                {template.name} invite
+              </p>
+              <h1
+                style={{ fontFamily: "var(--font-baloo)" }}
+                className="text-4xl leading-tight sm:text-5xl"
+              >
+                Create a beautiful birthday invite in minutes.
+              </h1>
+              <p className="text-lg text-[#4A403C]">
+                Add your party details, drop an RSVP link, and Envitefy shares one smart link with Add to Calendar buttons for every guest.
+              </p>
+              <p className="text-sm font-semibold text-[#4A403C]">
+                No apps required. Works with Google, Apple, and Outlook calendars.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={scrollToForm}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#FF6FB1] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#FF6FB1]/40 transition hover:scale-[1.01]"
+                >
+                  Jump to invite details <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReview}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-6 py-3 text-sm font-semibold text-[#2F2F2F]"
+                >
+                  Preview invite <CalendarDays className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="rounded-[32px] bg-white/90 p-6 shadow-xl">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[#7A6B66]">
+                <Sparkles className="h-4 w-4 text-[#FF6FB1]" /> Invite snapshot
+              </div>
+              <div className="mt-4 space-y-3 text-sm text-[#4B3F39]">
+                <p>
+                  <span className="font-semibold text-[#2F2F2F]">Template:</span> {template.name}
+                </p>
+                <p>
+                  <span className="font-semibold text-[#2F2F2F]">Mood:</span> {template.heroMood}
+                </p>
+                <p>
+                  <span className="font-semibold text-[#2F2F2F]">Guest view:</span> Shareable link + RSVP + calendars
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[32px] border border-[#F4E7FF] bg-white/90 p-4 shadow-sm">
+          <div className="grid gap-3 text-sm font-semibold text-[#2F2F2F] sm:grid-cols-3 lg:grid-cols-5">
+            {TRUST_ITEMS.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-2 rounded-full bg-[#FAF5FF] px-4 py-2"
+              >
+                <span aria-hidden>{item.icon}</span>
+                {item.label}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          ref={formSectionRef}
+          className="flex w-full flex-col gap-8 lg:flex-row"
+        >
+          <div className="flex-1 space-y-6">
+            <article className={styles.templateCard}>
+              <div className={styles.cardBody}>
+                <div className={styles.previewFrame}>
                 <div
                   className={styles.previewHeader}
                   style={{
@@ -1034,22 +1105,6 @@ export default function BirthdayTemplateCustomizePage() {
                       className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none mb-2"
                       placeholder="Street address"
                     />
-                    <div className="grid grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="City"
-                      />
-                      <input
-                        type="text"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="State"
-                      />
-                    </div>
                   </div>
 
                   {/* Guests */}
@@ -1192,12 +1247,13 @@ export default function BirthdayTemplateCustomizePage() {
           <button
             type="button"
             onClick={handleReview}
-            className="mt-5 w-full rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-stone-800"
+            className="mt-5 w-full rounded-full bg-[#FF6FB1] px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:scale-[1.01]"
           >
-            Review
+            Preview invite link
           </button>
         </div>
       </section>
+      </div>
 
       {/* Review/Preview Modal */}
       {showReview && (
@@ -1205,7 +1261,7 @@ export default function BirthdayTemplateCustomizePage() {
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between z-10">
               <h2 className="text-2xl font-semibold text-stone-900">
-                Review Your Event
+                Review Your Invite
               </h2>
               <button
                 type="button"
@@ -1309,19 +1365,15 @@ export default function BirthdayTemplateCustomizePage() {
                   Event Details
                 </h3>
                 <div className="space-y-4">
-                  {(venue || streetAddress || city || state) && (
+                  {(venue || streetAddress) && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         Location
                       </p>
                       <p className="text-base text-stone-900">
                         {venue && <span className="font-medium">{venue}</span>}
-                        {venue && (streetAddress || city || state) && (
-                          <span>, </span>
-                        )}
-                        {[streetAddress, city, state]
-                          .filter(Boolean)
-                          .join(", ")}
+                        {venue && streetAddress && <span>, </span>}
+                        {streetAddress}
                       </p>
                     </div>
                   )}
@@ -1395,19 +1447,15 @@ export default function BirthdayTemplateCustomizePage() {
                   Event Details
                 </h3>
                 <div className="space-y-4">
-                  {(venue || streetAddress || city || state) && (
+                  {(venue || streetAddress) && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         Location
                       </p>
                       <p className="text-base text-stone-900">
                         {venue && <span className="font-medium">{venue}</span>}
-                        {venue && (streetAddress || city || state) && (
-                          <span>, </span>
-                        )}
-                        {[streetAddress, city, state]
-                          .filter(Boolean)
-                          .join(", ")}
+                        {venue && streetAddress && <span>, </span>}
+                        {streetAddress}
                       </p>
                     </div>
                   )}
@@ -1489,9 +1537,9 @@ export default function BirthdayTemplateCustomizePage() {
                 type="button"
                 onClick={handlePublish}
                 disabled={submitting}
-                className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#FF6FB1] via-[#A68EF5] to-[#5F6FFF] rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting ? "Publishing..." : "Publish Event"}
+                {submitting ? "Sharing..." : "Share Invite"}
               </button>
             </div>
           </div>

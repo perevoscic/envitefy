@@ -5,6 +5,9 @@ type EventMapProps = {
   venue?: string | null;
   location?: string | null;
   className?: string;
+  mapWidth?: number;
+  mapHeight?: number;
+  zoom?: number;
 };
 
 /**
@@ -16,6 +19,9 @@ export default function EventMap({
   venue,
   location,
   className = "",
+  mapWidth = 640,
+  mapHeight = 420,
+  zoom = 17,
 }: EventMapProps) {
   // Build location query string
   const locationQuery = (() => {
@@ -33,7 +39,12 @@ export default function EventMap({
 
   return (
     <div className={className}>
-      <StaticMap address={locationQuery} zoom={17} height={420} />
+      <StaticMap
+        address={locationQuery}
+        zoom={zoom}
+        width={mapWidth}
+        height={mapHeight}
+      />
     </div>
   );
 }
