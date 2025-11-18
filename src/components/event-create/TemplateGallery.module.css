@@ -363,6 +363,7 @@
   letter-spacing: 0.08em;
   margin: 0;
   text-transform: none;
+  white-space: nowrap;
 }
 
 /* Bigger, bolder text for kids' birthday invitations */
@@ -374,6 +375,7 @@
   line-height: 1.15;
   z-index: 2;
   position: relative;
+  white-space: nowrap;
 }
 
 .previewMeta {
