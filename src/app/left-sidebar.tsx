@@ -2081,7 +2081,7 @@ export default function LeftSidebar() {
 
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 h-full z-[6000] border-r border-border backdrop-blur flex flex-col ${
+        className={`fixed left-0 top-0 h-full z-[6000] border-r border-border backdrop-blur flex flex-col rounded-tr-3xl rounded-br-3xl ${
           isOpen ? "overflow-visible" : "overflow-hidden"
         } transition-[width,opacity] duration-200 ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
@@ -2095,77 +2095,76 @@ export default function LeftSidebar() {
         }}
         aria-label="Sidebar"
       >
-        {/* Middle: Event history */}
-        <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
-          <div className="p-3 space-y-2">
-            {/* CREATE | SHARE | ENJOY */}
-            <div className="px-2 pb-2">
-              <div className="flex flex-col items-center gap-2">
-                <Image
-                  src="/E.png"
-                  alt="E"
-                  width={36}
-                  height={36}
-                  className="opacity-80"
-                  style={{
-                    filter:
-                      "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
-                  }}
-                />
-                <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
-                  CREATE | SHARE | ENJOY
-                </div>
+        {/* Header with close button */}
+        <div className="relative flex-shrink-0 px-3 pt-3 pb-0">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setIsCollapsed(true)}
+            className="absolute top-3 right-3 inline-flex items-center justify-center h-6 w-6 rounded-md border border-border bg-surface/80 hover:bg-surface"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3 w-3"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          {/* CREATE | SHARE | ENJOY */}
+          <div className="px-2 pb-2">
+            <div className="flex flex-col items-center gap-2">
+              <Image
+                src="/E.png"
+                alt="E"
+                width={48}
+                height={48}
+                className="opacity-80"
+                style={{
+                  filter:
+                    "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
+                }}
+              />
+              <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
+                CREATE | SHARE | ENJOY
               </div>
             </div>
+          </div>
+        </div>
+        {/* Middle: Event history */}
+        <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
+          <div className="px-3 pt-0 pb-3 space-y-2">
             {/* Separator line */}
             <div className="px-4 py-2">
               <div className="h-px bg-gray-300/60 dark:bg-gray-600/60"></div>
             </div>
             <div className="px-0">
-              <div className="block px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
-                <div className="flex items-center justify-between pl-0">
-                  <Link
-                    href="/"
-                    onClick={collapseSidebarOnTouch}
-                    className="flex items-center gap-2"
-                  >
-                    <svg
-                      viewBox="0 0 1920 1920"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M960.16 0 28 932.16l79 78.777 853.16-853.16 853.16 853.16 78.889-78.777L960.16 0Zm613.693 1027.34v781.078h-334.86v-557.913h-557.8v557.912H346.445V1027.34H234.751V1920h1450.684v-892.66h-111.582Zm-446.33 334.748v446.441H792.775v-446.441h334.748ZM960.127 692.604c61.593 0 111.582 49.989 111.582 111.582 0 61.594-49.989 111.583-111.582 111.583-61.594 0-111.583-49.99-111.583-111.583 0-61.593 49.99-111.582 111.583-111.582Zm223.165 111.582c0-123.075-100.09-223.165-223.165-223.165-123.076 0-223.165 100.09-223.165 223.165 0 123.076 100.09 223.165 223.165 223.165 123.075 0 223.165-100.09 223.165-223.165"
-                      ></path>
-                    </svg>
-                    <span>Home</span>
-                  </Link>
-                  <button
-                    type="button"
-                    aria-label="Close menu"
-                    onClick={() => setIsCollapsed(true)}
-                    className="inline-flex items-center justify-center h-6 w-6 rounded-md border border-border bg-surface/80 hover:bg-surface"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-3 w-3"
-                      aria-hidden="true"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <Link
+                href="/"
+                onClick={collapseSidebarOnTouch}
+                className="block px-2 py-2 rounded-md text-sm hover:bg-surface/70 flex items-center gap-2 text-foreground/90"
+              >
+                <svg
+                  viewBox="0 0 1920 1920"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M960.16 0 28 932.16l79 78.777 853.16-853.16 853.16 853.16 78.889-78.777L960.16 0Zm613.693 1027.34v781.078h-334.86v-557.913h-557.8v557.912H346.445V1027.34H234.751V1920h1450.684v-892.66h-111.582Zm-446.33 334.748v446.441H792.775v-446.441h334.748ZM960.127 692.604c61.593 0 111.582 49.989 111.582 111.582 0 61.594-49.989 111.583-111.582 111.583-61.594 0-111.583-49.99-111.583-111.583 0-61.593 49.99-111.582 111.583-111.582Zm223.165 111.582c0-123.075-100.09-223.165-223.165-223.165-123.076 0-223.165 100.09-223.165 223.165 0 123.076 100.09 223.165 223.165 223.165 123.075 0 223.165-100.09 223.165-223.165"
+                  ></path>
+                </svg>
+                <span>Home</span>
+              </Link>
               <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
                 <button
                   type="button"

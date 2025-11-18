@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import BirthdaysCreateTemplate from "@/components/event-create/BirthdaysCreateTemplate";
 import BirthdaysCreate from "@/components/event-create/BirthdaysCreate";
 
 export default function NewBirthdayEventPage() {
@@ -21,5 +22,12 @@ export default function NewBirthdayEventPage() {
     return id && id.trim() ? id.trim() : undefined;
   }, [search]);
 
-  return <BirthdaysCreate defaultDate={defaultDate} editEventId={editEventId} />;
+  // If editing, use the old component. Otherwise show template gallery first.
+  if (editEventId) {
+    return (
+      <BirthdaysCreate defaultDate={defaultDate} editEventId={editEventId} />
+    );
+  }
+
+  return <BirthdaysCreateTemplate defaultDate={defaultDate} />;
 }

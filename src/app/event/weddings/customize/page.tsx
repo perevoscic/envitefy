@@ -137,6 +137,395 @@ type StoryEntry = {
   photoUrl: string | null;
 };
 
+type PartyGroupDefinition = {
+  key: string;
+  label: string;
+  keywords: string[];
+};
+
+type StoryBlockTemplate = {
+  key: string;
+  badge: string;
+  keywords: string[];
+  fallbackName: string;
+  fallbackCaption: string;
+};
+
+type PartyHighlight = {
+  id: string;
+  label: string;
+  name: string;
+  role: string;
+  copy: string;
+};
+
+type VipHonor = {
+  id: string;
+  name: string;
+  role: string;
+  note: string;
+};
+
+type StoryBlockEntry = {
+  id: string;
+  badge: string;
+  name: string;
+  caption: string;
+};
+
+type FunFactEntry = {
+  id: string;
+  text: string;
+};
+
+type PartyModuleId =
+  | "hero"
+  | "highlights"
+  | "vips"
+  | "stories"
+  | "fun-facts"
+  | "banner"
+  | "closing";
+
+type PartyModuleDefinition = {
+  id: PartyModuleId;
+  label: string;
+  description: string;
+  icon: ReactNode;
+};
+
+const BRIDE_PARTY_GROUPS: PartyGroupDefinition[] = [
+  {
+    key: "maid-of-honor",
+    label: "Maid of Honor",
+    keywords: ["maid of honor", "matron of honor"],
+  },
+  {
+    key: "bridesmaids",
+    label: "Bridesmaids",
+    keywords: ["bridesmaid"],
+  },
+  {
+    key: "junior-bridesmaid",
+    label: "Junior Bridesmaid",
+    keywords: ["junior bridesmaid"],
+  },
+  {
+    key: "flower-girl",
+    label: "Flower Girl",
+    keywords: ["flower girl"],
+  },
+];
+
+const GROOM_PARTY_GROUPS: PartyGroupDefinition[] = [
+  {
+    key: "best-man",
+    label: "Best Man",
+    keywords: ["best man"],
+  },
+  {
+    key: "groomsmen",
+    label: "Groomsmen",
+    keywords: ["groomsman"],
+  },
+  {
+    key: "ring-bearer",
+    label: "Ring Bearer",
+    keywords: ["ring bearer"],
+  },
+  {
+    key: "junior-groomsman",
+    label: "Junior Groomsman",
+    keywords: ["junior groomsman"],
+  },
+];
+
+const VIP_ROLE_KEYWORDS = [
+  "mother",
+  "father",
+  "parent",
+  "grandparent",
+  "godparent",
+  "aunt",
+  "uncle",
+];
+
+const STORY_BLOCK_TEMPLATES: StoryBlockTemplate[] = [
+  {
+    key: "best-friend",
+    badge: "Best friends",
+    keywords: ["best man", "groomsman"],
+    fallbackName: "Daniel",
+    fallbackCaption:
+      "Met in middle school. Keeper of every secret and professional hype man.",
+  },
+  {
+    key: "sisterhood",
+    badge: "Sisterhood",
+    keywords: ["maid of honor", "matron of honor"],
+    fallbackName: "Livia",
+    fallbackCaption:
+      "My sister, my calm in chaos, the one who makes sure we're laughing.",
+  },
+  {
+    key: "college-crew",
+    badge: "College crew",
+    keywords: ["bridesmaid", "groomsman"],
+    fallbackName: "College friends",
+    fallbackCaption:
+      "Dorm neighbors turned lifelong family—still telling the same stories.",
+  },
+  {
+    key: "work-fam",
+    badge: "Work fam",
+    keywords: ["coworker"],
+    fallbackName: "Work friends",
+    fallbackCaption:
+      "Promoted from coworkers to family over countless coffees.",
+  },
+  {
+    key: "family-roots",
+    badge: "Family roots",
+    keywords: ["brother", "sister", "cousin", "parent"],
+    fallbackName: "Family",
+    fallbackCaption:
+      "The original hype team who taught us what love looks like.",
+  },
+];
+
+const AVATAR_COLORS = [
+  "bg-amber-100 text-amber-800",
+  "bg-rose-100 text-rose-700",
+  "bg-sky-100 text-sky-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-stone-200 text-stone-700",
+];
+
+const DEFAULT_PARTY_HERO = {
+  title: "Our People",
+  subtext:
+    "These are the hearts who've stood by us through every chapter. We can't wait for you to meet them.",
+  groupPhotoCaption: "Forever grateful for our people.",
+  closingNote:
+    "Thank you to our friends and family who make life brighter. We are honored to have you celebrate with us.",
+};
+
+const DEFAULT_PARTY_HIGHLIGHTS: PartyHighlight[] = [
+  {
+    id: "highlight-maid",
+    label: "Maid of Honor",
+    name: "Livia Hart",
+    role: "Sister & confidante",
+    copy: "My calm in chaos—the reason we're always laughing.",
+  },
+  {
+    id: "highlight-bestman",
+    label: "Best Man",
+    name: "Daniel Brooks",
+    role: "Childhood best friend",
+    copy: "Keeper of every secret and professional hype man.",
+  },
+];
+
+const DEFAULT_VIP_HONORS: VipHonor[] = [
+  {
+    id: "vip-mother",
+    name: "Celeste Hart",
+    role: "Mother of the Bride",
+    note: "Heart of every family tradition and the best advice-giver.",
+  },
+  {
+    id: "vip-father",
+    name: "David Quinn",
+    role: "Father of the Groom",
+    note: "Storyteller-in-chief and forever our steady compass.",
+  },
+];
+
+const DEFAULT_STORY_BLOCKS: StoryBlockEntry[] = [
+  {
+    id: "story-sisterhood",
+    badge: "Sisterhood",
+    name: "College roomies",
+    caption:
+      "Dorm neighbors turned lifelong family—still telling the same stories.",
+  },
+  {
+    id: "story-besties",
+    badge: "Best friends",
+    name: "Daniel & Theo",
+    caption: "Met in middle school and never stopped scheming adventures.",
+  },
+  {
+    id: "story-family",
+    badge: "Family roots",
+    name: "The Quinn crew",
+    caption: "Original hype team who taught us what love looks like.",
+  },
+  {
+    id: "story-work",
+    badge: "Work fam",
+    name: "Studio nights",
+    caption: "Promoted from coworkers to family over countless coffees.",
+  },
+];
+
+const DEFAULT_FUN_FACTS: FunFactEntry[] = [
+  {
+    id: "fact-travel",
+    text: "Our wedding party has traveled to 17 countries combined.",
+  },
+  {
+    id: "fact-roommates",
+    text: "Two were roommates in college.",
+  },
+  {
+    id: "fact-dance",
+    text: "Three can't dance but will try anyway.",
+  },
+  {
+    id: "fact-memes",
+    text: "One is responsible for 90% of the group chat memes.",
+  },
+];
+
+const PARTY_MODULES: PartyModuleDefinition[] = [
+  {
+    id: "hero",
+    label: "Title",
+    description: "Set your hero headline + intro.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M6 21V3h5.5a3.5 3.5 0 010 7H6" strokeWidth="1.6" />
+        <path d="M6 12h5.5A3.5 3.5 0 0115 15.5V21" strokeWidth="1.6" />
+        <path d="M21 8h-6M18 11V5" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: "highlights",
+    label: "Featured",
+    description: "Spotlight maid of honor or best man.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path
+          d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 17l-4.9 1.2.9-5.5-4-3.9 5.5-.8z"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "vips",
+    label: "VIP Honors",
+    description: "Parents, grandparents, godparents.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="4" y="6" width="16" height="12" rx="3" strokeWidth="1.6" />
+        <path d="M8 10h1.5L12 16l2.5-6H16" strokeWidth="1.6" />
+      </svg>
+    ),
+  },
+  {
+    id: "stories",
+    label: "Story Tiles",
+    description: "How you met each member.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="1.6" />
+        <path d="M4 10h16M10 4v16" strokeWidth="1.6" />
+      </svg>
+    ),
+  },
+  {
+    id: "fun-facts",
+    label: "Fun Facts",
+    description: "Travel counts, inside jokes, etc.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="8" strokeWidth="1.6" />
+        <path d="M12 8v5M12 16h.01" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: "banner",
+    label: "Group Banner",
+    description: "Full-width photo caption.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="3" y="6" width="18" height="12" rx="2" strokeWidth="1.6" />
+        <path d="M7 15l2.5-3 2 2.5L13 12l4 3" strokeWidth="1.6" />
+      </svg>
+    ),
+  },
+  {
+    id: "closing",
+    label: "Closing Note",
+    description: "Final thank-you message.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path
+          d="M5 5h14v14H5zM7 9h10M7 13h7"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+];
+
+const BRIDE_ROLE_PRESETS = [
+  "Maid of Honor",
+  "Matron of Honor",
+  "Bridesmaid",
+  "Junior Bridesmaid",
+  "Flower Girl",
+];
+
+const GROOM_ROLE_PRESETS = [
+  "Best Man",
+  "Groomsman",
+  "Junior Groomsman",
+  "Ring Bearer",
+];
+
+type PartyMemberPreview = PartyMember & {
+  displayName: string;
+  displayRole: string;
+  displayBio: string;
+  roleSearch: string;
+};
+
+type PartyGroupWithMembers = PartyGroupDefinition & {
+  members: PartyMemberPreview[];
+};
+
+type FeaturedPerson = {
+  key: string;
+  label: string;
+  name: string;
+  role: string;
+  copy: string;
+};
+
+type StoryCollageEntry = StoryBlockTemplate & {
+  name: string;
+  caption: string;
+};
+
+type WeddingPartyPreview = {
+  normalizedMembers: PartyMemberPreview[];
+  brideGroups: PartyGroupWithMembers[];
+  groomGroups: PartyGroupWithMembers[];
+  derivedVipMembers: PartyMemberPreview[];
+  fallbackHighlights: FeaturedPerson[];
+  fallbackStoryCollage: StoryCollageEntry[];
+  isPlaceholder: boolean;
+};
+
 export default function WeddingTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
@@ -174,6 +563,33 @@ export default function WeddingTemplateCustomizePage() {
   );
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [partyMembers, setPartyMembers] = useState<PartyMember[]>([]);
+  const [partyHeroTitle, setPartyHeroTitle] = useState(
+    DEFAULT_PARTY_HERO.title
+  );
+  const [partyHeroSubtext, setPartyHeroSubtext] = useState(
+    DEFAULT_PARTY_HERO.subtext
+  );
+  const [partyGroupPhotoCaption, setPartyGroupPhotoCaption] = useState(
+    DEFAULT_PARTY_HERO.groupPhotoCaption
+  );
+  const [partyClosingNote, setPartyClosingNote] = useState(
+    DEFAULT_PARTY_HERO.closingNote
+  );
+  const [partyHighlights, setPartyHighlights] = useState<PartyHighlight[]>(() =>
+    DEFAULT_PARTY_HIGHLIGHTS.map((entry) => ({ ...entry }))
+  );
+  const [vipHonors, setVipHonors] = useState<VipHonor[]>(() =>
+    DEFAULT_VIP_HONORS.map((entry) => ({ ...entry }))
+  );
+  const [storyBlocks, setStoryBlocks] = useState<StoryBlockEntry[]>(() =>
+    DEFAULT_STORY_BLOCKS.map((entry) => ({ ...entry }))
+  );
+  const [funFactEntries, setFunFactEntries] = useState<FunFactEntry[]>(() =>
+    DEFAULT_FUN_FACTS.map((entry) => ({ ...entry }))
+  );
+  const [activePartyModules, setActivePartyModules] = useState<PartyModuleId[]>(
+    []
+  );
   const [storyEntries, setStoryEntries] = useState<StoryEntry[]>([]);
   const storyEntriesRef = useRef<StoryEntry[]>([]);
   const photoFilesRef = useRef<Array<{ file: File; previewUrl: string }>>([]);
@@ -913,84 +1329,550 @@ export default function WeddingTemplateCustomizePage() {
     }
     if (sectionKey === "wedding-party") {
       return (
-        <div className="space-y-4">
-          <TileButton
-            icon={tileIcons.attendant}
-            label="Add attendant"
-            onClick={() =>
-              setPartyMembers((prev) => [
-                ...prev,
-                { id: generateId(), name: "", role: "", bio: "" },
-              ])
-            }
-          />
-          {partyMembers.length > 0 && (
-            <div className="space-y-2">
-              {partyMembers.map((member) => (
-                <div
-                  key={member.id}
-                  className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
-                >
-                  <input
-                    type="text"
-                    placeholder="Name"
-                    value={member.name}
-                    onChange={(event) =>
-                      setPartyMembers((prev) =>
-                        prev.map((entry) =>
-                          entry.id === member.id
-                            ? { ...entry, name: event.target.value }
-                            : entry
-                        )
-                      )
-                    }
-                    className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Role (Maid of Honor, Best Man)"
-                    value={member.role}
-                    onChange={(event) =>
-                      setPartyMembers((prev) =>
-                        prev.map((entry) =>
-                          entry.id === member.id
-                            ? { ...entry, role: event.target.value }
-                            : entry
-                        )
-                      )
-                    }
-                    className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                  />
-                  <textarea
-                    placeholder="Share a fun fact or connection story"
-                    value={member.bio}
-                    onChange={(event) =>
-                      setPartyMembers((prev) =>
-                        prev.map((entry) =>
-                          entry.id === member.id
-                            ? { ...entry, bio: event.target.value }
-                            : entry
-                        )
-                      )
-                    }
-                    rows={2}
-                    className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                  />
+        <div className="space-y-6">
+          <div>
+            <p className="text-sm font-semibold text-stone-700">
+              Make it yours by adding sections to your wedding party page.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {PARTY_MODULES.map((module) => {
+                const isActive = activePartyModules.includes(module.id);
+                return (
                   <button
+                    key={module.id}
                     type="button"
-                    className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
-                    onClick={() =>
-                      setPartyMembers((prev) =>
-                        prev.filter((entry) => entry.id !== member.id)
-                      )
-                    }
+                    onClick={() => addPartyModule(module.id)}
+                    disabled={isActive}
+                    className={`flex flex-col items-center justify-center gap-2 rounded-2xl border px-4 py-5 text-center shadow-sm transition ${
+                      isActive
+                        ? "border-stone-300 bg-stone-50 text-stone-400"
+                        : "border-stone-200 bg-white text-stone-900 hover:border-stone-400"
+                    }`}
                   >
-                    Remove
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-stone-200">
+                      <span className="h-6 w-6 text-stone-800 [&>svg]:h-full [&>svg]:w-full">
+                        {module.icon}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold uppercase tracking-[0.2em]">
+                      {module.label}
+                    </span>
+                    <span className="text-xs text-stone-500">
+                      {isActive ? "Added" : module.description}
+                    </span>
                   </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-stone-200 bg-white/90 p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+                  {"Bride's party"}
+                </p>
+                <span className="text-xs uppercase tracking-[0.2em] text-stone-400">
+                  {partnerOne
+                    ? `${partnerOne.split(" ")[0]}'s side`
+                    : "Partner A"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-stone-600">
+                Quick-add attendants tied to the bride/partner A side.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {BRIDE_ROLE_PRESETS.map((role) => (
+                  <QuickAddButton
+                    key={role}
+                    label={role}
+                    onClick={() => addPartyMemberWithRole(role)}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-stone-200 bg-white/90 p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+                  {"Groom's party"}
+                </p>
+                <span className="text-xs uppercase tracking-[0.2em] text-stone-400">
+                  {partnerTwo
+                    ? `${partnerTwo.split(" ")[0]}'s side`
+                    : "Partner B"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-stone-600">
+                Add best men, groomsmen, or junior roles to highlight them.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {GROOM_ROLE_PRESETS.map((role) => (
+                  <QuickAddButton
+                    key={role}
+                    label={role}
+                    onClick={() => addPartyMemberWithRole(role)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <PartyModuleCard title="Wedding party grid" removable={false}>
+            <TileButton
+              icon={tileIcons.attendant}
+              label="Add attendant"
+              onClick={() =>
+                setPartyMembers((prev) => [
+                  ...prev,
+                  { id: generateId(), name: "", role: "", bio: "" },
+                ])
+              }
+            />
+            {partyMembers.length > 0 && (
+              <div className="space-y-3">
+                {partyMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+                  >
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={member.name}
+                      onChange={(event) =>
+                        setPartyMembers((prev) =>
+                          prev.map((entry) =>
+                            entry.id === member.id
+                              ? { ...entry, name: event.target.value }
+                              : entry
+                          )
+                        )
+                      }
+                      className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Role (Maid of Honor, Best Man)"
+                      value={member.role}
+                      onChange={(event) =>
+                        setPartyMembers((prev) =>
+                          prev.map((entry) =>
+                            entry.id === member.id
+                              ? { ...entry, role: event.target.value }
+                              : entry
+                          )
+                        )
+                      }
+                      className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                    />
+                    <textarea
+                      placeholder="Share a fun fact or connection story"
+                      value={member.bio}
+                      onChange={(event) =>
+                        setPartyMembers((prev) =>
+                          prev.map((entry) =>
+                            entry.id === member.id
+                              ? { ...entry, bio: event.target.value }
+                              : entry
+                          )
+                        )
+                      }
+                      rows={2}
+                      className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+                      onClick={() =>
+                        setPartyMembers((prev) =>
+                          prev.filter((entry) => entry.id !== member.id)
+                        )
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </PartyModuleCard>
+          {activePartyModules.length === 0 && (
+            <p className="text-center text-sm text-stone-500">
+              Tap a tile above to insert optional sections like hero, featured,
+              or VIP notes.
+            </p>
           )}
+          <div className="space-y-4">
+            {activePartyModules.includes("hero") && (
+              <PartyModuleCard title="Hero message" moduleId="hero">
+                <input
+                  type="text"
+                  value={partyHeroTitle}
+                  onChange={(event) => setPartyHeroTitle(event.target.value)}
+                  placeholder="Section title"
+                  className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                />
+                <textarea
+                  value={partyHeroSubtext}
+                  onChange={(event) => setPartyHeroSubtext(event.target.value)}
+                  placeholder="Share why your people mean so much"
+                  rows={3}
+                  className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                />
+              </PartyModuleCard>
+            )}
+            {activePartyModules.includes("highlights") && (
+              <PartyModuleCard title="Featured people" moduleId="highlights">
+                <button
+                  type="button"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-600"
+                  onClick={() =>
+                    setPartyHighlights((prev) => [
+                      ...prev,
+                      {
+                        id: generateId(),
+                        label: "Featured role",
+                        name: "",
+                        role: "",
+                        copy: "",
+                      },
+                    ])
+                  }
+                >
+                  + Add highlight
+                </button>
+                {partyHighlights.length > 0 && (
+                  <div className="space-y-3">
+                    {partyHighlights.map((highlight) => (
+                      <div
+                        key={highlight.id}
+                        className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+                      >
+                        <input
+                          type="text"
+                          placeholder="Card label (Maid of Honor)"
+                          value={highlight.label}
+                          onChange={(event) =>
+                            setPartyHighlights((prev) =>
+                              prev.map((entry) =>
+                                entry.id === highlight.id
+                                  ? { ...entry, label: event.target.value }
+                                  : entry
+                              )
+                            )
+                          }
+                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                        />
+                        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <input
+                            type="text"
+                            placeholder="Name"
+                            value={highlight.name}
+                            onChange={(event) =>
+                              setPartyHighlights((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === highlight.id
+                                    ? { ...entry, name: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Role note"
+                            value={highlight.role}
+                            onChange={(event) =>
+                              setPartyHighlights((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === highlight.id
+                                    ? { ...entry, role: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                          />
+                        </div>
+                        <textarea
+                          placeholder="Share a one-sentence story"
+                          value={highlight.copy}
+                          onChange={(event) =>
+                            setPartyHighlights((prev) =>
+                              prev.map((entry) =>
+                                entry.id === highlight.id
+                                  ? { ...entry, copy: event.target.value }
+                                  : entry
+                              )
+                            )
+                          }
+                          rows={2}
+                          className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+                          onClick={() =>
+                            setPartyHighlights((prev) =>
+                              prev.filter((entry) => entry.id !== highlight.id)
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </PartyModuleCard>
+            )}
+            {activePartyModules.includes("vips") && (
+              <PartyModuleCard title="Honorary VIPs" moduleId="vips">
+                <button
+                  type="button"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-600"
+                  onClick={() =>
+                    setVipHonors((prev) => [
+                      ...prev,
+                      { id: generateId(), name: "", role: "", note: "" },
+                    ])
+                  }
+                >
+                  + Add VIP
+                </button>
+                {vipHonors.length > 0 && (
+                  <div className="space-y-3">
+                    {vipHonors.map((vip) => (
+                      <div
+                        key={vip.id}
+                        className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+                      >
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <input
+                            type="text"
+                            placeholder="Name"
+                            value={vip.name}
+                            onChange={(event) =>
+                              setVipHonors((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === vip.id
+                                    ? { ...entry, name: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Role"
+                            value={vip.role}
+                            onChange={(event) =>
+                              setVipHonors((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === vip.id
+                                    ? { ...entry, role: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                          />
+                        </div>
+                        <textarea
+                          placeholder="Short note"
+                          value={vip.note}
+                          onChange={(event) =>
+                            setVipHonors((prev) =>
+                              prev.map((entry) =>
+                                entry.id === vip.id
+                                  ? { ...entry, note: event.target.value }
+                                  : entry
+                              )
+                            )
+                          }
+                          rows={2}
+                          className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+                          onClick={() =>
+                            setVipHonors((prev) =>
+                              prev.filter((entry) => entry.id !== vip.id)
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </PartyModuleCard>
+            )}
+            {activePartyModules.includes("stories") && (
+              <PartyModuleCard title="Story collage" moduleId="stories">
+                <button
+                  type="button"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-600"
+                  onClick={() =>
+                    setStoryBlocks((prev) => [
+                      ...prev,
+                      { id: generateId(), badge: "", name: "", caption: "" },
+                    ])
+                  }
+                >
+                  + Add story
+                </button>
+                {storyBlocks.length > 0 && (
+                  <div className="space-y-3">
+                    {storyBlocks.map((block) => (
+                      <div
+                        key={block.id}
+                        className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+                      >
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <input
+                            type="text"
+                            placeholder="Badge (Sisterhood, College Crew)"
+                            value={block.badge}
+                            onChange={(event) =>
+                              setStoryBlocks((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === block.id
+                                    ? { ...entry, badge: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Heading"
+                            value={block.name}
+                            onChange={(event) =>
+                              setStoryBlocks((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === block.id
+                                    ? { ...entry, name: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                          />
+                        </div>
+                        <textarea
+                          placeholder="Mini caption"
+                          value={block.caption}
+                          onChange={(event) =>
+                            setStoryBlocks((prev) =>
+                              prev.map((entry) =>
+                                entry.id === block.id
+                                  ? { ...entry, caption: event.target.value }
+                                  : entry
+                              )
+                            )
+                          }
+                          rows={2}
+                          className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+                          onClick={() =>
+                            setStoryBlocks((prev) =>
+                              prev.filter((entry) => entry.id !== block.id)
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </PartyModuleCard>
+            )}
+            {activePartyModules.includes("fun-facts") && (
+              <PartyModuleCard title="Fun facts" moduleId="fun-facts">
+                <button
+                  type="button"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-600"
+                  onClick={() =>
+                    setFunFactEntries((prev) => [
+                      ...prev,
+                      { id: generateId(), text: "" },
+                    ])
+                  }
+                >
+                  + Add fact
+                </button>
+                {funFactEntries.length > 0 && (
+                  <div className="space-y-3">
+                    {funFactEntries.map((fact) => (
+                      <div
+                        key={fact.id}
+                        className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+                      >
+                        <textarea
+                          placeholder="Fun tidbit"
+                          value={fact.text}
+                          onChange={(event) =>
+                            setFunFactEntries((prev) =>
+                              prev.map((entry) =>
+                                entry.id === fact.id
+                                  ? { ...entry, text: event.target.value }
+                                  : entry
+                              )
+                            )
+                          }
+                          rows={2}
+                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+                          onClick={() =>
+                            setFunFactEntries((prev) =>
+                              prev.filter((entry) => entry.id !== fact.id)
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </PartyModuleCard>
+            )}
+            {activePartyModules.includes("banner") && (
+              <PartyModuleCard title="Group photo banner" moduleId="banner">
+                <input
+                  type="text"
+                  value={partyGroupPhotoCaption}
+                  onChange={(event) =>
+                    setPartyGroupPhotoCaption(event.target.value)
+                  }
+                  placeholder="Banner caption"
+                  className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                />
+              </PartyModuleCard>
+            )}
+            {activePartyModules.includes("closing") && (
+              <PartyModuleCard title="Closing note" moduleId="closing">
+                <textarea
+                  value={partyClosingNote}
+                  onChange={(event) => setPartyClosingNote(event.target.value)}
+                  placeholder="Thank your friends and family"
+                  rows={3}
+                  className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+                />
+              </PartyModuleCard>
+            )}
+          </div>
         </div>
       );
     }
@@ -1066,12 +1948,11 @@ export default function WeddingTemplateCustomizePage() {
     travelAirports.length > 0 ||
     travelDirections.length > 0;
   const hasActivityHighlights = activities.length > 0;
-  const hasWeddingParty = partyMembers.length > 0;
   const hasPhotos = photoFiles.length > 0;
 
   const previewNames =
-    template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName;
-  const [defaultLeft, defaultRight] = previewNames
+    template.preview?.coupleName ?? DEFAULT_PREVIEW.coupleName ?? "";
+  const [defaultLeft, defaultRight] = (previewNames || "")
     .split("&")
     .map((s) => s.trim());
   const location = template.preview?.location ?? DEFAULT_PREVIEW.location;
@@ -1094,7 +1975,120 @@ export default function WeddingTemplateCustomizePage() {
     template.preview?.dateLabel ??
     DEFAULT_PREVIEW.dateLabel;
   const previewLocation =
-    city || state ? [city, state].filter(Boolean).join(", ") : location;
+    city || state
+      ? [city, state]
+          .filter((v) => Boolean(v) && typeof v === "string")
+          .join(", ")
+      : location;
+
+  const weddingPartyPreview = useMemo<WeddingPartyPreview>(() => {
+    const normalizedMembers: PartyMemberPreview[] = partyMembers.map(
+      (member, index) => {
+        const displayRole = member.role?.trim() || "Wedding party";
+        return {
+          ...member,
+          displayName: member.name?.trim() || `Attendant ${index + 1}`,
+          displayRole,
+          displayBio:
+            member.bio?.trim() ||
+            `Standing with us as ${displayRole.toLowerCase()}.`,
+          roleSearch: member.role?.toLowerCase() ?? "",
+        };
+      }
+    );
+    const matchRole = (role: string, keywords: string[]) =>
+      keywords.some((keyword) => role.includes(keyword));
+    const buildGroups = (defs: PartyGroupDefinition[]) =>
+      defs.map<PartyGroupWithMembers>((group) => ({
+        ...group,
+        members: normalizedMembers.filter((member) =>
+          matchRole(member.roleSearch, group.keywords)
+        ),
+      }));
+    const brideGroups = buildGroups(BRIDE_PARTY_GROUPS);
+    const groomGroups = buildGroups(GROOM_PARTY_GROUPS);
+    const vipMembers = normalizedMembers.filter((member) =>
+      matchRole(member.roleSearch, VIP_ROLE_KEYWORDS)
+    );
+    const storyCollage = STORY_BLOCK_TEMPLATES.map((template, index) => {
+      const match =
+        normalizedMembers.length > 0
+          ? normalizedMembers.find((member) =>
+              matchRole(member.roleSearch, template.keywords)
+            ) ?? normalizedMembers[index % normalizedMembers.length]
+          : null;
+      return {
+        ...template,
+        name: match?.displayName ?? template.fallbackName,
+        caption:
+          match?.bio?.trim() || match?.displayBio || template.fallbackCaption,
+      };
+    });
+    return {
+      normalizedMembers,
+      brideGroups,
+      groomGroups,
+      derivedVipMembers: vipMembers,
+      fallbackHighlights: [],
+      fallbackStoryCollage: storyCollage,
+      isPlaceholder: false,
+    };
+  }, [partyMembers]);
+
+  const addPartyMemberWithRole = (role: string) => {
+    setPartyMembers((prev) => [
+      ...prev,
+      { id: generateId(), name: "", role, bio: "" },
+    ]);
+  };
+
+  const hasWeddingParty = weddingPartyPreview.normalizedMembers.length > 0;
+  const showWeddingPartyPreview = hasWeddingParty;
+  const highlightCards = partyHighlights
+    .map((highlight) =>
+      highlight.name.trim() || highlight.role.trim() || highlight.copy.trim()
+        ? {
+            key: highlight.id,
+            label: highlight.label || "Featured role",
+            name: highlight.name || "Beloved friend",
+            role: highlight.role || "",
+            copy: highlight.copy || "",
+          }
+        : null
+    )
+    .filter(Boolean) as FeaturedPerson[];
+  const vipCards =
+    vipHonors.length > 0
+      ? vipHonors.map((vip) => ({
+          key: vip.id,
+          name: vip.name || "Honorary guest",
+          role: vip.role || "",
+          note: vip.note || "",
+        }))
+      : weddingPartyPreview.derivedVipMembers.map((vip) => ({
+          key: vip.id,
+          name: vip.displayName,
+          role: vip.displayRole,
+          note: vip.displayBio,
+        }));
+  const storyCardData =
+    storyBlocks.length > 0
+      ? storyBlocks.map((block) => ({
+          key: block.id,
+          badge: block.badge || "Story",
+          name: block.name || "Best friends",
+          caption: block.caption || "",
+        }))
+      : weddingPartyPreview.fallbackStoryCollage;
+  const funFactsRender =
+    funFactEntries.length > 0 ? funFactEntries : DEFAULT_FUN_FACTS;
+  const heroEnabled = activePartyModules.includes("hero");
+  const highlightsEnabled = activePartyModules.includes("highlights");
+  const vipEnabled = activePartyModules.includes("vips");
+  const storiesEnabled = activePartyModules.includes("stories");
+  const funFactsEnabled = activePartyModules.includes("fun-facts");
+  const bannerEnabled = activePartyModules.includes("banner");
+  const closingEnabled = activePartyModules.includes("closing");
 
   const tileIcons: Record<string, ReactNode> = {
     hotel: (
@@ -1188,6 +2182,26 @@ export default function WeddingTemplateCustomizePage() {
     ),
   };
 
+  const getInitials = (name: string) => {
+    const segments = name
+      .split(/\s+/)
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    if (segments.length === 0) {
+      return "WP";
+    }
+    const [first, second] = segments;
+    const initials = `${first?.[0] ?? ""}${second?.[0] ?? ""}`;
+    return (initials || first?.[0] || "W").toUpperCase();
+  };
+
+  const getSideLabel = (name: string, fallback: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return fallback;
+    const first = trimmed.split(/\s+/)[0];
+    return first ? `${first}'s side` : fallback;
+  };
+
   const TileButton = ({
     icon,
     label,
@@ -1231,7 +2245,63 @@ export default function WeddingTemplateCustomizePage() {
     </div>
   );
 
+  const PartyModuleCard = ({
+    title,
+    children,
+    moduleId,
+    removable = true,
+  }: {
+    title: string;
+    children: ReactNode;
+    moduleId?: PartyModuleId;
+    removable?: boolean;
+  }) => (
+    <div className="rounded-2xl border border-stone-200 bg-white/90 p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+          {title}
+        </p>
+        {removable && moduleId && (
+          <button
+            type="button"
+            onClick={() => removePartyModule(moduleId)}
+            className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      <div className="mt-3 space-y-3">{children}</div>
+    </div>
+  );
+
+  const QuickAddButton = ({
+    label,
+    onClick,
+  }: {
+    label: string;
+    onClick: () => void;
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full border border-stone-300 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-stone-700 transition hover:border-stone-500 hover:text-stone-900"
+    >
+      + {label}
+    </button>
+  );
+
   const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
+
+  const addPartyModule = (moduleId: PartyModuleId) => {
+    setActivePartyModules((prev) =>
+      prev.includes(moduleId) ? prev : [...prev, moduleId]
+    );
+  };
+
+  const removePartyModule = (moduleId: PartyModuleId) => {
+    setActivePartyModules((prev) => prev.filter((id) => id !== moduleId));
+  };
 
   const handleContinue = useCallback(() => {
     const params = new URLSearchParams();
@@ -1331,128 +2401,445 @@ export default function WeddingTemplateCustomizePage() {
                       </div>
                     </PreviewCard>
                   )}
-                  {hasTravelDetails && (
-                    <PreviewCard title={menuLabel("travel", "Travel")}>
-                      {travelHotels.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-                            Hotels
-                          </p>
-                          <ul className="mt-1 space-y-1">
-                            {travelHotels.map((hotel) => (
-                              <li key={hotel.id}>
-                                <p className="font-semibold text-stone-900">
-                                  {hotel.name || "Hotel to be announced"}
-                                </p>
-                                {hotel.detail && (
-                                  <p className="text-sm text-stone-600">
-                                    {hotel.detail}
-                                  </p>
-                                )}
-                                {hotel.link && (
-                                  <a
-                                    href={hotel.link}
-                                    className="text-xs text-stone-500 underline"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
-                                    {hotel.link}
-                                  </a>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {travelAirports.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-                            Airports
-                          </p>
-                          <ul className="mt-1 space-y-1">
-                            {travelAirports.map((airport) => (
-                              <li key={airport.id}>
-                                <p className="font-semibold text-stone-900">
-                                  {airport.name || "Airport info coming soon"}
-                                </p>
-                                {airport.detail && (
-                                  <p className="text-sm text-stone-600">
-                                    {airport.detail}
-                                  </p>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {travelDirections.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-                            Directions
-                          </p>
-                          <ul className="mt-1 space-y-1">
-                            {travelDirections.map((direction) => (
-                              <li key={direction.id}>
-                                <p className="font-semibold text-stone-900">
-                                  {direction.title || "Transit plan"}
-                                </p>
-                                {direction.instructions && (
-                                  <p className="text-sm text-stone-600">
-                                    {direction.instructions}
-                                  </p>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </PreviewCard>
-                  )}
-                  {hasActivityHighlights && (
-                    <PreviewCard
-                      title={menuLabel("things-to-do", "Things To Do")}
-                    >
-                      <ul className="space-y-2">
-                        {activities.map((activity) => (
-                          <li key={activity.id}>
-                            <p className="font-semibold text-stone-900">
-                              {activity.title || "Weekend highlight"}
-                            </p>
-                            {activity.description && (
-                              <p className="text-sm text-stone-600">
-                                {activity.description}
-                              </p>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </PreviewCard>
-                  )}
-                  {hasWeddingParty && (
+                  {showWeddingPartyPreview && (
                     <PreviewCard
                       title={menuLabel("wedding-party", "Wedding Party")}
                     >
-                      <ul className="space-y-2">
-                        {partyMembers.map((member) => (
-                          <li key={member.id}>
-                            <p className="font-semibold text-stone-900">
-                              {member.name || "Attendant"}
-                              {member.role && (
-                                <span className="ml-2 text-xs uppercase tracking-[0.2em] text-stone-500">
-                                  {member.role}
-                                </span>
-                              )}
+                      <div className="space-y-10">
+                        {heroEnabled && (
+                          <div className="relative overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-br from-amber-50 via-white to-stone-50 p-8 text-stone-900">
+                            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-200/60 blur-3xl" />
+                            <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.3em] text-stone-600">
+                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-900">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="h-5 w-5"
+                                  strokeWidth="1.8"
+                                >
+                                  <path
+                                    d="M12 21s-7-4.35-7-10a4 4 0 017-3 4 4 0 017 3c0 5.65-7 10-7 10z"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                              <span>
+                                💛 {partyHeroTitle || DEFAULT_PARTY_HERO.title}
+                              </span>
+                            </div>
+                            <h3 className="mt-4 text-3xl font-serif text-stone-900">
+                              {partyHeroTitle || DEFAULT_PARTY_HERO.title}
+                            </h3>
+                            <p className="mt-3 max-w-2xl text-base text-stone-600">
+                              {partyHeroSubtext || DEFAULT_PARTY_HERO.subtext}
                             </p>
-                            {member.bio && (
-                              <p className="text-sm text-stone-600">
-                                {member.bio}
+                          </div>
+                        )}
+
+                        {highlightsEnabled && highlightCards.length > 0 && (
+                          <div>
+                            <div className="mb-4 flex items-center gap-3">
+                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-900">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="h-5 w-5"
+                                  strokeWidth="1.6"
+                                >
+                                  <path
+                                    d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 17l-4.9 1.2.9-5.5-4-3.9 5.5-.8z"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                                  Featured hearts
+                                </p>
+                                <p className="text-lg font-semibold text-stone-900">
+                                  Spotlight stories
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {highlightCards.map((featured) => (
+                                <div
+                                  key={featured.key}
+                                  className="rounded-3xl border border-stone-900/10 bg-stone-900 p-6 text-white shadow-md"
+                                >
+                                  <p className="text-xs uppercase tracking-[0.4em] text-amber-200">
+                                    {featured.label}
+                                  </p>
+                                  <p className="mt-3 text-2xl font-serif text-white">
+                                    {featured.name}
+                                  </p>
+                                  <p className="text-xs uppercase tracking-[0.5em] text-white/70">
+                                    {featured.role}
+                                  </p>
+                                  <p className="mt-4 text-base text-white/80">
+                                    {featured.copy}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white/90 p-6 shadow-sm">
+                          <div
+                            className="pointer-events-none absolute left-1/2 top-0 hidden h-full w-32 -translate-x-1/2 opacity-30 md:block"
+                            style={{
+                              background:
+                                "linear-gradient(140deg, rgba(0,0,0,0) 0%, rgba(16,24,40,0.12) 50%, rgba(0,0,0,0) 100%)",
+                              transform: "skewX(-20deg)",
+                            }}
+                            aria-hidden="true"
+                          />
+                          <div className="relative grid gap-6 md:grid-cols-2">
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-900">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    className="h-5 w-5"
+                                    strokeWidth="1.6"
+                                  >
+                                    <circle cx="8" cy="8" r="3" />
+                                    <circle cx="16" cy="10" r="2.5" />
+                                    <path
+                                      d="M3.5 19c0-3 2.5-5 4.5-5s4.5 2 4.5 5M12 19c0-2.5 1.5-4 3-4s3 1.5 3 4"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                </span>
+                                <div>
+                                  <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                                    {"Bride's party"}
+                                  </p>
+                                  <p className="text-lg font-semibold text-stone-900">
+                                    {getSideLabel(partnerOne, "Bride's Side")}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-4 space-y-3">
+                                {weddingPartyPreview.brideGroups.map(
+                                  (group) => (
+                                    <div key={group.key}>
+                                      <p className="font-semibold text-stone-900">
+                                        {group.label}
+                                      </p>
+                                      {group.members.length > 0 ? (
+                                        <ul className="mt-1 flex flex-wrap gap-2">
+                                          {group.members.map((member) => (
+                                            <li
+                                              key={member.id}
+                                              className="rounded-full border border-stone-200 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-stone-600"
+                                            >
+                                              {member.displayName}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-sm text-stone-400">
+                                          Add {group.label.toLowerCase()} to
+                                          spotlight them.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-900">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    className="h-5 w-5"
+                                    strokeWidth="1.6"
+                                  >
+                                    <circle cx="8" cy="8" r="3" />
+                                    <circle cx="16" cy="10" r="2.5" />
+                                    <path
+                                      d="M3.5 19c0-3 2.5-5 4.5-5s4.5 2 4.5 5M12 19c0-2.5 1.5-4 3-4s3 1.5 3 4"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                </span>
+                                <div>
+                                  <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                                    {"Groom's party"}
+                                  </p>
+                                  <p className="text-lg font-semibold text-stone-900">
+                                    {getSideLabel(partnerTwo, "Groom's Side")}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-4 space-y-3">
+                                {weddingPartyPreview.groomGroups.map(
+                                  (group) => (
+                                    <div key={group.key}>
+                                      <p className="font-semibold text-stone-900">
+                                        {group.label}
+                                      </p>
+                                      {group.members.length > 0 ? (
+                                        <ul className="mt-1 flex flex-wrap gap-2">
+                                          {group.members.map((member) => (
+                                            <li
+                                              key={member.id}
+                                              className="rounded-full border border-stone-200 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-stone-600"
+                                            >
+                                              {member.displayName}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-sm text-stone-400">
+                                          Add {group.label.toLowerCase()} to
+                                          spotlight them.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-900">
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                className="h-5 w-5"
+                                strokeWidth="1.6"
+                              >
+                                <circle cx="12" cy="12" r="4" />
+                                <path
+                                  d="M4 12h4M16 12h4M12 4v4M12 16v4"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            </span>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                                Modern grid
                               </p>
+                              <p className="text-lg font-semibold text-stone-900">
+                                Wedding Party Roll Call
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {weddingPartyPreview.normalizedMembers.map(
+                              (member, index) => (
+                                <div
+                                  key={member.id}
+                                  className="rounded-2xl border border-stone-200 bg-white/90 p-4 shadow-sm"
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <div
+                                      className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${
+                                        AVATAR_COLORS[
+                                          index % AVATAR_COLORS.length
+                                        ]
+                                      }`}
+                                    >
+                                      {getInitials(member.displayName)}
+                                    </div>
+                                    <div>
+                                      <p className="text-base font-semibold text-stone-900">
+                                        {member.displayName}
+                                      </p>
+                                      <p className="text-xs uppercase tracking-[0.4em] text-stone-500">
+                                        {member.displayRole}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <p className="mt-3 text-sm text-stone-600">
+                                    {member.displayBio}
+                                  </p>
+                                </div>
+                              )
                             )}
-                          </li>
-                        ))}
-                      </ul>
+                          </div>
+                        </div>
+
+                        {vipEnabled && vipCards.length > 0 && (
+                          <div className="rounded-3xl border border-stone-900/10 bg-gradient-to-br from-stone-900 to-stone-800 p-6 text-white">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="h-5 w-5"
+                                  strokeWidth="1.6"
+                                >
+                                  <path
+                                    d="M5 13l4 4L19 7"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.3em] text-amber-200">
+                                  Our VIPs
+                                </p>
+                                <p className="text-lg font-semibold text-white">
+                                  Honorary guests
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                              {vipCards.map((vip) => (
+                                <div
+                                  key={vip.key}
+                                  className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"
+                                >
+                                  <p className="text-base font-semibold text-white">
+                                    {vip.name}
+                                  </p>
+                                  <p className="text-xs uppercase tracking-[0.4em] text-white/70">
+                                    {vip.role}
+                                  </p>
+                                  <p className="mt-2 text-sm text-white/80">
+                                    {vip.note}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {storiesEnabled && storyCardData.length > 0 && (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-900">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="h-5 w-5"
+                                  strokeWidth="1.6"
+                                >
+                                  <path
+                                    d="M5 5h4l2 4h4l2 4h2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <circle cx="6" cy="5" r="1" />
+                                </svg>
+                              </span>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                                  Story collage
+                                </p>
+                                <p className="text-lg font-semibold text-stone-900">
+                                  How we know them
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {storyCardData.slice(0, 4).map((story) => (
+                                <div
+                                  key={story.key}
+                                  className="relative overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/80 p-4 shadow-inner"
+                                >
+                                  <p className="text-xs uppercase tracking-[0.4em] text-stone-500">
+                                    {story.badge}
+                                  </p>
+                                  <p className="mt-2 text-lg font-semibold text-stone-900">
+                                    {story.name}
+                                  </p>
+                                  <p className="mt-1 text-sm text-stone-600">
+                                    {story.caption}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {funFactsEnabled && funFactsRender.length > 0 && (
+                          <div className="rounded-3xl border border-stone-200 bg-white/90 p-6 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-900">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  className="h-5 w-5"
+                                  strokeWidth="1.6"
+                                >
+                                  <path
+                                    d="M6 9l4-4 4 4M18 15l-4 4-4-4"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                                  Fun things you should know
+                                </p>
+                                <p className="text-lg font-semibold text-stone-900">
+                                  Fun facts
+                                </p>
+                              </div>
+                            </div>
+                            <ul className="mt-4 space-y-2 text-sm text-stone-700">
+                              {funFactsRender.map((fact, index) => (
+                                <li
+                                  key={`${fact.id}-${index}`}
+                                  className="flex items-start gap-3"
+                                >
+                                  <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-stone-900" />
+                                  <span>{fact.text}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {bannerEnabled && (
+                          <div className="relative overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-r from-stone-800 via-stone-700 to-stone-900 px-6 py-16 text-center text-white">
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_transparent_55%)] opacity-80" />
+                            <p className="relative text-2xl font-semibold">
+                              {partyGroupPhotoCaption ||
+                                DEFAULT_PARTY_HERO.groupPhotoCaption}
+                            </p>
+                            <p className="relative mt-2 text-sm text-white/80">
+                              Add your favorite group photo to make this banner
+                              shine.
+                            </p>
+                          </div>
+                        )}
+
+                        {closingEnabled && (
+                          <div className="text-center text-sm text-stone-600">
+                            <p>
+                              {partyClosingNote ||
+                                DEFAULT_PARTY_HERO.closingNote}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </PreviewCard>
                   )}
+
                   {hasPhotos && (
                     <PreviewCard title={menuLabel("photos", "Photos")}>
                       <div className="relative w-full">

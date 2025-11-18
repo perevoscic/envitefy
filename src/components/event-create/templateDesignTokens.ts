@@ -243,11 +243,22 @@ const SCRIPT_FONT_ENTRIES = [
 const SCRIPT_FONT_TOKENS = SCRIPT_FONT_ENTRIES.reduce<
   Record<string, TemplateFontToken>
 >((acc, entry) => {
+  // Make kid-friendly fonts bolder for birthday templates
+  const isKidFriendly = [
+    "font-pacifico",
+    "font-cookie",
+    "font-yellowtail",
+    "font-shadows-into-light",
+    "font-indie-flower",
+    "font-kalam",
+    "font-dancing-script",
+  ].includes(entry.id);
+  
   acc[entry.id] = {
     id: entry.id,
     label: entry.label,
     fontVar: entry.varName,
-    weight: "normal",
+    weight: isKidFriendly ? "bold" : "normal",
     align: "center",
   };
   return acc;
@@ -368,6 +379,60 @@ export const TEMPLATE_PALETTE_TOKENS = {
     background: "linear-gradient(155deg, #F7F2FB, #C3A6DA)",
     titleColor: "#231434",
     defaultFontId: "serif-bold-center",
+  },
+  "birthday-bright": {
+    id: "birthday-bright",
+    label: "Birthday Bright",
+    tagline: "Vibrant party colors",
+    swatches: ["#FFE4F0", "#FFB3D9", "#FF69B4", "#FF1493", "#CC0066"],
+    background: "linear-gradient(145deg, #FFE4F0 0%, #FFB3D9 50%, #FF69B4 100%)",
+    titleColor: "#CC0066",
+    defaultFontId: "script-center",
+  },
+  "rainbow-fun": {
+    id: "rainbow-fun",
+    label: "Rainbow Fun",
+    tagline: "Colorful celebration",
+    swatches: ["#FFE5CC", "#FFD700", "#FF8C00", "#FF4500", "#FF1493"],
+    background: "linear-gradient(145deg, #FFE5CC 0%, #FFD700 30%, #FF8C00 70%, #FF4500 100%)",
+    titleColor: "#CC0000",
+    defaultFontId: "script-center",
+  },
+  "ocean-splash": {
+    id: "ocean-splash",
+    label: "Ocean Splash",
+    tagline: "Cool & refreshing",
+    swatches: ["#B3E5FC", "#4FC3F7", "#29B6F6", "#0288D1", "#01579B"],
+    background: "linear-gradient(150deg, #B3E5FC 0%, #4FC3F7 50%, #29B6F6 100%)",
+    titleColor: "#01579B",
+    defaultFontId: "script-center",
+  },
+  "sunshine-yellow": {
+    id: "sunshine-yellow",
+    label: "Sunshine Yellow",
+    tagline: "Cheerful & bright",
+    swatches: ["#FFF9C4", "#FFF59D", "#FFEB3B", "#FDD835", "#F57F17"],
+    background: "linear-gradient(145deg, #FFF9C4 0%, #FFF59D 50%, #FFEB3B 100%)",
+    titleColor: "#E65100",
+    defaultFontId: "script-center",
+  },
+  "purple-magic": {
+    id: "purple-magic",
+    label: "Purple Magic",
+    tagline: "Magical & fun",
+    swatches: ["#F3E5F5", "#E1BEE7", "#CE93D8", "#BA68C8", "#7B1FA2"],
+    background: "linear-gradient(155deg, #F3E5F5 0%, #E1BEE7 50%, #CE93D8 100%)",
+    titleColor: "#4A148C",
+    defaultFontId: "script-center",
+  },
+  "green-garden-party": {
+    id: "green-garden-party",
+    label: "Green Garden Party",
+    tagline: "Fresh & lively",
+    swatches: ["#C8E6C9", "#A5D6A7", "#81C784", "#66BB6A", "#2E7D32"],
+    background: "linear-gradient(150deg, #C8E6C9 0%, #A5D6A7 50%, #81C784 100%)",
+    titleColor: "#1B5E20",
+    defaultFontId: "script-center",
   },
 } as const satisfies Record<string, TemplatePaletteToken>;
 

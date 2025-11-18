@@ -34,7 +34,8 @@ export type TemplateGalleryTemplate = {
 };
 
 export type TemplatePreviewData = {
-  coupleName: string;
+  coupleName?: string;
+  birthdayName?: string;
   dateLabel: string;
   location: string;
 };
@@ -46,7 +47,9 @@ export const DEFAULT_PREVIEW: TemplatePreviewData = {
 };
 
 function hashSeed(seed: string) {
-  return seed.split("").reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
+  return seed
+    .split("")
+    .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
 }
 
 function tweakChannel(value: number, delta: number) {
@@ -65,17 +68,20 @@ function adjustHex(hex: string, delta: number): string {
   const nextR = tweakChannel(r, delta);
   const nextG = tweakChannel(g, Math.round(delta / 2));
   const nextB = tweakChannel(b, -Math.round(delta / 3));
-  return `#${((nextR << 16) | (nextG << 8) | nextB).toString(16).padStart(6, "0")}`;
+  return `#${((nextR << 16) | (nextG << 8) | nextB)
+    .toString(16)
+    .padStart(6, "0")}`;
 }
 
 function adjustGradientStops(gradient: string, delta: number) {
-  return gradient.replace(/#([0-9a-fA-F]{6})/g, (match) => adjustHex(match, delta));
+  return gradient.replace(/#([0-9a-fA-F]{6})/g, (match) =>
+    adjustHex(match, delta)
+  );
 }
 
 function rotateArray<T>(values: T[], shift: number): T[] {
   if (!values.length) return values;
-  const normalized =
-    ((shift % values.length) + values.length) % values.length;
+  const normalized = ((shift % values.length) + values.length) % values.length;
   if (normalized === 0) return [...values];
   return [...values.slice(normalized), ...values.slice(0, normalized)];
 }
@@ -135,7 +141,9 @@ export function resolveTemplateVariation(
 ): ResolvedTemplateVariation {
   const basePalette =
     variation.palette ??
-    (variation.paletteId ? getPaletteToken(variation.paletteId) : getPaletteToken(undefined));
+    (variation.paletteId
+      ? getPaletteToken(variation.paletteId)
+      : getPaletteToken(undefined));
   const palette = applyUniquePalette(basePalette, variation.id);
   const fontToken = getFontToken(variation.fontId ?? palette.defaultFontId);
   return {
@@ -183,6 +191,9 @@ export default function TemplateGallery({
                 <div
                   className={styles.previewHeader}
                   style={{ background: activeVariation.background }}
+                  data-birthday={
+                    (template.preview as any)?.birthdayName ? "true" : undefined
+                  }
                 >
                   <p
                     className={styles.previewNames}
@@ -197,7 +208,9 @@ export default function TemplateGallery({
                           : 400,
                     }}
                   >
-                    {previewInfo.coupleName}
+                    {(previewInfo as any).birthdayName
+                      ? `${(previewInfo as any).birthdayName}'s Birthday`
+                      : previewInfo.coupleName || "Event"}
                   </p>
                   <p
                     className={styles.previewMeta}
@@ -250,9 +263,7 @@ export default function TemplateGallery({
                   className={`${styles.selectButton} ${
                     isSelected ? styles.selectButtonSelected : ""
                   }`}
-                  onClick={() =>
-                    onApplyTemplate(template, activeVariation)
-                  }
+                  onClick={() => onApplyTemplate(template, activeVariation)}
                 >
                   {isSelected ? "Selected" : "Use template"}
                 </button>

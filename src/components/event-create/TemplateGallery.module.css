@@ -130,6 +130,8 @@
   gap: 1rem;
   transform: translateX(100%);
   transition: transform 260ms ease;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
 }
 
 .detailPanelOpen {
@@ -303,6 +305,47 @@
   min-height: 140px;
 }
 
+/* Kid-friendly birthday invitation style */
+.previewHeader[data-birthday="true"] {
+  padding: 1.75rem 1.5rem 1.25rem;
+  border: 4px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  margin: 8px;
+  box-shadow: 
+    0 0 0 3px rgba(255, 192, 203, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: visible;
+  min-height: 160px;
+}
+
+.previewHeader[data-birthday="true"]::before {
+  content: "🎈";
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 1.8rem;
+  opacity: 0.4;
+  animation: float 3s ease-in-out infinite;
+  z-index: 1;
+}
+
+.previewHeader[data-birthday="true"]::after {
+  content: "🎉";
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  font-size: 1.8rem;
+  opacity: 0.4;
+  animation: float 3s ease-in-out infinite 1.5s;
+  z-index: 1;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+}
+
 .previewHeroTag {
   align-self: flex-start;
   padding: 0.3rem 0.8rem;
@@ -320,11 +363,30 @@
   text-transform: none;
 }
 
+/* Bigger, bolder text for kids' birthday invitations */
+.previewHeader[data-birthday="true"] .previewNames {
+  font-size: 2.4rem !important;
+  font-weight: 700 !important;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.15), 0 0 10px rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  z-index: 2;
+  position: relative;
+}
+
 .previewMeta {
   margin: 0;
   font-size: 0.85rem;
   letter-spacing: 0.12em;
   text-transform: none;
+}
+
+.previewHeader[data-birthday="true"] .previewMeta {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  position: relative;
 }
 
 .previewNav {
