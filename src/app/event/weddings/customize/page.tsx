@@ -1349,11 +1349,6 @@ export default function WeddingTemplateCustomizePage() {
                         : "border-stone-200 bg-white text-stone-900 hover:border-stone-400"
                     }`}
                   >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-stone-200">
-                      <span className="h-6 w-6 text-stone-800 [&>svg]:h-full [&>svg]:w-full">
-                        {module.icon}
-                      </span>
-                    </span>
                     <span className="text-sm font-semibold uppercase tracking-[0.2em]">
                       {module.label}
                     </span>

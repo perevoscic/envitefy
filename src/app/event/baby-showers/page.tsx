@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import BabyShowersCreate from "@/components/event-create/BabyShowersCreate";
+import BabyShowersCreateTemplate from "@/components/event-create/BabyShowersCreateTemplate";
 
 export default function NewBabyShowerEventPage() {
   const search = useSearchParams();
@@ -20,8 +21,19 @@ export default function NewBabyShowerEventPage() {
     const id = search?.get("edit");
     return id && id.trim() ? id.trim() : undefined;
   }, [search]);
+  const templateId = search?.get("templateId");
+  const variationId = search?.get("variationId") ?? undefined;
+
+  if (!editEventId && !templateId) {
+    return <BabyShowersCreateTemplate defaultDate={defaultDate} />;
+  }
 
   return (
-    <BabyShowersCreate defaultDate={defaultDate} editEventId={editEventId} />
+    <BabyShowersCreate
+      defaultDate={defaultDate}
+      editEventId={editEventId}
+      templateId={templateId || undefined}
+      templateVariationId={variationId}
+    />
   );
 }

@@ -174,7 +174,9 @@ export default function BirthdayTemplateView({
   const previewLocation =
     eventData?.location || template.preview?.location || "Location TBD";
 
-  const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
+  const heroImageSrc =
+    (eventData?.customHeroImage as string) ||
+    `/templates/wedding-placeholders/${template.heroImageName}`;
   const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
 
   const venue = eventData?.venue || "";
@@ -228,7 +230,7 @@ export default function BirthdayTemplateView({
                   className={styles.previewNav}
                   style={{ color: variation.titleColor }}
                 >
-                  {template.menu.slice(0, 5).map((item) => (
+                  {template.menu.map((item) => (
                     <span key={item} className={styles.previewNavItem}>
                       {item}
                     </span>
@@ -264,14 +266,22 @@ export default function BirthdayTemplateView({
                 )}
               </div>
               <div className={styles.previewPhoto}>
-                <Image
-                  src={heroImageSrc}
-                  alt={`${template.name} preview`}
-                  width={640}
-                  height={360}
-                  className={styles.previewPhotoImage}
-                  priority={false}
-                />
+                {heroImageSrc.startsWith("data:") ? (
+                  <img
+                    src={heroImageSrc}
+                    alt={`${template.name} preview`}
+                    className={styles.previewPhotoImage}
+                  />
+                ) : (
+                  <Image
+                    src={heroImageSrc}
+                    alt={`${template.name} preview`}
+                    width={640}
+                    height={360}
+                    className={styles.previewPhotoImage}
+                    priority={false}
+                  />
+                )}
               </div>
             </div>
 

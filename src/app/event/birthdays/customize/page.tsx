@@ -82,19 +82,13 @@ const infoSections = [
     key: "headline",
     label: "Headline",
     description:
-      "Set the birthday person's name, event date, and city/state for the hero header.",
+      "Set the event title, event date, and time for the hero header.",
   },
   {
     key: "design",
     label: "Design",
     description:
       "Pick a color story that sets the palette for the hero preview.",
-  },
-  {
-    key: "photos",
-    label: "Photos",
-    description:
-      "Upload up to five gallery photos. Landscape-oriented shots keep the layout tidy.",
   },
   {
     key: "registry",
@@ -144,6 +138,13 @@ export default function BirthdayTemplateCustomizePage() {
   >([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [customHeroImage, setCustomHeroImage] = useState<{
+    file: File;
+    previewUrl: string;
+    dataUrl?: string;
+  } | null>(null);
+  const heroImageInputRef = useRef<HTMLInputElement>(null);
+  const heroImageObjectUrlRef = useRef<string | null>(null);
   const [customTitles, setCustomTitles] = useState<Record<string, string>>({});
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
@@ -161,6 +162,9 @@ export default function BirthdayTemplateCustomizePage() {
       photoFiles.forEach((photo) => {
         URL.revokeObjectURL(photo.previewUrl);
       });
+      if (heroImageObjectUrlRef.current) {
+        URL.revokeObjectURL(heroImageObjectUrlRef.current);
+      }
     };
   }, []);
 
@@ -204,6 +208,50 @@ export default function BirthdayTemplateCustomizePage() {
     setCurrentPhotoIndex(
       (prev) => (prev - 1 + photoFiles.length) % photoFiles.length
     );
+  };
+
+  const handleHeroImageChange = async (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Clean up previous object URL
+    if (heroImageObjectUrlRef.current) {
+      URL.revokeObjectURL(heroImageObjectUrlRef.current);
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    heroImageObjectUrlRef.current = previewUrl;
+
+    // Convert to data URL for storage
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setCustomHeroImage({
+        file,
+        previewUrl,
+        dataUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input to allow selecting the same file again
+    if (heroImageInputRef.current) {
+      heroImageInputRef.current.value = "";
+    }
+  };
+
+  const removeHeroImage = () => {
+    if (heroImageObjectUrlRef.current) {
+      URL.revokeObjectURL(heroImageObjectUrlRef.current);
+      heroImageObjectUrlRef.current = null;
+    }
+    setCustomHeroImage(null);
+    if (heroImageInputRef.current) {
+      heroImageInputRef.current.value = "";
+    }
   };
 
   useEffect(() => {
@@ -253,13 +301,13 @@ export default function BirthdayTemplateCustomizePage() {
       return (
         <div className="space-y-4">
           <label className="block text-sm font-medium text-stone-700">
-            Birthday person's name
+            Title
             <input
               type="text"
               value={birthdayName}
               onChange={(e) => setBirthdayName(e.target.value)}
               className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-              placeholder="Name"
+              placeholder="Event Title"
             />
           </label>
           <label className="block text-sm font-medium text-stone-700">
@@ -267,26 +315,29 @@ export default function BirthdayTemplateCustomizePage() {
             <input
               type="date"
               value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
+              onChange={(e) => {
+                setEventDate(e.target.value);
+                setWhenDate(e.target.value);
+              }}
               className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
             />
           </label>
           <div className="grid grid-cols-2 gap-4">
             <label className="block text-sm font-medium text-stone-700">
-              City
+              Start time
               <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
               />
             </label>
             <label className="block text-sm font-medium text-stone-700">
-              State
+              End time
               <input
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
               />
             </label>
@@ -328,95 +379,6 @@ export default function BirthdayTemplateCustomizePage() {
               );
             })}
           </div>
-        </div>
-      );
-    }
-    if (sectionKey === "photos") {
-      return (
-        <div className="space-y-3">
-          <div className="flex flex-col gap-2">
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handlePhotoChange}
-              className="hidden"
-              id="photo-upload-input"
-              disabled={photoFiles.length >= 5}
-            />
-            <label
-              htmlFor="photo-upload-input"
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 ${
-                photoFiles.length >= 5 ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <rect
-                  x="3"
-                  y="3"
-                  width="18"
-                  height="18"
-                  rx="2"
-                  strokeWidth="1.6"
-                />
-                <circle cx="8.5" cy="8.5" r="1.5" strokeWidth="1.6" />
-                <path
-                  d="M21 15l-5-5L5 21"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Choose Files</span>
-            </label>
-            <p className="text-xs text-stone-500">
-              Selected {photoFiles.length}{" "}
-              {photoFiles.length === 1 ? "photo" : "photos"} (max 5).
-            </p>
-            <p className="text-xs text-stone-500">
-              💡 Best results: Landscape photos (16:9 or 4:3), 1920×1080px or
-              larger. JPG or PNG, under 10MB per image.
-            </p>
-          </div>
-          {photoFiles.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-              {photoFiles.map((photo, index) => (
-                <div
-                  key={index}
-                  className="relative group rounded-lg overflow-hidden border border-stone-200 bg-white"
-                >
-                  <img
-                    src={photo.previewUrl}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-32 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(index)}
-                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Remove photo"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      className="h-4 w-4"
-                      strokeWidth="2"
-                    >
-                      <path d="M18 6L6 18M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       );
     }
@@ -581,7 +543,15 @@ export default function BirthdayTemplateCustomizePage() {
   useEffect(() => {
     setEndDate(whenDate);
   }, [whenDate]);
+
+  // Sync eventDate with whenDate
+  useEffect(() => {
+    if (whenDate && eventDate !== whenDate) {
+      setEventDate(whenDate);
+    }
+  }, [whenDate]);
   const [venue, setVenue] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
   const [eventLocation, setEventLocation] = useState("");
   const [description, setDescription] = useState("");
   const [rsvp, setRsvp] = useState("");
@@ -628,6 +598,18 @@ export default function BirthdayTemplateCustomizePage() {
             }))
           );
         }
+        if (data.customHeroImage) {
+          // Load custom hero image from stored data URL
+          // Create a placeholder file object for consistency
+          const placeholderFile = new File([], "hero-image", {
+            type: "image/jpeg",
+          });
+          setCustomHeroImage({
+            file: placeholderFile,
+            previewUrl: data.customHeroImage,
+            dataUrl: data.customHeroImage,
+          });
+        }
 
         // Load event details
         if (event.title) {
@@ -635,8 +617,10 @@ export default function BirthdayTemplateCustomizePage() {
         }
         if (data.startISO) {
           const startDate = new Date(data.startISO);
-          setWhenDate(toLocalDateValue(startDate));
-          setEndDate(toLocalDateValue(startDate));
+          const dateValue = toLocalDateValue(startDate);
+          setWhenDate(dateValue);
+          setEventDate(dateValue);
+          setEndDate(dateValue);
           if (!data.allDay) {
             setStartTime(toLocalTimeValue(startDate));
             if (data.endISO) {
@@ -650,13 +634,26 @@ export default function BirthdayTemplateCustomizePage() {
           setVenue(data.venue);
         }
         if (data.location) {
-          setEventLocation(data.location);
-          // Try to extract city/state from location
+          // Parse location into streetAddress, city, state
           const parts = data.location.split(",").map((s: string) => s.trim());
-          if (parts.length >= 2) {
+          if (parts.length >= 3) {
+            // Format: "Street, City, State"
+            setStreetAddress(parts[0]);
+            setCity(parts[1]);
+            setState(parts.slice(2).join(", "));
+          } else if (parts.length === 2) {
+            // Format: "City, State" (no street address)
+            setStreetAddress("");
             setCity(parts[0]);
-            setState(parts.slice(1).join(", "));
+            setState(parts[1]);
+          } else if (parts.length === 1) {
+            // Single part - could be street, city, or state
+            setStreetAddress(parts[0]);
+            setCity("");
+            setState("");
           }
+          // Keep eventLocation for backward compatibility
+          setEventLocation(data.location);
         }
         if (data.description) {
           setDescription(data.description);
@@ -684,14 +681,16 @@ export default function BirthdayTemplateCustomizePage() {
   }, [description]);
 
   const previewName =
-    birthdayName.trim() || template.preview?.birthdayName || "Birthday Person";
+    birthdayName.trim() || template.preview?.birthdayName || "Event";
 
   const previewDateLabel =
     formatDateLabel(eventDate) ??
     template.preview?.dateLabel ??
     DEFAULT_PREVIEW.dateLabel;
-  const previewLocation =
-    city || state ? [city, state].filter(Boolean).join(", ") : templateLocation;
+  const previewLocation = useMemo(() => {
+    const parts = [streetAddress, city, state].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : templateLocation;
+  }, [streetAddress, city, state, templateLocation]);
 
   const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
   const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
@@ -751,8 +750,13 @@ export default function BirthdayTemplateCustomizePage() {
           url: r.url.trim(),
         }));
 
+      // Combine address parts into location
+      const locationParts = [streetAddress, city, state].filter(Boolean);
+      const combinedLocation =
+        locationParts.length > 0 ? locationParts.join(", ") : undefined;
+
       const payload: any = {
-        title: title || `${birthdayName || "Birthday Person"}'s Birthday`,
+        title: title || birthdayName || "Event",
         data: {
           category: "Birthdays",
           createdVia: "template",
@@ -760,7 +764,7 @@ export default function BirthdayTemplateCustomizePage() {
           startISO,
           endISO,
           venue: venue || undefined,
-          location: eventLocation || undefined,
+          location: combinedLocation || undefined,
           description: description || undefined,
           rsvp: (rsvp || "").trim() || undefined,
           numberOfGuests: numberOfGuests || 0,
@@ -775,6 +779,7 @@ export default function BirthdayTemplateCustomizePage() {
             Object.keys(customTitles).length > 0 ? customTitles : undefined,
           sectionNotes:
             Object.keys(sectionNotes).length > 0 ? sectionNotes : undefined,
+          customHeroImage: customHeroImage?.dataUrl || undefined,
         },
       };
 
@@ -827,7 +832,9 @@ export default function BirthdayTemplateCustomizePage() {
     title,
     birthdayName,
     venue,
-    eventLocation,
+    streetAddress,
+    city,
+    state,
     description,
     rsvp,
     numberOfGuests,
@@ -836,6 +843,7 @@ export default function BirthdayTemplateCustomizePage() {
     resolvedVariation.id,
     customTitles,
     sectionNotes,
+    customHeroImage,
     editEventId,
     router,
   ]);
@@ -885,7 +893,7 @@ export default function BirthdayTemplateCustomizePage() {
                           : 400,
                     }}
                   >
-                    {previewName}'s Birthday
+                    {previewName}
                   </p>
                   <p
                     className={styles.previewMeta}
@@ -897,22 +905,87 @@ export default function BirthdayTemplateCustomizePage() {
                     className={styles.previewNav}
                     style={{ color: resolvedVariation.titleColor }}
                   >
-                    {template.menu.slice(0, 5).map((item) => (
+                    {template.menu.map((item) => (
                       <span key={item} className={styles.previewNavItem}>
                         {item}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className={styles.previewPhoto}>
-                  <Image
-                    src={heroImageSrc}
-                    alt={`${template.name} preview`}
-                    width={640}
-                    height={360}
-                    className={styles.previewPhotoImage}
-                    priority={false}
-                  />
+                <div className={`${styles.previewPhoto} relative`}>
+                  {(customHeroImage?.previewUrl || heroImageSrc).startsWith(
+                    "data:"
+                  ) ? (
+                    <img
+                      src={customHeroImage?.previewUrl || heroImageSrc}
+                      alt={`${template.name} preview`}
+                      className={styles.previewPhotoImage}
+                    />
+                  ) : (
+                    <Image
+                      src={customHeroImage?.previewUrl || heroImageSrc}
+                      alt={`${template.name} preview`}
+                      width={640}
+                      height={360}
+                      className={styles.previewPhotoImage}
+                      priority={false}
+                    />
+                  )}
+                  {/* Image upload overlay */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-auto">
+                      <input
+                        ref={heroImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleHeroImageChange}
+                        className="hidden"
+                        id="hero-image-upload"
+                      />
+                      <label
+                        htmlFor="hero-image-upload"
+                        className="cursor-pointer bg-white/90 hover:bg-white text-stone-700 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
+                        title="Change image"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          className="h-5 w-5"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </label>
+                      {customHeroImage && (
+                        <button
+                          type="button"
+                          onClick={removeHeroImage}
+                          className="bg-white/90 hover:bg-white text-red-600 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
+                          title="Remove image"
+                          aria-label="Remove custom image"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            className="h-5 w-5"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -922,73 +995,18 @@ export default function BirthdayTemplateCustomizePage() {
                   Event Details
                 </h2>
                 <div className="space-y-4">
-                  {/* Title */}
+                  {/* Venue */}
                   <div>
                     <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Title
+                      Venue
                     </label>
                     <input
                       type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                      value={venue}
+                      onChange={(e) => setVenue(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                      placeholder="Event title"
+                      placeholder="Venue name (optional)"
                     />
-                  </div>
-
-                  {/* When */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-sm font-medium text-stone-700">
-                        When
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-stone-600">
-                        <input
-                          type="checkbox"
-                          checked={fullDay}
-                          onChange={(e) => setFullDay(e.target.checked)}
-                          className="rounded"
-                        />
-                        <span>Full day</span>
-                      </label>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                      <div>
-                        <label className="text-xs text-stone-500">Date</label>
-                        <input
-                          type="date"
-                          value={whenDate}
-                          onChange={(e) => setWhenDate(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        />
-                      </div>
-                      {!fullDay && (
-                        <>
-                          <div>
-                            <label className="text-xs text-stone-500">
-                              Start time
-                            </label>
-                            <input
-                              type="time"
-                              value={startTime}
-                              onChange={(e) => setStartTime(e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-stone-500">
-                              End time
-                            </label>
-                            <input
-                              type="time"
-                              value={endTime}
-                              onChange={(e) => setEndTime(e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
                   </div>
 
                   {/* Address */}
@@ -996,20 +1014,27 @@ export default function BirthdayTemplateCustomizePage() {
                     <label className="block text-sm font-medium text-stone-700 mb-1">
                       Address
                     </label>
-                    <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={streetAddress}
+                      onChange={(e) => setStreetAddress(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none mb-2"
+                      placeholder="Street address"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
                       <input
                         type="text"
-                        value={venue}
-                        onChange={(e) => setVenue(e.target.value)}
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="Venue name (optional)"
+                        placeholder="City"
                       />
                       <input
                         type="text"
-                        value={eventLocation}
-                        onChange={(e) => setEventLocation(e.target.value)}
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="Street, City, State ZIP"
+                        placeholder="State"
                       />
                     </div>
                   </div>
@@ -1063,127 +1088,6 @@ export default function BirthdayTemplateCustomizePage() {
                   </div>
                 </div>
               </div>
-
-              {hasPhotos && (
-                <div className="mt-4 space-y-4">
-                  <PreviewCard title={menuLabel("photos", "Photos")}>
-                    <div className="relative w-full">
-                      <div className="relative overflow-hidden rounded-2xl bg-stone-100 aspect-[4/3]">
-                        <div
-                          className="flex h-full transition-transform duration-500 ease-in-out"
-                          style={{
-                            transform: `translateX(-${
-                              currentPhotoIndex * 100
-                            }%)`,
-                          }}
-                        >
-                          {photoFiles.map((photo, index) => (
-                            <div
-                              key={index}
-                              className="min-w-full h-full relative"
-                            >
-                              <img
-                                src={photo.previewUrl}
-                                alt={`Gallery photo ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                            </div>
-                          ))}
-                        </div>
-
-                        {photoFiles.length > 1 && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={prevPhoto}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-2 shadow-lg transition-all hover:scale-110"
-                              aria-label="Previous photo"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                className="w-5 h-5 text-stone-700"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M15 18l-6-6 6-6" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={nextPhoto}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-2 shadow-lg transition-all hover:scale-110"
-                              aria-label="Next photo"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                className="w-5 h-5 text-stone-700"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M9 18l6-6-6-6" />
-                              </svg>
-                            </button>
-                          </>
-                        )}
-
-                        {photoFiles.length > 1 && (
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-                            {photoFiles.map((_, index) => (
-                              <button
-                                key={index}
-                                type="button"
-                                onClick={() => setCurrentPhotoIndex(index)}
-                                className={`h-2 rounded-full transition-all ${
-                                  index === currentPhotoIndex
-                                    ? "w-8 bg-white"
-                                    : "w-2 bg-white/60 hover:bg-white/80"
-                                }`}
-                                aria-label={`Go to photo ${index + 1}`}
-                              />
-                            ))}
-                          </div>
-                        )}
-
-                        {photoFiles.length > 1 && (
-                          <div className="absolute top-4 right-4 z-10 bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full">
-                            {currentPhotoIndex + 1} / {photoFiles.length}
-                          </div>
-                        )}
-                      </div>
-
-                      {photoFiles.length > 1 && (
-                        <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                          {photoFiles.map((photo, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() => setCurrentPhotoIndex(index)}
-                              className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                                index === currentPhotoIndex
-                                  ? "border-stone-400 scale-105 shadow-md"
-                                  : "border-stone-200 hover:border-stone-300 opacity-70 hover:opacity-100"
-                              }`}
-                            >
-                              <img
-                                src={photo.previewUrl}
-                                alt={`Thumbnail ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </PreviewCard>
-                </div>
-              )}
             </div>
           </article>
         </div>
@@ -1341,7 +1245,7 @@ export default function BirthdayTemplateCustomizePage() {
                                 : 400,
                           }}
                         >
-                          {previewName}'s Birthday
+                          {previewName}
                         </p>
                         <p
                           className={styles.previewMeta}
@@ -1353,7 +1257,7 @@ export default function BirthdayTemplateCustomizePage() {
                           className={styles.previewNav}
                           style={{ color: resolvedVariation.titleColor }}
                         >
-                          {template.menu.slice(0, 5).map((item) => (
+                          {template.menu.map((item) => (
                             <span key={item} className={styles.previewNavItem}>
                               {item}
                             </span>
@@ -1361,14 +1265,24 @@ export default function BirthdayTemplateCustomizePage() {
                         </div>
                       </div>
                       <div className={styles.previewPhoto}>
-                        <Image
-                          src={heroImageSrc}
-                          alt={`${template.name} preview`}
-                          width={640}
-                          height={360}
-                          className={styles.previewPhotoImage}
-                          priority={false}
-                        />
+                        {(
+                          customHeroImage?.previewUrl || heroImageSrc
+                        ).startsWith("data:") ? (
+                          <img
+                            src={customHeroImage?.previewUrl || heroImageSrc}
+                            alt={`${template.name} preview`}
+                            className={styles.previewPhotoImage}
+                          />
+                        ) : (
+                          <Image
+                            src={customHeroImage?.previewUrl || heroImageSrc}
+                            alt={`${template.name} preview`}
+                            width={640}
+                            height={360}
+                            className={styles.previewPhotoImage}
+                            priority={false}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1381,44 +1295,19 @@ export default function BirthdayTemplateCustomizePage() {
                   Event Details
                 </h3>
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                      Title
-                    </p>
-                    <p className="text-base text-stone-900">
-                      {title ||
-                        `${birthdayName || "Birthday Person"}'s Birthday`}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                      When
-                    </p>
-                    <p className="text-base text-stone-900">
-                      {whenDate
-                        ? new Date(whenDate).toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
-                        : "Not set"}
-                      {!fullDay && startTime && ` at ${startTime}`}
-                      {!fullDay && endTime && ` - ${endTime}`}
-                      {fullDay && " (All day)"}
-                    </p>
-                  </div>
-
-                  {(venue || eventLocation) && (
+                  {(venue || streetAddress || city || state) && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         Location
                       </p>
                       <p className="text-base text-stone-900">
                         {venue && <span className="font-medium">{venue}</span>}
-                        {venue && eventLocation && <span>, </span>}
-                        {eventLocation}
+                        {venue && (streetAddress || city || state) && (
+                          <span>, </span>
+                        )}
+                        {[streetAddress, city, state]
+                          .filter(Boolean)
+                          .join(", ")}
                       </p>
                     </div>
                   )}
@@ -1492,44 +1381,19 @@ export default function BirthdayTemplateCustomizePage() {
                   Event Details
                 </h3>
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                      Title
-                    </p>
-                    <p className="text-base text-stone-900">
-                      {title ||
-                        `${birthdayName || "Birthday Person"}'s Birthday`}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                      When
-                    </p>
-                    <p className="text-base text-stone-900">
-                      {whenDate
-                        ? new Date(whenDate).toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
-                        : "Not set"}
-                      {!fullDay && startTime && ` at ${startTime}`}
-                      {!fullDay && endTime && ` - ${endTime}`}
-                      {fullDay && " (All day)"}
-                    </p>
-                  </div>
-
-                  {(venue || eventLocation) && (
+                  {(venue || streetAddress || city || state) && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         Location
                       </p>
                       <p className="text-base text-stone-900">
                         {venue && <span className="font-medium">{venue}</span>}
-                        {venue && eventLocation && <span>, </span>}
-                        {eventLocation}
+                        {venue && (streetAddress || city || state) && (
+                          <span>, </span>
+                        )}
+                        {[streetAddress, city, state]
+                          .filter(Boolean)
+                          .join(", ")}
                       </p>
                     </div>
                   )}

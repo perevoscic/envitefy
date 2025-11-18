@@ -17,7 +17,14 @@ import {
   type TemplatePaletteTokenId,
 } from "./templateDesignTokens";
 
-const birthdayMenu = ["Home", "Party Details", "Photos", "Wishlist", "RSVP"];
+const birthdayMenu = [
+  "Home",
+  "Party Details",
+  "Direction",
+  "Description",
+  "Wishlist",
+  "RSVP",
+];
 
 export type BirthdayTemplateDefinition = TemplateGalleryTemplate & {
   preview?: {

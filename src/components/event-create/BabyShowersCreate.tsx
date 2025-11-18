@@ -7,6 +7,11 @@ import { getEventTheme } from "@/lib/event-theme";
 import type { EditorBindings } from "@/components/event-templates/EventTemplateBase";
 import BabyShowersTemplate from "@/components/event-templates/BabyShowersTemplate";
 import {
+  babyShowerTemplateCatalog,
+  type BabyShowerTemplateDefinition,
+} from "@/components/event-create/BabyShowersTemplateGallery";
+import { resolveTemplateVariation } from "@/components/event-create/TemplateGallery";
+import {
   MAX_REGISTRY_LINKS,
   normalizeRegistryLinks,
   validateRegistryUrl,
@@ -19,6 +24,8 @@ type Props = {
   defaultDate?: Date;
   editEventId?: string;
   variant?: "baby_showers" | "gender_reveal";
+  templateId?: string;
+  templateVariationId?: string;
 };
 
 const createRegistryEntry = () => ({
@@ -112,6 +119,8 @@ export default function BabyShowersCreate({
   defaultDate,
   editEventId,
   variant,
+  templateId,
+  templateVariationId,
 }: Props) {
   const variantLabel =
     variant === "gender_reveal" ? "Gender Reveal" : "Baby Showers";
@@ -170,6 +179,7 @@ export default function BabyShowersCreate({
 
   // Title style controls (ported from Birthdays)
   const [titleColor, setTitleColor] = useState<string | null>(null);
+  const [titleColorTouched, setTitleColorTouched] = useState(false);
   const [titleFont, setTitleFont] = useState<
     | "auto"
     | "montserrat"
@@ -212,12 +222,25 @@ export default function BabyShowersCreate({
   });
 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const templateSelectionKeyRef = useRef<string | null>(null);
+  const [templateIdState, setTemplateIdState] = useState<string | null>(
+    templateId ?? null
+  );
+  const [templateVariationState, setTemplateVariationState] = useState<
+    string | null
+  >(templateVariationId ?? null);
   useEffect(() => {
     const el = descriptionRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   }, [description]);
+
+  useEffect(() => {
+    if (editEventId) return;
+    setTemplateIdState(templateId ?? null);
+    setTemplateVariationState(templateVariationId ?? null);
+  }, [templateId, templateVariationId, editEventId]);
 
   // Edit mode: prefill fields from existing event
   useEffect(() => {
@@ -256,7 +279,10 @@ export default function BabyShowersCreate({
         setHeaderBgCss((data as any).headerBgCss || null);
         const ts = (data as any).titleStyle || {};
         try {
-          if (typeof ts.color === "string") setTitleColor(ts.color);
+          if (typeof ts.color === "string") {
+            setTitleColor(ts.color);
+            setTitleColorTouched(true);
+          }
           if (typeof ts.font === "string") setTitleFont(ts.font);
           if (typeof ts.weight === "string") setTitleWeight(ts.weight);
           if (typeof ts.hAlign === "string") setTitleHAlign(ts.hAlign);
@@ -308,6 +334,16 @@ export default function BabyShowersCreate({
         }
         const colors = (data as any).imageColors;
         if (colors && typeof colors === "object") setImageColors(colors);
+        setTemplateIdState(
+          typeof (data as any).templateId === "string"
+            ? (data as any).templateId
+            : null
+        );
+        setTemplateVariationState(
+          typeof (data as any).templateVariationId === "string"
+            ? (data as any).templateVariationId
+            : null
+        );
         // Registries
         if (Array.isArray((data as any).registries)) {
           setRegistryLinks(
@@ -523,6 +559,8 @@ export default function BabyShowersCreate({
       return { backgroundImage: headerBgCss } as React.CSSProperties;
     if (headerBgColor)
       return { backgroundColor: headerBgColor } as React.CSSProperties;
+    if (templateBackgroundCss)
+      return { backgroundImage: templateBackgroundCss } as React.CSSProperties;
     return { backgroundImage: eventTheme.headerLight } as React.CSSProperties;
   })();
 
@@ -626,6 +664,8 @@ export default function BabyShowersCreate({
           headerThemeId: headerThemeId || undefined,
           headerBgColor: headerBgColor || undefined,
           headerBgCss: headerBgCss || undefined,
+          templateId: templateIdState || undefined,
+          templateVariationId: templateVariationState || undefined,
           thumbnail:
             attachmentPreviewUrl && attachment?.type.startsWith("image/")
               ? attachmentPreviewUrl
@@ -751,6 +791,30 @@ export default function BabyShowersCreate({
   return (
     <main className="max-w-3xl mx-auto px-5 sm:px-10 py-10">
       <form onSubmit={submit} className="space-y-6">
+        {selectedTemplate && (
+          <section className="rounded-2xl border border-dashed border-[#E4CDB9] bg-[#FFF9F6] px-4 py-3 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-[#AD8A6B]">
+                Using template
+              </p>
+              <p className="text-base font-semibold text-[#2C1F19]">
+                {selectedTemplate.name}
+              </p>
+              {selectedVariation?.label && (
+                <p className="text-sm text-[#7A6A5A]">
+                  Color story: {selectedVariation.label}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/event/baby-showers")}
+              className="mt-3 inline-flex items-center justify-center rounded-full border border-[#E4CDB9] px-3 py-1 text-sm text-[#7A6A5A] hover:bg-white sm:mt-0"
+            >
+              Choose a different template
+            </button>
+          </section>
+        )}
         <section
           className="event-theme-header relative overflow-hidden rounded-2xl border shadow-lg px-3 py-6 sm:px-8 min-h-[220px] sm:min-h-[280px]"
           style={headerBackground as React.CSSProperties}
@@ -971,7 +1035,10 @@ export default function BabyShowersCreate({
               <input
                 type="color"
                 value={titleColor || "#333333"}
-                onChange={(e) => setTitleColor(e.target.value)}
+                onChange={(e) => {
+                  setTitleColor(e.target.value);
+                  setTitleColorTouched(true);
+                }}
                 className="w-10 h-10 rounded-md border border-[#E4CDB9] cursor-pointer bg-transparent"
                 aria-label="Title color"
               />
@@ -1094,6 +1161,7 @@ export default function BabyShowersCreate({
             selectedCalendars,
             setSelectedCalendars,
             cardBackgroundImage: (imageColors?.cardLight ||
+              templateBackgroundCss ||
               eventTheme.cardLight) as string | undefined,
           };
           return <BabyShowersTemplate editor={editor} />;
@@ -1123,3 +1191,39 @@ export default function BabyShowersCreate({
     </main>
   );
 }
+  const selectedTemplate = useMemo<BabyShowerTemplateDefinition | null>(() => {
+    if (!templateIdState) return null;
+    return (
+      babyShowerTemplateCatalog.find((tpl) => tpl.id === templateIdState) ??
+      null
+    );
+  }, [templateIdState]);
+
+  const selectedVariation = useMemo(() => {
+    if (!selectedTemplate) return null;
+    const rawVariation =
+      selectedTemplate.variations.find(
+        (v) => v.id === templateVariationState
+      ) ?? selectedTemplate.variations[0];
+    return resolveTemplateVariation(rawVariation);
+  }, [selectedTemplate, templateVariationState]);
+
+  const templateBackgroundCss = selectedVariation?.background ?? null;
+  const templateTitleColor = selectedVariation?.titleColor ?? null;
+
+  useEffect(() => {
+    const key = `${templateIdState || "none"}@${
+      templateVariationState || "default"
+    }`;
+    if (templateSelectionKeyRef.current === key) return;
+    templateSelectionKeyRef.current = key;
+    if (!editEventId) {
+      setTitleColorTouched(false);
+    }
+  }, [templateIdState, templateVariationState, editEventId]);
+
+  useEffect(() => {
+    if (!templateTitleColor) return;
+    if (titleColorTouched) return;
+    setTitleColor(templateTitleColor);
+  }, [templateTitleColor, titleColorTouched]);
