@@ -25,6 +25,7 @@ export type BirthdayTemplateDefinition = TemplateGalleryTemplate & {
     dateLabel: string;
     location: string;
   };
+  backgroundPrompt?: string;
 };
 export type TemplateVariation = ResolvedTemplateVariation;
 type StoryConfig = {
@@ -134,6 +135,79 @@ const getColorStoriesForTemplate = (index: number): StoryConfig[] => {
   return [...rotated.slice(startIndex), ...rotated.slice(0, startIndex)];
 };
 
+// Background prompts for kids birthday templates (GPT-5.1 Ready)
+// These prompts follow the Codex instruction format for consistent background generation
+const BIRTHDAY_BACKGROUND_PROMPTS: Record<string, string> = {
+  "party-pop":
+    "soft pink-to-lavender gradient background, floating confetti dots, subtle sparkles, rounded balloon shapes fading into corners, gentle glossy highlights, clean modern kids birthday theme, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "candy-dreams":
+    "aqua-blue pastel gradient with candy-stripe diagonal patterns, soft gummies and lollipop silhouettes in the background, playful but minimal, glossy shine, bright birthday mood, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "rainbow-bash":
+    "pastel rainbow wave sweeping across a soft cream background, tiny stars and sparkles, watercolor cloud edges, bright but elegant birthday atmosphere, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "playful-pals":
+    "bold teal and lime gradient, chunky geometric shapes (circles, triangles, squiggles) floating around edges, playful kid energy, clean and modern, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "birthday-burst":
+    "rose-pink gradient with gold shimmer dust, soft bokeh lights, subtle starbursts radiating from the corners, fancy birthday aesthetic, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "sweet-celebration":
+    "sky-blue gradient with soft pastel confetti, frosted cupcake outlines in the background, subtle shadows, cheerful and fresh look, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "super-star":
+    "blush-pink to peach gradient with glimmering star clusters, dreamy glow, tiny metallic accents, magical birthday mood, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "happy-dance":
+    "bright blue and neon-green gradient, music note silhouettes, dance-party vibe with soft glowing circles, upbeat and energetic background, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "magic-sparkle":
+    "lavender to light-pink gradient with shimmering sparkles, soft magical mist, faint glowing swirls, elegant enchanted-party atmosphere, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "celebration-time":
+    "bold blue-orange gradient, comic-style burst shapes, clean confetti scatter, bright birthday excitement, modern kids style, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "fun-fiesta":
+    "peach-pink gradient, fiesta confetti ribbons in pastel tones, gentle sunburst behind, soft festive glow, warm and cheerful, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "joyful-jamboree":
+    "teal-to-yellow gradient with oval and zigzag playful shapes, dynamic motion streaks, fun upbeat birthday energy, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "whimsical-wonder":
+    "mint-to-lavender watercolor blend, floating whimsical shapes (stars, tiny hearts), soft dreamy clouds fading at edges, gentle magical tone, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "cheerful-chaos":
+    "bright coral-pink gradient, colorful irregular doodle shapes (squiggles, dots, scribbles), lively and bold but clean, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "party-parade":
+    "purple-pink gradient, flowing streamers and balloon silhouettes, soft glitter dust, festive parade vibe, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "birthday-bliss":
+    "turquoise and electric-blue gradient, crisp geometric confetti, subtle glossy arcs, clean modern design with boyish energy, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "sparkle-splash":
+    "iridescent pink-pearl background with watercolor splashes, delicate sparkles, soft glowing edges, luxurious birthday mood, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "celebration-craze":
+    "bold primary-color gradient (blue to red), dynamic confetti shapes, party bursts, energetic movement, vibrant kids-party style, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "happy-hooray":
+    "soft lilac-to-pink gradient, tiny crown and star outlines faded into background, gentle glitter mist, elegant and cheerful, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "party-palooza":
+    "fun neon-blue and lime gradient, bold party shapes (stripes, circles, zigzags), shiny highlight streaks, energetic celebration look, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "birthday-bonanza":
+    "sunset orange-to-peach gradient, multicolor confetti sprinkles, mild glow, festive but gender-neutral modern kids theme, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "sweet-surprise":
+    "strawberry-pink gradient with cute soft bokeh, faint candy swirl patterns, subtle sparkles, warm sweet birthday vibe, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "party-perfect":
+    "navy-to-teal gradient, bold geometric accents, clean star bursts, polished yet playful, older kids birthday feel, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "birthday-bash":
+    "royal-pink to gold gradient, elegant sparkles, celebratory wave shapes along the edge, premium birthday atmosphere, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+};
+
+/**
+ * Get the background prompt for a birthday template
+ * @param templateId - The template ID (e.g., "party-pop")
+ * @param birthdayName - Optional birthday person's name for personalization
+ * @param templateTitle - Optional template title
+ * @returns The background prompt string ready for GPT-5.1 Codex
+ */
+export function getBirthdayBackgroundPrompt(
+  templateId: string,
+  birthdayName?: string,
+  templateTitle?: string
+): string {
+  const basePrompt = BIRTHDAY_BACKGROUND_PROMPTS[templateId];
+  if (!basePrompt) {
+    // Fallback to a generic prompt if template not found
+    return "soft pastel gradient background with subtle sparkles and confetti, clean modern children's birthday aesthetic, website background, no characters, no center clutter";
+  }
+  return basePrompt;
+}
+
 const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
   {
     id: "party-pop",
@@ -153,6 +227,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "June 15, 2025",
       location: "Chicago, IL",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "party-pop",
+      "Emma",
+      "Party Pop"
+    ),
   },
   {
     id: "candy-dreams",
@@ -172,6 +251,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "July 22, 2025",
       location: "Los Angeles, CA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "candy-dreams",
+      "Lucas",
+      "Candy Dreams"
+    ),
   },
   {
     id: "rainbow-bash",
@@ -191,6 +275,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "August 10, 2025",
       location: "New York, NY",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "rainbow-bash",
+      "Sophia",
+      "Rainbow Bash"
+    ),
   },
   {
     id: "playful-pals",
@@ -210,6 +299,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "September 5, 2025",
       location: "Austin, TX",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "playful-pals",
+      "Mason",
+      "Playful Pals"
+    ),
   },
   {
     id: "birthday-burst",
@@ -229,6 +323,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "October 12, 2025",
       location: "Seattle, WA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "birthday-burst",
+      "Olivia",
+      "Birthday Burst"
+    ),
   },
   {
     id: "sweet-celebration",
@@ -248,6 +347,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "November 8, 2025",
       location: "Miami, FL",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "sweet-celebration",
+      "Noah",
+      "Sweet Celebration"
+    ),
   },
   {
     id: "super-star",
@@ -267,6 +371,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "December 3, 2025",
       location: "Denver, CO",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "super-star",
+      "Ava",
+      "Super Star"
+    ),
   },
   {
     id: "happy-dance",
@@ -286,6 +395,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "January 18, 2026",
       location: "Portland, OR",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "happy-dance",
+      "Ethan",
+      "Happy Dance"
+    ),
   },
   {
     id: "magic-sparkle",
@@ -305,6 +419,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "February 14, 2026",
       location: "Nashville, TN",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "magic-sparkle",
+      "Isabella",
+      "Magic Sparkle"
+    ),
   },
   {
     id: "celebration-time",
@@ -324,6 +443,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "March 22, 2026",
       location: "Phoenix, AZ",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "celebration-time",
+      "Jackson",
+      "Celebration Time"
+    ),
   },
   {
     id: "fun-fiesta",
@@ -343,6 +467,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "April 9, 2026",
       location: "San Diego, CA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "fun-fiesta",
+      "Lily",
+      "Fun Fiesta"
+    ),
   },
   {
     id: "joyful-jamboree",
@@ -362,6 +491,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "May 25, 2026",
       location: "Boston, MA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "joyful-jamboree",
+      "Carter",
+      "Joyful Jamboree"
+    ),
   },
   {
     id: "whimsical-wonder",
@@ -381,6 +515,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "June 30, 2026",
       location: "Atlanta, GA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "whimsical-wonder",
+      "Zoe",
+      "Whimsical Wonder"
+    ),
   },
   {
     id: "cheerful-chaos",
@@ -400,6 +539,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "July 15, 2026",
       location: "Dallas, TX",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "cheerful-chaos",
+      "Maya",
+      "Cheerful Chaos"
+    ),
   },
   {
     id: "party-parade",
@@ -419,6 +563,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "August 20, 2026",
       location: "Las Vegas, NV",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "party-parade",
+      "Harper",
+      "Party Parade"
+    ),
   },
   {
     id: "birthday-bliss",
@@ -438,6 +587,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "September 5, 2026",
       location: "Minneapolis, MN",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "birthday-bliss",
+      "Logan",
+      "Birthday Bliss"
+    ),
   },
   {
     id: "sparkle-splash",
@@ -457,6 +611,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "October 1, 2026",
       location: "Charlotte, NC",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "sparkle-splash",
+      "Chloe",
+      "Sparkle Splash"
+    ),
   },
   {
     id: "celebration-craze",
@@ -476,6 +635,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "November 12, 2026",
       location: "Detroit, MI",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "celebration-craze",
+      "Aiden",
+      "Celebration Craze"
+    ),
   },
   {
     id: "happy-hooray",
@@ -495,6 +659,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "December 25, 2026",
       location: "Orlando, FL",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "happy-hooray",
+      "Grace",
+      "Happy Hooray"
+    ),
   },
   {
     id: "party-palooza",
@@ -514,6 +683,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "January 7, 2027",
       location: "San Francisco, CA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "party-palooza",
+      "Lucas",
+      "Party Palooza"
+    ),
   },
   {
     id: "birthday-bonanza",
@@ -533,6 +707,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "February 18, 2027",
       location: "Philadelphia, PA",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "birthday-bonanza",
+      "Riley",
+      "Birthday Bonanza"
+    ),
   },
   {
     id: "sweet-surprise",
@@ -552,6 +731,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "March 3, 2027",
       location: "Houston, TX",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "sweet-surprise",
+      "Madison",
+      "Sweet Surprise"
+    ),
   },
   {
     id: "party-perfect",
@@ -571,6 +755,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "June 10, 2027",
       location: "Milwaukee, WI",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "party-perfect",
+      "Hunter",
+      "Party Perfect"
+    ),
   },
   {
     id: "birthday-bash",
@@ -590,6 +779,11 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       dateLabel: "July 22, 2027",
       location: "Baltimore, MD",
     },
+    backgroundPrompt: getBirthdayBackgroundPrompt(
+      "birthday-bash",
+      "Victoria",
+      "Birthday Bash"
+    ),
   },
 ];
 

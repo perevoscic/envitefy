@@ -179,6 +179,10 @@ export default function TemplateGallery({
         const previewFontFamily = activeVariation.titleFontFamily;
         const previewInfo = template.preview ?? DEFAULT_PREVIEW;
         const previewTextColor = activeVariation.titleColor;
+        const isBirthdayTemplate = !!(template.preview as any)?.birthdayName;
+        const backgroundImageSrc = isBirthdayTemplate
+          ? `/templates/birthdays/${template.id}.webp`
+          : null;
 
         return (
           <article
@@ -190,10 +194,17 @@ export default function TemplateGallery({
               <div className={styles.previewFrame}>
                 <div
                   className={styles.previewHeader}
-                  style={{ background: activeVariation.background }}
-                  data-birthday={
-                    (template.preview as any)?.birthdayName ? "true" : undefined
+                  style={
+                    backgroundImageSrc
+                      ? {
+                          backgroundImage: `url(${backgroundImageSrc})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          backgroundRepeat: "no-repeat",
+                        }
+                      : { background: activeVariation.background }
                   }
+                  data-birthday={isBirthdayTemplate ? "true" : undefined}
                 >
                   <p
                     className={styles.previewNames}

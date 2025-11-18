@@ -2120,26 +2120,28 @@ export default function LeftSidebar() {
           </button>
           {/* CREATE | SHARE | ENJOY */}
           <div className="px-2 pb-2">
-            <Link
-              href="/"
-              onClick={collapseSidebarOnTouch}
-              className="flex flex-col items-center gap-2 hover:opacity-90 transition-opacity"
-            >
-              <Image
-                src="/E.png"
-                alt="E"
-                width={48}
-                height={48}
-                className="opacity-80"
-                style={{
-                  filter:
-                    "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
-                }}
-              />
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                href="/"
+                onClick={collapseSidebarOnTouch}
+                className="hover:opacity-90 transition-opacity"
+              >
+                <Image
+                  src="/E.png"
+                  alt="E"
+                  width={48}
+                  height={48}
+                  className="opacity-80"
+                  style={{
+                    filter:
+                      "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
+                  }}
+                />
+              </Link>
               <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
                 CREATE | SHARE | ENJOY
               </div>
-            </Link>
+            </div>
           </div>
         </div>
         {/* Middle: Event history */}

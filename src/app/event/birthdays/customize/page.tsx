@@ -530,6 +530,7 @@ export default function BirthdayTemplateCustomizePage() {
     city || state ? [city, state].filter(Boolean).join(", ") : location;
 
   const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
+  const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
 
   const handleContinue = useCallback(() => {
     const params = new URLSearchParams();
@@ -570,7 +571,13 @@ export default function BirthdayTemplateCustomizePage() {
               <div className={styles.previewFrame}>
                 <div
                   className={styles.previewHeader}
-                  style={{ background: resolvedVariation.background }}
+                  style={{
+                    backgroundImage: `url(${backgroundImageSrc})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                  data-birthday="true"
                 >
                   <p
                     className={styles.previewNames}
