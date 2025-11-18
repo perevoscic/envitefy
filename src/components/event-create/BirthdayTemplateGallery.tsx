@@ -829,6 +829,7 @@ export default function BirthdayTemplateGallery({
         templates={birthdayTemplateCatalog as any}
         appliedTemplateId={appliedTemplateId}
         appliedVariationId={appliedVariationId}
+        forceBirthdayHero
         onApplyTemplate={(template, variation) =>
           onApplyTemplate(template as BirthdayTemplateDefinition, variation)
         }

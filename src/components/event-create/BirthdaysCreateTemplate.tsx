@@ -859,8 +859,8 @@ export default function BirthdaysCreateTemplate({ defaultDate }: Props) {
                 Envitefy
               </p>
               <p className="mt-3 text-sm text-white/70">
-                Shareable birthday invites with one smart link and add-to-calendar
-                buttons your guests will actually use.
+                Shareable birthday invites with one smart link and
+                add-to-calendar buttons your guests will actually use.
               </p>
             </div>
             <FooterList
@@ -871,7 +871,10 @@ export default function BirthdaysCreateTemplate({ defaultDate }: Props) {
               title="Company"
               items={["About", "Blog", "Privacy & Security"]}
             />
-            <FooterList title="Follow" items={["Instagram", "Facebook", "YouTube"]} />
+            <FooterList
+              title="Follow"
+              items={["Instagram", "Facebook", "YouTube"]}
+            />
           </div>
         </footer>
       </div>
@@ -905,8 +908,8 @@ function HeroSection({ onBrowse }: { onBrowse: () => void }) {
             Create a Beautiful Birthday Invite in Minutes.
           </h1>
           <p className="text-lg text-[#4A403C]">
-            Pick a kid-friendly template, add your details, and share one smart link
-            with every guest.
+            Pick a kid-friendly template, add your details, and share one smart
+            link with every guest.
           </p>
           <p className="text-sm font-semibold text-[#4A403C]">
             No apps to install. Works with Google, Apple, and Outlook calendars.
@@ -1008,7 +1011,7 @@ function FilterBar({
   onChange: (key: keyof FilterState, value: any) => void;
 }) {
   return (
-    <section className="sticky top-4 z-20 rounded-[32px] border border-[#F1E5FF] bg-white/95 p-4 shadow-md backdrop-blur">
+    <section className="sticky top-4 z-20 rounded-[32px] border border-[#F1E5FF] bg-white/95 p-4 shadow-md">
       <div className="flex items-center gap-2 text-sm font-semibold text-[#7A6C68]">
         <Filter className="h-4 w-4 text-[#FF6FB1]" /> Filter templates
       </div>
@@ -1089,19 +1092,23 @@ function TemplateCard({
   onPreview: () => void;
   onUse: () => void;
 }) {
+  const heroImageSrc = `/templates/birthdays/${
+    template.templateId || template.id
+  }.webp`;
   return (
     <div className="flex flex-col rounded-[32px] border border-[#F5EAF9] bg-white shadow-sm">
       <div
         className="relative h-48 rounded-t-[32px] overflow-hidden"
-        style={{ background: template.background }}
+        style={{
+          backgroundImage: `url(${heroImageSrc})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
-        <div className="relative flex h-full flex-col justify-between gap-2 p-4 text-white">
+        <div className="relative flex h-full flex-col justify-between gap-2 bg-black/20 p-4 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
             {template.icon} Invite style
-          </p>
-          <p className="text-sm leading-relaxed text-white">
-            {template.styleDescription}
           </p>
         </div>
       </div>
@@ -1117,7 +1124,9 @@ function TemplateCard({
           <p>{template.ageLabel}</p>
           <p>
             Style: {template.styles.join(" · ")} · Format:
-            {template.format === "card" ? " Card-style invite" : " Event page layout"}
+            {template.format === "card"
+              ? " Card-style invite"
+              : " Event page layout"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold text-[#7B6D68]">
@@ -1196,7 +1205,9 @@ function TemplatePreviewModal({
           </div>
           <div className="space-y-5 text-[#2F2F2F]">
             <div>
-              <p className="text-sm font-semibold text-[#B075D1]">Description</p>
+              <p className="text-sm font-semibold text-[#B075D1]">
+                Description
+              </p>
               <p className="text-base text-[#4A403C]">{template.description}</p>
             </div>
             <div className="rounded-2xl border border-[#F7E5FF] bg-[#FFFAFE] px-4 py-3 text-sm text-[#4A403C]">
@@ -1292,8 +1303,9 @@ function HowItWorks() {
         ))}
       </div>
       <div className="rounded-2xl border border-[#E7F6FF] bg-[#F5FBFF] p-4 text-sm text-[#115575]">
-        We handle the invite chaos: Envitefy turns your birthday info into a clean,
-        shareable invite and event page with built-in Add to Calendar buttons.
+        We handle the invite chaos: Envitefy turns your birthday info into a
+        clean, shareable invite and event page with built-in Add to Calendar
+        buttons.
       </div>
     </section>
   );
@@ -1320,7 +1332,9 @@ function Testimonials() {
             className="min-w-[260px] flex-1 rounded-[28px] border border-[#F7E5FF] bg-white p-6 text-[#4A403C]"
           >
             <p className="text-base font-medium">“{testimonial.quote}”</p>
-            <p className="mt-2 text-sm text-[#85736D]">— {testimonial.author}</p>
+            <p className="mt-2 text-sm text-[#85736D]">
+              — {testimonial.author}
+            </p>
           </div>
         ))}
       </div>
@@ -1361,6 +1375,3 @@ function FooterList({ title, items }: { title: string; items: string[] }) {
     </div>
   );
 }
-
-
-

@@ -132,6 +132,7 @@ export type TemplateGalleryProps = {
   appliedTemplateId: string | null;
   appliedVariationId: string | null;
   previewHeroImageUrl?: string | null;
+  forceBirthdayHero?: boolean;
   onApplyTemplate: (
     template: TemplateGalleryTemplate,
     variation: ResolvedTemplateVariation
@@ -166,6 +167,7 @@ export default function TemplateGallery({
   appliedTemplateId,
   appliedVariationId,
   previewHeroImageUrl,
+  forceBirthdayHero = false,
   onApplyTemplate,
 }: TemplateGalleryProps) {
   return (
@@ -181,16 +183,24 @@ export default function TemplateGallery({
         const previewFontFamily = activeVariation.titleFontFamily;
         const previewInfo = { ...DEFAULT_PREVIEW, ...(template.preview ?? {}) };
         const previewTextColor = activeVariation.titleColor;
-        const isBirthdayTemplate = !!(template.preview as any)?.birthdayName;
+        const isBirthdayTemplate =
+          forceBirthdayHero || !!(template.preview as any)?.birthdayName;
         const heroImageBasePath = isBirthdayTemplate
           ? "/templates/birthdays/"
           : "/templates/wedding-placeholders/";
         const heroImageFile = template.heroImageName || `${template.id}.webp`;
         const heroImageSrc =
           previewHeroImageUrl ?? `${heroImageBasePath}${heroImageFile}`;
-        const headerBackgroundStyle = {
-          background: activeVariation.background,
-        };
+        const birthdayOverlay =
+          "linear-gradient(180deg, rgba(18, 12, 36, 0.78) 0%, rgba(18, 12, 36, 0.55) 45%, rgba(18, 12, 36, 0.2) 100%)";
+        const headerBackgroundStyle = isBirthdayTemplate
+          ? {
+              backgroundImage: `${birthdayOverlay}, url(${heroImageSrc})`,
+              backgroundSize: "cover, cover",
+              backgroundPosition: "center, center",
+              backgroundRepeat: "no-repeat, no-repeat",
+            }
+          : { background: activeVariation.background };
 
         return (
           <article
