@@ -33,6 +33,7 @@ export type WeddingTemplateDefinition = TemplateGalleryTemplate & {
     coupleName: string;
     dateLabel: string;
     location: string;
+    timeLabel?: string;
   };
 };
 export type TemplateVariation = ResolvedTemplateVariation;

@@ -38,7 +38,11 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
     params.set("templateId", template.id);
     params.set("variationId", variation.id);
     if (defaultDateIso) params.set("d", defaultDateIso);
-    router.push(`/event/baby-showers?${params.toString()}`);
+    const query = params.toString();
+    const destination = query
+      ? `/event/baby-showers/customize?${query}`
+      : "/event/baby-showers/customize";
+    router.push(destination);
   };
 
   return (

@@ -17,6 +17,7 @@ export type BabyShowerTemplateDefinition = TemplateGalleryTemplate & {
     coupleName: string;
     dateLabel: string;
     location: string;
+    timeLabel?: string;
   };
 };
 export type TemplateVariation = ResolvedTemplateVariation;
@@ -123,6 +124,7 @@ const baseBabyShowerTemplateCatalog: BabyShowerTemplateDefinition[] = [
       coupleName: "Baby Avery",
       dateLabel: "April 12, 2025",
       location: "Nashville, TN",
+      timeLabel: "11:00 AM",
     },
   },
   {
@@ -142,6 +144,7 @@ const baseBabyShowerTemplateCatalog: BabyShowerTemplateDefinition[] = [
       coupleName: "Baby Liam",
       dateLabel: "May 4, 2025",
       location: "Seattle, WA",
+      timeLabel: "2:30 PM",
     },
   },
   {
@@ -161,6 +164,7 @@ const baseBabyShowerTemplateCatalog: BabyShowerTemplateDefinition[] = [
       coupleName: "Baby Harper",
       dateLabel: "June 1, 2025",
       location: "Portland, OR",
+      timeLabel: "10:00 AM",
     },
   },
   {
@@ -180,6 +184,7 @@ const baseBabyShowerTemplateCatalog: BabyShowerTemplateDefinition[] = [
       coupleName: "Baby Maya",
       dateLabel: "July 20, 2025",
       location: "Austin, TX",
+      timeLabel: "4:00 PM",
     },
   },
 ];

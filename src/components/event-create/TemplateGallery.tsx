@@ -37,12 +37,14 @@ export type TemplatePreviewData = {
   coupleName?: string;
   birthdayName?: string;
   dateLabel: string;
-  location: string;
+  location?: string;
+  timeLabel?: string;
 };
 
 export const DEFAULT_PREVIEW: TemplatePreviewData = {
   coupleName: "Ava & Mason",
   dateLabel: "September 23, 2028",
+  timeLabel: "4:00 PM",
   location: "New York, NY",
 };
 
@@ -177,7 +179,7 @@ export default function TemplateGallery({
           resolvedVariations.find((v) => v.id === appliedVariationId) ??
           resolvedVariations[0];
         const previewFontFamily = activeVariation.titleFontFamily;
-        const previewInfo = template.preview ?? DEFAULT_PREVIEW;
+        const previewInfo = { ...DEFAULT_PREVIEW, ...(template.preview ?? {}) };
         const previewTextColor = activeVariation.titleColor;
         const isBirthdayTemplate = !!(template.preview as any)?.birthdayName;
         const backgroundImageSrc = isBirthdayTemplate
@@ -227,7 +229,10 @@ export default function TemplateGallery({
                     className={styles.previewMeta}
                     style={{ color: previewTextColor }}
                   >
-                    {previewInfo.dateLabel} • {previewInfo.location}
+                    {previewInfo.dateLabel}
+                    {previewInfo.timeLabel
+                      ? ` • ${previewInfo.timeLabel}`
+                      : ""}
                   </p>
                   <div
                     className={styles.previewNav}

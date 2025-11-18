@@ -79,7 +79,10 @@ export async function GET(req: Request) {
 
     const sql = `
       select id, email, first_name, last_name, subscription_plan, ever_paid,
-             credits, created_at, scans_total, shares_sent
+             credits, created_at, scans_total, shares_sent,
+             scans_birthdays, scans_weddings, scans_sport_events,
+             scans_appointments, scans_doctor_appointments, scans_play_days,
+             scans_general_events, scans_car_pool
       from users
       where (
         lower(email) like $1

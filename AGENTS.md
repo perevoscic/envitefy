@@ -62,7 +62,7 @@ This document describes the app’s server-side agents (API routes) that extract
 
 - **Purpose**: Fetch headline metrics and top performers for the admin dashboard.
 - **Auth**: NextAuth session required and `isAdmin=true`.
-- **Output**: `{ ok: true, overview: { totalUsers, totalEvents, totalShares, usersPaid, usersFF }, topUsers: Array<{ email, scans, shares }> }`. `topUsers` returns up to 20 rows ordered by scans (ties broken by shares).
+- **Output**: `{ ok: true, overview: { totalUsers, totalEvents, totalShares, totalScans, usersPaid, usersFF, eventsByCategory }, topUsers: Array<{ email, scans, shares }> }`. `eventsByCategory` sums the per-user scan counters (`scans_birthdays`, `scans_weddings`, `scans_sport_events`, `scans_appointments`, `scans_doctor_appointments`, `scans_play_days`, `scans_general_events`, `scans_car_pool`). `topUsers` returns up to 20 rows ordered by scans (ties broken by shares).
 - **Env**: `DATABASE_URL` (required) plus optional `PGSSL_DISABLE_VERIFY` or `PGSSL_CA_BASE64` for Postgres SSL.
 
 ### Admin Campaigns Send — POST `/api/admin/campaigns/send`

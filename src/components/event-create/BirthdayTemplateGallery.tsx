@@ -31,6 +31,7 @@ export type BirthdayTemplateDefinition = TemplateGalleryTemplate & {
     birthdayName: string;
     dateLabel: string;
     location: string;
+    timeLabel?: string;
   };
   backgroundPrompt?: string;
 };

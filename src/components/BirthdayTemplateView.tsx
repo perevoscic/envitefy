@@ -125,6 +125,25 @@ function formatDateLabel(value?: string) {
   }
 }
 
+function formatTimeLabel(
+  value?: string | null,
+  options?: { timeZone?: string | null; allDay?: boolean }
+) {
+  if (!value || options?.allDay) return undefined;
+  try {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return undefined;
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: options?.timeZone || undefined,
+    }).format(parsed);
+  } catch {
+    return undefined;
+  }
+}
+
 type Props = {
   eventId: string;
   eventData: any;
@@ -171,8 +190,10 @@ export default function BirthdayTemplateView({
   });
 
   const previewDateLabel = formatDateLabel(startISO) || "Date TBD";
-  const previewLocation =
-    eventData?.location || template.preview?.location || "Location TBD";
+  const previewTime = formatTimeLabel(startISO, {
+    timeZone: eventData?.timezone || undefined,
+    allDay: Boolean(eventData?.allDay),
+  });
 
   const heroImageSrc =
     (eventData?.customHeroImage as string) ||
@@ -224,7 +245,8 @@ export default function BirthdayTemplateView({
                   className={styles.previewMeta}
                   style={{ color: variation.titleColor }}
                 >
-                  {previewDateLabel} • {previewLocation}
+                  {previewDateLabel}
+                  {previewTime ? ` • ${previewTime}` : ""}
                 </p>
                 <div
                   className={styles.previewNav}

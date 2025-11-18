@@ -45,6 +45,30 @@ function formatDateLabel(value?: string) {
   }
 }
 
+function toLocalTimeValue(d: Date | null): string {
+  if (!d) return "";
+  try {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    return `${hh}:${mm}`;
+  } catch {
+    return "";
+  }
+}
+
+function formatTimeForPreview(value?: string | null): string {
+  if (!value) return "";
+  const [hourPart, minutePart] = value.split(":");
+  const hour = Number.parseInt(hourPart || "0", 10);
+  const minute = Number.parseInt(minutePart || "0", 10);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return value;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const normalizedHour = ((hour + 11) % 12) + 1;
+  const paddedMinute = minute.toString().padStart(2, "0");
+  return `${normalizedHour}:${paddedMinute} ${suffix}`;
+}
+
 function getTemplateById(id?: string | null): WeddingTemplateDefinition {
   if (!id) return weddingTemplateCatalog[0];
   return (
@@ -58,7 +82,7 @@ const infoSections = [
     key: "headline",
     label: "Headline",
     description:
-      "Set your names, event date, and city/state for the hero header.",
+      "Set your names, event date, and start time for the hero header.",
   },
   {
     key: "design",
@@ -781,6 +805,32 @@ export default function WeddingTemplateCustomizePage() {
               className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
             />
           </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="full-day"
+              checked={fullDay}
+              onChange={(e) => setFullDay(e.target.checked)}
+              className="rounded border-stone-300"
+            />
+            <label
+              htmlFor="full-day"
+              className="text-sm font-medium text-stone-700"
+            >
+              All day
+            </label>
+          </div>
+          {!fullDay && (
+            <label className="block text-sm font-medium text-stone-700">
+              Start time
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+              />
+            </label>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <label className="block text-sm font-medium text-stone-700">
               City
@@ -1871,7 +1921,7 @@ export default function WeddingTemplateCustomizePage() {
   const [defaultLeft, defaultRight] = (previewNames || "")
     .split("&")
     .map((s) => s.trim());
-  const location = template.preview?.location ?? DEFAULT_PREVIEW.location;
+  const location = template.preview?.location ?? DEFAULT_PREVIEW.location ?? "";
   const [defaultCity, defaultState] = location.split(",").map((s) => s.trim());
 
   const [partnerOne, setPartnerOne] = useState(defaultLeft ?? "");
@@ -1884,18 +1934,30 @@ export default function WeddingTemplateCustomizePage() {
   const [city, setCity] = useState(defaultCity ?? "");
   const [state, setState] = useState(defaultState ?? "");
 
+  // Time fields
+  const initialStart = useMemo(() => {
+    const base = defaultDate ? new Date(defaultDate) : new Date();
+    base.setSeconds(0, 0);
+    const rounded = new Date(base);
+    const minutes = rounded.getMinutes();
+    rounded.setMinutes(minutes - (minutes % 15));
+    return rounded;
+  }, [defaultDate]);
+  const [fullDay, setFullDay] = useState<boolean>(false);
+  const [startTime, setStartTime] = useState<string>(
+    toLocalTimeValue(initialStart)
+  );
+
   const previewCoupleName =
     partnerOne && partnerTwo ? `${partnerOne} & ${partnerTwo}` : previewNames;
   const previewDateLabel =
     formatDateLabel(eventDate) ??
     template.preview?.dateLabel ??
     DEFAULT_PREVIEW.dateLabel;
-  const previewLocation =
-    city || state
-      ? [city, state]
-          .filter((v) => Boolean(v) && typeof v === "string")
-          .join(", ")
-      : location;
+  const previewTime = useMemo(() => {
+    if (fullDay) return "";
+    return formatTimeForPreview(startTime);
+  }, [fullDay, startTime]);
 
   const weddingPartyPreview = useMemo<WeddingPartyPreview>(() => {
     const normalizedMembers: PartyMemberPreview[] = partyMembers.map(
@@ -2264,7 +2326,8 @@ export default function WeddingTemplateCustomizePage() {
                     className={styles.previewMeta}
                     style={{ color: resolvedVariation.titleColor }}
                   >
-                    {previewDateLabel} • {previewLocation}
+                    {previewDateLabel}
+                    {previewTime ? ` • ${previewTime}` : ""}
                   </p>
                   <div
                     className={styles.previewNav}

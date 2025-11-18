@@ -101,8 +101,17 @@ export default function EventEditModal({
         title.includes("baby shower") ||
         (title.includes("baby") && title.includes("shower")) ||
         title.includes("bridal shower")
-      )
+      ) {
+        if (templateId && variationId) {
+          // Route to customization page with template params
+          return `/event/baby-showers/customize?templateId=${encodeURIComponent(
+            templateId
+          )}&variationId=${encodeURIComponent(
+            variationId
+          )}&edit=${encodeURIComponent(eventId)}`;
+        }
         return "/event/baby-showers";
+      }
       // Weddings
       if (cat.includes("wedding") || title.includes("wedding"))
         return "/event/weddings";

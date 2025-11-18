@@ -1674,195 +1674,31 @@ export default function LeftSidebar() {
               className="block fixed bottom-16 left-3 z-[1000] w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
             >
               <div className="p-2">
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSettingsOpenFloating((v) => {
-                        const next = !v;
-                        return next;
-                      });
-                    }}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                <Link
+                  href="/settings"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setSettingsOpenFloating(false);
+                    setAdminOpenFloating(false);
+                  }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
                   >
-                    <div className="flex items-center gap-3">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="7" r="4" />
-                        <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                      </svg>
-                      <span className="text-sm">Profile</span>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`h-4 w-4 transition-transform ${
-                        settingsOpenFloating ? "rotate-0" : "rotate-90"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-
-                  {settingsOpenFloating && (
-                    <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
-                      <Link
-                        href="/settings"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          setSettingsOpenFloating(false);
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="7" r="4" />
-                          <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                        </svg>
-                        <span className="text-sm">Profile</span>
-                      </Link>
-
-                    </div>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCalendarsOpenFloating((v) => !v);
-                    }}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                  >
-                    <div className="flex items-center gap-3">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <rect
-                          x="3"
-                          y="4"
-                          width="18"
-                          height="18"
-                          rx="2"
-                          ry="2"
-                        />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                      <span className="text-sm">Calendars</span>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`h-4 w-4 transition-transform ${
-                        calendarsOpenFloating ? "rotate-0" : "rotate-90"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                  {calendarsOpenFloating && (
-                    <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!connectedCalendars.google) {
-                            window.open("/api/google/auth", "_blank");
-                          }
-                        }}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CalendarIconGoogle className="h-4 w-4" />
-                          <span className="text-sm">Google</span>
-                        </div>
-                        <div
-                          className={`h-3 w-3 rounded-full ${
-                            connectedCalendars.google
-                              ? "bg-green-500"
-                              : "bg-gray-400 dark:bg-gray-500"
-                          }`}
-                          aria-hidden="true"
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!connectedCalendars.microsoft) {
-                            window.open("/api/outlook/auth", "_blank");
-                          }
-                        }}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CalendarIconOutlook className="h-4 w-4" />
-                          <span className="text-sm">Outlook</span>
-                        </div>
-                        <div
-                          className={`h-3 w-3 rounded-full ${
-                            connectedCalendars.microsoft
-                              ? "bg-green-500"
-                              : "bg-gray-400 dark:bg-gray-500"
-                          }`}
-                          aria-hidden="true"
-                        />
-                      </button>
-                      <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90">
-                        <div className="flex items-center gap-3">
-                          <CalendarIconApple className="h-4 w-4" />
-                          <span className="text-sm">Apple</span>
-                        </div>
-                        <div
-                          className={`h-3 w-3 rounded-full ${
-                            connectedCalendars.apple
-                              ? "bg-green-500"
-                              : "bg-gray-400 dark:bg-gray-500"
-                          }`}
-                          aria-hidden="true"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    <circle cx="12" cy="7" r="4" />
+                    <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+                  </svg>
+                  <span className="text-sm">Profile</span>
+                </Link>
 
                 <Link
                   href="/about"
@@ -4400,243 +4236,30 @@ export default function LeftSidebar() {
                   className="pointer-events-auto w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
                 >
                   <div className="p-2">
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSettingsOpen((v) => {
-                            const next = !v;
-                            return next;
-                          });
-                        }}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                    <Link
+                      href="/settings"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setSettingsOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
                       >
-                        <div className="flex items-center gap-3">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="7" r="4" />
-                            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                          </svg>
-                          <span className="text-sm">Profile</span>
-                        </div>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className={`h-4 w-4 transition-transform ${
-                            settingsOpen ? "rotate-0" : "rotate-90"
-                          }`}
-                          aria-hidden="true"
-                        >
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </button>
-
-                      {settingsOpen && (
-                        <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-40 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
-                          <Link
-                            href="/settings"
-                            onClick={() => {
-                              setMenuOpen(false);
-                              setSettingsOpen(false);
-                            }}
-                            className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <circle cx="12" cy="7" r="4" />
-                              <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                            </svg>
-                            <span className="text-sm">Profile</span>
-                          </Link>
-
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCalendarsOpen((v) => !v);
-                        }}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <div className="flex items-center gap-3">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <rect
-                              x="3"
-                              y="4"
-                              width="18"
-                              height="18"
-                              rx="2"
-                              ry="2"
-                            />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                          </svg>
-                          <span className="text-sm">Calendars</span>
-                        </div>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className={`h-4 w-4 transition-transform ${
-                            calendarsOpen ? "rotate-0" : "rotate-90"
-                          }`}
-                          aria-hidden="true"
-                        >
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </button>
-                      {calendarsOpen && (
-                        <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!connectedCalendars.google) {
-                                window.open("/api/google/auth", "_blank");
-                              }
-                            }}
-                            className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                          >
-                            <div className="flex items-center gap-3">
-                              <CalendarIconGoogle className="h-4 w-4" />
-                              <span className="text-sm">Google</span>
-                            </div>
-                            <div
-                              className={`h-3 w-3 rounded-full ${
-                                connectedCalendars.google
-                                  ? "bg-green-500"
-                                  : "bg-gray-400 dark:bg-gray-500"
-                              }`}
-                              aria-hidden="true"
-                            />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!connectedCalendars.microsoft) {
-                                window.open("/api/outlook/auth", "_blank");
-                              }
-                            }}
-                            className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                          >
-                            <div className="flex items-center gap-3">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                width="16"
-                                height="16"
-                                aria-hidden="true"
-                              >
-                                <rect
-                                  x="2"
-                                  y="2"
-                                  width="9"
-                                  height="9"
-                                  fill="currentColor"
-                                />
-                                <rect
-                                  x="13"
-                                  y="2"
-                                  width="9"
-                                  height="9"
-                                  fill="currentColor"
-                                />
-                                <rect
-                                  x="2"
-                                  y="13"
-                                  width="9"
-                                  height="9"
-                                  fill="currentColor"
-                                />
-                                <rect
-                                  x="13"
-                                  y="13"
-                                  width="9"
-                                  height="9"
-                                  fill="currentColor"
-                                />
-                              </svg>
-                              <span className="text-sm">Outlook</span>
-                            </div>
-                            <div
-                              className={`h-3 w-3 rounded-full ${
-                                connectedCalendars.microsoft
-                                  ? "bg-green-500"
-                                  : "bg-gray-400 dark:bg-gray-500"
-                              }`}
-                              aria-hidden="true"
-                            />
-                          </button>
-                          <div className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-foreground/90">
-                            <div className="flex items-center gap-3">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                width="16"
-                                height="16"
-                                aria-hidden="true"
-                              >
-                                <g transform="translate(2, 0) scale(0.65)">
-                                  <path
-                                    fill="currentColor"
-                                    d="M11.6 0c-.8.1-1.87.6-2.52 1.33-.55.6-1.02 1.45-.84 2.3.88.05 1.9-.5 2.5-1.2.6-.7 1.08-1.68.86-2.43zM15.49 12.57c-.01-2.49 2.05-3.74 2.16-3.81-1.2-1.76-3.09-2.01-3.76-2.05-1.59-.17-3.11.96-3.91.96-.8 0-2.05-.94-3.36-.92-1.72.02-3.31 1-4.19 2.54-1.79 3.12-.46 7.75 1.28 10.28.86 1.24 1.88 2.63 3.22 2.58 1.29-.05 1.78-.84 3.33-.84 1.55 0 2.01.84 3.38.82 1.41-.03 2.32-1.25 3.19-2.5 1.02-1.43 1.44-2.82 1.46-2.89-.03-.02-2.8-1.06-2.82-4.17z"
-                                  />
-                                </g>
-                              </svg>
-                              <span className="text-sm">Apple</span>
-                            </div>
-                            <div
-                              className={`h-3 w-3 rounded-full ${
-                                connectedCalendars.apple
-                                  ? "bg-green-500"
-                                  : "bg-gray-400 dark:bg-gray-500"
-                              }`}
-                              aria-hidden="true"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+                      </svg>
+                      <span className="text-sm">Profile</span>
+                    </Link>
 
                     <Link
                       href="/about"

@@ -17,9 +17,9 @@ import {
   type ResolvedTemplateVariation,
 } from "@/components/event-create/TemplateGallery";
 import {
-  type BirthdayTemplateDefinition,
-  birthdayTemplateCatalog,
-} from "@/components/event-create/BirthdayTemplateGallery";
+  type BabyShowerTemplateDefinition,
+  babyShowerTemplateCatalog,
+} from "@/components/event-create/BabyShowersTemplateGallery";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 
 function parseDateInput(label?: string | null) {
@@ -81,11 +81,11 @@ function formatTimeForPreview(value?: string | null): string {
   return `${normalizedHour}:${paddedMinute} ${suffix}`;
 }
 
-function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
-  if (!id) return birthdayTemplateCatalog[0];
+function getTemplateById(id?: string | null): BabyShowerTemplateDefinition {
+  if (!id) return babyShowerTemplateCatalog[0];
   return (
-    birthdayTemplateCatalog.find((template) => template.id === id) ??
-    birthdayTemplateCatalog[0]
+    babyShowerTemplateCatalog.find((template) => template.id === id) ??
+    babyShowerTemplateCatalog[0]
   );
 }
 
@@ -116,7 +116,7 @@ type RegistryEntry = {
   url: string;
 };
 
-export default function BirthdayTemplateCustomizePage() {
+export default function BabyShowerTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
 
@@ -130,12 +130,12 @@ export default function BirthdayTemplateCustomizePage() {
       const params = new URLSearchParams();
       if (defaultDate) params.set("d", defaultDate);
       const query = params.toString();
-      router.replace(`/event/birthdays${query ? `?${query}` : ""}`);
+      router.replace(`/event/baby-showers${query ? `?${query}` : ""}`);
     }
   }, [templateId, defaultDate, router]);
 
   const template = useMemo(() => {
-    if (!templateId) return birthdayTemplateCatalog[0];
+    if (!templateId) return babyShowerTemplateCatalog[0];
     return getTemplateById(templateId);
   }, [templateId]);
   const variationParam = search?.get("variationId") ?? "";
@@ -316,8 +316,8 @@ export default function BirthdayTemplateCustomizePage() {
             Title
             <input
               type="text"
-              value={birthdayName}
-              onChange={(e) => setBirthdayName(e.target.value)}
+              value={eventTitle}
+              onChange={(e) => setEventTitle(e.target.value)}
               className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
               placeholder="Event Title"
             />
@@ -508,12 +508,12 @@ export default function BirthdayTemplateCustomizePage() {
   const hasPhotos = photoFiles.length > 0;
 
   const templateLocation =
-    template.preview?.location ?? DEFAULT_PREVIEW.location ?? "City, State";
+    template.preview?.location ?? DEFAULT_PREVIEW.location ?? "New York, NY";
   const [defaultCity, defaultState] = templateLocation
     .split(",")
     .map((s) => s.trim());
 
-  const [birthdayName, setBirthdayName] = useState("");
+  const [eventTitle, setEventTitle] = useState("");
   const [eventDate, setEventDate] = useState(
     parseDateInput(
       defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel
@@ -522,7 +522,7 @@ export default function BirthdayTemplateCustomizePage() {
   const [city, setCity] = useState(defaultCity ?? "");
   const [state, setState] = useState(defaultState ?? "");
 
-  // Event fields from old birthday form
+  // Event fields from old baby shower form
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
     base.setSeconds(0, 0);
@@ -592,8 +592,8 @@ export default function BirthdayTemplateCustomizePage() {
         if (data.variationId) {
           setSelectedVariationId(data.variationId);
         }
-        if (data.birthdayName) {
-          setBirthdayName(data.birthdayName);
+        if (data.eventTitle || data.babyShowerName) {
+          setEventTitle(data.eventTitle || data.babyShowerName || "");
         }
         if (data.customTitles && typeof data.customTitles === "object") {
           setCustomTitles(data.customTitles);
@@ -693,7 +693,7 @@ export default function BirthdayTemplateCustomizePage() {
   }, [description]);
 
   const previewName =
-    birthdayName.trim() || template.preview?.birthdayName || "Event";
+    eventTitle.trim() || template.preview?.coupleName || "Baby Shower";
 
   const previewDateLabel =
     formatDateLabel(eventDate) ??
@@ -705,7 +705,7 @@ export default function BirthdayTemplateCustomizePage() {
   }, [fullDay, startTime]);
 
   const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
-  const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
+  const backgroundImageSrc = `/templates/baby-showers/${template.id}.webp`;
 
   const handleReview = useCallback(() => {
     setShowReview(true);
@@ -768,9 +768,9 @@ export default function BirthdayTemplateCustomizePage() {
         locationParts.length > 0 ? locationParts.join(", ") : undefined;
 
       const payload: any = {
-        title: title || birthdayName || "Event",
+        title: title || eventTitle || "Baby Shower",
         data: {
-          category: "Birthdays",
+          category: "Baby Showers",
           createdVia: "template",
           createdManually: true,
           startISO,
@@ -786,7 +786,7 @@ export default function BirthdayTemplateCustomizePage() {
           // Template customization data
           templateId: template.id,
           variationId: resolvedVariation.id,
-          birthdayName: birthdayName || undefined,
+          eventTitle: eventTitle || undefined,
           customTitles:
             Object.keys(customTitles).length > 0 ? customTitles : undefined,
           sectionNotes:
@@ -842,7 +842,7 @@ export default function BirthdayTemplateCustomizePage() {
     endDate,
     endTime,
     title,
-    birthdayName,
+    eventTitle,
     venue,
     streetAddress,
     city,
@@ -860,21 +860,6 @@ export default function BirthdayTemplateCustomizePage() {
     router,
   ]);
 
-  const PreviewCard = ({
-    title,
-    children,
-  }: {
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="rounded-2xl border border-black/5 bg-white/80 p-5 shadow-sm backdrop-blur">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-400">
-        {title}
-      </p>
-      <div className="mt-3 space-y-3 text-sm text-stone-700">{children}</div>
-    </div>
-  );
-
   return (
     <main className="px-5 py-10">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:flex-row">
@@ -890,7 +875,6 @@ export default function BirthdayTemplateCustomizePage() {
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
                   }}
-                  data-birthday="true"
                 >
                   <p
                     className={styles.previewNames}
@@ -1243,7 +1227,6 @@ export default function BirthdayTemplateCustomizePage() {
                           backgroundPosition: "center",
                           backgroundRepeat: "no-repeat",
                         }}
-                        data-birthday="true"
                       >
                         <p
                           className={styles.previewNames}
@@ -1300,92 +1283,6 @@ export default function BirthdayTemplateCustomizePage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Event Details */}
-              <div className="rounded-2xl border border-stone-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-stone-900 mb-4">
-                  Event Details
-                </h3>
-                <div className="space-y-4">
-                  {(venue || streetAddress || city || state) && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Location
-                      </p>
-                      <p className="text-base text-stone-900">
-                        {venue && <span className="font-medium">{venue}</span>}
-                        {venue && (streetAddress || city || state) && (
-                          <span>, </span>
-                        )}
-                        {[streetAddress, city, state]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {numberOfGuests > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Guests
-                      </p>
-                      <p className="text-base text-stone-900">
-                        {numberOfGuests}
-                      </p>
-                    </div>
-                  )}
-
-                  {description && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Description
-                      </p>
-                      <p className="text-base text-stone-900 whitespace-pre-wrap">
-                        {description}
-                      </p>
-                    </div>
-                  )}
-
-                  {rsvp && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        RSVP
-                      </p>
-                      <p className="text-base text-stone-900">{rsvp}</p>
-                    </div>
-                  )}
-
-                  {registries.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
-                        Registry Links
-                      </p>
-                      <div className="space-y-2">
-                        {registries
-                          .filter((r) => r.url.trim())
-                          .map((registry) => (
-                            <div
-                              key={registry.id}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="text-sm text-stone-700">
-                                {registry.label || "Registry"}
-                              </span>
-                              <a
-                                href={registry.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:underline"
-                              >
-                                {registry.url}
-                              </a>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

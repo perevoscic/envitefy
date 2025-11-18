@@ -3,12 +3,29 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
+const EVENT_TYPE_LABELS = {
+  scans_birthdays: "Birthdays",
+  scans_weddings: "Weddings",
+  scans_sport_events: "Sports",
+  scans_appointments: "Appointments",
+  scans_doctor_appointments: "Doctor",
+  scans_play_days: "Play days",
+  scans_general_events: "General",
+  scans_car_pool: "Car pool",
+} as const;
+
+type EventTypeKey = keyof typeof EVENT_TYPE_LABELS;
+type EventCategoryTotals = Partial<Record<EventTypeKey, number>>;
+
 type Overview = {
   totalUsers: number;
   totalEvents: number;
   totalShares: number;
   usersPaid: number;
   usersFF: number;
+  totalScans: number;
+  eventsByCategory: EventCategoryTotals;
+  scansByCategory: EventCategoryTotals;
 };
 
 type StatView = "all" | "paid" | "ff" | "scans" | "shares" | null;
@@ -63,6 +80,15 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const categoryStats = overview
+    ? getEventTypeStats(overview.eventsByCategory)
+    : [];
+  const categorizedTotal = categoryStats.reduce(
+    (sum, item) => sum + item.count,
+    0
+  );
+  const scanStats = overview ? getEventTypeStats(overview.scansByCategory) : [];
 
   function handleClearSearch() {
     setQ("");
@@ -270,7 +296,7 @@ export default function AdminPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <StatCard
                 label="Total Users"
                 value={overview.totalUsers}
@@ -279,29 +305,15 @@ export default function AdminPage() {
                 onClick={() => handleStatClick("all")}
                 isActive={activeStatView === "all"}
               />
-              <StatCard
+              <ScanBreakdownCard
                 label="Total Scans"
-                value={overview.totalEvents}
-                icon="📅"
-                gradient="from-emerald-500 to-teal-500"
-                onClick={() => handleStatClick("scans")}
-                isActive={activeStatView === "scans"}
+                scanStats={scanStats}
+                total={overview.totalScans}
               />
-              <StatCard
-                label="Paid Users"
-                value={overview.usersPaid}
-                icon="💳"
-                gradient="from-purple-500 to-pink-500"
-                onClick={() => handleStatClick("paid")}
-                isActive={activeStatView === "paid"}
-              />
-              <StatCard
-                label="FF Lifetime"
-                value={overview.usersFF}
-                icon="⭐"
-                gradient="from-amber-500 to-yellow-500"
-                onClick={() => handleStatClick("ff")}
-                isActive={activeStatView === "ff"}
+              <CategoryBreakdownCard
+                label="Total Events Created"
+                categoryStats={categoryStats}
+                total={categorizedTotal}
               />
             </div>
           )}
@@ -503,75 +515,47 @@ export default function AdminPage() {
                         key={u.id}
                         className="rounded-lg border border-border bg-surface/85 p-4 space-y-3"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-0">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Name:{" "}
-                              <span className="text-foreground/80 font-bold">
-                                {[u.first_name, u.last_name]
-                                  .filter(Boolean)
-                                  .join(" ") || "-"}
-                              </span>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                              Name
                             </p>
-                            <p className="font-medium text-foreground truncate"></p>
-                          </div>
-                          <PlanBadge plan={u.subscription_plan} />
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                            Email:{" "}
-                            <span className="text-foreground/80 font-bold">
+                            <p className="text-base font-semibold text-foreground truncate">
+                              {[u.first_name, u.last_name]
+                                .filter(Boolean)
+                                .join(" ") || "-"}
+                            </p>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                              Email
+                            </p>
+                            <p className="text-sm text-foreground/85 break-words">
                               {u.email}
-                            </span>
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
                               Scans
                             </p>
-                            <p className="font-semibold text-foreground">
+                            <p className="text-2xl font-bold text-foreground">
                               {u.scans_total ?? 0}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Shares
-                            </p>
-                            <p className="font-semibold text-foreground">
-                              {u.shares_sent ?? 0}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Credits
-                            </p>
-                            <p className="text-foreground/80">
-                              {u.credits ?? "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Joined
-                            </p>
-                            <p className="text-foreground/80 text-sm">
-                              {formatDate(u.created_at)}
-                            </p>
-                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2 border-t border-border">
-                          <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                            Paid:
-                          </span>
-                          {u.ever_paid ? (
-                            <span className="text-success font-medium">
-                              ✓ Yes
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">No</span>
-                          )}
+                        <div className="pt-2 border-t border-border space-y-1">
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Event types
+                          </p>
+                          <EventTypeBadges user={u} limit={4} />
+                        </div>
+
+                        <div className="pt-2 border-t border-border">
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                            Joined
+                          </p>
+                          <p className="text-sm text-foreground/80">
+                            {formatDate(u.created_at)}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -587,11 +571,8 @@ export default function AdminPage() {
                         <tr>
                           <th className="px-4 py-3">Name</th>
                           <th className="px-4 py-3">Email</th>
-                          <th className="px-4 py-3">Plan</th>
-                          <th className="px-4 py-3">Paid</th>
-                          <th className="px-4 py-3 text-right">Credits</th>
                           <th className="px-4 py-3 text-right">Scans</th>
-                          <th className="px-4 py-3 text-right">Shares</th>
+                          <th className="px-4 py-3">Event types</th>
                           <th className="px-4 py-3">Joined</th>
                         </tr>
                       </thead>
@@ -609,26 +590,11 @@ export default function AdminPage() {
                             <td className="px-4 py-3 font-medium text-foreground">
                               {u.email}
                             </td>
-                            <td className="px-4 py-3">
-                              <PlanBadge plan={u.subscription_plan} />
-                            </td>
-                            <td className="px-4 py-3">
-                              {u.ever_paid ? (
-                                <span className="text-success font-medium">
-                                  ✓
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-right text-foreground/80">
-                              {u.credits ?? "—"}
-                            </td>
                             <td className="px-4 py-3 text-right font-semibold text-foreground">
                               {u.scans_total ?? 0}
                             </td>
-                            <td className="px-4 py-3 text-right text-foreground/80">
-                              {u.shares_sent ?? 0}
+                            <td className="px-4 py-3 text-sm text-foreground/80">
+                              <EventTypeBadges user={u} />
                             </td>
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
                               {formatDate(u.created_at)}
@@ -670,6 +636,7 @@ function StatCard({
   gradient,
   onClick,
   isActive,
+  helperText,
 }: {
   label: string;
   value: number;
@@ -677,6 +644,7 @@ function StatCard({
   gradient: string;
   onClick?: () => void;
   isActive?: boolean;
+  helperText?: string;
 }) {
   const activeBorderClass = isActive
     ? gradient.includes("blue")
@@ -708,6 +676,11 @@ function StatCard({
             <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
               {value.toLocaleString()}
             </p>
+            {helperText && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {helperText}
+              </p>
+            )}
           </div>
           <div
             className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0 ${
@@ -727,25 +700,150 @@ function StatCard({
   );
 }
 
-function PlanBadge({ plan }: { plan?: string | null }) {
-  if (!plan) return <span className="text-muted-foreground">—</span>;
-
-  const styles: Record<string, string> = {
-    free: "bg-surface/80 text-foreground/80 border border-border",
-    freemium: "bg-surface/80 text-foreground/80 border border-border",
-    monthly: "bg-blue-500/15 text-blue-600 border border-blue-500/30",
-    yearly: "bg-purple-500/15 text-purple-600 border border-purple-500/30",
-    FF: "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg shadow-amber-500/20",
-  };
-
+function CategoryBreakdownCard({
+  label,
+  categoryStats,
+  total,
+}: {
+  label: string;
+  categoryStats: Array<{ key: EventTypeKey; label: string; count: number }>;
+  total: number;
+}) {
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
-        styles[plan] || styles.free
-      }`}
-    >
-      {plan === "FF" ? "⭐ Lifetime" : plan === "free" ? "Freemium" : plan}
-    </span>
+    <div className="relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 border-border">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+              {label}
+            </p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+              {total.toLocaleString()}
+            </p>
+          </div>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+            🗂️
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border/50">
+          {categoryStats.length > 0 ? (
+            <div className="space-y-2">
+              {categoryStats.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <span className="text-foreground/80 font-medium truncate">
+                    {item.label}
+                  </span>
+                  <span className="text-foreground font-semibold whitespace-nowrap">
+                    {item.count.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No categorized events yet
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="h-1 bg-gradient-to-r from-amber-500 to-yellow-500 opacity-60" />
+    </div>
+  );
+}
+
+function ScanBreakdownCard({
+  label,
+  scanStats,
+  total,
+}: {
+  label: string;
+  scanStats: Array<{ key: EventTypeKey; label: string; count: number }>;
+  total: number;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 border-border">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+              {label}
+            </p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+              {total.toLocaleString()}
+            </p>
+          </div>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+            🌀
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border/50">
+          {scanStats.length > 0 ? (
+            <div className="space-y-2">
+              {scanStats.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <span className="text-foreground/80 font-medium truncate">
+                    {item.label}
+                  </span>
+                  <span className="text-foreground font-semibold whitespace-nowrap">
+                    {item.count.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No scans yet</p>
+          )}
+        </div>
+      </div>
+      <div className="h-1 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-60" />
+    </div>
+  );
+}
+
+function getEventTypeStats(
+  source: Partial<Record<EventTypeKey, number>> | null | undefined
+) {
+  if (!source) return [];
+  return (Object.keys(EVENT_TYPE_LABELS) as EventTypeKey[])
+    .map((key) => {
+      const raw = Number((source as any)?.[key] ?? 0);
+      const count = Number.isFinite(raw) ? raw : 0;
+      return { key, label: EVENT_TYPE_LABELS[key], count };
+    })
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+function EventTypeBadges({ user, limit = 4 }: { user: any; limit?: number }) {
+  const breakdown = getEventTypeStats(user);
+  if (breakdown.length === 0) {
+    return <span className="text-muted-foreground text-sm">-</span>;
+  }
+  const visible = breakdown.slice(0, limit);
+  const remaining = breakdown.length - visible.length;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {visible.map((item) => (
+        <span
+          key={item.key}
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface/80 border border-border text-foreground/80"
+        >
+          {item.label}
+          <span className="ml-1 font-semibold text-foreground">
+            {item.count}
+          </span>
+        </span>
+      ))}
+      {remaining > 0 && (
+        <span className="text-xs text-muted-foreground">+{remaining} more</span>
+      )}
+    </div>
   );
 }
 
