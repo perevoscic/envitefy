@@ -39,20 +39,20 @@ const qs = [
     a: "Absolutely. Envitefy builds multi-event ICS downloads and offers bulk pushes directly to Google Calendar and Outlook, so you can drop every game or practice onto your calendar with one upload.",
   },
   {
-    q: "What are the available subscription plans?",
-    a: "Envitefy offers a free tier with core features plus monthly and yearly plans that unlock bulk schedule tools, faster processing, and premium support. You can upgrade or downgrade any time from the Subscription page, and the self-serve billing portal lets you update payment methods or renewals on your own.",
+    q: "Is Envitefy free to use?",
+    a: "Yes. Registration and everyday use are free, so you can upload flyers, manage events, and share with families without entering payment info.",
   },
   {
-    q: "How do I manage my subscription or payment info?",
-    a: "Open the Subscription page and launch the billing portal to update cards, download invoices, or set cancellations whenever you need. Changes take effect immediately.",
+    q: "Do I need a credit card to create an account?",
+    a: "No. Sign up with email/password or continue with Google and you'll reach the dashboard immediately—no checkout or billing setup required.",
   },
   {
-    q: "Can I gift Envitefy to someone else?",
-    a: "Yes. Start a gift checkout from the Subscription page to send prepaid months or years to a friend. We email them a code once payment clears, and if they already use Envitefy the bonus time is applied automatically.",
+    q: "How many events or schedules can I upload?",
+    a: "Envitefy can process individual invites, multi-page PDFs, and full practice schedules as often as you need. We built the tool for ongoing family planning, so there isn't a strict limit.",
   },
   {
-    q: "How do promo codes work?",
-    a: "Promo codes extend your subscription or credit extra time to someone else. Redeem them from your Subscription settings to apply the benefits instantly, and gifted codes sent to existing users attach to their account right away.",
+    q: "Where do I start after signing up?",
+    a: "After you finish sign-up or login you land on the main Envitefy dashboard. From there you can snap a new flyer, upload a PDF, or create an event from scratch within seconds.",
   },
   {
     q: "Which calendar services does Envitefy support for direct integration?",

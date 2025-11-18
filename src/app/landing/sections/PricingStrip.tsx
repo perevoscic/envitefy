@@ -6,7 +6,7 @@ import AuthModal from "@/components/auth/AuthModal";
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("signup");
-  const primaryHref = "/subscription";
+  const primaryHref = "/";
 
   return (
     <section className="w-full">
@@ -35,7 +35,7 @@ export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
                   scroll={false}
                   className="btn btn-primary btn-lg"
                 >
-                  Manage plan
+                  Open Envitefy
                 </Link>
               ) : (
                 <button

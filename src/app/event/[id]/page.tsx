@@ -47,6 +47,7 @@ import {
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
+import BirthdayTemplateView from "@/components/BirthdayTemplateView";
 
 export const dynamic = "force-dynamic";
 
@@ -921,6 +922,36 @@ export default async function EventPage({
     : isReadOnly
     ? "readonly"
     : "guest";
+
+  // Check if this is a birthday template event
+  const templateId =
+    typeof (data as any)?.templateId === "string"
+      ? (data as any).templateId
+      : null;
+  const variationId =
+    typeof (data as any)?.variationId === "string"
+      ? (data as any).variationId
+      : null;
+  const isBirthdayTemplate =
+    templateId && variationId && categoryNormalized === "birthdays";
+
+  // If it's a birthday template, render the template view
+  if (isBirthdayTemplate) {
+    return (
+      <BirthdayTemplateView
+        eventId={row.id}
+        eventData={data}
+        eventTitle={title}
+        templateId={templateId}
+        variationId={variationId}
+        isOwner={isOwner}
+        isReadOnly={isReadOnly}
+        viewerKind={viewerKind}
+        shareUrl={shareUrl}
+        sessionEmail={sessionEmail}
+      />
+    );
+  }
 
   return (
     <main

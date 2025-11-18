@@ -71,9 +71,29 @@ export default function EventEditModal({
     try {
       const title = String(eventTitle || "").toLowerCase();
       const cat = normalizedExistingCategory;
-      // Birthdays
-      if (cat.includes("birthday") || /birthday|b[-\s]?day/.test(title))
+
+      // Check if this is a birthday template event
+      const templateId =
+        typeof (eventData as any)?.templateId === "string"
+          ? (eventData as any).templateId
+          : null;
+      const variationId =
+        typeof (eventData as any)?.variationId === "string"
+          ? (eventData as any).variationId
+          : null;
+
+      // Birthdays - check if it's a template event first
+      if (cat.includes("birthday") || /birthday|b[-\s]?day/.test(title)) {
+        if (templateId && variationId) {
+          // Route to customization page with template params
+          return `/event/birthdays/customize?templateId=${encodeURIComponent(
+            templateId
+          )}&variationId=${encodeURIComponent(
+            variationId
+          )}&edit=${encodeURIComponent(eventId)}`;
+        }
         return "/event/birthdays";
+      }
       // Baby/Bridal showers
       if (
         cat.includes("baby") ||
@@ -90,7 +110,7 @@ export default function EventEditModal({
     } catch {
       return null;
     }
-  }, [normalizedExistingCategory, eventTitle]);
+  }, [normalizedExistingCategory, eventTitle, eventData, eventId]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -517,9 +537,14 @@ export default function EventEditModal({
           if (templateEditorRoute) {
             try {
               // Route to the category template editor in edit mode
-              (router as any).push(
-                `${templateEditorRoute}?edit=${encodeURIComponent(eventId)}`
-              );
+              // templateEditorRoute already includes edit param if it's a template event
+              if (templateEditorRoute.includes("edit=")) {
+                (router as any).push(templateEditorRoute);
+              } else {
+                (router as any).push(
+                  `${templateEditorRoute}?edit=${encodeURIComponent(eventId)}`
+                );
+              }
               return;
             } catch {}
           }

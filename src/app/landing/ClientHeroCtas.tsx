@@ -7,14 +7,14 @@ import AuthModal from "@/components/auth/AuthModal";
 export default function ClientHeroCtas({ isAuthed }: { isAuthed: boolean }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("signup");
-  const primaryHref = "/subscription";
+  const primaryHref = "/";
   const secondaryHref = isAuthed ? "/about" : "/";
 
   if (isAuthed) {
     return (
       <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start">
         <Link href={primaryHref} className="btn btn-primary btn-lg">
-          Manage plan
+          Open Envitefy
         </Link>
         <Link href={secondaryHref} className="btn btn-outline btn-lg">
           Learn more

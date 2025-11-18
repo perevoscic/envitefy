@@ -1500,34 +1500,10 @@ export default function LeftSidebar() {
             className="h-4 w-4"
             aria-hidden="true"
           >
-            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
+            <circle cx="12" cy="7" r="4" />
+            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
           </svg>
-          <span className="text-sm">Settings</span>
-        </Link>
-
-        <Link
-          href="/subscription"
-          onClick={onCloseMenu}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
-            <line x1="2" y1="10" x2="22" y2="10" />
-            <line x1="7" y1="15" x2="7.01" y2="15" />
-            <line x1="11" y1="15" x2="13" y2="15" />
-          </svg>
-          <span className="text-sm">Subscription</span>
+          <span className="text-sm">Profile</span>
         </Link>
 
         <Link
@@ -1721,10 +1697,10 @@ export default function LeftSidebar() {
                         className="h-4 w-4"
                         aria-hidden="true"
                       >
-                        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                       </svg>
-                      <span className="text-sm">Settings</span>
+                      <span className="text-sm">Profile</span>
                     </div>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1770,39 +1746,6 @@ export default function LeftSidebar() {
                         <span className="text-sm">Profile</span>
                       </Link>
 
-                      <Link
-                        href="/subscription"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          setSettingsOpenFloating(false);
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                        >
-                          <rect
-                            x="2"
-                            y="5"
-                            width="20"
-                            height="14"
-                            rx="2"
-                            ry="2"
-                          />
-                          <line x1="2" y1="10" x2="22" y2="10" />
-                          <line x1="7" y1="15" x2="7.01" y2="15" />
-                          <line x1="11" y1="15" x2="13" y2="15" />
-                        </svg>
-                        <span className="text-sm">Subscription</span>
-                      </Link>
                     </div>
                   )}
                 </div>
@@ -4480,10 +4423,10 @@ export default function LeftSidebar() {
                             className="h-4 w-4"
                             aria-hidden="true"
                           >
-                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.47.47-.61 1.17-.33 1.78h0A1.65 1.65 0 0 0 20.91 12H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" />
+                            <circle cx="12" cy="7" r="4" />
+                            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                           </svg>
-                          <span className="text-sm">Settings</span>
+                          <span className="text-sm">Profile</span>
                         </div>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -4529,39 +4472,6 @@ export default function LeftSidebar() {
                             <span className="text-sm">Profile</span>
                           </Link>
 
-                          <Link
-                            href="/subscription"
-                            onClick={() => {
-                              setMenuOpen(false);
-                              setSettingsOpen(false);
-                            }}
-                            className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <rect
-                                x="2"
-                                y="5"
-                                width="20"
-                                height="14"
-                                rx="2"
-                                ry="2"
-                              />
-                              <line x1="2" y1="10" x2="22" y2="10" />
-                              <line x1="7" y1="15" x2="7.01" y2="15" />
-                              <line x1="11" y1="15" x2="13" y2="15" />
-                            </svg>
-                            <span className="text-sm">Subscription</span>
-                          </Link>
                         </div>
                       )}
                     </div>

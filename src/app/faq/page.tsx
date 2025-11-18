@@ -5,11 +5,11 @@ import FAQ from "../landing/sections/FAQ";
 export const metadata: Metadata = {
   title: "Envitefy FAQ",
   description:
-    "Answers about scanning invites, creating events, RSVPs, smart sign‑up forms, and subscriptions.",
+    "Answers about scanning invites, creating events, RSVPs, and smart sign‑up forms.",
   openGraph: {
     title: "Envitefy FAQ",
     description:
-      "Find answers about Envitefy features, calendars, RSVPs, and billing.",
+      "Find answers about Envitefy features, calendars, RSVPs, and free accounts.",
     url: "https://envitefy.com/faq",
     siteName: "Envitefy",
     images: [

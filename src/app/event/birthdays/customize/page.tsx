@@ -44,6 +44,31 @@ function formatDateLabel(value?: string) {
   }
 }
 
+function toLocalDateValue(d: Date | null): string {
+  if (!d) return "";
+  try {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    return `${y}-${m}-${day}`;
+  } catch {
+    return "";
+  }
+}
+
+function toLocalTimeValue(d: Date | null): string {
+  if (!d) return "";
+  try {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    return `${hh}:${mm}`;
+  } catch {
+    return "";
+  }
+}
+
 function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
   if (!id) return birthdayTemplateCatalog[0];
   return (
@@ -91,6 +116,7 @@ export default function BirthdayTemplateCustomizePage() {
 
   const templateId = search?.get("templateId");
   const defaultDate = search?.get("d") ?? undefined;
+  const editEventId = search?.get("edit") ?? undefined;
 
   // Redirect to template selection if no templateId is provided
   useEffect(() => {
@@ -507,8 +533,11 @@ export default function BirthdayTemplateCustomizePage() {
 
   const hasPhotos = photoFiles.length > 0;
 
-  const location = template.preview?.location ?? DEFAULT_PREVIEW.location;
-  const [defaultCity, defaultState] = location.split(",").map((s) => s.trim());
+  const templateLocation =
+    template.preview?.location ?? DEFAULT_PREVIEW.location;
+  const [defaultCity, defaultState] = templateLocation
+    .split(",")
+    .map((s) => s.trim());
 
   const [birthdayName, setBirthdayName] = useState("");
   const [eventDate, setEventDate] = useState(
@@ -519,6 +548,141 @@ export default function BirthdayTemplateCustomizePage() {
   const [city, setCity] = useState(defaultCity ?? "");
   const [state, setState] = useState(defaultState ?? "");
 
+  // Event fields from old birthday form
+  const initialStart = useMemo(() => {
+    const base = defaultDate ? new Date(defaultDate) : new Date();
+    base.setSeconds(0, 0);
+    const rounded = new Date(base);
+    const minutes = rounded.getMinutes();
+    rounded.setMinutes(minutes - (minutes % 15));
+    return rounded;
+  }, [defaultDate]);
+
+  const initialEnd = useMemo(() => {
+    const d = new Date(initialStart);
+    d.setHours(d.getHours() + 1);
+    return d;
+  }, [initialStart]);
+
+  const [title, setTitle] = useState("");
+  const [whenDate, setWhenDate] = useState<string>(
+    toLocalDateValue(new Date(initialStart))
+  );
+  const [fullDay, setFullDay] = useState<boolean>(false);
+  const [startTime, setStartTime] = useState<string>(
+    toLocalTimeValue(initialStart)
+  );
+  const [endDate, setEndDate] = useState<string>(
+    toLocalDateValue(new Date(initialStart))
+  );
+  const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
+
+  // Sync end date with start date when start date changes
+  useEffect(() => {
+    setEndDate(whenDate);
+  }, [whenDate]);
+  const [venue, setVenue] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [description, setDescription] = useState("");
+  const [rsvp, setRsvp] = useState("");
+  const [numberOfGuests, setNumberOfGuests] = useState<number>(0);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Load event data when editing
+  useEffect(() => {
+    if (!editEventId) return;
+
+    const loadEvent = async () => {
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const event = await res.json();
+        const data = event?.data || {};
+
+        // Load template customization data
+        if (data.templateId) {
+          // Template ID is already in URL, but we can verify
+        }
+        if (data.variationId) {
+          setSelectedVariationId(data.variationId);
+        }
+        if (data.birthdayName) {
+          setBirthdayName(data.birthdayName);
+        }
+        if (data.customTitles && typeof data.customTitles === "object") {
+          setCustomTitles(data.customTitles);
+        }
+        if (data.sectionNotes && typeof data.sectionNotes === "object") {
+          setSectionNotes(data.sectionNotes);
+        }
+        if (Array.isArray(data.registries)) {
+          setRegistries(
+            data.registries.map((r: any) => ({
+              id: generateId(),
+              label: r.label || "",
+              url: r.url || "",
+            }))
+          );
+        }
+
+        // Load event details
+        if (event.title) {
+          setTitle(event.title);
+        }
+        if (data.startISO) {
+          const startDate = new Date(data.startISO);
+          setWhenDate(toLocalDateValue(startDate));
+          setEndDate(toLocalDateValue(startDate));
+          if (!data.allDay) {
+            setStartTime(toLocalTimeValue(startDate));
+            if (data.endISO) {
+              const endDate = new Date(data.endISO);
+              setEndTime(toLocalTimeValue(endDate));
+            }
+          }
+          setFullDay(data.allDay || false);
+        }
+        if (data.venue) {
+          setVenue(data.venue);
+        }
+        if (data.location) {
+          setEventLocation(data.location);
+          // Try to extract city/state from location
+          const parts = data.location.split(",").map((s: string) => s.trim());
+          if (parts.length >= 2) {
+            setCity(parts[0]);
+            setState(parts.slice(1).join(", "));
+          }
+        }
+        if (data.description) {
+          setDescription(data.description);
+        }
+        if (data.rsvp) {
+          setRsvp(data.rsvp);
+        }
+        if (typeof data.numberOfGuests === "number") {
+          setNumberOfGuests(data.numberOfGuests);
+        }
+      } catch (err) {
+        console.error("Failed to load event:", err);
+      }
+    };
+
+    loadEvent();
+  }, [editEventId, generateId]);
+
+  // Autosize description
+  useEffect(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
+
   const previewName =
     birthdayName.trim() || template.preview?.birthdayName || "Birthday Person";
 
@@ -527,25 +691,154 @@ export default function BirthdayTemplateCustomizePage() {
     template.preview?.dateLabel ??
     DEFAULT_PREVIEW.dateLabel;
   const previewLocation =
-    city || state ? [city, state].filter(Boolean).join(", ") : location;
+    city || state ? [city, state].filter(Boolean).join(", ") : templateLocation;
 
   const heroImageSrc = `/templates/wedding-placeholders/${template.heroImageName}`;
   const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
 
-  const handleContinue = useCallback(() => {
-    const params = new URLSearchParams();
-    params.set("templateId", template.id);
-    params.set("variationId", resolvedVariation.id);
-    if (eventDate) {
-      try {
-        const iso = new Date(eventDate).toISOString();
-        params.set("d", iso);
-      } catch {}
-    } else if (defaultDate) {
-      params.set("d", defaultDate);
+  const handleReview = useCallback(() => {
+    setShowReview(true);
+  }, []);
+
+  const handlePublish = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      // Calculate start and end ISO dates
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (whenDate) {
+        if (fullDay) {
+          const start = new Date(`${whenDate}T00:00:00`);
+          const now = new Date();
+          const todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
+          if (start < todayStart)
+            throw new Error("Start date cannot be in the past");
+          const end = new Date(start);
+          end.setDate(end.getDate() + 1);
+          startISO = start.toISOString();
+          endISO = end.toISOString();
+        } else {
+          const start = new Date(`${whenDate}T${startTime || "09:00"}:00`);
+          const end = new Date(`${whenDate}T${endTime || "10:00"}:00`);
+          const now = new Date();
+          const todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
+          if (start < todayStart)
+            throw new Error("Start date cannot be in the past");
+          if (end < start) {
+            endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
+            startISO = start.toISOString();
+          } else {
+            startISO = start.toISOString();
+            endISO = end.toISOString();
+          }
+        }
+      }
+
+      // Prepare registries
+      const sanitizedRegistries = registries
+        .filter((r) => r.url.trim())
+        .map((r) => ({
+          label: r.label.trim() || "Registry",
+          url: r.url.trim(),
+        }));
+
+      const payload: any = {
+        title: title || `${birthdayName || "Birthday Person"}'s Birthday`,
+        data: {
+          category: "Birthdays",
+          createdVia: "template",
+          createdManually: true,
+          startISO,
+          endISO,
+          venue: venue || undefined,
+          location: eventLocation || undefined,
+          description: description || undefined,
+          rsvp: (rsvp || "").trim() || undefined,
+          numberOfGuests: numberOfGuests || 0,
+          allDay: fullDay || undefined,
+          registries:
+            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
+          // Template customization data
+          templateId: template.id,
+          variationId: resolvedVariation.id,
+          birthdayName: birthdayName || undefined,
+          customTitles:
+            Object.keys(customTitles).length > 0 ? customTitles : undefined,
+          sectionNotes:
+            Object.keys(sectionNotes).length > 0 ? sectionNotes : undefined,
+        },
+      };
+
+      let id: string | undefined;
+
+      if (editEventId) {
+        // Update existing event
+        await fetch(`/api/history/${editEventId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: payload.title,
+            data: payload.data,
+          }),
+        });
+        id = editEventId;
+      } else {
+        // Create new event
+        const r = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        const j = await r.json().catch(() => ({}));
+        id = (j as any)?.id as string | undefined;
+      }
+
+      if (id) {
+        router.push(`/event/${id}${editEventId ? "?updated=1" : "?created=1"}`);
+      } else {
+        throw new Error(
+          editEventId ? "Failed to update event" : "Failed to create event"
+        );
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || err || "Failed to create event");
+      alert(msg);
+    } finally {
+      setSubmitting(false);
     }
-    router.push(`/event/new?${params.toString()}`);
-  }, [template.id, resolvedVariation.id, eventDate, defaultDate, router]);
+  }, [
+    submitting,
+    whenDate,
+    fullDay,
+    startTime,
+    endDate,
+    endTime,
+    title,
+    birthdayName,
+    venue,
+    eventLocation,
+    description,
+    rsvp,
+    numberOfGuests,
+    registries,
+    template.id,
+    resolvedVariation.id,
+    customTitles,
+    sectionNotes,
+    editEventId,
+    router,
+  ]);
 
   const PreviewCard = ({
     title,
@@ -565,7 +858,7 @@ export default function BirthdayTemplateCustomizePage() {
   return (
     <main className="px-5 py-10">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:flex-row">
-        <div className="flex-1">
+        <div className="flex-1 space-y-6">
           <article className={styles.templateCard}>
             <div className={styles.cardBody}>
               <div className={styles.previewFrame}>
@@ -622,6 +915,155 @@ export default function BirthdayTemplateCustomizePage() {
                   />
                 </div>
               </div>
+
+              {/* Event Fields Section */}
+              <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
+                <h2 className="text-xl font-semibold text-stone-900 mb-4">
+                  Event Details
+                </h2>
+                <div className="space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                      placeholder="Event title"
+                    />
+                  </div>
+
+                  {/* When */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-stone-700">
+                        When
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-stone-600">
+                        <input
+                          type="checkbox"
+                          checked={fullDay}
+                          onChange={(e) => setFullDay(e.target.checked)}
+                          className="rounded"
+                        />
+                        <span>Full day</span>
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                      <div>
+                        <label className="text-xs text-stone-500">Date</label>
+                        <input
+                          type="date"
+                          value={whenDate}
+                          onChange={(e) => setWhenDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                        />
+                      </div>
+                      {!fullDay && (
+                        <>
+                          <div>
+                            <label className="text-xs text-stone-500">
+                              Start time
+                            </label>
+                            <input
+                              type="time"
+                              value={startTime}
+                              onChange={(e) => setStartTime(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-stone-500">
+                              End time
+                            </label>
+                            <input
+                              type="time"
+                              value={endTime}
+                              onChange={(e) => setEndTime(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      Address
+                    </label>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={venue}
+                        onChange={(e) => setVenue(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                        placeholder="Venue name (optional)"
+                      />
+                      <input
+                        type="text"
+                        value={eventLocation}
+                        onChange={(e) => setEventLocation(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                        placeholder="Street, City, State ZIP"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Guests */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      Guests
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={numberOfGuests || ""}
+                      onChange={(e) =>
+                        setNumberOfGuests(
+                          Number.parseInt(e.target.value, 10) || 0
+                        )
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                      placeholder="Enter number of guests"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      ref={descriptionRef}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none resize-none"
+                      placeholder="Add details for your guests"
+                    />
+                  </div>
+
+                  {/* RSVP */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      RSVP
+                    </label>
+                    <input
+                      type="text"
+                      value={rsvp}
+                      onChange={(e) => setRsvp(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
+                      placeholder="Phone number or email for RSVP"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {hasPhotos && (
                 <div className="mt-4 space-y-4">
                   <PreviewCard title={menuLabel("photos", "Photos")}>
@@ -745,7 +1187,7 @@ export default function BirthdayTemplateCustomizePage() {
             </div>
           </article>
         </div>
-        <div className="w-full max-w-md space-y-5 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
+        <div className="w-full max-w-md flex flex-col rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-stone-500">
               Customize
@@ -754,7 +1196,7 @@ export default function BirthdayTemplateCustomizePage() {
               Add your details
             </h2>
           </div>
-          <div className={styles.accordionWrapper}>
+          <div className={`${styles.accordionWrapper} flex-1 min-h-0`}>
             <div
               className={`${styles.menuView} ${
                 activeSection ? styles.menuHidden : ""
@@ -832,13 +1274,351 @@ export default function BirthdayTemplateCustomizePage() {
           </div>
           <button
             type="button"
-            onClick={handleContinue}
-            className="w-full rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-stone-800"
+            onClick={handleReview}
+            className="mt-5 w-full rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-stone-800"
           >
-            Preview and publish
+            Review
           </button>
         </div>
       </section>
+
+      {/* Review/Preview Modal */}
+      {showReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-semibold text-stone-900">
+                Review Your Event
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowReview(false)}
+                className="text-stone-500 hover:text-stone-700"
+                aria-label="Close"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Template Preview */}
+              <div className="rounded-2xl border border-stone-200 bg-white p-6">
+                <div className={styles.templateCard}>
+                  <div className={styles.cardBody}>
+                    <div className={styles.previewFrame}>
+                      <div
+                        className={styles.previewHeader}
+                        style={{
+                          backgroundImage: `url(${backgroundImageSrc})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          backgroundRepeat: "no-repeat",
+                        }}
+                        data-birthday="true"
+                      >
+                        <p
+                          className={styles.previewNames}
+                          style={{
+                            color: resolvedVariation.titleColor,
+                            fontFamily: resolvedVariation.titleFontFamily,
+                            fontWeight:
+                              resolvedVariation.titleWeight === "bold"
+                                ? 700
+                                : resolvedVariation.titleWeight === "semibold"
+                                ? 600
+                                : 400,
+                          }}
+                        >
+                          {previewName}'s Birthday
+                        </p>
+                        <p
+                          className={styles.previewMeta}
+                          style={{ color: resolvedVariation.titleColor }}
+                        >
+                          {previewDateLabel} • {previewLocation}
+                        </p>
+                        <div
+                          className={styles.previewNav}
+                          style={{ color: resolvedVariation.titleColor }}
+                        >
+                          {template.menu.slice(0, 5).map((item) => (
+                            <span key={item} className={styles.previewNavItem}>
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={styles.previewPhoto}>
+                        <Image
+                          src={heroImageSrc}
+                          alt={`${template.name} preview`}
+                          width={640}
+                          height={360}
+                          className={styles.previewPhotoImage}
+                          priority={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Event Details */}
+              <div className="rounded-2xl border border-stone-200 bg-white p-6">
+                <h3 className="text-lg font-semibold text-stone-900 mb-4">
+                  Event Details
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      Title
+                    </p>
+                    <p className="text-base text-stone-900">
+                      {title ||
+                        `${birthdayName || "Birthday Person"}'s Birthday`}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      When
+                    </p>
+                    <p className="text-base text-stone-900">
+                      {whenDate
+                        ? new Date(whenDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "Not set"}
+                      {!fullDay && startTime && ` at ${startTime}`}
+                      {!fullDay && endTime && ` - ${endTime}`}
+                      {fullDay && " (All day)"}
+                    </p>
+                  </div>
+
+                  {(venue || eventLocation) && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Location
+                      </p>
+                      <p className="text-base text-stone-900">
+                        {venue && <span className="font-medium">{venue}</span>}
+                        {venue && eventLocation && <span>, </span>}
+                        {eventLocation}
+                      </p>
+                    </div>
+                  )}
+
+                  {numberOfGuests > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Guests
+                      </p>
+                      <p className="text-base text-stone-900">
+                        {numberOfGuests}
+                      </p>
+                    </div>
+                  )}
+
+                  {description && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Description
+                      </p>
+                      <p className="text-base text-stone-900 whitespace-pre-wrap">
+                        {description}
+                      </p>
+                    </div>
+                  )}
+
+                  {rsvp && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        RSVP
+                      </p>
+                      <p className="text-base text-stone-900">{rsvp}</p>
+                    </div>
+                  )}
+
+                  {registries.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
+                        Registry Links
+                      </p>
+                      <div className="space-y-2">
+                        {registries
+                          .filter((r) => r.url.trim())
+                          .map((registry) => (
+                            <div
+                              key={registry.id}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="text-sm text-stone-700">
+                                {registry.label || "Registry"}
+                              </span>
+                              <a
+                                href={registry.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline"
+                              >
+                                {registry.url}
+                              </a>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Event Details */}
+              <div className="rounded-2xl border border-stone-200 bg-white p-6">
+                <h3 className="text-lg font-semibold text-stone-900 mb-4">
+                  Event Details
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      Title
+                    </p>
+                    <p className="text-base text-stone-900">
+                      {title ||
+                        `${birthdayName || "Birthday Person"}'s Birthday`}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                      When
+                    </p>
+                    <p className="text-base text-stone-900">
+                      {whenDate
+                        ? new Date(whenDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "Not set"}
+                      {!fullDay && startTime && ` at ${startTime}`}
+                      {!fullDay && endTime && ` - ${endTime}`}
+                      {fullDay && " (All day)"}
+                    </p>
+                  </div>
+
+                  {(venue || eventLocation) && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Location
+                      </p>
+                      <p className="text-base text-stone-900">
+                        {venue && <span className="font-medium">{venue}</span>}
+                        {venue && eventLocation && <span>, </span>}
+                        {eventLocation}
+                      </p>
+                    </div>
+                  )}
+
+                  {numberOfGuests > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Guests
+                      </p>
+                      <p className="text-base text-stone-900">
+                        {numberOfGuests}
+                      </p>
+                    </div>
+                  )}
+
+                  {description && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Description
+                      </p>
+                      <p className="text-base text-stone-900 whitespace-pre-wrap">
+                        {description}
+                      </p>
+                    </div>
+                  )}
+
+                  {rsvp && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        RSVP
+                      </p>
+                      <p className="text-base text-stone-900">{rsvp}</p>
+                    </div>
+                  )}
+
+                  {registries.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
+                        Registry Links
+                      </p>
+                      <div className="space-y-2">
+                        {registries
+                          .filter((r) => r.url.trim())
+                          .map((registry) => (
+                            <div
+                              key={registry.id}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="text-sm text-stone-700">
+                                {registry.label || "Registry"}
+                              </span>
+                              <a
+                                href={registry.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline"
+                              >
+                                {registry.url}
+                              </a>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="sticky bottom-0 bg-white border-t border-stone-200 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowReview(false)}
+                className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-md hover:bg-stone-50"
+              >
+                Back to Edit
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={submitting}
+                className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Publishing..." : "Publish Event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

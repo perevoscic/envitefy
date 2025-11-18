@@ -3,7 +3,6 @@
 import { FormEvent, useRef, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
 
 declare global {
   interface Window {
@@ -21,7 +20,6 @@ export default function SignupForm({
   onSwitchMode,
 }: SignupFormProps) {
   const router = useRouter();
-  const params = useSearchParams();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -166,18 +164,14 @@ export default function SignupForm({
         email,
         password,
         redirect: false,
-        callbackUrl: "/subscription",
+        callbackUrl: "/",
       });
       if (result?.ok) {
         try {
           localStorage.setItem("welcomeAfterSignup", "1");
         } catch {}
         onSuccess?.();
-        const preselectedPlan = params?.get?.("plan") ?? null;
-        const target = preselectedPlan
-          ? `/subscription?plan=${encodeURIComponent(preselectedPlan)}`
-          : "/subscription";
-        router.replace(target);
+        router.replace("/");
         return;
       }
       setMessage("Account created, please log in");
@@ -189,7 +183,7 @@ export default function SignupForm({
   const onGoogleSignUp = async () => {
     setSubmitting(true);
     try {
-      await signIn("google", { callbackUrl: "/subscription" });
+      await signIn("google", { callbackUrl: "/" });
     } catch (err) {
       console.error("Google sign-up error:", err);
       setMessage("Failed to sign up with Google");
