@@ -1107,9 +1107,6 @@ function TemplateCard({
         }}
       >
         <div className="relative flex h-full flex-col justify-between gap-2 bg-black/20 p-4 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
-            {template.icon} Invite style
-          </p>
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-4 p-5 text-[#2F2F2F]">

@@ -50,7 +50,7 @@ GOOGLE_APPLICATION_CREDENTIALS_JSON=
 
 # Optional LLM fallback for OCR title/schedule
 OPENAI_API_KEY=
-LLM_MODEL=gpt-4o-mini
+LLM_MODEL=gpt-5.1-mini
 
 # Postgres (users + token store)
 DATABASE_URL=postgresql://appuser:pass@host:5432/envitefy

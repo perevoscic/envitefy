@@ -17,7 +17,7 @@ export function OPTIONS(request: Request) {
   return corsPreflight(request);
 }
 
-const DEFAULT_OCR_MODEL = "gpt-4o";
+const DEFAULT_OCR_MODEL = "gpt-5.1";
 
 function resolveOcrModel(): string {
   return process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || DEFAULT_OCR_MODEL;
@@ -1223,7 +1223,7 @@ async function llmRewriteBirthdayDescription(
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.1-mini";
   const system =
     "You rewrite short event notes into one friendly invitation sentence for a calendar description. Output plain text only (no JSON), one sentence, under 160 characters.";
   // Give the model explicit guidance so it standardizes the sentence while adapting to available fields
@@ -1264,7 +1264,7 @@ async function llmRewriteWedding(
 ): Promise<{ title: string; description: string } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.1-mini";
   const system =
     "You rewrite wedding invitation copy into a clean calendar title and a short description using ONLY facts present in the image text. Output strict JSON only.";
   const user =
@@ -1319,7 +1319,7 @@ async function llmRewriteSmartDescription(
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.1-mini";
   const system =
     "You summarize event flyers into ONE friendly calendar sentence, using only facts present. Output plain text only, single line, under 160 characters.";
   const user =

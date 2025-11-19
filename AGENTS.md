@@ -185,7 +185,7 @@ curl -X POST \
 
 - **Env**:
   - **Required**: `OPENAI_API_KEY` (Primary OCR via OpenAI Vision).
-  - **Optional**: `OPENAI_OCR_MODEL` to override the dedicated OCR model (defaults to `gpt-4o`; falls back to `LLM_MODEL` when set).
+  - **Optional**: `OPENAI_OCR_MODEL` to override the dedicated OCR model (defaults to `gpt-5.1`; falls back to `LLM_MODEL` when set).
   - **Optional fallback**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Google Vision fallback.
 
 #### Common OCR Errors
@@ -532,7 +532,7 @@ Payload used by the authenticated calendar agents.
   - Prefer inline: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
   - Or ADC file path: `GOOGLE_APPLICATION_CREDENTIALS`.
 - **OpenAI (optional OCR fallback)**
-  - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`).
+- `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-5.1-mini`).
 - **AWS SES (email senders)**
   - `SES_FROM_EMAIL_NO_REPLY` e.g. `Envitefy <no-reply@envitefy.com>` (password reset, system mail)
   - `SES_FROM_EMAIL_GIFT` e.g. `"Envitefy Gifts" <gift@envitefy.com>` (gift delivery emails)
@@ -588,7 +588,7 @@ Payload used by the authenticated calendar agents.
 ## Changelog
 
 - 2025-10-06: **UI Enhancement**: Event creation modal now supports custom categories with automatic icon assignment. Users can select from preset categories (with emoji icons) or add their own custom category via "➕ Add your own..." option. Icons are intelligently assigned based on category keywords (e.g., 🎂 for birthdays, 💍 for weddings, 🩺 for medical appointments).
-- 2025-10-06: Default LLM model set to `gpt-4o` for best OCR accuracy with cursive/decorative fonts. Users can override with `LLM_MODEL=gpt-4o-mini` for faster, lower-cost processing when high accuracy is not critical.
+- 2025-10-06: Default LLM model upgraded to `gpt-5.1` for best OCR accuracy with cursive/decorative fonts. Users can override with `LLM_MODEL=gpt-5.1-mini` for faster, lower-cost processing when high accuracy is not critical.
 - 2025-10-06: **New feature**: Event creation modal now detects connected calendars (Google, Microsoft, Apple) and shows checkboxes to add events to multiple calendars simultaneously. All connected calendars are pre-selected by default.
 - 2025-10-06: Medical and dental appointment descriptions are now content-based, not template-based. The LLM extracts only the clinical information actually visible on the scanned image (appointment type, provider if shown, facility if shown, time, etc.). No rigid templates, no invented information. Patient name and DOB are excluded. All invitation-style phrases like "You're invited", "Join", "for his/her", "please" are forbidden. Each fact appears on its own line.
 - 2025-10-06: **BREAKING**: OCR pipeline flipped to use OpenAI Vision as PRIMARY OCR method, with Google Vision as fallback. OpenAI Vision now runs first for all scans (direct image analysis), Google Vision only used if OpenAI fails. Response includes `ocrSource` field (`"openai"`, `"google-sdk"`, or `"google-rest"`). This improves accuracy for cursive fonts, decorative text, and RSVP extraction.
