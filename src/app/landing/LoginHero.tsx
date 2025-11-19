@@ -2,13 +2,14 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BackgroundSlider from "@/components/BackgroundSlider";
 import AuthModal from "@/components/auth/AuthModal";
 
 export default function LoginHero() {
   const { status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [showReadMore, setShowReadMore] = useState(false);
@@ -120,6 +121,7 @@ export default function LoginHero() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
+    if (pathname === "/") return;
     try {
       if (typeof window !== "undefined") {
         const welcomeFlag = window.localStorage.getItem("welcomeAfterSignup");
@@ -127,7 +129,7 @@ export default function LoginHero() {
       }
     } catch {}
     router.replace("/");
-  }, [status, router]);
+  }, [status, router, pathname]);
 
   // Open modal automatically when `?auth=login` or `?auth=signup` is present and respond to query changes
   useEffect(() => {
