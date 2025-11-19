@@ -81,8 +81,7 @@ export default function TopNav() {
     }
   }, []);
 
-  const isLandingPage = (pathname || "") === "/";
-  const shouldShowNav = status === "authenticated" && !isLandingPage;
+  const shouldShowNav = status === "authenticated";
 
   useEffect(() => {
     if (typeof document === "undefined") return;
