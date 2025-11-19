@@ -39,7 +39,7 @@ export function SnapUploadHero({ onSnap, onUpload }: SnapUploadHeroProps) {
               buttons.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 md:flex-row">
             <button
               type="button"
               onClick={onSnap}

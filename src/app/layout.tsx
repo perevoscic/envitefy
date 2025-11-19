@@ -63,6 +63,7 @@ import Providers from "./providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
+import TopNav from "@/components/navigation/TopNav";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import type { CSSProperties } from "react";
@@ -761,11 +762,12 @@ export default async function RootLayout({
         `}</Script>
         <Providers session={session}>
           <LeftSidebar />
+          <TopNav />
           <div
             className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
             style={{
               minHeight: "100dvh",
-              paddingTop: "max(0px, env(safe-area-inset-top))",
+              paddingTop: "calc(4.5rem + max(0px, env(safe-area-inset-top)))",
               paddingBottom: "max(0px, env(safe-area-inset-bottom))",
             }}
             data-static-illustration="true"

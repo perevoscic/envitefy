@@ -88,7 +88,6 @@ export default function Home() {
   const isSignedIn = Boolean(session?.user);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const heroRef = useRef<HTMLDivElement | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -96,7 +95,6 @@ export default function Home() {
   const [, setOcrText] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
-  const [showStickyBrand, setShowStickyBrand] = useState(false);
 
   const logUploadIssue = useCallback(
     (err: unknown, stage: string, details?: Record<string, unknown>) => {
@@ -953,62 +951,18 @@ export default function Home() {
   }, [session]);
 
   useEffect(() => {
-    const target = heroRef.current;
-    if (!target || typeof window === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry) {
-          setShowStickyBrand(!entry.isIntersecting);
-        }
-      },
-      {
-        root: null,
-        rootMargin: "-60px 0px 0px 0px",
-        threshold: 0,
-      }
-    );
-    observer.observe(target);
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 1023px)");
+    const handler = () => {};
+    media.addEventListener("change", handler);
     return () => {
-      observer.disconnect();
+      media.removeEventListener("change", handler);
     };
   }, []);
 
   return (
     <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      {showStickyBrand && (
-        <div className="fixed left-0 right-0 top-0 z-30 border-b border-[#dfe2ff] bg-white/90 text-[#7f8cff] backdrop-blur-md transition">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] sm:text-sm">
-            <div className="flex items-center gap-2 text-[#7f8cff]">
-              <Image
-                src="/navElogo.png"
-                alt="Envitefy mark"
-                width={64}
-                height={64}
-                priority
-              />
-            </div>
-            <span>CREATE | SHARE | ENJOY</span>
-          </div>
-        </div>
-      )}
-      <div
-        ref={heroRef}
-        className="flex flex-col items-center gap-4 md:gap-6 text-center px-8 py-5 md:px-12 md:py-8 w-auto mb-6 md:mb-10 -mt-8 md:-mt-12"
-      >
-        <Image
-          src="/E.png"
-          alt="Envitefy"
-          width={216}
-          height={216}
-          quality={100}
-          priority
-          className="opacity-80 w-[108px] h-[108px] md:w-[180px] md:h-[180px]"
-        />
-        <div className="text-xs md:text-sm font-semibold uppercase tracking-wider text-center text-[#7f8cff]">
-          CREATE | SHARE | ENJOY
-        </div>
-      </div>
+      {/* Hero logo removed for streamlined layout */}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
           <SnapUploadHero onSnap={openCamera} onUpload={openUpload} />
