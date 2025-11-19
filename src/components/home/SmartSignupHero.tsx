@@ -28,7 +28,7 @@ export function SmartSignupHero() {
             Open sign-up builder
           </Link>
         </div>
-        <div className="grid flex-1 gap-4 rounded-[28px] border border-[#D9E8FF] bg-white/95 p-5 shadow-lg shadow-[#D3E0FF]/60 sm:grid-cols-3">
+        <div className="grid flex-1 gap-4 rounded-[28px] border border-[#D9E8FF] bg-white/95 p-5 shadow-lg shadow-[#D3E0FF]/60 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
               icon: ClipboardCheck,
@@ -37,13 +37,33 @@ export function SmartSignupHero() {
             },
             {
               icon: Users,
-              label: "Track families",
+              label: "Track attendance",
               copy: "Capture names, contact info, and custom questions.",
             },
             {
               icon: ListChecks,
               label: "Sync responses",
               copy: "See confirmations inside Envitefy and export anytime.",
+            },
+            {
+              icon: Users,
+              label: "Waitlist automation",
+              copy: "Promote the next guest when someone cancels.",
+            },
+            {
+              icon: ListChecks,
+              label: "Reminders & nudges",
+              copy: "Send one-tap reminders to families who haven't replied.",
+            },
+            {
+              icon: ListChecks,
+              label: "Printable rosters",
+              copy: "Download sign-in sheets and cheat-sheets for the event.",
+            },
+            {
+              icon: ListChecks,
+              label: "Co-host sharing",
+              copy: "Give helpers access without sharing logins.",
             },
           ].map((feature) => (
             <div key={feature.label} className="space-y-2">

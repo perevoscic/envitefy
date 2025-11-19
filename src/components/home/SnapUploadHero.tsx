@@ -39,11 +39,11 @@ export function SnapUploadHero({ onSnap, onUpload }: SnapUploadHeroProps) {
               buttons.
             </p>
           </div>
-          <div className="flex flex-col gap-3 md:flex-row">
+          <div className="flex flex-wrap gap-3 sm:flex-nowrap sm:justify-start">
             <button
               type="button"
               onClick={onSnap}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#7F8CFF] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF]"
+              className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full bg-[#7F8CFF] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF] sm:flex-none sm:w-auto"
             >
               <Camera className="h-5 w-5" aria-hidden="true" />
               Snap Event
@@ -51,7 +51,7 @@ export function SnapUploadHero({ onSnap, onUpload }: SnapUploadHeroProps) {
             <button
               type="button"
               onClick={onUpload}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E4D8FF] bg-white px-6 py-3 text-base font-semibold text-[#3F2F60] shadow-sm transition hover:bg-[#F9F5FF]"
+              className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full border border-[#E4D8FF] bg-white px-6 py-3 text-base font-semibold text-[#3F2F60] shadow-sm transition hover:bg-[#F9F5FF] sm:flex-none sm:w-auto"
             >
               <UploadCloud className="h-5 w-5" aria-hidden="true" />
               Upload Event

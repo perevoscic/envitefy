@@ -773,7 +773,7 @@ export default async function RootLayout({
             data-static-illustration="true"
           >
             <div className="flex-1 min-w-0">{children}</div>
-            <footer>
+            <footer className="bg-gradient-to-b from-[#F8F5FF] via-white to-white w-full">
               <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
                 <div className="w-full">
                   <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1 sm:whitespace-nowrap">

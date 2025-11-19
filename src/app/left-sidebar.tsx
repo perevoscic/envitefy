@@ -294,7 +294,6 @@ export default function LeftSidebar() {
     if (!isOpen) setMenuOpen(false);
   }, [isOpen]);
 
-
   // Fetch connected calendars status
   useEffect(() => {
     if (status === "authenticated") {
@@ -2186,67 +2185,18 @@ export default function LeftSidebar() {
               <Link
                 href="/"
                 onClick={collapseSidebarOnTouch}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/85 shadow-[0_15px_35px_rgba(121,92,175,0.25)]"
+                className="flex h-12 w-12 items-center justify-center]"
               >
                 <Image
-                  src="/E.png"
+                  src="/e.png"
                   alt="Envitefy"
-                  width={40}
-                  height={40}
+                  width={64}
+                  height={64}
                   className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
                 />
               </Link>
-              <div className={SIDEBAR_TAG_CLASS}>SNAP OR UPLOAD</div>
-              <p className="text-base font-semibold leading-snug text-[#2f1a4b]">
-                Bring printed invites into Envitefy.
-              </p>
-              <p className="text-xs text-[#6f5a85]">
-                Skip retyping every detail—just point, send, and polish later.
-              </p>
-              <div className="mt-2 w-full space-y-2">
-                <button
-                  type="button"
-                  onClick={(event) => handleSnapShortcutClick(event, "camera")}
-                  className={SIDEBAR_PRIMARY_PILL_CLASS}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="3" />
-                  </svg>
-                  <span>Snap Event</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => handleSnapShortcutClick(event, "upload")}
-                  className={SIDEBAR_SECONDARY_PILL_CLASS}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 5v14" />
-                    <path d="m5 12 7-7 7 7" />
-                    <path d="M5 19h14" />
-                  </svg>
-                  <span>Upload Event</span>
-                </button>
+              <div className="text-xs font-semibold tracking-widest text-[#7f8cff]">
+                CREATE | SHARE | ENJOY
               </div>
             </div>
           </div>

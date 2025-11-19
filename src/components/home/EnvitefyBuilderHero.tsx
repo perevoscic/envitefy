@@ -118,7 +118,7 @@ export function EnvitefyBuilderHero({ className }: EnvitefyBuilderHeroProps) {
               Pick a template to open its dedicated flow.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {QUICK_START_CARDS.map((card) => (
               <Link
                 key={card.label}
