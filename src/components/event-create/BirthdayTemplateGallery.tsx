@@ -26,6 +26,26 @@ const birthdayMenu = [
   "RSVP",
 ];
 
+export type TemplateLayoutConfig = {
+  id: string;
+  displayName: string;
+  ageRange: string;
+  styleTags: string[];
+  format: string;
+  layoutIntent: string;
+  backgroundPrompt: string;
+  palette: {
+    bgGradientFrom: string;
+    bgGradientTo: string;
+    cardBg: string;
+    primary: string;
+    accent: string;
+    sprinkleColors: string[];
+  };
+  borderStyle: string;
+  cardStyle: string;
+};
+
 export type BirthdayTemplateDefinition = TemplateGalleryTemplate & {
   preview?: {
     birthdayName: string;
@@ -34,6 +54,7 @@ export type BirthdayTemplateDefinition = TemplateGalleryTemplate & {
     timeLabel?: string;
   };
   backgroundPrompt?: string;
+  templateConfig?: TemplateLayoutConfig;
 };
 export type TemplateVariation = ResolvedTemplateVariation;
 type StoryConfig = {
@@ -143,13 +164,15 @@ const getColorStoriesForTemplate = (index: number): StoryConfig[] => {
   return [...rotated.slice(startIndex), ...rotated.slice(0, startIndex)];
 };
 
+const CANDY_DREAMS_BACKGROUND_PROMPT =
+  "soft pastel candy layout background, mint, pink, and light yellow gradient, tiny candy shapes and sprinkles forming a subtle border around the edges, center area very light and clean for text, cute illustrated style, no characters, no logos, website background";
+
 // Background prompts for kids birthday templates (GPT-5.1 Ready)
 // These prompts follow the Codex instruction format for consistent background generation
 const BIRTHDAY_BACKGROUND_PROMPTS: Record<string, string> = {
   "party-pop":
     "soft pink-to-lavender gradient background, floating confetti dots, subtle sparkles, rounded balloon shapes fading into corners, gentle glossy highlights, clean modern kids birthday theme, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
-  "candy-dreams":
-    "aqua-blue pastel gradient with candy-stripe diagonal patterns, soft gummies and lollipop silhouettes in the background, playful but minimal, glossy shine, bright birthday mood, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+  "candy-dreams": CANDY_DREAMS_BACKGROUND_PROMPT,
   "rainbow-bash":
     "pastel rainbow wave sweeping across a soft cream background, tiny stars and sparkles, watercolor cloud edges, bright but elegant birthday atmosphere, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
   "playful-pals":
@@ -194,6 +217,27 @@ const BIRTHDAY_BACKGROUND_PROMPTS: Record<string, string> = {
     "navy-to-teal gradient, bold geometric accents, clean star bursts, polished yet playful, older kids birthday feel, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
   "birthday-bash":
     "royal-pink to gold gradient, elegant sparkles, celebratory wave shapes along the edge, premium birthday atmosphere, soft gradient, pastel tones, subtle sparkles, clean modern children's birthday aesthetic, website background, no characters, no center clutter",
+};
+
+export const candyDreamsTemplateConfig: TemplateLayoutConfig = {
+  id: "candy-dreams",
+  displayName: "Candy Dreams Invite",
+  ageRange: "3–8",
+  styleTags: ["cute", "illustrated", "pastel", "candy"],
+  format: "event-page-layout",
+  layoutIntent:
+    "Soft pastel candy layout with a rounded central card and sprinkle border that never crowds the text.",
+  backgroundPrompt: CANDY_DREAMS_BACKGROUND_PROMPT,
+  palette: {
+    bgGradientFrom: "#FDF0FF",
+    bgGradientTo: "#E0F7FF",
+    cardBg: "#FFFFFF",
+    primary: "#F78FB3",
+    accent: "#6EC1E4",
+    sprinkleColors: ["#F78FB3", "#FFCF6F", "#9BE7FF", "#B0A8FF"],
+  },
+  borderStyle: "sprinkle-border-soft",
+  cardStyle: "rounded-3xl shadow-md padding-lg center-aligned",
 };
 
 /**
@@ -264,6 +308,7 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
       "Lucas",
       "Candy Dreams"
     ),
+    templateConfig: candyDreamsTemplateConfig,
   },
   {
     id: "rainbow-bash",

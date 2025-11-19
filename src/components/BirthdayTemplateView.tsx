@@ -10,6 +10,7 @@ import {
 import {
   type BirthdayTemplateDefinition,
   birthdayTemplateCatalog,
+  type TemplateLayoutConfig,
 } from "@/components/event-create/BirthdayTemplateGallery";
 import EventActions from "@/components/EventActions";
 import EventEditModal from "@/components/EventEditModal";
@@ -28,6 +29,7 @@ import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
+import { CandyDreamsLayout } from "@/components/templates/CandyDreamsLayout";
 // Format event range display - simplified version
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
@@ -162,6 +164,17 @@ function formatTimeLabel(
   }
 }
 
+function parseCoordinateValue(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 type Props = {
   eventId: string;
   eventData: any;
@@ -194,6 +207,8 @@ export default function BirthdayTemplateView({
       template.variations[0];
     return resolveTemplateVariation(v);
   }, [template, variationId]);
+  const templateLayout: TemplateLayoutConfig | undefined =
+    template.templateConfig;
 
   const birthdayName =
     (eventData?.birthdayName as string) ||
@@ -297,6 +312,13 @@ export default function BirthdayTemplateView({
     venue || null,
     location || null
   );
+  const latValue = parseCoordinateValue(eventData?.lat);
+  const lngValue = parseCoordinateValue(eventData?.lng);
+  const mapCoordinates =
+    latValue !== null && lngValue !== null
+      ? { latitude: latValue, longitude: lngValue }
+      : undefined;
+  const zoomValue = parseCoordinateValue(eventData?.zoom);
 
   // Navigation active state tracking
   const [activeSection, setActiveSection] = useState<string>("home");
@@ -370,374 +392,378 @@ export default function BirthdayTemplateView({
     };
   }, [templateId]);
 
-  return (
-    <main className="px-5 py-10">
-      <section className="mx-auto w-full max-w-7xl">
-        <article className={styles.templateCard}>
-          <div className={styles.cardBody}>
-            {/* Home section - the header */}
-            <div id="home" className="scroll-mt-20">
-              <div className={styles.previewFrame}>
-                <div
-                  className={styles.previewHeader}
-                  style={headerBackgroundStyle}
-                  data-birthday="true"
+  const viewContent = (
+    <section className="mx-auto w-full max-w-7xl">
+      <article className={styles.templateCard}>
+        <div className={styles.cardBody}>
+          {/* Home section - the header */}
+          <div id="home" className="scroll-mt-20">
+            <div className={styles.previewFrame}>
+              <div
+                className={styles.previewHeader}
+                style={headerBackgroundStyle}
+                data-birthday="true"
+              >
+                <p
+                  className={styles.previewNames}
+                  style={{
+                    color: variation.titleColor,
+                    fontFamily: variation.titleFontFamily,
+                    fontWeight:
+                      variation.titleWeight === "bold"
+                        ? 700
+                        : variation.titleWeight === "semibold"
+                        ? 600
+                        : 400,
+                  }}
                 >
-                  <p
-                    className={styles.previewNames}
-                    style={{
-                      color: variation.titleColor,
-                      fontFamily: variation.titleFontFamily,
-                      fontWeight:
-                        variation.titleWeight === "bold"
-                          ? 700
-                          : variation.titleWeight === "semibold"
-                          ? 600
-                          : 400,
-                    }}
-                  >
-                    {birthdayName}'s Birthday
-                  </p>
-                  <p
-                    className={styles.previewMeta}
-                    style={{ color: variation.titleColor }}
-                  >
-                    {previewDateLabel}
-                    {previewTime ? ` • ${previewTime}` : ""}
-                  </p>
-                  <div
-                    className={styles.previewNav}
-                    style={{ color: variation.titleColor }}
-                  >
-                    {template.menu.map((item) => {
-                      const hashId = menuItemToHash(item);
-                      const isActive = activeSection === hashId;
-                      return (
-                        <a
-                          key={item}
-                          href={`#${hashId}`}
-                          className={`${styles.previewNavItem} ${
-                            isActive ? styles.previewNavItemActive : ""
-                          }`}
-                          style={{
-                            fontWeight: isActive ? 600 : 400,
-                            opacity: isActive ? 1 : 0.8,
-                          }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const element = document.getElementById(hashId);
-                            if (element) {
-                              element.scrollIntoView({ behavior: "smooth" });
-                              window.history.pushState(null, "", `#${hashId}`);
-                              setActiveSection(hashId);
-                            }
-                          }}
-                        >
-                          {item}
-                        </a>
-                      );
-                    })}
-                  </div>
-                  {/* Actions pinned to top-right of header */}
-                  {!isReadOnly && (
-                    <div className="absolute top-3 right-3 z-40">
-                      <div className="flex items-center gap-2 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 py-1.5 shadow">
-                        {isOwner && (
-                          <>
-                            <EventEditModal
-                              eventId={eventId}
-                              eventData={eventData}
-                              eventTitle={eventTitle}
-                            />
-                            <EventDeleteModal
-                              eventId={eventId}
-                              eventTitle={eventTitle}
-                            />
-                          </>
-                        )}
-                        <EventActions
-                          shareUrl={shareUrl}
-                          event={eventData}
-                          historyId={eventId}
-                          className=""
-                          variant="compact"
-                          tone="default"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {birthdayName}'s Birthday
+                </p>
+                <p
+                  className={styles.previewMeta}
+                  style={{ color: variation.titleColor }}
+                >
+                  {previewDateLabel}
+                  {previewTime ? ` • ${previewTime}` : ""}
+                </p>
+                <div
+                  className={styles.previewNav}
+                  style={{ color: variation.titleColor }}
+                >
+                  {template.menu.map((item) => {
+                    const hashId = menuItemToHash(item);
+                    const isActive = activeSection === hashId;
+                    return (
+                      <a
+                        key={item}
+                        href={`#${hashId}`}
+                        className={`${styles.previewNavItem} ${
+                          isActive ? styles.previewNavItemActive : ""
+                        }`}
+                        style={{
+                          fontWeight: isActive ? 600 : 400,
+                          opacity: isActive ? 1 : 0.8,
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const element = document.getElementById(hashId);
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth" });
+                            window.history.pushState(null, "", `#${hashId}`);
+                            setActiveSection(hashId);
+                          }
+                        }}
+                      >
+                        {item}
+                      </a>
+                    );
+                  })}
                 </div>
-                <div className={styles.previewPhoto}>
-                  {heroImageSrc.startsWith("data:") ? (
-                    <img
-                      src={heroImageSrc}
-                      alt={`${template.name} preview`}
-                      className={styles.previewPhotoImage}
-                    />
-                  ) : (
-                    <Image
-                      src={heroImageSrc}
-                      alt={`${template.name} preview`}
-                      width={640}
-                      height={360}
-                      className={styles.previewPhotoImage}
-                      priority={false}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Party Details section */}
-            <div id="party-details" className="scroll-mt-20">
-              <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                  Event Details
-                </h2>
-                <div className="md:grid md:grid-cols-2 md:gap-6">
-                  <div className="space-y-3">
-                    {whenLabel && (
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                          When
-                        </p>
-                        <div className="space-y-1">
-                          {(() => {
-                            const timeLabel = (() => {
-                              if (Boolean(eventData?.allDay)) return null;
-                              if (!startISO) return null;
-                              try {
-                                const start = new Date(startISO);
-                                if (Number.isNaN(start.getTime())) return null;
-                                const end = endISO ? new Date(endISO) : null;
-                                const tz = eventData?.timezone || undefined;
-                                const timeFmt = new Intl.DateTimeFormat(
-                                  "en-US",
-                                  {
-                                    hour: "numeric",
-                                    minute: "2-digit",
-                                    hour12: true,
-                                    timeZone: tz,
-                                  }
-                                );
-                                if (end && !Number.isNaN(end.getTime())) {
-                                  const sameDay =
-                                    start.getFullYear() === end.getFullYear() &&
-                                    start.getMonth() === end.getMonth() &&
-                                    start.getDate() === end.getDate();
-                                  if (sameDay) {
-                                    return `${timeFmt.format(
-                                      start
-                                    )} – ${timeFmt.format(end)}`;
-                                  }
-                                }
-                                return timeFmt.format(start);
-                              } catch {
-                                return null;
-                              }
-                            })();
-                            const dateLabel = formatDateLabel(startISO);
-                            return (
-                              <>
-                                {timeLabel && (
-                                  <p className="text-base text-stone-900 font-semibold">
-                                    {timeLabel}
-                                  </p>
-                                )}
-                                {dateLabel && (
-                                  <p className="text-base text-stone-900">
-                                    {dateLabel}
-                                  </p>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    )}
-
-                    {(venue || location) && (
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                          {venue ? "Venue & location" : "Location"}
-                        </p>
-                        <div className="space-y-1 text-base text-stone-900">
-                          {venue && (
-                            <p className="font-semibold text-lg">{venue}</p>
-                          )}
-                          {location && (
-                            <p>
-                              <LocationLink
-                                location={location}
-                                query={locationQuery}
-                                className="text-base text-stone-900"
-                              />
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {numberOfGuests > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                          Guests
-                        </p>
-                        <p className="text-base text-stone-900">
-                          {numberOfGuests}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {locationQuery && (
-                    <div
-                      id="direction"
-                      className="hidden md:block scroll-mt-20 w-full"
-                    >
-                      <EventMap
-                        venue={venue}
-                        location={location}
-                        mapHeight={300}
-                        className="rounded-2xl border border-black/10 bg-white shadow-sm w-full"
+                {/* Actions pinned to top-right of header */}
+                {!isReadOnly && (
+                  <div className="absolute top-3 right-3 z-40">
+                    <div className="flex items-center gap-2 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 py-1.5 shadow">
+                      {isOwner && (
+                        <>
+                          <EventEditModal
+                            eventId={eventId}
+                            eventData={eventData}
+                            eventTitle={eventTitle}
+                          />
+                          <EventDeleteModal
+                            eventId={eventId}
+                            eventTitle={eventTitle}
+                          />
+                        </>
+                      )}
+                      <EventActions
+                        shareUrl={shareUrl}
+                        event={eventData}
+                        historyId={eventId}
+                        className=""
+                        variant="compact"
+                        tone="default"
                       />
                     </div>
-                  )}
-                </div>
-
-                {locationQuery && (
-                  <div className="md:hidden mt-4">
-                    <EventMap
-                      venue={venue}
-                      location={location}
-                      mapHeight={300}
-                      className="rounded-2xl border border-black/10 bg-white shadow-sm"
-                    />
                   </div>
                 )}
               </div>
+              <div className={styles.previewPhoto}>
+                {heroImageSrc.startsWith("data:") ? (
+                  <img
+                    src={heroImageSrc}
+                    alt={`${template.name} preview`}
+                    className={styles.previewPhotoImage}
+                  />
+                ) : (
+                  <Image
+                    src={heroImageSrc}
+                    alt={`${template.name} preview`}
+                    width={640}
+                    height={360}
+                    className={styles.previewPhotoImage}
+                    priority={false}
+                  />
+                )}
+              </div>
             </div>
+          </div>
 
-            {/* Description section */}
-            {description && (
-              <div id="description" className="scroll-mt-20">
-                <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                    Description
-                  </h2>
-                  <p className="text-base text-stone-900 whitespace-pre-wrap">
-                    {description}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Wishlist section */}
-            {registryLinks.length > 0 && (
-              <div id="wishlist" className="scroll-mt-20">
-                <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                    Wishlist
-                  </h2>
-                  <div className="space-y-2">
-                    {registryLinks.map((registry: any, index: number) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <span className="text-sm text-stone-700">
-                          {registry.label || "Registry"}
-                        </span>
-                        <a
-                          href={registry.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          {registry.url}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* RSVP section */}
-            {(hasRsvpContact || rsvp || calendarLinks) && (
-              <div id="rsvp" className="scroll-mt-20">
-                <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                  {(hasRsvpContact || rsvp) && (
-                    <div className="flex-1 rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
-                        RSVP
+          {/* Party Details section */}
+          <div id="party-details" className="scroll-mt-20">
+            <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-stone-900 mb-4">
+                Event Details
+              </h2>
+              <div className="md:grid md:grid-cols-2 md:gap-6">
+                <div className="space-y-3">
+                  {whenLabel && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        When
                       </p>
-                      {hasRsvpContact ? (
-                        <EventRsvpPrompt
-                          eventId={eventId}
-                          rsvpName={rsvpName}
-                          rsvpPhone={rsvpPhone}
-                          rsvpEmail={rsvpEmail}
-                          eventTitle={eventTitle}
-                          shareUrl={shareUrl}
-                        />
-                      ) : (
-                        rsvp && (
-                          <p className="text-base text-stone-900">{rsvp}</p>
-                        )
+                      <div className="space-y-1">
+                        {(() => {
+                          const timeLabel = (() => {
+                            if (Boolean(eventData?.allDay)) return null;
+                            if (!startISO) return null;
+                            try {
+                              const start = new Date(startISO);
+                              if (Number.isNaN(start.getTime())) return null;
+                              const end = endISO ? new Date(endISO) : null;
+                              const tz = eventData?.timezone || undefined;
+                              const timeFmt = new Intl.DateTimeFormat("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                                timeZone: tz,
+                              });
+                              if (end && !Number.isNaN(end.getTime())) {
+                                const sameDay =
+                                  start.getFullYear() === end.getFullYear() &&
+                                  start.getMonth() === end.getMonth() &&
+                                  start.getDate() === end.getDate();
+                                if (sameDay) {
+                                  return `${timeFmt.format(
+                                    start
+                                  )} – ${timeFmt.format(end)}`;
+                                }
+                              }
+                              return timeFmt.format(start);
+                            } catch {
+                              return null;
+                            }
+                          })();
+                          const dateLabel = formatDateLabel(startISO);
+                          return (
+                            <>
+                              <p className="text-base font-semibold text-stone-900">
+                                {dateLabel}
+                              </p>
+                              {timeLabel && (
+                                <p className="text-sm text-stone-600">
+                                  {timeLabel}
+                                </p>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {(venue || location) && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Where
+                      </p>
+                      <LocationLink
+                        location={venue || location}
+                        query={locationQuery}
+                        className="text-base font-semibold text-stone-900"
+                      />
+                      {venue && location && (
+                        <p className="text-sm text-stone-600">{location}</p>
                       )}
                     </div>
                   )}
-                  {calendarLinks && (
-                    <div className="flex-1 rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
-                        Add to calendar
+                </div>
+
+                <div className="space-y-3">
+                  {rsvp && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        RSVP
                       </p>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <a
-                          href={calendarLinks.appleInline}
-                          className="flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white text-stone-900 transition hover:bg-stone-50"
-                          aria-label="Add to Apple Calendar"
-                          title="Apple Calendar"
-                        >
-                          <CalendarIconApple className="h-5 w-5" />
-                        </a>
-                        <a
-                          href={calendarLinks.google}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white text-stone-900 transition hover:bg-stone-50"
-                          aria-label="Add to Google Calendar"
-                          title="Google Calendar"
-                        >
-                          <CalendarIconGoogle className="h-5 w-5" />
-                        </a>
-                        <a
-                          href={calendarLinks.outlook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white text-stone-900 transition hover:bg-stone-50"
-                          aria-label="Add to Outlook Calendar"
-                          title="Outlook Calendar"
-                        >
-                          <CalendarIconOutlook className="h-5 w-5" />
-                        </a>
-                      </div>
+                      <p className="text-base font-semibold text-stone-900">
+                        {rsvp}
+                      </p>
+                    </div>
+                  )}
+
+                  {numberOfGuests > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Guests Expected
+                      </p>
+                      <p className="text-base font-semibold text-stone-900">
+                        {numberOfGuests}
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Additional sections */}
+          <div className="space-y-6">
+            {description && (
+              <section
+                id="description"
+                className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+              >
+                <h2 className="text-xl font-semibold text-stone-900 mb-3">
+                  Description
+                </h2>
+                <p className="text-stone-700 whitespace-pre-line">
+                  {description}
+                </p>
+              </section>
             )}
 
-            {/* Host Dashboard */}
-            {isOwner && numberOfGuests > 0 && (
-              <div className="mt-6">
-                <EventRsvpDashboard
-                  eventId={eventId}
-                  initialNumberOfGuests={numberOfGuests}
-                />
-              </div>
+            {registryLinks.length > 0 && (
+              <section
+                id="wishlist"
+                className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+              >
+                <h2 className="text-xl font-semibold text-stone-900 mb-3">
+                  Wishlist & Registries
+                </h2>
+                <div className="space-y-3">
+                  {registryLinks.map((entry: any) => (
+                    <a
+                      key={entry.url}
+                      href={entry.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-lg border border-stone-100 bg-white/80 px-4 py-3 shadow-sm transition hover:border-stone-200"
+                    >
+                      <p className="text-base font-semibold text-stone-900">
+                        {entry.label || entry.url}
+                      </p>
+                      <p className="text-sm text-stone-500 truncate">
+                        {entry.url}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {hasRsvpContact && !isReadOnly && (
+              <section
+                id="rsvp"
+                className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+              >
+                <h2 className="text-xl font-semibold text-stone-900 mb-3">
+                  RSVP & Attendance
+                </h2>
+                <div className="space-y-4">
+                  <EventRsvpPrompt
+                    eventId={eventId}
+                    rsvpName={rsvpName}
+                    rsvpPhone={rsvpPhone}
+                    rsvpEmail={rsvpEmail}
+                    eventTitle={eventTitle}
+                    shareUrl={shareUrl}
+                  />
+                  {isOwner && (
+                    <EventRsvpDashboard
+                      eventId={eventId}
+                      initialNumberOfGuests={numberOfGuests}
+                    />
+                  )}
+                </div>
+              </section>
             )}
           </div>
-        </article>
-      </section>
-    </main>
+
+          {/* Map & actions */}
+          {(location || venue) && (
+            <section
+              className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+              id="direction"
+            >
+              <h2 className="text-xl font-semibold text-stone-900 mb-3">
+                Direction
+              </h2>
+              <EventMap
+                venue={venue}
+                location={location}
+                coordinates={mapCoordinates}
+                zoom={zoomValue ?? undefined}
+              />
+            </section>
+          )}
+
+          {/* Calendar buttons */}
+          {calendarLinks && (
+            <section
+              className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+              id="party-details"
+            >
+              <h2 className="text-xl font-semibold text-stone-900 mb-4">
+                Add to Calendar
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {calendarLinks.google && (
+                  <a
+                    href={calendarLinks.google}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
+                  >
+                    <CalendarIconGoogle className="h-5 w-5" />
+                    Google
+                  </a>
+                )}
+                {calendarLinks.outlook && (
+                  <a
+                    href={calendarLinks.outlook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
+                  >
+                    <CalendarIconOutlook className="h-5 w-5" />
+                    Outlook
+                  </a>
+                )}
+                {calendarLinks.appleInline && (
+                  <a
+                    href={calendarLinks.appleInline}
+                    className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
+                    download
+                  >
+                    <CalendarIconApple className="h-5 w-5" />
+                    Apple
+                  </a>
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+      </article>
+    </section>
   );
+
+  if (templateLayout?.id === "candy-dreams" && templateLayout.palette) {
+    return (
+      <CandyDreamsLayout palette={templateLayout.palette}>
+        {viewContent}
+      </CandyDreamsLayout>
+    );
+  }
+
+  return <main className="px-5 py-10">{viewContent}</main>;
 }

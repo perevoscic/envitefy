@@ -1,0 +1,43 @@
+[
+  {
+    "templateId": "pink-or-blue-classic",
+    "description": "Pink or Blue Classic – split color design, fun and traditional.",
+    "imagePrompt": "A festive gender reveal table setup with a split color theme, half pastel pink and half baby blue, featuring cupcakes with pink and blue frosting, a 'He or She?' sign, and matching balloons, photographed from above with a clean central area for text, no other visible words."
+  },
+  {
+    "templateId": "what-will-it-be-clouds",
+    "description": "What Will It Be – dreamy clouds in soft pinks and blues.",
+    "imagePrompt": "A dreamy sky background with fluffy white clouds, some tinted soft pink and others soft blue, with a golden question mark balloon floating in the corner, shot to leave a large open sky area in the center for text, no text on the balloons."
+  },
+  {
+    "templateId": "neutral-mystery",
+    "description": "Neutral Mystery – elegant gold and white, keeping the secret.",
+    "imagePrompt": "An elegant gender reveal setup in white and gold, with a large white balloon box, gold confetti, and a '?' topper on a cake, photographed against a clean white wall that serves as a perfect text area, minimal and chic, no text on the box."
+  },
+  {
+    "templateId": "boots-or-bows",
+    "description": "Boots or Bows – rustic theme with cute props.",
+    "imagePrompt": "A rustic wooden table displaying a pair of tiny cowboy boots and a delicate pink bow, with some hay and wildflowers, shot from above with a clear wooden surface area in the middle for text overlay, country style, no labels."
+  },
+  {
+    "templateId": "touchdowns-or-tutus",
+    "description": "Touchdowns or Tutus – playful sports and ballet theme.",
+    "imagePrompt": "A fun flat-lay with a small football and a tiny pink tutu arranged on a neutral background, with some confetti scattered around, leaving a wide open space in the center for event details, no text on the items."
+  },
+  {
+    "templateId": "bee-theme-reveal",
+    "description": "What Will It Bee – cute bumblebee theme with yellow and black.",
+    "imagePrompt": "A bright and cheerful table setting with yellow and black decor, honeycomb patterns, and cute bee illustrations, with a pot of honey and sunflowers, photographed to leave a clean yellow or white space for text, no words on the decor."
+  },
+  {
+    "templateId": "staches-or-lashes",
+    "description": "Staches or Lashes – fun mustache and eyelash motifs.",
+    "imagePrompt": "A playful party background with props of black mustaches and pink eyelashes on sticks, arranged as a border around a clean white center space for text, fun and modern, no written words."
+  },
+  {
+    "templateId": "prince-or-princess",
+    "description": "Prince or Princess – royal theme with crowns and tiaras.",
+    "imagePrompt": "A royal-themed setup with a small gold crown and a sparkly tiara on a velvet cushion, with royal blue and pink accents, shot with a soft focus background that provides a large empty space for text, elegant and regal, no text."
+  }
+]
+
