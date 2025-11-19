@@ -118,7 +118,10 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const secret =
+    process.env.AUTH_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
   const token = await getToken({ req: req as any, secret });
   let hasSession = Boolean(token);
 
