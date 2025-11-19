@@ -950,6 +950,8 @@ export default function Home() {
     // Touch the session so provider connections hydrate promptly
   }, [session]);
 
+  const showScanSection = Boolean(error || loading || (modalOpen && event));
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const media = window.matchMedia("(max-width: 1023px)");
@@ -962,6 +964,21 @@ export default function Home() {
 
   return (
     <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+        className="hidden"
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+        className="hidden"
+      />
       {/* Hero logo removed for streamlined layout */}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
@@ -970,55 +987,42 @@ export default function Home() {
           <SmartSignupHero />
         </div>
       )}
-      <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
-        <div className="space-y-3">
-          {error && (
-            <div className="rounded border border-error bg-surface/90 p-3 text-sm text-error">
-              {error}
-            </div>
-          )}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(event) => onFile(event.target.files?.[0] ?? null)}
-            className="hidden"
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={(event) => onFile(event.target.files?.[0] ?? null)}
-            className="hidden"
-          />
-          {loading && (
-            <div role="status" aria-live="polite" className="mt-3">
-              <div className="scan-inline" style={{ height: 10 }}>
-                <div className="scan-beam" />
+      {showScanSection && (
+        <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
+          <div className="space-y-3">
+            {error && (
+              <div className="rounded border border-error bg-surface/90 p-3 text-sm text-error">
+                {error}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+            {loading && (
+              <div role="status" aria-live="polite" className="mt-3">
+                <div className="scan-inline" style={{ height: 10 }}>
+                  <div className="scan-beam" />
+                </div>
+              </div>
+            )}
+          </div>
 
-        <SnapEventModal
-          open={modalOpen && Boolean(event)}
-          event={event}
-          onClose={resetForm}
-          setEvent={setEvent}
-          connected={connected}
-          addGoogle={addGoogle}
-          connectGoogle={connectGoogle}
-          addOutlook={addOutlook}
-          connectOutlook={connectOutlook}
-          dlIcs={dlIcs}
-          addAppleCalendar={addAppleCalendar}
-          buildSubmissionEvent={buildSubmissionEvent}
-          setError={setError}
-          saveToEnvitefy={saveToEnvitefy}
-          resetForm={resetForm}
-        />
-      </section>
+          <SnapEventModal
+            open={modalOpen && Boolean(event)}
+            event={event}
+            onClose={resetForm}
+            setEvent={setEvent}
+            connected={connected}
+            addGoogle={addGoogle}
+            connectGoogle={connectGoogle}
+            addOutlook={addOutlook}
+            connectOutlook={connectOutlook}
+            dlIcs={dlIcs}
+            addAppleCalendar={addAppleCalendar}
+            buildSubmissionEvent={buildSubmissionEvent}
+            setError={setError}
+            saveToEnvitefy={saveToEnvitefy}
+            resetForm={resetForm}
+          />
+        </section>
+      )}
     </main>
   );
 }

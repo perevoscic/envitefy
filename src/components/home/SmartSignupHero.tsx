@@ -6,8 +6,8 @@ import { ClipboardCheck, ListChecks, Users } from "lucide-react";
 export function SmartSignupHero() {
   return (
     <section className="rounded-[40px] bg-gradient-to-br from-[#E4F3FF] via-white to-[#F7EDFF] p-6 shadow-xl shadow-[#C4D4FF]/60 sm:p-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-4 lg:max-w-2xl">
+      <div className="flex flex-col gap-6">
+        <div className="space-y-4">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#3975C3] shadow-sm shadow-[#BAD4FF]">
             Smart sign-up forms
           </span>
@@ -28,7 +28,7 @@ export function SmartSignupHero() {
             Open sign-up builder
           </Link>
         </div>
-        <div className="grid flex-1 gap-4 rounded-[28px] border border-[#D9E8FF] bg-white/95 p-5 shadow-lg shadow-[#D3E0FF]/60 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 rounded-[28px] border border-[#D9E8FF] bg-white/95 p-5 shadow-lg shadow-[#D3E0FF]/60 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
               icon: ClipboardCheck,
@@ -59,11 +59,6 @@ export function SmartSignupHero() {
               icon: ListChecks,
               label: "Printable rosters",
               copy: "Download sign-in sheets and cheat-sheets for the event.",
-            },
-            {
-              icon: ListChecks,
-              label: "Co-host sharing",
-              copy: "Give helpers access without sharing logins.",
             },
           ].map((feature) => (
             <div key={feature.label} className="space-y-2">
