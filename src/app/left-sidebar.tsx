@@ -2157,7 +2157,7 @@ export default function LeftSidebar() {
         aria-label="Sidebar"
       >
         {/* Header with close button */}
-        <div className="relative flex-shrink-0 px-4 pt-5 pb-2">
+        <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
           {/* Hero-esque intro */}
           <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
             <button
@@ -2188,7 +2188,7 @@ export default function LeftSidebar() {
                 className="flex h-12 w-12 items-center justify-center]"
               >
                 <Image
-                  src="/e.png"
+                  src="/E.png"
                   alt="Envitefy"
                   width={64}
                   height={64}
