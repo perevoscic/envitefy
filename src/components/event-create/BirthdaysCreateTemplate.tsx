@@ -868,27 +868,12 @@ export default function BirthdaysCreateTemplate({ defaultDate }: Props) {
               items={["How It Works", "Birthday Templates", "Help Center"]}
             />
             <FooterList
-              title="Company"
-              items={["About", "Blog", "Privacy & Security"]}
-            />
-            <FooterList
               title="Follow"
               items={["Instagram", "Facebook", "YouTube"]}
             />
           </div>
         </footer>
       </div>
-
-      {selectedTemplate && (
-        <TemplatePreviewModal
-          template={selectedTemplate}
-          onClose={() => setSelectedTemplateId(null)}
-          onUse={() => {
-            handleUseTemplate(selectedTemplate);
-            setSelectedTemplateId(null);
-          }}
-        />
-      )}
     </main>
   );
 }
@@ -1085,7 +1070,6 @@ function FilterSelect({
 
 function TemplateCard({
   template,
-  onPreview,
   onUse,
 }: {
   template: InviteTemplate;
@@ -1106,8 +1090,7 @@ function TemplateCard({
           backgroundRepeat: "no-repeat",
         }}
       >
-        <div className="relative flex h-full flex-col justify-between gap-2 bg-black/20 p-4 text-white">
-        </div>
+        <div className="relative flex h-full flex-col justify-between gap-2 bg-black/20 p-4 text-white"></div>
       </div>
       <div className="flex flex-1 flex-col gap-4 p-5 text-[#2F2F2F]">
         <div>
@@ -1144,128 +1127,12 @@ function TemplateCard({
           >
             Use This Template
           </button>
-          <button
-            type="button"
-            onClick={onPreview}
-            className="flex-1 rounded-full border border-[#E0D4FF] px-4 py-2 text-sm font-semibold text-[#6C5E5A]"
-          >
-            Preview
-          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function TemplatePreviewModal({
-  template,
-  onClose,
-  onUse,
-}: {
-  template: InviteTemplate;
-  onClose: () => void;
-  onUse: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-4xl overflow-hidden rounded-[40px] bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#F2E6FF] px-6 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#FF6FB1]">
-              Template preview
-            </p>
-            <p className="text-2xl font-semibold text-[#2F2F2F]">
-              {template.icon} {template.name}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm font-semibold text-[#7B6C68]"
-          >
-            Close
-          </button>
-        </div>
-        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div
-            className="rounded-[32px] border border-[#F2E6FF] bg-white/60 p-4"
-            style={{ background: template.background }}
-          >
-            <div className="rounded-2xl bg-white/85 p-4 text-sm text-[#4A403C] shadow-inner">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#B075D1]">
-                Invite layout
-              </p>
-              <p className="mt-2 text-base font-medium text-[#2F2F2F]">
-                {template.styleDescription}
-              </p>
-            </div>
-          </div>
-          <div className="space-y-5 text-[#2F2F2F]">
-            <div>
-              <p className="text-sm font-semibold text-[#B075D1]">
-                Description
-              </p>
-              <p className="text-base text-[#4A403C]">{template.description}</p>
-            </div>
-            <div className="rounded-2xl border border-[#F7E5FF] bg-[#FFFAFE] px-4 py-3 text-sm text-[#4A403C]">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#FF6FB1]">
-                Image prompt
-              </p>
-              <p className="mt-2 text-sm">{template.imagePrompt}</p>
-            </div>
-            <div className="space-y-2 text-sm text-[#4A403C]">
-              <p className="font-semibold">Fields guests see</p>
-              <ul className="space-y-1">
-                <li>
-                  <Check className="mr-2 inline h-4 w-4 text-[#7ED9B0]" />
-                  Child’s name & age
-                </li>
-                <li>
-                  <Check className="mr-2 inline h-4 w-4 text-[#7ED9B0]" />
-                  Date & time with timezone
-                </li>
-                <li>
-                  <Check className="mr-2 inline h-4 w-4 text-[#7ED9B0]" />
-                  Location with optional map link
-                </li>
-                <li>
-                  <Check className="mr-2 inline h-4 w-4 text-[#7ED9B0]" />
-                  RSVP email, phone, or link
-                </li>
-              </ul>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {template.highlight.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full bg-[#FFF4F9] px-3 py-1 text-xs font-semibold text-[#B075D1]"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={onUse}
-                className="flex-1 rounded-full bg-[#FF6FB1] px-4 py-2 text-sm font-semibold text-white"
-              >
-                Start with This Template
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 rounded-full border border-[#E0D4FF] px-4 py-2 text-sm font-semibold text-[#6C5E5A]"
-              >
-                Keep browsing
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 function HowItWorks() {
   return (
     <section id="how-envitefy-works" className="space-y-6">

@@ -826,27 +826,12 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
               items={["How It Works", "Baby Shower Templates", "Help Center"]}
             />
             <FooterList
-              title="Company"
-              items={["About", "Blog", "Privacy & Security"]}
-            />
-            <FooterList
               title="Follow"
               items={["Instagram", "Facebook", "YouTube"]}
             />
           </div>
         </footer>
       </div>
-
-      {selectedTemplate && (
-        <TemplatePreviewModal
-          template={selectedTemplate}
-          onClose={() => setSelectedTemplateId(null)}
-          onUse={() => {
-            handleUseTemplate(selectedTemplate);
-            setSelectedTemplateId(null);
-          }}
-        />
-      )}
     </main>
   );
 }
@@ -1113,114 +1098,6 @@ function TemplateCard({
           >
             Use This Template
           </button>
-          <button
-            type="button"
-            onClick={onPreview}
-            className="flex-1 rounded-full border border-[#E0D4FF] px-4 py-2 text-sm font-semibold text-[#6C5E5A]"
-          >
-            Preview
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TemplatePreviewModal({
-  template,
-  onClose,
-  onUse,
-}: {
-  template: BabyShowerInviteTemplate;
-  onClose: () => void;
-  onUse: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-4xl overflow-hidden rounded-[40px] bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#F2E6FF] px-6 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9B7ED9]">
-              Template preview
-            </p>
-            <p className="text-2xl font-semibold text-[#2F2F2F]">
-              {template.name}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm font-semibold text-[#7B6C68]"
-          >
-            Close
-          </button>
-        </div>
-        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[32px] border border-[#F2E6FF] bg-[#FAF7FF] p-4">
-            <Image
-              src={template.previewImage}
-              alt={`${template.name} preview`}
-              width={1200}
-              height={700}
-              className="rounded-3xl"
-            />
-          </div>
-          <div className="space-y-5 text-[#2F2F2F]">
-            <div>
-              <p className="text-sm font-semibold text-[#9B7ED9]">
-                Description
-              </p>
-              <p className="text-base text-[#4A403C]">{template.description}</p>
-            </div>
-            <div className="space-y-2 text-sm text-[#4A403C]">
-              <p className="font-semibold">Best for:</p>
-              <ul className="space-y-1">
-                {template.bestFor.map((item) => (
-                  <li key={item}>
-                    <Check className="mr-2 inline h-4 w-4 text-[#7ED9B0]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="space-y-2 text-sm text-[#4A403C]">
-              <p className="font-semibold">Recommended use:</p>
-              <ul className="space-y-1">
-                {template.recommendedUse.map((item) => (
-                  <li key={item}>
-                    <Check className="mr-2 inline h-4 w-4 text-[#7ED9B0]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {template.recommendedUse.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full bg-[#FFF4F9] px-3 py-1 text-xs font-semibold text-[#9B7ED9]"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={onUse}
-                className="flex-1 rounded-full bg-[#9B7ED9] px-4 py-2 text-sm font-semibold text-white"
-              >
-                Start with This Template
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 rounded-full border border-[#E0D4FF] px-4 py-2 text-sm font-semibold text-[#6C5E5A]"
-              >
-                Keep browsing
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import BabyShowersCreate from "@/components/event-create/BabyShowersCreate";
+import GenderRevealCreateTemplate from "@/components/event-create/GenderRevealCreateTemplate";
+import GenderRevealCreate from "@/components/event-create/GenderRevealCreate";
 
 export default function NewGenderRevealEventPage() {
   const search = useSearchParams();
@@ -21,11 +22,11 @@ export default function NewGenderRevealEventPage() {
     return id && id.trim() ? id.trim() : undefined;
   }, [search]);
 
-  return (
-    <BabyShowersCreate
-      defaultDate={defaultDate}
-      editEventId={editEventId}
-      variant="gender_reveal"
-    />
-  );
+  if (editEventId) {
+    return (
+      <GenderRevealCreate defaultDate={defaultDate} editEventId={editEventId} />
+    );
+  }
+
+  return <GenderRevealCreateTemplate defaultDate={defaultDate} />;
 }

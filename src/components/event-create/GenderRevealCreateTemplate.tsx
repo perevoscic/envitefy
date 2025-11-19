@@ -299,10 +299,6 @@ export default function GenderRevealCreateTemplate({ defaultDate }: Props) {
               items={["How It Works", "Gender Reveal Templates", "Help Center"]}
             />
             <FooterList
-              title="Company"
-              items={["About", "Blog", "Privacy & Security"]}
-            />
-            <FooterList
               title="Follow"
               items={["Instagram", "Facebook", "YouTube"]}
             />

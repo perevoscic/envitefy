@@ -15,6 +15,9 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
+import { EnvitefyBuilderHero } from "@/components/home/EnvitefyBuilderHero";
+import { SnapUploadHero } from "@/components/home/SnapUploadHero";
+import { SmartSignupHero } from "@/components/home/SmartSignupHero";
 import {
   CreateEventIllustration,
   ScanIllustration,
@@ -82,8 +85,10 @@ declare global {
 
 export default function Home() {
   const { data: session } = useSession();
+  const isSignedIn = Boolean(session?.user);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const heroRef = useRef<HTMLDivElement | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,6 +96,7 @@ export default function Home() {
   const [, setOcrText] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
+  const [showStickyBrand, setShowStickyBrand] = useState(false);
 
   const logUploadIssue = useCallback(
     (err: unknown, stage: string, details?: Record<string, unknown>) => {
@@ -946,72 +952,70 @@ export default function Home() {
     // Touch the session so provider connections hydrate promptly
   }, [session]);
 
+  useEffect(() => {
+    const target = heroRef.current;
+    if (!target || typeof window === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry) {
+          setShowStickyBrand(!entry.isIntersecting);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "-60px 0px 0px 0px",
+        threshold: 0,
+      }
+    );
+    observer.observe(target);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <main className="landing-dark-gradient relative flex min-h-[100dvh] w-full flex-col items-center px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
-      <div className="flex flex-col items-center gap-4 md:gap-6 text-center px-8 py-5 md:px-12 md:py-8 w-auto mb-6 md:mb-10 -mt-8 md:-mt-12">
+    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
+      {showStickyBrand && (
+        <div className="fixed left-0 right-0 top-0 z-30 border-b border-[#dfe2ff] bg-white/90 text-[#7f8cff] backdrop-blur-md transition">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] sm:text-sm">
+            <div className="flex items-center gap-2 text-[#7f8cff]">
+              <Image
+                src="/navElogo.png"
+                alt="Envitefy mark"
+                width={64}
+                height={64}
+                priority
+              />
+            </div>
+            <span>CREATE | SHARE | ENJOY</span>
+          </div>
+        </div>
+      )}
+      <div
+        ref={heroRef}
+        className="flex flex-col items-center gap-4 md:gap-6 text-center px-8 py-5 md:px-12 md:py-8 w-auto mb-6 md:mb-10 -mt-8 md:-mt-12"
+      >
         <Image
           src="/E.png"
-          alt="E"
-          width={108}
-          height={108}
+          alt="Envitefy"
+          width={216}
+          height={216}
+          quality={100}
+          priority
           className="opacity-80 w-[108px] h-[108px] md:w-[180px] md:h-[180px]"
-          style={{
-            filter:
-              "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
-          }}
         />
-        <div className="text-xs md:text-sm font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
+        <div className="text-xs md:text-sm font-semibold uppercase tracking-wider text-center text-[#7f8cff]">
           CREATE | SHARE | ENJOY
         </div>
       </div>
-      <div className="grid max-w-6xl grid-cols-2 gap-3 md:gap-8 lg:grid-cols-4 pt-2 mt-2 md:pt-4 md:mt-4">
-        <OptionCard
-          title="Snap Event"
-          ctaLabel="Open Camera"
-          ctaColor="#5fb1ff"
-          details={[
-            "Use your camera to",
-            "Extracts dates, locations, and RSVP details automatically.",
-          ]}
-          artwork={<ScanIllustration />}
-          tone="primary"
-          onClick={openCamera}
-        />
-        <OptionCard
-          title="Upload Event"
-          ctaLabel="Choose File"
-          details={[
-            "Drop PDFs, screenshots, or photos from your library.",
-            "Smart cleanup handles decorative fonts and tricky layouts.",
-          ]}
-          artwork={<UploadIllustration />}
-          tone="secondary"
-          onClick={openUpload}
-        />
-        <OptionCard
-          title="Create Event"
-          ctaLabel="Start Draft"
-          details={[
-            "Start from scratch with precise times, reminders, and notes.",
-            "Add recurrence rules, categories, and custom reminders.",
-          ]}
-          artwork={<CreateEventIllustration />}
-          tone="accent"
-          onClick={openCreateEvent}
-        />
-        <OptionCard
-          title="Sign-Up Form"
-          ctaLabel="Form Builder"
-          details={[
-            "Build RSVP and volunteer sheets with slot limits and questions.",
-            "Share a single link that syncs responses in real time.",
-          ]}
-          artwork={<SignUpIllustration />}
-          tone="success"
-          href="/smart-signup-form"
-        />
-      </div>
-
+      {isSignedIn && (
+        <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
+          <SnapUploadHero onSnap={openCamera} onUpload={openUpload} />
+          <EnvitefyBuilderHero />
+          <SmartSignupHero />
+        </div>
+      )}
       <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
         <div className="space-y-3">
           {error && (

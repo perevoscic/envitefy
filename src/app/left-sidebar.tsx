@@ -16,6 +16,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar } from "./sidebar-context";
@@ -164,6 +165,22 @@ const CATEGORY_OPTIONS = [
   "General Events",
   "Car Pool",
 ] as const;
+
+const SIDEBAR_GRADIENT =
+  "linear-gradient(180deg, rgba(252,248,255,0.98) 0%, rgba(242,244,255,0.95) 50%, rgba(236,248,255,0.92) 100%)";
+const SIDEBAR_CARD_CLASS =
+  "rounded-3xl border border-white/60 bg-white/80 shadow-[0_25px_60px_rgba(101,67,145,0.18)] backdrop-blur-2xl";
+const SIDEBAR_ITEM_CARD_CLASS =
+  "rounded-2xl border border-white/60 bg-white/80 shadow-[0_18px_40px_rgba(81,54,123,0.15)] backdrop-blur-xl transition hover:shadow-[0_22px_55px_rgba(81,54,123,0.25)] hover:-translate-y-0.5";
+const SIDEBAR_TAG_CLASS =
+  "inline-flex items-center justify-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[10px] font-semibold tracking-[0.4em] text-[#a08ac6]";
+const SIDEBAR_PRIMARY_PILL_CLASS =
+  "inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8468ff] via-[#a66cff] to-[#ff9ad5] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(132,104,255,0.55)] transition hover:shadow-[0_22px_48px_rgba(132,104,255,0.65)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
+const SIDEBAR_SECONDARY_PILL_CLASS =
+  "inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-sm font-semibold text-[#5b3d73] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6c5ff]";
+const SIDEBAR_BADGE_CLASS =
+  "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-[#6a4a83] shadow-inner";
+const SIDEBAR_WIDTH_REM = "16.5rem";
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
@@ -608,7 +625,7 @@ export default function LeftSidebar() {
     } catch {}
   };
   const handleSnapShortcutClick = (
-    event: React.MouseEvent<HTMLAnchorElement>,
+    event: ReactMouseEvent<HTMLElement>,
     mode: "camera" | "upload"
   ) => {
     const win = window as any;
@@ -621,6 +638,7 @@ export default function LeftSidebar() {
       } catch {}
     } else {
       collapseSidebarOnTouch();
+      triggerCreateEvent();
     }
   };
   const profileMenuItemClass =
@@ -1838,6 +1856,8 @@ export default function LeftSidebar() {
         </button>
       )}
 
+      {/* no floating close button; close control lives inside sidebar */}
+
       {/* Floating profile button (when collapsed) */}
       {!isOpen && (
         <>
@@ -2191,125 +2211,175 @@ export default function LeftSidebar() {
 
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 h-full z-[6000] border-r border-border backdrop-blur flex flex-col rounded-tr-3xl rounded-br-3xl ${
+        className={`fixed left-0 top-0 h-full z-[6000] border border-white/60 dark:border-white/10 backdrop-blur-2xl flex flex-col rounded-tr-[2.75rem] rounded-br-[2.75rem] shadow-[0_35px_90px_rgba(72,44,116,0.28)] ${
           isOpen ? "overflow-visible" : "overflow-hidden"
         } transition-[width,opacity] duration-200 ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
         style={{
-          width: isOpen ? "16rem" : "0rem",
+          width: isOpen ? SIDEBAR_WIDTH_REM : "0rem",
           opacity: isOpen ? 1 : 0,
-          backgroundImage:
-            "linear-gradient(180deg, rgba(171, 203, 235, 0.95), rgba(226, 151, 11, 0.28))",
-          backgroundColor: "rgba(255, 255, 255, 0.7)",
+          backgroundImage: SIDEBAR_GRADIENT,
+          backgroundColor: "rgba(255, 255, 255, 0.78)",
+          boxShadow: "0 30px 90px rgba(84, 56, 125, 0.35)",
         }}
         aria-label="Sidebar"
       >
         {/* Header with close button */}
-        <div className="relative flex-shrink-0 px-3 pt-3 pb-0">
-          <button
-            type="button"
-            aria-label="Close menu"
-            onClick={() => setIsCollapsed(true)}
-            className="absolute top-3 right-3 inline-flex items-center justify-center h-6 w-6 rounded-md border border-border bg-surface/80 hover:bg-surface"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3 w-3"
-              aria-hidden="true"
+        <div className="relative flex-shrink-0 px-4 pt-5 pb-2">
+          {/* Hero-esque intro */}
+          <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
+            <button
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setIsCollapsed(true)}
+              className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
             >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-          {/* CREATE | SHARE | ENJOY */}
-          <div className="px-2 pb-2">
-            <div className="flex flex-col items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <div className="flex flex-col items-center gap-3 text-center">
               <Link
                 href="/"
                 onClick={collapseSidebarOnTouch}
-                className="hover:opacity-90 transition-opacity"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/85 shadow-[0_15px_35px_rgba(121,92,175,0.25)]"
               >
                 <Image
                   src="/E.png"
-                  alt="E"
-                  width={48}
-                  height={48}
-                  className="opacity-80"
-                  style={{
-                    filter:
-                      "opacity(0.8) grayscale(100%) brightness(0) saturate(0%) invert(0.4)",
-                  }}
+                  alt="Envitefy"
+                  width={40}
+                  height={40}
+                  className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
                 />
               </Link>
-              <div className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider text-center">
-                CREATE | SHARE | ENJOY
+              <div className={SIDEBAR_TAG_CLASS}>SNAP OR UPLOAD</div>
+              <p className="text-base font-semibold leading-snug text-[#2f1a4b]">
+                Bring printed invites into Envitefy.
+              </p>
+              <p className="text-xs text-[#6f5a85]">
+                Skip retyping every detail—just point, send, and polish later.
+              </p>
+              <div className="mt-2 w-full space-y-2">
+                <button
+                  type="button"
+                  onClick={(event) => handleSnapShortcutClick(event, "camera")}
+                  className={SIDEBAR_PRIMARY_PILL_CLASS}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
+                  <span>Snap Event</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => handleSnapShortcutClick(event, "upload")}
+                  className={SIDEBAR_SECONDARY_PILL_CLASS}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14" />
+                    <path d="m5 12 7-7 7 7" />
+                    <path d="M5 19h14" />
+                  </svg>
+                  <span>Upload Event</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
         {/* Middle: Event history */}
         <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
-          <div className="px-3 pt-0 pb-3 space-y-2">
+          <div className="px-4 pt-0 pb-5 space-y-4">
             {/* Separator line */}
-            <div className="px-4 py-2">
-              <div className="h-px bg-gray-300/60 dark:bg-gray-600/60"></div>
-            </div>
-            <div className="px-0">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
+            <div className="space-y-3">
               <Link
                 href="/"
                 onClick={collapseSidebarOnTouch}
-                className="block px-2 py-2 rounded-md text-sm hover:bg-surface/70 flex items-center gap-2 text-foreground/90"
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#2f1d47]`}
               >
-                <svg
-                  viewBox="0 0 1920 1920"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M960.16 0 28 932.16l79 78.777 853.16-853.16 853.16 853.16 78.889-78.777L960.16 0Zm613.693 1027.34v781.078h-334.86v-557.913h-557.8v557.912H346.445V1027.34H234.751V1920h1450.684v-892.66h-111.582Zm-446.33 334.748v446.441H792.775v-446.441h334.748ZM960.127 692.604c61.593 0 111.582 49.989 111.582 111.582 0 61.594-49.989 111.583-111.582 111.583-61.594 0-111.583-49.99-111.583-111.583 0-61.593 49.99-111.582 111.583-111.582Zm223.165 111.582c0-123.075-100.09-223.165-223.165-223.165-123.076 0-223.165 100.09-223.165 223.165 0 123.076 100.09 223.165 223.165 223.165 123.075 0 223.165-100.09 223.165-223.165"
-                  ></path>
-                </svg>
+                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5efff] to-white text-[#7a5ec0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                  <svg
+                    viewBox="0 0 1920 1920"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M960.16 0 28 932.16l79 78.777 853.16-853.16 853.16 853.16 78.889-78.777L960.16 0Zm613.693 1027.34v781.078h-334.86v-557.913h-557.8v557.912H346.445V1027.34H234.751V1920h1450.684v-892.66h-111.582Zm-446.33 334.748v446.441H792.775v-446.441h334.748ZM960.127 692.604c61.593 0 111.582 49.989 111.582 111.582 0 61.594-49.989 111.583-111.582 111.583-61.594 0-111.583-49.99-111.583-111.583 0-61.593 49.99-111.582 111.583-111.582Zm223.165 111.582c0-123.075-100.09-223.165-223.165-223.165-123.076 0-223.165 100.09-223.165 223.165 0 123.076 100.09 223.165 223.165 223.165 123.075 0 223.165-100.09 223.165-223.165"
+                    ></path>
+                  </svg>
+                </span>
                 <span>Home</span>
               </Link>
-              <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
+
+              <div
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
+              >
                 <button
                   type="button"
                   onClick={(event) => {
                     event.preventDefault();
                     triggerCreateEvent();
                   }}
-                  className="flex flex-1 items-center gap-2 pl-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="flex flex-1 items-center gap-3 text-left text-sm font-semibold text-[#2f1d47] focus:outline-none"
                 >
-                  <svg
-                    viewBox="0 0 32 32"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path d="M18 31h2v-2a1.0006 1.0006 0 0 1 1-1h6a1.0006 1.0006 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
-                    <path d="M24 25a4 4 0 1 1 4-4 4.0039 4.0039 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0027 2.0027 0 0 0-2-2Z" />
-                    <path d="M2 31h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
-                    <path d="M8 25a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0023 2.0023 0 0 0-2-2Z" />
-                    <path d="M18 16h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
-                    <path d="M24 10a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.0023 2.0023 0 0 0 24 4Z" />
-                    <path d="M2 16h2v-2a1.0013 1.0013 0 0 1 1-1h6a1.0013 1.0013 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
-                    <path d="M8 10a4 4 0 1 1 4-4 4.0045 4.0045 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.002 2.002 0 0 0 8 4Z" />
-                  </svg>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    <svg
+                      viewBox="0 0 32 32"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M18 31h2v-2a1.0006 1.0006 0 0 1 1-1h6a1.0006 1.0006 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
+                      <path d="M24 25a4 4 0 1 1 4-4 4.0039 4.0039 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0027 2.0027 0 0 0-2-2Z" />
+                      <path d="M2 31h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
+                      <path d="M8 25a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0023 2.0023 0 0 0-2-2Z" />
+                      <path d="M18 16h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
+                      <path d="M24 10a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.0023 2.0023 0 0 0 24 4Z" />
+                      <path d="M2 16h2v-2a1.0013 1.0013 0 0 1 1-1h6a1.0013 1.0013 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
+                      <path d="M8 10a4 4 0 1 1 4-4 4.0045 4.0045 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.002 2.002 0 0 0 8 4Z" />
+                    </svg>
+                  </span>
                   <span>Create Event</span>
                 </button>
-                <div className="ml-auto flex items-center gap-1">
-                  <span className="inline-flex items-center rounded-full border border-border bg-surface/60 px-1.5 py-0.5 text-[10px] text-foreground/80">
+                <div className="ml-auto flex items-center gap-2">
+                  <span className={SIDEBAR_BADGE_CLASS}>
                     {createdEventsCount}
                   </span>
                   <button
@@ -2318,7 +2388,7 @@ export default function LeftSidebar() {
                       event.preventDefault();
                       triggerCreateEvent();
                     }}
-                    className="p-1 rounded hover:bg-surface/50"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
                     aria-label="Create event"
                   >
                     <svg
@@ -2332,12 +2402,15 @@ export default function LeftSidebar() {
                       className="h-4 w-4"
                       aria-hidden="true"
                     >
-                      <path d="M4 13.9999L5.57465 20.2985C5.61893 20.4756 5.64107 20.5642 5.66727 20.6415C5.92317 21.397 6.60352 21.9282 7.39852 21.9933C7.4799 21.9999 7.5712 21.9999 7.75379 21.9999C7.98244 21.9999 8.09677 21.9999 8.19308 21.9906C9.145 21.8982 9.89834 21.1449 9.99066 20.193C10 20.0967 10 19.9823 10 19.7537V5.49991M18.5 13.4999C20.433 13.4999 22 11.9329 22 9.99991C22 8.06691 20.433 6.49991 18.5 6.49991M10.25 5.49991H6.5C4.01472 5.49991 2 7.51463 2 9.99991C2 12.4852 4.01472 14.4999 6.5 14.4999H10.25C12.0164 14.4999 14.1772 15.4468 15.8443 16.3556C16.8168 16.8857 17.3031 17.1508 17.6216 17.1118C17.9169 17.0756 18.1402 16.943 18.3133 16.701C18.5 16.4401 18.5 15.9179 18.5 14.8736V5.1262C18.5 4.08191 18.5 3.55976 18.3133 3.2988C18.1402 3.05681 17.9169 2.92421 17.6216 2.88804C17.3031 2.84903 16.8168 3.11411 15.8443 3.64427C14.1772 4.55302 12.0164 5.49991 10.25 5.49991Z" />
+                      <path d="M12 5v14M5 12h14" />
                     </svg>
                   </button>
                 </div>
               </div>
-              <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
+
+              <div
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
+              >
                 <Link
                   href="/calendar"
                   onClick={() => {
@@ -2350,32 +2423,32 @@ export default function LeftSidebar() {
                       if (isTouch) setIsCollapsed(true);
                     } catch {}
                   }}
-                  className="flex items-center gap-2 pl-0"
+                  className="flex flex-1 items-center gap-3 text-sm font-semibold text-[#2f1d47]"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </span>
                   <span className="flex items-center gap-2">
                     <span>Calendar</span>
                   </span>
                 </Link>
-                <div className="ml-auto flex items-center">
-                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                    {history.length}
-                  </span>
+                <div className="ml-auto flex items-center gap-2">
+                  <span className={SIDEBAR_BADGE_CLASS}>{history.length}</span>
                   <button
                     type="button"
                     title="New event"
@@ -2386,7 +2459,7 @@ export default function LeftSidebar() {
                         (window as any).__openCreateEvent?.();
                       } catch {}
                     }}
-                    className="ml-1 p-1 rounded hover:bg-surface/50"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
                     aria-label="New event"
                   >
                     <svg
@@ -2409,7 +2482,14 @@ export default function LeftSidebar() {
                   </button>
                 </div>
               </div>
-              <div className="mt-1 flex items-center justify-between px-2 py-2 rounded-md hover:bg-surface/70 text-sm">
+
+              <div
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 ${
+                  activeCategory === "Smart sign-up"
+                    ? "ring-2 ring-[#d9ccff]"
+                    : ""
+                }`}
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -2417,35 +2497,33 @@ export default function LeftSidebar() {
                       prev === "Smart sign-up" ? null : "Smart sign-up"
                     );
                   }}
-                  className={`flex flex-1 items-center gap-2 pl-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                    activeCategory === "Smart sign-up"
-                      ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
-                      : ""
-                  }`}
+                  className="flex flex-1 items-center gap-3 text-left text-sm font-semibold text-[#2f1d47] focus:outline-none"
                   aria-pressed={activeCategory === "Smart sign-up"}
                   title="Smart sign-up"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                    <path d="M17 16v3" />
-                    <path d="M15.5 17.5h3" />
-                  </svg>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6faff] to-white text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <path d="M17 16v3" />
+                      <path d="M15.5 17.5h3" />
+                    </svg>
+                  </span>
                   <span>Smart sign-up</span>
                 </button>
-                <div className="ml-auto flex items-center gap-1">
-                  <span className="inline-flex items-center rounded-full border border-border bg-surface/60 px-1.5 py-0.5 text-[10px] text-foreground/80">
+                <div className="ml-auto flex items-center gap-2">
+                  <span className={SIDEBAR_BADGE_CLASS}>
                     {smartSignupCount}
                   </span>
                   <button
@@ -2456,7 +2534,7 @@ export default function LeftSidebar() {
                         (window as any).__openSmartSignup?.();
                       } catch {}
                     }}
-                    className="p-1 rounded hover:bg-surface/50"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
                     aria-label="Open Smart sign-up"
                   >
                     <svg
