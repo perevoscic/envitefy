@@ -15,6 +15,9 @@ type CandyDreamsPalette = {
 type Props = {
   palette: CandyDreamsPalette;
   children: ReactNode;
+  contentClassName?: string;
+  align?: "center" | "top";
+  as?: "div" | "main";
 };
 
 const hexToRgba = (hex: string, alpha: number) => {
@@ -26,7 +29,13 @@ const hexToRgba = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-export function CandyDreamsLayout({ palette, children }: Props) {
+export function CandyDreamsLayout({
+  palette,
+  children,
+  contentClassName,
+  align = "center",
+  as = "main",
+}: Props) {
   const sprinkleBackground = palette.sprinkleColors
     .map((color) => `radial-gradient(circle, ${color} 2px, transparent 2px)`)
     .join(", ");
@@ -41,15 +50,24 @@ export function CandyDreamsLayout({ palette, children }: Props) {
     borderColor: hexToRgba(palette.primary, 0.35),
   };
 
+  const alignmentClass =
+    align === "top"
+      ? "items-start justify-center pt-10"
+      : "items-center justify-center";
+
+  const Wrapper = as === "div" ? "div" : "main";
+
   return (
-    <main
-      className="min-h-screen bg-gradient-to-br from-transparent to-transparent flex items-center justify-center px-4 py-10"
+    <Wrapper
+      className={`min-h-screen flex ${alignmentClass} px-4 py-10`}
       style={{
         backgroundImage: `linear-gradient(135deg, ${palette.bgGradientFrom}, ${palette.bgGradientTo})`,
       }}
     >
       <div
-        className="relative max-w-3xl w-full rounded-[32px] shadow-[0_20px_40px_rgba(0,0,0,0.06)] p-[3rem] overflow-hidden"
+        className={`relative ${
+          contentClassName ?? "max-w-3xl w-full"
+        } rounded-[32px] shadow-[0_20px_40px_rgba(0,0,0,0.06)] p-[3rem] overflow-hidden`}
         style={{
           backgroundColor: palette.cardBg,
           boxShadow: `0 20px 40px ${hexToRgba(palette.accent, 0.22)}`,
@@ -57,16 +75,10 @@ export function CandyDreamsLayout({ palette, children }: Props) {
         }}
       >
         <div className={styles.wrapper}>
-          <div
-            className={styles.border}
-            style={{
-              ...borderStyle,
-            }}
-          />
+          <div className={styles.border} style={borderStyle} />
         </div>
         <div className="relative z-10">{children}</div>
       </div>
-    </main>
+    </Wrapper>
   );
 }
-

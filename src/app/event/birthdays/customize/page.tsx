@@ -124,14 +124,6 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-const TRUST_ITEMS = [
-  { icon: "📅", label: "1-click Add to Calendar" },
-  { icon: "📱", label: "Works on every phone" },
-  { icon: "🔒", label: "Private share links" },
-  { icon: "🧁", label: "Kid-focused layouts" },
-  { icon: "⏱️", label: "Invite ready in minutes" },
-];
-
 type RegistryEntry = {
   id: string;
   label: string;
@@ -949,21 +941,6 @@ export default function BirthdayTemplateCustomizePage() {
             </div>
           </div>
         </section>
-
-        <section className="rounded-[32px] border border-[#F4E7FF] bg-white/90 p-4 shadow-sm">
-          <div className="grid gap-3 text-sm font-semibold text-[#2F2F2F] sm:grid-cols-3 lg:grid-cols-5">
-            {TRUST_ITEMS.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-2 rounded-full bg-[#FAF5FF] px-4 py-2"
-              >
-                <span aria-hidden>{item.icon}</span>
-                {item.label}
-              </div>
-            ))}
-          </div>
-        </section>
-
         <section
           ref={formSectionRef}
           className="flex w-full flex-col gap-8 lg:flex-row"
