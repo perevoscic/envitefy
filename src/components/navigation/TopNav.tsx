@@ -37,6 +37,7 @@ const NAV_LINKS: Array<{
 ];
 
 const MAX_HISTORY = 8;
+const NAV_HEIGHT = "4.5rem";
 
 function formatRelative(date?: string) {
   if (!date) return "";
@@ -80,8 +81,20 @@ export default function TopNav() {
     }
   }, []);
 
+  const isLandingPage = (pathname || "") === "/";
+  const shouldShowNav = status === "authenticated" && !isLandingPage;
+
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--top-nav-height",
+      shouldShowNav ? NAV_HEIGHT : "0px"
+    );
+  }, [shouldShowNav]);
+
+  useEffect(() => {
+    if (!shouldShowNav) return;
     let cancelled = false;
     (async () => {
       await loadHistory();
@@ -90,7 +103,7 @@ export default function TopNav() {
     return () => {
       cancelled = true;
     };
-  }, [status, loadHistory]);
+  }, [shouldShowNav, loadHistory]);
 
   useEffect(() => {
     const onCreated = (event: Event) => {
@@ -145,7 +158,7 @@ export default function TopNav() {
     };
   }, [openRecent]);
 
-  if (status !== "authenticated") {
+  if (!shouldShowNav) {
     return null;
   }
 

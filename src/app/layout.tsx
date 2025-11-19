@@ -767,7 +767,8 @@ export default async function RootLayout({
             className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
             style={{
               minHeight: "100dvh",
-              paddingTop: "calc(4.5rem + max(0px, env(safe-area-inset-top)))",
+              paddingTop:
+                "calc(var(--top-nav-height, 4.5rem) + max(0px, env(safe-area-inset-top)))",
               paddingBottom: "max(0px, env(safe-area-inset-bottom))",
             }}
             data-static-illustration="true"
