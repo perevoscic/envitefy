@@ -64,6 +64,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
 import TopNav from "@/components/navigation/TopNav";
+import { MenuProvider } from "@/contexts/MenuContext";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import type { CSSProperties } from "react";
@@ -761,10 +762,14 @@ export default async function RootLayout({
           gtag('config', 'G-3X25SZMRFY');
         `}</Script>
         <Providers session={session}>
-          <LeftSidebar />
-          <TopNav />
+          <MenuProvider>
+            <LeftSidebar />
+            <TopNav />
+          </MenuProvider>
           <div
-            className="min-h-[100dvh] bg-background text-foreground flex flex-col landing-dark-gradient"
+            className={`min-h-[100dvh] text-foreground flex flex-col ${
+              session ? "bg-[#F8F5FF]" : "bg-background landing-dark-gradient"
+            }`}
             style={{
               minHeight: "100dvh",
               paddingTop:

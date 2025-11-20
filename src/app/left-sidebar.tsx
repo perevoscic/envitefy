@@ -27,6 +27,13 @@ import {
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
+import {
+  TEMPLATE_LINKS,
+  NAV_LINKS,
+  useUnifiedMenu,
+  ProfileMenu,
+} from "@/components/navigation/TopNav";
+import { useEventCategories } from "@/hooks/useEventCategories";
 
 declare global {
   interface Window {
@@ -166,14 +173,7 @@ const CATEGORY_OPTIONS = [
   "Car Pool",
 ] as const;
 
-const TEMPLATE_LINKS = [
-  { label: "Birthdays", href: "/event/birthdays", icon: "🎂" },
-  { label: "Weddings", href: "/event/weddings", icon: "💍" },
-  { label: "Baby Showers", href: "/event/baby-showers", icon: "🍼" },
-  { label: "Gender Reveal", href: "/event/gender-reveal", icon: "🎈" },
-  { label: "Sport Events", href: "/event/sport-events", icon: "🏅" },
-  { label: "General Events", href: "/event/general", icon: "📅" },
-] as const;
+// TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
 const SIDEBAR_GRADIENT =
   "linear-gradient(180deg, rgba(252,248,255,0.98) 0%, rgba(242,244,255,0.95) 50%, rgba(236,248,255,0.92) 100%)";

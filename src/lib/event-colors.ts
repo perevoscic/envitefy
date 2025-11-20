@@ -1,11 +1,16 @@
+
 export type EventCategory =
   | "Birthdays"
+  | "Weddings"
+  | "Baby Showers"
   | "Sports"
   | "Meetings"
   | "Education"
   | "Concerts"
   | "Family"
   | "Healthcare"
+  | "Appointments"
+  | "General Events"
   | "Other";
 
 export type EventColor = {
@@ -19,23 +24,59 @@ export type EventColor = {
 };
 
 // Palette inspired by the mockup (soft pastels with readable dark text)
-const COLOR_MAP: Record<EventCategory, EventColor> = {
+const COLOR_MAP: Record<string, EventColor> = {
   Birthdays: {
-    key: "pink",
+    key: "emerald", // Changed to Green per screenshot
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    text: "text-emerald-700 dark:text-emerald-200",
+    border: "border-emerald-300/60 dark:border-emerald-700/60",
+    dot: "bg-emerald-500 dark:bg-emerald-400",
+    tint: "bg-emerald-50 dark:bg-emerald-900/20",
+    tile: "#D1FAE5",
+  },
+  Weddings: {
+    key: "blue", // Blue per screenshot
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-700 dark:text-blue-200",
+    border: "border-blue-300/60 dark:border-blue-700/60",
+    dot: "bg-blue-500 dark:bg-blue-400",
+    tint: "bg-blue-50 dark:bg-blue-900/20",
+    tile: "#DBEAFE",
+  },
+  "Baby Showers": {
+    key: "pink", // Pink per screenshot
     bg: "bg-pink-100 dark:bg-pink-900/30",
     text: "text-pink-700 dark:text-pink-200",
     border: "border-pink-300/60 dark:border-pink-700/60",
     dot: "bg-pink-500 dark:bg-pink-400",
     tint: "bg-pink-50 dark:bg-pink-900/20",
-    tile: "#FCE8F3",
+    tile: "#FCE7F3",
+  },
+  Appointments: {
+    key: "amber", // Orange/Amber per screenshot
+    bg: "bg-amber-100 dark:bg-amber-900/30",
+    text: "text-amber-800 dark:text-amber-200",
+    border: "border-amber-300/60 dark:border-amber-700/60",
+    dot: "bg-amber-500 dark:bg-amber-400",
+    tint: "bg-amber-50 dark:bg-amber-900/20",
+    tile: "#FEF3C7",
+  },
+  "General Events": {
+    key: "orange", // Orange per screenshot
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    text: "text-orange-800 dark:text-orange-200",
+    border: "border-orange-300/60 dark:border-orange-700/60",
+    dot: "bg-orange-500 dark:bg-orange-400",
+    tint: "bg-orange-50 dark:bg-orange-900/20",
+    tile: "#FFEDD5",
   },
   Sports: {
-    key: "green",
-    bg: "bg-green-100 dark:bg-green-900/30",
-    text: "text-green-700 dark:text-green-200",
-    border: "border-green-300/60 dark:border-green-700/60",
-    dot: "bg-green-500 dark:bg-green-400",
-    tint: "bg-green-50 dark:bg-green-900/20",
+    key: "cyan",
+    bg: "bg-cyan-100 dark:bg-cyan-900/30",
+    text: "text-cyan-700 dark:text-cyan-200",
+    border: "border-cyan-300/60 dark:border-cyan-700/60",
+    dot: "bg-cyan-500 dark:bg-cyan-400",
+    tint: "bg-cyan-50 dark:bg-cyan-900/20",
   },
   Meetings: {
     key: "sky",
@@ -46,20 +87,20 @@ const COLOR_MAP: Record<EventCategory, EventColor> = {
     tint: "bg-sky-50 dark:bg-sky-900/20",
   },
   Education: {
-    key: "amber",
-    bg: "bg-amber-100 dark:bg-amber-900/30",
-    text: "text-amber-800 dark:text-amber-200",
-    border: "border-amber-300/60 dark:border-amber-700/60",
-    dot: "bg-amber-500 dark:bg-amber-400",
-    tint: "bg-amber-50 dark:bg-amber-900/20",
-  },
-  Concerts: {
     key: "violet",
     bg: "bg-violet-100 dark:bg-violet-900/30",
-    text: "text-violet-700 dark:text-violet-200",
+    text: "text-violet-800 dark:text-violet-200",
     border: "border-violet-300/60 dark:border-violet-700/60",
     dot: "bg-violet-500 dark:bg-violet-400",
     tint: "bg-violet-50 dark:bg-violet-900/20",
+  },
+  Concerts: {
+    key: "fuchsia",
+    bg: "bg-fuchsia-100 dark:bg-fuchsia-900/30",
+    text: "text-fuchsia-700 dark:text-fuchsia-200",
+    border: "border-fuchsia-300/60 dark:border-fuchsia-700/60",
+    dot: "bg-fuchsia-500 dark:bg-fuchsia-400",
+    tint: "bg-fuchsia-50 dark:bg-fuchsia-900/20",
   },
   Family: {
     key: "rose",
@@ -89,17 +130,22 @@ const COLOR_MAP: Record<EventCategory, EventColor> = {
 
 export function getEventColor(input?: string | null): EventColor {
   if (!input) return COLOR_MAP.Other;
-  const key = (input || "").toLowerCase();
+  // Direct match first
+  if (COLOR_MAP[input]) return COLOR_MAP[input];
+  
+  const key = input.toLowerCase();
   if (/birthday|bday|cake|party/.test(key)) return COLOR_MAP.Birthdays;
-  if (/vet|doctor|dent(ist)?|clinic|health/.test(key)) return COLOR_MAP.Healthcare;
+  if (/wedding|marriage|bride|groom/.test(key)) return COLOR_MAP.Weddings;
+  if (/baby|shower|gender|reveal/.test(key)) return COLOR_MAP["Baby Showers"];
+  if (/vet|doctor|dent(ist)?|clinic|health|dr/.test(key)) return COLOR_MAP.Healthcare;
+  if (/appoint/.test(key)) return COLOR_MAP.Appointments;
   if (/meet|manager|standup|sync|call/.test(key)) return COLOR_MAP.Meetings;
   if (/class|course|school|lesson|study/.test(key)) return COLOR_MAP.Education;
   if (/concert|show|live|gig|karaoke/.test(key)) return COLOR_MAP.Concerts;
-  if (/soccer|game|match|home|away|stadium|vs/.test(key))
-    return COLOR_MAP.Sports;
+  if (/soccer|game|match|home|away|stadium|vs|sport/.test(key)) return COLOR_MAP.Sports;
   if (/family|kids|parent|mom|dad/.test(key)) return COLOR_MAP.Family;
-  const normalized = (input[0].toUpperCase() + input.slice(1)) as EventCategory;
-  return (COLOR_MAP as any)[normalized] || COLOR_MAP.Other;
+  
+  return COLOR_MAP["General Events"] || COLOR_MAP.Other;
 }
 
 export function getColorByCategory(category?: string | null): EventColor {
@@ -111,10 +157,12 @@ export function getCategoryIcon(category: string): string {
   const lower = category.toLowerCase();
   if (lower.includes("birthday")) return "🎂";
   if (lower.includes("wedding")) return "💍";
+  if (lower.includes("baby") || lower.includes("gender")) return "🍼";
   if (
     lower.includes("doctor") ||
     lower.includes("dental") ||
-    lower.includes("medical")
+    lower.includes("medical") ||
+    lower.includes("dr")
   )
     return "🩺";
   if (lower.includes("appointment")) return "📅";
@@ -140,6 +188,6 @@ export function getCategoryIcon(category: string): string {
   if (lower.includes("holiday")) return "🎄";
   if (lower.includes("anniversary")) return "💐";
   if (lower.includes("party")) return "🎉";
+  if (lower.includes("car")) return "🚗";
   return "📌"; // Default icon
 }
-
