@@ -768,7 +768,7 @@ export default async function RootLayout({
           </MenuProvider>
           <div
             className={`min-h-[100dvh] text-foreground flex flex-col ${
-              session ? "bg-[#F8F5FF]" : "bg-background landing-dark-gradient"
+              session ? "bg-[#F8F5FF]" : "bg-[#F8F5FF] landing-dark-gradient"
             }`}
             style={{
               minHeight: "100dvh",

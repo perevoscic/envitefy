@@ -667,7 +667,7 @@ export default function TopNav() {
   return (
     <>
       {/* Mobile/Tablet Header with Hamburger */}
-      <div className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/60 bg-white text-[#1b1540] shadow-sm lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/60 bg-[#F8F5FF] text-[#1b1540] shadow-sm lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"
@@ -698,7 +698,7 @@ export default function TopNav() {
       </div>
 
       {/* Desktop TopNav */}
-      <div className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/60 bg-white text-[#1b1540] shadow-sm backdrop-blur-none hidden lg:block">
+      <div className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/60 bg-[#F8F5FF] text-[#1b1540] shadow-sm backdrop-blur-none hidden lg:block">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex flex-shrink-0 items-center gap-3">
             <Link
