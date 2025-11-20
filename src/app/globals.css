@@ -120,7 +120,7 @@ html {
   min-height: 100vh;
   min-height: 100dvh;
   /* Extend background to cover status bar area on iOS */
-  background-color: color-mix(in oklab, var(--background) 95%, black 5%);
+  background-color: #F8F5FF;
   /* Ensure html extends edge-to-edge */
   margin: 0;
   padding: 0;
@@ -130,7 +130,7 @@ html {
 }
 
 body {
-  background-color: color-mix(in oklab, var(--background) 95%, black 5%);
+  background-color: #F8F5FF;
   color: var(--foreground);
   font-family: var(--font-raleway), var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
