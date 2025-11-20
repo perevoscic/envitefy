@@ -1,109 +1,76 @@
 "use client";
 import { useState } from "react";
+import { Plus, Minus } from "lucide-react";
 
 const qs = [
   {
-    q: "Can I share my event without guests downloading an app?",
-    a: "Yes! Guests can open and RSVP via an email or text link — no downloads needed.",
+    q: "Do guests need to download the app?",
+    a: "No! That's the best part. You send a simple link (via text or email), and guests can view details, RSVP, and add to their calendar instantly—no app required.",
   },
   {
-    q: "Can I co-manage events with other Envitefy users?",
-    a: "Yes. Invite another Envitefy user from the share menu and they'll accept from their email to see the event in their dashboard, access the live link, and stay synced on every change.",
+    q: "Does it work with my calendar?",
+    a: "Yes. We sync seamlessly with Google Calendar, Outlook, and Apple Calendar. You can also download a universal .ics file for any other platform.",
   },
   {
-    q: "If I change event details, do guests see the update?",
-    a: "Absolutely. The shared link always reflects the latest info, so everyone stays on the same page.",
+    q: "How accurate is the scanning?",
+    a: "Extremely accurate. We use advanced AI vision to read dates, times, addresses, and even handwritten notes from your flyers and screenshots. You can always edit the details before saving.",
+  },
+  {
+    q: "Is it free?",
+    a: "Yes, Envitefy has a generous free plan that lets you snap flyers, create events, and manage RSVPs without paying a dime. We don't require a credit card to sign up.",
   },
   {
     q: "Can I track RSVPs?",
-    a: "Yes. Envitefy collects replies from text or email and sends you updates, so you and any collaborators always know who's coming.",
+    a: "Absolutely. You'll see who's coming, who's not, and who's unsure—all in one dashboard. We can even collect meal preferences or other custom questions.",
   },
   {
-    q: "What are smart sign-up forms?",
-    a: "Smart sign-up forms let families claim snack duty, volunteer slots, or carpool seats right from your event link. We enforce capacity limits, manage waitlists automatically, and sync every response in your event history so you always know who's confirmed.",
-  },
-  {
-    q: "How accurate is Envitefy's scanning?",
-    a: "Envitefy uses advanced text recognition to pull dates, times, locations, and notes from flyers and PDFs with high accuracy. You can review everything before saving, and tweak any detail with a tap.",
-  },
-  {
-    q: "Does Envitefy integrate with Apple Calendar?",
-    a: "Yes! We generate universally compatible calendar files that open instantly in Apple Calendar on iPhone, iPad, and Mac.",
-  },
-  {
-    q: "Can I upload PDF files for event extraction?",
-    a: "Yes, Envitefy processes PDFs just like photos — even multi-page schedules — so you can capture every date at once.",
-  },
-  {
-    q: "Can I add an entire season to my calendar at once?",
-    a: "Absolutely. Envitefy builds multi-event ICS downloads and offers bulk pushes directly to Google Calendar and Outlook, so you can drop every game or practice onto your calendar with one upload.",
-  },
-  {
-    q: "Is Envitefy free to use?",
-    a: "Yes. Registration and everyday use are free, so you can upload flyers, manage events, and share with families without entering payment info.",
-  },
-  {
-    q: "Do I need a credit card to create an account?",
-    a: "No. Sign up with email/password or continue with Google and you'll reach the dashboard immediately—no checkout or billing setup required.",
-  },
-  {
-    q: "How many events or schedules can I upload?",
-    a: "Envitefy can process individual invites, multi-page PDFs, and full practice schedules as often as you need. We built the tool for ongoing family planning, so there isn't a strict limit.",
-  },
-  {
-    q: "Where do I start after signing up?",
-    a: "After you finish sign-up or login you land on the main Envitefy dashboard. From there you can snap a new flyer, upload a PDF, or create an event from scratch within seconds.",
-  },
-  {
-    q: "Which calendar services does Envitefy support for direct integration?",
-    a: "Envitefy offers secure, one-tap connections to Google Calendar and Microsoft Outlook, plus universal ICS downloads for everything else. Bulk imports work the same way, so large schedules sync just as easily as single events.",
-  },
-  {
-    q: "Can Envitefy handle sports schedules and weekly practices?",
-    a: "Definitely. Envitefy recognizes season flyers, builds each meet automatically, and creates weekly practice schedules with recurring reminders that you can export individually or in bulk.",
-  },
-  {
-    q: "What types of image files can I upload?",
-    a: "You can upload common image formats like JPEG, and PNG. Clear, well-lit photos give the best results.",
-  },
-  {
-    q: "What is Envitefy?",
-    a: "Envitefy turns invitations and flyers into real calendar events. Upload a photo or PDF and we extract the title, date, time, and location, then let you download an ICS file or add the event directly to Google Calendar or Microsoft Outlook.",
-  },
-  {
-    q: "How does Envitefy use my Google data?",
-    a: "When you choose “Continue with Google,” we request Calendar permission to create and update events you save with Envitefy. We do not read your email, contacts, or other Google data. We store a Google refresh token only to add events on your behalf; you can disconnect anytime from your account or at myaccount.google.com.",
+    q: "What about weekly practice schedules?",
+    a: "We handle those too! Upload a season schedule or practice PDF, and we'll extract all the recurring events at once so you can add the whole season to your calendar in one click.",
   },
 ];
 
 export default function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
+
   return (
-    <section aria-labelledby="faq" className="w-full">
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <h2 id="faq" className="text-2xl sm:text-3xl font-bold text-center">
-          FAQ
-        </h2>
-        <div className="mt-6 divide-y divide-border rounded-2xl border border-border bg-surface/70">
+    <section id="faq" className="py-24 bg-gray-50">
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-gray-600">
+            Have something else in mind? Reach out to us directly.
+          </p>
+        </div>
+
+        <div className="space-y-4">
           {qs.map((item, idx) => (
-            <div key={item.q}>
+            <div
+              key={idx}
+              className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all duration-200 hover:border-gray-200 hover:shadow-sm"
+            >
               <button
-                className="w-full text-left px-4 sm:px-6 py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="w-full text-left px-6 py-5 flex items-center justify-between gap-4"
                 onClick={() => setOpen(open === idx ? null : idx)}
                 aria-expanded={open === idx}
               >
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-semibold">{item.q}</span>
-                  <span className="text-foreground/60">
-                    {open === idx ? "−" : "+"}
-                  </span>
-                </div>
+                <span className="font-semibold text-gray-900 text-lg">
+                  {item.q}
+                </span>
+                <span className="text-gray-400 flex-shrink-0">
+                  {open === idx ? <Minus size={20} /> : <Plus size={20} />}
+                </span>
               </button>
-              {open === idx && (
-                <div className="px-4 sm:px-6 pb-5 text-foreground/80">
-                  {item.a}
-                </div>
-              )}
+              <div
+                className={`px-6 overflow-hidden transition-all duration-300 ease-in-out ${
+                  open === idx
+                    ? "max-h-48 pb-6 opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                <p className="text-gray-600 leading-relaxed">{item.a}</p>
+              </div>
             </div>
           ))}
         </div>
