@@ -982,9 +982,15 @@ export default function Dashboard() {
       {/* Hero logo removed for streamlined layout */}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
-          <SnapUploadHero onSnap={openCamera} onUpload={openUpload} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
+            <SnapUploadHero
+              onSnap={openCamera}
+              onUpload={openUpload}
+              className="h-full"
+            />
+            <SmartSignupHero className="h-full" />
+          </div>
           <EnvitefyBuilderHero />
-          <SmartSignupHero />
         </div>
       )}
       {showScanSection && (

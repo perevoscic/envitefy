@@ -82,42 +82,9 @@ export function EnvitefyBuilderHero({ className }: EnvitefyBuilderHeroProps) {
             <CalendarHeart className="h-3.5 w-3.5" />
             Envitefy Builder
           </span>
-          <h2
-            id="envitefy-builder"
-            className="text-4xl font-semibold leading-tight text-[#140D26] sm:text-5xl"
-          >
-            Create once, share everywhere.
-          </h2>
-          <p className="text-lg text-[#4A3E66]">
-            Tap a category to open its tailored builder. Every flow keeps the
-            same promise: polished invites, mobile-first layouts, and instant
-            add-to-calendar links.
-          </p>
-          <div className="flex flex-wrap gap-3 text-sm text-[#524872]">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow">
-              <Sparkles className="h-4 w-4 text-[#F49AC1]" />
-              Live preview header
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow">
-              <Smartphone className="h-4 w-4 text-[#7F8CFF]" />
-              Phone-first layout
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow">
-              <Share2 className="h-4 w-4 text-[#5AC29A]" />
-              One smart link
-            </div>
-          </div>
         </div>
 
         <div className="space-y-3">
-          <div className="flex flex-col gap-1 text-sm text-[#5A4F78] sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-semibold uppercase tracking-[0.3em] text-[#9B7BFF]">
-              Quick start
-            </p>
-            <p className="text-xs sm:text-sm">
-              Pick a template to open its dedicated flow.
-            </p>
-          </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {QUICK_START_CARDS.map((card) => (
               <Link

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 type SnapUploadHeroProps = {
   onSnap: () => void;
   onUpload: () => void;
+  className?: string;
 };
 
 const BENEFITS: Array<{ icon: ReactNode; label: string; copy: string }> = [
@@ -21,24 +22,22 @@ const BENEFITS: Array<{ icon: ReactNode; label: string; copy: string }> = [
   },
 ];
 
-export function SnapUploadHero({ onSnap, onUpload }: SnapUploadHeroProps) {
+export function SnapUploadHero({
+  onSnap,
+  onUpload,
+  className,
+}: SnapUploadHeroProps) {
   return (
-    <section className="rounded-[40px] bg-gradient-to-bl from-[#F9F2FF] via-white to-[#FFEAF4] p-6 shadow-xl shadow-[#E8DFFF]/70 sm:p-8">
+    <section
+      className={`rounded-[40px] bg-gradient-to-bl from-[#F9F2FF] via-white to-[#FFEAF4] p-6 shadow-xl shadow-[#E8DFFF]/70 sm:p-8 ${
+        className || ""
+      }`}
+    >
       <div className="grid gap-8 lg:grid-cols-[1.1fr,0.9fr] lg:items-center">
         <div className="space-y-5">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#8A6BFF] shadow-sm shadow-[#D8CBFF]">
             Snap or Upload
           </span>
-          <div className="space-y-4">
-            <h1 className="text-4xl font-semibold leading-tight text-[#160F2F] sm:text-5xl">
-              Bring printed invites into Envitefy instantly.
-            </h1>
-            <p className="text-base leading-relaxed text-[#4A3E66]">
-              Skip retyping every detail. Use your camera or upload a file; we
-              auto-extract the event and get it ready for sharing or calendar
-              buttons.
-            </p>
-          </div>
           <div className="flex flex-wrap gap-3 sm:flex-nowrap sm:justify-start">
             <button
               type="button"
@@ -60,28 +59,6 @@ export function SnapUploadHero({ onSnap, onUpload }: SnapUploadHeroProps) {
           <p className="text-xs uppercase tracking-[0.3em] text-[#9B7BFF]">
             Works great on mobile browsers—just point and send.
           </p>
-        </div>
-
-        <div className="rounded-[32px] border border-[#F3E8FF] bg-white/95 p-6 shadow-lg shadow-[#E8DFFF]/60">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {BENEFITS.map((feature) => (
-              <div
-                key={feature.label}
-                className="rounded-3xl border border-[#EFE5FF] bg-gradient-to-r from-white to-[#FAF6FF] p-4 shadow-sm"
-              >
-                <div className="flex items-center gap-2 text-sm font-semibold text-[#1D1234]">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#F3ECFF] text-[#7A5AF8]">
-                    {feature.icon}
-                  </span>
-                  {feature.label}
-                </div>
-                <p className="mt-2 text-sm text-[#5A4F78]">{feature.copy}</p>
-              </div>
-            ))}
-            <div className="rounded-3xl border border-[#E7F6FF] bg-[#F6FBFF] px-4 py-3 text-sm text-[#115575] sm:col-span-2">
-              Private by default. Nothing is saved until you confirm the event.
-            </div>
-          </div>
         </div>
       </div>
     </section>
