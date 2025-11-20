@@ -18,9 +18,9 @@ export default async function Hero() {
                 className="block text-transparent bg-clip-text"
                 style={{
                   backgroundImage:
-                    "linear-gradient(120deg, #d1a67a 0%, #f5e0d0 40%, #9f6c4c 100%)",
-                  fontFamily:
-                    'var(--font-playfair), "Times New Roman", serif',
+                    "linear-gradient(120deg,rgb(59, 121, 236) 0%,rgb(161, 230, 240) 40%,rgb(76, 115, 159) 100%)",
+                  fontFamily: 'var(--font-playfair), "Venturis ADF", serif',
+                  fontSize: "3rem",
                 }}
               >
                 Create. Share. Enjoy.

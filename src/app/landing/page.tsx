@@ -12,7 +12,7 @@ import Link from "next/link";
 
 export default async function LandingPage() {
   return (
-    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#F8F5FF] via-white to-white text-foreground">
       <LoginHero />
       <Hero />
       <CreateShare />
