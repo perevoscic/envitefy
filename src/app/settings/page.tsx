@@ -182,6 +182,7 @@ export default function SettingsPage() {
                   Current password
                 </label>
                 <input
+                  name="currentPassword"
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -195,6 +196,7 @@ export default function SettingsPage() {
                     New password
                   </label>
                   <input
+                    name="newPassword"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -207,6 +209,7 @@ export default function SettingsPage() {
                     Confirm new password
                   </label>
                   <input
+                    name="confirmPassword"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

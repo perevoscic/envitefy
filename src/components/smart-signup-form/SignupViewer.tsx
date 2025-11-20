@@ -889,7 +889,9 @@ const SignupViewer: React.FC<Props> = ({
                       Email for reminders
                     </label>
                     <input
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"

@@ -240,7 +240,9 @@ export default function SignupForm({
 
         <div className="grid grid-cols-2 gap-3">
           <input
+            name="firstName"
             type="text"
+            autoComplete="given-name"
             className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
             placeholder="First name"
             value={firstName}
@@ -248,7 +250,9 @@ export default function SignupForm({
             required
           />
           <input
+            name="lastName"
             type="text"
+            autoComplete="family-name"
             className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
             placeholder="Last name"
             value={lastName}
@@ -257,7 +261,9 @@ export default function SignupForm({
           />
         </div>
         <input
+          name="email"
           type="email"
+          autoComplete="email"
           className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
           placeholder="Email"
           value={email}
@@ -270,11 +276,11 @@ export default function SignupForm({
           }`}
         >
           <input
+            name="password"
             type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
             className={`w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition ${
-              message === "Passwords do not match."
-                ? "input-error"
-                : ""
+              message === "Passwords do not match." ? "input-error" : ""
             }`}
             placeholder="Password"
             value={password}
@@ -326,11 +332,11 @@ export default function SignupForm({
           }`}
         >
           <input
+            name="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
             className={`w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition ${
-              message === "Passwords do not match."
-                ? "input-error"
-                : ""
+              message === "Passwords do not match." ? "input-error" : ""
             }`}
             placeholder="Confirm password"
             value={confirmPassword}

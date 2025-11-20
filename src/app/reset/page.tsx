@@ -55,7 +55,9 @@ export default function ResetPasswordPage() {
         </p>
         <form onSubmit={onSubmit} className="space-y-3">
           <input
+            name="newPassword"
             type="password"
+            autoComplete="new-password"
             className="w-full border border-border bg-surface text-foreground p-2 rounded"
             placeholder="New password"
             value={newPassword}
@@ -63,7 +65,9 @@ export default function ResetPasswordPage() {
             required
           />
           <input
+            name="confirmPassword"
             type="password"
+            autoComplete="new-password"
             className="w-full border border-border bg-surface text-foreground p-2 rounded"
             placeholder="Confirm new password"
             value={confirmPassword}

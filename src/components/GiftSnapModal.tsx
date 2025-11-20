@@ -201,7 +201,9 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
                 />
               </div>
               <input
+                name="recipientEmail"
                 type="email"
+                autoComplete="email"
                 placeholder="Recipient email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -244,7 +246,9 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
                     />
                   </div>
                   <input
+                    name="senderEmail"
                     type="email"
+                    autoComplete="email"
                     placeholder="Your email"
                     value={senderEmail}
                     onChange={(e) => setSenderEmail(e.target.value)}

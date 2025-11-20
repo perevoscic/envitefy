@@ -98,7 +98,9 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
 
       <input
         id="login-email-input"
+        name="email"
         type="email"
+        autoComplete="username"
         className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
         placeholder="Email"
         value={email}
@@ -108,7 +110,9 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
       <div className="relative">
         <input
           id="login-password-input"
+          name="password"
           type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
           className={`w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition${
             message ? " input-error" : ""
           }${shake ? " input-shake" : ""}`}

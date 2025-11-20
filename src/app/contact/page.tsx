@@ -95,7 +95,9 @@ export default function ContactPage() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 required
                 defaultValue={(session?.user as any)?.email || ""}
                 className="mt-1 w-full border border-border bg-surface/60 text-foreground p-3 rounded opacity-60 cursor-not-allowed"
