@@ -23,6 +23,29 @@ function getSes(): any {
   return sesClient;
 }
 
+function resolveNoReplySender(context: string): { from: string; usedFallback: boolean } {
+  const preferred = (process.env.SES_FROM_EMAIL_NO_REPLY || "").trim();
+  const fallbacks = [
+    preferred,
+    (process.env.SES_FROM_EMAIL || "").trim(),
+    (process.env.SES_FROM_EMAIL_CONTACT || "").trim(),
+    (process.env.SMTP_FROM || "").trim(),
+    "no-reply@envitefy.com",
+  ].filter(Boolean);
+
+  const from = fallbacks[0] as string | undefined;
+  const usedFallback = Boolean(from && preferred && from !== preferred) || !preferred;
+  if (!from) throw new Error(`${context}: no from address configured`);
+
+  if (usedFallback) {
+    try {
+      console.warn(`[email] ${context} using fallback sender`, { from: maskEmail(from), preferred: preferred || null });
+    } catch {}
+  }
+
+  return { from, usedFallback };
+}
+
 export async function sendGiftEmail(params: {
   toEmail: string;
   recipientName?: string | null;
@@ -164,8 +187,7 @@ export async function sendPasswordResetEmail(params: {
   toEmail: string;
   resetUrl: string;
 }): Promise<void> {
-  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
-  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const { from } = resolveNoReplySender("password reset");
   const to = params.toEmail;
   const subject = `Reset your Envitefy password`;
   const preheader = `We received a request to reset your password.`;
@@ -208,7 +230,30 @@ export async function sendPasswordResetEmail(params: {
       },
     },
   });
-  await getSes().send(cmd);
+  try {
+    const result = await getSes().send(cmd);
+    try {
+      console.log("[email] sendPasswordResetEmail success", {
+        to: maskEmail(to),
+        from: maskEmail(from),
+        messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+        requestId: (result as any)?.$metadata?.requestId || null,
+        statusCode: (result as any)?.$metadata?.httpStatusCode || null,
+      });
+    } catch {}
+  } catch (err: any) {
+    try {
+      console.error("[email] sendPasswordResetEmail failed", {
+        to: maskEmail(to),
+        from: maskEmail(from),
+        error: err?.message,
+        name: err?.name,
+        statusCode: err?.$metadata?.httpStatusCode || null,
+        requestId: err?.$metadata?.requestId || null,
+      });
+    } catch {}
+    throw err;
+  }
 }
 
 export async function sendShareEventEmail(params: {

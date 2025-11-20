@@ -20,6 +20,14 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Output**: `{ ok: true, delivered: boolean }`.
 - **Env**: `SES_FROM_EMAIL_CONTACT` (e.g., `Envitefy Contact <contact@envitefy.com>`), optional `CONTACT_TO` to override destination; standard AWS credentials and `AWS_REGION`/`AWS_DEFAULT_REGION`. Optionally supports SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
 
+### Password Reset — POST `/api/auth/forgot`
+
+- **Purpose**: Generate a password reset token and email the reset link.
+- **Auth**: None (always responds 200 to avoid user enumeration).
+- **Behavior**: Sends reset email when the user exists. Non-production responses include the reset URL and error reason if email sending fails.
+- **From/Sender**: Prefers `SES_FROM_EMAIL_NO_REPLY`; falls back to `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_CONTACT`, then `SMTP_FROM`, then `no-reply@envitefy.com`. Logs a warning when using a fallback sender.
+- **Env**: Standard AWS credentials and region envs; optionally SMTP fallback as above.
+
 ### Event Share — POST `/api/events/share`
 
 - **Purpose**: Share an event with another existing user by email. Creates or updates a pending share.
