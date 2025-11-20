@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Calendar, Gift, CheckSquare, Heart } from "lucide-react";
+import { ArrowRight, Calendar, Gift, CheckSquare } from "lucide-react";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -23,7 +23,7 @@ export default function Verticals() {
       description:
         "Create a stunning wedding page in minutes. Collect RSVPs, link your registries (Amazon, Target, Zola), and share driving directions—all from one elegant link.",
       color: "from-rose-200 to-pink-100",
-      icon: <Heart className="w-6 h-6 text-rose-600" />,
+      icon: <WeddingIcon className="w-6 h-6 text-rose-600" />,
       image: "/images/wedding-mockup.png", // Placeholder
       orientation: "left",
       buttonText: "Create Wedding Page",
@@ -191,6 +191,61 @@ function SparklesIcon({ className }: { className?: string }) {
       <path d="M9 5H5" />
       <path d="M19 18v4" />
       <path d="M15 20h4" />
+    </svg>
+  );
+}
+
+// Wedding icon component
+function WeddingIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 60 60"
+      version="1.1"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlnsXlink="http://www.w3.org/1999/xlink"
+      fill="currentColor"
+      className={className}
+    >
+      <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+      <g
+        id="SVGRepo_tracerCarrier"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></g>
+      <g id="SVGRepo_iconCarrier">
+        <g
+          id="colored"
+          stroke="none"
+          strokeWidth="1"
+          fill="none"
+          fillRule="evenodd"
+        >
+          <g
+            id="Holidays"
+            transform="translate(5.000000, 3.000000)"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <g id="Wedding" transform="translate(0.000000, 4.000000)">
+              <path
+                d="M18.1327868,0.932322573 C15.5547756,1.92192834 14.5880122,5.65000968 15.9734603,9.25922531 C17.3573726,12.8644401 23,15.5000002 23,15.5000002 C23,15.5000002 28.9253523,12.8644401 30.3092646,9.25922531 C31.6947127,5.65000968 30.7279493,1.92192834 28.1499381,0.932322573 C26.5272972,0.30944908 24.653089,0.919921664 23.1413624,2.35789076 C23.1413624,2.35789076 19.7554277,0.30944908 18.1327868,0.932322573 Z"
+                id="Oval-1690"
+                fill="currentColor"
+              ></path>
+              <path
+                d="M26.9244035,46.8154782 C29.294794,48.2040416 32.054444,49 35,49 C43.836556,49 51,41.836556 51,33 C51,24.163444 43.836556,17 35,17 C26.163444,17 19,24.163444 19,33 C19,36.2290072 19.9565195,39.2346073 21.6016685,41.7489103"
+                id="Oval-1690"
+              ></path>
+              <path
+                d="M20.1652501,20.1484669 C18.4248387,19.409055 16.5101893,19 14.5,19 C6.49187113,19 0,25.4918711 0,33.5 C0,41.5081289 6.49187113,48 14.5,48 C22.5081289,48 29,41.5081289 29,33.5 C29,30.1794472 27.8838346,27.1195888 26.0062229,24.675144"
+                id="Oval-1690"
+              ></path>
+            </g>
+          </g>
+        </g>
+      </g>
     </svg>
   );
 }

@@ -1,4 +1,5 @@
-import { Camera, Sparkles, Share2, ArrowRight, Zap } from "lucide-react";
+import Image from "next/image";
+import { Camera, Sparkles, Share2, Zap } from "lucide-react";
 
 export default function HowItWorks() {
   const steps = [
@@ -56,14 +57,32 @@ export default function HowItWorks() {
       visual: (
         <div className="relative w-full h-32 bg-pink-50 rounded-xl overflow-hidden mt-6 border border-pink-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
           <div className="flex gap-3">
-            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-blue-600 font-bold text-xs">
-              G
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center overflow-hidden p-2">
+              <Image
+                src="/brands/google.svg"
+                alt="Google"
+                width={24}
+                height={24}
+                className="w-full h-full object-contain"
+              />
             </div>
-            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-blue-700 font-bold text-xs">
-              O
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center overflow-hidden p-2">
+              <Image
+                src="/brands/microsoft.svg"
+                alt="Outlook"
+                width={24}
+                height={24}
+                className="w-full h-full object-contain"
+              />
             </div>
-            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-red-500 font-bold text-xs">
-              A
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center overflow-hidden p-2">
+              <Image
+                src="/brands/apple-black.svg"
+                alt="Apple"
+                width={24}
+                height={24}
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
           <div className="absolute bottom-2 text-[10px] font-medium text-pink-600 uppercase tracking-wide">
