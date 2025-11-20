@@ -2330,81 +2330,6 @@ export default function LeftSidebar() {
               </div>
 
               <div
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
-              >
-                <Link
-                  href="/calendar"
-                  onClick={() => {
-                    try {
-                      const isTouch =
-                        typeof window !== "undefined" &&
-                        typeof window.matchMedia === "function" &&
-                        window.matchMedia("(hover: none), (pointer: coarse)")
-                          .matches;
-                      if (isTouch) setIsCollapsed(true);
-                    } catch {}
-                  }}
-                  className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span>Calendar</span>
-                  </span>
-                </Link>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className={SIDEBAR_BADGE_CLASS}>{history.length}</span>
-                  <button
-                    type="button"
-                    title="New event"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        (window as any).__openCreateEvent?.();
-                      } catch {}
-                    }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                    aria-label="New event"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="miter"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <rect x="2" y="4" width="20" height="18" rx="0"></rect>
-                      <line x1="7" y1="2" x2="7" y2="6"></line>
-                      <line x1="17" y1="2" x2="17" y2="6"></line>
-                      <line x1="8" y1="13" x2="16" y2="13"></line>
-                      <line x1="12" y1="9" x2="12" y2="17"></line>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div
                 className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 ${
                   activeCategory === "Smart sign-up"
                     ? "ring-2 ring-[#d9ccff]"
@@ -2679,6 +2604,81 @@ export default function LeftSidebar() {
                   })()}
                 </div>
               )}
+
+              <div
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
+              >
+                <Link
+                  href="/calendar"
+                  onClick={() => {
+                    try {
+                      const isTouch =
+                        typeof window !== "undefined" &&
+                        typeof window.matchMedia === "function" &&
+                        window.matchMedia("(hover: none), (pointer: coarse)")
+                          .matches;
+                      if (isTouch) setIsCollapsed(true);
+                    } catch {}
+                  }}
+                  className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span>Calendar</span>
+                  </span>
+                </Link>
+                <div className="ml-auto flex items-center gap-2">
+                  <span className={SIDEBAR_BADGE_CLASS}>{history.length}</span>
+                  <button
+                    type="button"
+                    title="New event"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      try {
+                        (window as any).__openCreateEvent?.();
+                      } catch {}
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                    aria-label="New event"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="miter"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <rect x="2" y="4" width="20" height="18" rx="0"></rect>
+                      <line x1="7" y1="2" x2="7" y2="6"></line>
+                      <line x1="17" y1="2" x2="17" y2="6"></line>
+                      <line x1="8" y1="13" x2="16" y2="13"></line>
+                      <line x1="12" y1="9" x2="12" y2="17"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
               {(() => {
                 const sharedCount = 0; // Shared events disabled

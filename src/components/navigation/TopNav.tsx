@@ -32,7 +32,8 @@ const NAV_LINKS: Array<{
   {
     label: "Create Event",
     href: "/event/new",
-    match: (path) => path.startsWith("/event") && !path.startsWith("/event/new"),
+    match: (path) =>
+      path.startsWith("/event") && !path.startsWith("/event/new"),
   },
   {
     label: "Smart sign-up",
@@ -43,42 +44,6 @@ const NAV_LINKS: Array<{
     label: "Calendar",
     href: "/calendar",
     match: (path) => path.startsWith("/calendar"),
-  },
-  {
-    label: "Birthdays",
-    href: "/event/birthdays",
-    icon: "🎂",
-    match: (path) => path.startsWith("/event/birthdays"),
-  },
-  {
-    label: "Weddings",
-    href: "/event/weddings",
-    icon: "💍",
-    match: (path) => path.startsWith("/event/weddings"),
-  },
-  {
-    label: "Baby Showers",
-    href: "/event/baby-showers",
-    icon: "🍼",
-    match: (path) => path.startsWith("/event/baby-showers"),
-  },
-  {
-    label: "Gender Reveal",
-    href: "/event/gender-reveal",
-    icon: "🎈",
-    match: (path) => path.startsWith("/event/gender-reveal"),
-  },
-  {
-    label: "Sport Events",
-    href: "/event/sport-events",
-    icon: "🏅",
-    match: (path) => path.startsWith("/event/sport-events"),
-  },
-  {
-    label: "General Events",
-    href: "/event/general",
-    icon: "📅",
-    match: (path) => path.startsWith("/event/general"),
   },
 ];
 
@@ -370,7 +335,9 @@ export default function TopNav() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className={`h-4 w-4 transition-transform ${createEventOpen ? "rotate-180" : ""}`}
+                className={`h-4 w-4 transition-transform ${
+                  createEventOpen ? "rotate-180" : ""
+                }`}
                 aria-hidden="true"
               >
                 <path d="M6 9l6 6 6-6" />
