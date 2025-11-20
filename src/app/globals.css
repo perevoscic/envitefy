@@ -120,11 +120,7 @@ html {
   min-height: 100vh;
   min-height: 100dvh;
   /* Extend background to cover status bar area on iOS */
-  background-color: var(--background);
-  background-image: var(--theme-hero-gradient);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: color-mix(in oklab, var(--background) 95%, black 5%);
   /* Ensure html extends edge-to-edge */
   margin: 0;
   padding: 0;
@@ -134,16 +130,12 @@ html {
 }
 
 body {
-  background-color: var(--background);
+  background-color: color-mix(in oklab, var(--background) 95%, black 5%);
   color: var(--foreground);
   font-family: var(--font-raleway), var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
   letter-spacing: 0.01em;
   position: relative;
-  background-image: var(--theme-hero-gradient);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
   /* Ensure body extends to full viewport but allows scrolling */
   min-height: 100vh;
   min-height: 100dvh;
@@ -166,7 +158,6 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: var(--theme-hero-gradient);
   opacity: 0.08;
   pointer-events: none;
   z-index: -1;
@@ -955,8 +946,7 @@ h5 {
   position: relative;
   overflow: hidden;
   z-index: 0;
-  background-color: var(--background);
-  background-image: var(--theme-hero-gradient);
+  background-color: color-mix(in oklab, var(--background) 95%, black 5%);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;

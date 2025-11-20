@@ -166,6 +166,15 @@ const CATEGORY_OPTIONS = [
   "Car Pool",
 ] as const;
 
+const TEMPLATE_LINKS = [
+  { label: "Birthdays", href: "/event/birthdays", icon: "🎂" },
+  { label: "Weddings", href: "/event/weddings", icon: "💍" },
+  { label: "Baby Showers", href: "/event/baby-showers", icon: "🍼" },
+  { label: "Gender Reveal", href: "/event/gender-reveal", icon: "🎈" },
+  { label: "Sport Events", href: "/event/sport-events", icon: "🏅" },
+  { label: "General Events", href: "/event/general", icon: "📅" },
+] as const;
+
 const SIDEBAR_GRADIENT =
   "linear-gradient(180deg, rgba(252,248,255,0.98) 0%, rgba(242,244,255,0.95) 50%, rgba(236,248,255,0.92) 100%)";
 const SIDEBAR_CARD_CLASS =
@@ -173,14 +182,14 @@ const SIDEBAR_CARD_CLASS =
 const SIDEBAR_ITEM_CARD_CLASS =
   "rounded-2xl border border-white/60 bg-white/80 shadow-[0_18px_40px_rgba(81,54,123,0.15)] backdrop-blur-xl transition hover:shadow-[0_22px_55px_rgba(81,54,123,0.25)] hover:-translate-y-0.5";
 const SIDEBAR_TAG_CLASS =
-  "inline-flex items-center justify-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[10px] font-semibold tracking-[0.4em] text-[#a08ac6]";
+  "inline-flex items-center justify-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[10px] md:text-xs md:text-sm font-semibold tracking-[0.4em] text-[#a08ac6]";
 const SIDEBAR_PRIMARY_PILL_CLASS =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8468ff] via-[#a66cff] to-[#ff9ad5] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(132,104,255,0.55)] transition hover:shadow-[0_22px_48px_rgba(132,104,255,0.65)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
+  "inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8468ff] via-[#a66cff] to-[#ff9ad5] px-4 py-2 text-sm md:text-base font-semibold text-white shadow-[0_18px_38px_rgba(132,104,255,0.55)] transition hover:shadow-[0_22px_48px_rgba(132,104,255,0.65)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
 const SIDEBAR_SECONDARY_PILL_CLASS =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-sm font-semibold text-[#5b3d73] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6c5ff]";
+  "inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-sm md:text-base font-semibold text-[#5b3d73] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6c5ff]";
 const SIDEBAR_BADGE_CLASS =
-  "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-[#6a4a83] shadow-inner";
-const SIDEBAR_WIDTH_REM = "16.5rem";
+  "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner";
+const SIDEBAR_WIDTH_REM = "20rem";
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
@@ -213,6 +222,7 @@ export default function LeftSidebar() {
   const [menuCalendarsOpen, setMenuCalendarsOpen] = useState(false);
   const [menuCalendarsOpenFloating, setMenuCalendarsOpenFloating] =
     useState(false);
+  const [createEventOpen, setCreateEventOpen] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
     microsoft: boolean;
@@ -365,6 +375,7 @@ export default function LeftSidebar() {
         setMenuCalendarsOpenFloating(false);
         setMenuCalendarsOpen(false);
         setMenuCalendarsOpenFloating(false);
+        setCreateEventOpen(false);
       }
     };
     const onEsc = (e: KeyboardEvent) => {
@@ -1559,7 +1570,7 @@ export default function LeftSidebar() {
             <circle cx="12" cy="7" r="4" />
             <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
           </svg>
-          <span className="text-sm">Profile</span>
+          <span className="text-sm md:text-base">Profile</span>
         </Link>
 
         <Link
@@ -1583,7 +1594,7 @@ export default function LeftSidebar() {
             <line x1="8" y1="2" x2="8" y2="6" />
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
-          <span className="text-sm">Calendar</span>
+          <span className="text-sm md:text-base">Calendar</span>
         </Link>
 
         <Link
@@ -1606,7 +1617,7 @@ export default function LeftSidebar() {
             <line x1="12" y1="16" x2="12" y2="12" />
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
-          <span className="text-sm">About us</span>
+          <span className="text-sm md:text-base">About us</span>
         </Link>
 
         <Link
@@ -1628,7 +1639,7 @@ export default function LeftSidebar() {
             <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
             <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
           </svg>
-          <span className="text-sm">Contact us</span>
+          <span className="text-sm md:text-base">Contact us</span>
         </Link>
 
         <div className="mt-1 relative">
@@ -1656,7 +1667,7 @@ export default function LeftSidebar() {
                 <line x1="8" y1="2" x2="8" y2="6" />
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
-              <span className="text-sm">Calendars</span>
+              <span className="text-sm md:text-base">Calendars</span>
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -1677,7 +1688,7 @@ export default function LeftSidebar() {
           {calendarsOpenFloating && (
             <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-56 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-3 z-[1100]">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
                   Connection status
                 </p>
                 <Link
@@ -1687,7 +1698,7 @@ export default function LeftSidebar() {
                     setSettingsOpen(false);
                     setCalendarsOpenFloating(false);
                   }}
-                  className="text-xs font-medium text-primary hover:underline"
+                  className="text-xs md:text-sm font-medium text-primary hover:underline"
                 >
                   Manage
                 </Link>
@@ -1755,7 +1766,7 @@ export default function LeftSidebar() {
               >
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              <span className="text-sm">Admin</span>
+              <span className="text-sm md:text-base">Admin</span>
             </Link>
           </>
         )}
@@ -1779,7 +1790,7 @@ export default function LeftSidebar() {
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-          <span className="text-sm">Log out</span>
+          <span className="text-sm md:text-base">Log out</span>
         </button>
       </div>
     );
@@ -1813,7 +1824,7 @@ export default function LeftSidebar() {
             onPointerDown={(e) => e.stopPropagation()}
             className="inline-flex fixed bottom-3 left-3 z-[400] items-center justify-center h-10 w-10 rounded-full border border-border bg-surface/90 text-foreground/90 hover:bg-surface shadow-lg"
           >
-            <span className="text-xs font-semibold select-none">
+            <span className="text-xs md:text-sm font-semibold select-none">
               {initials}
             </span>
           </button>
@@ -1853,7 +1864,7 @@ export default function LeftSidebar() {
                     <circle cx="12" cy="7" r="4" />
                     <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                   </svg>
-                  <span className="text-sm">Profile</span>
+                  <span className="text-sm md:text-base">Profile</span>
                 </Link>
 
                 <div className="mt-1 relative">
@@ -1889,7 +1900,7 @@ export default function LeftSidebar() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <span className="text-sm">Calendar</span>
+                      <span className="text-sm md:text-base">Calendar</span>
                     </div>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1910,7 +1921,7 @@ export default function LeftSidebar() {
                   {menuCalendarsOpenFloating && (
                     <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-56 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-3 z-[1100]">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                        <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
                           Connection status
                         </p>
                         <Link
@@ -1921,7 +1932,7 @@ export default function LeftSidebar() {
                             setMenuCalendarsOpen(false);
                             setMenuCalendarsOpenFloating(false);
                           }}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="text-xs md:text-sm font-medium text-primary hover:underline"
                         >
                           Manage
                         </Link>
@@ -1998,7 +2009,7 @@ export default function LeftSidebar() {
                     <line x1="12" y1="16" x2="12" y2="12" />
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
-                  <span className="text-sm">About us</span>
+                  <span className="text-sm md:text-base">About us</span>
                 </Link>
 
                 <Link
@@ -2026,7 +2037,7 @@ export default function LeftSidebar() {
                     <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
                     <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
                   </svg>
-                  <span className="text-sm">Contact us</span>
+                  <span className="text-sm md:text-base">Contact us</span>
                 </Link>
 
                 {isAdmin && (
@@ -2052,7 +2063,7 @@ export default function LeftSidebar() {
                         >
                           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         </svg>
-                        <span className="text-sm">Admin</span>
+                        <span className="text-sm md:text-base">Admin</span>
                       </div>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -2082,7 +2093,9 @@ export default function LeftSidebar() {
                           }}
                           className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
                         >
-                          <span className="text-sm">Dashboard</span>
+                          <span className="text-sm md:text-base">
+                            Dashboard
+                          </span>
                         </Link>
                         <Link
                           href="/admin/emails"
@@ -2094,7 +2107,7 @@ export default function LeftSidebar() {
                           }}
                           className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
                         >
-                          <span className="text-sm">Emails</span>
+                          <span className="text-sm md:text-base">Emails</span>
                         </Link>
                         <Link
                           href="/admin/campaigns"
@@ -2106,7 +2119,9 @@ export default function LeftSidebar() {
                           }}
                           className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
                         >
-                          <span className="text-sm">Campaigns</span>
+                          <span className="text-sm md:text-base">
+                            Campaigns
+                          </span>
                         </Link>
                       </div>
                     )}
@@ -2132,7 +2147,7 @@ export default function LeftSidebar() {
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
                   </svg>
-                  <span className="text-sm">Log out</span>
+                  <span className="text-sm md:text-base">Log out</span>
                 </button>
               </div>
             </div>
@@ -2195,7 +2210,7 @@ export default function LeftSidebar() {
                   className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
                 />
               </Link>
-              <div className="text-xs font-semibold tracking-widest text-[#7f8cff]">
+              <div className="text-xs md:text-sm font-semibold tracking-widest text-[#7f8cff]">
                 CREATE | SHARE | ENJOY
               </div>
             </div>
@@ -2210,7 +2225,7 @@ export default function LeftSidebar() {
               <Link
                 href="/"
                 onClick={collapseSidebarOnTouch}
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#2f1d47]`}
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm md:text-base font-semibold text-[#2f1d47]`}
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5efff] to-white text-[#7a5ec0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                   <svg
@@ -2230,64 +2245,88 @@ export default function LeftSidebar() {
               </Link>
 
               <div
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
+                className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 ${
+                  createEventOpen ? "ring-2 ring-[#d9ccff]" : ""
+                }`}
               >
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    triggerCreateEvent();
-                  }}
-                  className="flex flex-1 items-center gap-3 text-left text-sm font-semibold text-[#2f1d47] focus:outline-none"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                    <svg
-                      viewBox="0 0 32 32"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <path d="M18 31h2v-2a1.0006 1.0006 0 0 1 1-1h6a1.0006 1.0006 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
-                      <path d="M24 25a4 4 0 1 1 4-4 4.0039 4.0039 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0027 2.0027 0 0 0-2-2Z" />
-                      <path d="M2 31h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
-                      <path d="M8 25a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0023 2.0023 0 0 0-2-2Z" />
-                      <path d="M18 16h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
-                      <path d="M24 10a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.0023 2.0023 0 0 0 24 4Z" />
-                      <path d="M2 16h2v-2a1.0013 1.0013 0 0 1 1-1h6a1.0013 1.0013 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
-                      <path d="M8 10a4 4 0 1 1 4-4 4.0045 4.0045 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.002 2.002 0 0 0 8 4Z" />
-                    </svg>
-                  </span>
-                  <span>Create Event</span>
-                </button>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className={SIDEBAR_BADGE_CLASS}>
-                    {createdEventsCount}
-                  </span>
+                <div className="flex items-center gap-3 w-full">
                   <button
                     type="button"
                     onClick={(event) => {
                       event.preventDefault();
-                      triggerCreateEvent();
+                      setCreateEventOpen(!createEventOpen);
                     }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                    aria-label="Create event"
+                    className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <svg
+                        viewBox="0 0 32 32"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 31h2v-2a1.0006 1.0006 0 0 1 1-1h6a1.0006 1.0006 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
+                        <path d="M24 25a4 4 0 1 1 4-4 4.0039 4.0039 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0027 2.0027 0 0 0-2-2Z" />
+                        <path d="M2 31h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
+                        <path d="M8 25a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0023 2.0023 0 0 0-2-2Z" />
+                        <path d="M18 16h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
+                        <path d="M24 10a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.0023 2.0023 0 0 0 24 4Z" />
+                        <path d="M2 16h2v-2a1.0013 1.0013 0 0 1 1-1h6a1.0013 1.0013 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
+                        <path d="M8 10a4 4 0 1 1 4-4 4.0045 4.0045 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.002 2.002 0 0 0 8 4Z" />
+                      </svg>
+                    </span>
+                    <span>Create Event</span>
                   </button>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className={SIDEBAR_BADGE_CLASS}>
+                      {createdEventsCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setCreateEventOpen(!createEventOpen);
+                      }}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                      aria-label="Toggle create menu"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-4 w-4 transition-transform ${
+                          createEventOpen ? "rotate-180" : ""
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
+                {createEventOpen && (
+                  <div className="mt-3 flex flex-col gap-1 pl-2">
+                    {TEMPLATE_LINKS.map((item) => (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => {
+                          setCreateEventOpen(false);
+                          collapseSidebarOnTouch();
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm md:text-base font-medium text-[#2f1d47]"
+                      >
+                        <span className="text-lg">{item.icon}</span>
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div
@@ -2305,7 +2344,7 @@ export default function LeftSidebar() {
                       if (isTouch) setIsCollapsed(true);
                     } catch {}
                   }}
-                  className="flex flex-1 items-center gap-3 text-sm font-semibold text-[#2f1d47]"
+                  className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
                     <svg
@@ -2379,7 +2418,7 @@ export default function LeftSidebar() {
                       prev === "Smart sign-up" ? null : "Smart sign-up"
                     );
                   }}
-                  className="flex flex-1 items-center gap-3 text-left text-sm font-semibold text-[#2f1d47] focus:outline-none"
+                  className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
                   aria-pressed={activeCategory === "Smart sign-up"}
                   title="Smart sign-up"
                 >
@@ -2474,7 +2513,7 @@ export default function LeftSidebar() {
                     );
                     if (items.length === 0)
                       return (
-                        <div className="text-xs text-foreground/60 px-1 py-0.5">
+                        <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
                           No forms
                         </div>
                       );
@@ -2517,7 +2556,7 @@ export default function LeftSidebar() {
                                     {h.title || "Untitled form"}
                                   </span>
                                 </div>
-                                <div className="text-xs text-foreground/60">
+                                <div className="text-xs md:text-sm text-foreground/60">
                                   {(() => {
                                     const start =
                                       (h as any)?.data?.start ||
@@ -2746,7 +2785,7 @@ export default function LeftSidebar() {
                           );
                           if (items.length === 0)
                             return (
-                              <div className="text-xs text-foreground/60 px-1 py-0.5">
+                              <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
                                 No events
                               </div>
                             );
@@ -2969,7 +3008,7 @@ export default function LeftSidebar() {
                                             >
                                               <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
                                             </svg>
-                                            <span className="text-sm">
+                                            <span className="text-sm md:text-base">
                                               Share
                                             </span>
                                           </button>
@@ -3003,7 +3042,7 @@ export default function LeftSidebar() {
                                                 <path d="M12 20h9" />
                                                 <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
                                               </svg>
-                                              <span className="text-sm">
+                                              <span className="text-sm md:text-base">
                                                 Rename
                                               </span>
                                             </button>
@@ -3037,7 +3076,7 @@ export default function LeftSidebar() {
                                               <path d="M14 11v6" />
                                               <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
                                             </svg>
-                                            <span className="text-sm">
+                                            <span className="text-sm md:text-base">
                                               Delete
                                             </span>
                                           </button>
@@ -3735,7 +3774,7 @@ export default function LeftSidebar() {
                           {activeCategory === c ? (
                             <div className="mt-1 mb-2">
                               {categoryItems.length === 0 ? (
-                                <div className="text-xs text-foreground/60 px-1 py-0.5">
+                                <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
                                   No events
                                 </div>
                               ) : (
@@ -3974,7 +4013,7 @@ export default function LeftSidebar() {
                                                   >
                                                     <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
                                                   </svg>
-                                                  <span className="text-sm">
+                                                  <span className="text-sm md:text-base">
                                                     Delete
                                                   </span>
                                                 </button>
@@ -4220,7 +4259,9 @@ export default function LeftSidebar() {
                                   y2="10.49"
                                 />
                               </svg>
-                              <span className="text-sm">Share</span>
+                              <span className="text-sm md:text-base">
+                                Share
+                              </span>
                             </button>
                             {!hideRenameAndChange && (
                               <button
@@ -4250,7 +4291,9 @@ export default function LeftSidebar() {
                                   <path d="M12 20h9" />
                                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
                                 </svg>
-                                <span className="text-sm">Rename</span>
+                                <span className="text-sm md:text-base">
+                                  Rename
+                                </span>
                               </button>
                             )}
                             {!hideRenameAndChange && (
@@ -4286,7 +4329,9 @@ export default function LeftSidebar() {
                                       <path d="M7 12h13" />
                                       <path d="M10 18h10" />
                                     </svg>
-                                    <span className="text-sm">Change to</span>
+                                    <span className="text-sm md:text-base">
+                                      Change to
+                                    </span>
                                   </span>
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -4380,7 +4425,7 @@ export default function LeftSidebar() {
                                           >
                                             <path d="M20 6L9 17l-5-5" />
                                           </svg>
-                                          <span className="text-sm">
+                                          <span className="text-sm md:text-base">
                                             {label}
                                           </span>
                                         </button>
@@ -4482,7 +4527,7 @@ export default function LeftSidebar() {
                     {displayName}
                   </div>
                   {userEmail && (
-                    <div className="truncate text-xs text-foreground/60">
+                    <div className="truncate text-xs md:text-sm text-foreground/60">
                       {userEmail}
                     </div>
                   )}
@@ -4544,7 +4589,7 @@ export default function LeftSidebar() {
                         <circle cx="12" cy="7" r="4" />
                         <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                       </svg>
-                      <span className="text-sm">Profile</span>
+                      <span className="text-sm md:text-base">Profile</span>
                     </Link>
 
                     <div className="mt-1 relative">
@@ -4580,7 +4625,7 @@ export default function LeftSidebar() {
                             <line x1="8" y1="2" x2="8" y2="6" />
                             <line x1="3" y1="10" x2="21" y2="10" />
                           </svg>
-                          <span className="text-sm">Calendar</span>
+                          <span className="text-sm md:text-base">Calendar</span>
                         </div>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -4601,7 +4646,7 @@ export default function LeftSidebar() {
                       {menuCalendarsOpen && (
                         <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-56 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-3 z-[1100]">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                            <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
                               Connection status
                             </p>
                             <Link
@@ -4611,7 +4656,7 @@ export default function LeftSidebar() {
                                 setSettingsOpen(false);
                                 setMenuCalendarsOpen(false);
                               }}
-                              className="text-xs font-medium text-primary hover:underline"
+                              className="text-xs md:text-sm font-medium text-primary hover:underline"
                             >
                               Manage
                             </Link>
@@ -4687,7 +4732,7 @@ export default function LeftSidebar() {
                         <line x1="12" y1="16" x2="12" y2="12" />
                         <line x1="12" y1="8" x2="12.01" y2="8" />
                       </svg>
-                      <span className="text-sm">About us</span>
+                      <span className="text-sm md:text-base">About us</span>
                     </Link>
 
                     <Link
@@ -4714,7 +4759,7 @@ export default function LeftSidebar() {
                         <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
                         <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
                       </svg>
-                      <span className="text-sm">Contact us</span>
+                      <span className="text-sm md:text-base">Contact us</span>
                     </Link>
 
                     <button
@@ -4736,7 +4781,7 @@ export default function LeftSidebar() {
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                       </svg>
-                      <span className="text-sm">Log out</span>
+                      <span className="text-sm md:text-base">Log out</span>
                     </button>
                   </div>
                 </div>
