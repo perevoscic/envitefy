@@ -150,14 +150,14 @@ const ThemeImagesCarousel: React.FC<{
   if (loading) {
     return (
       <div className="sm:col-span-2">
-        <div className="text-xs text-foreground/60">Loading theme images…</div>
+        <div className="text-sm text-gray-600">Loading theme images…</div>
       </div>
     );
   }
   if (error) {
     return (
       <div className="sm:col-span-2">
-        <div className="text-xs text-foreground/60">
+        <div className="text-sm text-gray-600">
           No images found for this theme.
         </div>
       </div>
@@ -166,7 +166,7 @@ const ThemeImagesCarousel: React.FC<{
   if (!urls || urls.length === 0) {
     return (
       <div className="sm:col-span-2">
-        <div className="text-xs text-foreground/60">
+        <div className="text-sm text-gray-600">
           No theme images found for "{themeName}".
         </div>
       </div>
@@ -174,8 +174,8 @@ const ThemeImagesCarousel: React.FC<{
   }
 
   return (
-    <div className="sm:col-span-2 space-y-1 w-full min-w-0 max-w-full">
-      <div className="rounded-md border border-gray-200 bg-white p-2 overflow-x-auto w-full min-w-0 max-w-full">
+    <div className="sm:col-span-2 space-y-2 w-full min-w-0 max-w-full">
+      <div className="rounded-xl border border-gray-200 bg-white p-3 overflow-x-auto w-full min-w-0 max-w-full shadow-sm">
         <div className="flex gap-3 min-w-0 max-w-full">
           {urls.map((url) => {
             const file = url.split("/").pop() || "image";
@@ -197,15 +197,15 @@ const ThemeImagesCarousel: React.FC<{
               <button
                 key={url}
                 type="button"
-                className={`shrink-0 w-28 rounded-md border bg-white transition-all ${
+                className={`shrink-0 w-28 rounded-lg border bg-white transition-all ${
                   isSelected
                     ? "border-blue-500 ring-2 ring-blue-500 shadow-md"
-                    : "border-gray-200 hover:ring-2 hover:ring-blue-500"
+                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                 }`}
                 title={pretty}
                 onClick={() => onPick(url)}
               >
-                <div className="p-1 relative">
+                <div className="p-1.5 relative">
                   <img
                     src={url}
                     alt={pretty}
@@ -214,10 +214,10 @@ const ThemeImagesCarousel: React.FC<{
                     }`}
                   />
                   {isSelected && (
-                    <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
                       <svg
-                        width="10"
-                        height="10"
+                        width="12"
+                        height="12"
                         viewBox="0 0 20 20"
                         fill="none"
                         stroke="white"
@@ -230,7 +230,7 @@ const ThemeImagesCarousel: React.FC<{
                     </div>
                   )}
                 </div>
-                <div className="px-2 pb-2 text-[10px] text-gray-800 text-center truncate">
+                <div className="px-2 pb-2 text-xs text-gray-700 text-center truncate font-medium">
                   {pretty}
                 </div>
               </button>
@@ -2068,12 +2068,12 @@ const SignupBuilder: React.FC<Props> = ({
     React.useState(false);
 
   const TEMPLATE_OPTIONS = [
-    { id: "header-1", label: "1. Left" },
-    { id: "header-2", label: "2. Right" },
-    { id: "header-3", label: "3. Full-width banner" },
-    { id: "header-4", label: "4. Banner + square left" },
-    { id: "header-5", label: "5. Two images" },
-    { id: "header-6", label: "6. Three images" },
+    { id: "header-1", label: "Left" },
+    { id: "header-2", label: "Right" },
+    { id: "header-3", label: "Full-width banner" },
+    { id: "header-4", label: "Banner + square left" },
+    { id: "header-5", label: "Two images" },
+    { id: "header-6", label: "Three images" },
   ] as const;
 
   const renderTemplateThumbSvg = (id: string) => {
@@ -2844,8 +2844,8 @@ const SignupBuilder: React.FC<Props> = ({
             </div>
             {/* Removed manual background color control */}
             {/* Theme design picker (between Headline description and Image template) */}
-            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+            <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
+              <label className="block text-sm font-medium text-gray-700">
                 Theme design
               </label>
               {/* Small screens: dropdown with thumbnail */}
@@ -2853,10 +2853,10 @@ const SignupBuilder: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setThemeMenuOpen((o) => !o)}
-                  className="w-full flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition hover:bg-gray-50"
                 >
                   <span className="inline-flex items-center gap-2">
-                    <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                    <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
                       {form.header?.designTheme ? (
                         renderThemeThumbSvg(
                           form.header.designTheme as SignupDesignTheme
@@ -2888,7 +2888,7 @@ const SignupBuilder: React.FC<Props> = ({
                     height="16"
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="opacity-70"
+                    className="text-gray-500"
                   >
                     <path
                       fillRule="evenodd"
@@ -2898,7 +2898,7 @@ const SignupBuilder: React.FC<Props> = ({
                   </svg>
                 </button>
                 {themeMenuOpen && (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-background shadow">
+                  <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
                     <ul className="max-h-64 overflow-auto py-1">
                       {THEME_NAMES.map((name) => (
                         <li key={name}>
@@ -2908,13 +2908,13 @@ const SignupBuilder: React.FC<Props> = ({
                               setHeader({ designTheme: name as any });
                               setThemeMenuOpen(false);
                             }}
-                            className={`flex w-full items-center gap-2 px-2 py-2 text-left text-sm hover:bg-muted/40 ${
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
                               (form.header?.designTheme || "") === name
-                                ? "bg-muted/30"
-                                : ""
+                                ? "bg-gray-100 text-gray-900"
+                                : "text-gray-700 hover:bg-gray-50"
                             }`}
                           >
-                            <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                            <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
                               {renderThemeThumbSvg(name as SignupDesignTheme)}
                             </span>
                             <span className="truncate">{name}</span>
@@ -2927,24 +2927,24 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
 
               {/* md+ screens: 5-column grid */}
-              <div className="hidden md:grid grid-cols-5 gap-2">
+              <div className="hidden md:grid grid-cols-5 gap-3">
                 {THEME_NAMES.map((name) => (
                   <button
                     key={name}
                     type="button"
                     onClick={() => setHeader({ designTheme: name as any })}
-                    className={`relative w-full rounded-lg border ${
+                    className={`relative w-full rounded-xl border-2 overflow-hidden transition ${
                       (form.header?.designTheme || "") === name
-                        ? "border-foreground"
-                        : "border-border"
+                        ? "border-gray-900 shadow-md"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                     title={name}
                   >
-                    <div className="h-12 rounded-t-lg overflow-hidden bg-background grid place-items-center">
+                    <div className="w-full aspect-[5/3] overflow-hidden bg-white">
                       {renderThemeThumbSvg(name as SignupDesignTheme)}
                     </div>
-                    <div className="px-2 py-1 text-left">
-                      <div className="text-[11px] font-semibold truncate">
+                    <div className="px-2 py-2 bg-white text-left border-t border-gray-100">
+                      <div className="text-xs font-semibold text-gray-900 truncate">
                         {name}
                       </div>
                     </div>
@@ -2955,7 +2955,7 @@ const SignupBuilder: React.FC<Props> = ({
 
             {/* Theme images header with search */}
             <div className="sm:col-span-2 flex items-center justify-between min-w-0 max-w-full gap-2">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 truncate min-w-0">
+              <label className="block text-sm font-medium text-gray-700 truncate min-w-0">
                 Theme images
               </label>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -2967,7 +2967,7 @@ const SignupBuilder: React.FC<Props> = ({
                       onChange={(e) => setThemeImagesQuery(e.target.value)}
                       placeholder="Search..."
                       autoFocus
-                      className="h-8 w-32 rounded-md border border-border bg-background px-2 text-sm"
+                      className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       onBlur={() => {
                         if (!themeImagesQuery.trim()) {
                           setThemeImagesSearchOpen(false);
@@ -2986,7 +2986,7 @@ const SignupBuilder: React.FC<Props> = ({
                         setThemeImagesSearchOpen(false);
                         setThemeImagesQuery("");
                       }}
-                      className="h-8 w-8 rounded-md border border-border bg-background flex items-center justify-center hover:bg-muted"
+                      className="h-9 w-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center hover:bg-gray-50 transition"
                       title="Close search"
                     >
                       <svg
@@ -2994,6 +2994,7 @@ const SignupBuilder: React.FC<Props> = ({
                         height="14"
                         viewBox="0 0 20 20"
                         fill="currentColor"
+                        className="text-gray-600"
                       >
                         <path
                           fillRule="evenodd"
@@ -3007,7 +3008,7 @@ const SignupBuilder: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setThemeImagesSearchOpen(true)}
-                    className="h-8 w-8 rounded-md border border-border bg-background flex items-center justify-center hover:bg-muted"
+                    className="h-9 w-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center hover:bg-gray-50 transition"
                     title="Search theme images"
                   >
                     <svg
@@ -3017,6 +3018,7 @@ const SignupBuilder: React.FC<Props> = ({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
+                      className="text-gray-600"
                     >
                       <circle cx="9" cy="9" r="6" />
                       <path d="m17 17-4-4" />
@@ -3088,8 +3090,8 @@ const SignupBuilder: React.FC<Props> = ({
                 return form.header?.backgroundImage?.dataUrl || null;
               })()}
             />
-            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+            <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
+              <label className="block text-sm font-medium text-gray-700">
                 Color stories
               </label>
               <div className="flex flex-wrap gap-3 max-w-full">
@@ -3155,8 +3157,8 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+            <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
+              <label className="block text-sm font-medium text-gray-700">
                 Image template
               </label>
               {/* Small screens: dropdown with thumbnail */}
@@ -3164,10 +3166,10 @@ const SignupBuilder: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setTemplateMenuOpen((o) => !o)}
-                  className="w-full flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition hover:bg-gray-50"
                 >
                   <span className="inline-flex items-center gap-2">
-                    <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                    <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
                       {renderTemplateThumbSvg(
                         (form.header?.templateId || "") as string
                       )}
@@ -3186,7 +3188,7 @@ const SignupBuilder: React.FC<Props> = ({
                     height="16"
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="opacity-70"
+                    className="text-gray-500"
                   >
                     <path
                       fillRule="evenodd"
@@ -3196,7 +3198,7 @@ const SignupBuilder: React.FC<Props> = ({
                   </svg>
                 </button>
                 {templateMenuOpen && (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-background shadow">
+                  <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
                     <ul className="max-h-64 overflow-auto py-1">
                       {TEMPLATE_OPTIONS.map((opt) => (
                         <li key={opt.id}>
@@ -3206,13 +3208,13 @@ const SignupBuilder: React.FC<Props> = ({
                               setHeader({ templateId: opt.id as any });
                               setTemplateMenuOpen(false);
                             }}
-                            className={`flex w-full items-center gap-2 px-2 py-2 text-left text-sm hover:bg-muted/40 ${
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
                               (form.header?.templateId || "") === opt.id
-                                ? "bg-muted/30"
-                                : ""
+                                ? "bg-gray-100 text-gray-900"
+                                : "text-gray-700 hover:bg-gray-50"
                             }`}
                           >
-                            <span className="h-6 w-10 overflow-hidden rounded bg-muted grid place-items-center">
+                            <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
                               {renderTemplateThumbSvg(opt.id as string)}
                             </span>
                             <span className="truncate">{opt.label}</span>
@@ -3229,68 +3231,68 @@ const SignupBuilder: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-1" })}
-                  className={`px-3 py-1 text-xs rounded-md border ${
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
                     (form.header?.templateId || "header-1") === "header-1"
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  1. Left
+                  Left
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-2" })}
-                  className={`px-3 py-1 text-xs rounded-md border ${
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
                     form.header?.templateId === "header-2"
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  2. Right
+                  Right
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-3" })}
-                  className={`px-3 py-1 text-xs rounded-md border ${
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
                     form.header?.templateId === "header-3"
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  3. Full-width banner
+                  Full-width banner
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-4" })}
-                  className={`px-3 py-1 text-xs rounded-md border ${
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
                     form.header?.templateId === "header-4"
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  4. Banner + square left
+                  Banner + square left
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-5" })}
-                  className={`px-3 py-1 text-xs rounded-md border ${
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
                     form.header?.templateId === "header-5"
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  5. Two images
+                  Two images
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeader({ templateId: "header-6" })}
-                  className={`px-3 py-1 text-xs rounded-md border ${
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
                     form.header?.templateId === "header-6"
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  6. Three images
+                  Three images
                 </button>
               </div>
             </div>
