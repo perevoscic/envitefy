@@ -129,7 +129,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
           type="button"
           aria-label={showPassword ? "Hide password" : "Show password"}
           aria-pressed={showPassword}
-          className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)]"
+          className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)] z-10"
           onClick={() => setShowPassword((v) => !v)}
         >
           <svg

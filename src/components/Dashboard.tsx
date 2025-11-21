@@ -964,7 +964,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-12 text-foreground md:px-8 md:pt-16">
+    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16">
       <input
         ref={cameraInputRef}
         type="file"
@@ -982,8 +982,8 @@ export default function Dashboard() {
       />
       {/* Hero logo and tagline */}
       {isSignedIn && (
-        <div className="w-full max-w-6xl mb-8 flex flex-col items-center gap-4 md:mb-10">
-          <div className="relative w-64 h-64 md:w-64 md:h-64">
+        <div className="w-full max-w-6xl mb-8 flex flex-col items-center gap-4 md:mb-10 mt-0">
+          <div className="relative w-20 h-20 sm:w-64 sm:h-64">
             <Image
               src="/E.png"
               alt="Envitefy Logo"

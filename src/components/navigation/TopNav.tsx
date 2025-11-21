@@ -579,6 +579,7 @@ export default function TopNav() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
@@ -592,6 +593,17 @@ export default function TopNav() {
       // Show logo after scrolling past the big dashboard logo (approx 300px)
       setIsScrolled(window.scrollY > 300);
     };
+
+    // Check initial scroll position immediately
+    handleScroll();
+
+    // For iOS Safari: check again after a frame to ensure scroll position is available
+    requestAnimationFrame(() => {
+      handleScroll();
+      // After first check, enable transitions
+      setTimeout(() => setIsInitialMount(false), 50);
+    });
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -678,7 +690,9 @@ export default function TopNav() {
     <>
       {/* Mobile/Tablet Header with Hamburger */}
       <div
-        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] lg:hidden transition-all duration-300 ${
+        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] lg:hidden ${
+          !isInitialMount ? "transition-all duration-300" : ""
+        } ${
           isScrolled
             ? "border-b border-white/60 bg-[#F8F5FF]/80 backdrop-blur-md shadow-sm"
             : "bg-transparent"
@@ -724,7 +738,9 @@ export default function TopNav() {
 
       {/* Desktop TopNav */}
       <div
-        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] hidden lg:block transition-all duration-300 ${
+        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] hidden lg:block ${
+          !isInitialMount ? "transition-all duration-300" : ""
+        } ${
           isScrolled
             ? "border-b border-white/60 bg-[#F8F5FF]/80 backdrop-blur-md shadow-sm"
             : "bg-transparent"

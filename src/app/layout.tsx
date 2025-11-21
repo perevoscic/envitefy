@@ -13,7 +13,7 @@ import {
   Allura,
   Amita,
   Arizonia,
-  Beth_Ellen,
+  // Beth_Ellen, // Temporarily disabled due to Turbopack issue
   Bilbo_Swash_Caps,
   Cookie,
   Courgette,
@@ -40,7 +40,7 @@ import {
   Satisfy,
   Sacramento,
   Shadows_Into_Light,
-  Shippori_Mincho,
+  // Shippori_Mincho, // Temporarily disabled due to Turbopack issue
   Sofia,
   Sonsie_One,
   Style_Script,
@@ -156,12 +156,13 @@ const arizonia = Arizonia({
   display: "swap",
 });
 
-const bethEllen = Beth_Ellen({
-  variable: "--font-beth-ellen",
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-});
+// Temporarily disabled due to Turbopack issue
+// const bethEllen = Beth_Ellen({
+//   variable: "--font-beth-ellen",
+//   weight: "400",
+//   subsets: ["latin"],
+//   display: "swap",
+// });
 
 const bilboSwashCaps = Bilbo_Swash_Caps({
   variable: "--font-bilbo-swash-caps",
@@ -345,12 +346,13 @@ const shadowsIntoLight = Shadows_Into_Light({
   display: "swap",
 });
 
-const shipporiMincho = Shippori_Mincho({
-  variable: "--font-shippori-mincho",
-  weight: ["400", "500"],
-  subsets: ["latin"],
-  display: "swap",
-});
+// Temporarily disabled due to Turbopack issue
+// const shipporiMincho = Shippori_Mincho({
+//   variable: "--font-shippori-mincho",
+//   weight: ["400", "500"],
+//   subsets: ["latin"],
+//   display: "swap",
+// });
 
 const sofia = Sofia({
   variable: "--font-sofia",
@@ -463,7 +465,7 @@ const decorativeFonts = [
   allura,
   amita,
   arizonia,
-  bethEllen,
+  // bethEllen, // Temporarily disabled due to Turbopack issue
   bilboSwashCaps,
   cookie,
   courgette,
@@ -490,7 +492,7 @@ const decorativeFonts = [
   satisfy,
   sacramento,
   shadowsIntoLight,
-  shipporiMincho,
+  // shipporiMincho, // Temporarily disabled due to Turbopack issue
   sofia,
   sonsieOne,
   styleScript,

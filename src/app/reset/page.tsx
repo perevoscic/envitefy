@@ -2,6 +2,8 @@
 import type { Metadata } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function ResetPasswordPage() {
   const params = useSearchParams();
@@ -47,18 +49,33 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] flex items-center justify-center p-6">
-      <section className="w-full max-w-md rounded-2xl border border-border bg-surface/70 backdrop-blur-md p-6 shadow-md">
-        <h1 className="text-2xl font-semibold mb-2">Reset password</h1>
-        <p className="text-sm text-muted-foreground mb-4">
+    <main className="min-h-[100dvh] flex items-center justify-center p-6 bg-[#F8F5FF]">
+      <section className="w-full max-w-md rounded-2xl bg-white/80 backdrop-blur-lg border border-white/60 p-8 shadow-xl">
+        <Link href="/" className="mb-6 block text-center">
+          <Image
+            src="/navElogo.png"
+            alt="Envitefy logo"
+            width={156}
+            height={64}
+            priority
+            className="mx-auto"
+          />
+        </Link>
+        <p className="text-sm text-muted-foreground text-center mb-6">
+          From papers to reminders.
+        </p>
+        <h1 className="text-2xl font-semibold mb-2 text-foreground">
+          Reset password
+        </h1>
+        <p className="text-sm text-muted-foreground mb-6">
           Enter your new password.
         </p>
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="space-y-4">
           <input
             name="newPassword"
             type="password"
             autoComplete="new-password"
-            className="w-full border border-border bg-surface text-foreground p-2 rounded"
+            className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
             placeholder="New password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -68,7 +85,7 @@ export default function ResetPasswordPage() {
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            className="w-full border border-border bg-surface text-foreground p-2 rounded"
+            className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
             placeholder="Confirm new password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -77,13 +94,13 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 rounded-md bg-primary text-on-primary disabled:opacity-70"
+            className="btn btn-primary w-full justify-center"
           >
             {loading ? "Resetting..." : "Reset password"}
           </button>
         </form>
         {message && (
-          <p className="mt-3 text-sm text-foreground/80">{message}</p>
+          <p className="mt-4 text-sm text-muted-foreground">{message}</p>
         )}
       </section>
     </main>

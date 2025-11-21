@@ -18,15 +18,15 @@ export default function Hero() {
   const Phone = ({
     className,
     app,
-    eventTitle,
-    time,
-    color,
+    events,
   }: {
     className?: string;
     app: "google" | "apple" | "outlook";
-    eventTitle: string;
-    time: string;
-    color: string;
+    events: Array<{
+      title: string;
+      time: string;
+      color: "blue" | "red" | "green" | "purple" | "orange";
+    }>;
   }) => (
     <div
       className={`relative w-[280px] h-[580px] bg-[#F8F5FF] rounded-[3rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.12)] border-[6px] border-[#F8F5FF] ring-1 ring-gray-900/5 overflow-hidden ${className}`}
@@ -58,12 +58,12 @@ export default function Hero() {
             }`}
           >
             {app === "google"
-              ? "Sep"
+              ? "January"
               : app === "outlook"
-              ? "September"
+              ? "December"
               : "September"}
           </span>
-          <span className="text-gray-400 text-sm">2025</span>
+          <span className="text-gray-400 text-sm">2026</span>
         </div>
         {/* Calendar Grid Mockup */}
         <div className="grid grid-cols-7 gap-2 mb-4 text-center text-[10px] text-gray-400 font-medium">
@@ -78,7 +78,7 @@ export default function Hero() {
             <span
               key={i}
               className={`py-1 ${
-                i === 3 ? `bg-${color}-100 text-${color}-700 rounded-full` : ""
+                i === 3 ? "bg-blue-100 text-blue-700 rounded-full" : ""
               }`}
             >
               {10 + i}
@@ -87,31 +87,40 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Event Card */}
+      {/* Event Cards */}
       <div className="px-4">
-        <div
-          className={`p-4 rounded-2xl border-l-4 ${
-            app === "google"
-              ? "bg-blue-50 border-blue-500"
-              : app === "outlook"
-              ? "bg-blue-50/50 border-blue-700"
-              : "bg-red-50 border-red-500"
-          } shadow-sm mb-3 animate-fade-in-up`}
-        >
-          <div className="text-xs font-semibold opacity-60 mb-1 uppercase tracking-wide">
-            {time}
-          </div>
-          <div className="font-bold text-gray-900 text-lg leading-tight mb-1">
-            {eventTitle}
-          </div>
-          <div className="text-xs text-gray-500 flex items-center gap-1">
-            <Check size={10} /> Synced
-          </div>
-        </div>
+        {events.map((event, idx) => {
+          const colorClasses = {
+            blue: "bg-blue-50 border-blue-500",
+            red: "bg-red-50 border-red-500",
+            green: "bg-green-50 border-green-500",
+            purple: "bg-purple-50 border-purple-500",
+            orange: "bg-orange-50 border-orange-500",
+          };
+
+          return (
+            <div
+              key={idx}
+              className={`p-4 rounded-2xl border-l-4 ${
+                colorClasses[event.color]
+              } shadow-sm mb-3 animate-fade-in-up`}
+              style={{ animationDelay: `${idx * 100}ms` }}
+            >
+              <div className="text-xs font-semibold opacity-60 mb-1 uppercase tracking-wide">
+                {event.time}
+              </div>
+              <div className="font-bold text-gray-900 text-lg leading-tight mb-1">
+                {event.title}
+              </div>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Check size={10} /> Synced
+              </div>
+            </div>
+          );
+        })}
 
         {/* Fake events below */}
         <div className="space-y-3 opacity-40 blur-[0.5px]">
-          <div className="h-16 w-full bg-gray-50 rounded-xl" />
           <div className="h-16 w-full bg-gray-50 rounded-xl" />
           <div className="h-16 w-full bg-gray-50 rounded-xl" />
         </div>
@@ -119,21 +128,21 @@ export default function Hero() {
 
       {/* Bottom Nav */}
       <div className="absolute bottom-0 inset-x-0 h-16 bg-[#F8F5FF] border-t border-gray-50 flex justify-around items-center text-gray-300">
-        <div className="w-8 h-8 rounded-full bg-gray-100" />
-        <div className="w-8 h-8 rounded-full bg-gray-100" />
-        <div className="w-8 h-8 rounded-full bg-gray-100" />
+        <div className="w-8 h-8 rounded-full bg-gray-200" />
+        <div className="w-8 h-8 rounded-full bg-gray-200" />
+        <div className="w-8 h-8 rounded-full bg-gray-200" />
       </div>
     </div>
   );
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-[#F8F5FF]">
+    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-[#ffffff]">
       <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
         {/* Text Content */}
         <div className="relative z-10 max-w-2xl lg:max-w-none">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold tracking-wide uppercase mb-8">
             <Sparkles size={12} className="text-blue-500" />
-            <span>AI-Powered Event Planning</span>
+            <span>Event Planning Made Easy</span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] mb-6">
@@ -193,9 +202,14 @@ export default function Hero() {
           <div className="absolute left-0 lg:left-8 top-12 transform -rotate-6 scale-90 hover:scale-95 hover:z-20 hover:rotate-0 transition-all duration-500 origin-bottom-right z-10 opacity-90">
             <Phone
               app="outlook"
-              eventTitle="Project Sync"
-              time="10:00 AM"
-              color="blue"
+              events={[
+                { title: "Project Sync", time: "10:00 AM", color: "blue" },
+                {
+                  title: "Dentist Appointment",
+                  time: "3:00 PM",
+                  color: "purple",
+                },
+              ]}
             />
             <div className="absolute -top-4 left-4 bg-blue-700 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
               Outlook
@@ -206,9 +220,14 @@ export default function Hero() {
           <div className="absolute right-0 lg:right-8 top-24 transform rotate-6 scale-90 hover:scale-95 hover:z-20 hover:rotate-0 transition-all duration-500 origin-bottom-left z-10 opacity-90">
             <Phone
               app="apple"
-              eventTitle="Alice's Birthday"
-              time="2:00 PM"
-              color="red"
+              events={[
+                {
+                  title: "Alice's 9th Birthday",
+                  time: "2:00 PM",
+                  color: "red",
+                },
+                { title: "Team Meeting", time: "4:30 PM", color: "green" },
+              ]}
             />
             <div className="absolute -top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
               Apple Cal
@@ -219,9 +238,19 @@ export default function Hero() {
           <div className="absolute z-20 top-0 transform hover:-translate-y-2 transition-transform duration-500">
             <Phone
               app="google"
-              eventTitle="Soccer Practice"
-              time="5:30 PM"
-              color="blue"
+              events={[
+                { title: "Football Practice", time: "5:30 PM", color: "blue" },
+                {
+                  title: "Alice's 9th Birthday",
+                  time: "7:00 PM",
+                  color: "orange",
+                },
+                {
+                  title: "School Volunteering",
+                  time: "9:00 AM",
+                  color: "green",
+                },
+              ]}
             />
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
               Google Cal
