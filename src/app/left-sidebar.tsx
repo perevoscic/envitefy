@@ -233,6 +233,7 @@ export default function LeftSidebar() {
     microsoft: false,
     apple: false,
   });
+  const [adminOpen, setAdminOpen] = useState(false);
   const [adminOpenFloating, setAdminOpenFloating] = useState(false);
 
   const fetchConnectedCalendars = useCallback(async () => {
@@ -302,7 +303,11 @@ export default function LeftSidebar() {
   const categoriesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!isOpen) setMenuOpen(false);
+    if (!isOpen) {
+      setMenuOpen(false);
+      setAdminOpen(false);
+      setAdminOpenFloating(false);
+    }
   }, [isOpen]);
 
   // Fetch connected calendars status
@@ -377,6 +382,8 @@ export default function LeftSidebar() {
         setMenuOpen(false);
         setSettingsOpen(false);
         setSettingsOpenFloating(false);
+        setAdminOpen(false);
+        setAdminOpenFloating(false);
         setCalendarsOpen(false);
         setCalendarsOpenFloating(false);
         setMenuCalendarsOpen(false);
@@ -391,6 +398,8 @@ export default function LeftSidebar() {
         setMenuOpen(false);
         setSettingsOpen(false);
         setSettingsOpenFloating(false);
+        setAdminOpen(false);
+        setAdminOpenFloating(false);
         setCalendarsOpen(false);
         setCalendarsOpenFloating(false);
       }
@@ -1835,6 +1844,7 @@ export default function LeftSidebar() {
                 setCalendarsOpenFloating(false);
                 setMenuCalendarsOpen(false);
                 setMenuCalendarsOpenFloating(false);
+                setAdminOpen(false);
                 setAdminOpenFloating(false);
                 return next;
               });
@@ -1863,6 +1873,7 @@ export default function LeftSidebar() {
                   onClick={() => {
                     setMenuOpen(false);
                     setSettingsOpenFloating(false);
+                    setAdminOpen(false);
                     setAdminOpenFloating(false);
                     setMenuCalendarsOpen(false);
                     setMenuCalendarsOpenFloating(false);
@@ -2009,6 +2020,7 @@ export default function LeftSidebar() {
                   onClick={() => {
                     setMenuOpen(false);
                     setSettingsOpenFloating(false);
+                    setAdminOpen(false);
                     setAdminOpenFloating(false);
                     setMenuCalendarsOpen(false);
                     setMenuCalendarsOpenFloating(false);
@@ -2038,6 +2050,7 @@ export default function LeftSidebar() {
                   onClick={() => {
                     setMenuOpen(false);
                     setSettingsOpenFloating(false);
+                    setAdminOpen(false);
                     setAdminOpenFloating(false);
                     setMenuCalendarsOpen(false);
                     setMenuCalendarsOpenFloating(false);
@@ -2103,7 +2116,7 @@ export default function LeftSidebar() {
                       </svg>
                     </button>
                     {adminOpenFloating && (
-                      <div className="absolute top-1/2 right-full mr-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
+                      <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
                         <Link
                           href="/admin"
                           onClick={() => {
@@ -4176,6 +4189,8 @@ export default function LeftSidebar() {
                   const next = !v;
                   setSettingsOpen(false);
                   setSettingsOpenFloating(false);
+                  setAdminOpen(false);
+                  setAdminOpenFloating(false);
                   return next;
                 });
               }}
@@ -4231,11 +4246,13 @@ export default function LeftSidebar() {
                     <Link
                       href="/settings"
                       onClick={() => {
-                        setMenuOpen(false);
-                        setSettingsOpen(false);
-                        setMenuCalendarsOpen(false);
-                        setMenuCalendarsOpenFloating(false);
-                      }}
+                    setMenuOpen(false);
+                    setSettingsOpen(false);
+                    setAdminOpen(false);
+                    setAdminOpenFloating(false);
+                    setMenuCalendarsOpen(false);
+                    setMenuCalendarsOpenFloating(false);
+                  }}
                       className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                     >
                       <svg
@@ -4260,6 +4277,7 @@ export default function LeftSidebar() {
                         type="button"
                         onClick={() => {
                           setMenuCalendarsOpen((v) => !v);
+                          setAdminOpen(false);
                           setMenuCalendarsOpenFloating(false);
                         }}
                         className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
@@ -4378,6 +4396,8 @@ export default function LeftSidebar() {
                       onClick={() => {
                         setMenuOpen(false);
                         setSettingsOpen(false);
+                        setAdminOpen(false);
+                        setAdminOpenFloating(false);
                         setMenuCalendarsOpen(false);
                         setMenuCalendarsOpenFloating(false);
                       }}
@@ -4406,6 +4426,8 @@ export default function LeftSidebar() {
                       onClick={() => {
                         setMenuOpen(false);
                         setSettingsOpen(false);
+                        setAdminOpen(false);
+                        setAdminOpenFloating(false);
                         setMenuCalendarsOpen(false);
                         setMenuCalendarsOpenFloating(false);
                       }}
@@ -4423,32 +4445,125 @@ export default function LeftSidebar() {
                         <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
                         <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
                         <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
-                        <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
-                      </svg>
-                      <span className="text-sm md:text-base">Contact us</span>
-                    </Link>
+                    <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
+                    </svg>
+                    <span className="text-sm md:text-base">Contact us</span>
+                  </Link>
 
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
+                  {isAdmin && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminOpen((v) => !v);
+                          setMenuCalendarsOpen(false);
+                          setMenuCalendarsOpenFloating(false);
+                        }}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                       >
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                      </svg>
-                      <span className="text-sm md:text-base">Log out</span>
-                    </button>
+                        <div className="flex items-center gap-3">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          </svg>
+                          <span className="text-sm md:text-base">Admin</span>
+                        </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`h-4 w-4 transition-transform ${
+                            adminOpen ? "rotate-0" : "rotate-90"
+                          }`}
+                          aria-hidden="true"
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
+                      {adminOpen && (
+                        <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
+                          <Link
+                            href="/admin"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setMenuCalendarsOpen(false);
+                              setMenuCalendarsOpenFloating(false);
+                              setAdminOpen(false);
+                              setAdminOpenFloating(false);
+                            }}
+                            className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <span className="text-sm md:text-base">
+                              Dashboard
+                            </span>
+                          </Link>
+                          <Link
+                            href="/admin/emails"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setMenuCalendarsOpen(false);
+                              setMenuCalendarsOpenFloating(false);
+                              setAdminOpen(false);
+                              setAdminOpenFloating(false);
+                            }}
+                            className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <span className="text-sm md:text-base">Emails</span>
+                          </Link>
+                          <Link
+                            href="/admin/campaigns"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setMenuCalendarsOpen(false);
+                              setMenuCalendarsOpenFloating(false);
+                              setAdminOpen(false);
+                              setAdminOpenFloating(false);
+                            }}
+                            className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <span className="text-sm md:text-base">
+                              Campaigns
+                            </span>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span className="text-sm md:text-base">Log out</span>
+                  </button>
                   </div>
                 </div>
               </div>
