@@ -64,6 +64,17 @@ export type SignupFormSettings = {
   signupClosesAt?: string | null;
 };
 
+export type SignupSafetyFlags = {
+  allergens?: boolean;
+  outdoor?: boolean;
+  equipment?: boolean;
+  travel?: boolean;
+  permission?: boolean;
+  sensitiveInfo?: boolean;
+  photoConsent?: boolean;
+  emergencyContact?: boolean;
+};
+
 export type SignupForm = {
   version: 1;
   enabled: boolean;
@@ -76,10 +87,27 @@ export type SignupForm = {
   responses: SignupResponse[];
   venue?: string | null;
   location?: string | null;
+  room?: string | null;
+  parkingInfo?: string | null;
+  arrivalInstructions?: string | null;
+  dropoffNotes?: string | null;
   start?: string | null; // ISO (local clock preserved)
   end?: string | null;   // ISO (local clock preserved)
+  setupTime?: string | null;
+  earliestDropoff?: string | null;
+  arrivalWindow?: string | null;
   timezone?: string | null;
   allDay?: boolean | null;
+  gradeOrAge?: string | null;
+  audience?: string[] | null;
+  themeCategory?: string | null;
+  themeImage?: string | null;
+  colorStory?: string | null;
+  headerTemplate?: string | null;
+  vibeDirection?: string | null;
+  safetyNotes?: string | null;
+  requirements?: string | null;
+  safetyFlags?: SignupSafetyFlags | null;
 };
 
 export type SignupFormHeader = {
