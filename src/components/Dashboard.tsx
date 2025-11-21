@@ -979,7 +979,24 @@ export default function Dashboard() {
         onChange={(event) => onFile(event.target.files?.[0] ?? null)}
         className="hidden"
       />
-      {/* Hero logo removed for streamlined layout */}
+      {/* Hero logo and tagline */}
+      {isSignedIn && (
+        <div className="w-full max-w-6xl mb-8 flex flex-col items-center gap-4 md:mb-10">
+          <div className="relative w-64 h-64 md:w-64 md:h-64">
+            <Image
+              src="/E.png"
+              alt="Envitefy Logo"
+              width={240}
+              height={240}
+              className="w-full h-full object-contain"
+              priority
+            />
+          </div>
+          <p className="text-base md:text-lg font-medium text-gray-600 tracking-wider uppercase">
+            CREATE | SHARE | ENJOY
+          </p>
+        </div>
+      )}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">

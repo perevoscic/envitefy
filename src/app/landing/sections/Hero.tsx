@@ -127,7 +127,7 @@ export default function Hero() {
   );
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-[#F8F5FF]">
       <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
         {/* Text Content */}
         <div className="relative z-10 max-w-2xl lg:max-w-none">

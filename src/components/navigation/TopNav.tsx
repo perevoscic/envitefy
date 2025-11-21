@@ -578,6 +578,7 @@ export default function TopNav() {
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
@@ -585,6 +586,15 @@ export default function TopNav() {
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const shouldShowNav = status === "authenticated";
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show logo after scrolling past the big dashboard logo (approx 300px)
+      setIsScrolled(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -667,8 +677,20 @@ export default function TopNav() {
   return (
     <>
       {/* Mobile/Tablet Header with Hamburger */}
-      <div className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/60 bg-[#F8F5FF] text-[#1b1540] shadow-sm lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
+      <div
+        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] lg:hidden transition-all duration-300 ${
+          isScrolled
+            ? "border-b border-white/60 bg-[#F8F5FF]/80 backdrop-blur-md shadow-sm"
+            : "bg-transparent"
+        }`}
+        suppressHydrationWarning
+      >
+        <div
+          className={`flex items-center justify-between px-4 ${
+            isScrolled ? "py-3" : "py-5"
+          }`}
+          suppressHydrationWarning
+        >
           <button
             type="button"
             aria-label="Toggle sidebar"
@@ -683,7 +705,9 @@ export default function TopNav() {
           </button>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-[#7f8cff]"
+            className={`inline-flex items-center gap-2 text-[#7f8cff] transition-opacity duration-300 ${
+              isScrolled ? "opacity-100" : "opacity-0"
+            }`}
           >
             <Image
               src="/navElogo.png"
@@ -698,12 +722,26 @@ export default function TopNav() {
       </div>
 
       {/* Desktop TopNav */}
-      <div className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/60 bg-[#F8F5FF] text-[#1b1540] shadow-sm backdrop-blur-none hidden lg:block">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div
+        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] hidden lg:block transition-all duration-300 ${
+          isScrolled
+            ? "border-b border-white/60 bg-[#F8F5FF]/80 backdrop-blur-md shadow-sm"
+            : "bg-transparent"
+        }`}
+        suppressHydrationWarning
+      >
+        <div
+          className={`mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 ${
+            isScrolled ? "py-3" : "py-5"
+          }`}
+          suppressHydrationWarning
+        >
           <div className="flex flex-shrink-0 items-center gap-3">
             <Link
               href="/"
-              className="inline-flex items-center pr-10 gap-2 text-[#7f8cff]"
+              className={`inline-flex items-center pr-10 gap-2 text-[#7f8cff] transition-opacity duration-300 ${
+                isScrolled ? "opacity-100" : "opacity-0"
+              }`}
             >
               <Image
                 src="/navElogo.png"

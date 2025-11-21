@@ -72,7 +72,7 @@ export default function LandingNav() {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
             {status === "authenticated" ? (
-               <Link
+              <Link
                 href="/calendar"
                 className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
@@ -161,4 +161,3 @@ export default function LandingNav() {
     </>
   );
 }
-
