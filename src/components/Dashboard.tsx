@@ -1177,6 +1177,15 @@ function SnapEventModal({
       }
     };
     fetchConnected();
+
+    // Refresh connection status when window regains focus (after OAuth)
+    const handleFocus = () => {
+      fetchConnected();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [open]);
 
   const updateEvent = useCallback(
@@ -1196,43 +1205,47 @@ function SnapEventModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:py-10 md:px-8">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-lg transition-opacity"
         onClick={onClose}
       />
       <div
-        className="relative z-10 flex w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[85vh] flex-col gap-5 overflow-hidden rounded-3xl border border-border bg-surface/95 p-6 shadow-[0_45px_90px_-40px_rgba(0,0,0,0.6)] backdrop-blur"
+        className="relative z-10 flex w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[85vh] flex-col gap-6 overflow-hidden rounded-2xl border-2 border-white/20 bg-gradient-to-br from-surface via-surface to-surface-alt/50 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] p-8"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          boxShadow:
+            "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset",
+        }}
       >
-        <div className="flex items-start justify-between gap-4 shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
+        <div className="flex items-start justify-between gap-4 shrink-0 pb-4 border-b-2 border-border/30 bg-gradient-to-r from-transparent via-white/5 to-transparent">
+          <div className="flex-1 pt-1">
+            <h2 className="text-2xl font-bold text-foreground mb-1.5 tracking-tight">
               Review Event Details
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Make any tweaks before sending it to your calendar.
             </p>
           </div>
           <button
             type="button"
             aria-label="Close event editor"
-            className="rounded-full border border-border bg-surface p-2 text-sm text-foreground hover:bg-surface/80"
+            className="rounded-xl border-2 border-border/40 bg-white/50 hover:bg-white/80 backdrop-blur-sm transition-all p-2.5 text-foreground/80 hover:text-foreground hover:border-border hover:scale-105 shrink-0 shadow-sm"
             onClick={onClose}
           >
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 overflow-y-auto pr-1 min-h-0 flex-1">
-          <div className="space-y-1">
+        <div className="flex flex-col gap-6 overflow-y-auto pr-2 min-h-0 flex-1 scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent">
+          <div className="space-y-2.5">
             <label
               htmlFor="snap-event-title"
-              className="text-sm text-muted-foreground"
+              className="text-sm font-semibold text-foreground block"
             >
               Title
             </label>
             <input
               id="snap-event-title"
-              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
               value={event.title}
               onChange={(e) =>
                 updateEvent((current) => ({
@@ -1243,17 +1256,17 @@ function SnapEventModal({
             />
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2.5">
               <label
                 htmlFor="snap-event-start"
-                className="text-sm text-muted-foreground"
+                className="text-sm font-semibold text-foreground block"
               >
                 Start
               </label>
               <input
                 id="snap-event-start"
-                className="w-full rounded border border-border bg-surface text-foreground p-2"
+                className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
                 value={event.start || ""}
                 onChange={(e) => {
                   const value = e.target.value || null;
@@ -1261,16 +1274,16 @@ function SnapEventModal({
                 }}
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2.5">
               <label
                 htmlFor="snap-event-end"
-                className="text-sm text-muted-foreground"
+                className="text-sm font-semibold text-foreground block"
               >
                 End (optional)
               </label>
               <input
                 id="snap-event-end"
-                className="w-full rounded border border-border bg-surface text-foreground p-2"
+                className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
                 value={event.end || ""}
                 onChange={(e) => {
                   const value = e.target.value || null;
@@ -1280,16 +1293,16 @@ function SnapEventModal({
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2.5">
             <label
               htmlFor="snap-event-location"
-              className="text-sm text-muted-foreground"
+              className="text-sm font-semibold text-foreground block"
             >
               Location
             </label>
             <input
               id="snap-event-location"
-              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
               value={event.location}
               onChange={(e) =>
                 updateEvent((current) => ({
@@ -1302,16 +1315,16 @@ function SnapEventModal({
 
           {/* Number of guests field removed - not needed for scanned events */}
 
-          <div className="space-y-1">
+          <div className="space-y-2.5">
             <label
               htmlFor="snap-event-description"
-              className="text-sm text-muted-foreground"
+              className="text-sm font-semibold text-foreground block"
             >
               Description
             </label>
             <textarea
               id="snap-event-description"
-              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80 resize-none"
               rows={4}
               value={event.description}
               onChange={(e) =>
@@ -1323,17 +1336,17 @@ function SnapEventModal({
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2.5">
             <label
               htmlFor="snap-event-rsvp"
-              className="text-sm text-muted-foreground"
+              className="text-sm font-semibold text-foreground block"
             >
               RSVP (Phone or Email)
             </label>
             <input
               id="snap-event-rsvp"
               type="text"
-              className="w-full rounded border border-border bg-surface text-foreground p-2"
+              className="w-1/3 rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80 placeholder:text-muted-foreground/50"
               placeholder="e.g., RSVP: Taya 850-555-8888 or contact@example.com"
               value={event.rsvp || ""}
               onChange={(e) =>
@@ -1343,15 +1356,17 @@ function SnapEventModal({
                 }))
               }
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground/70 mt-1.5 pl-1">
               Phone number or email for RSVP. If detected from scan, it will be
               filled automatically.
             </p>
           </div>
 
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">Reminders</span>
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <span className="text-sm font-semibold text-foreground block">
+              Reminders
+            </span>
+            <div className="space-y-3">
               {(event.reminders || []).map((reminder, idx) => {
                 const dayOptions = [1, 2, 3, 7, 14, 30];
                 const currentDays = Math.max(
@@ -1359,9 +1374,9 @@ function SnapEventModal({
                   Math.round((reminder.minutes || 0) / 1440) || 1
                 );
                 return (
-                  <div key={idx} className="flex items-center gap-2">
+                  <div key={idx} className="flex items-center gap-3">
                     <select
-                      className="rounded border border-border bg-surface text-foreground p-2"
+                      className="w-1/3 rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
                       value={currentDays}
                       onChange={(e) => {
                         const days = Math.max(1, Number(e.target.value) || 1);
@@ -1381,7 +1396,7 @@ function SnapEventModal({
                     <button
                       type="button"
                       aria-label="Delete reminder"
-                      className="rounded border border-border bg-surface px-2 py-2 text-sm hover:opacity-80"
+                      className="rounded-xl border-2 border-red-200/60 bg-red-50/60 hover:bg-red-100/80 px-3.5 py-2.5 text-sm text-red-700 hover:text-red-800 transition-all hover:border-red-300 hover:scale-105 shadow-sm"
                       onClick={() =>
                         updateEvent((current) => ({
                           ...current,
@@ -1412,7 +1427,7 @@ function SnapEventModal({
               <div>
                 <button
                   type="button"
-                  className="rounded border border-border bg-surface px-3 py-1 text-sm hover:opacity-80"
+                  className="rounded-xl border-2 border-primary/40 bg-primary/10 hover:bg-primary/20 px-4 py-2.5 text-sm text-primary font-semibold transition-all hover:border-primary/60 hover:scale-105 shadow-sm"
                   onClick={() =>
                     updateEvent((current) => {
                       const base = Array.isArray(current.reminders)
@@ -1432,12 +1447,12 @@ function SnapEventModal({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 shrink-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {connected.google ? (
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-5 shrink-0 border-t-2 border-border/30 bg-gradient-to-r from-transparent via-white/5 to-transparent">
+          <div className="flex flex-wrap items-center gap-3">
+            {connectedCalendars.google ? (
               <button
                 type="button"
-                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
                 onClick={addGoogle}
               >
                 <span>Add to</span>
@@ -1446,17 +1461,17 @@ function SnapEventModal({
             ) : (
               <button
                 type="button"
-                className="rounded bg-primary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
                 onClick={connectGoogle}
               >
                 <span>Connect to</span>
                 <CalendarIconGoogle className="h-5 w-5 text-white" />
               </button>
             )}
-            {connected.microsoft ? (
+            {connectedCalendars.microsoft ? (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
                 onClick={addOutlook}
               >
                 <span>Add to</span>
@@ -1470,7 +1485,7 @@ function SnapEventModal({
             ) : (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
                 onClick={connectOutlook}
               >
                 <span>Connect to</span>
@@ -1485,7 +1500,7 @@ function SnapEventModal({
             {isAppleDevice && (
               <button
                 type="button"
-                className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm flex items-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
                 onClick={addAppleCalendar || dlIcs}
               >
                 <span>Add to</span>
@@ -1498,18 +1513,18 @@ function SnapEventModal({
               </button>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               disabled={!event?.start}
-              className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
               onClick={saveToEnvitefy}
             >
               <span>Save to Envitefy</span>
             </button>
             <button
               type="button"
-              className="rounded bg-secondary px-4 py-2 text-white text-shadow-subtle shadow-sm disabled:opacity-50"
+              className="rounded-xl border-2 border-border/50 bg-white/60 hover:bg-white/80 backdrop-blur-sm px-5 py-3 text-sm text-foreground font-semibold transition-all hover:border-border hover:scale-105 active:scale-100 shadow-sm"
               onClick={onClose}
             >
               Cancel

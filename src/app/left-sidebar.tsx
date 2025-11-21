@@ -323,6 +323,13 @@ export default function LeftSidebar() {
     return () => window.removeEventListener("focus", handleFocus);
   }, [status, fetchConnectedCalendars]);
 
+  // Refresh calendar status when calendar submenu opens
+  useEffect(() => {
+    if (menuCalendarsOpen && status === "authenticated") {
+      fetchConnectedCalendars();
+    }
+  }, [menuCalendarsOpen, status, fetchConnectedCalendars]);
+
   useEffect(() => {
     if (!isOpen) return;
     const isPhoneHiddenViewport = () =>
@@ -1687,24 +1694,13 @@ export default function LeftSidebar() {
             </svg>
           </button>
           {calendarsOpenFloating && (
-            <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-56 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-3 z-[1100]">
+            <div className="mt-2 px-3 pb-2 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
                   Connection status
                 </p>
-                <Link
-                  href="/settings"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setSettingsOpen(false);
-                    setCalendarsOpenFloating(false);
-                  }}
-                  className="text-xs md:text-sm font-medium text-primary hover:underline"
-                >
-                  Manage
-                </Link>
               </div>
-              <div className="mt-3 flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
                   const active = connectedCalendars[key];
                   return (
@@ -1722,14 +1718,36 @@ export default function LeftSidebar() {
                             ? `${label} calendar connected`
                             : `Connect ${label} calendar`
                         }
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${
+                        className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
                           active
-                            ? "border-emerald-600 bg-emerald-50 hover:border-emerald-500"
+                            ? "border-emerald-600 bg-emerald-50 hover:border-emerald-500 shadow-md shadow-emerald-600/20"
                             : "border-border bg-surface hover:border-primary hover:bg-primary/10"
                         }`}
                         onClick={() => handleCalendarConnect(key)}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon
+                          className={`h-4 w-4 ${
+                            active ? "text-emerald-700" : ""
+                          }`}
+                        />
+                        {active && (
+                          <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-sm">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              className="h-2.5 w-2.5 text-white"
+                            >
+                              <path
+                                d="M10 3L4.5 8.5L2 6"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                        )}
                       </button>
                       <span>{label}</span>
                     </div>
@@ -1739,7 +1757,7 @@ export default function LeftSidebar() {
               {!connectedCalendars.google &&
                 !connectedCalendars.apple &&
                 !connectedCalendars.microsoft && (
-                  <p className="mt-2 text-[11px] text-foreground/60">
+                  <p className="text-[11px] text-foreground/60">
                     Connect calendars from Settings to sync events in one tap.
                   </p>
                 )}
@@ -1901,7 +1919,7 @@ export default function LeftSidebar() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <span className="text-sm md:text-base">Calendar</span>
+                      <span className="text-sm md:text-base">Calendars</span>
                     </div>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1920,25 +1938,13 @@ export default function LeftSidebar() {
                     </svg>
                   </button>
                   {menuCalendarsOpenFloating && (
-                    <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-56 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-3 z-[1100]">
+                    <div className="mt-2 px-3 pb-2 space-y-3">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
                           Connection status
                         </p>
-                        <Link
-                          href="/settings"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            setSettingsOpen(false);
-                            setMenuCalendarsOpen(false);
-                            setMenuCalendarsOpenFloating(false);
-                          }}
-                          className="text-xs md:text-sm font-medium text-primary hover:underline"
-                        >
-                          Manage
-                        </Link>
                       </div>
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                         {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
                           const active = connectedCalendars[key];
                           return (
@@ -1958,28 +1964,42 @@ export default function LeftSidebar() {
                                     ? `${label} calendar connected`
                                     : `Connect ${label} calendar`
                                 }
-                                className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${
+                                className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
                                   active
-                                    ? "border-emerald-600 bg-emerald-50 hover:border-emerald-500"
+                                    ? "border-emerald-600 bg-emerald-50 hover:border-emerald-500 shadow-md shadow-emerald-600/20"
                                     : "border-border bg-surface hover:border-primary hover:bg-primary/10"
                                 }`}
                                 onClick={() => handleCalendarConnect(key)}
                               >
-                                <Icon className="h-4 w-4" />
+                                <Icon
+                                  className={`h-4 w-4 ${
+                                    active ? "text-emerald-700" : ""
+                                  }`}
+                                />
+                                {active && (
+                                  <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-sm">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 12 12"
+                                      fill="none"
+                                      className="h-2.5 w-2.5 text-white"
+                                    >
+                                      <path
+                                        d="M10 3L4.5 8.5L2 6"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  </div>
+                                )}
                               </button>
                               <span>{label}</span>
                             </div>
                           );
                         })}
                       </div>
-                      {!connectedCalendars.google &&
-                        !connectedCalendars.apple &&
-                        !connectedCalendars.microsoft && (
-                          <p className="mt-2 text-[11px] text-foreground/60">
-                            Connect calendars from Settings to sync events in
-                            one tap.
-                          </p>
-                        )}
                     </div>
                   )}
                 </div>
@@ -2083,7 +2103,7 @@ export default function LeftSidebar() {
                       </svg>
                     </button>
                     {adminOpenFloating && (
-                      <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[1100]">
+                      <div className="absolute top-1/2 right-full mr-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
                         <Link
                           href="/admin"
                           onClick={() => {
@@ -4287,24 +4307,13 @@ export default function LeftSidebar() {
                         </svg>
                       </button>
                       {menuCalendarsOpen && (
-                        <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-56 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-3 z-[1100]">
+                        <div className="mt-2 px-3 pb-2 space-y-3">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
                               Connection status
                             </p>
-                            <Link
-                              href="/settings"
-                              onClick={() => {
-                                setMenuOpen(false);
-                                setSettingsOpen(false);
-                                setMenuCalendarsOpen(false);
-                              }}
-                              className="text-xs md:text-sm font-medium text-primary hover:underline"
-                            >
-                              Manage
-                            </Link>
                           </div>
-                          <div className="mt-3 flex items-center gap-3">
+                          <div className="flex items-center gap-3">
                             {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
                               const active = connectedCalendars[key];
                               return (
@@ -4324,28 +4333,42 @@ export default function LeftSidebar() {
                                         ? `${label} calendar connected`
                                         : `Connect ${label} calendar`
                                     }
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${
+                                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
                                       active
-                                        ? "border-emerald-600 bg-emerald-50 hover:border-emerald-500"
+                                        ? "border-emerald-600 bg-emerald-100 hover:border-emerald-500 shadow-lg shadow-emerald-600/30 ring-2 ring-emerald-600/20"
                                         : "border-border bg-surface hover:border-primary hover:bg-primary/10"
                                     }`}
                                     onClick={() => handleCalendarConnect(key)}
                                   >
-                                    <Icon className="h-4 w-4" />
+                                    <Icon
+                                      className={`h-4 w-4 ${
+                                        active ? "text-emerald-700" : ""
+                                      }`}
+                                    />
+                                    {active && (
+                                      <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-lg z-10">
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 12 12"
+                                          fill="none"
+                                          className="h-3 w-3 text-white"
+                                        >
+                                          <path
+                                            d="M10 3L4.5 8.5L2 6"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
+                                      </div>
+                                    )}
                                   </button>
                                   <span>{label}</span>
                                 </div>
                               );
                             })}
                           </div>
-                          {!connectedCalendars.google &&
-                            !connectedCalendars.apple &&
-                            !connectedCalendars.microsoft && (
-                              <p className="mt-2 text-[11px] text-foreground/60">
-                                Connect calendars from Settings to sync events
-                                in one tap.
-                              </p>
-                            )}
                         </div>
                       )}
                     </div>

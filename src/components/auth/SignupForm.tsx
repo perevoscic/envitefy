@@ -171,7 +171,8 @@ export default function SignupForm({
           localStorage.setItem("welcomeAfterSignup", "1");
         } catch {}
         onSuccess?.();
-        router.replace("/");
+        // Force a full page reload to ensure session is available
+        window.location.href = "/";
         return;
       }
       setMessage("Account created, please log in");

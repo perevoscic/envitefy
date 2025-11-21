@@ -16,7 +16,12 @@ export async function GET(request: Request) {
   const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     include_granted_scopes: true,
-    scope: ["https://www.googleapis.com/auth/calendar.events"],
+    scope: [
+      "https://www.googleapis.com/auth/calendar.events",
+      "openid",
+      "email",
+      "profile",
+    ],
     ...(forceConsent ? { prompt: "consent" as const } : {}),
     ...(state ? { state } : {}),
   });

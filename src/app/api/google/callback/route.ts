@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail, getUserIdByEmail, insertEventHistory } from "@/lib/db";
@@ -68,6 +69,16 @@ export async function GET(request: Request) {
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.GOOGLE_REDIRECT_URI!
     );
+    const secret =
+      process.env.AUTH_SECRET ??
+      process.env.NEXTAUTH_SECRET ??
+      (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
+    const tokenData = await getToken({ req: request as any, secret }).catch(() => null);
+    const sessionEmailFromJwt =
+      (tokenData as any)?.email && typeof (tokenData as any)?.email === "string"
+        ? ((tokenData as any)?.email as string).toLowerCase()
+        : undefined;
+
     const { tokens } = await oAuth2Client.getToken(code);
 
     let refresh = tokens.refresh_token || undefined;
@@ -76,7 +87,7 @@ export async function GET(request: Request) {
       refresh = cookieRefresh;
     }
 
-    let sessionEmail = emailFromIdToken(tokens.id_token);
+    let sessionEmail = sessionEmailFromJwt || emailFromIdToken(tokens.id_token);
     if (!sessionEmail && tokens.access_token) {
       sessionEmail = await emailFromGoogle(tokens.access_token);
     }

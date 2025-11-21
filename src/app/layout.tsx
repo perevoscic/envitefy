@@ -664,7 +664,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F6ECE1" },
+    { media: "(prefers-color-scheme: light)", color: "#F8F5FF" },
     { media: "(prefers-color-scheme: dark)", color: "#0b0b0f" },
   ],
 };
@@ -687,7 +687,7 @@ export default async function RootLayout({
       lang="en"
       data-theme={`${themeKey}-${htmlVariant}`}
       data-theme-key={themeKey}
-      style={htmlStyle}
+      style={{ ...htmlStyle, backgroundColor: "#F8F5FF" }}
       suppressHydrationWarning
     >
       <head>

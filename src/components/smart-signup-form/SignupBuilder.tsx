@@ -530,6 +530,49 @@ const SignupBuilder: React.FC<Props> = ({
     });
   };
 
+  // Helper to check if a color is dark (low brightness)
+  const isDarkColor = (hex: string): boolean => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness < 128;
+  };
+
+  // Helper to get lightest color from palette
+  const getLightestColor = (colors: string[]): string => {
+    return colors.reduce((lightest, color) => {
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+      const rL = parseInt(lightest.slice(1, 3), 16);
+      const gL = parseInt(lightest.slice(3, 5), 16);
+      const bL = parseInt(lightest.slice(5, 7), 16);
+      const brightnessL = (rL * 299 + gL * 587 + bL * 114) / 1000;
+
+      return brightness > brightnessL ? color : lightest;
+    });
+  };
+
+  // Helper to get darkest color from palette
+  const getDarkestColor = (colors: string[]): string => {
+    return colors.reduce((darkest, color) => {
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+      const rD = parseInt(darkest.slice(1, 3), 16);
+      const gD = parseInt(darkest.slice(3, 5), 16);
+      const bD = parseInt(darkest.slice(5, 7), 16);
+      const brightnessD = (rD * 299 + gD * 587 + bD * 114) / 1000;
+
+      return brightness < brightnessD ? color : darkest;
+    });
+  };
+
   const setHeader = (next: Partial<NonNullable<SignupForm["header"]>>) => {
     onChange({
       ...form,
@@ -620,173 +663,1403 @@ const SignupBuilder: React.FC<Props> = ({
     }
   };
 
-  const PRESETS: Array<{
-    id: string;
-    name: string;
-    bgColor: string;
-    bgCss?: string;
-    textColor1?: string;
-    textColor2?: string;
-    buttonColor?: string;
-    buttonTextColor?: string;
-  }> = [
-    {
-      id: "fall-fun",
-      name: "Fall Fun",
-      bgColor: "#A42D06",
-      bgCss:
-        "linear-gradient(135deg, rgba(164,45,6,0.92), rgba(214,128,40,0.85))",
-      textColor1: "#FAFCCD",
-      textColor2: "#FFFFFF",
-      buttonColor: "#44AD3C",
-      buttonTextColor: "#FFF4C7",
-    },
-    {
-      id: "trusty-blue",
-      name: "Trusty Blue + Orange",
-      bgColor: "#143A66",
-      bgCss:
-        "linear-gradient(120deg, rgba(20,58,102,0.95) 0%, rgba(17,92,150,0.85) 100%)",
-      textColor1: "#FCEFD5",
-      textColor2: "#FFFFFF",
-      buttonColor: "#FF7A30",
-      buttonTextColor: "#FFF8E7",
-    },
-    {
-      id: "mint-fresh",
-      name: "Mint Fresh",
-      bgColor: "#D1F1E0",
-      bgCss:
-        "linear-gradient(135deg, rgba(59,201,159,0.25), rgba(255,255,255,0.6))",
-      textColor1: "#176B5B",
-      textColor2: "#0D3B34",
-      buttonColor: "#176B5B",
-      buttonTextColor: "#E7FFF7",
-    },
-    {
-      id: "night-sky",
-      name: "Night Sky",
-      bgColor: "#334155",
-      bgCss: "linear-gradient(180deg, #334155 0%, #1F2937 100%)",
-      textColor1: "#E5E7EB",
-      textColor2: "#FFFFFF",
-      buttonColor: "#60A5FA",
-      buttonTextColor: "#0B1220",
-    },
-    {
-      id: "sunset-blend",
-      name: "Sunset Blend",
-      bgColor: "#F97316",
-      bgCss: "linear-gradient(135deg, #F97316 0%, #EF4444 50%, #DB2777 100%)",
-      textColor1: "#FFF1E6",
-      textColor2: "#FFFFFF",
-      buttonColor: "#EA580C",
-      buttonTextColor: "#FEF2F2",
-    },
-    {
-      id: "ocean-wave",
-      name: "Ocean Wave",
-      bgColor: "#0EA5E9",
-      bgCss:
-        "linear-gradient(120deg, rgba(14,165,233,0.95) 0%, rgba(59,130,246,0.85) 100%)",
-      textColor1: "#E0F2FE",
-      textColor2: "#FFFFFF",
-      buttonColor: "#22D3EE",
-      buttonTextColor: "#022C22",
-    },
-    {
-      id: "forest-mist",
-      name: "Forest Mist",
-      bgColor: "#166534",
-      bgCss:
-        "linear-gradient(135deg, rgba(22,101,52,0.95), rgba(15,118,110,0.85))",
-      textColor1: "#D1FAE5",
-      textColor2: "#ECFDF5",
-      buttonColor: "#10B981",
-      buttonTextColor: "#052E2B",
-    },
-    {
-      id: "royal-plum",
-      name: "Royal Plum",
-      bgColor: "#6D28D9",
-      bgCss:
-        "linear-gradient(135deg, rgba(109,40,217,0.95), rgba(147,51,234,0.85))",
-      textColor1: "#EDE9FE",
-      textColor2: "#FAF5FF",
-      buttonColor: "#A855F7",
-      buttonTextColor: "#2E1065",
-    },
-    {
-      id: "citrus-light",
-      name: "Citrus Light",
-      bgColor: "#FDE68A",
-      bgCss: "linear-gradient(135deg, #FDE68A 0%, #FCA5A5 100%)",
-      textColor1: "#4B5563",
-      textColor2: "#1F2937",
-      buttonColor: "#F59E0B",
-      buttonTextColor: "#1F1302",
-    },
-    {
-      id: "dawn-rose",
-      name: "Dawn Rose",
-      bgColor: "#FBCFE8",
-      bgCss: "linear-gradient(135deg, #FBCFE8 0%, #E9D5FF 100%)",
-      textColor1: "#4B5563",
-      textColor2: "#1F2937",
-      buttonColor: "#EC4899",
-      buttonTextColor: "#3B0820",
-    },
-    {
-      id: "steel-sky",
-      name: "Steel Sky",
-      bgColor: "#93C5FD",
-      bgCss: "linear-gradient(135deg, #93C5FD 0%, #A7F3D0 100%)",
-      textColor1: "#0F172A",
-      textColor2: "#0F172A",
-      buttonColor: "#3B82F6",
-      buttonTextColor: "#041022",
-    },
-    {
-      id: "berry-splash",
-      name: "Berry Splash",
-      bgColor: "#F472B6",
-      bgCss: "linear-gradient(135deg, #F472B6 0%, #60A5FA 100%)",
-      textColor1: "#111827",
-      textColor2: "#0F172A",
-      buttonColor: "#8B5CF6",
-      buttonTextColor: "#1E0E3E",
-    },
-    {
-      id: "charcoal-glow",
-      name: "Charcoal Glow",
-      bgColor: "#1F2937",
-      bgCss: "linear-gradient(135deg, #1F2937 0%, #374151 60%, #4B5563 100%)",
-      textColor1: "#F3F4F6",
-      textColor2: "#FFFFFF",
-      buttonColor: "#93C5FD",
-      buttonTextColor: "#0B1220",
-    },
-    {
-      id: "emerald-glow",
-      name: "Emerald Glow",
-      bgColor: "#064E3B",
-      bgCss: "linear-gradient(135deg, #064E3B 0%, #059669 100%)",
-      textColor1: "#D1FAE5",
-      textColor2: "#ECFDF5",
-      buttonColor: "#10B981",
-      buttonTextColor: "#052E2B",
-    },
-    {
-      id: "sunrise-peach",
-      name: "Sunrise Peach",
-      bgColor: "#FDBA74",
-      bgCss: "linear-gradient(135deg, #FDBA74 0%, #F472B6 100%)",
-      textColor1: "#1F2937",
-      textColor2: "#111827",
-      buttonColor: "#EC4899",
-      buttonTextColor: "#3B0820",
-    },
-  ];
+  // Generate color stories for all themes (12 per theme)
+  // Helper function to create gradient CSS
+  const createGradient = (color1: string, color2: string, angle = 135) => {
+    return `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+  };
+
+  // Helper function to convert hex to rgba
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  };
+
+  // Generate all color stories for each theme
+  const generateColorStories = () => {
+    const stories: Array<{
+      id: string;
+      name: string;
+      description: string;
+      colors: string[];
+      bgColor: string;
+      bgCss?: string;
+      textColor1?: string;
+      textColor2?: string;
+      buttonColor?: string;
+      buttonTextColor?: string;
+    }> = [];
+
+    // Spring - 12 color stories
+    const springStories = [
+      {
+        id: "spring-1",
+        name: "Verdant Atelier",
+        desc: "Botanical inked outlines",
+        colors: ["#697864", "#2D4739", "#96C7D4", "#B5D4DD", "#81A494"],
+        bg: "#697864",
+      },
+      {
+        id: "spring-2",
+        name: "Petal Script",
+        desc: "Painterly blush swash",
+        colors: ["#5D3834", "#F5EDE4", "#DDB9B9", "#D9A884", "#B8876B"],
+        bg: "#F5EDE4",
+      },
+      {
+        id: "spring-3",
+        name: "Garden Bloom",
+        desc: "Lush emerald gathers",
+        colors: ["#F5EDE4", "#9CC5B3", "#6B9D88", "#4A7662", "#2D5644"],
+        bg: "#6B9D88",
+      },
+      {
+        id: "spring-4",
+        name: "Cherry Blossom",
+        desc: "Soft pink petals",
+        colors: ["#F8E8E8", "#E8B8C8", "#D88AA8", "#C85A88", "#A83A68"],
+        bg: "#E8B8C8",
+      },
+      {
+        id: "spring-5",
+        name: "Meadow Fresh",
+        desc: "New growth greens",
+        colors: ["#E8F5E8", "#B8E8B8", "#88D888", "#68C868", "#48A848"],
+        bg: "#88D888",
+      },
+      {
+        id: "spring-6",
+        name: "Daffodil Dawn",
+        desc: "Bright yellow sunshine",
+        colors: ["#FFF8E8", "#FFE8B8", "#FFD888", "#FFC868", "#FFB848"],
+        bg: "#FFD888",
+      },
+      {
+        id: "spring-7",
+        name: "Lavender Fields",
+        desc: "Purple spring blooms",
+        colors: ["#F5E8F5", "#E8B8E8", "#D888D8", "#C868C8", "#A848A8"],
+        bg: "#D888D8",
+      },
+      {
+        id: "spring-8",
+        name: "Tulip Garden",
+        desc: "Vibrant spring colors",
+        colors: ["#FFE0E0", "#FFB0B0", "#FF8080", "#E86060", "#C84040"],
+        bg: "#FF8080",
+      },
+      {
+        id: "spring-9",
+        name: "Mint Fresh",
+        desc: "Cool minty greens",
+        colors: ["#E8F5F0", "#B8E8D8", "#88D8C8", "#68C8B8", "#48A898"],
+        bg: "#88D8C8",
+      },
+      {
+        id: "spring-10",
+        name: "Peach Blossom",
+        desc: "Warm peach tones",
+        colors: ["#FFF5E8", "#FFE8C8", "#FFD8A8", "#FFC888", "#FFB868"],
+        bg: "#FFD8A8",
+      },
+      {
+        id: "spring-11",
+        name: "Iris Garden",
+        desc: "Deep purple blooms",
+        colors: ["#E8E8F5", "#C8C8E8", "#A8A8D8", "#8888C8", "#6868A8"],
+        bg: "#A8A8D8",
+      },
+      {
+        id: "spring-12",
+        name: "Lily Pond",
+        desc: "Aqua and green harmony",
+        colors: ["#E8F5F5", "#B8E8E8", "#88D8D8", "#68C8C8", "#48A8A8"],
+        bg: "#88D8D8",
+      },
+    ];
+
+    // Summer - 12 color stories
+    const summerStories = [
+      {
+        id: "summer-1",
+        name: "Shimmering Sea",
+        desc: "Coastal mist & glitter",
+        colors: ["#B5D7E8", "#5B9FB8", "#3D7A95", "#2C5466", "#A8CDDD"],
+        bg: "#5B9FB8",
+      },
+      {
+        id: "summer-2",
+        name: "Mist Coast",
+        desc: "Cool greenhouse glass",
+        colors: ["#1C3D52", "#93C5E8", "#B5D7EA", "#7CADC7", "#4A7792"],
+        bg: "#1C3D52",
+      },
+      {
+        id: "summer-3",
+        name: "Coral Lyric",
+        desc: "Bougainvillea promise",
+        colors: ["#D8A9A0", "#BA7A7A", "#B16B54", "#3D2522", "#E4D5D9"],
+        bg: "#BA7A7A",
+      },
+      {
+        id: "summer-4",
+        name: "Tropical Paradise",
+        desc: "Vibrant island colors",
+        colors: ["#FFE8A8", "#FFD888", "#FFC868", "#FFB848", "#FFA828"],
+        bg: "#FFC868",
+      },
+      {
+        id: "summer-5",
+        name: "Ocean Breeze",
+        desc: "Cool blue waters",
+        colors: ["#E0F5FF", "#B0E8FF", "#80D8FF", "#60C8FF", "#40A8FF"],
+        bg: "#80D8FF",
+      },
+      {
+        id: "summer-6",
+        name: "Sunset Beach",
+        desc: "Warm evening glow",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#FFB868", "#FFA848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "summer-7",
+        name: "Palm Frond",
+        desc: "Tropical green leaves",
+        colors: ["#E5F5E5", "#B5E8B5", "#85D885", "#65C865", "#45A845"],
+        bg: "#85D885",
+      },
+      {
+        id: "summer-8",
+        name: "Sandy Shore",
+        desc: "Beach sand tones",
+        colors: ["#FFF8E8", "#FFE8C8", "#FFD8A8", "#E8C888", "#D8B868"],
+        bg: "#FFD8A8",
+      },
+      {
+        id: "summer-9",
+        name: "Poolside Blue",
+        desc: "Swimming pool aqua",
+        colors: ["#E5F5FF", "#B5E8FF", "#85D8FF", "#65C8FF", "#45A8FF"],
+        bg: "#85D8FF",
+      },
+      {
+        id: "summer-10",
+        name: "Watermelon Slice",
+        desc: "Fresh summer fruit",
+        colors: ["#FFE5E5", "#FFB5B5", "#FF8585", "#E86565", "#C84545"],
+        bg: "#FF8585",
+      },
+      {
+        id: "summer-11",
+        name: "Lemonade Stand",
+        desc: "Bright citrus yellow",
+        colors: ["#FFF5E0", "#FFE5B0", "#FFD580", "#FFC560", "#FFB540"],
+        bg: "#FFD580",
+      },
+      {
+        id: "summer-12",
+        name: "Seashell Pink",
+        desc: "Soft coastal pink",
+        colors: ["#FFE8F5", "#FFC8E8", "#FFA8D8", "#E888C8", "#D868A8"],
+        bg: "#FFA8D8",
+      },
+    ];
+
+    // School & Education - 12 color stories
+    const schoolStories = [
+      {
+        id: "school-1",
+        name: "Sage Dusk",
+        desc: "Lavender twilight canopy",
+        colors: ["#6B86B3", "#4E6BA0", "#1E2C5C", "#B5CEE8", "#8FA6D4"],
+        bg: "#4E6BA0",
+      },
+      {
+        id: "school-2",
+        name: "Mist Coast",
+        desc: "Cool greenhouse glass",
+        colors: ["#1C3D52", "#93C5E8", "#B5D7EA", "#7CADC7", "#4A7792"],
+        bg: "#1C3D52",
+      },
+      {
+        id: "school-3",
+        name: "Velvet Gold",
+        desc: "Gilded foliage shine",
+        colors: ["#9A967E", "#6B6B4A", "#2C2E1A", "#E4E8DC", "#A8A89E"],
+        bg: "#6B6B4A",
+      },
+      {
+        id: "school-4",
+        name: "Notebook Blue",
+        desc: "Classic school blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "school-5",
+        name: "Chalkboard",
+        desc: "Dark academic green",
+        colors: ["#2C3E2C", "#3E5E3E", "#4E7E4E", "#5E9E5E", "#6EBE6E"],
+        bg: "#3E5E3E",
+      },
+      {
+        id: "school-6",
+        name: "Textbook Brown",
+        desc: "Vintage book cover",
+        colors: ["#8B6B4A", "#6B4A2A", "#4A2A1A", "#A88B6B", "#C8A88B"],
+        bg: "#8B6B4A",
+      },
+      {
+        id: "school-7",
+        name: "Graduation Cap",
+        desc: "Formal navy blue",
+        colors: ["#1A2A3A", "#2A3A4A", "#3A4A5A", "#4A5A6A", "#5A6A7A"],
+        bg: "#2A3A4A",
+      },
+      {
+        id: "school-8",
+        name: "Apple Red",
+        desc: "Teacher's apple",
+        colors: ["#FFE3E3", "#FFB3B3", "#FF8383", "#E86363", "#C84343"],
+        bg: "#FF8383",
+      },
+      {
+        id: "school-9",
+        name: "Library Beige",
+        desc: "Quiet study tones",
+        colors: ["#F5F0E8", "#E8D8C8", "#D8C8B8", "#C8B8A8", "#B8A898"],
+        bg: "#D8C8B8",
+      },
+      {
+        id: "school-10",
+        name: "Science Lab",
+        desc: "Cool laboratory blue",
+        colors: ["#E8F0F5", "#B8D8E8", "#88C0D8", "#68A8C8", "#4890B8"],
+        bg: "#88C0D8",
+      },
+      {
+        id: "school-11",
+        name: "Art Studio",
+        desc: "Creative purple",
+        colors: ["#F5E8F5", "#E8C8E8", "#D8A8D8", "#C888C8", "#B868B8"],
+        bg: "#D8A8D8",
+      },
+      {
+        id: "school-12",
+        name: "Study Hall",
+        desc: "Neutral gray tones",
+        colors: ["#E8E8E8", "#C8C8C8", "#A8A8A8", "#888888", "#686868"],
+        bg: "#A8A8A8",
+      },
+    ];
+
+    // Fall & Seasonal - 12 color stories
+    const fallStories = [
+      {
+        id: "fall-1",
+        name: "Trellis Brass",
+        desc: "Gilded lattice cues",
+        colors: ["#E8D99F", "#B89F5F", "#6B5D3B", "#3D2E1A", "#F5EDD1"],
+        bg: "#B89F5F",
+      },
+      {
+        id: "fall-2",
+        name: "Amber Sunset",
+        desc: "Warm adobe glow",
+        colors: ["#C88F5E", "#8B5E3C", "#1E2C3A", "#F5EDE4", "#A8A8A3"],
+        bg: "#C88F5E",
+      },
+      {
+        id: "fall-3",
+        name: "Terracotta Petal",
+        desc: "Warm botanical clay",
+        colors: ["#B16B54", "#4A2820", "#E4D5D9", "#D8A9AD", "#C17D7A"],
+        bg: "#B16B54",
+      },
+      {
+        id: "fall-4",
+        name: "Maple Leaf",
+        desc: "Autumn reds",
+        colors: ["#FFE8E8", "#FFB8B8", "#E88868", "#C86848", "#A84828"],
+        bg: "#E88868",
+      },
+      {
+        id: "fall-5",
+        name: "Pumpkin Spice",
+        desc: "Warm orange tones",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "fall-6",
+        name: "Harvest Gold",
+        desc: "Golden wheat fields",
+        colors: ["#FFF6E6", "#FFE6B6", "#FFD686", "#E8C666", "#D8B646"],
+        bg: "#FFD686",
+      },
+      {
+        id: "fall-7",
+        name: "Cranberry",
+        desc: "Deep red berries",
+        colors: ["#FFE8F0", "#FFB8D8", "#E888B8", "#C86898", "#A84878"],
+        bg: "#E888B8",
+      },
+      {
+        id: "fall-8",
+        name: "Rustic Brown",
+        desc: "Weathered wood",
+        colors: ["#8B6B4A", "#6B4A2A", "#4A2A1A", "#A88B6B", "#C8A88B"],
+        bg: "#8B6B4A",
+      },
+      {
+        id: "fall-9",
+        name: "Cozy Sweater",
+        desc: "Warm burgundy",
+        colors: ["#E8D8D8", "#C8B8B8", "#A89898", "#887878", "#685858"],
+        bg: "#A89898",
+      },
+      {
+        id: "fall-10",
+        name: "Apple Orchard",
+        desc: "Crisp apple red",
+        colors: ["#FFE6E6", "#FFB6B6", "#FF8686", "#E86666", "#C84646"],
+        bg: "#FF8686",
+      },
+      {
+        id: "fall-11",
+        name: "Hay Bale",
+        desc: "Golden yellow",
+        colors: ["#FFF8E8", "#FFE8C8", "#FFD8A8", "#E8C888", "#D8B868"],
+        bg: "#FFD8A8",
+      },
+      {
+        id: "fall-12",
+        name: "Mulled Wine",
+        desc: "Deep wine red",
+        colors: ["#E8D8E8", "#C8B8C8", "#A898A8", "#887888", "#685868"],
+        bg: "#A898A8",
+      },
+    ];
+
+    // Church & Community - 12 color stories
+    const churchStories = [
+      {
+        id: "church-1",
+        name: "Velvet Gold",
+        desc: "Gilded foliage shine",
+        colors: ["#9A967E", "#6B6B4A", "#2C2E1A", "#E4E8DC", "#A8A89E"],
+        bg: "#6B6B4A",
+      },
+      {
+        id: "church-2",
+        name: "Tramontane",
+        desc: "Noir dusk breeze",
+        colors: ["#5D5247", "#7A6B7A", "#D9A884", "#3D2E1A", "#4A3834"],
+        bg: "#5D5247",
+      },
+      {
+        id: "church-3",
+        name: "Sage Dusk",
+        desc: "Lavender twilight canopy",
+        colors: ["#6B86B3", "#4E6BA0", "#1E2C5C", "#B5CEE8", "#8FA6D4"],
+        bg: "#4E6BA0",
+      },
+      {
+        id: "church-4",
+        name: "Stained Glass",
+        desc: "Rich jewel tones",
+        colors: ["#4A2A5A", "#5A3A6A", "#6A4A7A", "#7A5A8A", "#8A6A9A"],
+        bg: "#5A3A6A",
+      },
+      {
+        id: "church-5",
+        name: "Chapel White",
+        desc: "Pure white light",
+        colors: ["#FFFFFF", "#F5F5F5", "#E8E8E8", "#D8D8D8", "#C8C8C8"],
+        bg: "#F5F5F5",
+      },
+      {
+        id: "church-6",
+        name: "Altar Gold",
+        desc: "Sacred gold",
+        colors: ["#FFF0E0", "#FFE0C0", "#FFD0A0", "#E8C080", "#D8B060"],
+        bg: "#FFD0A0",
+      },
+      {
+        id: "church-7",
+        name: "Navy Hymn",
+        desc: "Deep blue reverence",
+        colors: ["#1A2A3A", "#2A3A4A", "#3A4A5A", "#4A5A6A", "#5A6A7A"],
+        bg: "#2A3A4A",
+      },
+      {
+        id: "church-8",
+        name: "Marble Stone",
+        desc: "Classic gray",
+        colors: ["#E8E8E8", "#C8C8C8", "#A8A8A8", "#888888", "#686868"],
+        bg: "#A8A8A8",
+      },
+      {
+        id: "church-9",
+        name: "Candlelight",
+        desc: "Warm amber glow",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "church-10",
+        name: "Burgundy Pew",
+        desc: "Rich red wood",
+        colors: ["#8B4A4A", "#6B2A2A", "#4A1A1A", "#A86B6B", "#C88B8B"],
+        bg: "#8B4A4A",
+      },
+      {
+        id: "church-11",
+        name: "Ivory Lace",
+        desc: "Delicate cream",
+        colors: ["#FFF8F5", "#FFE8E8", "#FFD8D8", "#E8C8C8", "#D8B8B8"],
+        bg: "#FFE8E8",
+      },
+      {
+        id: "church-12",
+        name: "Royal Purple",
+        desc: "Regal purple",
+        colors: ["#6B4A8B", "#5A3A7A", "#4A2A6A", "#8B6BA8", "#A88BC8"],
+        bg: "#5A3A7A",
+      },
+    ];
+
+    // Sports & Recreation - 12 color stories
+    const sportsStories = [
+      {
+        id: "sports-1",
+        name: "Shimmering Sea",
+        desc: "Coastal mist & glitter",
+        colors: ["#B5D7E8", "#5B9FB8", "#3D7A95", "#2C5466", "#A8CDDD"],
+        bg: "#5B9FB8",
+      },
+      {
+        id: "sports-2",
+        name: "Mist Coast",
+        desc: "Cool greenhouse glass",
+        colors: ["#1C3D52", "#93C5E8", "#B5D7EA", "#7CADC7", "#4A7792"],
+        bg: "#1C3D52",
+      },
+      {
+        id: "sports-3",
+        name: "Garden Bloom",
+        desc: "Lush emerald gathers",
+        colors: ["#F5EDE4", "#9CC5B3", "#6B9D88", "#4A7662", "#2D5644"],
+        bg: "#6B9D88",
+      },
+      {
+        id: "sports-4",
+        name: "Field Green",
+        desc: "Grass playing field",
+        colors: ["#E0F5E0", "#A8E8A8", "#70D870", "#50C850", "#30A830"],
+        bg: "#70D870",
+      },
+      {
+        id: "sports-5",
+        name: "Team Blue",
+        desc: "Athletic blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "sports-6",
+        name: "Victory Red",
+        desc: "Championship red",
+        colors: ["#FFE2E2", "#FFB2B2", "#FF8282", "#E86262", "#C84242"],
+        bg: "#FF8282",
+      },
+      {
+        id: "sports-7",
+        name: "Track Orange",
+        desc: "Energetic orange",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "sports-8",
+        name: "Court Yellow",
+        desc: "Tennis court yellow",
+        colors: ["#FFF4E4", "#FFE4B4", "#FFD484", "#E8C464", "#D8B444"],
+        bg: "#FFD484",
+      },
+      {
+        id: "sports-9",
+        name: "Pool Blue",
+        desc: "Swimming pool",
+        colors: ["#E3F5FF", "#B3E8FF", "#83D8FF", "#63C8FF", "#43A8FF"],
+        bg: "#83D8FF",
+      },
+      {
+        id: "sports-10",
+        name: "Gym Gray",
+        desc: "Fitness center",
+        colors: ["#E8E8E8", "#C8C8C8", "#A8A8A8", "#888888", "#686868"],
+        bg: "#A8A8A8",
+      },
+      {
+        id: "sports-11",
+        name: "Stadium Lights",
+        desc: "Bright white",
+        colors: ["#FFFFFF", "#F5F5F5", "#E8E8E8", "#D8D8D8", "#C8C8C8"],
+        bg: "#F5F5F5",
+      },
+      {
+        id: "sports-12",
+        name: "Trophy Gold",
+        desc: "Championship gold",
+        colors: ["#FFF3E3", "#FFE3C3", "#FFD3A3", "#E8C383", "#D8B363"],
+        bg: "#FFD3A3",
+      },
+    ];
+
+    // Fundraising & Food - 12 color stories
+    const fundraisingStories = [
+      {
+        id: "fundraising-1",
+        name: "Terracotta Petal",
+        desc: "Warm botanical clay",
+        colors: ["#B16B54", "#4A2820", "#E4D5D9", "#D8A9AD", "#C17D7A"],
+        bg: "#B16B54",
+      },
+      {
+        id: "fundraising-2",
+        name: "Coral Lyric",
+        desc: "Bougainvillea promise",
+        colors: ["#D8A9A0", "#BA7A7A", "#B16B54", "#3D2522", "#E4D5D9"],
+        bg: "#BA7A7A",
+      },
+      {
+        id: "fundraising-3",
+        name: "Amber Sunset",
+        desc: "Warm adobe glow",
+        colors: ["#C88F5E", "#8B5E3C", "#1E2C3A", "#F5EDE4", "#A8A8A3"],
+        bg: "#C88F5E",
+      },
+      {
+        id: "fundraising-4",
+        name: "Bake Sale",
+        desc: "Warm pastry tones",
+        colors: ["#FFF2E2", "#FFE2C2", "#FFD2A2", "#E8C282", "#D8B262"],
+        bg: "#FFD2A2",
+      },
+      {
+        id: "fundraising-5",
+        name: "Soup Kitchen",
+        desc: "Comforting orange",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "fundraising-6",
+        name: "Charity Red",
+        desc: "Heartfelt red",
+        colors: ["#FFE4E4", "#FFB4B4", "#FF8484", "#E86464", "#C84444"],
+        bg: "#FF8484",
+      },
+      {
+        id: "fundraising-7",
+        name: "Community Green",
+        desc: "Growth green",
+        colors: ["#D8F5D8", "#A0E8A0", "#68D868", "#48C848", "#28A828"],
+        bg: "#68D868",
+      },
+      {
+        id: "fundraising-8",
+        name: "Harvest Table",
+        desc: "Rustic brown",
+        colors: ["#8B6B4A", "#6B4A2A", "#4A2A1A", "#A88B6B", "#C8A88B"],
+        bg: "#8B6B4A",
+      },
+      {
+        id: "fundraising-9",
+        name: "Fresh Market",
+        desc: "Vibrant produce",
+        colors: ["#D0F5D0", "#90E890", "#58D858", "#38C838", "#18A818"],
+        bg: "#58D858",
+      },
+      {
+        id: "fundraising-10",
+        name: "Warm Meal",
+        desc: "Comforting beige",
+        colors: ["#F5F0E8", "#E8D8C8", "#D8C8B8", "#C8B8A8", "#B8A898"],
+        bg: "#D8C8B8",
+      },
+      {
+        id: "fundraising-11",
+        name: "Giving Heart",
+        desc: "Pink compassion",
+        colors: ["#FFE8F5", "#FFC8E8", "#FFA8D8", "#E888C8", "#D868A8"],
+        bg: "#FFA8D8",
+      },
+      {
+        id: "fundraising-12",
+        name: "Hope Yellow",
+        desc: "Bright optimism",
+        colors: ["#FFF1E1", "#FFE1B1", "#FFD181", "#E8C161", "#D8B141"],
+        bg: "#FFD181",
+      },
+    ];
+
+    // Family & Personal - 12 color stories
+    const familyStories = [
+      {
+        id: "family-1",
+        name: "Petal Script",
+        desc: "Painterly blush swash",
+        colors: ["#5D3834", "#F5EDE4", "#DDB9B9", "#D9A884", "#B8876B"],
+        bg: "#F5EDE4",
+      },
+      {
+        id: "family-2",
+        name: "Coral Lyric",
+        desc: "Bougainvillea promise",
+        colors: ["#D8A9A0", "#BA7A7A", "#B16B54", "#3D2522", "#E4D5D9"],
+        bg: "#BA7A7A",
+      },
+      {
+        id: "family-3",
+        name: "Verdant Atelier",
+        desc: "Botanical inked outlines",
+        colors: ["#697864", "#2D4739", "#96C7D4", "#B5D4DD", "#81A494"],
+        bg: "#697864",
+      },
+      {
+        id: "family-4",
+        name: "Baby Pink",
+        desc: "Soft gentle pink",
+        colors: ["#FFE8F5", "#FFC8E8", "#FFA8D8", "#E888C8", "#D868A8"],
+        bg: "#FFC8E8",
+      },
+      {
+        id: "family-5",
+        name: "Nursery Blue",
+        desc: "Calming sky blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "family-6",
+        name: "Lavender Dream",
+        desc: "Soft purple",
+        colors: ["#F5E8F5", "#E8C8E8", "#D8A8D8", "#C888C8", "#B868B8"],
+        bg: "#D8A8D8",
+      },
+      {
+        id: "family-7",
+        name: "Peach Blush",
+        desc: "Warm peach",
+        colors: ["#FFF5E8", "#FFE8C8", "#FFD8A8", "#FFC888", "#FFB868"],
+        bg: "#FFD8A8",
+      },
+      {
+        id: "family-8",
+        name: "Mint Fresh",
+        desc: "Cool mint",
+        colors: ["#E8F5F0", "#B8E8D8", "#88D8C8", "#68C8B8", "#48A898"],
+        bg: "#88D8C8",
+      },
+      {
+        id: "family-9",
+        name: "Buttercream",
+        desc: "Soft yellow",
+        colors: ["#FFEFDF", "#FFDFCF", "#FFCFAF", "#E8BF8F", "#D8AF6F"],
+        bg: "#FFCFAF",
+      },
+      {
+        id: "family-10",
+        name: "Rose Garden",
+        desc: "Romantic rose",
+        colors: ["#FFE8F0", "#FFB8D8", "#E888B8", "#C86898", "#A84878"],
+        bg: "#E888B8",
+      },
+      {
+        id: "family-11",
+        name: "Lilac Morning",
+        desc: "Light purple",
+        colors: ["#F5E8F5", "#E8C8E8", "#D8A8D8", "#C888C8", "#B868B8"],
+        bg: "#D8A8D8",
+      },
+      {
+        id: "family-12",
+        name: "Vanilla Cream",
+        desc: "Warm cream",
+        colors: ["#FFF8F5", "#FFE8E8", "#FFD8D8", "#E8C8C8", "#D8B8B8"],
+        bg: "#FFE8E8",
+      },
+    ];
+
+    // Business & Professional - 12 color stories
+    const businessStories = [
+      {
+        id: "business-1",
+        name: "Mist Coast",
+        desc: "Cool greenhouse glass",
+        colors: ["#1C3D52", "#93C5E8", "#B5D7EA", "#7CADC7", "#4A7792"],
+        bg: "#1C3D52",
+      },
+      {
+        id: "business-2",
+        name: "Sage Dusk",
+        desc: "Lavender twilight canopy",
+        colors: ["#6B86B3", "#4E6BA0", "#1E2C5C", "#B5CEE8", "#8FA6D4"],
+        bg: "#4E6BA0",
+      },
+      {
+        id: "business-3",
+        name: "Tramontane",
+        desc: "Noir dusk breeze",
+        colors: ["#5D5247", "#7A6B7A", "#D9A884", "#3D2E1A", "#4A3834"],
+        bg: "#5D5247",
+      },
+      {
+        id: "business-4",
+        name: "Corporate Navy",
+        desc: "Professional blue",
+        colors: ["#1A2A3A", "#2A3A4A", "#3A4A5A", "#4A5A6A", "#5A6A7A"],
+        bg: "#2A3A4A",
+      },
+      {
+        id: "business-5",
+        name: "Executive Gray",
+        desc: "Sophisticated gray",
+        colors: ["#E8E8E8", "#C8C8C8", "#A8A8A8", "#888888", "#686868"],
+        bg: "#A8A8A8",
+      },
+      {
+        id: "business-6",
+        name: "Boardroom Blue",
+        desc: "Trust blue",
+        colors: ["#2A3A5A", "#3A4A6A", "#4A5A7A", "#5A6A8A", "#6A7A9A"],
+        bg: "#3A4A6A",
+      },
+      {
+        id: "business-7",
+        name: "Charcoal Suit",
+        desc: "Dark professional",
+        colors: ["#2A2A2A", "#3A3A3A", "#4A4A4A", "#5A5A5A", "#6A6A6A"],
+        bg: "#3A3A3A",
+      },
+      {
+        id: "business-8",
+        name: "Silver Lining",
+        desc: "Metallic silver",
+        colors: ["#E8E8E8", "#D8D8D8", "#C8C8C8", "#B8B8B8", "#A8A8A8"],
+        bg: "#C8C8C8",
+      },
+      {
+        id: "business-9",
+        name: "Teal Accent",
+        desc: "Modern teal",
+        colors: ["#E8F5F5", "#B8E8E8", "#88D8D8", "#68C8C8", "#48A8A8"],
+        bg: "#88D8D8",
+      },
+      {
+        id: "business-10",
+        name: "Burgundy Tie",
+        desc: "Rich burgundy",
+        colors: ["#8B4A4A", "#6B2A2A", "#4A1A1A", "#A86B6B", "#C88B8B"],
+        bg: "#8B4A4A",
+      },
+      {
+        id: "business-11",
+        name: "Ivory Paper",
+        desc: "Clean white",
+        colors: ["#FFFFFF", "#F5F5F5", "#E8E8E8", "#D8D8D8", "#C8C8C8"],
+        bg: "#F5F5F5",
+      },
+      {
+        id: "business-12",
+        name: "Midnight Blue",
+        desc: "Deep professional",
+        colors: ["#1A2A4A", "#2A3A5A", "#3A4A6A", "#4A5A7A", "#5A6A8A"],
+        bg: "#2A3A5A",
+      },
+    ];
+
+    // Parties & Events - 12 color stories
+    const partiesStories = [
+      {
+        id: "parties-1",
+        name: "Coral Lyric",
+        desc: "Bougainvillea promise",
+        colors: ["#D8A9A0", "#BA7A7A", "#B16B54", "#3D2522", "#E4D5D9"],
+        bg: "#BA7A7A",
+      },
+      {
+        id: "parties-2",
+        name: "Amber Sunset",
+        desc: "Warm adobe glow",
+        colors: ["#C88F5E", "#8B5E3C", "#1E2C3A", "#F5EDE4", "#A8A8A3"],
+        bg: "#C88F5E",
+      },
+      {
+        id: "parties-3",
+        name: "Petal Script",
+        desc: "Painterly blush swash",
+        colors: ["#5D3834", "#F5EDE4", "#DDB9B9", "#D9A884", "#B8876B"],
+        bg: "#F5EDE4",
+      },
+      {
+        id: "parties-4",
+        name: "Celebration Pink",
+        desc: "Festive pink",
+        colors: ["#FFE8F5", "#FFC8E8", "#FFA8D8", "#E888C8", "#D868A8"],
+        bg: "#FFA8D8",
+      },
+      {
+        id: "parties-5",
+        name: "Party Purple",
+        desc: "Vibrant purple",
+        colors: ["#E8C8F5", "#D8A8E8", "#C888D8", "#B868C8", "#A848B8"],
+        bg: "#C888D8",
+      },
+      {
+        id: "parties-6",
+        name: "Confetti Yellow",
+        desc: "Bright yellow",
+        colors: ["#FFF7E7", "#FFE7B7", "#FFD787", "#E8C767", "#D8B747"],
+        bg: "#FFD787",
+      },
+      {
+        id: "parties-7",
+        name: "Balloon Blue",
+        desc: "Sky blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "parties-8",
+        name: "Streamer Red",
+        desc: "Party red",
+        colors: ["#FFE1E1", "#FFB1B1", "#FF8181", "#E86161", "#C84141"],
+        bg: "#FF8181",
+      },
+      {
+        id: "parties-9",
+        name: "Disco Gold",
+        desc: "Shimmering gold",
+        colors: ["#FFEDDD", "#FFDDCD", "#FFCDAD", "#E8BD8D", "#D8AD6D"],
+        bg: "#FFCDAD",
+      },
+      {
+        id: "parties-10",
+        name: "Neon Green",
+        desc: "Electric green",
+        colors: ["#E8FFE8", "#B8FFB8", "#88FF88", "#68FF68", "#48FF48"],
+        bg: "#88FF88",
+      },
+      {
+        id: "parties-11",
+        name: "Rainbow",
+        desc: "Colorful spectrum",
+        colors: ["#FFE8E8", "#FFE8C8", "#FFE8A8", "#E8E8FF", "#D8D8FF"],
+        bg: "#FFE8A8",
+      },
+      {
+        id: "parties-12",
+        name: "Midnight Party",
+        desc: "Dark celebration",
+        colors: ["#2A2A4A", "#3A3A5A", "#4A4A6A", "#5A5A7A", "#6A6A8A"],
+        bg: "#3A3A5A",
+      },
+    ];
+
+    // Health & Fitness - 12 color stories
+    const healthStories = [
+      {
+        id: "health-1",
+        name: "Garden Bloom",
+        desc: "Lush emerald gathers",
+        colors: ["#F5EDE4", "#9CC5B3", "#6B9D88", "#4A7662", "#2D5644"],
+        bg: "#6B9D88",
+      },
+      {
+        id: "health-2",
+        name: "Shimmering Sea",
+        desc: "Coastal mist & glitter",
+        colors: ["#B5D7E8", "#5B9FB8", "#3D7A95", "#2C5466", "#A8CDDD"],
+        bg: "#5B9FB8",
+      },
+      {
+        id: "health-3",
+        name: "Verdant Atelier",
+        desc: "Botanical inked outlines",
+        colors: ["#697864", "#2D4739", "#96C7D4", "#B5D4DD", "#81A494"],
+        bg: "#697864",
+      },
+      {
+        id: "health-4",
+        name: "Fresh Green",
+        desc: "Vitality green",
+        colors: ["#D5F5D5", "#95E895", "#5DD85D", "#3DC83D", "#1DA81D"],
+        bg: "#5DD85D",
+      },
+      {
+        id: "health-5",
+        name: "Ocean Breeze",
+        desc: "Cool blue",
+        colors: ["#E6F5FF", "#B6E8FF", "#86D8FF", "#66C8FF", "#46A8FF"],
+        bg: "#86D8FF",
+      },
+      {
+        id: "health-6",
+        name: "Energy Orange",
+        desc: "Energetic orange",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "health-7",
+        name: "Pure White",
+        desc: "Clean white",
+        colors: ["#FFFFFF", "#F5F5F5", "#E8E8E8", "#D8D8D8", "#C8C8C8"],
+        bg: "#F5F5F5",
+      },
+      {
+        id: "health-8",
+        name: "Lime Zest",
+        desc: "Fresh lime",
+        colors: ["#E8FFE8", "#B8FFB8", "#88FF88", "#68FF68", "#48FF48"],
+        bg: "#88FF88",
+      },
+      {
+        id: "health-9",
+        name: "Turquoise",
+        desc: "Aqua wellness",
+        colors: ["#E8F5F5", "#B8E8E8", "#88D8D8", "#68C8C8", "#48A8A8"],
+        bg: "#88D8D8",
+      },
+      {
+        id: "health-10",
+        name: "Sunrise Yellow",
+        desc: "Morning energy",
+        colors: ["#FFEEDE", "#FFDECE", "#FFCE9E", "#E8BE7E", "#D8AE5E"],
+        bg: "#FFCE9E",
+      },
+      {
+        id: "health-11",
+        name: "Mint Fresh",
+        desc: "Cool mint",
+        colors: ["#E8F5F0", "#B8E8D8", "#88D8C8", "#68C8B8", "#48A898"],
+        bg: "#88D8C8",
+      },
+      {
+        id: "health-12",
+        name: "Coral Vitality",
+        desc: "Warm coral",
+        colors: ["#FFE7E7", "#FFB7B7", "#FF8787", "#E86767", "#C84747"],
+        bg: "#FF8787",
+      },
+    ];
+
+    // Clubs & Groups - 12 color stories
+    const clubsStories = [
+      {
+        id: "clubs-1",
+        name: "Sage Dusk",
+        desc: "Lavender twilight canopy",
+        colors: ["#6B86B3", "#4E6BA0", "#1E2C5C", "#B5CEE8", "#8FA6D4"],
+        bg: "#4E6BA0",
+      },
+      {
+        id: "clubs-2",
+        name: "Velvet Gold",
+        desc: "Gilded foliage shine",
+        colors: ["#9A967E", "#6B6B4A", "#2C2E1A", "#E4E8DC", "#A8A89E"],
+        bg: "#6B6B4A",
+      },
+      {
+        id: "clubs-3",
+        name: "Mist Coast",
+        desc: "Cool greenhouse glass",
+        colors: ["#1C3D52", "#93C5E8", "#B5D7EA", "#7CADC7", "#4A7792"],
+        bg: "#1C3D52",
+      },
+      {
+        id: "clubs-4",
+        name: "Unity Blue",
+        desc: "Togetherness blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "clubs-5",
+        name: "Community Green",
+        desc: "Group green",
+        colors: ["#E3F5E3", "#B3E8B3", "#83D883", "#63C863", "#43A843"],
+        bg: "#83D883",
+      },
+      {
+        id: "clubs-6",
+        name: "Friendship Pink",
+        desc: "Warm pink",
+        colors: ["#FFE8F5", "#FFC8E8", "#FFA8D8", "#E888C8", "#D868A8"],
+        bg: "#FFA8D8",
+      },
+      {
+        id: "clubs-7",
+        name: "Team Purple",
+        desc: "Collaborative purple",
+        colors: ["#F5E8F5", "#E8C8E8", "#D8A8D8", "#C888C8", "#B868B8"],
+        bg: "#D8A8D8",
+      },
+      {
+        id: "clubs-8",
+        name: "Social Orange",
+        desc: "Friendly orange",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "clubs-9",
+        name: "Gathering Beige",
+        desc: "Neutral meeting",
+        colors: ["#F5F0E8", "#E8D8C8", "#D8C8B8", "#C8B8A8", "#B8A898"],
+        bg: "#D8C8B8",
+      },
+      {
+        id: "clubs-10",
+        name: "Activity Red",
+        desc: "Active red",
+        colors: ["#FFE9E9", "#FFB9B9", "#FF8989", "#E86969", "#C84949"],
+        bg: "#FF8989",
+      },
+      {
+        id: "clubs-11",
+        name: "Meeting Gray",
+        desc: "Professional gray",
+        colors: ["#E8E8E8", "#C8C8C8", "#A8A8A8", "#888888", "#686868"],
+        bg: "#A8A8A8",
+      },
+      {
+        id: "clubs-12",
+        name: "Together Teal",
+        desc: "Unified teal",
+        colors: ["#E8F5F5", "#B8E8E8", "#88D8D8", "#68C8C8", "#48A8A8"],
+        bg: "#88D8D8",
+      },
+    ];
+
+    // General - 12 color stories
+    const generalStories = [
+      {
+        id: "general-1",
+        name: "Mist Coast",
+        desc: "Cool greenhouse glass",
+        colors: ["#1C3D52", "#93C5E8", "#B5D7EA", "#7CADC7", "#4A7792"],
+        bg: "#1C3D52",
+      },
+      {
+        id: "general-2",
+        name: "Sage Dusk",
+        desc: "Lavender twilight canopy",
+        colors: ["#6B86B3", "#4E6BA0", "#1E2C5C", "#B5CEE8", "#8FA6D4"],
+        bg: "#4E6BA0",
+      },
+      {
+        id: "general-3",
+        name: "Velvet Gold",
+        desc: "Gilded foliage shine",
+        colors: ["#9A967E", "#6B6B4A", "#2C2E1A", "#E4E8DC", "#A8A89E"],
+        bg: "#6B6B4A",
+      },
+      {
+        id: "general-4",
+        name: "Tramontane",
+        desc: "Noir dusk breeze",
+        colors: ["#5D5247", "#7A6B7A", "#D9A884", "#3D2E1A", "#4A3834"],
+        bg: "#5D5247",
+      },
+      {
+        id: "general-5",
+        name: "Neutral Gray",
+        desc: "Versatile gray",
+        colors: ["#E8E8E8", "#C8C8C8", "#A8A8A8", "#888888", "#686868"],
+        bg: "#A8A8A8",
+      },
+      {
+        id: "general-6",
+        name: "Classic Blue",
+        desc: "Timeless blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "general-7",
+        name: "Warm Beige",
+        desc: "Comfortable beige",
+        colors: ["#F5F0E8", "#E8D8C8", "#D8C8B8", "#C8B8A8", "#B8A898"],
+        bg: "#D8C8B8",
+      },
+      {
+        id: "general-8",
+        name: "Soft White",
+        desc: "Clean white",
+        colors: ["#FFFFFF", "#F5F5F5", "#E8E8E8", "#D8D8D8", "#C8C8C8"],
+        bg: "#F5F5F5",
+      },
+      {
+        id: "general-9",
+        name: "Muted Green",
+        desc: "Calm green",
+        colors: ["#E6F5E6", "#B6E8B6", "#86D886", "#66C866", "#46A846"],
+        bg: "#86D886",
+      },
+      {
+        id: "general-10",
+        name: "Earth Brown",
+        desc: "Natural brown",
+        colors: ["#8B6B4A", "#6B4A2A", "#4A2A1A", "#A88B6B", "#C8A88B"],
+        bg: "#8B6B4A",
+      },
+      {
+        id: "general-11",
+        name: "Sky Blue",
+        desc: "Light blue",
+        colors: ["#E4F5FF", "#B4E8FF", "#84D8FF", "#64C8FF", "#44A8FF"],
+        bg: "#84D8FF",
+      },
+      {
+        id: "general-12",
+        name: "Charcoal",
+        desc: "Dark neutral",
+        colors: ["#2A2A2A", "#3A3A3A", "#4A4A4A", "#5A5A5A", "#6A6A6A"],
+        bg: "#3A3A3A",
+      },
+    ];
+
+    // Other / Special Interest - 12 color stories
+    const otherStories = [
+      {
+        id: "other-1",
+        name: "Verdant Atelier",
+        desc: "Botanical inked outlines",
+        colors: ["#697864", "#2D4739", "#96C7D4", "#B5D4DD", "#81A494"],
+        bg: "#697864",
+      },
+      {
+        id: "other-2",
+        name: "Trellis Brass",
+        desc: "Gilded lattice cues",
+        colors: ["#E8D99F", "#B89F5F", "#6B5D3B", "#3D2E1A", "#F5EDD1"],
+        bg: "#B89F5F",
+      },
+      {
+        id: "other-3",
+        name: "Petal Script",
+        desc: "Painterly blush swash",
+        colors: ["#5D3834", "#F5EDE4", "#DDB9B9", "#D9A884", "#B8876B"],
+        bg: "#F5EDE4",
+      },
+      {
+        id: "other-4",
+        name: "Sage Dusk",
+        desc: "Lavender twilight canopy",
+        colors: ["#6B86B3", "#4E6BA0", "#1E2C5C", "#B5CEE8", "#8FA6D4"],
+        bg: "#4E6BA0",
+      },
+      {
+        id: "other-5",
+        name: "Unique Purple",
+        desc: "Distinctive purple",
+        colors: ["#E8C8F5", "#D8A8E8", "#C888D8", "#B868C8", "#A848B8"],
+        bg: "#C888D8",
+      },
+      {
+        id: "other-6",
+        name: "Special Teal",
+        desc: "Unique teal",
+        colors: ["#E8F5F5", "#B8E8E8", "#88D8D8", "#68C8C8", "#48A8A8"],
+        bg: "#88D8D8",
+      },
+      {
+        id: "other-7",
+        name: "Custom Orange",
+        desc: "Personal orange",
+        colors: ["#FFE8C8", "#FFD8A8", "#FFC888", "#E8A868", "#D88848"],
+        bg: "#FFC888",
+      },
+      {
+        id: "other-8",
+        name: "Distinctive Red",
+        desc: "Standout red",
+        colors: ["#FFEBEB", "#FFBBBB", "#FF8B8B", "#E86B6B", "#C84B4B"],
+        bg: "#FF8B8B",
+      },
+      {
+        id: "other-9",
+        name: "Rare Green",
+        desc: "Uncommon green",
+        colors: ["#E1F5E1", "#B1E8B1", "#81D881", "#61C861", "#41A841"],
+        bg: "#81D881",
+      },
+      {
+        id: "other-10",
+        name: "Exotic Pink",
+        desc: "Unusual pink",
+        colors: ["#FFE8F5", "#FFC8E8", "#FFA8D8", "#E888C8", "#D868A8"],
+        bg: "#FFA8D8",
+      },
+      {
+        id: "other-11",
+        name: "Mystery Blue",
+        desc: "Intriguing blue",
+        colors: ["#E8F0FF", "#B8D8FF", "#88C0FF", "#68A8FF", "#4890FF"],
+        bg: "#88C0FF",
+      },
+      {
+        id: "other-12",
+        name: "Eclectic Mix",
+        desc: "Varied colors",
+        colors: ["#FFE8E8", "#FFE8C8", "#FFE8A8", "#E8E8FF", "#D8D8FF"],
+        bg: "#FFE8A8",
+      },
+    ];
+
+    // Combine all stories
+    const allStories = [
+      ...springStories,
+      ...summerStories,
+      ...schoolStories,
+      ...fallStories,
+      ...churchStories,
+      ...sportsStories,
+      ...fundraisingStories,
+      ...familyStories,
+      ...businessStories,
+      ...partiesStories,
+      ...healthStories,
+      ...clubsStories,
+      ...generalStories,
+      ...otherStories,
+    ];
+
+    // Process each story to add gradients and text colors
+    allStories.forEach((story) => {
+      const bgIsDark = isDarkColor(story.bg);
+
+      // Calculate background brightness
+      const bgR = parseInt(story.bg.slice(1, 3), 16);
+      const bgG = parseInt(story.bg.slice(3, 5), 16);
+      const bgB = parseInt(story.bg.slice(5, 7), 16);
+      const bgBrightness = (bgR * 299 + bgG * 587 + bgB * 114) / 1000;
+
+      const lightest = getLightestColor(story.colors);
+      const darkest = getDarkestColor(story.colors);
+
+      // Calculate brightness for lightest and darkest colors
+      const lightestR = parseInt(lightest.slice(1, 3), 16);
+      const lightestG = parseInt(lightest.slice(3, 5), 16);
+      const lightestB = parseInt(lightest.slice(5, 7), 16);
+      const lightestBrightness =
+        (lightestR * 299 + lightestG * 587 + lightestB * 114) / 1000;
+
+      const darkestR = parseInt(darkest.slice(1, 3), 16);
+      const darkestG = parseInt(darkest.slice(3, 5), 16);
+      const darkestB = parseInt(darkest.slice(5, 7), 16);
+      const darkestBrightness =
+        (darkestR * 299 + darkestG * 587 + darkestB * 114) / 1000;
+
+      // Ensure proper contrast: dark backgrounds need light text, light backgrounds need dark text
+      // For dark backgrounds (brightness < 128), use white or very light colors (brightness > 200)
+      // For light backgrounds (brightness >= 128), use black or very dark colors (brightness < 100)
+      let textColor1: string;
+      let textColor2: string;
+
+      if (bgIsDark) {
+        // Dark background: need light text
+        if (lightestBrightness > 200) {
+          textColor1 = lightest;
+        } else {
+          textColor1 = "#FFFFFF"; // Use white for maximum contrast
+        }
+        textColor2 = "#FFFFFF"; // Always white for main title on dark backgrounds
+      } else {
+        // Light background: need dark text
+        if (darkestBrightness < 100) {
+          textColor1 = darkest;
+        } else {
+          textColor1 = "#111827"; // Use near-black for maximum contrast
+        }
+        textColor2 = darkestBrightness < 100 ? darkest : "#111827"; // Use darkest or near-black
+      }
+
+      // Create gradient from first two colors
+      const gradientColor1 = hexToRgba(story.colors[0], 0.95);
+      const gradientColor2 = hexToRgba(
+        story.colors[1] || story.colors[0],
+        0.85
+      );
+      const bgCss = createGradient(gradientColor1, gradientColor2);
+
+      stories.push({
+        id: story.id,
+        name: story.name,
+        description: story.desc,
+        colors: story.colors,
+        bgColor: story.bg,
+        bgCss,
+        textColor1,
+        textColor2,
+        buttonColor: story.colors[2] || story.colors[0],
+        buttonTextColor: bgIsDark ? textColor1 : darkest,
+      });
+    });
+
+    return stories;
+  };
+
+  const PRESETS = generateColorStories();
+
+  // Map theme designs to their color stories
+  const THEME_COLOR_STORIES: Record<string, string[]> = {
+    Spring: PRESETS.filter((p) => p.id.startsWith("spring-")).map((p) => p.id),
+    Summer: PRESETS.filter((p) => p.id.startsWith("summer-")).map((p) => p.id),
+    "School & Education": PRESETS.filter((p) => p.id.startsWith("school-")).map(
+      (p) => p.id
+    ),
+    "Fall & Seasonal": PRESETS.filter((p) => p.id.startsWith("fall-")).map(
+      (p) => p.id
+    ),
+    "Church & Community": PRESETS.filter((p) => p.id.startsWith("church-")).map(
+      (p) => p.id
+    ),
+    "Sports & Recreation": PRESETS.filter((p) =>
+      p.id.startsWith("sports-")
+    ).map((p) => p.id),
+    "Fundraising & Food": PRESETS.filter((p) =>
+      p.id.startsWith("fundraising-")
+    ).map((p) => p.id),
+    "Family & Personal": PRESETS.filter((p) => p.id.startsWith("family-")).map(
+      (p) => p.id
+    ),
+    "Business & Professional": PRESETS.filter((p) =>
+      p.id.startsWith("business-")
+    ).map((p) => p.id),
+    "Parties & Events": PRESETS.filter((p) => p.id.startsWith("parties-")).map(
+      (p) => p.id
+    ),
+    "Health & Fitness": PRESETS.filter((p) => p.id.startsWith("health-")).map(
+      (p) => p.id
+    ),
+    "Clubs & Groups": PRESETS.filter((p) => p.id.startsWith("clubs-")).map(
+      (p) => p.id
+    ),
+    General: PRESETS.filter((p) => p.id.startsWith("general-")).map(
+      (p) => p.id
+    ),
+    "Other / Special Interest": PRESETS.filter((p) =>
+      p.id.startsWith("other-")
+    ).map((p) => p.id),
+  };
 
   const [themeMenuOpen, setThemeMenuOpen] = React.useState(false);
   const [templateMenuOpen, setTemplateMenuOpen] = React.useState(false);
@@ -1438,13 +2711,13 @@ const SignupBuilder: React.FC<Props> = ({
   }, [previewFixedHeightPx, previewFloating]);
 
   return (
-    <section className="rounded-lg border border-border bg-surface/60 px-4 py-4 sm:px-5 sm:py-5 space-y-4 max-w-full overflow-x-hidden">
-      <div className="space-y-4 max-w-full overflow-x-hidden">
-        {showBasics && (
-          <div className="grid gap-3 sm:grid-cols-2 max-w-full min-w-0">
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Form title
+    <div className="space-y-6">
+      {showBasics && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Form Title
               </label>
               <input
                 type="text"
@@ -1452,101 +2725,88 @@ const SignupBuilder: React.FC<Props> = ({
                 onChange={(event) =>
                   onChange({ ...form, title: event.target.value })
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="Example: Volunteer & supply sign-up"
               />
             </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Group name
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Group Name
               </label>
               <input
                 type="text"
                 value={form.header?.groupName || ""}
                 onChange={(e) => setHeader({ groupName: e.target.value })}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="Your group or team"
               />
             </div>
-            <div className="space-y-1 hidden">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Group name
-              </label>
-              <input
-                type="text"
-                value={form.header?.groupName || ""}
-                onChange={(e) => setHeader({ groupName: e.target.value })}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                placeholder="Your group or team"
-              />
-            </div>
-            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Headline description
-              </label>
-              <textarea
-                value={form.description || ""}
-                onChange={(event) =>
-                  onChange({ ...form, description: event.target.value })
-                }
-                rows={3}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                placeholder="Let guests know how to prepare."
-              />
-            </div>
-            {/* Venue and Address fields */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Venue
-              </label>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <label className="text-sm font-medium text-gray-700">
+              Headline Description
+            </label>
+            <textarea
+              value={form.description || ""}
+              onChange={(event) =>
+                onChange({ ...form, description: event.target.value })
+              }
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              placeholder="Let guests know how to prepare."
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Venue</label>
               <input
                 type="text"
                 value={(form as any).venue || ""}
                 onChange={(e) =>
                   onChange({ ...(form as any), venue: e.target.value })
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="e.g., Central Park"
               />
             </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Address
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                aria-required="false"
+                aria-required="true"
                 value={(form as any).location || ""}
                 onChange={(e) =>
                   onChange({ ...(form as any), location: e.target.value })
                 }
-                className={`w-full rounded-md border bg-background px-3 py-2 text-sm ${
+                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 ${
                   showBasicsErrors &&
                   (typeof (form as any).location !== "string" ||
                     !(form as any).location.trim())
-                    ? "border-red-500"
-                    : "border-border"
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
                 }`}
                 placeholder="Street, City, State"
               />
               {showBasicsErrors &&
                 (typeof (form as any).location !== "string" ||
                   !(form as any).location.trim()) && (
-                  <p className="text-[11px] text-red-600">
-                    Address is required.
-                  </p>
+                  <p className="text-xs text-red-600">Address is required.</p>
                 )}
             </div>
-            {/* Date and time (start) */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Date
-              </label>
+          </div>
+
+          {/* Date and time */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Date</label>
               <input
                 type="date"
                 value={(((form as any).start as string) || "").slice(0, 10)}
                 onChange={(e) => {
-                  const date = e.target.value; // YYYY-MM-DD
+                  const date = e.target.value;
                   const current = ((form as any).start as string) || "";
                   const time = current.includes("T")
                     ? current.split("T")[1].slice(0, 5)
@@ -1554,13 +2814,11 @@ const SignupBuilder: React.FC<Props> = ({
                   const isoLocal = date ? `${date}T${time}` : null;
                   onChange({ ...(form as any), start: isoLocal });
                 }}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Time
-              </label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Time</label>
               <input
                 type="time"
                 value={(() => {
@@ -1581,7 +2839,7 @@ const SignupBuilder: React.FC<Props> = ({
                   const isoLocal = `${baseDate}T${time}`;
                   onChange({ ...(form as any), start: isoLocal });
                 }}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
             {/* Removed manual background color control */}
@@ -1832,6 +3090,73 @@ const SignupBuilder: React.FC<Props> = ({
             />
             <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+                Color stories
+              </label>
+              <div className="flex flex-wrap gap-3 max-w-full">
+                {(() => {
+                  const selectedTheme =
+                    form.header?.designTheme || THEME_NAMES[0];
+                  const themeColorStoryIds =
+                    THEME_COLOR_STORIES[selectedTheme] || [];
+                  const filteredPresets = PRESETS.filter((p) =>
+                    themeColorStoryIds.includes(p.id)
+                  );
+                  return filteredPresets.map((p) => {
+                    // Use pre-calculated text colors from PRESETS
+                    const textColor1 = p.textColor1 || "#374151";
+                    const textColor2 =
+                      p.textColor2 || p.textColor1 || "#111827";
+
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() =>
+                          setHeader({
+                            themeId: p.id,
+                            backgroundColor: p.bgColor,
+                            backgroundCss: p.bgCss || null,
+                            textColor1: textColor1,
+                            textColor2: textColor2 || textColor1,
+                            buttonColor: p.buttonColor || null,
+                            buttonTextColor: p.buttonTextColor || null,
+                          })
+                        }
+                        className={`flex-1 min-w-[150px] border rounded-2xl p-[0.65rem] bg-[#f7f4f0] cursor-pointer flex flex-col gap-[0.45rem] transition-all duration-[120ms] ease text-left ${
+                          (form.header?.themeId || "") === p.id
+                            ? "border-[rgba(199,153,100,0.9)] shadow-[0_12px_30px_rgba(12,0,6,0.2)]"
+                            : "border-[rgba(0,0,0,0.08)] hover:border-[rgba(199,153,100,0.6)] hover:-translate-y-0.5"
+                        }`}
+                        style={{ color: "rgba(21, 12, 9, 0.9)" }}
+                        title={`${p.name} - ${p.description}`}
+                      >
+                        {/* Color circles */}
+                        <div className="flex gap-[0.3rem]">
+                          {p.colors.map((color, idx) => (
+                            <span
+                              key={idx}
+                              className="w-[18px] h-[18px] rounded-full border border-[rgba(0,0,0,0.08)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)]"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Text content */}
+                        <div className="flex flex-col text-[0.65rem] leading-[1.2] tracking-[0.1em] uppercase">
+                          <span>{p.name}</span>
+                          <small className="text-[0.6rem] text-[rgba(21,12,9,0.55)] normal-case tracking-[0.05em]">
+                            {p.description}
+                          </small>
+                        </div>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
                 Image template
               </label>
               {/* Small screens: dropdown with thumbnail */}
@@ -1969,49 +3294,6 @@ const SignupBuilder: React.FC<Props> = ({
                 </button>
               </div>
             </div>
-            <div className="space-y-1 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                Background color
-              </label>
-              <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 max-w-full min-w-0">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() =>
-                      setHeader({
-                        themeId: p.id,
-                        backgroundColor: p.bgColor,
-                        backgroundCss: p.bgCss || null,
-                        textColor1: p.textColor1 || null,
-                        textColor2: p.textColor2 || null,
-                        buttonColor: p.buttonColor || null,
-                        buttonTextColor: p.buttonTextColor || null,
-                      })
-                    }
-                    className={`relative w-full rounded-lg border ${
-                      (form.header?.themeId || "") === p.id
-                        ? "border-foreground"
-                        : "border-border"
-                    }`}
-                    title={p.name}
-                  >
-                    <div
-                      className="h-12 rounded-t-lg"
-                      style={{
-                        backgroundColor: p.bgColor,
-                        backgroundImage: p.bgCss,
-                      }}
-                    />
-                    <div className="px-2 py-1 text-left">
-                      <div className="text-[11px] font-semibold truncate">
-                        {p.name}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
             {/* Hidden file inputs */}
             <input
               ref={headerFileInputRef}
@@ -2060,7 +3342,12 @@ const SignupBuilder: React.FC<Props> = ({
                           : undefined,
                       }}
                     >
-                      <p className="text-xs text-gray-700 mb-2 text-center">
+                      <p
+                        className="text-xs mb-2 text-center opacity-75"
+                        style={{
+                          color: form.header?.textColor1 || "#374151",
+                        }}
+                      >
                         Header preview
                       </p>
                       {(form.header?.templateId || "header-1") ===
@@ -2850,23 +4137,22 @@ const SignupBuilder: React.FC<Props> = ({
                         >
                           {form.header?.groupName ? (
                             <div
-                              className="text-[0.9rem] sm:text-sm font-semibold text-gray-700 opacity-85"
-                              style={
-                                {
-                                  // color: form.header?.textColor1 || undefined,
-                                }
-                              }
+                              className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
+                              style={{
+                                color: form.header?.textColor1 || "#374151",
+                              }}
                             >
                               {form.header.groupName}
                             </div>
                           ) : null}
                           <h3
-                            className="text-2xl sm:text-[1.6rem] font-semibold text-gray-900"
-                            style={
-                              {
-                                // color: form.header?.textColor2 || undefined,
-                              }
-                            }
+                            className="text-2xl sm:text-[1.6rem] font-semibold"
+                            style={{
+                              color:
+                                form.header?.textColor2 ||
+                                form.header?.textColor1 ||
+                                "#111827",
+                            }}
                           >
                             {form.title || "Smart sign-up"}
                           </h3>
@@ -2874,12 +4160,10 @@ const SignupBuilder: React.FC<Props> = ({
                       </div>
                       {form.description && (
                         <p
-                          className="mt-3 text-[0.95rem] max-w-2xl text-gray-700 opacity-90"
-                          style={
-                            {
-                              // color: form.header?.textColor1 || undefined,
-                            }
-                          }
+                          className="mt-3 text-[0.95rem] max-w-2xl opacity-90"
+                          style={{
+                            color: form.header?.textColor1 || "#374151",
+                          }}
                         >
                           {form.description}
                         </p>
@@ -2890,24 +4174,35 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {showSettings && (
-          <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                Smart settings
-              </span>
-              <button
-                type="button"
-                onClick={() => setSettings({ ...DEFAULT_SIGNUP_SETTINGS })}
-                className="text-xs text-foreground/70 hover:text-foreground underline underline-offset-2"
-              >
-                Reset to defaults
-              </button>
+      {showSettings && (
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-2xl font-bold text-foreground mb-1">
+                Smart Settings
+              </h3>
+              <p className="text-sm text-foreground/60">
+                Set capacity, deadlines, and preferences
+              </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex items-start gap-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setSettings({ ...DEFAULT_SIGNUP_SETTINGS })}
+              className="text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"
+            >
+              Reset to defaults
+            </button>
+          </div>
+
+          {/* Smart Settings Section */}
+          <div className="space-y-4 bg-muted/30 rounded-2xl p-6 border border-border/50">
+            {/* Allow multiple slots */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={settings.allowMultipleSlotsPerPerson}
@@ -2916,362 +4211,522 @@ const SignupBuilder: React.FC<Props> = ({
                       allowMultipleSlotsPerPerson: event.target.checked,
                     })
                   }
+                  className="sr-only"
                 />
-                <span>
-                  Allow guests to claim multiple slots
-                  <span className="block text-xs text-foreground/60">
-                    Perfect for parents helping in multiple time blocks.
-                  </span>
-                </span>
-              </label>
-              <div className="grid grid-cols-[auto_1fr] items-center gap-2 text-sm">
-                <label className="flex items-center gap-2">
-                  <span>Max slots per person</span>
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={settings.maxSlotsPerPerson ?? ""}
-                  onChange={(event) =>
-                    setSettings({
-                      maxSlotsPerPerson: event.target.value
-                        ? Math.max(
-                            1,
-                            Math.min(
-                              50,
-                              Number.parseInt(event.target.value, 10) || 1
-                            )
-                          )
-                        : null,
-                    })
-                  }
-                  className="w-28 rounded-md border border-border bg-background px-2 py-1 text-sm"
-                  placeholder="Unlimited"
-                />
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.allowMultipleSlotsPerPerson
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.allowMultipleSlotsPerPerson && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
               </div>
-              <label className="flex items-start gap-2 text-sm">
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
+                  Allow guests to claim multiple slots
+                </div>
+                <p className="text-sm text-foreground/60">
+                  Perfect for parents helping in multiple time blocks.
+                </p>
+              </div>
+            </label>
+
+            {/* Max slots per person */}
+            <div className="space-y-2 pl-9">
+              <label className="text-sm font-medium text-foreground/70">
+                Max slots per person
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={settings.maxSlotsPerPerson ?? ""}
+                onChange={(event) =>
+                  setSettings({
+                    maxSlotsPerPerson: event.target.value
+                      ? Math.max(
+                          1,
+                          Math.min(
+                            50,
+                            Number.parseInt(event.target.value, 10) || 1
+                          )
+                        )
+                      : null,
+                  })
+                }
+                className="w-32 rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                placeholder="Unlimited"
+              />
+            </div>
+
+            {/* Enable waitlist */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={settings.waitlistEnabled}
                   onChange={(event) =>
                     setSettings({ waitlistEnabled: event.target.checked })
                   }
+                  className="sr-only"
                 />
-                <span>
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.waitlistEnabled
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.waitlistEnabled && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
                   Enable automatic waitlist
-                  <span className="block text-xs text-foreground/60">
-                    Overflow sign-ups queue automatically when slots are full.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
+                </div>
+                <p className="text-sm text-foreground/60">
+                  Overflow sign-ups queue automatically when slots are full.
+                </p>
+              </div>
+            </label>
+
+            {/* Lock when full */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={settings.lockWhenFull}
                   onChange={(event) =>
                     setSettings({ lockWhenFull: event.target.checked })
                   }
+                  className="sr-only"
                 />
-                <span>
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.lockWhenFull
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.lockWhenFull && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
                   Lock slots once capacity is met
-                  <span className="block text-xs text-foreground/60">
-                    Prevents overbooking. Waitlist still collects interest.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
+                </div>
+                <p className="text-sm text-foreground/60">
+                  Prevents overbooking. Waitlist still collects interest.
+                </p>
+              </div>
+            </label>
+
+            {/* Show remaining spots */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={settings.showRemainingSpots}
                   onChange={(event) =>
                     setSettings({ showRemainingSpots: event.target.checked })
                   }
+                  className="sr-only"
                 />
-                <span>
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.showRemainingSpots
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.showRemainingSpots && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
                   Show remaining spots to guests
-                  <span className="block text-xs text-foreground/60">
-                    Creates urgency and builds trust in availability data.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
+                </div>
+                <p className="text-sm text-foreground/60">
+                  Creates urgency and builds trust in availability data.
+                </p>
+              </div>
+            </label>
+
+            {/* Hide participant names */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={Boolean(settings.hideParticipantNames)}
                   onChange={(event) =>
-                    setSettings({ hideParticipantNames: event.target.checked })
+                    setSettings({
+                      hideParticipantNames: event.target.checked,
+                    })
                   }
+                  className="sr-only"
                 />
-                <span>
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.hideParticipantNames
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.hideParticipantNames && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
                   Hide names from participants
-                  <span className="block text-xs text-foreground/60">
-                    Only the host can see who signed up.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
+                </div>
+                <p className="text-sm text-foreground/60">
+                  Only the host can see who signed up.
+                </p>
+              </div>
+            </label>
+
+            {/* Collect phone */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={settings.collectPhone}
                   onChange={(event) =>
                     setSettings({ collectPhone: event.target.checked })
                   }
+                  className="sr-only"
                 />
-                <span>
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.collectPhone
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.collectPhone && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
                   Collect mobile numbers
-                  <span className="block text-xs text-foreground/60">
-                    Useful for last-minute changes or team group texts.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
+                </div>
+                <p className="text-sm text-foreground/60">
+                  Useful for last-minute changes or team group texts.
+                </p>
+              </div>
+            </label>
+
+            {/* Collect email */}
+            <label className="flex items-start gap-4 group cursor-pointer">
+              <div className="relative flex-shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={settings.collectEmail}
                   onChange={(event) =>
                     setSettings({ collectEmail: event.target.checked })
                   }
+                  className="sr-only"
                 />
-                <span>
+                <div
+                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                    settings.collectEmail
+                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
+                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                  }`}
+                >
+                  {settings.collectEmail && (
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground mb-0.5">
                   Collect alternate email
-                  <span className="block text-xs text-foreground/60">
-                    Guests can route reminders to a personal inbox if needed.
-                  </span>
-                </span>
-              </label>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                  Max guests per sign-up
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={settings.maxGuestsPerSignup}
-                  onChange={(event) =>
-                    setSettings({
-                      maxGuestsPerSignup: Math.max(
-                        1,
-                        Math.min(
-                          20,
-                          Number.parseInt(event.target.value || "1", 10)
-                        )
-                      ),
-                    })
-                  }
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                />
-                <p className="mt-1 text-[11px] text-foreground/60">
-                  Let families register multiple attendees at once.
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                  Automated reminders
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {REMINDER_PRESETS.map((option) => {
-                    const checked = settings.autoRemindersHoursBefore.includes(
-                      option.value
-                    );
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => toggleReminder(option.value)}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                          checked
-                            ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow"
-                            : "border-border bg-background text-foreground"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={handleAddReminderPrompt}
-                    className="rounded-full border border-dashed border-primary/60 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-                  >
-                    + Custom
-                  </button>
                 </div>
-                <p className="mt-2 text-[11px] text-foreground/60">
-                  Active:{" "}
-                  {settings.autoRemindersHoursBefore.length
-                    ? settings.autoRemindersHoursBefore
-                        .slice()
-                        .sort((a, b) => a - b)
-                        .map((hours) =>
-                          hours >= 24
-                            ? `${Math.round(hours / 24)} day${
-                                hours / 24 === 1 ? "" : "s"
-                              }`
-                            : `${hours} hour${hours === 1 ? "" : "s"}`
-                        )
-                        .join(", ")
-                    : "None"}
+                <p className="text-sm text-foreground/60">
+                  Guests can route reminders to a personal inbox if needed.
                 </p>
               </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                  Sign-up window
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="datetime-local"
-                    value={settings.signupOpensAt || ""}
-                    onChange={(e) =>
-                      setSettings({ signupOpensAt: e.target.value || null })
-                    }
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    placeholder="Opens"
-                  />
-                  <input
-                    type="datetime-local"
-                    value={settings.signupClosesAt || ""}
-                    onChange={(e) =>
-                      setSettings({ signupClosesAt: e.target.value || null })
-                    }
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    placeholder="Closes"
-                  />
-                </div>
-                <p className="mt-1 text-[11px] text-foreground/60">
-                  Leave blank to accept sign-ups anytime.
-                </p>
-              </div>
-            </div>
+            </label>
           </div>
-        )}
 
-        {showSections && (
-          <div className="space-y-4">
-            {form.sections.map((section, index) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                index={index}
-                total={form.sections.length}
-                onChange={(nextSection) =>
-                  handleSectionChange(section.id, nextSection)
+          {/* Max Guests Section */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+              Max guests per sign-up
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={settings.maxGuestsPerSignup}
+              onChange={(event) =>
+                setSettings({
+                  maxGuestsPerSignup: Math.max(
+                    1,
+                    Math.min(20, Number.parseInt(event.target.value || "1", 10))
+                  ),
+                })
+              }
+              className="w-1/5 rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+            />
+            <p className="text-xs text-foreground/60">
+              Let families register multiple attendees at once.
+            </p>
+          </div>
+
+          {/* Sign-up Window Section */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+              Sign-up window
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="datetime-local"
+                value={settings.signupOpensAt || ""}
+                onChange={(e) =>
+                  setSettings({ signupOpensAt: e.target.value || null })
                 }
-                onMove={handleSectionMove}
-                onDuplicate={handleSectionDuplicate}
-                onRemove={handleSectionRemove}
-                onSlotChange={handleSlotChange}
-                onSlotMove={handleSlotMove}
-                onSlotDuplicate={handleSlotDuplicate}
-                onSlotRemove={handleSlotRemove}
-                onAddSlot={handleAddSlot}
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                placeholder="Opens"
               />
-            ))}
+              <input
+                type="datetime-local"
+                value={settings.signupClosesAt || ""}
+                onChange={(e) =>
+                  setSettings({ signupClosesAt: e.target.value || null })
+                }
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                placeholder="Closes"
+              />
+            </div>
+            <p className="text-xs text-foreground/60">
+              Leave blank to accept sign-ups anytime.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showSections && (
+        <div className="space-y-4">
+          {form.sections.map((section, index) => (
+            <SectionCard
+              key={section.id}
+              section={section}
+              index={index}
+              total={form.sections.length}
+              onChange={(nextSection) =>
+                handleSectionChange(section.id, nextSection)
+              }
+              onMove={handleSectionMove}
+              onDuplicate={handleSectionDuplicate}
+              onRemove={handleSectionRemove}
+              onSlotChange={handleSlotChange}
+              onSlotMove={handleSlotMove}
+              onSlotDuplicate={handleSlotDuplicate}
+              onSlotRemove={handleSlotRemove}
+              onAddSlot={handleAddSlot}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={handleAddSection}
+            className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+          >
+            + Add another section
+          </button>
+        </div>
+      )}
+
+      {showQuestions && (
+        <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              Custom follow-up questions
+            </span>
             <button
               type="button"
-              onClick={handleAddSection}
-              className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+              onClick={handleAddQuestion}
+              className="inline-flex items-center gap-1 rounded-md border border-dashed border-primary/60 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
             >
-              + Add another section
+              + Question
             </button>
           </div>
-        )}
-
-        {showQuestions && (
-          <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                Custom follow-up questions
-              </span>
-              <button
-                type="button"
-                onClick={handleAddQuestion}
-                className="inline-flex items-center gap-1 rounded-md border border-dashed border-primary/60 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
-              >
-                + Question
-              </button>
-            </div>
-            {(form.questions || []).length === 0 ? (
-              <p className="text-xs text-foreground/60">
-                Ask for dietary notes, t-shirt sizes, carpool info, or anything
-                else you need.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {(form.questions || []).map((question, index) => (
-                  <div
-                    key={question.id}
-                    className="rounded-md border border-border bg-background px-3 py-3 space-y-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
-                            Prompt
-                          </label>
+          {(form.questions || []).length === 0 ? (
+            <p className="text-xs text-foreground/60">
+              Ask for dietary notes, t-shirt sizes, carpool info, or anything
+              else you need.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {(form.questions || []).map((question, index) => (
+                <div
+                  key={question.id}
+                  className="rounded-md border border-border bg-background px-3 py-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+                          Prompt
+                        </label>
+                        <input
+                          type="text"
+                          value={question.prompt}
+                          onChange={(event) =>
+                            handleQuestionChange(question.id, {
+                              prompt: event.target.value,
+                            })
+                          }
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          placeholder="Example: What time works best for you?"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-xs">
+                        <label className="inline-flex items-center gap-2">
                           <input
-                            type="text"
-                            value={question.prompt}
+                            type="checkbox"
+                            checked={Boolean(question.required)}
                             onChange={(event) =>
                               handleQuestionChange(question.id, {
-                                prompt: event.target.value,
+                                required: event.target.checked,
                               })
                             }
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                            placeholder="Example: What time works best for you?"
                           />
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-xs">
-                          <label className="inline-flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(question.required)}
-                              onChange={(event) =>
-                                handleQuestionChange(question.id, {
-                                  required: event.target.checked,
-                                })
-                              }
-                            />
-                            Required to submit
-                          </label>
-                          <label className="inline-flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(question.multiline)}
-                              onChange={(event) =>
-                                handleQuestionChange(question.id, {
-                                  multiline: event.target.checked,
-                                })
-                              }
-                            />
-                            Use a multi-line answer box
-                          </label>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-[11px] text-foreground/60">
-                          #{index + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleQuestionRemove(question.id)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-xs text-red-600 hover:text-red-700"
-                          title="Remove question"
-                        >
-                          ✕
-                        </button>
+                          Required to submit
+                        </label>
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(question.multiline)}
+                            onChange={(event) =>
+                              handleQuestionChange(question.id, {
+                                multiline: event.target.checked,
+                              })
+                            }
+                          />
+                          Use a multi-line answer box
+                        </label>
                       </div>
                     </div>
+                    <div className="flex flex-col gap-2">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-[11px] text-foreground/60">
+                        #{index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuestionRemove(question.id)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-xs text-red-600 hover:text-red-700"
+                        title="Remove question"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Gallery image selection modal */}
       {galleryImageIndex !== null && (
@@ -3354,7 +4809,7 @@ const SignupBuilder: React.FC<Props> = ({
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 };
 

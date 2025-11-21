@@ -32,7 +32,8 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
       });
       if (result?.ok) {
         onSuccess?.();
-        router.replace("/");
+        // Force a full page reload to ensure session is available
+        window.location.href = "/";
         return;
       }
       setMessage("Invalid email or password");

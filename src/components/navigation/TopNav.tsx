@@ -169,6 +169,12 @@ export function useUnifiedMenu() {
     }
   }, [status, fetchConnectedCalendars]);
 
+  useEffect(() => {
+    if (calendarsOpen && status === "authenticated") {
+      fetchConnectedCalendars();
+    }
+  }, [calendarsOpen, status, fetchConnectedCalendars]);
+
   return {
     session,
     status,
@@ -488,9 +494,9 @@ export function ProfileMenu({
                           title={
                             active ? `${label} connected` : `Connect ${label}`
                           }
-                          className={`flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                          className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
                             active
-                              ? "border-emerald-600 bg-emerald-50"
+                              ? "border-emerald-600 bg-emerald-100 ring-2 ring-emerald-600/20 shadow-lg shadow-emerald-600/25"
                               : "border-[#dcd8ff] bg-white hover:border-[#7f8cff]"
                           }`}
                           onClick={(e) => {
@@ -498,7 +504,29 @@ export function ProfileMenu({
                             handleCalendarConnect(key);
                           }}
                         >
-                          <Icon className="h-4 w-4" />
+                          <Icon
+                            className={`h-4 w-4 ${
+                              active ? "text-emerald-700" : ""
+                            }`}
+                          />
+                          {active && (
+                            <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-md">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 12 12"
+                                fill="none"
+                                className="h-3 w-3 text-white"
+                              >
+                                <path
+                                  d="M10 3L4.5 8.5L2 6"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                          )}
                         </button>
                         <span>{label}</span>
                       </div>
@@ -580,6 +608,8 @@ export default function TopNav() {
   const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isInitialMount, setIsInitialMount] = useState(true);
+  const isDashboardView = pathname === "/";
+  const navIsScrolled = isDashboardView ? isScrolled : true;
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
@@ -589,6 +619,12 @@ export default function TopNav() {
   const shouldShowNav = status === "authenticated";
 
   useEffect(() => {
+    if (!isDashboardView) {
+      setIsInitialMount(false);
+      return;
+    }
+
+    setIsInitialMount(true);
     const handleScroll = () => {
       // Show logo after scrolling past the big dashboard logo (approx 300px)
       setIsScrolled(window.scrollY > 300);
@@ -606,7 +642,7 @@ export default function TopNav() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isDashboardView]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -690,18 +726,18 @@ export default function TopNav() {
     <>
       {/* Mobile/Tablet Header with Hamburger */}
       <div
-        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] lg:hidden ${
+        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] lg:hidden bg-[#F8F5FF] ${
           !isInitialMount ? "transition-all duration-300" : ""
         } ${
-          isScrolled
-            ? "border-b border-white/60 bg-[#F8F5FF] backdrop-blur-md shadow-sm"
-            : "bg-transparent"
+          navIsScrolled
+            ? "border-b border-white/60 backdrop-blur-md shadow-sm"
+            : ""
         }`}
         suppressHydrationWarning
       >
         <div
           className={`flex items-center justify-between px-4 ${
-            isScrolled ? "py-3" : "py-5"
+            navIsScrolled ? "py-3" : "py-5"
           }`}
           suppressHydrationWarning
         >
@@ -720,7 +756,7 @@ export default function TopNav() {
           <Link
             href="/"
             className={`inline-flex items-center gap-2 text-[#7f8cff] transition-opacity duration-300 ${
-              isScrolled ? "opacity-100" : "opacity-0"
+              navIsScrolled ? "opacity-100" : "opacity-0"
             }`}
             suppressHydrationWarning
           >
@@ -738,18 +774,18 @@ export default function TopNav() {
 
       {/* Desktop TopNav */}
       <div
-        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] hidden lg:block ${
+        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] hidden lg:block bg-[#F8F5FF] ${
           !isInitialMount ? "transition-all duration-300" : ""
         } ${
-          isScrolled
-            ? "border-b border-white/60 bg-[#F8F5FF] backdrop-blur-md shadow-sm"
-            : "bg-transparent"
+          navIsScrolled
+            ? "border-b border-white/60 backdrop-blur-md shadow-sm"
+            : ""
         }`}
         suppressHydrationWarning
       >
         <div
           className={`mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 ${
-            isScrolled ? "py-3" : "py-5"
+            navIsScrolled ? "py-3" : "py-5"
           }`}
           suppressHydrationWarning
         >
@@ -757,7 +793,7 @@ export default function TopNav() {
             <Link
               href="/"
               className={`inline-flex items-center pr-10 gap-2 text-[#7f8cff] transition-opacity duration-300 ${
-                isScrolled ? "opacity-100" : "opacity-0"
+                navIsScrolled ? "opacity-100" : "opacity-0"
               }`}
               suppressHydrationWarning
             >

@@ -14,11 +14,39 @@ type Props = {
   submitting?: boolean;
 };
 
-const STEP_TITLES = [
-  "Basics",
-  "Smart settings",
-  "Sections",
-  "Preview & publish",
+const STEP_CONFIG = [
+  {
+    id: "basics",
+    title: "Event Basics",
+    subtitle: "Tell us about your event",
+    description: "Start with the essentials—what, when, and where",
+    color: "from-cyan-400 to-blue-500",
+    lightBg: "bg-gradient-to-br from-cyan-50 to-blue-50",
+  },
+  {
+    id: "settings",
+    title: "Smart Settings",
+    subtitle: "Configure your sign-up",
+    description: "Set capacity, deadlines, and preferences",
+    color: "from-purple-400 to-pink-500",
+    lightBg: "bg-gradient-to-br from-purple-50 to-pink-50",
+  },
+  {
+    id: "sections",
+    title: "Build Form",
+    subtitle: "Create sections & questions",
+    description: "Customize what information you need to collect",
+    color: "from-amber-400 to-orange-500",
+    lightBg: "bg-gradient-to-br from-amber-50 to-orange-50",
+  },
+  {
+    id: "preview",
+    title: "Launch",
+    subtitle: "Preview & publish",
+    description: "Review your sign-up form before sharing it",
+    color: "from-emerald-400 to-teal-500",
+    lightBg: "bg-gradient-to-br from-emerald-50 to-teal-50",
+  },
 ] as const;
 
 type StepKey = 0 | 1 | 2 | 3;
@@ -32,28 +60,14 @@ export default function SmartSignupWizard({
   const [step, setStep] = useState<StepKey>(0);
   const [showBasicsErrors, setShowBasicsErrors] = useState(false);
   const { data: session } = useSession();
-  const creatorName = (session?.user?.name as string | undefined) || null;
 
   const theme = useMemo(
     () => getEventTheme((form.description || form.title || "") as string),
     [form.title, form.description]
   );
-  const themeStyleVars = useMemo(
-    () =>
-      ({
-        "--event-header-gradient-light": theme.headerLight,
-        "--event-header-gradient-dark": theme.headerDark,
-        "--event-card-bg-light": theme.cardLight,
-        "--event-card-bg-dark": theme.cardDark,
-        "--event-border-light": theme.borderLight,
-        "--event-border-dark": theme.borderDark,
-        "--event-chip-light": theme.chipLight,
-        "--event-chip-dark": theme.chipDark,
-        "--event-text-light": theme.textLight,
-        "--event-text-dark": theme.textDark,
-      } as React.CSSProperties),
-    [theme]
-  );
+
+  const currentStep = STEP_CONFIG[step];
+  const progress = ((step + 1) / STEP_CONFIG.length) * 100;
 
   const next = () => {
     if (step === 0) {
@@ -67,176 +81,187 @@ export default function SmartSignupWizard({
     }
     setStep((s) => (s < 3 ? ((s + 1) as StepKey) : s));
   };
-  const prev = () => setStep((s) => (s > 0 ? ((s - 1) as StepKey) : s));
-  const initials = (creatorName || "")
-    .trim()
-    .split(/\s+/)
-    .map((w) => (w ? w[0].toUpperCase() : ""))
-    .slice(0, 2)
-    .join("");
 
-  const formatRangeLabel = (
-    startInput?: string | null,
-    endInput?: string | null,
-    options?: { timeZone?: string | null; allDay?: boolean | null }
-  ): string | null => {
-    const timeZone = options?.timeZone || undefined;
-    const allDay = Boolean(options?.allDay);
-    try {
-      if (!startInput) return null;
-      const start = new Date(startInput);
-      const end = endInput ? new Date(endInput) : null;
-      if (Number.isNaN(start.getTime())) return null;
-      const sameDay =
-        !!end &&
-        start.getFullYear() === end.getFullYear() &&
-        start.getMonth() === end.getMonth() &&
-        start.getDate() === end.getDate();
-      if (allDay) {
-        const dateFmt = new Intl.DateTimeFormat(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          timeZone,
-        });
-        const label =
-          end && !sameDay
-            ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
-            : dateFmt.format(start);
-        return `${label} (all day)`;
-      }
-      const dateFmt = new Intl.DateTimeFormat(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone,
-      });
-      if (end) {
-        if (sameDay) {
-          return `${dateFmt.format(start)}`;
-        }
-        return `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
-      }
-      return dateFmt.format(start);
-    } catch {
-      return startInput || null;
-    }
-  };
+  const prev = () => setStep((s) => (s > 0 ? ((s - 1) as StepKey) : s));
 
   const handleSubmit = (e: React.FormEvent) => {
-    // Never auto-submit on Enter or implicit form submit; publishing is only via the button click
     e.preventDefault();
   };
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      {/* Stepper */}
-      <div className="overflow-x-auto -mx-4 px-4">
-        <ol className="flex items-center gap-2 text-xs min-w-max">
-          {STEP_TITLES.map((label, i) => {
-            const active = i === step;
-            const done = i < step;
-            return (
-              <li
-                key={label}
-                className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border whitespace-nowrap flex-shrink-0 ${
-                  active
-                    ? "border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white"
-                    : done
-                    ? "border-border bg-surface text-foreground"
-                    : "border-dashed border-border text-foreground/70"
-                }`}
+    <div className="relative">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 -z-10 overflow-hidden rounded-3xl">
+        <div
+          className={`absolute inset-0 opacity-[0.03] transition-all duration-700 ${currentStep.lightBg}`}
+        />
+      </div>
+
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Compact header with progress */}
+        <div className="space-y-3">
+          {/* Step indicator and percentage */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-900">
+              Step {step + 1} of {STEP_CONFIG.length}
+            </span>
+            <span className="text-xs font-medium text-gray-500">
+              {Math.round(progress)}% Complete
+            </span>
+          </div>
+
+          {/* Clean progress bar */}
+          <div className="relative h-1.5 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={`h-full bg-gradient-to-r ${currentStep.color} transition-all duration-500 ease-out`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Title */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+              {currentStep.title}
+            </h2>
+            <p className="mt-1 text-sm text-gray-600">
+              {currentStep.description}
+            </p>
+          </div>
+        </div>
+        image.png
+        {/* Direct content - no extra wrapper */}
+        <div className="min-h-[400px]">
+          {step === 0 && (
+            <SignupBuilder
+              form={form}
+              onChange={onChange}
+              showBasicsErrors={showBasicsErrors}
+              panels={{
+                basics: true,
+                settings: false,
+                sections: false,
+                questions: false,
+              }}
+            />
+          )}
+          {step === 1 && (
+            <SignupBuilder
+              form={form}
+              onChange={onChange}
+              panels={{
+                basics: false,
+                settings: true,
+                sections: false,
+                questions: false,
+              }}
+            />
+          )}
+          {step === 2 && (
+            <SignupBuilder
+              form={form}
+              onChange={onChange}
+              panels={{
+                basics: false,
+                settings: false,
+                sections: true,
+                questions: true,
+              }}
+            />
+          )}
+          {step === 3 && (
+            <SignupViewer
+              eventId="preview"
+              initialForm={form as SignupForm}
+              viewerKind="readonly"
+            />
+          )}
+        </div>
+        {/* Clean action buttons */}
+        <div className="flex items-center justify-between gap-4 border-t border-gray-200 pt-6">
+          <button
+            type="button"
+            onClick={prev}
+            disabled={step === 0}
+            className="group inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <svg
+              className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Back
+          </button>
+
+          {step < 3 ? (
+            <button
+              type="button"
+              onClick={next}
+              className={`group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${currentStep.color} px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:shadow-xl`}
+            >
+              Continue
+              <svg
+                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
               >
-                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] flex-shrink-0 ${
-                  active
-                    ? "border-white/30 bg-white/20 text-white"
-                    : "border-gray-200 bg-white text-gray-900"
-                }`}>
-                  {i + 1}
-                </span>
-                <span className="whitespace-nowrap">{label}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      {/* Content */}
-      {step === 0 && (
-        <SignupBuilder
-          form={form}
-          onChange={onChange}
-          showBasicsErrors={showBasicsErrors}
-          panels={{
-            basics: true,
-            settings: false,
-            sections: false,
-            questions: false,
-          }}
-        />
-      )}
-      {step === 1 && (
-        <SignupBuilder
-          form={form}
-          onChange={onChange}
-          panels={{
-            basics: false,
-            settings: true,
-            sections: false,
-            questions: false,
-          }}
-        />
-      )}
-      {step === 2 && (
-        <SignupBuilder
-          form={form}
-          onChange={onChange}
-          panels={{
-            basics: false,
-            settings: false,
-            sections: true,
-            questions: true,
-          }}
-        />
-      )}
-      {step === 3 && (
-        <SignupViewer
-          eventId="preview"
-          initialForm={form as SignupForm}
-          viewerKind="readonly"
-        />
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-1">
-        <button
-          type="button"
-          onClick={prev}
-          disabled={step === 0}
-          className="px-3 py-2 text-sm rounded-md border border-border disabled:opacity-60"
-        >
-          Back
-        </button>
-        {step < 3 ? (
-          <button
-            type="button"
-            onClick={next}
-            className="px-3 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white"
-          >
-            Next
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onSubmit as any}
-            disabled={submitting}
-            className="px-3 py-2 text-sm rounded-md bg-primary text-white disabled:opacity-70"
-          >
-            {submitting ? "Publishing…" : "Publish sign-up"}
-          </button>
-        )}
-      </div>
-    </form>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSubmit as any}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? (
+                <>
+                  <svg
+                    className="h-4 w-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  Publish Sign-Up
+                  <span className="text-base">🎉</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }
