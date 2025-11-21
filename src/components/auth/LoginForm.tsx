@@ -56,7 +56,13 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
   };
 
   return (
-    <form className="space-y-3" onSubmit={onEmailSubmit} autoComplete="on">
+    <form
+      className="space-y-3"
+      onSubmit={onEmailSubmit}
+      autoComplete="on"
+      method="post"
+      action="#"
+    >
       <button
         type="button"
         onClick={onGoogleSignIn}
@@ -100,7 +106,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         id="login-email-input"
         name="email"
         type="email"
-        autoComplete="email username"
+        autoComplete="username"
         className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
         placeholder="Email"
         value={email}
@@ -113,6 +119,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
           name="password"
           type={showPassword ? "text" : "password"}
           autoComplete="current-password"
+          data-form-type="login"
           className={`w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition${
             message ? " input-error" : ""
           }${shake ? " input-shake" : ""}`}

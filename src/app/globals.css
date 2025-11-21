@@ -115,6 +115,25 @@ input[type="submit"][disabled] {
   cursor: not-allowed;
 }
 
+/* Override browser autofill styles to ensure text is always visible */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--foreground) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--surface) inset !important;
+  box-shadow: 0 0 0 30px var(--surface) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Ensure password text is visible when revealed */
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  color: var(--foreground) !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+}
+
 html {
   /* Ensure fullscreen coverage including safe areas but allow scrolling */
   min-height: 100vh;

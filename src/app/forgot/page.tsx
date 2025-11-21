@@ -52,7 +52,10 @@ export default function ForgotPasswordPage() {
         <p className="text-sm text-muted-foreground mb-6">
           Enter your email to receive a reset link.
         </p>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4 flex flex-col items-center"
+        >
           <input
             name="email"
             type="email"
@@ -66,7 +69,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary justify-center"
+            className="btn btn-primary px-8"
           >
             {loading ? "Sending..." : "Send reset link"}
           </button>

@@ -93,7 +93,7 @@ export default function AuthModal({
               <Image
                 src="/E.png"
                 alt="Envitefy emblem"
-                width={150}
+                width={92}
                 height={48}
                 quality={100}
                 unoptimized

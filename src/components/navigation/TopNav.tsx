@@ -694,7 +694,7 @@ export default function TopNav() {
           !isInitialMount ? "transition-all duration-300" : ""
         } ${
           isScrolled
-            ? "border-b border-white/60 bg-[#F8F5FF]/80 backdrop-blur-md shadow-sm"
+            ? "border-b border-white/60 bg-[#F8F5FF] backdrop-blur-md shadow-sm"
             : "bg-transparent"
         }`}
         suppressHydrationWarning
@@ -742,7 +742,7 @@ export default function TopNav() {
           !isInitialMount ? "transition-all duration-300" : ""
         } ${
           isScrolled
-            ? "border-b border-white/60 bg-[#F8F5FF]/80 backdrop-blur-md shadow-sm"
+            ? "border-b border-white/60 bg-[#F8F5FF] backdrop-blur-md shadow-sm"
             : "bg-transparent"
         }`}
         suppressHydrationWarning
