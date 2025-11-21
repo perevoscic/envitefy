@@ -5,6 +5,10 @@ import Link from "next/link";
 import { ArrowRight, Calendar, Gift, CheckSquare } from "lucide-react";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import WeddingWebsitePhones from "@/components/landing/WeddingWebsitePhones";
+import BirthdayPhones from "@/components/landing/BirthdayPhones";
+import BabyShowerPhones from "@/components/landing/BabyShowerPhones";
+import SignupFormsPhones from "@/components/landing/SignupFormsPhones";
 
 export default function Verticals() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -103,61 +107,71 @@ export default function Verticals() {
 
             {/* Visual Side */}
             <div className="flex-1 w-full">
-              <div
-                className={`relative aspect-[4/3] rounded-[2.5rem] bg-gradient-to-br ${block.color} p-8 sm:p-12 overflow-hidden shadow-sm group hover:shadow-md transition-shadow`}
-              >
-                {/* Abstract Shapes/Pattern Background */}
-                <div className="absolute inset-0 opacity-40">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay transform translate-x-1/4 -translate-y-1/4" />
-                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay transform -translate-x-1/4 translate-y-1/4" />
-                </div>
-
-                {/* Mockup Card representing the feature */}
-                <div className="relative h-full w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col transform group-hover:-translate-y-2 transition-transform duration-500">
-                  {/* Fake Header */}
-                  <div className="h-14 border-b border-gray-100 flex items-center px-6 justify-between bg-white/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-400" />
-                      <div className="w-3 h-3 rounded-full bg-amber-400" />
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                    </div>
-                    <div className="h-2 w-20 bg-gray-100 rounded-full" />
+              {block.id === "weddings" ? (
+                <WeddingWebsitePhones />
+              ) : block.id === "birthdays" ? (
+                <BirthdayPhones />
+              ) : block.id === "baby-showers" ? (
+                <BabyShowerPhones />
+              ) : block.id === "signup-forms" ? (
+                <SignupFormsPhones />
+              ) : (
+                <div
+                  className={`relative aspect-[4/3] rounded-[2.5rem] bg-gradient-to-br ${block.color} p-8 sm:p-12 overflow-hidden shadow-sm group hover:shadow-md transition-shadow`}
+                >
+                  {/* Abstract Shapes/Pattern Background */}
+                  <div className="absolute inset-0 opacity-40">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay transform translate-x-1/4 -translate-y-1/4" />
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay transform -translate-x-1/4 translate-y-1/4" />
                   </div>
 
-                  {/* Fake Content Body */}
-                  <div className="flex-1 p-6 space-y-4 bg-gray-50/50">
-                    <div className="h-8 w-3/4 bg-gray-200 rounded-lg animate-pulse" />
-                    <div className="h-4 w-1/2 bg-gray-100 rounded-lg" />
-
-                    <div className="grid grid-cols-3 gap-3 mt-4">
-                      <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
-                      <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
-                      <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
-                    </div>
-
-                    {/* Specific UI hint based on type */}
-                    {block.id === "signup-forms" && (
-                      <div className="space-y-2 mt-4">
-                        {[1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100"
-                          >
-                            <div className="w-5 h-5 rounded border border-gray-300" />
-                            <div className="h-2 w-24 bg-gray-100 rounded" />
-                            <div className="ml-auto h-6 w-6 rounded-full bg-gray-100" />
-                          </div>
-                        ))}
+                  {/* Mockup Card representing the feature */}
+                  <div className="relative h-full w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col transform group-hover:-translate-y-2 transition-transform duration-500">
+                    {/* Fake Header */}
+                    <div className="h-14 border-b border-gray-100 flex items-center px-6 justify-between bg-white/50 backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-400" />
+                        <div className="w-3 h-3 rounded-full bg-amber-400" />
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
                       </div>
-                    )}
-                  </div>
+                      <div className="h-2 w-20 bg-gray-100 rounded-full" />
+                    </div>
 
-                  {/* Action Button Mock */}
-                  <div className="p-4 border-t border-gray-100 bg-white">
-                    <div className="w-full h-10 bg-black rounded-lg opacity-10" />
+                    {/* Fake Content Body */}
+                    <div className="flex-1 p-6 space-y-4 bg-gray-50/50">
+                      <div className="h-8 w-3/4 bg-gray-200 rounded-lg animate-pulse" />
+                      <div className="h-4 w-1/2 bg-gray-100 rounded-lg" />
+
+                      <div className="grid grid-cols-3 gap-3 mt-4">
+                        <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
+                        <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
+                        <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
+                      </div>
+
+                      {/* Specific UI hint based on type */}
+                      {block.id === "signup-forms" && (
+                        <div className="space-y-2 mt-4">
+                          {[1, 2, 3].map((i) => (
+                            <div
+                              key={i}
+                              className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100"
+                            >
+                              <div className="w-5 h-5 rounded border border-gray-300" />
+                              <div className="h-2 w-24 bg-gray-100 rounded" />
+                              <div className="ml-auto h-6 w-6 rounded-full bg-gray-100" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Button Mock */}
+                    <div className="p-4 border-t border-gray-100 bg-white">
+                      <div className="w-full h-10 bg-black rounded-lg opacity-10" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         ))}
