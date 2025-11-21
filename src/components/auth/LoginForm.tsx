@@ -57,6 +57,8 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
 
   return (
     <form
+      id="login-form"
+      name="login"
       className="space-y-3"
       onSubmit={onEmailSubmit}
       autoComplete="on"

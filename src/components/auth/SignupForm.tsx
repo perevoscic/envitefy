@@ -196,8 +196,11 @@ export default function SignupForm({
     <>
       <form
         id="email-signup-form"
+        name="signup"
         className="space-y-3"
         onSubmit={onEmailSubmit}
+        method="post"
+        action="#"
       >
         <button
           type="button"
@@ -263,7 +266,7 @@ export default function SignupForm({
         <input
           name="email"
           type="email"
-          autoComplete="email"
+          autoComplete="username"
           className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
           placeholder="Email"
           value={email}
@@ -279,6 +282,7 @@ export default function SignupForm({
             name="password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
+            data-form-type="signup"
             className={`w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition ${
               message === "Passwords do not match." ? "input-error" : ""
             }`}
@@ -335,6 +339,7 @@ export default function SignupForm({
             name="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             autoComplete="new-password"
+            data-form-type="signup"
             className={`w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition ${
               message === "Passwords do not match." ? "input-error" : ""
             }`}
