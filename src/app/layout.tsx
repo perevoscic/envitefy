@@ -642,9 +642,9 @@ export const metadata: Metadata = {
     title: "Envitefy",
   },
   openGraph: {
-    title: "Envitefy | Create. Share. Enjoy.",
+    title: "Envitefy - Create. Share. Enjoy.",
     description:
-      "Turn flyers, invites, schedules into shareable plans in seconds. Create birthday, wedding events and sign-up forms of any kind, then share with friends and colleagues.",
+      "Turn flyers, invites, schedules into shareable plans in seconds. Create birthday, wedding, baby shower events and sign-up forms of any kind, then share with friends and colleagues. RSVPs, sign-ups, and more.",
     url: "https://envitefy.com",
     siteName: "Envitefy",
     images: [
