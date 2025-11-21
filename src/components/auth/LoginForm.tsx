@@ -56,7 +56,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
   };
 
   return (
-    <form className="space-y-3" onSubmit={onEmailSubmit}>
+    <form className="space-y-3" onSubmit={onEmailSubmit} autoComplete="on">
       <button
         type="button"
         onClick={onGoogleSignIn}
@@ -100,7 +100,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         id="login-email-input"
         name="email"
         type="email"
-        autoComplete="username"
+        autoComplete="email username"
         className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
         placeholder="Email"
         value={email}

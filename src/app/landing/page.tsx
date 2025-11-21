@@ -8,7 +8,7 @@ import FinalCta from "./sections/FinalCta";
 
 export default async function LandingPage() {
   return (
-    <main className="min-h-screen w-full bg-white selection:bg-blue-100 selection:text-blue-900">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#F8F5FF] via-white to-white selection:bg-blue-100 selection:text-blue-900">
       <LandingNav />
       <Hero />
       <Verticals />

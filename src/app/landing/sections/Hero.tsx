@@ -29,15 +29,15 @@ export default function Hero() {
     color: string;
   }) => (
     <div
-      className={`relative w-[280px] h-[580px] bg-white rounded-[3rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.12)] border-[6px] border-white ring-1 ring-gray-900/5 overflow-hidden ${className}`}
+      className={`relative w-[280px] h-[580px] bg-[#F8F5FF] rounded-[3rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.12)] border-[6px] border-[#F8F5FF] ring-1 ring-gray-900/5 overflow-hidden ${className}`}
     >
       {/* Notch */}
-      <div className="absolute top-0 inset-x-0 h-7 bg-white z-20 flex justify-center">
+      <div className="absolute top-0 inset-x-0 h-7 bg-[#F8F5FF] z-20 flex justify-center">
         <div className="w-32 h-6 bg-black rounded-b-2xl" />
       </div>
 
       {/* Status Bar Placeholder */}
-      <div className="h-12 w-full bg-white flex justify-between items-center px-6 pt-2 text-[10px] font-bold text-gray-900">
+      <div className="h-12 w-full bg-[#F8F5FF] flex justify-between items-center px-6 pt-2 text-[10px] font-bold text-gray-900">
         <span>9:41</span>
         <div className="flex gap-1">
           <div className="w-4 h-2.5 bg-black rounded-[1px]" />
@@ -118,7 +118,7 @@ export default function Hero() {
       </div>
 
       {/* Bottom Nav */}
-      <div className="absolute bottom-0 inset-x-0 h-16 bg-white border-t border-gray-50 flex justify-around items-center text-gray-300">
+      <div className="absolute bottom-0 inset-x-0 h-16 bg-[#F8F5FF] border-t border-gray-50 flex justify-around items-center text-gray-300">
         <div className="w-8 h-8 rounded-full bg-gray-100" />
         <div className="w-8 h-8 rounded-full bg-gray-100" />
         <div className="w-8 h-8 rounded-full bg-gray-100" />
@@ -169,7 +169,7 @@ export default function Hero() {
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="w-10 h-10 rounded-full border-2 border-white bg-gray-100 overflow-hidden relative"
+                    className="w-10 h-10 rounded-full border-2 border-[#F8F5FF] bg-gray-100 overflow-hidden relative"
                   >
                     <div
                       className={`absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300`}
@@ -185,7 +185,7 @@ export default function Hero() {
         </div>
 
         {/* Visual Content: The 3 White Phones */}
-        <div className="relative h-[600px] w-full flex items-center justify-center perspective-[2000px]">
+        <div className="relative h-[700px] w-full flex items-center justify-center perspective-[2000px]">
           {/* Background Glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-gradient-to-tr from-blue-100/40 via-violet-100/40 to-transparent rounded-full blur-3xl -z-10" />
 

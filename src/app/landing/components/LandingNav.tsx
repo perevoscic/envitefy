@@ -39,30 +39,21 @@ export default function LandingNav() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out ${
           isScrolled || mobileMenuOpen
-            ? "bg-white/80 backdrop-blur-md border-b border-black/5 shadow-sm py-3"
+            ? "bg-[#F8F5FF]/80 backdrop-blur-md border-b border-white/60 shadow-sm py-3"
             : "bg-transparent py-5"
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative w-8 h-8 transition-transform duration-300 group-hover:scale-105">
-              <Image
-                src="/E.png"
-                alt="Envitefy Logo"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-            <span
-              className={`text-xl font-semibold tracking-tight transition-colors duration-300 ${
-                isScrolled ? "text-gray-900" : "text-gray-900" // Always dark for readability on light bg
-              }`}
-              style={{ fontFamily: 'var(--font-playfair), serif' }}
-            >
-              Envitefy
-            </span>
+            <Image
+              src="/navElogo.png"
+              alt="Envitefy logo"
+              width={156}
+              height={64}
+              priority
+              className="transition-transform duration-300 group-hover:scale-105"
+            />
           </Link>
 
           {/* Desktop Nav */}
@@ -117,7 +108,7 @@ export default function LandingNav() {
 
         {/* Mobile Menu */}
         <div
-          className={`absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg md:hidden transition-all duration-300 origin-top overflow-hidden ${
+          className={`absolute top-full left-0 right-0 bg-[#F8F5FF] border-b border-white/60 shadow-lg md:hidden transition-all duration-300 origin-top overflow-hidden ${
             mobileMenuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
