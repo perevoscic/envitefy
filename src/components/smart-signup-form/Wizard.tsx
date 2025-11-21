@@ -128,7 +128,6 @@ export default function SmartSignupWizard({
             </p>
           </div>
         </div>
-        image.png
         {/* Direct content - no extra wrapper */}
         <div className="min-h-[400px]">
           {step === 0 && (

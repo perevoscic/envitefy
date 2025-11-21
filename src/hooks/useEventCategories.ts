@@ -42,7 +42,10 @@ export function useEventCategories() {
         credentials: "include",
       });
       const data = await res.json().catch(() => ({ items: [] }));
-      const items = Array.isArray(data?.items) ? data.items : [];
+      const items = (Array.isArray(data?.items) ? data.items : []).map((item: any) => ({
+        ...item,
+        category: item.category || item.data?.category,
+      }));
       setHistory(items);
     } catch {
       // ignore

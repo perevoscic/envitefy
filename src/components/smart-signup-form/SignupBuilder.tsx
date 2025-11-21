@@ -273,11 +273,11 @@ const SectionCard = ({
   onSlotRemove: (sectionId: string, slotId: string) => void;
   onAddSlot: (sectionId: string) => void;
 }) => (
-  <div className="rounded-lg border border-border/70 bg-surface/70 p-3 sm:p-4 space-y-3">
+  <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex-1 min-w-0 space-y-2">
+      <div className="flex-1 min-w-0 space-y-3">
         <div>
-          <label className="block text-xs uppercase font-semibold tracking-wide text-foreground/60 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Section title
           </label>
           <input
@@ -287,11 +287,11 @@ const SectionCard = ({
               onChange({ ...section, title: event.target.value })
             }
             placeholder="Example: Food stations, volunteer roles, supply checklist..."
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
         <div>
-          <label className="block text-xs uppercase font-semibold tracking-wide text-foreground/60 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Instructions (optional)
           </label>
           <textarea
@@ -301,7 +301,7 @@ const SectionCard = ({
             }
             placeholder="Share context for this section."
             rows={2}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
       </div>
@@ -310,7 +310,7 @@ const SectionCard = ({
           type="button"
           onClick={() => onMove(index, -1)}
           disabled={index === 0}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-sm disabled:opacity-50"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
           title="Move section up"
         >
           ↑
@@ -319,7 +319,7 @@ const SectionCard = ({
           type="button"
           onClick={() => onMove(index, 1)}
           disabled={index >= total - 1}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-sm disabled:opacity-50"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
           title="Move section down"
         >
           ↓
@@ -327,7 +327,7 @@ const SectionCard = ({
         <button
           type="button"
           onClick={() => onDuplicate(section)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-sm"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 transition hover:bg-gray-50"
           title="Duplicate section"
         >
           ⧉
@@ -335,22 +335,22 @@ const SectionCard = ({
         <button
           type="button"
           onClick={() => onRemove(section)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-sm text-red-600 hover:text-red-700"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-sm text-red-600 transition hover:bg-red-50"
           title="Remove section"
         >
           ✕
         </button>
       </div>
     </div>
-    <div className="space-y-3">
+    <div className="space-y-4">
       {section.slots.map((slot, slotIndex) => (
         <div
           key={slot.id}
-          className="rounded-md border border-border bg-background/80 p-3 space-y-2"
+          className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 space-y-3"
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Slot label
               </label>
               <input
@@ -363,7 +363,7 @@ const SectionCard = ({
                   })
                 }
                 placeholder="Example: Bring dessert for 12 guests"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
             {/* Date and time removed from slot editor (moved to Basics) */}
@@ -372,7 +372,7 @@ const SectionCard = ({
                 type="button"
                 onClick={() => onSlotMove(section.id, slot.id, -1)}
                 disabled={slotIndex === 0}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-xs disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-xs text-gray-700 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Move slot up"
               >
                 ↑
@@ -381,7 +381,7 @@ const SectionCard = ({
                 type="button"
                 onClick={() => onSlotMove(section.id, slot.id, 1)}
                 disabled={slotIndex >= section.slots.length - 1}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-xs disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-xs text-gray-700 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Move slot down"
               >
                 ↓
@@ -389,7 +389,7 @@ const SectionCard = ({
               <button
                 type="button"
                 onClick={() => onSlotDuplicate(section.id, slot)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-xs"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-xs text-gray-700 transition hover:bg-gray-50"
                 title="Duplicate slot"
               >
                 ⧉
@@ -397,7 +397,7 @@ const SectionCard = ({
               <button
                 type="button"
                 onClick={() => onSlotRemove(section.id, slot.id)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-xs text-red-600 hover:text-red-700"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs text-red-600 transition hover:bg-red-50"
                 title="Remove slot"
               >
                 ✕
@@ -406,7 +406,7 @@ const SectionCard = ({
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-xs uppercase font-semibold tracking-wide text-foreground/60 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Capacity
               </label>
               <input
@@ -433,14 +433,14 @@ const SectionCard = ({
                   });
                 }}
                 placeholder="Unlimited"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
-              <p className="mt-1 text-[11px] text-foreground/60">
+              <p className="mt-1.5 text-xs text-gray-600">
                 Leave blank for unlimited sign-ups.
               </p>
             </div>
             <div>
-              <label className="block text-xs uppercase font-semibold tracking-wide text-foreground/60 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Starts at
               </label>
               <input
@@ -452,11 +452,11 @@ const SectionCard = ({
                     startTime: event.target.value || null,
                   })
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
             <div>
-              <label className="block text-xs uppercase font-semibold tracking-wide text-foreground/60 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ends at
               </label>
               <input
@@ -468,12 +468,12 @@ const SectionCard = ({
                     endTime: event.target.value || null,
                   })
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs uppercase font-semibold tracking-wide text-foreground/60 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Notes for volunteers (optional)
             </label>
             <textarea
@@ -485,7 +485,7 @@ const SectionCard = ({
                 })
               }
               rows={2}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="Share what to bring or how to prepare."
             />
           </div>
@@ -495,7 +495,7 @@ const SectionCard = ({
     <button
       type="button"
       onClick={() => onAddSlot(section.id)}
-      className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+      className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50 px-4 py-2.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-100/70 hover:border-blue-400"
     >
       + Add slot
     </button>
@@ -2721,12 +2721,12 @@ const SignupBuilder: React.FC<Props> = ({
               </label>
               <input
                 type="text"
-                value={form.title}
+                value={form.title || ""}
                 onChange={(event) =>
                   onChange({ ...form, title: event.target.value })
                 }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Example: Volunteer & supply sign-up"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Enter the title of your event"
               />
             </div>
             <div className="space-y-2">
@@ -2737,8 +2737,8 @@ const SignupBuilder: React.FC<Props> = ({
                 type="text"
                 value={form.header?.groupName || ""}
                 onChange={(e) => setHeader({ groupName: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Your group or team"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Enter your group or team name"
               />
             </div>
           </div>
@@ -2752,7 +2752,7 @@ const SignupBuilder: React.FC<Props> = ({
                 onChange({ ...form, description: event.target.value })
               }
               rows={3}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="Let guests know how to prepare."
             />
           </div>
@@ -2766,8 +2766,8 @@ const SignupBuilder: React.FC<Props> = ({
                 onChange={(e) =>
                   onChange({ ...(form as any), venue: e.target.value })
                 }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="e.g., Central Park"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Enter the venue name"
               />
             </div>
             <div className="space-y-2">
@@ -2781,14 +2781,14 @@ const SignupBuilder: React.FC<Props> = ({
                 onChange={(e) =>
                   onChange({ ...(form as any), location: e.target.value })
                 }
-                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 ${
+                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:outline-none focus:ring-2 ${
                   showBasicsErrors &&
                   (typeof (form as any).location !== "string" ||
                     !(form as any).location.trim())
                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                     : "border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
                 }`}
-                placeholder="Street, City, State"
+                placeholder="Enter the location address"
               />
               {showBasicsErrors &&
                 (typeof (form as any).location !== "string" ||
@@ -4178,28 +4178,8 @@ const SignupBuilder: React.FC<Props> = ({
       )}
 
       {showSettings && (
-        <div className="space-y-8">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-2xl font-bold text-foreground mb-1">
-                Smart Settings
-              </h3>
-              <p className="text-sm text-foreground/60">
-                Set capacity, deadlines, and preferences
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSettings({ ...DEFAULT_SIGNUP_SETTINGS })}
-              className="text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"
-            >
-              Reset to defaults
-            </button>
-          </div>
-
-          {/* Smart Settings Section */}
-          <div className="space-y-4 bg-muted/30 rounded-2xl p-6 border border-border/50">
+        <div className="space-y-6">
+          <div className="space-y-4 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
             {/* Allow multiple slots */}
             <label className="flex items-start gap-4 group cursor-pointer">
               <div className="relative flex-shrink-0 mt-0.5">
@@ -4217,7 +4197,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.allowMultipleSlotsPerPerson
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.allowMultipleSlotsPerPerson && (
@@ -4238,10 +4218,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Allow guests to claim multiple slots
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Perfect for parents helping in multiple time blocks.
                 </p>
               </div>
@@ -4249,7 +4229,7 @@ const SignupBuilder: React.FC<Props> = ({
 
             {/* Max slots per person */}
             <div className="space-y-2 pl-9">
-              <label className="text-sm font-medium text-foreground/70">
+              <label className="text-sm font-medium text-gray-700">
                 Max slots per person
               </label>
               <input
@@ -4270,7 +4250,7 @@ const SignupBuilder: React.FC<Props> = ({
                       : null,
                   })
                 }
-                className="w-32 rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                className="w-32 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="Unlimited"
               />
             </div>
@@ -4290,7 +4270,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.waitlistEnabled
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.waitlistEnabled && (
@@ -4311,10 +4291,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Enable automatic waitlist
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Overflow sign-ups queue automatically when slots are full.
                 </p>
               </div>
@@ -4335,7 +4315,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.lockWhenFull
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.lockWhenFull && (
@@ -4356,10 +4336,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Lock slots once capacity is met
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Prevents overbooking. Waitlist still collects interest.
                 </p>
               </div>
@@ -4380,7 +4360,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.showRemainingSpots
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.showRemainingSpots && (
@@ -4401,10 +4381,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Show remaining spots to guests
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Creates urgency and builds trust in availability data.
                 </p>
               </div>
@@ -4427,7 +4407,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.hideParticipantNames
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.hideParticipantNames && (
@@ -4448,10 +4428,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Hide names from participants
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Only the host can see who signed up.
                 </p>
               </div>
@@ -4472,7 +4452,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.collectPhone
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.collectPhone && (
@@ -4493,10 +4473,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Collect mobile numbers
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Useful for last-minute changes or team group texts.
                 </p>
               </div>
@@ -4517,7 +4497,7 @@ const SignupBuilder: React.FC<Props> = ({
                   className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
                     settings.collectEmail
                       ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-foreground/30 bg-background group-hover:border-foreground/50"
+                      : "border-gray-300 bg-white group-hover:border-gray-400"
                   }`}
                 >
                   {settings.collectEmail && (
@@ -4538,10 +4518,10 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-foreground mb-0.5">
+                <div className="font-semibold text-gray-900 mb-0.5">
                   Collect alternate email
                 </div>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-gray-600">
                   Guests can route reminders to a personal inbox if needed.
                 </p>
               </div>
@@ -4549,8 +4529,8 @@ const SignupBuilder: React.FC<Props> = ({
           </div>
 
           {/* Max Guests Section */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
               Max guests per sign-up
             </label>
             <input
@@ -4566,16 +4546,16 @@ const SignupBuilder: React.FC<Props> = ({
                   ),
                 })
               }
-              className="w-1/5 rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+              className="w-32 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
-            <p className="text-xs text-foreground/60">
+            <p className="text-sm text-gray-600">
               Let families register multiple attendees at once.
             </p>
           </div>
 
           {/* Sign-up Window Section */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60">
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
               Sign-up window
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -4585,7 +4565,7 @@ const SignupBuilder: React.FC<Props> = ({
                 onChange={(e) =>
                   setSettings({ signupOpensAt: e.target.value || null })
                 }
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="Opens"
               />
               <input
@@ -4594,11 +4574,11 @@ const SignupBuilder: React.FC<Props> = ({
                 onChange={(e) =>
                   setSettings({ signupClosesAt: e.target.value || null })
                 }
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="Closes"
               />
             </div>
-            <p className="text-xs text-foreground/60">
+            <p className="text-sm text-gray-600">
               Leave blank to accept sign-ups anytime.
             </p>
           </div>
@@ -4606,7 +4586,7 @@ const SignupBuilder: React.FC<Props> = ({
       )}
 
       {showSections && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {form.sections.map((section, index) => (
             <SectionCard
               key={section.id}
@@ -4629,7 +4609,7 @@ const SignupBuilder: React.FC<Props> = ({
           <button
             type="button"
             onClick={handleAddSection}
-            className="inline-flex items-center gap-2 rounded-md border border-dashed border-primary/60 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100/70 hover:border-amber-400"
           >
             + Add another section
           </button>
@@ -4637,35 +4617,36 @@ const SignupBuilder: React.FC<Props> = ({
       )}
 
       {showQuestions && (
-        <div className="rounded-md border border-border bg-background/80 p-3 sm:p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-foreground">
-              Custom follow-up questions
-            </span>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Custom follow-up questions
+              </h3>
+              <p className="text-sm text-gray-600 mt-0.5">
+                Ask for dietary notes, t-shirt sizes, carpool info, or anything
+                else you need
+              </p>
+            </div>
             <button
               type="button"
               onClick={handleAddQuestion}
-              className="inline-flex items-center gap-1 rounded-md border border-dashed border-primary/60 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100/70 hover:border-amber-400"
             >
               + Question
             </button>
           </div>
-          {(form.questions || []).length === 0 ? (
-            <p className="text-xs text-foreground/60">
-              Ask for dietary notes, t-shirt sizes, carpool info, or anything
-              else you need.
-            </p>
-          ) : (
+          {(form.questions || []).length > 0 && (
             <div className="space-y-3">
               {(form.questions || []).map((question, index) => (
                 <div
                   key={question.id}
-                  className="rounded-md border border-border bg-background px-3 py-3 space-y-2"
+                  className="rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-4 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex-1 min-w-0 space-y-3">
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Prompt
                         </label>
                         <input
@@ -4676,12 +4657,12 @@ const SignupBuilder: React.FC<Props> = ({
                               prompt: event.target.value,
                             })
                           }
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                           placeholder="Example: What time works best for you?"
                         />
                       </div>
-                      <div className="flex flex-wrap gap-3 text-xs">
-                        <label className="inline-flex items-center gap-2">
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <label className="inline-flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={Boolean(question.required)}
@@ -4690,10 +4671,13 @@ const SignupBuilder: React.FC<Props> = ({
                                 required: event.target.checked,
                               })
                             }
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
                           />
-                          Required to submit
+                          <span className="text-gray-700">
+                            Required to submit
+                          </span>
                         </label>
-                        <label className="inline-flex items-center gap-2">
+                        <label className="inline-flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={Boolean(question.multiline)}
@@ -4702,19 +4686,22 @@ const SignupBuilder: React.FC<Props> = ({
                                 multiline: event.target.checked,
                               })
                             }
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
                           />
-                          Use a multi-line answer box
+                          <span className="text-gray-700">
+                            Use a multi-line answer box
+                          </span>
                         </label>
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-[11px] text-foreground/60">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-xs font-semibold text-gray-600">
                         #{index + 1}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleQuestionRemove(question.id)}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-xs text-red-600 hover:text-red-700"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-white text-xs text-red-600 transition hover:bg-red-50"
                         title="Remove question"
                       >
                         ✕

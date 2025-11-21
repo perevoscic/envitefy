@@ -606,12 +606,10 @@ const SignupViewer: React.FC<Props> = ({
   if (!form.sections.length) return null;
 
   return (
-    <section className="rounded-xl border border-border bg-surface/80 p-4 sm:p-6 space-y-5">
-      <header className="space-y-1">
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-5 shadow-sm">
+      <header className="space-y-2">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-foreground">
-            Sign-up board
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900">Sign-up board</h2>
           {viewerKind === "owner" && ownerEventData && (
             <div className="flex items-center gap-2 text-sm font-medium">
               <EventEditModal
@@ -650,7 +648,7 @@ const SignupViewer: React.FC<Props> = ({
                     alert(String(err?.message || err || "Could not duplicate"));
                   }
                 }}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-foreground/70 hover:text-foreground hover:bg-surface transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
                 title="Duplicate form"
               >
                 <svg
@@ -675,7 +673,7 @@ const SignupViewer: React.FC<Props> = ({
             </div>
           )}
         </div>
-        <p className="text-sm text-foreground/70">
+        <p className="text-sm text-gray-600">
           Claim a spot, bring supplies, or volunteer for a role. Slots update in
           real time for everyone invited.
         </p>
@@ -718,20 +716,20 @@ const SignupViewer: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {form.sections.map((section) => (
           <div key={section.id} className="space-y-3">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">
+              <h3 className="text-base font-semibold text-gray-900">
                 {section.title}
               </h3>
               {section.description && (
-                <p className="text-xs text-foreground/70 mt-0.5">
+                <p className="text-sm text-gray-600 mt-1">
                   {section.description}
                 </p>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {section.slots.map((slot) => {
                 const key = slotKey(section.id, slot.id);
                 const isSelected = Boolean(selectedSlots[key]);
@@ -760,28 +758,26 @@ const SignupViewer: React.FC<Props> = ({
                 return (
                   <div
                     key={slot.id}
-                    className={`rounded-lg border px-3 py-3 transition ${
+                    className={`rounded-xl border px-4 py-3.5 transition ${
                       isSelected
-                        ? "border-primary/70 bg-primary/5"
-                        : "border-border bg-background"
+                        ? "border-blue-300 bg-blue-50/50 shadow-sm"
+                        : "border-gray-200 bg-gray-50/50"
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-foreground">
+                      <div className="space-y-1.5">
+                        <div className="text-sm font-medium text-gray-900">
                           {slot.label}
                         </div>
                         {range && (
-                          <div className="text-xs text-foreground/60">
-                            {range}
-                          </div>
+                          <div className="text-xs text-gray-600">{range}</div>
                         )}
                         {slot.notes && (
-                          <div className="text-xs text-foreground/60">
+                          <div className="text-xs text-gray-600">
                             {slot.notes}
                           </div>
                         )}
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-foreground/60">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
                           {typeof capacity === "number" ? (
                             <span>
                               {confirmed}/{capacity} claimed
@@ -800,12 +796,12 @@ const SignupViewer: React.FC<Props> = ({
                               entry.sectionId === section.id &&
                               entry.slotId === slot.id
                           ) && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
                               You&apos;re signed up
                             </span>
                           )}
                           {isFull && remaining === 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
                               Currently full
                             </span>
                           )}
@@ -824,16 +820,16 @@ const SignupViewer: React.FC<Props> = ({
                                 Number.parseInt(event.target.value, 10) || 1
                               )
                             }
-                            className="w-16 rounded-md border border-border bg-background px-2 py-1 text-sm"
+                            className="w-16 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             disabled={!canInteract || loading}
                           />
                         )}
                         <button
                           type="button"
-                          className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${
+                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                             isSelected
-                              ? "border-primary/60 bg-primary/10 text-primary hover:bg-primary/20"
-                              : "border-border bg-background text-foreground hover:border-foreground/50"
+                              ? "border-blue-500 bg-blue-500 text-white shadow-sm hover:bg-blue-600"
+                              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                           }`}
                           onClick={() => handleToggleSlot(section.id, slot.id)}
                           disabled={!canInteract || loading}
@@ -866,26 +862,26 @@ const SignupViewer: React.FC<Props> = ({
             Object.keys(selectedSlots).length > 0 ||
             myResponse ||
             editingResponse) && (
-            <div className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">
+            <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-5 space-y-4">
+              <h3 className="text-base font-semibold text-gray-900">
                 Your details
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs text-foreground/60 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Name
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     disabled={loading}
                   />
                 </div>
                 {form.settings.collectEmail && (
                   <div>
-                    <label className="block text-xs text-foreground/60 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Email for reminders
                     </label>
                     <input
@@ -894,28 +890,28 @@ const SignupViewer: React.FC<Props> = ({
                       autoComplete="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       disabled={loading}
                     />
                   </div>
                 )}
                 {form.settings.collectPhone && (
                   <div>
-                    <label className="block text-xs text-foreground/60 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Mobile number
                     </label>
                     <input
                       type="tel"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       disabled={loading}
                     />
                   </div>
                 )}
                 {maxGuests > 1 && (
                   <div>
-                    <label className="block text-xs text-foreground/60 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Extra guests (for headcount)
                     </label>
                     <input
@@ -934,7 +930,7 @@ const SignupViewer: React.FC<Props> = ({
                           )
                         )
                       }
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       disabled={loading}
                     />
                   </div>
@@ -942,12 +938,12 @@ const SignupViewer: React.FC<Props> = ({
               </div>
 
               {form.questions.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {form.questions.map((question) => {
                     const value = answers[question.id] || "";
                     return (
                       <div key={question.id}>
-                        <label className="block text-xs text-foreground/60 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           {question.prompt}
                           {question.required && (
                             <span className="ml-1 text-red-500">*</span>
@@ -963,7 +959,7 @@ const SignupViewer: React.FC<Props> = ({
                               }))
                             }
                             rows={3}
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             disabled={loading}
                           />
                         ) : (
@@ -976,7 +972,7 @@ const SignupViewer: React.FC<Props> = ({
                                 [question.id]: event.target.value,
                               }))
                             }
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             disabled={loading}
                           />
                         )}
@@ -987,23 +983,23 @@ const SignupViewer: React.FC<Props> = ({
               )}
 
               <div>
-                <label className="block text-xs text-foreground/60 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Notes for the host (optional)
                 </label>
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   rows={2}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   disabled={loading}
                 />
               </div>
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-foreground/60">
-              We’ll auto-manage waitlists, notify you about updates, and remind
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="text-xs text-gray-600">
+              We'll auto-manage waitlists, notify you about updates, and remind
               you{" "}
               {form.settings.autoRemindersHoursBefore
                 .slice()
@@ -1023,7 +1019,7 @@ const SignupViewer: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="rounded-md border border-red-500/60 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-500/10 disabled:opacity-50"
+                  className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                   disabled={loading}
                 >
                   Cancel my spot
@@ -1042,7 +1038,7 @@ const SignupViewer: React.FC<Props> = ({
                     setGuests(0);
                     setAnswers({});
                   }}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-surface disabled:opacity-50"
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
                   disabled={loading}
                 >
                   Cancel
@@ -1050,7 +1046,7 @@ const SignupViewer: React.FC<Props> = ({
               )}
               <button
                 type="submit"
-                className="rounded-md border border-primary bg-primary px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-60"
                 disabled={loading}
               >
                 {loading
@@ -1067,8 +1063,8 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {myResponse && (
-        <div className="rounded-lg border border-border bg-background/70 p-3">
-          <p className="text-sm font-semibold text-foreground">
+        <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+          <p className="text-sm font-semibold text-gray-900">
             Your status:{" "}
             <span
               className={
@@ -1076,7 +1072,7 @@ const SignupViewer: React.FC<Props> = ({
                   ? "text-emerald-600"
                   : myResponse.status === "waitlisted"
                   ? "text-amber-600"
-                  : "text-foreground"
+                  : "text-gray-900"
               }
             >
               {myResponse.status === "confirmed"
@@ -1087,7 +1083,7 @@ const SignupViewer: React.FC<Props> = ({
             </span>
           </p>
           {selectedEntries.length > 0 && (
-            <ul className="mt-2 text-xs text-foreground/70 space-y-1">
+            <ul className="mt-2 text-sm text-gray-600 space-y-1">
               {selectedEntries.map((entry) => (
                 <li key={entry.key}>
                   {entry.sectionTitle}: {entry.slotLabel}
@@ -1101,17 +1097,15 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {viewerKind === "owner" && (
-        <div className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-foreground">
-              Host dashboard
-            </h3>
-            <div className="flex items-end gap-5">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 shadow-sm">
+          <header className="flex flex-wrap items-center justify-between gap-4">
+            <h3 className="text-lg font-bold text-gray-900">Host dashboard</h3>
+            <div className="flex items-end gap-6">
               <div className="text-center leading-none">
                 <div className="font-mono font-extrabold text-3xl sm:text-4xl text-sky-600">
                   {hasUnlimited ? "∞" : totalCapacity}
                 </div>
-                <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-gray-600">
                   Total
                 </div>
               </div>
@@ -1119,7 +1113,7 @@ const SignupViewer: React.FC<Props> = ({
                 <div className="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-600">
                   {filledCount}
                 </div>
-                <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-gray-600">
                   Filled
                 </div>
               </div>
@@ -1127,30 +1121,30 @@ const SignupViewer: React.FC<Props> = ({
                 <div className="font-mono font-extrabold text-3xl sm:text-4xl text-violet-600">
                   {hasUnlimited ? "∞" : remainingCount}
                 </div>
-                <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-gray-600">
                   Remaining
                 </div>
               </div>
             </div>
           </header>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {confirmedResponses.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/50 mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                   Confirmed
                 </h4>
                 <div className="space-y-2">
                   {confirmedResponses.map((response) => (
                     <div
                       key={response.id}
-                      className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                      className="rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium text-foreground">
+                        <span className="font-semibold text-gray-900">
                           {response.name}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-foreground/60">
+                          <span className="text-xs text-gray-600">
                             {new Date(
                               response.updatedAt || response.createdAt || ""
                             ).toLocaleString()}
@@ -1161,7 +1155,7 @@ const SignupViewer: React.FC<Props> = ({
                             disabled={
                               loading || removingResponseId === response.id
                             }
-                            className="text-xs px-2 py-1 rounded border border-border bg-background hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Edit sign-up"
                           >
                             Edit
@@ -1172,7 +1166,7 @@ const SignupViewer: React.FC<Props> = ({
                             disabled={
                               loading || removingResponseId === response.id
                             }
-                            className="text-xs px-2 py-1 rounded border border-red-500/50 bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-xs px-3 py-1.5 rounded-lg border border-red-300 bg-white text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Remove sign-up"
                           >
                             {removingResponseId === response.id
@@ -1181,11 +1175,11 @@ const SignupViewer: React.FC<Props> = ({
                           </button>
                         </div>
                       </div>
-                      <div className="text-xs text-foreground/70 mt-1">
+                      <div className="text-sm text-gray-600 mt-2">
                         {summarizeResponseSlots(form, response) ||
                           "No slots selected"}
                       </div>
-                      <div className="text-xs text-foreground/50 mt-1 flex flex-wrap gap-3">
+                      <div className="text-xs text-gray-500 mt-1.5 flex flex-wrap gap-3">
                         {response.email && <span>{response.email}</span>}
                         {response.phone && <span>{response.phone}</span>}
                         {response.guests && response.guests > 0 && (
@@ -1193,8 +1187,9 @@ const SignupViewer: React.FC<Props> = ({
                         )}
                       </div>
                       {response.note && (
-                        <div className="mt-1 text-xs text-foreground/60">
-                          Note: {response.note}
+                        <div className="mt-2 text-sm text-gray-600 bg-white rounded-lg px-3 py-2 border border-gray-200">
+                          <span className="font-medium">Note:</span>{" "}
+                          {response.note}
                         </div>
                       )}
                     </div>
@@ -1205,26 +1200,26 @@ const SignupViewer: React.FC<Props> = ({
 
             {waitlistedResponses.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/50 mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                   Waitlist
                 </h4>
                 <div className="space-y-2">
                   {waitlistedResponses.map((response) => (
                     <div
                       key={response.id}
-                      className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
+                      className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium text-amber-700">
+                        <span className="font-semibold text-amber-900">
                           {response.name}
                         </span>
-                        <span className="text-xs text-amber-700/70">
+                        <span className="text-xs text-amber-700">
                           {new Date(
                             response.updatedAt || response.createdAt || ""
                           ).toLocaleString()}
                         </span>
                       </div>
-                      <div className="text-xs text-amber-700/80 mt-1">
+                      <div className="text-sm text-amber-800 mt-2">
                         {summarizeResponseSlots(form, response) ||
                           "No slots selected"}
                       </div>
@@ -1236,12 +1231,15 @@ const SignupViewer: React.FC<Props> = ({
 
             {cancelledResponses.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/50 mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                   Cancelled (for audit trail)
                 </h4>
-                <div className="space-y-1 text-xs text-foreground/50">
+                <div className="space-y-2 text-sm text-gray-500">
                   {cancelledResponses.map((response) => (
-                    <div key={response.id}>
+                    <div
+                      key={response.id}
+                      className="rounded-lg bg-gray-50 px-3 py-2 border border-gray-200"
+                    >
                       {response.name} —{" "}
                       {new Date(
                         response.updatedAt || response.createdAt || ""
@@ -1264,8 +1262,8 @@ const SignupViewer: React.FC<Props> = ({
             className="absolute inset-0 bg-black/40"
             onClick={() => setConfirmOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-background shadow-lg">
-            <div className="p-4 sm:p-5 space-y-3">
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
                   <svg
@@ -1283,12 +1281,12 @@ const SignupViewer: React.FC<Props> = ({
                   </svg>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                  <h3 className="text-lg font-bold text-gray-900">
                     {feedback?.includes("waitlist")
                       ? "You're on the waitlist"
                       : "Sign-up confirmed!"}
                   </h3>
-                  <p className="text-sm text-foreground/70">
+                  <p className="text-sm text-gray-600">
                     {feedback?.includes("waitlist") ? (
                       <>
                         Your sign-up went through successfully! We'll promote
@@ -1315,10 +1313,10 @@ const SignupViewer: React.FC<Props> = ({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 pt-1">
+              <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface transition-colors"
+                  className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                   onClick={() => setConfirmOpen(false)}
                 >
                   Got it
@@ -1338,8 +1336,8 @@ const SignupViewer: React.FC<Props> = ({
             className="absolute inset-0 bg-black/40"
             onClick={() => setErrorOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-xl border border-red-500/50 bg-background shadow-lg">
-            <div className="p-4 sm:p-5 space-y-3">
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-white shadow-2xl">
+            <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
                   <svg
@@ -1358,16 +1356,16 @@ const SignupViewer: React.FC<Props> = ({
                   </svg>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                  <h3 className="text-lg font-bold text-gray-900">
                     Sign-up failed
                   </h3>
-                  <p className="text-sm text-foreground/70">{error}</p>
+                  <p className="text-sm text-gray-600">{error}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 pt-1">
+              <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface transition-colors"
+                  className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setErrorOpen(false);
                     setError(null);
