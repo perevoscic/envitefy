@@ -34,28 +34,37 @@ export function SnapUploadHero({
       }`}
     >
       <div className="grid gap-8 lg:grid-cols-[1.1fr,0.9fr] lg:items-center">
-        <div className="space-y-5">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#8A6BFF] shadow-sm shadow-[#D8CBFF]">
-            Snap or Upload
-          </span>
-          <div className="flex flex-wrap gap-3 sm:flex-nowrap sm:justify-start">
+        <div className="space-y-8">
+          {/* Snap Section */}
+          <div className="space-y-5">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#8A6BFF] shadow-sm shadow-[#D8CBFF]">
+              Snap
+            </span>
             <button
               type="button"
               onClick={onSnap}
-              className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full bg-[#7F8CFF] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF] sm:flex-none sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#7F8CFF] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF] sm:w-auto"
             >
               <Camera className="h-5 w-5" aria-hidden="true" />
-              Snap Event
+              Open Camera
             </button>
+          </div>
+
+          {/* Upload Section */}
+          <div className="space-y-5">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#8A6BFF] shadow-sm shadow-[#D8CBFF]">
+              Upload
+            </span>
             <button
               type="button"
               onClick={onUpload}
-              className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full border border-[#E4D8FF] bg-white px-6 py-3 text-base font-semibold text-[#3F2F60] shadow-sm transition hover:bg-[#F9F5FF] sm:flex-none sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#E4D8FF] bg-white px-6 py-3 text-base font-semibold text-[#3F2F60] shadow-sm transition hover:bg-[#F9F5FF] sm:w-auto"
             >
               <UploadCloud className="h-5 w-5" aria-hidden="true" />
-              Upload Event
+              Select File
             </button>
           </div>
+
           <p className="text-xs uppercase tracking-[0.3em] text-[#9B7BFF]">
             Works great on mobile browsers—just point and send.
           </p>

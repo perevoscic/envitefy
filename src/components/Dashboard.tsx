@@ -16,7 +16,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
 import { EnvitefyBuilderHero } from "@/components/home/EnvitefyBuilderHero";
-import { SnapUploadHero } from "@/components/home/SnapUploadHero";
+import { SnapHero } from "@/components/home/SnapHero";
+import { UploadHero } from "@/components/home/UploadHero";
 import { SmartSignupHero } from "@/components/home/SmartSignupHero";
 import {
   CreateEventIllustration,
@@ -992,19 +993,16 @@ export default function Dashboard() {
               priority
             />
           </div>
-          <p className="text-base md:text-lg font-medium text-gray-600 tracking-wider uppercase">
+          <p className="text-base md:text-lg font-medium text-[#7f8cff] tracking-wider uppercase">
             CREATE | SHARE | ENJOY
           </p>
         </div>
       )}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
-            <SnapUploadHero
-              onSnap={openCamera}
-              onUpload={openUpload}
-              className="h-full"
-            />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+            <SnapHero onSnap={openCamera} className="h-full" />
+            <UploadHero onUpload={openUpload} className="h-full" />
             <SmartSignupHero className="h-full" />
           </div>
           <EnvitefyBuilderHero />

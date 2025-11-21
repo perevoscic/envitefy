@@ -708,6 +708,7 @@ export default function TopNav() {
             className={`inline-flex items-center gap-2 text-[#7f8cff] transition-opacity duration-300 ${
               isScrolled ? "opacity-100" : "opacity-0"
             }`}
+            suppressHydrationWarning
           >
             <Image
               src="/navElogo.png"
@@ -742,6 +743,7 @@ export default function TopNav() {
               className={`inline-flex items-center pr-10 gap-2 text-[#7f8cff] transition-opacity duration-300 ${
                 isScrolled ? "opacity-100" : "opacity-0"
               }`}
+              suppressHydrationWarning
             >
               <Image
                 src="/navElogo.png"
