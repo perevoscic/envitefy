@@ -8,6 +8,7 @@ import type {
   SignupFormSlot,
   SignupQuestion,
   SignupDesignTheme,
+  SignupSafetyFlags,
 } from "@/types/signup";
 import { readFileAsDataUrl, createThumbnailDataUrl } from "@/utils/thumbnail";
 import {
@@ -522,6 +523,41 @@ const SignupBuilder: React.FC<Props> = ({
   const showSettings = panels?.settings !== false;
   const showSections = panels?.sections !== false;
   const showQuestions = panels?.questions !== false;
+
+  const audienceOptions = React.useMemo(
+    () => ["Parents", "Whole family", "Students", "Volunteers", "Team members"],
+    []
+  );
+  const vibeDirections = React.useMemo(
+    () => [
+      "Fun & playful",
+      "Warm & welcoming",
+      "Professional/business",
+      "Cute & seasonal",
+      "Sports/action-oriented",
+    ],
+    []
+  );
+
+  const toggleAudience = (value: string) => {
+    const current = Array.isArray((form as any).audience)
+      ? ((form as any).audience as string[])
+      : [];
+    const exists = current.includes(value);
+    const next = exists
+      ? current.filter((item) => item !== value)
+      : [...current, value];
+    onChange({ ...(form as any), audience: next });
+  };
+
+  const safetyFlags: SignupSafetyFlags =
+    ((form as any).safetyFlags as SignupSafetyFlags) || {};
+  const setSafetyFlag = (key: keyof SignupSafetyFlags, value: boolean) => {
+    onChange({
+      ...(form as any),
+      safetyFlags: { ...safetyFlags, [key]: value },
+    });
+  };
 
   const setSettings = (next: Partial<typeof settings>) => {
     onChange({
@@ -2714,136 +2750,489 @@ const SignupBuilder: React.FC<Props> = ({
     <div className="space-y-6">
       {showBasics && (
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-5 shadow-sm">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Event Title
+                </label>
+                <input
+                  type="text"
+                  value={form.title || ""}
+                  onChange={(event) =>
+                    onChange({ ...form, title: event.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: Lakeside Adventure Park Field Trip"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Group / Class
+                </label>
+                <input
+                  type="text"
+                  value={form.header?.groupName || ""}
+                  onChange={(e) => setHeader({ groupName: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: 5th Grade Panthers"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Grade / Age
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).gradeOrAge || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), gradeOrAge: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: Grade 5 (10–11 years)"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Audience Type
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {audienceOptions.map((option) => {
+                    const active = Array.isArray((form as any).audience)
+                      ? ((form as any).audience as string[]).includes(option)
+                      : false;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => toggleAudience(option)}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition border ${
+                          active
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">
-                Form Title
+                Headline Description
               </label>
-              <input
-                type="text"
-                value={form.title || ""}
+              <textarea
+                value={form.description || ""}
                 onChange={(event) =>
-                  onChange({ ...form, title: event.target.value })
+                  onChange({ ...form, description: event.target.value })
                 }
+                rows={3}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Enter the title of your event"
+                placeholder="Warm one-liner to help parents and volunteers know what to expect."
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Group Name
-              </label>
-              <input
-                type="text"
-                value={form.header?.groupName || ""}
-                onChange={(e) => setHeader({ groupName: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Enter your group or team name"
-              />
-            </div>
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700">
-              Headline Description
-            </label>
-            <textarea
-              value={form.description || ""}
-              onChange={(event) =>
-                onChange({ ...form, description: event.target.value })
-              }
-              rows={3}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Let guests know how to prepare."
-            />
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Venue</label>
-              <input
-                type="text"
-                value={(form as any).venue || ""}
-                onChange={(e) =>
-                  onChange({ ...(form as any), venue: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Enter the venue name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                aria-required="true"
-                value={(form as any).location || ""}
-                onChange={(e) =>
-                  onChange({ ...(form as any), location: e.target.value })
-                }
-                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:outline-none focus:ring-2 ${
-                  showBasicsErrors &&
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Venue
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).venue || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), venue: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Venue name"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  aria-required="true"
+                  value={(form as any).location || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), location: e.target.value })
+                  }
+                  className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:outline-none focus:ring-2 ${
+                    showBasicsErrors &&
+                    (typeof (form as any).location !== "string" ||
+                      !(form as any).location.trim())
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+                  }`}
+                  placeholder="Street, city, state"
+                />
+                {showBasicsErrors &&
                   (typeof (form as any).location !== "string" ||
-                    !(form as any).location.trim())
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
-                }`}
-                placeholder="Enter the location address"
-              />
-              {showBasicsErrors &&
-                (typeof (form as any).location !== "string" ||
-                  !(form as any).location.trim()) && (
-                  <p className="text-xs text-red-600">Address is required.</p>
-                )}
+                    !(form as any).location.trim()) && (
+                    <p className="text-xs text-red-600">Address is required.</p>
+                  )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Room / Field / Area
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).room || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), room: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: Pavilion C or East Activity Lawn"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Parking Info
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).parkingInfo || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), parkingInfo: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Where to park or bus staging"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Arrival Instructions
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).arrivalInstructions || ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...(form as any),
+                      arrivalInstructions: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Check-in process or entry door"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Drop-off / Pick-up Notes
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).dropoffNotes || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), dropoffNotes: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Where and when to drop off or pick up"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Date</label>
+                <input
+                  type="date"
+                  value={(((form as any).start as string) || "").slice(0, 10)}
+                  onChange={(e) => {
+                    const date = e.target.value;
+                    const current = ((form as any).start as string) || "";
+                    const time = current.includes("T")
+                      ? current.split("T")[1].slice(0, 5)
+                      : "00:00";
+                    const isoLocal = date ? `${date}T${time}` : null;
+                    onChange({ ...(form as any), start: isoLocal });
+                  }}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  value={(() => {
+                    const s = ((form as any).start as string) || "";
+                    if (!s.includes("T")) return "";
+                    return s.split("T")[1].slice(0, 5);
+                  })()}
+                  onChange={(e) => {
+                    const time = e.target.value || "00:00";
+                    const current = ((form as any).start as string) || "";
+                    const date = current ? current.slice(0, 10) : "";
+                    const today = new Date();
+                    const yyyy = String(today.getFullYear()).padStart(4, "0");
+                    const mm = String(today.getMonth() + 1).padStart(2, "0");
+                    const dd = String(today.getDate()).padStart(2, "0");
+                    const fallbackDate = `${yyyy}-${mm}-${dd}`;
+                    const baseDate = date || fallbackDate;
+                    const isoLocal = `${baseDate}T${time}`;
+                    onChange({ ...(form as any), start: isoLocal });
+                  }}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  value={(() => {
+                    const e = ((form as any).end as string) || "";
+                    if (!e || !e.includes("T")) return "";
+                    return e.split("T")[1].slice(0, 5);
+                  })()}
+                  onChange={(event) => {
+                    const time = event.target.value || "00:00";
+                    const current = ((form as any).end as string) || "";
+                    const date = current ? current.slice(0, 10) : "";
+                    const startDate =
+                      ((form as any).start as string)?.slice(0, 10) || "";
+                    const baseDate = date || startDate;
+                    if (!baseDate) return;
+                    onChange({
+                      ...(form as any),
+                      end: `${baseDate}T${time}`,
+                    });
+                  }}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Setup Time
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).setupTime || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), setupTime: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: 8:15–8:45 AM for volunteers"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Earliest Drop-off Time
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).earliestDropoff || ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...(form as any),
+                      earliestDropoff: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: 8:30 AM"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Suggested Arrival Window
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).arrivalWindow || ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...(form as any),
+                      arrivalWindow: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: 3:50–4:15 PM"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Theme Category
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).themeCategory || ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...(form as any),
+                      themeCategory: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: Outdoor adventure & friendly competition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Theme Image (optional URL)
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).themeImage || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), themeImage: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Paste a hero image URL"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Color Story
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).colorStory || ""}
+                  onChange={(e) =>
+                    onChange({ ...(form as any), colorStory: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: Sky blue, sunshine yellow, leaf green"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Header Template
+                </label>
+                <input
+                  type="text"
+                  value={(form as any).headerTemplate || ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...(form as any),
+                      headerTemplate: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Example: Wide banner with centered title"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Vibe Direction
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {vibeDirections.map((option) => {
+                    const active = (form as any).vibeDirection === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() =>
+                          onChange({ ...(form as any), vibeDirection: option })
+                        }
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition border ${
+                          active
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-gray-900">
+                Safety & Requirements
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[
+                  { key: "allergens", label: "Food / allergens" },
+                  { key: "outdoor", label: "Outdoor activity" },
+                  { key: "equipment", label: "Special equipment needed" },
+                  { key: "travel", label: "Travel involved" },
+                  { key: "permission", label: "Permission slip required" },
+                  { key: "sensitiveInfo", label: "Sensitive information handled" },
+                  { key: "photoConsent", label: "Photo/video consent" },
+                  { key: "emergencyContact", label: "Emergency contact required" },
+                ].map((item) => (
+                  <label
+                    key={item.key}
+                    className="flex items-center gap-2 text-sm text-gray-800"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean((safetyFlags as any)?.[item.key])}
+                      onChange={(e) =>
+                        setSafetyFlag(
+                          item.key as keyof SignupSafetyFlags,
+                          e.target.checked
+                        )
+                      }
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Safety Notes
+                  </label>
+                  <textarea
+                    value={(form as any).safetyNotes || ""}
+                    onChange={(e) =>
+                      onChange({ ...(form as any), safetyNotes: e.target.value })
+                    }
+                    rows={2}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="All lunches must be nut-free; sunscreen recommended."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Requirements
+                  </label>
+                  <textarea
+                    value={(form as any).requirements || ""}
+                    onChange={(e) =>
+                      onChange({
+                        ...(form as any),
+                        requirements: e.target.value,
+                      })
+                    }
+                    rows={2}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Example: Walking shoes, hat, refillable water bottle."
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Date and time */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                value={(((form as any).start as string) || "").slice(0, 10)}
-                onChange={(e) => {
-                  const date = e.target.value;
-                  const current = ((form as any).start as string) || "";
-                  const time = current.includes("T")
-                    ? current.split("T")[1].slice(0, 5)
-                    : "00:00";
-                  const isoLocal = date ? `${date}T${time}` : null;
-                  onChange({ ...(form as any), start: isoLocal });
-                }}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Time</label>
-              <input
-                type="time"
-                value={(() => {
-                  const s = ((form as any).start as string) || "";
-                  if (!s.includes("T")) return "";
-                  return s.split("T")[1].slice(0, 5);
-                })()}
-                onChange={(e) => {
-                  const time = e.target.value || "00:00";
-                  const current = ((form as any).start as string) || "";
-                  const date = current ? current.slice(0, 10) : "";
-                  const today = new Date();
-                  const yyyy = String(today.getFullYear()).padStart(4, "0");
-                  const mm = String(today.getMonth() + 1).padStart(2, "0");
-                  const dd = String(today.getDate()).padStart(2, "0");
-                  const fallbackDate = `${yyyy}-${mm}-${dd}`;
-                  const baseDate = date || fallbackDate;
-                  const isoLocal = `${baseDate}T${time}`;
-                  onChange({ ...(form as any), start: isoLocal });
-                }}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-            {/* Removed manual background color control */}
-            {/* Theme design picker (between Headline description and Image template) */}
+          {/* Theme design picker (between Headline description and Image template) */}
             <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
               <label className="block text-sm font-medium text-gray-700">
                 Theme design
@@ -4176,7 +4565,6 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </div>
           </div>
-        </div>
       )}
 
       {showSettings && (

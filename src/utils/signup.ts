@@ -7,6 +7,7 @@ import {
   SignupResponse,
   SignupResponseStatus,
   SignupFormHeader,
+  SignupSafetyFlags,
 } from "@/types/signup";
 
 export const SIGNUP_FORM_VERSION = 1;
@@ -66,6 +67,10 @@ export const createDefaultSignupForm = (): SignupForm => ({
   description: null,
   venue: null,
   location: null,
+  room: null,
+  parkingInfo: null,
+  arrivalInstructions: null,
+  dropoffNotes: null,
   start: (() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -75,8 +80,30 @@ export const createDefaultSignupForm = (): SignupForm => ({
     return `${yyyy}-${mm}-${dd}`;
   })(),
   end: null,
+  setupTime: null,
+  earliestDropoff: null,
+  arrivalWindow: null,
   timezone: null,
   allDay: null,
+  gradeOrAge: null,
+  audience: [],
+  themeCategory: null,
+  themeImage: null,
+  colorStory: null,
+  headerTemplate: null,
+  vibeDirection: null,
+  safetyNotes: null,
+  requirements: null,
+  safetyFlags: {
+    allergens: false,
+    outdoor: false,
+    equipment: false,
+    travel: false,
+    permission: false,
+    sensitiveInfo: false,
+    photoConsent: false,
+    emergencyContact: false,
+  },
   header: {
     backgroundColor: "#F5F5F4",
     backgroundImage: null,
@@ -204,6 +231,22 @@ const sanitizeSettings = (settings: SignupFormSettings): SignupFormSettings => {
   };
 };
 
+const sanitizeSafetyFlags = (raw: unknown): SignupSafetyFlags | null => {
+  if (!raw || typeof raw !== "object") return null;
+  const merged: SignupSafetyFlags = {
+    allergens: Boolean((raw as any).allergens),
+    outdoor: Boolean((raw as any).outdoor),
+    equipment: Boolean((raw as any).equipment),
+    travel: Boolean((raw as any).travel),
+    permission: Boolean((raw as any).permission),
+    sensitiveInfo: Boolean((raw as any).sensitiveInfo),
+    photoConsent: Boolean((raw as any).photoConsent),
+    emergencyContact: Boolean((raw as any).emergencyContact),
+  };
+  const anyTrue = Object.values(merged).some(Boolean);
+  return anyTrue ? merged : null;
+};
+
 export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
   const sections = sanitizeSections(form.sections || []);
   const settings = sanitizeSettings(form.settings || DEFAULT_SIGNUP_SETTINGS);
@@ -281,10 +324,45 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
       description: form.description?.trim() ? form.description.trim() : null,
       venue: (form as any).venue?.trim ? ((form as any).venue as string).trim() || null : (form as any).venue ?? null,
       location: (form as any).location?.trim ? ((form as any).location as string).trim() || null : (form as any).location ?? null,
+      room: (form as any).room?.trim ? ((form as any).room as string).trim() || null : (form as any).room ?? null,
+      parkingInfo: (form as any).parkingInfo?.trim ? ((form as any).parkingInfo as string).trim() || null : (form as any).parkingInfo ?? null,
+      arrivalInstructions: (form as any).arrivalInstructions?.trim
+        ? ((form as any).arrivalInstructions as string).trim() || null
+        : (form as any).arrivalInstructions ?? null,
+      dropoffNotes: (form as any).dropoffNotes?.trim
+        ? ((form as any).dropoffNotes as string).trim() || null
+        : (form as any).dropoffNotes ?? null,
       start: (form as any).start?.trim ? ((form as any).start as string).trim() || null : (form as any).start ?? null,
       end: (form as any).end?.trim ? ((form as any).end as string).trim() || null : (form as any).end ?? null,
+      setupTime: (form as any).setupTime?.trim ? ((form as any).setupTime as string).trim() || null : (form as any).setupTime ?? null,
+      earliestDropoff:
+        (form as any).earliestDropoff?.trim && typeof (form as any).earliestDropoff === "string"
+          ? ((form as any).earliestDropoff as string).trim() || null
+          : (form as any).earliestDropoff ?? null,
+      arrivalWindow:
+        (form as any).arrivalWindow?.trim && typeof (form as any).arrivalWindow === "string"
+          ? ((form as any).arrivalWindow as string).trim() || null
+          : (form as any).arrivalWindow ?? null,
       timezone: (form as any).timezone?.trim ? ((form as any).timezone as string).trim() || null : (form as any).timezone ?? null,
       allDay: typeof (form as any).allDay === "boolean" ? Boolean((form as any).allDay) : null,
+      gradeOrAge: (form as any).gradeOrAge?.trim ? ((form as any).gradeOrAge as string).trim() || null : (form as any).gradeOrAge ?? null,
+      audience: Array.isArray((form as any).audience)
+        ? ((form as any).audience as any[]).filter((a) => typeof a === "string" && a.trim()).map((a) => a.trim())
+        : null,
+      themeCategory: (form as any).themeCategory?.trim
+        ? ((form as any).themeCategory as string).trim() || null
+        : (form as any).themeCategory ?? null,
+      themeImage: (form as any).themeImage?.trim ? ((form as any).themeImage as string).trim() || null : (form as any).themeImage ?? null,
+      colorStory: (form as any).colorStory?.trim ? ((form as any).colorStory as string).trim() || null : (form as any).colorStory ?? null,
+      headerTemplate: (form as any).headerTemplate?.trim
+        ? ((form as any).headerTemplate as string).trim() || null
+        : (form as any).headerTemplate ?? null,
+      vibeDirection: (form as any).vibeDirection?.trim
+        ? ((form as any).vibeDirection as string).trim() || null
+        : (form as any).vibeDirection ?? null,
+      safetyNotes: (form as any).safetyNotes?.trim ? ((form as any).safetyNotes as string).trim() || null : (form as any).safetyNotes ?? null,
+      requirements: (form as any).requirements?.trim ? ((form as any).requirements as string).trim() || null : (form as any).requirements ?? null,
+      safetyFlags: sanitizeSafetyFlags((form as any).safetyFlags),
       header: header || null,
       sections: [],
       questions: [],
@@ -300,10 +378,41 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     description: form.description?.trim() ? form.description.trim() : null,
     venue: (form as any).venue?.trim ? ((form as any).venue as string).trim() || null : (form as any).venue ?? null,
     location: (form as any).location?.trim ? ((form as any).location as string).trim() || null : (form as any).location ?? null,
+    room: (form as any).room?.trim ? ((form as any).room as string).trim() || null : (form as any).room ?? null,
+    parkingInfo: (form as any).parkingInfo?.trim ? ((form as any).parkingInfo as string).trim() || null : (form as any).parkingInfo ?? null,
+    arrivalInstructions: (form as any).arrivalInstructions?.trim
+      ? ((form as any).arrivalInstructions as string).trim() || null
+      : (form as any).arrivalInstructions ?? null,
+    dropoffNotes: (form as any).dropoffNotes?.trim
+      ? ((form as any).dropoffNotes as string).trim() || null
+      : (form as any).dropoffNotes ?? null,
     start: (form as any).start?.trim ? ((form as any).start as string).trim() || null : (form as any).start ?? null,
     end: (form as any).end?.trim ? ((form as any).end as string).trim() || null : (form as any).end ?? null,
+    setupTime: (form as any).setupTime?.trim ? ((form as any).setupTime as string).trim() || null : (form as any).setupTime ?? null,
+    earliestDropoff:
+      (form as any).earliestDropoff?.trim && typeof (form as any).earliestDropoff === "string"
+        ? ((form as any).earliestDropoff as string).trim() || null
+        : (form as any).earliestDropoff ?? null,
+    arrivalWindow:
+      (form as any).arrivalWindow?.trim && typeof (form as any).arrivalWindow === "string"
+        ? ((form as any).arrivalWindow as string).trim() || null
+        : (form as any).arrivalWindow ?? null,
     timezone: (form as any).timezone?.trim ? ((form as any).timezone as string).trim() || null : (form as any).timezone ?? null,
     allDay: typeof (form as any).allDay === "boolean" ? Boolean((form as any).allDay) : null,
+    gradeOrAge: (form as any).gradeOrAge?.trim ? ((form as any).gradeOrAge as string).trim() || null : (form as any).gradeOrAge ?? null,
+    audience: Array.isArray((form as any).audience)
+      ? ((form as any).audience as any[]).filter((a) => typeof a === "string" && a.trim()).map((a) => a.trim())
+      : null,
+    themeCategory: (form as any).themeCategory?.trim ? ((form as any).themeCategory as string).trim() || null : (form as any).themeCategory ?? null,
+    themeImage: (form as any).themeImage?.trim ? ((form as any).themeImage as string).trim() || null : (form as any).themeImage ?? null,
+    colorStory: (form as any).colorStory?.trim ? ((form as any).colorStory as string).trim() || null : (form as any).colorStory ?? null,
+    headerTemplate: (form as any).headerTemplate?.trim
+      ? ((form as any).headerTemplate as string).trim() || null
+      : (form as any).headerTemplate ?? null,
+    vibeDirection: (form as any).vibeDirection?.trim ? ((form as any).vibeDirection as string).trim() || null : (form as any).vibeDirection ?? null,
+    safetyNotes: (form as any).safetyNotes?.trim ? ((form as any).safetyNotes as string).trim() || null : (form as any).safetyNotes ?? null,
+    requirements: (form as any).requirements?.trim ? ((form as any).requirements as string).trim() || null : (form as any).requirements ?? null,
+    safetyFlags: sanitizeSafetyFlags((form as any).safetyFlags),
     header: header || null,
     sections,
     questions,
