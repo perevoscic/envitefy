@@ -1,7 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight, Sparkles, Check } from "lucide-react";
+import {
+  ArrowRight,
+  Camera,
+  PlayCircle,
+  Heart,
+  Calendar,
+  MapPin,
+  Wand2,
+  CalendarCheck2,
+  Check,
+} from "lucide-react";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -14,248 +24,255 @@ export default function Hero() {
     setAuthModalOpen(true);
   };
 
-  // Reusable Phone Component
-  const Phone = ({
-    className,
-    app,
-    events,
-  }: {
-    className?: string;
-    app: "google" | "apple" | "outlook";
-    events: Array<{
-      title: string;
-      time: string;
-      color: "blue" | "red" | "green" | "purple" | "orange";
-    }>;
-  }) => (
-    <div
-      className={`relative w-[280px] h-[580px] bg-[#F8F5FF] rounded-[3rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.12)] border-[6px] border-[#F8F5FF] ring-1 ring-gray-900/5 overflow-hidden ${className}`}
-    >
-      {/* Notch */}
-      <div className="absolute top-0 inset-x-0 h-7 bg-[#F8F5FF] z-20 flex justify-center">
-        <div className="w-32 h-6 bg-black rounded-b-2xl" />
-      </div>
-
-      {/* Status Bar Placeholder */}
-      <div className="h-12 w-full bg-[#F8F5FF] flex justify-between items-center px-6 pt-2 text-[10px] font-bold text-gray-900">
-        <span>9:41</span>
-        <div className="flex gap-1">
-          <div className="w-4 h-2.5 bg-black rounded-[1px]" />
-          <div className="w-0.5 h-2.5 bg-black/30 rounded-[1px]" />
-        </div>
-      </div>
-
-      {/* App Header */}
-      <div className={`px-6 pb-4 ${app === "apple" ? "pt-2" : "pt-4"}`}>
-        <div className="flex justify-between items-end mb-4">
-          <span
-            className={`text-2xl font-bold ${
-              app === "google"
-                ? "text-blue-600"
-                : app === "outlook"
-                ? "text-blue-700"
-                : "text-red-500"
-            }`}
-          >
-            {app === "google"
-              ? "January"
-              : app === "outlook"
-              ? "December"
-              : "September"}
-          </span>
-          <span className="text-gray-400 text-sm">2026</span>
-        </div>
-        {/* Calendar Grid Mockup */}
-        <div className="grid grid-cols-7 gap-2 mb-4 text-center text-[10px] text-gray-400 font-medium">
-          <span>S</span>
-          <span>M</span>
-          <span>T</span>
-          <span>W</span>
-          <span>T</span>
-          <span>F</span>
-          <span>S</span>
-          {Array.from({ length: 7 }).map((_, i) => (
-            <span
-              key={i}
-              className={`py-1 ${
-                i === 3 ? "bg-blue-100 text-blue-700 rounded-full" : ""
-              }`}
-            >
-              {10 + i}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Event Cards */}
-      <div className="px-4">
-        {events.map((event, idx) => {
-          const colorClasses = {
-            blue: "bg-blue-50 border-blue-500",
-            red: "bg-red-50 border-red-500",
-            green: "bg-green-50 border-green-500",
-            purple: "bg-purple-50 border-purple-500",
-            orange: "bg-orange-50 border-orange-500",
-          };
-
-          return (
-            <div
-              key={idx}
-              className={`p-4 rounded-2xl border-l-4 ${
-                colorClasses[event.color]
-              } shadow-sm mb-3 animate-fade-in-up`}
-              style={{ animationDelay: `${idx * 100}ms` }}
-            >
-              <div className="text-xs font-semibold opacity-60 mb-1 uppercase tracking-wide">
-                {event.time}
-              </div>
-              <div className="font-bold text-gray-900 text-lg leading-tight mb-1">
-                {event.title}
-              </div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Check size={10} /> Synced
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Fake events below */}
-        <div className="space-y-3 opacity-40 blur-[0.5px]">
-          <div className="h-16 w-full bg-gray-50 rounded-xl" />
-          <div className="h-16 w-full bg-gray-50 rounded-xl" />
-        </div>
-      </div>
-
-      {/* Bottom Nav */}
-      <div className="absolute bottom-0 inset-x-0 h-16 bg-[#F8F5FF] border-t border-gray-50 flex justify-around items-center text-gray-300">
-        <div className="w-8 h-8 rounded-full bg-gray-200" />
-        <div className="w-8 h-8 rounded-full bg-gray-200" />
-        <div className="w-8 h-8 rounded-full bg-gray-200" />
-      </div>
-    </div>
-  );
-
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-[#ffffff]">
-      <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-        {/* Text Content */}
-        <div className="relative z-10 max-w-2xl lg:max-w-none">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold tracking-wide uppercase mb-8">
-            <Sparkles size={12} className="text-blue-500" />
-            <span>Event Planning Made Easy</span>
+    <section className="relative overflow-hidden bg-white pt-32 pb-24 text-slate-800 lg:pt-44 lg:pb-32">
+      {/* Background blobs */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="animate-float absolute top-[-12%] left-[-6%] h-[500px] w-[500px] rounded-full bg-green-200/30 blur-3xl" />
+        <div className="animate-float-delayed absolute bottom-[8%] right-[-12%] h-[620px] w-[620px] rounded-full bg-purple-200/35 blur-3xl" />
+        <div className="absolute top-[40%] right-[18%] h-[320px] w-[320px] rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,#fffcf5_0%,#ffffff_45%,#ffffff_100%)]" />
+      </div>
+
+      <div className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:gap-20 lg:px-8">
+        {/* Left copy */}
+        <div className="max-w-2xl">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+            Trusted by 2,000+ planners & parents
           </div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] mb-6">
-            Your calendar, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">
-              automagically
-            </span>{" "}
-            filled.
+          <h1 className="mb-6 font-serif text-5xl leading-[1.1] text-slate-900 sm:text-6xl lg:text-7xl">
+            Your events, <br />
+            <span className="italic text-slate-500">automagically</span> <br />
+            organized.
           </h1>
-
-          <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-lg">
-            Turn messy flyers, screenshots, and invites into real calendar
-            events in seconds. No typing required.
+          <p className="mb-10 max-w-xl text-lg leading-relaxed text-slate-600">
+            Turn messy flyers, screenshots, and invitations into beautiful
+            websites and calendar events in seconds. From funny{" "}
+            <span className="font-semibold text-slate-900">birthdays</span> to
+            chaotic{" "}
+            <span className="font-semibold text-slate-900">weddings</span>. One
+            link, one beautiful website, RSVPs and directions for every guest.
           </p>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="mb-12 flex flex-col gap-4 sm:flex-row">
             <button
               onClick={openSignup}
-              className="group relative px-8 py-4 bg-black text-white rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-8 py-4 text-base font-medium text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-slate-800 hover:shadow-2xl"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                Start for free{" "}
-                <ArrowRight
-                  size={18}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <Camera
+                size={18}
+                className="transition-transform group-hover:-translate-y-0.5"
+              />
+              Snap your invite
             </button>
+          </div>
 
-            <div className="flex items-center gap-4 px-4 py-2">
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full border-2 border-[#F8F5FF] bg-gray-100 overflow-hidden relative"
-                  >
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300`}
-                    />
-                  </div>
-                ))}
+          <div className="grid grid-cols-3 gap-6 border-t border-slate-200 pt-8">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 font-serif font-medium text-slate-900">
+                <Wand2 size={16} className="text-amber-600" />
+                Instant
               </div>
-              <div className="text-sm font-medium text-gray-600">
-                <span className="text-black font-bold">2k+</span> events snapped
+              <p className="text-xs text-slate-500">
+                Extracts dates & locations from images.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 font-serif font-medium text-slate-900">
+                <CalendarCheck2 size={16} className="text-amber-600" />
+                Syncs
               </div>
+              <p className="text-xs text-slate-500">
+                Google, Apple, & Outlook ready.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 font-serif font-medium text-slate-900">
+                <Heart size={16} className="text-amber-600" />
+                RSVP
+              </div>
+              <p className="text-xs text-slate-500">
+                Guests reply via text or email.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Visual Content: The 3 White Phones */}
-        <div className="relative h-[700px] w-full flex items-center justify-center perspective-[2000px]">
-          {/* Background Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-gradient-to-tr from-blue-100/40 via-violet-100/40 to-transparent rounded-full blur-3xl -z-10" />
-
-          {/* Phone 1: Outlook (Left, Back) */}
-          <div className="absolute left-0 lg:left-8 top-12 transform -rotate-6 scale-90 hover:scale-95 hover:z-20 hover:rotate-0 transition-all duration-500 origin-bottom-right z-10 opacity-90">
-            <Phone
-              app="outlook"
-              events={[
-                { title: "Project Sync", time: "10:00 AM", color: "blue" },
-                {
-                  title: "Dentist Appointment",
-                  time: "3:00 PM",
-                  color: "purple",
-                },
-              ]}
-            />
-            <div className="absolute -top-4 left-4 bg-blue-700 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
-              Outlook
+        {/* Right Column: Camera Scanning Visual */}
+        <div className="perspective-container relative h-[700px] w-full">
+          {/* Background Flyer */}
+          <div className="flyer-3d absolute right-0 top-10 z-0 h-96 w-72 origin-center rounded-lg border-8 border-white bg-yellow-50 p-6 shadow-2xl animate-float-delayed lg:right-10">
+            <div className="h-full w-full border-4 border-dashed border-yellow-300 bg-white/50 p-4 text-center transition-all duration-500">
+              <div className="mb-4 text-5xl">🦖</div>
+              <h3 className="mb-2 font-serif text-3xl font-black leading-none text-slate-900">
+                LEO&apos;S
+                <br />
+                DINO
+                <br />
+                BASH
+              </h3>
+              <div className="my-4 h-1 w-16 bg-slate-900" />
+              <p className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                Saturday
+              </p>
+              <p className="mb-2 text-4xl font-black text-slate-900">12</p>
+              <p className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-800">
+                July @ 2PM
+              </p>
+              <p className="text-xs italic text-slate-500">City Park Gazebo</p>
             </div>
           </div>
 
-          {/* Phone 2: Apple (Right, Back) */}
-          <div className="absolute right-0 lg:right-8 top-24 transform rotate-6 scale-90 hover:scale-95 hover:z-20 hover:rotate-0 transition-all duration-500 origin-bottom-left z-10 opacity-90">
-            <Phone
-              app="apple"
-              events={[
-                {
-                  title: "Alice's 9th Birthday",
-                  time: "2:00 PM",
-                  color: "red",
-                },
-                { title: "Team Meeting", time: "4:30 PM", color: "green" },
-              ]}
-            />
-            <div className="absolute -top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
-              Apple Cal
+          {/* Phone (Camera View) */}
+          <div className="phone-3d absolute left-0 top-0 z-10 h-[580px] w-[280px] rounded-[40px] border-4 border-slate-800 bg-slate-900 p-3 shadow-2xl animate-float lg:left-16">
+            <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[32px] bg-black">
+              {/* Camera feed */}
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-slate-800">
+                <div className="absolute inset-0 bg-yellow-50 opacity-20 blur-md" />
+                <div className="animate-flyer-blur relative w-64 scale-[0.65] border-4 border-dashed border-yellow-300 bg-white p-4 text-center shadow-2xl">
+                  <div className="text-5xl mb-4">🦖</div>
+                  <h3 className="mb-2 font-serif text-3xl font-black leading-none text-slate-900">
+                    LEO&apos;S
+                    <br />
+                    DINO
+                    <br />
+                    BASH
+                  </h3>
+                  <div className="my-3 h-1 w-12 bg-slate-900" />
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Saturday
+                  </p>
+                  <p className="mb-1 text-3xl font-black text-slate-900">12</p>
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-800">
+                    July @ 2PM
+                  </p>
+                  <p className="text-[10px] italic text-slate-500">
+                    City Park Gazebo
+                  </p>
+                </div>
+              </div>
+
+              {/* Overlay */}
+              <div className="absolute inset-0 z-20">
+                <div className="absolute top-1/4 left-1/4 h-8 w-8 border-l-2 border-t-2 border-yellow-400 shadow-sm opacity-60" />
+                <div className="absolute top-1/4 right-1/4 h-8 w-8 border-r-2 border-t-2 border-yellow-400 shadow-sm opacity-60" />
+                <div className="absolute bottom-1/3 left-1/4 h-8 w-8 border-b-2 border-l-2 border-yellow-400 shadow-sm opacity-60" />
+                <div className="absolute bottom-1/3 right-1/4 h-8 w-8 border-b-2 border-r-2 border-yellow-400 shadow-sm opacity-60" />
+
+                <div className="animate-scan-cycle absolute left-0 top-0 h-2 w-full bg-yellow-400/90 blur-[2px] shadow-[0_0_25px_rgba(250,204,21,1)]" />
+
+                <div className="animate-text-cycle absolute left-0 top-12 w-full text-center">
+                  <span className="rounded-full bg-black/50 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
+                    Scanning...
+                  </span>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="absolute bottom-0 z-20 flex h-24 w-full items-center justify-center gap-8 bg-black/40 pb-4 backdrop-blur-md">
+                <div className="h-10 w-10 rounded-full border border-white/20 bg-black/50" />
+                <div className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-4 border-white transition-transform active:scale-95">
+                  <div className="h-14 w-14 rounded-full bg-white" />
+                </div>
+                <div className="h-10 w-10 rounded-full border border-white/20 bg-black/50" />
+              </div>
+
+              {/* Success card */}
+              <div className="animate-card-pop absolute bottom-0 left-0 z-30 w-full rounded-t-3xl bg-white p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
+                <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-200" />
+
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-600">
+                    <Check size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Event snapped!
+                    </h4>
+                    <p className="text-xs text-slate-500">Ready to RSVP</p>
+                  </div>
+                </div>
+
+                <div className="mb-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                      What
+                    </span>
+                    <span className="text-xs font-semibold text-slate-800">
+                      Leo&apos;s Dino Bash
+                    </span>
+                  </div>
+                  <div className="h-[1px] w-full bg-slate-200" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                      When
+                    </span>
+                    <span className="text-xs font-semibold text-slate-800">
+                      Jul 12 · 2:00 PM
+                    </span>
+                  </div>
+                </div>
+
+                <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-3 text-xs font-bold text-white transition-colors hover:bg-slate-800">
+                  Add to Calendar
+                  <ArrowRight size={14} />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Phone 3: Google (Center, Front) */}
-          <div className="absolute z-20 top-0 transform hover:-translate-y-2 transition-transform duration-500">
-            <Phone
-              app="google"
-              events={[
-                { title: "Football Practice", time: "5:30 PM", color: "blue" },
-                {
-                  title: "Alice's 9th Birthday",
-                  time: "7:00 PM",
-                  color: "orange",
-                },
-                {
-                  title: "School Volunteering",
-                  time: "9:00 AM",
-                  color: "green",
-                },
-              ]}
-            />
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
-              Google Cal
+          {/* Floating badges */}
+          <div
+            className="glass-panel absolute top-[20%] right-[-12px] z-30 flex max-w-[220px] items-center gap-3 rounded-xl border border-white/60 bg-white/70 px-4 py-3 shadow-xl backdrop-blur"
+            style={{ animation: "float 6s ease-in-out infinite" }}
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <Check size={16} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase text-slate-400">
+                New RSVP
+              </p>
+              <p className="text-xs font-semibold text-slate-800">
+                Aunt Carol is coming!
+              </p>
             </div>
           </div>
+
+          <div
+            className="glass-panel absolute bottom-[24%] left-[-8px] z-30 flex items-center gap-3 rounded-xl border border-white/60 bg-white/70 px-4 py-3 shadow-xl backdrop-blur"
+            style={{ animation: "float 6s ease-in-out 3s infinite" }}
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+              <Calendar size={16} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase text-slate-400">
+                Synced
+              </p>
+              <p className="text-xs font-semibold text-slate-800">
+                Added to calendar
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Social proof */}
+      <div className="relative z-10 mt-16 px-4 sm:px-6 lg:px-8">
+        <p className="mb-8 text-center text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
+          Works perfectly with
+        </p>
+        <div className="flex flex-wrap justify-center gap-10 text-slate-800 opacity-70 transition-all duration-500 hover:opacity-100">
+          <span className="flex items-center gap-2 text-lg font-bold">
+            <Calendar size={18} /> Google Calendar
+          </span>
+          <span className="flex items-center gap-2 text-lg font-bold">
+            <Calendar size={18} /> Apple Calendar
+          </span>
+          <span className="flex items-center gap-2 text-lg font-bold">
+            <Calendar size={18} /> Outlook
+          </span>
         </div>
       </div>
 
@@ -265,6 +282,131 @@ export default function Hero() {
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
       />
+
+      <style jsx global>{`
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.85);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+        .hero-gradient {
+          background: radial-gradient(
+            circle at 50% 0%,
+            #fffcf5 0%,
+            #ffffff 100%
+          );
+        }
+        .perspective-container {
+          perspective: 1200px;
+        }
+        .flyer-3d {
+          transform: rotateY(10deg) rotateX(5deg) translateZ(-50px);
+          box-shadow: -20px 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        .phone-3d {
+          transform: rotateY(-10deg) rotateX(5deg) translateZ(50px);
+          box-shadow: 20px 20px 50px rgba(0, 0, 0, 0.2);
+          transition: transform 0.3s ease;
+        }
+        .phone-3d:hover {
+          transform: rotateY(-5deg) rotateX(2deg) translateZ(60px) scale(1.02);
+        }
+
+        .animate-scan-cycle {
+          animation: scanCycle 8s linear infinite;
+        }
+        .animate-card-pop {
+          animation: cardPop 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .animate-flyer-blur {
+          animation: flyerBlur 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .animate-text-cycle {
+          animation: textCycle 8s linear infinite;
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+          animation: float 6s ease-in-out 3s infinite;
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+        @keyframes scanCycle {
+          0% {
+            top: 5%;
+            opacity: 0;
+          }
+          5% {
+            opacity: 1;
+          }
+          30% {
+            top: 95%;
+            opacity: 1;
+          }
+          35% {
+            top: 95%;
+            opacity: 0;
+          }
+          100% {
+            top: 95%;
+            opacity: 0;
+          }
+        }
+        @keyframes cardPop {
+          0%,
+          35% {
+            transform: translateY(110%);
+            opacity: 0;
+          }
+          40%,
+          90% {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          95%,
+          100% {
+            transform: translateY(110%);
+            opacity: 0;
+          }
+        }
+        @keyframes flyerBlur {
+          0%,
+          35% {
+            filter: blur(0px);
+            opacity: 1;
+          }
+          40%,
+          90% {
+            filter: blur(6px);
+            opacity: 0.7;
+          }
+          95%,
+          100% {
+            filter: blur(0px);
+            opacity: 1;
+          }
+        }
+        @keyframes textCycle {
+          0%,
+          35% {
+            opacity: 1;
+          }
+          36%,
+          100% {
+            opacity: 0;
+          }
+        }
+      `}</style>
     </section>
   );
 }

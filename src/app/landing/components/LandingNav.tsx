@@ -37,7 +37,7 @@ export default function LandingNav() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out bg-[#F8F5FF] ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out bg-white ${
           isScrolled || mobileMenuOpen
             ? "backdrop-blur-md border-b border-white/60 shadow-sm py-3"
             : "py-5"
@@ -108,7 +108,7 @@ export default function LandingNav() {
 
         {/* Mobile Menu */}
         <div
-          className={`absolute top-full left-0 right-0 bg-[#F8F5FF] border-b border-white/60 shadow-lg md:hidden transition-all duration-300 origin-top overflow-hidden ${
+          className={`absolute top-full left-0 right-0 bg-white border-b border-white/60 shadow-lg md:hidden transition-all duration-300 origin-top overflow-hidden ${
             mobileMenuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >

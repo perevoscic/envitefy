@@ -5,6 +5,22 @@ export const metadata: Metadata = {
   title: "About — Envitefy",
   description:
     "Envitefy turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
+  openGraph: {
+    title: "About — Envitefy",
+    description:
+      "Envitefy turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
+    url: "https://envitefy.com/about",
+    siteName: "Envitefy",
+    images: [
+      {
+        url: "https://envitefy.com/og-default-v2.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Envitefy preview",
+      },
+    ],
+    type: "website",
+  },
 };
 
 export default function AboutPage() {

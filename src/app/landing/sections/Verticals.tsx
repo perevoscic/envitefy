@@ -23,7 +23,14 @@ export default function Verticals() {
     {
       id: "weddings",
       title: "Wedding Websites",
-      subtitle: "Your big day, beautifully organized.",
+      subtitle: (
+        <>
+          Your big day, <br />
+          <span className="italic text-red-500">beautifully</span>
+          <br />
+          organized.
+        </>
+      ),
       description:
         "Create a stunning wedding page in minutes. Collect RSVPs, link your registries (Amazon, Target, Zola), and share driving directions—all from one elegant link.",
       color: "from-rose-200 to-pink-100",
@@ -35,7 +42,16 @@ export default function Verticals() {
     {
       id: "birthdays",
       title: "Birthdays & Parties",
-      subtitle: "Invites that actually get replies.",
+      subtitle: (
+        <>
+          Invites that
+          <br />
+          <span className="italic text-blue-500">actually</span>
+          <br />
+          get replies.
+        </>
+      ),
+      subtitleClass: "text-[#3b2d25]",
       description:
         "From 1st birthdays to 50th bashes. Snap a photo of the paper invite to digitize it, or pick a theme. Guests RSVP by text, and you get a headcount instantly.",
       color: "from-blue-200 to-cyan-100",
@@ -47,7 +63,12 @@ export default function Verticals() {
     {
       id: "baby-showers",
       title: "Baby Showers",
-      subtitle: "Sprinkle joy, not stress.",
+      subtitle: (
+        <>
+          Sprinkle joy, <br />
+          <span className="italic text-violet-500">not stress.</span>{" "}
+        </>
+      ),
       description:
         "Coordinate the perfect shower. Link your registry, track gifts, and share games or diaper raffle info. It’s the easiest way to gather loved ones.",
       color: "from-purple-200 to-violet-100",
@@ -59,7 +80,15 @@ export default function Verticals() {
     {
       id: "signup-forms",
       title: "Smart Sign-up Forms",
-      subtitle: "Volunteers, Potlucks, & Carpools.",
+      subtitle: (
+        <>
+          Volunteers,
+          <br />
+          Potlucks,
+          <br />
+          <span className="italic text-teal-500">and Carpools.</span>{" "}
+        </>
+      ),
       description:
         "Ditch the reply-all chaos. Create a sign-up list for anything—classroom snacks, team volunteers, or potluck dishes. Slots update in real-time so no one brings double chips.",
       color: "from-emerald-200 to-teal-100",
@@ -89,7 +118,11 @@ export default function Verticals() {
                 <span>{block.title}</span>
               </div>
 
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+              <h2
+                className={`text-4xl md:text-5xl font-bold tracking-tight ${
+                  block.subtitleClass ?? "text-gray-900"
+                }`}
+              >
                 {block.subtitle}
               </h2>
 

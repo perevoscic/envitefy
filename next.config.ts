@@ -15,6 +15,7 @@ const nextConfig = {
       { protocol: "https", hostname: "fonts.gstatic.com" },
       { protocol: "https", hostname: "upload.wikimedia.org" },
       { protocol: "https", hostname: "static.thenounproject.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
 };
