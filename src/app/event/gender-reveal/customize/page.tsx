@@ -137,15 +137,7 @@ export default function GenderRevealTemplateCustomizePage() {
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
 
-  // Redirect to template selection if no templateId is provided
-  useEffect(() => {
-    if (!templateId) {
-      const params = new URLSearchParams();
-      if (defaultDate) params.set("d", defaultDate);
-      const query = params.toString();
-      router.replace(`/event/gender-reveal${query ? `?${query}` : ""}`);
-    }
-  }, [templateId, defaultDate, router]);
+  // Use default template if no templateId is provided (no redirect)
 
   const template = useMemo(() => {
     if (!templateId) return genderRevealTemplateCatalog[0];

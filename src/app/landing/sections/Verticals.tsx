@@ -130,12 +130,21 @@ export default function Verticals() {
                 {block.description}
               </p>
 
-              <button
-                onClick={openSignup}
-                className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
-              >
-                {block.buttonText} <ArrowRight className="w-5 h-5" />
-              </button>
+              {block.id === "baby-showers" ? (
+                <Link
+                  href="/event/baby-showers/customize"
+                  className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
+                >
+                  {block.buttonText} <ArrowRight className="w-5 h-5" />
+                </Link>
+              ) : (
+                <button
+                  onClick={openSignup}
+                  className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
+                >
+                  {block.buttonText} <ArrowRight className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             {/* Visual Side */}

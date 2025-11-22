@@ -20,6 +20,11 @@ module.exports = {
     'from-purple-200','via-fuchsia-200','to-pink-200',
     'from-slate-200','via-zinc-200','to-sky-200',
     'from-cyan-300','via-sky-300','to-fuchsia-300',
+    // Birthday theme gradients
+    'from-pink-100','via-yellow-100','to-blue-100',
+    'from-pink-200','via-yellow-200','to-blue-200',
+    'from-purple-100','via-pink-100','to-orange-100',
+    'from-purple-200','via-pink-200','to-orange-200',
   ],
 };
 

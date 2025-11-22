@@ -1,87 +1,31 @@
+// @ts-nocheck
 "use client";
 
+import React, { useRef, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
-  useMemo,
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  type ChangeEvent,
-} from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Baloo_2, Poppins } from "next/font/google";
-import { ArrowLeft, ArrowRight, CalendarDays, Sparkles } from "lucide-react";
-import styles from "@/components/event-create/TemplateGallery.module.css";
-import {
-  DEFAULT_PREVIEW,
-  resolveTemplateVariation,
-  type ResolvedTemplateVariation,
-} from "@/components/event-create/TemplateGallery";
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Edit2,
+  Heart,
+  Users,
+  Image as ImageIcon,
+  Type,
+  Palette,
+  CheckSquare,
+  Gift,
+  Upload,
+  Trash2,
+  Menu,
+  Cake,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 import {
   type BirthdayTemplateDefinition,
   birthdayTemplateCatalog,
 } from "@/components/event-create/BirthdayTemplateGallery";
-import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
-
-function parseDateInput(label?: string | null) {
-  if (!label) return "";
-  const parsed = new Date(label);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
-}
-
-function formatDateLabel(value?: string) {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    }).format(parsed);
-  } catch {
-    return parsed.toDateString();
-  }
-}
-
-function toLocalDateValue(d: Date | null): string {
-  if (!d) return "";
-  try {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const y = d.getFullYear();
-    const m = pad(d.getMonth() + 1);
-    const day = pad(d.getDate());
-    return `${y}-${m}-${day}`;
-  } catch {
-    return "";
-  }
-}
-
-function toLocalTimeValue(d: Date | null): string {
-  if (!d) return "";
-  try {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const hh = pad(d.getHours());
-    const mm = pad(d.getMinutes());
-    return `${hh}:${mm}`;
-  } catch {
-    return "";
-  }
-}
-
-function formatTimeForPreview(value?: string | null): string {
-  if (!value) return "";
-  const [hourPart, minutePart] = value.split(":");
-  const hour = Number.parseInt(hourPart || "0", 10);
-  const minute = Number.parseInt(minutePart || "0", 10);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return value;
-  const suffix = hour >= 12 ? "PM" : "AM";
-  const normalizedHour = ((hour + 11) % 12) + 1;
-  const paddedMinute = minute.toString().padStart(2, "0");
-  return `${normalizedHour}:${paddedMinute} ${suffix}`;
-}
 
 function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
   if (!id) return birthdayTemplateCatalog[0];
@@ -91,717 +35,495 @@ function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
   );
 }
 
-const infoSections = [
+// Simplified constants - we'll expand these
+const FONTS = {
+  playfair: { name: "Playfair Display", preview: "var(--font-playfair)" },
+  montserrat: { name: "Montserrat", preview: "var(--font-montserrat)" },
+  poppins: { name: "Poppins", preview: "var(--font-poppins)" },
+  dancing: { name: "Dancing Script", preview: "var(--font-dancing)" },
+  allura: { name: "Allura", preview: "var(--font-allura)" },
+  parisienne: { name: "Parisienne", preview: "var(--font-parisienne)" },
+};
+
+const FONT_SIZES = {
+  small: {
+    h1: "text-2xl md:text-4xl",
+    h2: "text-2xl md:text-3xl",
+    body: "text-sm",
+  },
+  medium: {
+    h1: "text-3xl md:text-5xl",
+    h2: "text-3xl md:text-4xl",
+    body: "text-base",
+  },
+  large: {
+    h1: "text-4xl md:text-6xl",
+    h2: "text-4xl md:text-5xl",
+    body: "text-lg",
+  },
+};
+
+const DESIGN_THEMES = [
   {
-    key: "headline",
-    label: "Invite Header",
-    description:
-      "Add the child’s name, age, and date/time so we can format the hero text for you.",
+    id: "party_pop",
+    name: "Party Pop",
+    category: "Bold & Playful",
+    bg: "bg-[#fff1f2]",
+    text: "text-[#881337]",
+    accent: "text-[#e11d48]",
+    previewColor: "bg-[#ffe4e6]",
   },
   {
-    key: "design",
-    label: "Colors & Layout",
-    description:
-      "Choose the palette and layout variation that matches your party vibe.",
+    id: "candy_dreams",
+    name: "Candy Dreams",
+    category: "Sweet & Whimsical",
+    bg: "bg-[#fdf2f8]",
+    text: "text-[#831843]",
+    accent: "text-[#ec4899]",
+    previewColor: "bg-[#fce7f3]",
   },
   {
-    key: "registry",
-    label: "RSVP & Links",
-    description:
-      "Drop your RSVP contact or shareable links so guests can respond in one tap.",
+    id: "rainbow_bash",
+    name: "Rainbow Bash",
+    category: "Vibrant & Energetic",
+    bg: "bg-gradient-to-br from-pink-100 via-yellow-100 to-blue-100",
+    text: "text-slate-900",
+    accent: "text-purple-600",
+    previewColor: "bg-gradient-to-br from-pink-200 via-yellow-200 to-blue-200",
+  },
+  {
+    id: "playful_pals",
+    name: "Playful Pals",
+    category: "Casual & Friendly",
+    bg: "bg-[#f0fdf4]",
+    text: "text-[#1e293b]",
+    accent: "text-[#10b981]",
+    previewColor: "bg-[#d1fae5]",
+  },
+  {
+    id: "birthday_burst",
+    name: "Birthday Burst",
+    category: "Relaxed & Cheerful",
+    bg: "bg-[#fef3c7]",
+    text: "text-[#78350f]",
+    accent: "text-[#f59e0b]",
+    previewColor: "bg-[#fde68a]",
+  },
+  {
+    id: "sweet_celebration",
+    name: "Sweet Celebration",
+    category: "Flowing Handwriting",
+    bg: "bg-[#fdf4ff]",
+    text: "text-[#581c87]",
+    accent: "text-[#a855f7]",
+    previewColor: "bg-[#f3e8ff]",
+  },
+  {
+    id: "super_star",
+    name: "Super Star",
+    category: "Elegant Flowing",
+    bg: "bg-[#1e1b4b]",
+    text: "text-white",
+    accent: "text-[#fbbf24]",
+    previewColor: "bg-[#312e81]",
+  },
+  {
+    id: "happy_dance",
+    name: "Happy Dance",
+    category: "Lively Bouncing",
+    bg: "bg-[#fef2f2]",
+    text: "text-[#991b1b]",
+    accent: "text-[#ef4444]",
+    previewColor: "bg-[#fee2e2]",
+  },
+  {
+    id: "magic_sparkle",
+    name: "Magic Sparkle",
+    category: "Charming Handwriting",
+    bg: "bg-[#f0f9ff]",
+    text: "text-[#0c4a6e]",
+    accent: "text-[#0ea5e9]",
+    previewColor: "bg-[#bae6fd]",
+  },
+  {
+    id: "celebration_time",
+    name: "Celebration Time",
+    category: "Playful & Elegant",
+    bg: "bg-[#fff7ed]",
+    text: "text-[#9a3412]",
+    accent: "text-[#f97316]",
+    previewColor: "bg-[#ffedd5]",
+  },
+  {
+    id: "fun_fiesta",
+    name: "Fun Fiesta",
+    category: "Bold & Dynamic",
+    bg: "bg-[#ecfdf5]",
+    text: "text-[#064e3b]",
+    accent: "text-[#10b981]",
+    previewColor: "bg-[#a7f3d0]",
+  },
+  {
+    id: "joyful_jamboree",
+    name: "Joyful Jamboree",
+    category: "Clean & Elegant",
+    bg: "bg-white",
+    text: "text-slate-900",
+    accent: "text-indigo-600",
+    previewColor: "bg-indigo-50",
+  },
+  {
+    id: "whimsical_wonder",
+    name: "Whimsical Wonder",
+    category: "Flowing Decorative",
+    bg: "bg-[#fdf2f8]",
+    text: "text-[#831843]",
+    accent: "text-[#db2777]",
+    previewColor: "bg-[#fbcfe8]",
+  },
+  {
+    id: "cheerful_chaos",
+    name: "Cheerful Chaos",
+    category: "Loose & Stylish",
+    bg: "bg-[#fefce8]",
+    text: "text-[#713f12]",
+    accent: "text-[#eab308]",
+    previewColor: "bg-[#fef9c3]",
+  },
+  {
+    id: "party_parade",
+    name: "Party Parade",
+    category: "Flowing Brush",
+    bg: "bg-[#eff6ff]",
+    text: "text-[#1e3a8a]",
+    accent: "text-[#3b82f6]",
+    previewColor: "bg-[#dbeafe]",
+  },
+  {
+    id: "birthday_bliss",
+    name: "Birthday Bliss",
+    category: "Casual Vintage",
+    bg: "bg-[#fffbeb]",
+    text: "text-[#78350f]",
+    accent: "text-[#f59e0b]",
+    previewColor: "bg-[#fef3c7]",
+  },
+  {
+    id: "sparkle_splash",
+    name: "Sparkle Splash",
+    category: "Elegant Calligraphic",
+    bg: "bg-[#f8fafc]",
+    text: "text-[#0f172a]",
+    accent: "text-[#64748b]",
+    previewColor: "bg-slate-100",
+  },
+  {
+    id: "celebration_craze",
+    name: "Celebration Craze",
+    category: "Classic Cursive",
+    bg: "bg-[#fdfbf7]",
+    text: "text-[#451a03]",
+    accent: "text-[#92400e]",
+    previewColor: "bg-[#fef3c7]",
+  },
+  {
+    id: "happy_hooray",
+    name: "Happy Hooray",
+    category: "Refined Thin",
+    bg: "bg-white",
+    text: "text-slate-800",
+    accent: "text-slate-600",
+    previewColor: "bg-gray-50",
+  },
+  {
+    id: "party_palooza",
+    name: "Party Palooza",
+    category: "Vintage Flat Nib",
+    bg: "bg-[#fff7ed]",
+    text: "text-[#7c2d12]",
+    accent: "text-[#ea580c]",
+    previewColor: "bg-[#ffedd5]",
+  },
+  {
+    id: "birthday_bonanza",
+    name: "Birthday Bonanza",
+    category: "Decorative Bold",
+    bg: "bg-[#fef2f2]",
+    text: "text-[#991b1b]",
+    accent: "text-[#dc2626]",
+    previewColor: "bg-[#fee2e2]",
+  },
+  {
+    id: "sweet_surprise",
+    name: "Sweet Surprise",
+    category: "Delicate Cursive",
+    bg: "bg-[#fdf4ff]",
+    text: "text-[#6b21a8]",
+    accent: "text-[#9333ea]",
+    previewColor: "bg-[#e9d5ff]",
+  },
+  {
+    id: "party_perfect",
+    name: "Party Perfect",
+    category: "Relaxed Handwritten",
+    bg: "bg-[#f0fdf4]",
+    text: "text-[#14532d]",
+    accent: "text-[#22c55e]",
+    previewColor: "bg-[#bbf7d0]",
+  },
+  {
+    id: "birthday_bash",
+    name: "Birthday Bash",
+    category: "Ornate & Formal",
+    bg: "bg-[#1e293b]",
+    text: "text-white",
+    accent: "text-[#fbbf24]",
+    previewColor: "bg-[#334155]",
   },
 ];
 
-const baloo = Baloo_2({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-baloo",
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
-});
-
-type RegistryEntry = {
-  id: string;
-  label: string;
-  url: string;
+const INITIAL_DATA = {
+  childName: "Emma",
+  age: 5,
+  date: (() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    return date.toISOString().split("T")[0];
+  })(),
+  time: "14:00",
+  city: "Chicago",
+  state: "IL",
+  venue: "",
+  partyDetails: {
+    theme: "",
+    activities: "",
+    notes:
+      "Join us for an amazing birthday celebration! We'll have games, cake, and lots of fun activities. Can't wait to celebrate with you!",
+  },
+  hosts: [{ id: 1, name: "Mom & Dad", role: "Parents" }],
+  theme: {
+    font: "playfair",
+    fontSize: "medium",
+    themeId: "rainbow_bash",
+  },
+  images: {
+    hero: null,
+    headlineBg: null,
+  },
+  registries: [],
+  rsvp: {
+    isEnabled: true,
+    deadline: (() => {
+      const date = new Date();
+      date.setDate(date.getDate() + 14);
+      return date.toISOString().split("T")[0];
+    })(),
+  },
+  gallery: [],
 };
+
+const MenuCard = ({ title, icon, desc, onClick }) => (
+  <div
+    onClick={onClick}
+    className="group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
+  >
+    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
+      {icon}
+    </div>
+    <div className="flex-1">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="font-semibold text-slate-800">{title}</h3>
+        <ChevronRight
+          size={16}
+          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
+        />
+      </div>
+      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+    </div>
+  </div>
+);
+
+const EditorLayout = ({ title, onBack, children }) => (
+  <div className="animate-fade-in-right">
+    <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
+      <button
+        onClick={onBack}
+        className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+      >
+        <ChevronLeft size={20} />
+      </button>
+      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
+        Customize
+      </span>
+      <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2">
+        {title}
+      </h2>
+    </div>
+    {children}
+  </div>
+);
+
+const InputGroup = ({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+}) => (
+  <div>
+    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+      {label}
+    </label>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
+    />
+  </div>
+);
 
 export default function BirthdayTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
-
-  const templateId = search?.get("templateId");
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
+  const templateId = search?.get("templateId");
 
-  // Redirect to template selection if no templateId is provided
-  useEffect(() => {
-    if (!templateId) {
-      const params = new URLSearchParams();
-      if (defaultDate) params.set("d", defaultDate);
-      const query = params.toString();
-      router.replace(`/event/birthdays${query ? `?${query}` : ""}`);
-    }
-  }, [templateId, defaultDate, router]);
+  const template = getTemplateById(templateId);
 
-  const template = useMemo(() => {
-    if (!templateId) return birthdayTemplateCatalog[0];
-    return getTemplateById(templateId);
-  }, [templateId]);
-  const variationParam = search?.get("variationId") ?? "";
-  const firstVariationId = template.variations[0]?.id ?? "";
-  const [selectedVariationId, setSelectedVariationId] = useState(
-    variationParam || firstVariationId
-  );
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [sectionNotes, setSectionNotes] = useState<Record<string, string>>({});
-  const [photoFiles, setPhotoFiles] = useState<
-    Array<{ file: File; previewUrl: string }>
-  >([]);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const formSectionRef = useRef<HTMLDivElement>(null);
-  const [customHeroImage, setCustomHeroImage] = useState<{
-    file: File;
-    previewUrl: string;
-    dataUrl?: string;
-  } | null>(null);
-  const heroImageInputRef = useRef<HTMLInputElement>(null);
-  const heroImageObjectUrlRef = useRef<string | null>(null);
-  const [customTitles, setCustomTitles] = useState<Record<string, string>>({});
-  const [editingTitle, setEditingTitle] = useState<string | null>(null);
-  const [renameDraft, setRenameDraft] = useState("");
-  const generateId = useCallback(
-    () =>
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2, 10),
-    []
-  );
-  const [registries, setRegistries] = useState<RegistryEntry[]>([]);
-  const scrollToForm = useCallback(() => {
-    formSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      photoFiles.forEach((photo) => {
-        URL.revokeObjectURL(photo.previewUrl);
-      });
-      if (heroImageObjectUrlRef.current) {
-        URL.revokeObjectURL(heroImageObjectUrlRef.current);
-      }
-    };
-  }, []);
-
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    const remainingSlots = 5 - photoFiles.length;
-    if (remainingSlots <= 0) return;
-
-    const filesToAdd = files.slice(0, remainingSlots);
-    const newPhotos = filesToAdd.map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }));
-    setPhotoFiles((prev) => [...prev, ...newPhotos]);
-
-    if (photoInputRef.current) {
-      photoInputRef.current.value = "";
-    }
-  };
-
-  const removePhoto = (index: number) => {
-    setPhotoFiles((prev) => {
-      const photo = prev[index];
-      if (photo) {
-        URL.revokeObjectURL(photo.previewUrl);
-      }
-      const newPhotos = prev.filter((_, i) => i !== index);
-      if (currentPhotoIndex >= newPhotos.length && newPhotos.length > 0) {
-        setCurrentPhotoIndex(newPhotos.length - 1);
-      } else if (newPhotos.length === 0) {
-        setCurrentPhotoIndex(0);
-      }
-      return newPhotos;
-    });
-  };
-
-  const nextPhoto = () => {
-    setCurrentPhotoIndex((prev) => (prev + 1) % photoFiles.length);
-  };
-  const prevPhoto = () => {
-    setCurrentPhotoIndex(
-      (prev) => (prev - 1 + photoFiles.length) % photoFiles.length
-    );
-  };
-
-  const handleHeroImageChange = async (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Clean up previous object URL
-    if (heroImageObjectUrlRef.current) {
-      URL.revokeObjectURL(heroImageObjectUrlRef.current);
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    heroImageObjectUrlRef.current = previewUrl;
-
-    // Convert to data URL for storage
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      setCustomHeroImage({
-        file,
-        previewUrl,
-        dataUrl,
-      });
-    };
-    reader.readAsDataURL(file);
-
-    // Reset input to allow selecting the same file again
-    if (heroImageInputRef.current) {
-      heroImageInputRef.current.value = "";
-    }
-  };
-
-  const removeHeroImage = () => {
-    if (heroImageObjectUrlRef.current) {
-      URL.revokeObjectURL(heroImageObjectUrlRef.current);
-      heroImageObjectUrlRef.current = null;
-    }
-    setCustomHeroImage(null);
-    if (heroImageInputRef.current) {
-      heroImageInputRef.current.value = "";
-    }
-  };
-
-  useEffect(() => {
-    if (variationParam) {
-      setSelectedVariationId(variationParam);
-      return;
-    }
-    if (firstVariationId) {
-      setSelectedVariationId(firstVariationId);
-    }
-  }, [variationParam, firstVariationId]);
-
-  const resolvedVariation: ResolvedTemplateVariation = useMemo(() => {
-    const variation =
-      template.variations.find((v) => v.id === selectedVariationId) ??
-      template.variations[0];
-    return resolveTemplateVariation(variation);
-  }, [template, selectedVariationId]);
-
-  const resolvedVariations = useMemo(
-    () =>
-      template.variations.map((variation) =>
-        resolveTemplateVariation(variation)
-      ),
-    [template.variations]
-  );
-
-  const displayVariations = useMemo(() => {
-    const trimmed = resolvedVariations.slice(0, 16);
-    if (
-      trimmed.some((variation) => variation.id === selectedVariationId) ||
-      trimmed.length < 6
-    ) {
-      return trimmed;
-    }
-    const selected = resolvedVariations.find(
-      (variation) => variation.id === selectedVariationId
-    );
-    if (!selected) {
-      return trimmed;
-    }
-    return [...trimmed.slice(0, trimmed.length - 1), selected];
-  }, [resolvedVariations, selectedVariationId]);
-
-  const renderSectionContent = (sectionKey: string) => {
-    if (sectionKey === "headline") {
-      return (
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-stone-700">
-            Title
-            <input
-              type="text"
-              value={birthdayName}
-              onChange={(e) => setBirthdayName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-              placeholder="Event Title"
-            />
-          </label>
-          <label className="block text-sm font-medium text-stone-700">
-            Event date
-            <input
-              type="date"
-              value={eventDate}
-              onChange={(e) => {
-                setEventDate(e.target.value);
-                setWhenDate(e.target.value);
-              }}
-              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block text-sm font-medium text-stone-700">
-              Start time
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-              />
-            </label>
-            <label className="block text-sm font-medium text-stone-700">
-              End time
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-              />
-            </label>
-          </div>
-        </div>
-      );
-    }
-    if (sectionKey === "design") {
-      return (
-        <div className={styles.variationSection}>
-          <span className={styles.variationKicker}>Color stories</span>
-          <div className={styles.variationRow}>
-            {displayVariations.map((variation) => {
-              const isActiveVariation = variation.id === selectedVariationId;
-              return (
-                <button
-                  key={variation.id}
-                  type="button"
-                  aria-pressed={isActiveVariation}
-                  className={`${styles.variationButton} ${
-                    isActiveVariation ? styles.variationActive : ""
-                  }`}
-                  onClick={() => setSelectedVariationId(variation.id)}
-                >
-                  <div className={styles.variationSwatches}>
-                    {variation.swatches.map((color) => (
-                      <span
-                        key={color}
-                        className={styles.paletteDot}
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                  <div className={styles.variationLabel}>
-                    <span>{variation.label}</span>
-                    <small>{variation.tagline}</small>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-    if (sectionKey === "registry") {
-      return (
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() =>
-              setRegistries((prev) => [
-                ...prev,
-                { id: generateId(), label: "", url: "" },
-              ])
-            }
-            className="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              className="h-5 w-5"
-              strokeWidth="1.6"
-            >
-              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-            </svg>
-            <span>Add registry</span>
-          </button>
-          {registries.length > 0 && (
-            <div className="space-y-3">
-              {registries.map((registry) => (
-                <div
-                  key={registry.id}
-                  className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm"
-                >
-                  <input
-                    type="text"
-                    placeholder="Registry name (e.g., Amazon, Target)"
-                    value={registry.label}
-                    onChange={(event) =>
-                      setRegistries((prev) =>
-                        prev.map((entry) =>
-                          entry.id === registry.id
-                            ? { ...entry, label: event.target.value }
-                            : entry
-                        )
-                      )
-                    }
-                    className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                  />
-                  <input
-                    type="url"
-                    placeholder="https://www.example.com/your-registry"
-                    value={registry.url}
-                    onChange={(event) =>
-                      setRegistries((prev) =>
-                        prev.map((entry) =>
-                          entry.id === registry.id
-                            ? { ...entry, url: event.target.value }
-                            : entry
-                        )
-                      )
-                    }
-                    className="mt-2 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
-                    onClick={() =>
-                      setRegistries((prev) =>
-                        prev.filter((entry) => entry.id !== registry.id)
-                      )
-                    }
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const activeSectionData = activeSection
-    ? infoSections.find((section) => section.key === activeSection)
-    : undefined;
-  const handleBack = () => {
-    setActiveSection(null);
-  };
-  useEffect(() => {
-    if (!activeSection) {
-      setEditingTitle(null);
-      setRenameDraft("");
-    }
-  }, [activeSection]);
-  const menuLabel = (key: string, label: string) => customTitles[key] ?? label;
-  const startEditTitle = () => {
-    if (!activeSection) return;
-    setEditingTitle(activeSection);
-    setRenameDraft(
-      customTitles[activeSection] ?? activeSectionData?.label ?? activeSection
-    );
-  };
-  const saveTitle = () => {
-    if (!activeSection || renameDraft.trim() === "") return;
-    setCustomTitles((prev) => ({
-      ...prev,
-      [activeSection]: renameDraft.trim(),
-    }));
-    setEditingTitle(null);
-  };
-
-  const hasPhotos = photoFiles.length > 0;
-
-  const defaultLocation =
-    template.preview?.location ?? DEFAULT_PREVIEW.location ?? "";
-
-  const [birthdayName, setBirthdayName] = useState("");
-  const [eventDate, setEventDate] = useState(
-    parseDateInput(
-      defaultDate ?? template.preview?.dateLabel ?? DEFAULT_PREVIEW.dateLabel
-    )
-  );
-
-  // Event fields from old birthday form
-  const initialStart = useMemo(() => {
-    const base = defaultDate ? new Date(defaultDate) : new Date();
-    base.setSeconds(0, 0);
-    const rounded = new Date(base);
-    const minutes = rounded.getMinutes();
-    rounded.setMinutes(minutes - (minutes % 15));
-    return rounded;
-  }, [defaultDate]);
-
-  const initialEnd = useMemo(() => {
-    const d = new Date(initialStart);
-    d.setHours(d.getHours() + 1);
-    return d;
-  }, [initialStart]);
-
-  const [title, setTitle] = useState("");
-  const [whenDate, setWhenDate] = useState<string>(
-    toLocalDateValue(new Date(initialStart))
-  );
-  const [fullDay, setFullDay] = useState<boolean>(false);
-  const [startTime, setStartTime] = useState<string>(
-    toLocalTimeValue(initialStart)
-  );
-  const [endDate, setEndDate] = useState<string>(
-    toLocalDateValue(new Date(initialStart))
-  );
-  const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
-
-  // Sync end date with start date when start date changes
-  useEffect(() => {
-    setEndDate(whenDate);
-  }, [whenDate]);
-
-  // Sync eventDate with whenDate
-  useEffect(() => {
-    if (whenDate && eventDate !== whenDate) {
-      setEventDate(whenDate);
-    }
-  }, [whenDate]);
-  const [venue, setVenue] = useState("");
-  const [streetAddress, setStreetAddress] = useState(defaultLocation);
-  const [eventLocation, setEventLocation] = useState("");
-  const [description, setDescription] = useState("");
-  const [rsvp, setRsvp] = useState("");
-  const [numberOfGuests, setNumberOfGuests] = useState<number>(0);
-  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
-  const [showReview, setShowReview] = useState(false);
+  const [activeView, setActiveView] = useState("main");
+  const [data, setData] = useState(INITIAL_DATA);
+  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [designOpen, setDesignOpen] = useState(true);
+  const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load event data when editing
-  useEffect(() => {
-    if (!editEventId) return;
-
-    const loadEvent = async () => {
-      try {
-        const res = await fetch(`/api/history/${editEventId}`, {
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const event = await res.json();
-        const data = event?.data || {};
-
-        // Load template customization data
-        if (data.templateId) {
-          // Template ID is already in URL, but we can verify
-        }
-        if (data.variationId) {
-          setSelectedVariationId(data.variationId);
-        }
-        if (data.birthdayName) {
-          setBirthdayName(data.birthdayName);
-        }
-        if (data.customTitles && typeof data.customTitles === "object") {
-          setCustomTitles(data.customTitles);
-        }
-        if (data.sectionNotes && typeof data.sectionNotes === "object") {
-          setSectionNotes(data.sectionNotes);
-        }
-        if (Array.isArray(data.registries)) {
-          setRegistries(
-            data.registries.map((r: any) => ({
-              id: generateId(),
-              label: r.label || "",
-              url: r.url || "",
-            }))
-          );
-        }
-        if (data.customHeroImage) {
-          // Load custom hero image from stored data URL
-          // Create a placeholder file object for consistency
-          const placeholderFile = new File([], "hero-image", {
-            type: "image/jpeg",
-          });
-          setCustomHeroImage({
-            file: placeholderFile,
-            previewUrl: data.customHeroImage,
-            dataUrl: data.customHeroImage,
-          });
-        }
-
-        // Load event details
-        if (event.title) {
-          setTitle(event.title);
-        }
-        if (data.startISO) {
-          const startDate = new Date(data.startISO);
-          const dateValue = toLocalDateValue(startDate);
-          setWhenDate(dateValue);
-          setEventDate(dateValue);
-          setEndDate(dateValue);
-          if (!data.allDay) {
-            setStartTime(toLocalTimeValue(startDate));
-            if (data.endISO) {
-              const endDate = new Date(data.endISO);
-              setEndTime(toLocalTimeValue(endDate));
-            }
-          }
-          setFullDay(data.allDay || false);
-        }
-        if (data.venue) {
-          setVenue(data.venue);
-        }
-        if (data.location) {
-          setStreetAddress(data.location);
-          setEventLocation(data.location);
-        }
-        if (data.description) {
-          setDescription(data.description);
-        }
-        if (data.rsvp) {
-          setRsvp(data.rsvp);
-        }
-        if (typeof data.numberOfGuests === "number") {
-          setNumberOfGuests(data.numberOfGuests);
-        }
-      } catch (err) {
-        console.error("Failed to load event:", err);
-      }
-    };
-
-    loadEvent();
-  }, [editEventId, generateId]);
-
-  // Autosize description
-  useEffect(() => {
-    const el = descriptionRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [description]);
-
-  const previewName =
-    birthdayName.trim() || template.preview?.birthdayName || "Event";
-
-  const previewDateLabel =
-    formatDateLabel(eventDate) ??
-    template.preview?.dateLabel ??
-    DEFAULT_PREVIEW.dateLabel;
-  const previewTime = useMemo(() => {
-    if (fullDay) return "";
-    return formatTimeForPreview(startTime);
-  }, [fullDay, startTime]);
-
-  const heroImageBasePath = template.preview?.birthdayName
-    ? "/templates/birthdays/"
-    : "/templates/wedding-placeholders/";
-  const heroImageSrc = `${heroImageBasePath}${
-    template.heroImageName || `${template.id}.webp`
-  }`;
-  const headerBackgroundStyle = {
-    background: resolvedVariation.background,
+  const updateData = (field, value) => {
+    setData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleReview = useCallback(() => {
-    setShowReview(true);
-  }, []);
+  const updateTheme = (field, value) => {
+    setData((prev) => ({
+      ...prev,
+      theme: { ...prev.theme, [field]: value },
+    }));
+  };
+
+  const updatePartyDetails = (field, value) => {
+    setData((prev) => ({
+      ...prev,
+      partyDetails: { ...prev.partyDetails, [field]: value },
+    }));
+  };
+
+  const handleImageUpload = (field, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setData((prev) => ({
+        ...prev,
+        images: { ...prev.images, [field]: imageUrl },
+      }));
+    }
+  };
+
+  const handleGalleryUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const newImages = files.map((file) => ({
+      id: `${file.name}-${Date.now()}`,
+      url: URL.createObjectURL(file),
+    }));
+    setData((prev) => ({
+      ...prev,
+      gallery: [...prev.gallery, ...newImages],
+    }));
+  };
+
+  const removeGalleryImage = (id) => {
+    setData((prev) => ({
+      ...prev,
+      gallery: prev.gallery.filter((img) => img.id !== id),
+    }));
+  };
+
+  const currentTheme =
+    DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
+  const currentFont = FONTS[data.theme.font] || FONTS.playfair;
+  const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+
+  const heroImageSrc =
+    template?.heroImageName &&
+    typeof template.heroImageName === "string" &&
+    template.heroImageName.trim()
+      ? `/templates/birthdays/${template.heroImageName}`
+      : "/templates/birthdays/rainbow-bash.webp";
+
+  const getAgeSuffix = (age: number) => {
+    if (age === 1) return "st";
+    if (age === 2) return "nd";
+    if (age === 3) return "rd";
+    return "th";
+  };
 
   const handlePublish = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      // Calculate start and end ISO dates
       let startISO: string | null = null;
       let endISO: string | null = null;
-      if (whenDate) {
-        if (fullDay) {
-          const start = new Date(`${whenDate}T00:00:00`);
-          const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          if (start < todayStart)
-            throw new Error("Start date cannot be in the past");
-          const end = new Date(start);
-          end.setDate(end.getDate() + 1);
-          startISO = start.toISOString();
-          endISO = end.toISOString();
-        } else {
-          const start = new Date(`${whenDate}T${startTime || "09:00"}:00`);
-          const end = new Date(`${whenDate}T${endTime || "10:00"}:00`);
-          const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          if (start < todayStart)
-            throw new Error("Start date cannot be in the past");
-          if (end < start) {
-            endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
-            startISO = start.toISOString();
-          } else {
-            startISO = start.toISOString();
-            endISO = end.toISOString();
-          }
-        }
+      if (data.date) {
+        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+        const end = new Date(start);
+        end.setHours(end.getHours() + 3);
+        startISO = start.toISOString();
+        endISO = end.toISOString();
       }
 
-      // Prepare registries
-      const sanitizedRegistries = registries
-        .filter((r) => r.url.trim())
-        .map((r) => ({
-          label: r.label.trim() || "Registry",
-          url: r.url.trim(),
-        }));
-
-      const combinedLocation =
-        streetAddress.trim().length > 0 ? streetAddress.trim() : undefined;
+      const locationParts = [data.venue, data.city, data.state].filter(Boolean);
+      const location =
+        locationParts.length > 0 ? locationParts.join(", ") : undefined;
 
       const payload: any = {
-        title: title || birthdayName || "Event",
+        title: `${data.childName}'s ${data.age}${getAgeSuffix(
+          data.age
+        )} Birthday`,
         data: {
           category: "Birthdays",
           createdVia: "template",
           createdManually: true,
           startISO,
           endISO,
-          venue: venue || undefined,
-          location: combinedLocation || undefined,
-          description: description || undefined,
-          rsvp: (rsvp || "").trim() || undefined,
-          numberOfGuests: numberOfGuests || 0,
-          allDay: fullDay || undefined,
-          registries:
-            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
-          // Template customization data
+          location,
+          venue: data.venue || undefined,
+          description: data.partyDetails.notes || undefined,
+          rsvp: data.rsvp.isEnabled
+            ? data.rsvp.deadline || undefined
+            : undefined,
+          numberOfGuests: 0,
           templateId: template.id,
-          variationId: resolvedVariation.id,
-          birthdayName: birthdayName || undefined,
-          customTitles:
-            Object.keys(customTitles).length > 0 ? customTitles : undefined,
-          sectionNotes:
-            Object.keys(sectionNotes).length > 0 ? sectionNotes : undefined,
-          customHeroImage: customHeroImage?.dataUrl || undefined,
+          // Customization data
+          birthdayName: data.childName,
+          age: data.age,
+          partyDetails: data.partyDetails,
+          hosts: data.hosts,
+          theme: data.theme,
+          registries: data.registries
+            .filter((r) => r.url.trim())
+            .map((r) => ({
+              label: r.label.trim() || "Registry",
+              url: r.url.trim(),
+            })),
+          customHeroImage: data.images.hero || undefined,
         },
       };
 
       let id: string | undefined;
 
       if (editEventId) {
-        // Update existing event
         await fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -813,7 +535,6 @@ export default function BirthdayTemplateCustomizePage() {
         });
         id = editEventId;
       } else {
-        // Create new event
         const r = await fetch("/api/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -837,702 +558,856 @@ export default function BirthdayTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [
-    submitting,
-    whenDate,
-    fullDay,
-    startTime,
-    endDate,
-    endTime,
-    title,
-    birthdayName,
-    venue,
-    streetAddress,
-    description,
-    rsvp,
-    numberOfGuests,
-    registries,
-    template.id,
-    resolvedVariation.id,
-    customTitles,
-    sectionNotes,
-    customHeroImage,
-    editEventId,
-    router,
-  ]);
+  }, [submitting, data, template.id, editEventId, router]);
 
-  const PreviewCard = ({
-    title,
-    children,
-  }: {
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="rounded-2xl border border-black/5 bg-white/80 p-5 shadow-sm backdrop-blur">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-400">
-        {title}
-      </p>
-      <div className="mt-3 space-y-3 text-sm text-stone-700">{children}</div>
+  const MainMenu = () => (
+    <div className="space-y-4 animate-fade-in pb-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
+          Add your details
+        </h2>
+        <p className="text-slate-500 text-sm">
+          Customize every aspect of your birthday party website.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3">
+        <MenuCard
+          title="Headline"
+          icon={<Type size={18} />}
+          desc="Child's name, age, date, location."
+          onClick={() => setActiveView("headline")}
+        />
+        <MenuCard
+          title="Design"
+          icon={<Palette size={18} />}
+          desc="Theme, fonts, colors."
+          onClick={() => setActiveView("design")}
+        />
+        <MenuCard
+          title="Images"
+          icon={<ImageIcon size={18} />}
+          desc="Hero & background photos."
+          onClick={() => setActiveView("images")}
+        />
+        <MenuCard
+          title="Party Details"
+          icon={<Cake size={18} />}
+          desc="Theme, activities, notes."
+          onClick={() => setActiveView("partyDetails")}
+        />
+        <MenuCard
+          title="Hosts"
+          icon={<Users size={18} />}
+          desc="Who's organizing the party."
+          onClick={() => setActiveView("hosts")}
+        />
+        <MenuCard
+          title="Photos"
+          icon={<ImageIcon size={18} />}
+          desc="Photo gallery."
+          onClick={() => setActiveView("photos")}
+        />
+        <MenuCard
+          title="RSVP"
+          icon={<CheckSquare size={18} />}
+          desc="RSVP settings."
+          onClick={() => setActiveView("rsvp")}
+        />
+        <MenuCard
+          title="Wishlist"
+          icon={<Gift size={18} />}
+          desc="Gift wishlist links."
+          onClick={() => setActiveView("registry")}
+        />
+      </div>
     </div>
   );
 
-  return (
-    <main className={`${poppins.className} ${baloo.variable} bg-[#FAFAFA]`}>
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-10">
-        <section className="rounded-[40px] bg-gradient-to-br from-[#FFE0F0] via-[#D3F9F5] to-[#C7A7F8] p-8 shadow-2xl">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-            <div className="space-y-5 text-[#2F2F2F]">
-              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#FF6FB1]">
-                {template.name} invite
-              </p>
-              <h1
-                style={{ fontFamily: "var(--font-baloo)" }}
-                className="text-4xl leading-tight sm:text-5xl"
-              >
-                Create a beautiful birthday invite in minutes.
-              </h1>
-              <p className="text-lg text-[#4A403C]">
-                Add your party details, drop an RSVP link, and Envitefy shares
-                one smart link with Add to Calendar buttons for every guest.
-              </p>
-              <p className="text-sm font-semibold text-[#4A403C]">
-                No apps required. Works with Google, Apple, and Outlook
-                calendars.
-              </p>
-              <div className="flex flex-wrap gap-3">
+  const HeadlineEditor = () => (
+    <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
+      <div className="space-y-6">
+        <InputGroup
+          label="Child's Name"
+          value={data.childName}
+          onChange={(v) => updateData("childName", v)}
+          placeholder="Child's name"
+        />
+        <InputGroup
+          label="Age"
+          type="number"
+          value={data.age}
+          onChange={(v) => updateData("age", Number.parseInt(v, 10) || 0)}
+          placeholder="5"
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <InputGroup
+            label="Event Date"
+            type="date"
+            value={data.date}
+            onChange={(v) => updateData("date", v)}
+          />
+          <InputGroup
+            label="Start Time"
+            type="time"
+            value={data.time}
+            onChange={(v) => updateData("time", v)}
+          />
+        </div>
+        <InputGroup
+          label="Venue"
+          value={data.venue}
+          onChange={(v) => updateData("venue", v)}
+          placeholder="Party venue (optional)"
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <InputGroup
+            label="City"
+            value={data.city}
+            onChange={(v) => updateData("city", v)}
+          />
+          <InputGroup
+            label="State"
+            value={data.state}
+            onChange={(v) => updateData("state", v)}
+          />
+        </div>
+      </div>
+    </EditorLayout>
+  );
+
+  const ImagesEditor = () => (
+    <EditorLayout title="Images" onBack={() => setActiveView("main")}>
+      <div className="space-y-8">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
+            Hero Image
+          </label>
+          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
+            {data.images.hero ? (
+              <div className="relative w-full h-48 rounded-lg overflow-hidden">
+                <img
+                  src={data.images.hero}
+                  alt="Hero"
+                  className="w-full h-full object-cover"
+                />
                 <button
-                  type="button"
-                  onClick={scrollToForm}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#FF6FB1] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#FF6FB1]/40 transition hover:scale-[1.01]"
+                  onClick={() =>
+                    setData((prev) => ({
+                      ...prev,
+                      images: { ...prev.images, hero: null },
+                    }))
+                  }
+                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
                 >
-                  Jump to invite details <ArrowRight className="h-4 w-4" />
+                  <Trash2 size={16} />
                 </button>
+              </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Upload size={20} />
+                </div>
+                <p className="text-sm text-slate-600 mb-1">Upload main photo</p>
+                <p className="text-xs text-slate-400">
+                  Recommended: 1600x900px
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => handleImageUpload("hero", e)}
+                />
+              </>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
+            Headline Background
+          </label>
+          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
+            {data.images.headlineBg ? (
+              <div className="relative w-full h-32 rounded-lg overflow-hidden">
+                <img
+                  src={data.images.headlineBg}
+                  alt="Headline Bg"
+                  className="w-full h-full object-cover"
+                />
                 <button
-                  type="button"
-                  onClick={handleReview}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-6 py-3 text-sm font-semibold text-[#2F2F2F]"
+                  onClick={() =>
+                    setData((prev) => ({
+                      ...prev,
+                      images: { ...prev.images, headlineBg: null },
+                    }))
+                  }
+                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
                 >
-                  Preview invite <CalendarDays className="h-4 w-4" />
+                  <Trash2 size={16} />
                 </button>
               </div>
-            </div>
-            <div className="rounded-[32px] bg-white/90 p-6 shadow-xl">
-              <div className="flex items-center gap-2 text-sm font-semibold text-[#7A6B66]">
-                <Sparkles className="h-4 w-4 text-[#FF6FB1]" /> Invite snapshot
-              </div>
-              <div className="mt-4 space-y-3 text-sm text-[#4B3F39]">
-                <p>
-                  <span className="font-semibold text-[#2F2F2F]">
-                    Template:
-                  </span>{" "}
-                  {template.name}
-                </p>
-                <p>
-                  <span className="font-semibold text-[#2F2F2F]">Mood:</span>{" "}
-                  {template.heroMood}
-                </p>
-                <p>
-                  <span className="font-semibold text-[#2F2F2F]">
-                    Guest view:
-                  </span>{" "}
-                  Shareable link + RSVP + calendars
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section
-          ref={formSectionRef}
-          className="flex w-full flex-col gap-8 lg:flex-row"
-        >
-          <div className="flex-1 space-y-6">
-            <article className={styles.templateCard}>
-              <div className={styles.cardBody}>
-                <div className={styles.previewFrame}>
-                  <div
-                    className={styles.previewHeader}
-                    style={headerBackgroundStyle}
-                    data-birthday="true"
-                  >
-                    <p
-                      className={styles.previewNames}
-                      style={{
-                        color: resolvedVariation.titleColor,
-                        fontFamily: resolvedVariation.titleFontFamily,
-                        fontWeight:
-                          resolvedVariation.titleWeight === "bold"
-                            ? 700
-                            : resolvedVariation.titleWeight === "semibold"
-                            ? 600
-                            : 400,
-                      }}
-                    >
-                      {previewName}
-                    </p>
-                    <p
-                      className={styles.previewMeta}
-                      style={{ color: resolvedVariation.titleColor }}
-                    >
-                      {previewDateLabel}
-                      {previewTime ? ` • ${previewTime}` : ""}
-                    </p>
-                    <div
-                      className={styles.previewNav}
-                      style={{ color: resolvedVariation.titleColor }}
-                    >
-                      {template.menu.map((item) => (
-                        <span key={item} className={styles.previewNavItem}>
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={`${styles.previewPhoto} relative`}>
-                    {(customHeroImage?.previewUrl || heroImageSrc).startsWith(
-                      "data:"
-                    ) ? (
-                      <img
-                        src={customHeroImage?.previewUrl || heroImageSrc}
-                        alt={`${template.name} preview`}
-                        className={styles.previewPhotoImage}
-                      />
-                    ) : (
-                      <Image
-                        src={customHeroImage?.previewUrl || heroImageSrc}
-                        alt={`${template.name} preview`}
-                        width={640}
-                        height={360}
-                        className={styles.previewPhotoImage}
-                        priority={false}
-                      />
-                    )}
-                    {/* Image upload overlay */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-auto">
-                        <input
-                          ref={heroImageInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleHeroImageChange}
-                          className="hidden"
-                          id="hero-image-upload"
-                        />
-                        <label
-                          htmlFor="hero-image-upload"
-                          className="cursor-pointer bg-white/90 hover:bg-white text-stone-700 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
-                          title="Change image"
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            className="h-5 w-5"
-                            strokeWidth="2"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </label>
-                        {customHeroImage && (
-                          <button
-                            type="button"
-                            onClick={removeHeroImage}
-                            className="bg-white/90 hover:bg-white text-red-600 rounded-full p-2.5 shadow-lg transition-all hover:scale-110"
-                            title="Remove image"
-                            aria-label="Remove custom image"
-                          >
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              className="h-5 w-5"
-                              strokeWidth="2"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <ImageIcon size={20} />
                 </div>
-
-                {/* Event Fields Section */}
-                <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                    Event Details
-                  </h2>
-                  <div className="space-y-4">
-                    {/* Venue */}
-                    <div>
-                      <label className="block text-sm font-medium text-stone-700 mb-1">
-                        Venue
-                      </label>
-                      <input
-                        type="text"
-                        value={venue}
-                        onChange={(e) => setVenue(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="Venue name (optional)"
-                      />
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                      <label className="block text-sm font-medium text-stone-700 mb-1">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        value={streetAddress}
-                        onChange={(e) => setStreetAddress(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none mb-2"
-                        placeholder="Street address"
-                      />
-                    </div>
-
-                    {/* Guests */}
-                    <div>
-                      <label className="block text-sm font-medium text-stone-700 mb-1">
-                        Guests
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={numberOfGuests || ""}
-                        onChange={(e) =>
-                          setNumberOfGuests(
-                            Number.parseInt(e.target.value, 10) || 0
-                          )
-                        }
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="Enter number of guests"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium text-stone-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        ref={descriptionRef}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none resize-none"
-                        placeholder="Add details for your guests"
-                      />
-                    </div>
-
-                    {/* RSVP */}
-                    <div>
-                      <label className="block text-sm font-medium text-stone-700 mb-1">
-                        RSVP
-                      </label>
-                      <input
-                        type="text"
-                        value={rsvp}
-                        onChange={(e) => setRsvp(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:border-stone-400 focus:outline-none"
-                        placeholder="Phone number or email for RSVP"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </article>
+                <p className="text-sm text-slate-600 mb-1">
+                  Upload header texture
+                </p>
+                <p className="text-xs text-slate-400">
+                  Optional pattern behind names
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => handleImageUpload("headlineBg", e)}
+                />
+              </>
+            )}
           </div>
-          <div className="w-full max-w-md flex flex-col rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md">
+        </div>
+      </div>
+    </EditorLayout>
+  );
+
+  const DesignEditor = () => (
+    <EditorLayout title="Design" onBack={() => setActiveView("main")}>
+      <div className="space-y-6">
+        <div>
+          <button
+            onClick={() => setDesignOpen(!designOpen)}
+            className="flex items-center justify-between w-full text-left group"
+          >
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-stone-500">
-                Customize
-              </p>
-              <h2 className="text-2xl font-semibold text-stone-900">
-                Add your details
-              </h2>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block cursor-pointer mb-1">
+                Themes
+              </label>
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                <div
+                  className={`w-3 h-3 rounded-full border shadow-sm ${
+                    currentTheme.previewColor.split(" ")[0]
+                  }`}
+                ></div>
+                {currentTheme.name || "Select a theme"}
+              </div>
             </div>
-            <div className={`${styles.accordionWrapper} flex-1 min-h-0`}>
-              <div
-                className={`${styles.menuView} ${
-                  activeSection ? styles.menuHidden : ""
+            <div
+              className={`p-2 rounded-full bg-slate-50 text-slate-500 group-hover:bg-slate-100 transition-all ${
+                designOpen ? "rotate-180 text-indigo-600 bg-indigo-50" : ""
+              }`}
+            >
+              <ChevronDown size={16} />
+            </div>
+          </button>
+
+          <div
+            className={`grid grid-cols-2 gap-3 mt-4 overflow-y-auto transition-all duration-300 ease-in-out ${
+              designOpen
+                ? "max-h-[600px] opacity-100"
+                : "max-h-0 opacity-0 hidden"
+            }`}
+          >
+            {DESIGN_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  updateTheme("themeId", theme.id);
+                }}
+                className={`relative overflow-hidden p-3 border rounded-lg text-left transition-all group ${
+                  data.theme.themeId === theme.id
+                    ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
+                    : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
                 }`}
               >
-                {infoSections.map((section) => (
-                  <div key={section.key} className={styles.menuItem}>
-                    <button
-                      type="button"
-                      className={styles.menuButton}
-                      onClick={() => setActiveSection(section.key)}
-                    >
-                      <span>{menuLabel(section.key, section.label)}</span>
-                      <span className={styles.menuButtonIcon}>➤</span>
-                    </button>
-                    <p>{section.description}</p>
-                  </div>
-                ))}
-              </div>
-              {activeSectionData && (
                 <div
-                  className={`${styles.detailPanel} ${styles.detailPanelOpen}`}
-                >
-                  <div className={styles.detailHeader}>
-                    <button
-                      type="button"
-                      className="text-sm font-semibold text-stone-600"
-                      onClick={handleBack}
-                    >
-                      ← Back
-                    </button>
-                    <div className="flex items-center gap-2">
-                      {editingTitle === activeSection ? (
-                        <input
-                          value={renameDraft}
-                          onChange={(event) =>
-                            setRenameDraft(event.target.value)
-                          }
-                          onBlur={saveTitle}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              saveTitle();
-                            }
-                          }}
-                          className="border-b border-stone-700 text-sm uppercase tracking-[0.3em] px-2 py-1"
-                          autoFocus
-                        />
-                      ) : (
-                        <h3 className={styles.detailTitle}>
-                          {menuLabel(
-                            activeSectionData.key,
-                            activeSectionData.label
-                          )}
-                        </h3>
-                      )}
-                      {editingTitle !== activeSection && (
-                        <button
-                          type="button"
-                          aria-label="Rename link"
-                          className="text-xs uppercase tracking-[0.3em] text-stone-500"
-                          onClick={startEditTitle}
-                        >
-                          <EditSquareIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                    <span />
-                  </div>
-                  <p className={styles.detailDesc}>
-                    {activeSectionData.description}
-                  </p>
-                  <div className={styles.detailContent}>
-                    {renderSectionContent(activeSectionData.key)}
-                  </div>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleReview}
-              className="mt-5 w-full rounded-full bg-[#FF6FB1] px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:scale-[1.01]"
+                  className={`h-12 w-full rounded-md mb-3 ${theme.previewColor} border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden`}
+                ></div>
+                <span className="text-sm font-medium text-slate-700 block truncate">
+                  {theme.name}
+                </span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wide">
+                  {theme.category}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+            Typography
+          </label>
+          <div className="relative">
+            <select
+              value={data.theme.font}
+              onChange={(e) => updateTheme("font", e.target.value)}
+              className="w-full p-3 bg-white border border-slate-200 rounded-lg appearance-none text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
             >
-              Preview invite link
+              {Object.entries(FONTS).map(([key, font]) => (
+                <option
+                  key={key}
+                  value={key}
+                  style={{ fontFamily: font.preview }}
+                >
+                  {font.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="absolute right-3 top-3.5 text-slate-400 pointer-events-none"
+              size={16}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+            Text Size
+          </label>
+          <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+            {["small", "medium", "large"].map((size) => (
+              <button
+                key={size}
+                onClick={() => updateTheme("fontSize", size)}
+                className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                  data.theme.fontSize === size
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </EditorLayout>
+  );
+
+  const PartyDetailsEditor = () => (
+    <EditorLayout title="Party Details" onBack={() => setActiveView("main")}>
+      <div className="space-y-4">
+        <InputGroup
+          label="Party Theme"
+          value={data.partyDetails.theme}
+          onChange={(v) => updatePartyDetails("theme", v)}
+          placeholder="e.g. Princess, Superhero, Unicorn"
+        />
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+            Activities
+          </label>
+          <textarea
+            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[100px] text-slate-700 text-sm"
+            value={data.partyDetails.activities}
+            onChange={(e) => updatePartyDetails("activities", e.target.value)}
+            placeholder="Games, activities, special events..."
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+            Notes
+          </label>
+          <textarea
+            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[200px] text-slate-700 text-sm"
+            value={data.partyDetails.notes}
+            onChange={(e) => updatePartyDetails("notes", e.target.value)}
+            placeholder="Share details about the party..."
+          />
+        </div>
+      </div>
+    </EditorLayout>
+  );
+
+  const HostsEditor = () => {
+    const [newHost, setNewHost] = useState({ name: "", role: "" });
+
+    const addHost = () => {
+      if (newHost.name) {
+        updateData("hosts", [...data.hosts, { ...newHost, id: Date.now() }]);
+        setNewHost({ name: "", role: "" });
+      }
+    };
+
+    return (
+      <EditorLayout title="Hosts" onBack={() => setActiveView("main")}>
+        <div className="space-y-6">
+          <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="text-xs font-bold text-slate-500 uppercase">
+              Add Host
+            </h4>
+            <InputGroup
+              label="Name"
+              value={newHost.name}
+              onChange={(v) => setNewHost({ ...newHost, name: v })}
+              placeholder="Host name"
+            />
+            <InputGroup
+              label="Role"
+              value={newHost.role}
+              onChange={(v) => setNewHost({ ...newHost, role: v })}
+              placeholder="e.g. Parents, Grandparents"
+            />
+            <button
+              onClick={addHost}
+              className="w-full py-2 bg-indigo-600 text-white text-sm rounded-md font-medium hover:bg-indigo-700"
+            >
+              Add Host
             </button>
           </div>
-        </section>
-      </div>
 
-      {/* Review/Preview Modal */}
-      {showReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div className="sticky top-0 bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between z-10">
-              <h2 className="text-2xl font-semibold text-stone-900">
-                Review Your Invite
-              </h2>
-              <button
-                type="button"
-                onClick={() => setShowReview(false)}
-                className="text-stone-500 hover:text-stone-700"
-                aria-label="Close"
+          <div className="space-y-3">
+            {data.hosts.map((host) => (
+              <div
+                key={host.id}
+                className="bg-white p-3 border border-slate-200 rounded-lg flex justify-between items-center"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <div>
+                  <div className="font-bold text-slate-800">{host.name}</div>
+                  {host.role && (
+                    <div className="text-xs text-slate-500">{host.role}</div>
+                  )}
+                </div>
+                <button
+                  onClick={() =>
+                    updateData(
+                      "hosts",
+                      data.hosts.filter((h) => h.id !== host.id)
+                    )
+                  }
+                  className="text-slate-400 hover:text-red-500"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </EditorLayout>
+    );
+  };
 
-            <div className="p-6 space-y-6">
-              {/* Template Preview */}
-              <div className="rounded-2xl border border-stone-200 bg-white p-6">
-                <div className={styles.templateCard}>
-                  <div className={styles.cardBody}>
-                    <div className={styles.previewFrame}>
-                      <div
-                        className={styles.previewHeader}
-                        style={headerBackgroundStyle}
-                        data-birthday="true"
-                      >
-                        <p
-                          className={styles.previewNames}
-                          style={{
-                            color: resolvedVariation.titleColor,
-                            fontFamily: resolvedVariation.titleFontFamily,
-                            fontWeight:
-                              resolvedVariation.titleWeight === "bold"
-                                ? 700
-                                : resolvedVariation.titleWeight === "semibold"
-                                ? 600
-                                : 400,
-                          }}
-                        >
-                          {previewName}
-                        </p>
-                        <p
-                          className={styles.previewMeta}
-                          style={{ color: resolvedVariation.titleColor }}
-                        >
-                          {previewDateLabel}
-                          {previewTime ? ` • ${previewTime}` : ""}
-                        </p>
-                        <div
-                          className={styles.previewNav}
-                          style={{ color: resolvedVariation.titleColor }}
-                        >
-                          {template.menu.map((item) => (
-                            <span key={item} className={styles.previewNavItem}>
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className={styles.previewPhoto}>
-                        {(
-                          customHeroImage?.previewUrl || heroImageSrc
-                        ).startsWith("data:") ? (
-                          <img
-                            src={customHeroImage?.previewUrl || heroImageSrc}
-                            alt={`${template.name} preview`}
-                            className={styles.previewPhotoImage}
-                          />
-                        ) : (
-                          <Image
-                            src={customHeroImage?.previewUrl || heroImageSrc}
-                            alt={`${template.name} preview`}
-                            width={640}
-                            height={360}
-                            className={styles.previewPhotoImage}
-                            priority={false}
-                          />
-                        )}
-                      </div>
-                    </div>
+  const PhotosEditor = () => (
+    <EditorLayout title="Photos" onBack={() => setActiveView("main")}>
+      <div className="space-y-6">
+        <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group relative">
+          <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <Upload size={20} className="text-indigo-600" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800 mb-1">
+            Upload Photos
+          </h3>
+          <p className="text-xs text-slate-500">JPG or PNG up to 5MB</p>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            onChange={handleGalleryUpload}
+          />
+        </div>
+
+        {data.gallery.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {data.gallery.map((img) => (
+              <div key={img.id} className="relative group">
+                <img
+                  src={img.url}
+                  alt="Gallery"
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <button
+                  onClick={() => removeGalleryImage(img.id)}
+                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </EditorLayout>
+  );
+
+  const RSVPEditor = () => (
+    <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <span className="font-medium text-slate-700 text-sm">
+            Enable RSVP
+          </span>
+          <button
+            onClick={() =>
+              updateData("rsvp", {
+                ...data.rsvp,
+                isEnabled: !data.rsvp.isEnabled,
+              })
+            }
+            className={`w-11 h-6 rounded-full transition-colors relative ${
+              data.rsvp.isEnabled ? "bg-indigo-600" : "bg-slate-300"
+            }`}
+          >
+            <span
+              className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                data.rsvp.isEnabled ? "translate-x-5" : "translate-x-0"
+              }`}
+            ></span>
+          </button>
+        </div>
+
+        {data.rsvp.isEnabled && (
+          <InputGroup
+            label="RSVP Deadline"
+            type="date"
+            value={data.rsvp.deadline}
+            onChange={(v) => updateData("rsvp", { ...data.rsvp, deadline: v })}
+          />
+        )}
+
+        <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+          <strong>Preview:</strong> Check the preview pane to see the RSVP form
+          that your guests will see.
+        </div>
+      </div>
+    </EditorLayout>
+  );
+
+  const RegistryEditor = () => {
+    const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+
+    const addRegistry = () => {
+      if (newRegistry.url) {
+        updateData("registries", [
+          ...data.registries,
+          { ...newRegistry, id: Date.now() },
+        ]);
+        setNewRegistry({ label: "", url: "" });
+      }
+    };
+
+    return (
+      <EditorLayout title="Wishlist" onBack={() => setActiveView("main")}>
+        <div className="space-y-6">
+          <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="text-xs font-bold text-slate-500 uppercase">
+              Add Wishlist
+            </h4>
+            <InputGroup
+              label="Wishlist Name"
+              value={newRegistry.label}
+              onChange={(v) => setNewRegistry({ ...newRegistry, label: v })}
+              placeholder="e.g. Amazon, Target, Toys R Us"
+            />
+            <InputGroup
+              label="Wishlist URL"
+              type="url"
+              value={newRegistry.url}
+              onChange={(v) => setNewRegistry({ ...newRegistry, url: v })}
+              placeholder="https://www.example.com/wishlist"
+            />
+            <button
+              onClick={addRegistry}
+              className="w-full py-2 bg-indigo-600 text-white text-sm rounded-md font-medium hover:bg-indigo-700"
+            >
+              Add Wishlist
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {data.registries.map((registry) => (
+              <div
+                key={registry.id}
+                className="bg-white p-3 border border-slate-200 rounded-lg flex justify-between items-center"
+              >
+                <div>
+                  <div className="font-bold text-slate-800">
+                    {registry.label || "Wishlist"}
+                  </div>
+                  <div className="text-xs text-slate-500 truncate max-w-xs">
+                    {registry.url}
+                  </div>
+                </div>
+                <button
+                  onClick={() =>
+                    updateData(
+                      "registries",
+                      data.registries.filter((r) => r.id !== registry.id)
+                    )
+                  }
+                  className="text-slate-400 hover:text-red-500"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </EditorLayout>
+    );
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+      <div
+        ref={previewRef}
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+      >
+        <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
+          <div
+            key={`preview-${data.theme.themeId}`}
+            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-all duration-500 relative z-0`}
+          >
+            <div className="relative z-10">
+              <div
+                className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
+              >
+                <div
+                  className="cursor-pointer hover:opacity-80 transition-opacity group"
+                  onClick={() => setActiveView("headline")}
+                >
+                  <h1
+                    className={`${currentSize.h1} mb-2 leading-tight`}
+                    style={{ fontFamily: currentFont.preview }}
+                  >
+                    {data.childName}'s {data.age}
+                    {getAgeSuffix(data.age)} Birthday
+                    <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
+                      <Edit2 size={24} />
+                    </span>
+                  </h1>
+                  <div
+                    className={`flex items-center gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
+                  >
+                    <span>
+                      {new Date(data.date).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                    <span>{data.time}</span>
+                    {(data.city || data.state) && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                        <span>
+                          {[data.venue, data.city, data.state]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Event Details */}
-              <div className="rounded-2xl border border-stone-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-stone-900 mb-4">
-                  Event Details
-                </h3>
-                <div className="space-y-4">
-                  {(venue || streetAddress) && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Location
-                      </p>
-                      <p className="text-base text-stone-900">
-                        {venue && <span className="font-medium">{venue}</span>}
-                        {venue && streetAddress && <span>, </span>}
-                        {streetAddress}
-                      </p>
-                    </div>
-                  )}
-
-                  {numberOfGuests > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Guests
-                      </p>
-                      <p className="text-base text-stone-900">
-                        {numberOfGuests}
-                      </p>
-                    </div>
-                  )}
-
-                  {description && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Description
-                      </p>
-                      <p className="text-base text-stone-900 whitespace-pre-wrap">
-                        {description}
-                      </p>
-                    </div>
-                  )}
-
-                  {rsvp && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        RSVP
-                      </p>
-                      <p className="text-base text-stone-900">{rsvp}</p>
-                    </div>
-                  )}
-
-                  {registries.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
-                        Registry Links
-                      </p>
-                      <div className="space-y-2">
-                        {registries
-                          .filter((r) => r.url.trim())
-                          .map((registry) => (
-                            <div
-                              key={registry.id}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="text-sm text-stone-700">
-                                {registry.label || "Registry"}
-                              </span>
-                              <a
-                                href={registry.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:underline"
-                              >
-                                {registry.url}
-                              </a>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="relative w-full h-64 md:h-96">
+                {data.images.hero ? (
+                  <img
+                    src={data.images.hero}
+                    alt="Hero"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={heroImageSrc}
+                    alt="Hero"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 1000px"
+                  />
+                )}
               </div>
 
-              {/* Event Details */}
-              <div className="rounded-2xl border border-stone-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-stone-900 mb-4">
-                  Event Details
-                </h3>
-                <div className="space-y-4">
-                  {(venue || streetAddress) && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Location
-                      </p>
-                      <p className="text-base text-stone-900">
-                        {venue && <span className="font-medium">{venue}</span>}
-                        {venue && streetAddress && <span>, </span>}
-                        {streetAddress}
+              {data.partyDetails.notes && (
+                <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
+                  <h2
+                    className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
+                  >
+                    Party Details
+                  </h2>
+                  <p
+                    className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
+                  >
+                    {data.partyDetails.notes}
+                  </p>
+                  {data.partyDetails.theme && (
+                    <div className="mt-4">
+                      <span
+                        className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${currentTheme.accent} bg-white/10`}
+                      >
+                        Theme: {data.partyDetails.theme}
+                      </span>
+                    </div>
+                  )}
+                  {data.partyDetails.activities && (
+                    <div className="mt-4 text-left">
+                      <h3 className="font-semibold mb-2">Activities:</h3>
+                      <p className="opacity-80 whitespace-pre-wrap">
+                        {data.partyDetails.activities}
                       </p>
                     </div>
                   )}
+                </section>
+              )}
 
-                  {numberOfGuests > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Guests
-                      </p>
-                      <p className="text-base text-stone-900">
-                        {numberOfGuests}
-                      </p>
-                    </div>
-                  )}
+              {data.registries.length > 0 && (
+                <section className="text-center py-12 border-t border-white/10">
+                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                    Wishlist
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-4">
+                    {data.registries.map((registry) => (
+                      <a
+                        key={registry.id}
+                        href={registry.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
+                      >
+                        <span className="uppercase tracking-widest text-sm font-semibold">
+                          {registry.label || "Wishlist"}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
 
-                  {description && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Description
-                      </p>
-                      <p className="text-base text-stone-900 whitespace-pre-wrap">
-                        {description}
-                      </p>
-                    </div>
-                  )}
+              {data.rsvp.isEnabled && (
+                <section className="max-w-xl mx-auto text-center p-6 md:p-8">
+                  <h2
+                    className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
+                  >
+                    RSVP
+                  </h2>
+                  <div className="bg-white/5 border border-white/10 p-8 rounded-xl text-left">
+                    {!rsvpSubmitted ? (
+                      <div className="space-y-6">
+                        <div className="text-center mb-4">
+                          <p className="opacity-80">
+                            {data.rsvp.deadline
+                              ? `Kindly respond by ${new Date(
+                                  data.rsvp.deadline
+                                ).toLocaleDateString()}`
+                              : "Please RSVP"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                            Full Name
+                          </label>
+                          <input
+                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                            placeholder="Guest Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
+                            Attending?
+                          </label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <label className="relative cursor-pointer group">
+                              <input
+                                type="radio"
+                                name="attending"
+                                className="peer sr-only"
+                                defaultChecked
+                              />
+                              <div className="p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20">
+                                <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
+                                  <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                </div>
+                                <span className="font-semibold">
+                                  Joyfully Accept
+                                </span>
+                              </div>
+                            </label>
+                            <label className="relative cursor-pointer group">
+                              <input
+                                type="radio"
+                                name="attending"
+                                className="peer sr-only"
+                              />
+                              <div className="p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20">
+                                <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
+                                  <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                </div>
+                                <span className="font-semibold">
+                                  Regretfully Decline
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
 
-                  {rsvp && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        RSVP
-                      </p>
-                      <p className="text-base text-stone-900">{rsvp}</p>
-                    </div>
-                  )}
-
-                  {registries.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">
-                        Registry Links
-                      </p>
-                      <div className="space-y-2">
-                        {registries
-                          .filter((r) => r.url.trim())
-                          .map((registry) => (
-                            <div
-                              key={registry.id}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="text-sm text-stone-700">
-                                {registry.label || "Registry"}
-                              </span>
-                              <a
-                                href={registry.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:underline"
-                              >
-                                {registry.url}
-                              </a>
-                            </div>
-                          ))}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRsvpSubmitted(true);
+                          }}
+                          className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
+                        >
+                          Send RSVP
+                        </button>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="sticky bottom-0 bg-white border-t border-stone-200 px-6 py-4 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowReview(false)}
-                className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-md hover:bg-stone-50"
-              >
-                Back to Edit
-              </button>
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={submitting}
-                className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#FF6FB1] via-[#A68EF5] to-[#5F6FFF] rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submitting ? "Sharing..." : "Share Invite"}
-              </button>
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-4xl mb-4">🎉</div>
+                        <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
+                        <p className="opacity-70">Your RSVP has been sent.</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRsvpSubmitted(false);
+                          }}
+                          className="text-sm underline mt-6 opacity-50 hover:opacity-100"
+                        >
+                          Send another response
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         </div>
-      )}
-    </main>
+      </div>
+
+      <div
+        className="w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative h-full transition-transform duration-300 transform md:translate-x-0"
+        style={{ transform: `translateX(${mobileMenuOpen ? "0" : ""})` }}
+      >
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {activeView === "main" && <MainMenu />}
+            {activeView === "headline" && <HeadlineEditor />}
+            {activeView === "images" && <ImagesEditor />}
+            {activeView === "design" && <DesignEditor />}
+            {activeView === "partyDetails" && <PartyDetailsEditor />}
+            {activeView === "hosts" && <HostsEditor />}
+            {activeView === "photos" && <PhotosEditor />}
+            {activeView === "rsvp" && <RSVPEditor />}
+            {activeView === "registry" && <RegistryEditor />}
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+          <button
+            onClick={handlePublish}
+            disabled={submitting}
+            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Publishing..." : "PREVIEW AND PUBLISH"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

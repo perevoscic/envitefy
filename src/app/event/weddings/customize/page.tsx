@@ -33,59 +33,338 @@ import {
 // --- Constants & Data ---
 
 const FONTS = {
-  playfair: { name: "Playfair Display", title: '[font-family:var(--font-playfair),_"Times_New_Roman",_serif]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-playfair)" },
-  montserrat: { name: "Montserrat", title: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]', body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]', preview: "var(--font-montserrat)" },
-  poppins: { name: "Poppins", title: '[font-family:var(--font-poppins),_"Helvetica",_sans-serif]', body: '[font-family:var(--font-poppins),_"Helvetica",_sans-serif]', preview: "var(--font-poppins)" },
-  raleway: { name: "Raleway", title: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-raleway)" },
-  geist: { name: "Geist Sans", title: '[font-family:var(--font-geist-sans),_"Helvetica",_sans-serif]', body: '[font-family:var(--font-geist-sans),_"Helvetica",_sans-serif]', preview: "var(--font-geist-sans)" },
-  dancing: { name: "Dancing Script", title: '[font-family:var(--font-dancing),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]', preview: "var(--font-dancing)" },
-  pacifico: { name: "Pacifico", title: '[font-family:var(--font-pacifico),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-pacifico)" },
-  greatVibes: { name: "Great Vibes", title: '[font-family:var(--font-great-vibes),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-great-vibes)" },
-  allura: { name: "Allura", title: '[font-family:var(--font-allura),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]', preview: "var(--font-allura)" },
-  parisienne: { name: "Parisienne", title: '[font-family:var(--font-parisienne),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-parisienne)" },
-  alexBrush: { name: "Alex Brush", title: '[font-family:var(--font-alex-brush),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-alex-brush)" },
-  amita: { name: "Amita", title: '[font-family:var(--font-amita),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]', preview: "var(--font-amita)" },
-  arizonia: { name: "Arizonia", title: '[font-family:var(--font-arizonia),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-arizonia)" },
-  bilbo: { name: "Bilbo Swash Caps", title: '[font-family:var(--font-bilbo-swash-caps),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-bilbo-swash-caps)" },
-  cookie: { name: "Cookie", title: '[font-family:var(--font-cookie),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-cookie)" },
-  courgette: { name: "Courgette", title: '[font-family:var(--font-courgette),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-courgette)" },
-  euphoria: { name: "Euphoria Script", title: '[font-family:var(--font-euphoria-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-euphoria-script)" },
-  herrVon: { name: "Herr Von Muellerhoff", title: '[font-family:var(--font-herr-von-muellerhoff),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-herr-von-muellerhoff)" },
-  indieFlower: { name: "Indie Flower", title: '[font-family:var(--font-indie-flower),_"Comic_Sans_MS",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-indie-flower)" },
-  italianno: { name: "Italianno", title: '[font-family:var(--font-italianno),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-italianno)" },
-  kaushan: { name: "Kaushan Script", title: '[font-family:var(--font-kaushan-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-kaushan-script)" },
-  kalam: { name: "Kalam", title: '[font-family:var(--font-kalam),_"Comic_Sans_MS",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-kalam)" },
-  laBelleAurore: { name: "La Belle Aurore", title: '[font-family:var(--font-la-belle-aurore),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-la-belle-aurore)" },
-  marckScript: { name: "Marck Script", title: '[font-family:var(--font-marck-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-marck-script)" },
-  meieScript: { name: "Meie Script", title: '[font-family:var(--font-meie-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-meie-script)" },
-  meddon: { name: "Meddon", title: '[font-family:var(--font-meddon),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-meddon)" },
-  monsieur: { name: "Monsieur La Doulaise", title: '[font-family:var(--font-monsieur-la-doulaise),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-monsieur-la-doulaise)" },
-  mrDeHaviland: { name: "Mr De Haviland", title: '[font-family:var(--font-mr-de-haviland),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-mr-de-haviland)" },
-  mrsSaint: { name: "Mrs Saint Delafield", title: '[font-family:var(--font-mrs-saint-delafield),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-mrs-saint-delafield)" },
-  mySoul: { name: "My Soul", title: '[font-family:var(--font-my-soul),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-my-soul)" },
-  niconne: { name: "Niconne", title: '[font-family:var(--font-niconne),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-niconne)" },
-  pinyon: { name: "Pinyon Script", title: '[font-family:var(--font-pinyon-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-pinyon-script)" },
-  petitFormal: { name: "Petit Formal", title: '[font-family:var(--font-petit-formal-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-petit-formal-script)" },
-  redressed: { name: "Redressed", title: '[font-family:var(--font-redressed),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-redressed)" },
-  rouge: { name: "Rouge Script", title: '[font-family:var(--font-rouge-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-rouge-script)" },
-  satisfy: { name: "Satisfy", title: '[font-family:var(--font-satisfy),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-satisfy)" },
-  sacramento: { name: "Sacramento", title: '[font-family:var(--font-sacramento),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-sacramento)" },
-  shadows: { name: "Shadows Into Light", title: '[font-family:var(--font-shadows-into-light),_"Comic_Sans_MS",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-shadows-into-light)" },
-  sofia: { name: "Sofia", title: '[font-family:var(--font-sofia),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-sofia)" },
-  sonsie: { name: "Sonsie One", title: '[font-family:var(--font-sonsie-one),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-sonsie-one)" },
-  styleScript: { name: "Style Script", title: '[font-family:var(--font-style-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-style-script)" },
-  tangerine: { name: "Tangerine", title: '[font-family:var(--font-tangerine),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-tangerine)" },
-  yesteryear: { name: "Yesteryear", title: '[font-family:var(--font-yesteryear),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-yesteryear)" },
-  yellowtail: { name: "Yellowtail", title: '[font-family:var(--font-yellowtail),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-yellowtail)" },
-  zhiMang: { name: "Zhi Mang Xing", title: '[font-family:var(--font-zhi-mang-xing),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-zhi-mang-xing)" },
-  missFajardose: { name: "Miss Fajardose", title: '[font-family:var(--font-miss-fajardose),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-miss-fajardose)" },
-  stalemate: { name: "Stalemate", title: '[font-family:var(--font-stalemate),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-stalemate)" },
-  drSugiyama: { name: "Dr Sugiyama", title: '[font-family:var(--font-dr-sugiyama),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-dr-sugiyama)" },
-  caramel: { name: "Caramel", title: '[font-family:var(--font-caramel),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-caramel)" },
-  kolkerBrush: { name: "Kolker Brush", title: '[font-family:var(--font-kolker-brush),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-kolker-brush)" },
-  loveLight: { name: "Love Light", title: '[font-family:var(--font-love-light),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-love-light)" },
-  luxuriousScript: { name: "Luxurious Script", title: '[font-family:var(--font-luxurious-script),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-luxurious-script)" },
-  monteCarlo: { name: "Monte Carlo", title: '[font-family:var(--font-monte-carlo),_"Brush_Script_MT",_cursive]', body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]', preview: "var(--font-monte-carlo)" },
+  playfair: {
+    name: "Playfair Display",
+    title: '[font-family:var(--font-playfair),_"Times_New_Roman",_serif]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-playfair)",
+  },
+  montserrat: {
+    name: "Montserrat",
+    title: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]',
+    body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]',
+    preview: "var(--font-montserrat)",
+  },
+  poppins: {
+    name: "Poppins",
+    title: '[font-family:var(--font-poppins),_"Helvetica",_sans-serif]',
+    body: '[font-family:var(--font-poppins),_"Helvetica",_sans-serif]',
+    preview: "var(--font-poppins)",
+  },
+  raleway: {
+    name: "Raleway",
+    title: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-raleway)",
+  },
+  geist: {
+    name: "Geist Sans",
+    title: '[font-family:var(--font-geist-sans),_"Helvetica",_sans-serif]',
+    body: '[font-family:var(--font-geist-sans),_"Helvetica",_sans-serif]',
+    preview: "var(--font-geist-sans)",
+  },
+  dancing: {
+    name: "Dancing Script",
+    title: '[font-family:var(--font-dancing),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]',
+    preview: "var(--font-dancing)",
+  },
+  pacifico: {
+    name: "Pacifico",
+    title: '[font-family:var(--font-pacifico),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-pacifico)",
+  },
+  greatVibes: {
+    name: "Great Vibes",
+    title: '[font-family:var(--font-great-vibes),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-great-vibes)",
+  },
+  allura: {
+    name: "Allura",
+    title: '[font-family:var(--font-allura),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]',
+    preview: "var(--font-allura)",
+  },
+  parisienne: {
+    name: "Parisienne",
+    title: '[font-family:var(--font-parisienne),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-parisienne)",
+  },
+  alexBrush: {
+    name: "Alex Brush",
+    title: '[font-family:var(--font-alex-brush),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-alex-brush)",
+  },
+  amita: {
+    name: "Amita",
+    title: '[font-family:var(--font-amita),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-montserrat),_"Helvetica",_sans-serif]',
+    preview: "var(--font-amita)",
+  },
+  arizonia: {
+    name: "Arizonia",
+    title: '[font-family:var(--font-arizonia),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-arizonia)",
+  },
+  bilbo: {
+    name: "Bilbo Swash Caps",
+    title:
+      '[font-family:var(--font-bilbo-swash-caps),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-bilbo-swash-caps)",
+  },
+  cookie: {
+    name: "Cookie",
+    title: '[font-family:var(--font-cookie),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-cookie)",
+  },
+  courgette: {
+    name: "Courgette",
+    title: '[font-family:var(--font-courgette),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-courgette)",
+  },
+  euphoria: {
+    name: "Euphoria Script",
+    title:
+      '[font-family:var(--font-euphoria-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-euphoria-script)",
+  },
+  herrVon: {
+    name: "Herr Von Muellerhoff",
+    title:
+      '[font-family:var(--font-herr-von-muellerhoff),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-herr-von-muellerhoff)",
+  },
+  indieFlower: {
+    name: "Indie Flower",
+    title: '[font-family:var(--font-indie-flower),_"Comic_Sans_MS",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-indie-flower)",
+  },
+  italianno: {
+    name: "Italianno",
+    title: '[font-family:var(--font-italianno),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-italianno)",
+  },
+  kaushan: {
+    name: "Kaushan Script",
+    title:
+      '[font-family:var(--font-kaushan-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-kaushan-script)",
+  },
+  kalam: {
+    name: "Kalam",
+    title: '[font-family:var(--font-kalam),_"Comic_Sans_MS",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-kalam)",
+  },
+  laBelleAurore: {
+    name: "La Belle Aurore",
+    title:
+      '[font-family:var(--font-la-belle-aurore),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-la-belle-aurore)",
+  },
+  marckScript: {
+    name: "Marck Script",
+    title: '[font-family:var(--font-marck-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-marck-script)",
+  },
+  meieScript: {
+    name: "Meie Script",
+    title: '[font-family:var(--font-meie-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-meie-script)",
+  },
+  meddon: {
+    name: "Meddon",
+    title: '[font-family:var(--font-meddon),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-meddon)",
+  },
+  monsieur: {
+    name: "Monsieur La Doulaise",
+    title:
+      '[font-family:var(--font-monsieur-la-doulaise),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-monsieur-la-doulaise)",
+  },
+  mrDeHaviland: {
+    name: "Mr De Haviland",
+    title:
+      '[font-family:var(--font-mr-de-haviland),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-mr-de-haviland)",
+  },
+  mrsSaint: {
+    name: "Mrs Saint Delafield",
+    title:
+      '[font-family:var(--font-mrs-saint-delafield),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-mrs-saint-delafield)",
+  },
+  mySoul: {
+    name: "My Soul",
+    title: '[font-family:var(--font-my-soul),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-my-soul)",
+  },
+  niconne: {
+    name: "Niconne",
+    title: '[font-family:var(--font-niconne),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-niconne)",
+  },
+  pinyon: {
+    name: "Pinyon Script",
+    title:
+      '[font-family:var(--font-pinyon-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-pinyon-script)",
+  },
+  petitFormal: {
+    name: "Petit Formal",
+    title:
+      '[font-family:var(--font-petit-formal-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-petit-formal-script)",
+  },
+  redressed: {
+    name: "Redressed",
+    title: '[font-family:var(--font-redressed),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-redressed)",
+  },
+  rouge: {
+    name: "Rouge Script",
+    title: '[font-family:var(--font-rouge-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-rouge-script)",
+  },
+  satisfy: {
+    name: "Satisfy",
+    title: '[font-family:var(--font-satisfy),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-satisfy)",
+  },
+  sacramento: {
+    name: "Sacramento",
+    title: '[font-family:var(--font-sacramento),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-sacramento)",
+  },
+  shadows: {
+    name: "Shadows Into Light",
+    title:
+      '[font-family:var(--font-shadows-into-light),_"Comic_Sans_MS",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-shadows-into-light)",
+  },
+  sofia: {
+    name: "Sofia",
+    title: '[font-family:var(--font-sofia),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-sofia)",
+  },
+  sonsie: {
+    name: "Sonsie One",
+    title: '[font-family:var(--font-sonsie-one),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-sonsie-one)",
+  },
+  styleScript: {
+    name: "Style Script",
+    title: '[font-family:var(--font-style-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-style-script)",
+  },
+  tangerine: {
+    name: "Tangerine",
+    title: '[font-family:var(--font-tangerine),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-tangerine)",
+  },
+  yesteryear: {
+    name: "Yesteryear",
+    title: '[font-family:var(--font-yesteryear),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-yesteryear)",
+  },
+  yellowtail: {
+    name: "Yellowtail",
+    title: '[font-family:var(--font-yellowtail),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-yellowtail)",
+  },
+  zhiMang: {
+    name: "Zhi Mang Xing",
+    title:
+      '[font-family:var(--font-zhi-mang-xing),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-zhi-mang-xing)",
+  },
+  missFajardose: {
+    name: "Miss Fajardose",
+    title:
+      '[font-family:var(--font-miss-fajardose),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-miss-fajardose)",
+  },
+  stalemate: {
+    name: "Stalemate",
+    title: '[font-family:var(--font-stalemate),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-stalemate)",
+  },
+  drSugiyama: {
+    name: "Dr Sugiyama",
+    title: '[font-family:var(--font-dr-sugiyama),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-dr-sugiyama)",
+  },
+  caramel: {
+    name: "Caramel",
+    title: '[font-family:var(--font-caramel),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-caramel)",
+  },
+  kolkerBrush: {
+    name: "Kolker Brush",
+    title: '[font-family:var(--font-kolker-brush),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-kolker-brush)",
+  },
+  loveLight: {
+    name: "Love Light",
+    title: '[font-family:var(--font-love-light),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-love-light)",
+  },
+  luxuriousScript: {
+    name: "Luxurious Script",
+    title:
+      '[font-family:var(--font-luxurious-script),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-luxurious-script)",
+  },
+  monteCarlo: {
+    name: "Monte Carlo",
+    title: '[font-family:var(--font-monte-carlo),_"Brush_Script_MT",_cursive]',
+    body: '[font-family:var(--font-raleway),_"Helvetica",_sans-serif]',
+    preview: "var(--font-monte-carlo)",
+  },
 };
 
 const FONT_SIZES = {
@@ -591,9 +870,25 @@ const INITIAL_DATA = {
     headlineBg: null,
   },
   travel: {
-    hotels: [],
-    airports: [],
-    directions: "",
+    hotels: [
+      {
+        id: 1,
+        name: "The Grand Plaza Hotel",
+        address: "123 Main Street, Chicago, IL 60601",
+        link: "https://example.com/book",
+        deadline: "2028-08-15",
+      },
+    ],
+    airports: [
+      {
+        id: 1,
+        name: "O'Hare International Airport",
+        code: "ORD",
+        distance: "25 minutes away",
+      },
+    ],
+    directions:
+      "From downtown Chicago, take Lake Shore Drive north. The venue is located on the right side, just past the marina. Free parking is available in the lot adjacent to the building. Valet parking is also available at the main entrance.",
     shuttle: "", // New field
   },
   schedule: [
@@ -1019,6 +1314,7 @@ const App = () => {
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -2071,7 +2367,10 @@ const App = () => {
 
   return (
     <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-      <div ref={previewRef} className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center">
+      <div
+        ref={previewRef}
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+      >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
             className={`min-h-[800px] w-full bg-white shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.body} transition-colors duration-500 relative z-0`}
@@ -2163,7 +2462,7 @@ const App = () => {
                 <img
                   src={
                     data.images.hero ||
-                    "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    "/templates/wedding-placeholders/ivory-ink-hero.jpeg"
                   }
                   alt="Couple"
                   className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-700"
@@ -2174,8 +2473,8 @@ const App = () => {
                     currentTheme.text.includes("black")
                       ? "bg-gradient-to-t from-white/90 to-transparent"
                       : data.theme.themeId === "navy_gold"
-                        ? "bg-gradient-to-t from-[#0f172a]/90 to-transparent"
-                        : "bg-gradient-to-t from-black/70 to-transparent"
+                      ? "bg-gradient-to-t from-[#0f172a]/90 to-transparent"
+                      : "bg-gradient-to-t from-black/70 to-transparent"
                   }`}
                 ></div>
               </div>
@@ -2460,7 +2759,9 @@ const App = () => {
                     !data.travel.shuttle && (
                       <div className="mt-8 bg-white/5 border border-white/15 rounded-xl p-6 text-center">
                         <p className="text-sm opacity-80 leading-relaxed">
-                          Add lodging, airport tips, parking notes, or shuttle times so guests know exactly how to arrive and where to stay.
+                          Add lodging, airport tips, parking notes, or shuttle
+                          times so guests know exactly how to arrive and where
+                          to stay.
                         </p>
                       </div>
                     )}
@@ -2498,53 +2799,75 @@ const App = () => {
                           </div>
                           <div>
                             <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                              Attending?
+                              Will you be attending?
                             </label>
                             <div className="grid grid-cols-2 gap-4">
-                              <label className="relative cursor-pointer group">
-                                <input
-                                  type="radio"
-                                  name="attending"
-                                  className="peer sr-only"
-                                  defaultChecked
-                                />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRsvpAttending(true);
+                                }}
+                                className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
+                                  rsvpAttending === true
+                                    ? "border-current bg-white/25 shadow-lg"
+                                    : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
+                                }`}
+                              >
                                 <div
-                                  className={`p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20`}
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                    rsvpAttending === true
+                                      ? "bg-white/30"
+                                      : "bg-white/20 group-hover:bg-white/30"
+                                  }`}
                                 >
-                                  <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                                    <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                  </div>
-                                  <span className="font-semibold">
-                                    Joyfully Accept
-                                  </span>
+                                  <Check size={20} className="text-current" />
                                 </div>
-                              </label>
-                              <label className="relative cursor-pointer group">
-                                <input
-                                  type="radio"
-                                  name="attending"
-                                  className="peer sr-only"
-                                />
+                                <span className="font-semibold text-base">
+                                  Yes, I'll be there!
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRsvpAttending(false);
+                                }}
+                                className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
+                                  rsvpAttending === false
+                                    ? "border-current bg-white/25 shadow-lg"
+                                    : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
+                                }`}
+                              >
                                 <div
-                                  className={`p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20`}
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                    rsvpAttending === false
+                                      ? "bg-white/30"
+                                      : "bg-white/20 group-hover:bg-white/30"
+                                  }`}
                                 >
-                                  <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                                    <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                  </div>
-                                  <span className="font-semibold">
-                                    Regretfully Decline
-                                  </span>
+                                  <XIcon size={20} className="text-current" />
                                 </div>
-                              </label>
+                                <span className="font-semibold text-base">
+                                  Sorry, can't make it
+                                </span>
+                              </button>
                             </div>
                           </div>
 
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setRsvpSubmitted(true);
+                              if (rsvpAttending !== null) {
+                                setRsvpSubmitted(true);
+                              }
                             }}
-                            className={`w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg`}
+                            disabled={rsvpAttending === null}
+                            className={`w-full py-4 mt-2 font-bold uppercase tracking-widest text-sm rounded-lg transition-colors shadow-lg ${
+                              rsvpAttending !== null
+                                ? "bg-white text-slate-900 hover:bg-slate-200"
+                                : "bg-white/20 text-white/50 cursor-not-allowed"
+                            }`}
                           >
                             Send RSVP
                           </button>
@@ -2560,6 +2883,7 @@ const App = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               setRsvpSubmitted(false);
+                              setRsvpAttending(null);
                             }}
                             className="text-sm underline mt-6 opacity-50 hover:opacity-100"
                           >
@@ -2578,7 +2902,7 @@ const App = () => {
                 </section>
 
                 <section
-                  className="text-center py-12 border-t border-white/10"
+                  className="text-center py-5 border-t border-white/10 mb-5"
                   onClick={() => setActiveView("registry")}
                 >
                   <h2
@@ -2596,6 +2920,14 @@ const App = () => {
                     new life together! Check back soon for details.
                   </p>
                 </section>
+
+                <footer className="text-center py-8 border-t border-white/10 mt-1">
+                  <p className="text-sm opacity-60">
+                    Powered by{" "}
+                    <span className="font-semibold opacity-80">Envitefy</span>.
+                    Create. Share. Enjoy
+                  </p>
+                </footer>
               </div>
             </div>
           </div>

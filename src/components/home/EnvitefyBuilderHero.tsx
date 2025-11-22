@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   CalendarHeart,
@@ -22,13 +23,13 @@ const QUICK_START_CARDS: BuilderCard[] = [
     label: "Birthday Party",
     icon: "🎂",
     copy: "Whimsical themes with kid-ready layouts.",
-    href: "/event/birthdays",
+    href: "/event/birthdays/customize",
   },
   {
     label: "Baby Shower",
     icon: "baby-carriage",
     copy: "Soft palettes, registry panels, RSVP cues.",
-    href: "/event/baby-showers",
+    href: "/event/baby-showers/customize",
   },
   {
     label: "Wedding ",
@@ -38,9 +39,9 @@ const QUICK_START_CARDS: BuilderCard[] = [
   },
   {
     label: "Gender Reveal",
-    icon: "🎈",
+    icon: "gender-reveal-icon",
     copy: "Confetti, balloons, and countdown moments.",
-    href: "/event/gender-reveal",
+    href: "/event/gender-reveal/customize",
   },
 ];
 
@@ -80,6 +81,14 @@ export function EnvitefyBuilderHero({ className }: EnvitefyBuilderHeroProps) {
                 >
                   {card.icon === "baby-carriage" ? (
                     <BabyCarriageIcon className="w-full h-full" />
+                  ) : card.icon === "gender-reveal-icon" ? (
+                    <Image
+                      src="/gender-reveal-icon.png"
+                      alt="Gender Reveal"
+                      width={80}
+                      height={80}
+                      className="w-full h-full object-contain"
+                    />
                   ) : (
                     card.icon
                   )}

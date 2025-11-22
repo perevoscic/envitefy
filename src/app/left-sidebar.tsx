@@ -214,6 +214,7 @@ export default function LeftSidebar() {
     }
   })();
   const [myEventsOpen, setMyEventsOpen] = useState(false);
+  const [recentAddedOpen, setRecentAddedOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [adminOpenFloating, setAdminOpenFloating] = useState(false);
@@ -1780,15 +1781,26 @@ export default function LeftSidebar() {
 
   return (
     <>
+      {/* Backdrop overlay */}
+      <div
+        className={`fixed inset-0 z-[5999] bg-black/20 backdrop-blur-sm transition-opacity duration-200 lg:hidden ${
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsCollapsed(true)}
+        aria-hidden="true"
+      />
       <aside
         ref={asideRef}
         className={`fixed left-0 top-0 h-full z-[6000] border border-white/60 dark:border-white/10 backdrop-blur-2xl flex flex-col rounded-tr-[2.75rem] rounded-br-[2.75rem] shadow-[0_35px_90px_rgba(72,44,116,0.28)] ${
           isOpen ? "overflow-visible" : "overflow-hidden"
-        } transition-[width,opacity] duration-200 ${
+        } transition-[transform,opacity] duration-200 ease-out will-change-transform ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
         } lg:hidden`}
         style={{
-          width: isOpen ? SIDEBAR_WIDTH_REM : "0rem",
+          width: SIDEBAR_WIDTH_REM,
+          transform: isOpen ? "translateX(0)" : "translateX(-100%)",
           opacity: isOpen ? 1 : 0,
           backgroundImage: SIDEBAR_GRADIENT,
           backgroundColor: "rgba(255, 255, 255, 0.78)",
@@ -3765,6 +3777,191 @@ export default function LeftSidebar() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Recent Added Section */}
+        <div
+          className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 mt-3 ${
+            recentAddedOpen ? "ring-2 ring-[#d9ccff]" : ""
+          }`}
+        >
+          <div className="flex items-center gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setRecentAddedOpen((v) => !v)}
+              className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M12 2v20M2 12h20" />
+                </svg>
+              </span>
+              <span>Recent Added</span>
+            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <span className={SIDEBAR_BADGE_CLASS}>
+                {
+                  history.filter((h) => {
+                    if (!h.created_at) return false;
+                    const created = new Date(h.created_at);
+                    const now = new Date();
+                    const daysDiff =
+                      (now.getTime() - created.getTime()) /
+                      (1000 * 60 * 60 * 24);
+                    return daysDiff <= 7; // Last 7 days
+                  }).length
+                }
+              </span>
+              <button
+                type="button"
+                onClick={() => setRecentAddedOpen((v) => !v)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                aria-label="Toggle Recent Added"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-4 w-4 transition-transform ${
+                    recentAddedOpen ? "rotate-180" : ""
+                  }`}
+                  aria-hidden="true"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`pl-2 mt-3 border-l-2 border-border/40 ml-2 ${
+              recentAddedOpen ? "" : "hidden"
+            }`}
+          >
+            {(() => {
+              const recentItems = sortHistoryRows(
+                history.filter((h) => {
+                  if (!h.created_at) return false;
+                  const created = new Date(h.created_at);
+                  const now = new Date();
+                  const daysDiff =
+                    (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+                  return daysDiff <= 7; // Last 7 days
+                })
+              );
+              if (recentItems.length === 0)
+                return (
+                  <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
+                    No recent events
+                  </div>
+                );
+              return (
+                <div className="space-y-1">
+                  {recentItems.map((h) => {
+                    const slug = (h.title || "")
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-+|-+$/g, "");
+                    const dataObj: any = (h as any)?.data || {};
+                    const prettyHref = dataObj?.signupForm
+                      ? `/smart-signup-form/${h.id}`
+                      : `/event/${slug}-${h.id}`;
+                    const explicitCat = (h as any)?.data?.category as
+                      | string
+                      | null;
+                    const effectiveCategory = (() => {
+                      const explicit = normalizeCategoryLabel(explicitCat);
+                      if (explicit) return explicit;
+                      try {
+                        const text = [
+                          String((h as any)?.title || ""),
+                          String((h as any)?.data?.description || ""),
+                          String((h as any)?.data?.rsvp || ""),
+                          String((h as any)?.data?.location || ""),
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+                        const guessed = guessCategoryFromText(text);
+                        return normalizeCategoryLabel(guessed);
+                      } catch {
+                        return null;
+                      }
+                    })();
+                    const rowAndBadge = (() => {
+                      if (!effectiveCategory)
+                        return {
+                          row: "",
+                          badge:
+                            "bg-surface/70 text-foreground/70 border-border/70",
+                        };
+                      const color =
+                        categoryColors[effectiveCategory] ||
+                        defaultCategoryColor(effectiveCategory);
+                      const ccls = colorClasses(color);
+                      return {
+                        row: ccls.tint,
+                        badge: ccls.badge,
+                      };
+                    })();
+                    return (
+                      <div
+                        key={h.id}
+                        data-history-item={h.id}
+                        className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
+                      >
+                        <Link
+                          href={prettyHref}
+                          onClick={() => {
+                            try {
+                              const isTouch =
+                                typeof window !== "undefined" &&
+                                typeof window.matchMedia === "function" &&
+                                window.matchMedia(
+                                  "(hover: none), (pointer: coarse)"
+                                ).matches;
+                              if (isTouch) setIsCollapsed(true);
+                            } catch {}
+                          }}
+                          className="block pr-8"
+                          title={h.title}
+                        >
+                          <div className="truncate flex items-center gap-2">
+                            <span className="truncate">
+                              {h.title || "Untitled event"}
+                            </span>
+                          </div>
+                          <div className="text-xs text-foreground/60">
+                            {(() => {
+                              const start =
+                                (h as any)?.data?.start ||
+                                (h as any)?.data?.event?.start;
+                              const dateStr = start || h.created_at;
+                              return dateStr
+                                ? new Date(dateStr).toLocaleDateString()
+                                : "";
+                            })()}
+                          </div>
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
