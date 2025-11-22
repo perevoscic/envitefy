@@ -16,6 +16,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
 import { EnvitefyBuilderHero } from "@/components/home/EnvitefyBuilderHero";
+import { SportsPracticeHero } from "@/components/home/SportsPracticeHero";
+import { AppointmentsGeneralHero } from "@/components/home/AppointmentsGeneralHero";
 import { SnapHero } from "@/components/home/SnapHero";
 import { UploadHero } from "@/components/home/UploadHero";
 import { SmartSignupHero } from "@/components/home/SmartSignupHero";
@@ -980,22 +982,28 @@ export default function Dashboard() {
         onChange={(event) => onFile(event.target.files?.[0] ?? null)}
         className="hidden"
       />
-      {/* Hero logo and tagline */}
+      {/* Welcome message */}
       {isSignedIn && (
-        <div className="w-full max-w-6xl mb-8 flex flex-col items-center gap-4 md:mb-10 mt-0">
-          <div className="relative w-20 h-20 sm:w-64 sm:h-64">
-            <Image
-              src="/E.png"
-              alt="Envitefy Logo"
-              width={240}
-              height={240}
-              className="w-full h-full object-contain"
-              priority
-            />
+        <div className="w-full max-w-6xl mb-8 flex flex-col items-start gap-4 md:mb-10 mt-0">
+          <div className="flex flex-col items-start text-left">
+            <div
+              className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+              style={{
+                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+              }}
+            >
+              <span className="text-[#1b1540]">Welcome Back,</span>
+              <br />
+              <span className="text-[#7F8CFF] italic">
+                {(session?.user?.name as string) ||
+                  (session?.user?.email as string)?.split("@")[0] ||
+                  "there"}
+              </span>
+            </div>
+            <p className="text-lg sm:text-xl md:text-xl text-[#1b1540] mt-2">
+              Let's create something unforgettable.
+            </p>
           </div>
-          <p className="text-base md:text-lg font-medium text-[#7f8cff] tracking-wider uppercase">
-            CREATE | SHARE | ENJOY
-          </p>
         </div>
       )}
       {isSignedIn && (
@@ -1006,6 +1014,8 @@ export default function Dashboard() {
             <SmartSignupHero className="h-full" />
           </div>
           <EnvitefyBuilderHero />
+          <SportsPracticeHero />
+          <AppointmentsGeneralHero />
         </div>
       )}
       {showScanSection && (

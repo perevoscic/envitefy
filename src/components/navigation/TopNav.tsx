@@ -822,15 +822,13 @@ export default function TopNav() {
           <div className="flex flex-shrink-0 items-center gap-3">
             <Link
               href="/"
-              className={`inline-flex items-center pr-10 gap-2 text-[#7f8cff] transition-opacity duration-300 ${
-                navIsScrolled ? "opacity-100" : "opacity-0"
-              }`}
+              className="inline-flex items-center pr-10 gap-2 text-[#7f8cff] opacity-100"
               suppressHydrationWarning
             >
               <Image
-                src="/navElogo.png"
+                src="/E.png"
                 alt="Envitefy logo"
-                width={156}
+                width={64}
                 height={64}
                 priority
               />
