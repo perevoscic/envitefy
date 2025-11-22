@@ -282,6 +282,309 @@ const DESIGN_THEMES = [
   },
 ];
 
+const THEME_DESCRIPTIONS = [
+  {
+    id: "super_star_gala",
+    title: "Super Star Gala",
+    aesthetic: "High glamour, red carpet event.",
+    colors: "Deep black, shimmering gold, vivid ruby red.",
+    graphics: "Glittering stars, spotlights, velvet texture backdrop.",
+    font: "Dramatic, elegant serif for the title.",
+    primaryObjects:
+      "Gold statuettes frame the text block with a velvet curtain and top-corner spotlights.",
+  },
+  {
+    id: "mystic_unicorn",
+    title: "Mystic Unicorn",
+    aesthetic: "Magical, iridescent, and soft.",
+    colors: "Pastel lavender, mint, baby pink, and white with an iridescent sheen.",
+    graphics: "Graceful unicorn silhouette, rainbows, sparkles.",
+    font: "Whimsical, flowing script.",
+    primaryObjects:
+      "A shimmering unicorn sits above the title with rainbow and stardust trails across the background.",
+  },
+  {
+    id: "dinosaur_adventure",
+    title: "Dinosaur Adventure",
+    aesthetic: "Prehistoric jungle exploration.",
+    colors: "Earthy greens, moss, burnt orange, and brown.",
+    graphics: "Friendly dinosaurs, palm leaves, fossil patterns.",
+    font: "Bold, slightly rugged, stencil-like.",
+    primaryObjects:
+      "A friendly T-Rex peeks from the bottom left while tropical foliage borders the top and sides.",
+  },
+  {
+    id: "candy_dreams",
+    title: "Candy Dreams",
+    aesthetic: "Sweet, vibrant, and playful.",
+    colors: "Hot pink, turquoise, sunshine yellow, electric purple.",
+    graphics: "Giant lollipops, gummies, candy canes, frosting drips.",
+    font: "Bubbly, rounded, decorative.",
+    primaryObjects:
+      "Corner accents feature giant lollipops and ice cream cones with dripping frosting around the text.",
+  },
+  {
+    id: "deep_space_hero",
+    title: "Deep Space Hero",
+    aesthetic: "Cosmic adventure and futuristic tech.",
+    colors: "Deep navy, black, electric blue, and silver.",
+    graphics: "Starfields, planets, spaceships, neon lines.",
+    font: "Clean, bold, futuristic sans-serif.",
+    primaryObjects:
+      "A stylized spaceship flies across the top banner while planets anchor the bottom corners.",
+  },
+  {
+    id: "rainbow_sparkle",
+    title: "Rainbow Sparkle",
+    aesthetic: "Joyful explosion of color.",
+    colors: "Full rainbow palette with white for readability.",
+    graphics: "Arcing rainbows, clouds, scattered glitter.",
+    font: "Fun, slightly chunky.",
+    primaryObjects:
+      "A large rainbow stretches across the center with clouds and star accents around the text block.",
+  },
+  {
+    id: "pirate_treasure",
+    title: "Pirate Treasure",
+    aesthetic: "Aged parchment and swashbuckling adventure.",
+    colors: "Dark browns, deep reds, sandy beige, gold.",
+    graphics: "Treasure map texture, skull and crossbones, compass rose, treasure chest.",
+    font: "Old-style script.",
+    primaryObjects:
+      "A rolled treasure map background holds the text with a skull and crossbones near the RSVP details.",
+  },
+  {
+    id: "mermaid_lagoon",
+    title: "Mermaid Lagoon",
+    aesthetic: "Undersea fantasy with shimmer.",
+    colors: "Teal, seafoam, deep purple, pearly white.",
+    graphics: "Fish scales, seashells, starfish, bubbles.",
+    font: "Elegant, slightly watery script.",
+    primaryObjects:
+      "A mermaid tail rises from the bottom center with seashells and bubbles framing a clam-shaped title.",
+  },
+  {
+    id: "robot_invasion",
+    title: "Robot Invasion",
+    aesthetic: "Industrial and retro-futuristic.",
+    colors: "Metallic silver, vibrant orange, black, light gray.",
+    graphics: "Circuit boards, nuts-and-bolts borders, friendly robots.",
+    font: "Blocky, monospace.",
+    primaryObjects:
+      "A friendly robot sits below the main title with gear and circuit textures as the border.",
+  },
+  {
+    id: "fairy_garden",
+    title: "Fairy Garden",
+    aesthetic: "Enchanted forest and delicate nature.",
+    colors: "Soft forest green, pale yellow, moss, blush pink.",
+    graphics: "Intricate flowers, whimsical mushrooms, tiny fairies.",
+    font: "Delicate, looping calligraphy.",
+    primaryObjects:
+      "Tiny fairy silhouettes flutter near the title while flower vines and light orbs frame the edges.",
+  },
+  {
+    id: "dragons_fire",
+    title: "Dragon's Fire",
+    aesthetic: "Medieval fantasy with intensity.",
+    colors: "Deep crimson, charcoal gray, fiery orange, metallic bronze.",
+    graphics: "Dragon silhouette, castle turrets, rocky textures.",
+    font: "Dramatic, bold, slightly Gothic.",
+    primaryObjects:
+      "A dragon wraps around the top edge with subtle fire effects rising from the bottom corners.",
+  },
+  {
+    id: "jungle_safari",
+    title: "Jungle Safari",
+    aesthetic: "Tropical, wild, and adventurous.",
+    colors: "Khaki, bright leaf green, tan, animal print accents.",
+    graphics: "Layered jungle leaves, friendly safari animals.",
+    font: "Playful, textured.",
+    primaryObjects:
+      "Dense palm leaves and vines border the invite with a friendly lion or monkey peeking from the side.",
+  },
+  {
+    id: "princess_castle",
+    title: "Princess Castle",
+    aesthetic: "Royal, elegant, and fairytale-inspired.",
+    colors: "Light gold, soft pink, periwinkle blue, white.",
+    graphics: "Grand castle silhouette, ornate scrollwork, tiny crowns.",
+    font: "Formal, decorative script.",
+    primaryObjects:
+      "A castle silhouette crowns the header with ornate scrollwork and crowns as dividers.",
+  },
+  {
+    id: "knights_quest",
+    title: "Knight's Quest",
+    aesthetic: "Brave, noble, and historical.",
+    colors: "Silver, deep blue, deep red, slate gray.",
+    graphics: "Heraldic shields, crossed swords, chainmail textures.",
+    font: "Strong, imposing serif.",
+    primaryObjects:
+      "A large heraldic shield sits behind the title with crossed swords near the date and time.",
+  },
+  {
+    id: "monster_mash",
+    title: "Monster Mash",
+    aesthetic: "Slightly spooky, silly, and friendly.",
+    colors: "Lime green, deep purple, black, glow-in-the-dark white.",
+    graphics: "Cute monsters, ooze and slime effects.",
+    font: "Slightly wobbly or handwritten horror style.",
+    primaryObjects:
+      "Fuzzy monsters peek from the borders with playful green slime dripping from the header.",
+  },
+  {
+    id: "sunny_beach_bash",
+    title: "Sunny Beach Bash",
+    aesthetic: "Relaxed, tropical, and bright.",
+    colors: "Turquoise water, sandy yellow, coral pink, sunset orange.",
+    graphics: "Palm trees, flip-flops, sunglasses, waves.",
+    font: "Casual, hand-drawn.",
+    primaryObjects:
+      "Palm trees line the sides with ocean waves along the bottom edge near the location details.",
+  },
+  {
+    id: "winter_wonderland",
+    title: "Winter Wonderland",
+    aesthetic: "Icy, serene, and sparkling.",
+    colors: "Icy blue, silver, crisp white, deep navy.",
+    graphics: "Snowflakes, frost patterns, bare trees, swirling snow.",
+    font: "Thin, delicate serif or elegant script.",
+    primaryObjects:
+      "Large snowflakes fall across the page with a frosted border and soft tree silhouettes.",
+  },
+  {
+    id: "mad_scientist_lab",
+    title: "Mad Scientist Lab",
+    aesthetic: "Energetic, chaotic, and experimental.",
+    colors: "Neon green, bright yellow, black, beaker blue.",
+    graphics: "Bubbling test tubes, atomic symbols, lightning bolts, safety signs.",
+    font: "Bold, industrial, slightly distressed.",
+    primaryObjects:
+      "Beakers and test tubes sit near the event details with lightning or radiation icons as dividers.",
+  },
+  {
+    id: "llama_fiesta",
+    title: "Llama Fiesta",
+    aesthetic: "Vibrant, celebratory, and charming.",
+    colors: "Fuchsia, turquoise, orange, lime green inspired by Peruvian textiles.",
+    graphics: "Festive llama, confetti, geometric patterns.",
+    font: "Playful, bold, rounded.",
+    primaryObjects:
+      "A smiling llama with a colorful blanket sits below the title while papel picado drapes across the top.",
+  },
+  {
+    id: "panda_zen",
+    title: "Panda Zen",
+    aesthetic: "Calm, minimalist, bamboo inspired.",
+    colors: "Black, white, shades of green, warm gray.",
+    graphics: "Cute pandas, bamboo stalks, watercolor effects.",
+    font: "Clean, minimalist sans-serif.",
+    primaryObjects:
+      "A seated panda rests in a corner with bamboo stalks used as dividers or background texture.",
+  },
+  {
+    id: "doggy_pawty",
+    title: "Doggy Pawty",
+    aesthetic: "Energetic, fun, and tail-wagging.",
+    colors: "Primary reds, blues, yellows or brown, black, bone white.",
+    graphics: "Paw prints, bones, tennis balls, cute dog breeds.",
+    font: "Friendly, rounded, slightly bouncy.",
+    primaryObjects:
+      "Paw prints scatter the background with a large bone at the top holding the title or age.",
+  },
+  {
+    id: "kitten_cafe",
+    title: "Kitten Cafe",
+    aesthetic: "Cozy, gentle, and sweet.",
+    colors: "Pastel peach, cream, light gray, soft brown.",
+    graphics: "Line-drawn kittens, hearts, steaming teacups, floral accents.",
+    font: "Gentle, slightly cursive or handwritten.",
+    primaryObjects:
+      "Simple kitten motifs sit in the corners with a steaming teacup near the RSVP or time.",
+  },
+  {
+    id: "race_car_rally",
+    title: "Race Car Rally",
+    aesthetic: "High speed and competitive energy.",
+    colors: "Bright red, black, white, neon yellow.",
+    graphics: "Racing stripes, checkered flags, speed lines, race car graphic.",
+    font: "Bold, italicized, dynamic.",
+    primaryObjects:
+      "Checkered flags border the invite with a race car near the title trailing speed lines.",
+  },
+  {
+    id: "music_festival_vibe",
+    title: "Music Festival Vibe",
+    aesthetic: "Bohemian, artistic, and free-spirited.",
+    colors: "Earth tones with bright jewel accents like indigo and turquoise.",
+    graphics: "Tents, stage lights, tribal patterns, sunbursts.",
+    font: "Cool, retro, slightly distressed.",
+    primaryObjects:
+      "A stage or tent silhouette anchors the background with feather and floral borders or headers.",
+  },
+  {
+    id: "construction_zone",
+    title: "Construction Zone",
+    aesthetic: "Industrial, safety-focused, and dynamic.",
+    colors: "Caution yellow, bright orange, black, industrial gray.",
+    graphics: "Construction tape, dump trucks, hard hats, cones.",
+    font: "Heavy, blocky, stencil style.",
+    primaryObjects:
+      "Caution stripes form bold borders with trucks or cranes along the bottom creating a worksite scene.",
+  },
+  {
+    id: "under_the_sea",
+    title: "Under the Sea",
+    aesthetic: "Deep ocean wonder and bioluminescence.",
+    colors: "Deep blues, vibrant corals, electric greens, dark teal.",
+    graphics: "Deep-sea creatures, kelp forests, glowing bubbles.",
+    font: "Slightly distorted or wavy.",
+    primaryObjects:
+      "Bioluminescent jellyfish float near the header with coral reefs along the bottom texture.",
+  },
+  {
+    id: "farmyard_friends",
+    title: "Farmyard Friends",
+    aesthetic: "Rustic, cheerful, and pastoral.",
+    colors: "Barn red, straw yellow, denim blue, grassy green.",
+    graphics: "Picket fences, hay bales, cute farm animals.",
+    font: "Sweet, slightly rounded, country style.",
+    primaryObjects:
+      "A picket fence borders the bottom with cow and pig illustrations flanking the main text.",
+  },
+  {
+    id: "superhero_city",
+    title: "Superhero City",
+    aesthetic: "Comic book style and iconic energy.",
+    colors: "Primary red, blue, yellow with black outlines and white highlights.",
+    graphics: "Comic speech bubbles, city skyline silhouette, shield icon.",
+    font: "Bold, impactful, slightly skewed comic lettering.",
+    primaryObjects:
+      "A city skyline forms the backdrop with a personalized hero shield at the top header.",
+  },
+  {
+    id: "retro_arcade",
+    title: "Retro Arcade",
+    aesthetic: "8-bit, neon, and nostalgic.",
+    colors: "Electric pink, cyan, purple, black.",
+    graphics: "Pixel art characters, geometric patterns, neon tubing.",
+    font: "Pixelated or blocky 8-bit digital.",
+    primaryObjects:
+      "Pixel characters scatter across the background with a neon-style box framing the title.",
+  },
+  {
+    id: "viking_voyage",
+    title: "Viking Voyage",
+    aesthetic: "Norse mythology, rugged, and epic.",
+    colors: "Dark forest green, deep brown, steel gray, rustic gold.",
+    graphics: "Longship silhouette, stylized knots and runes, Viking helmet.",
+    font: "Strong, medieval, carved wood effect.",
+    primaryObjects:
+      "A Viking longship sails across the bottom while rune-like symbols frame the text like carved wood.",
+  },
+];
+
 const INITIAL_DATA = {
   childName: "Emma",
   age: 5,
@@ -919,6 +1222,52 @@ export default function BirthdayTemplateCustomizePage() {
               >
                 {size}
               </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <Palette size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Theme Visual Descriptions
+              </p>
+              <p className="text-sm text-slate-600">
+                Quick references for 30 curated birthday invite looks.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
+            {THEME_DESCRIPTIONS.map((theme) => (
+              <div
+                key={theme.id}
+                className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2"
+              >
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-800">
+                    {theme.title}
+                  </h4>
+                  <p className="text-xs text-slate-500">{theme.aesthetic}</p>
+                </div>
+                <div className="text-xs text-slate-600 space-y-1">
+                  <p>
+                    <span className="font-semibold text-slate-700">Colors:</span> {theme.colors}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-700">Graphics:</span> {theme.graphics}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-700">Font:</span> {theme.font}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-700">Primary objects:</span> {theme.primaryObjects}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
