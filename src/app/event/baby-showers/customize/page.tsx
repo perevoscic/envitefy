@@ -21,6 +21,8 @@ import {
   Menu,
   Baby,
   Calendar as CalendarIcon,
+  Check,
+  X as XIcon,
 } from "lucide-react";
 import {
   type BabyShowerTemplateDefinition,
@@ -125,6 +127,7 @@ const INITIAL_DATA = {
   time: "14:00",
   city: "Chicago",
   state: "IL",
+  address: "123 Main Street",
   babyDetails: {
     expectingDate: (() => {
       const date = new Date();
@@ -135,9 +138,14 @@ const INITIAL_DATA = {
     notes:
       "We are so excited to celebrate the upcoming arrival of our little one! Join us for an afternoon of games, delicious treats, and lots of love. We can't wait to share this special day with our closest family and friends.",
   },
+  momDetails: {
+    notes:
+      "We're so excited to celebrate Sarah and the upcoming arrival of baby Emma! Join us for an afternoon of games, delicious treats, and lots of love.",
+  },
   hosts: [
-    { id: 1, name: "Grandma Mary", role: "Grandmother" },
-    { id: 2, name: "Aunt Jessica", role: "Aunt" },
+    { id: 1, name: "Sarah & Michael", role: "Parents-to-be" },
+    { id: 2, name: "Grandma Mary", role: "Grandmother" },
+    { id: 3, name: "Aunt Jessica", role: "Aunt" },
   ],
   theme: {
     font: "playfair",
@@ -168,7 +176,23 @@ const INITIAL_DATA = {
       return date.toISOString().split("T")[0];
     })(),
   },
-  gallery: [],
+  gallery: [
+    {
+      id: 1,
+      url: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=800",
+      caption: "Baby shower setup",
+    },
+    {
+      id: 2,
+      url: "https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=800",
+      caption: "Decorations",
+    },
+    {
+      id: 3,
+      url: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800",
+      caption: "Gifts",
+    },
+  ],
 };
 
 const MenuCard = ({ title, icon, desc, onClick }) => (
@@ -245,6 +269,7 @@ export default function BabyShowerTemplateCustomizePage() {
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -265,6 +290,13 @@ export default function BabyShowerTemplateCustomizePage() {
     setData((prev) => ({
       ...prev,
       babyDetails: { ...prev.babyDetails, [field]: value },
+    }));
+  };
+
+  const updateMomDetails = (field, value) => {
+    setData((prev) => ({
+      ...prev,
+      momDetails: { ...prev.momDetails, [field]: value },
     }));
   };
 
@@ -424,10 +456,16 @@ export default function BabyShowerTemplateCustomizePage() {
           onClick={() => setActiveView("images")}
         />
         <MenuCard
-          title="Baby Details"
+          title="About Baby"
           icon={<Baby size={18} />}
           desc="Expecting date, gender, notes."
           onClick={() => setActiveView("babyDetails")}
+        />
+        <MenuCard
+          title="About Mom"
+          icon={<Heart size={18} />}
+          desc="Share details about the mom-to-be."
+          onClick={() => setActiveView("momDetails")}
         />
         <MenuCard
           title="Hosts"
@@ -486,6 +524,12 @@ export default function BabyShowerTemplateCustomizePage() {
             onChange={(v) => updateData("time", v)}
           />
         </div>
+        <InputGroup
+          label="Address"
+          value={data.address}
+          onChange={(v) => updateData("address", v)}
+          placeholder="Street address (optional)"
+        />
         <div className="grid grid-cols-2 gap-4">
           <InputGroup
             label="City"
@@ -715,7 +759,7 @@ export default function BabyShowerTemplateCustomizePage() {
   );
 
   const BabyDetailsEditor = () => (
-    <EditorLayout title="Baby Details" onBack={() => setActiveView("main")}>
+    <EditorLayout title="About Baby" onBack={() => setActiveView("main")}>
       <div className="space-y-4">
         <InputGroup
           label="Expected Due Date"
@@ -752,6 +796,24 @@ export default function BabyShowerTemplateCustomizePage() {
             value={data.babyDetails.notes}
             onChange={(e) => updateBabyDetails("notes", e.target.value)}
             placeholder="Share any special details about the baby or shower..."
+          />
+        </div>
+      </div>
+    </EditorLayout>
+  );
+
+  const MomDetailsEditor = () => (
+    <EditorLayout title="About Mom" onBack={() => setActiveView("main")}>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+            About {data.momName || "Mom"}
+          </label>
+          <textarea
+            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[200px] text-slate-700 text-sm"
+            value={data.momDetails?.notes || ""}
+            onChange={(e) => updateMomDetails("notes", e.target.value)}
+            placeholder="Share details about the mom-to-be, her journey, or what makes this special..."
           />
         </div>
       </div>
@@ -1055,6 +1117,41 @@ export default function BabyShowerTemplateCustomizePage() {
                 )}
               </div>
 
+              {data.hosts.length > 0 && (
+                <section className="text-center py-12 border-t border-white/10">
+                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                    Hosted By
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-6">
+                    {data.hosts.map((host) => (
+                      <div key={host.id} className="text-center">
+                        <div className="font-semibold text-lg mb-1">
+                          {host.name}
+                        </div>
+                        {host.role && (
+                          <div className="text-sm opacity-70">{host.role}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(data.address || data.city || data.state) && (
+                <section className="text-center py-12 border-t border-white/10">
+                  <h2 className={`text-2xl mb-4 ${currentTheme.accent}`}>
+                    Location
+                  </h2>
+                  {(data.address || data.city || data.state) && (
+                    <div className="opacity-80">
+                      {[data.address, data.city, data.state]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </div>
+                  )}
+                </section>
+              )}
+
               {data.babyDetails.notes && (
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
@@ -1067,6 +1164,47 @@ export default function BabyShowerTemplateCustomizePage() {
                   >
                     {data.babyDetails.notes}
                   </p>
+                </section>
+              )}
+
+              {data.momName && data.momDetails?.notes && (
+                <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
+                  <h2
+                    className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
+                  >
+                    About {data.momName}
+                  </h2>
+                  <p
+                    className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
+                  >
+                    {data.momDetails.notes}
+                  </p>
+                </section>
+              )}
+
+              {data.gallery.length > 0 && (
+                <section className="py-12 border-t border-white/10">
+                  <h2
+                    className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
+                  >
+                    Photo Gallery
+                  </h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto px-4">
+                    {data.gallery.map((img) => (
+                      <div key={img.id} className="relative aspect-square">
+                        <img
+                          src={img.url}
+                          alt={img.caption || "Gallery"}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        {img.caption && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
+                            {img.caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </section>
               )}
 
@@ -1123,48 +1261,74 @@ export default function BabyShowerTemplateCustomizePage() {
                         </div>
                         <div>
                           <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                            Attending?
+                            Will you be attending?
                           </label>
                           <div className="grid grid-cols-2 gap-4">
-                            <label className="relative cursor-pointer group">
-                              <input
-                                type="radio"
-                                name="attending"
-                                className="peer sr-only"
-                                defaultChecked
-                              />
-                              <div className="p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20">
-                                <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                                  <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                                <span className="font-semibold">
-                                  Joyfully Accept
-                                </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRsvpAttending(true);
+                              }}
+                              className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
+                                rsvpAttending === true
+                                  ? "border-current bg-white/25 shadow-lg"
+                                  : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
+                              }`}
+                            >
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                  rsvpAttending === true
+                                    ? "bg-white/30"
+                                    : "bg-white/20 group-hover:bg-white/30"
+                                }`}
+                              >
+                                <Check size={20} className="text-current" />
                               </div>
-                            </label>
-                            <label className="relative cursor-pointer group">
-                              <input
-                                type="radio"
-                                name="attending"
-                                className="peer sr-only"
-                              />
-                              <div className="p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20">
-                                <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                                  <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                                <span className="font-semibold">
-                                  Regretfully Decline
-                                </span>
+                              <span className="font-semibold text-base">
+                                Yes, I'll be there!
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRsvpAttending(false);
+                              }}
+                              className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
+                                rsvpAttending === false
+                                  ? "border-current bg-white/25 shadow-lg"
+                                  : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
+                              }`}
+                            >
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                  rsvpAttending === false
+                                    ? "bg-white/30"
+                                    : "bg-white/20 group-hover:bg-white/30"
+                                }`}
+                              >
+                                <XIcon size={20} className="text-current" />
                               </div>
-                            </label>
+                              <span className="font-semibold text-base">
+                                Sorry, can't make it
+                              </span>
+                            </button>
                           </div>
                         </div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setRsvpSubmitted(true);
+                            if (rsvpAttending !== null) {
+                              setRsvpSubmitted(true);
+                            }
                           }}
-                          className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
+                          disabled={rsvpAttending === null}
+                          className={`w-full py-4 mt-2 font-bold uppercase tracking-widest text-sm rounded-lg transition-colors shadow-lg ${
+                            rsvpAttending !== null
+                              ? "bg-white text-slate-900 hover:bg-slate-200"
+                              : "bg-white/20 text-white/50 cursor-not-allowed"
+                          }`}
                         >
                           Send RSVP
                         </button>
@@ -1178,6 +1342,7 @@ export default function BabyShowerTemplateCustomizePage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setRsvpSubmitted(false);
+                            setRsvpAttending(null);
                           }}
                           className="text-sm underline mt-6 opacity-50 hover:opacity-100"
                         >
@@ -1188,6 +1353,14 @@ export default function BabyShowerTemplateCustomizePage() {
                   </div>
                 </section>
               )}
+
+              <footer className="text-center py-8 border-t border-white/10 mt-1">
+                <p className="text-sm opacity-60">
+                  Powered by{" "}
+                  <span className="font-semibold opacity-80">Envitefy</span>.
+                  Create. Share. Enjoy
+                </p>
+              </footer>
             </div>
           </div>
         </div>
@@ -1204,6 +1377,7 @@ export default function BabyShowerTemplateCustomizePage() {
             {activeView === "images" && <ImagesEditor />}
             {activeView === "design" && <DesignEditor />}
             {activeView === "babyDetails" && <BabyDetailsEditor />}
+            {activeView === "momDetails" && <MomDetailsEditor />}
             {activeView === "hosts" && <HostsEditor />}
             {activeView === "photos" && <PhotosEditor />}
             {activeView === "rsvp" && <RSVPEditor />}

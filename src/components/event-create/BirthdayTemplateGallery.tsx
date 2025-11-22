@@ -315,7 +315,7 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
     name: "Rainbow Bash",
     description:
       "Vibrant and energetic with retro brush script for maximum fun.",
-    heroImageName: "midnight-bloom-hero.jpeg",
+    heroImageName: "rainbow-bash.webp",
     heroMood: "Vibrant & Energetic",
     menu: [...birthdayMenu],
     variations: buildStories(

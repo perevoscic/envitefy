@@ -293,14 +293,19 @@ const INITIAL_DATA = {
   time: "14:00",
   city: "Chicago",
   state: "IL",
-  venue: "",
+  address: "123 Main Street",
+  venue: "Fun Zone Playground",
   partyDetails: {
-    theme: "",
-    activities: "",
+    theme: "Princess Party",
+    activities:
+      "Face painting, bouncy castle, magic show, piñata, arts & crafts",
     notes:
       "Join us for an amazing birthday celebration! We'll have games, cake, and lots of fun activities. Can't wait to celebrate with you!",
   },
-  hosts: [{ id: 1, name: "Mom & Dad", role: "Parents" }],
+  hosts: [
+    { id: 1, name: "Sarah & Michael", role: "Parents" },
+    { id: 2, name: "Grandma Linda", role: "Grandmother" },
+  ],
   theme: {
     font: "playfair",
     fontSize: "medium",
@@ -310,7 +315,18 @@ const INITIAL_DATA = {
     hero: null,
     headlineBg: null,
   },
-  registries: [],
+  registries: [
+    {
+      id: 1,
+      label: "Amazon Wishlist",
+      url: "https://www.amazon.com/wishlist/emma-5th-birthday",
+    },
+    {
+      id: 2,
+      label: "Target Wishlist",
+      url: "https://www.target.com/wishlist/emma-party",
+    },
+  ],
   rsvp: {
     isEnabled: true,
     deadline: (() => {
@@ -319,7 +335,23 @@ const INITIAL_DATA = {
       return date.toISOString().split("T")[0];
     })(),
   },
-  gallery: [],
+  gallery: [
+    {
+      id: 1,
+      url: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=800",
+      caption: "Last year's party",
+    },
+    {
+      id: 2,
+      url: "https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=800",
+      caption: "Birthday cake",
+    },
+    {
+      id: 3,
+      url: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800",
+      caption: "Party decorations",
+    },
+  ],
 };
 
 const MenuCard = ({ title, icon, desc, onClick }) => (
@@ -659,6 +691,12 @@ export default function BirthdayTemplateCustomizePage() {
           value={data.venue}
           onChange={(v) => updateData("venue", v)}
           placeholder="Party venue (optional)"
+        />
+        <InputGroup
+          label="Address"
+          value={data.address}
+          onChange={(v) => updateData("address", v)}
+          placeholder="Street address (optional)"
         />
         <div className="grid grid-cols-2 gap-4">
           <InputGroup
@@ -1224,6 +1262,46 @@ export default function BirthdayTemplateCustomizePage() {
                 )}
               </div>
 
+              {data.hosts.length > 0 && (
+                <section className="text-center py-12 border-t border-white/10">
+                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                    Hosted By
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-6">
+                    {data.hosts.map((host) => (
+                      <div key={host.id} className="text-center">
+                        <div className="font-semibold text-lg mb-1">
+                          {host.name}
+                        </div>
+                        {host.role && (
+                          <div className="text-sm opacity-70">{host.role}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(data.address || data.venue) && (
+                <section className="text-center py-12 border-t border-white/10">
+                  <h2 className={`text-2xl mb-4 ${currentTheme.accent}`}>
+                    Location
+                  </h2>
+                  {data.venue && (
+                    <div className="font-semibold text-lg mb-2">
+                      {data.venue}
+                    </div>
+                  )}
+                  {(data.address || data.city || data.state) && (
+                    <div className="opacity-80">
+                      {[data.address, data.city, data.state]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </div>
+                  )}
+                </section>
+              )}
+
               {data.partyDetails.notes && (
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
@@ -1253,6 +1331,32 @@ export default function BirthdayTemplateCustomizePage() {
                       </p>
                     </div>
                   )}
+                </section>
+              )}
+
+              {data.gallery.length > 0 && (
+                <section className="py-12 border-t border-white/10">
+                  <h2
+                    className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
+                  >
+                    Photo Gallery
+                  </h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto px-4">
+                    {data.gallery.map((img) => (
+                      <div key={img.id} className="relative aspect-square">
+                        <img
+                          src={img.url}
+                          alt={img.caption || "Gallery"}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        {img.caption && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
+                            {img.caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </section>
               )}
 
@@ -1375,6 +1479,14 @@ export default function BirthdayTemplateCustomizePage() {
                   </div>
                 </section>
               )}
+
+              <footer className="text-center py-8 border-t border-white/10 mt-1">
+                <p className="text-sm opacity-60">
+                  Powered by{" "}
+                  <span className="font-semibold opacity-80">Envitefy</span>.
+                  Create. Share. Enjoy
+                </p>
+              </footer>
             </div>
           </div>
         </div>
