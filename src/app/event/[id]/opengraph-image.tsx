@@ -19,9 +19,7 @@ export default async function OgImage(props: {
 
   const hasThumb =
     typeof data?.thumbnail === "string" && data.thumbnail.length > 0;
-  const bg = hasThumb
-    ? data.thumbnail
-    : await absoluteUrl("/og-default-v2.jpg");
+  const bg = hasThumb ? data.thumbnail : await absoluteUrl("/og-default.jpg");
 
   return new ImageResponse(
     (

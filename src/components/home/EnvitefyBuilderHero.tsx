@@ -20,6 +20,12 @@ type BuilderCard = {
 
 const QUICK_START_CARDS: BuilderCard[] = [
   {
+    label: "Wedding ",
+    icon: "💍",
+    copy: "Gallery hero, luxe typography options.",
+    href: "/event/weddings/customize",
+  },
+  {
     label: "Birthday Party",
     icon: "🎂",
     copy: "Whimsical themes with kid-ready layouts.",
@@ -30,12 +36,6 @@ const QUICK_START_CARDS: BuilderCard[] = [
     icon: "baby-carriage",
     copy: "Soft palettes, registry panels, RSVP cues.",
     href: "/event/baby-showers/customize",
-  },
-  {
-    label: "Wedding ",
-    icon: "💍",
-    copy: "Gallery hero, luxe typography options.",
-    href: "/event/weddings/customize",
   },
   {
     label: "Gender Reveal",

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     siteName: "Envitefy",
     images: [
       {
-        url: "https://envitefy.com/og-default-v2.jpg",
+        url: "https://envitefy.com/og-default.jpg",
         width: 1200,
         height: 630,
         alt: "Envitefy preview",
@@ -34,7 +34,10 @@ export default function AboutPage() {
                 <span className="bg-clip-text pb-10 text-transparent bg-gradient-to-r from-cyan-600 via-sky-500 to-fuchsia-600 dark:from-cyan-300 dark:via-sky-200 dark:to-fuchsia-300">
                   About
                   <span> </span>
-                  <span className="font-pacifico inline-block pb-1"> Envitefy</span>
+                  <span className="font-pacifico inline-block pb-1">
+                    {" "}
+                    Envitefy
+                  </span>
                   <span> </span>
                   <span className="font-montserrat"></span>
                 </span>

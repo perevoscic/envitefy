@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     siteName: "Envitefy",
     images: [
       {
-        url: "https://envitefy.com/og-default-v2.jpg",
+        url: "https://envitefy.com/og-default.jpg",
         width: 1200,
         height: 630,
         alt: "Envitefy preview",
@@ -30,24 +30,38 @@ export default function WhoItsForPage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://envitefy.com/" },
-      { "@type": "ListItem", position: 2, name: "Who it’s for", item: "https://envitefy.com/who-its-for" },
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://envitefy.com/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Who it’s for",
+        item: "https://envitefy.com/who-its-for",
+      },
     ],
   };
   return (
     <main className="min-h-screen w-full bg-background text-foreground">
       <section className="max-w-5xl mx-auto px-6 pt-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center">Who it’s for</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-center">
+          Who it’s for
+        </h1>
         <p className="mt-3 text-center text-foreground/70">
           Envitefy helps busy families, teams, and classrooms stay coordinated.
         </p>
       </section>
       <UseCases />
-      <Script id="ld-breadcrumb-who" type="application/ld+json" strategy="afterInteractive">
+      <Script
+        id="ld-breadcrumb-who"
+        type="application/ld+json"
+        strategy="afterInteractive"
+      >
         {JSON.stringify(breadcrumbLd)}
       </Script>
     </main>
   );
 }
-
-

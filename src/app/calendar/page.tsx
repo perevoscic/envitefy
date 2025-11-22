@@ -963,28 +963,28 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-[60vh] p-4 sm:p-6 pt-8 sm:pt-10">
+    <div className="min-h-[60vh] p-4 sm:p-6 pt-8 sm:pt-10 landing-dark-gradient bg-background text-foreground">
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={goPrev}
-              className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm hover:bg-foreground/5"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface/80 hover:border-border/80 transition-all duration-200 shadow-sm hover:shadow ring-1 ring-border/50"
             >
               ←
             </button>
             <button
               type="button"
               onClick={goToday}
-              className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm hover:bg-foreground/5"
+              className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground hover:bg-surface/80 hover:border-border/80 transition-all duration-200 shadow-sm hover:shadow ring-1 ring-border/50"
             >
               Today
             </button>
             <button
               type="button"
               onClick={goNext}
-              className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm hover:bg-foreground/5"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface/80 hover:border-border/80 transition-all duration-200 shadow-sm hover:shadow ring-1 ring-border/50"
             >
               →
             </button>
@@ -1004,7 +1004,7 @@ export default function CalendarPage() {
                 } catch {}
               }}
               title="New event"
-              className="ml-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-3 py-1.5 text-sm font-medium text-white shadow transition hover:opacity-90 focus:outline-none"
+              className="ml-2 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-background"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -1026,10 +1026,10 @@ export default function CalendarPage() {
               <span>Add event</span>
             </button>
           </div>
-          <h1 className="text-xl sm:text-2xl font-semibold">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
             {monthFormatter.format(new Date(year, month, 1))}
           </h1>
-          <div className="hidden sm:block text-sm text-foreground/70">
+          <div className="hidden sm:block text-sm text-muted-foreground font-medium">
             {loading
               ? "Loading…"
               : error
@@ -1038,7 +1038,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl border border-border calendar-festive p-2 sm:p-3 shadow-sm">
+        <div className="mt-6 rounded-2xl border border-border bg-background p-4 sm:p-5 shadow-lg ring-1 ring-border/50">
           <div
             className="grid grid-cols-7 text-center text-xs sm:text-sm text-foreground/70"
             style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
@@ -1054,7 +1054,7 @@ export default function CalendarPage() {
           </div>
 
           <div
-            className="mt-2 grid grid-cols-7 grid-rows-6 gap-px rounded-md border border-border bg-border w-full max-w-full shadow-md sm:shadow-lg transition-shadow"
+            className="mt-3 grid grid-cols-7 grid-rows-6 gap-px rounded-xl border border-border bg-background/50 w-full max-w-full overflow-hidden"
             style={{
               gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
               gridTemplateRows: "repeat(6, minmax(0, 1fr))",
@@ -1071,24 +1071,28 @@ export default function CalendarPage() {
                     <div
                       key={date.toISOString()}
                       onClick={() => onDayClick(date)}
-                      className={`h-full cursor-pointer bg-surface p-2 sm:p-3 min-h-[32px] sm:min-h-[40px] md:min-h-[48px] ${
-                        isCurrentMonth ? "" : "bg-foreground/[.02]"
+                      className={`h-full cursor-pointer bg-background p-2 sm:p-3 min-h-[32px] sm:min-h-[40px] md:min-h-[48px] transition-all duration-200 hover:bg-background/90 ${
+                        isCurrentMonth ? "" : "bg-background/50 opacity-60"
+                      } ${
+                        isToday
+                          ? "ring-2 ring-indigo-500 ring-inset bg-background"
+                          : ""
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <div
-                          className={`h-5 w-5 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[10px] ${
+                          className={`h-6 w-6 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[11px] font-semibold transition-all ${
                             isToday
-                              ? "bg-foreground text-background"
+                              ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md"
                               : isCurrentMonth
-                              ? "text-foreground/80"
-                              : "text-foreground/40"
+                              ? "text-foreground"
+                              : "text-muted-foreground"
                           }`}
                         >
                           {date.getDate()}
                         </div>
                         {items.length > 0 && (
-                          <div className="ml-1 flex items-center gap-1">
+                          <div className="ml-1 flex items-center gap-1 flex-wrap">
                             {items.slice(0, 8).map((ev) => renderEventDot(ev))}
                             {items.length > 8 && (
                               <button
@@ -1097,7 +1101,7 @@ export default function CalendarPage() {
                                   e.stopPropagation();
                                   setOpenDay({ date, items });
                                 }}
-                                className="text-[10px] text-foreground/60 hover:text-foreground/80"
+                                className="text-[10px] text-muted-foreground hover:text-foreground font-medium transition-colors"
                               >
                                 +{items.length - 8}
                               </button>
@@ -1121,16 +1125,18 @@ export default function CalendarPage() {
 
       {/* Upcoming (toggle) */}
       <div className="mx-auto max-w-6xl mt-8">
-        <h2 className="text-lg font-semibold">Upcoming events</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          Upcoming events
+        </h2>
 
         <div className="mt-3 flex justify-start">
           {/* Elastic Tabs Toggle */}
           <nav
-            className="relative flex bg-white dark:bg-surface shadow-md rounded-full px-1 py-1 w-[280px] tabs-elastic"
+            className="relative flex bg-surface shadow-md rounded-full px-1 py-1 w-[280px] tabs-elastic ring-1 ring-border/50"
             suppressHydrationWarning
           >
             <div
-              className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-sky-400 to-purple-700 z-0"
+              className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-indigo-600 to-purple-600 z-0"
               style={{
                 width: "50%",
                 transform:
@@ -1142,7 +1148,7 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === "week" ? "text-white" : "text-gray-500"
+                upcomingView === "week" ? "text-white" : "text-muted-foreground"
               }`}
               onClick={() => setUpcomingView("week")}
             >
@@ -1189,7 +1195,9 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === "month" ? "text-white" : "text-gray-500"
+                upcomingView === "month"
+                  ? "text-white"
+                  : "text-muted-foreground"
               }`}
               onClick={() => setUpcomingView("month")}
             >
@@ -1239,7 +1247,7 @@ export default function CalendarPage() {
         {upcomingView === "week" ? (
           <div className="mt-4 space-y-2">
             {upcomingWeek.length === 0 && (
-              <div className="text-sm text-foreground/70">
+              <div className="text-sm text-muted-foreground">
                 No upcoming events this week.
               </div>
             )}
@@ -1306,16 +1314,16 @@ export default function CalendarPage() {
         ) : (
           <div className="mt-4 space-y-4">
             {groupedByMonth.length === 0 && (
-              <div className="text-sm text-foreground/70">
+              <div className="text-sm text-muted-foreground">
                 No upcoming events.
               </div>
             )}
             {groupedByMonth.map((group, idx) => (
               <div
                 key={idx}
-                className="border border-border rounded-md overflow-hidden"
+                className="border border-border rounded-xl overflow-hidden bg-surface ring-1 ring-border/50 shadow-sm"
               >
-                <div className="px-3 py-2 bg-surface/60 text-sm text-foreground/80 border-b border-border">
+                <div className="px-3 py-2 bg-surface/80 text-sm text-foreground border-b border-border">
                   {group.label}
                 </div>
                 <ul className="mt-1.5 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:p-3 md:pt-3 md:pb-4">
