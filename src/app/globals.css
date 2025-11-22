@@ -134,6 +134,32 @@ input[type="password"] {
   -webkit-text-fill-color: var(--foreground) !important;
 }
 
+/* Ensure placeholders are styled correctly with gray color - must override input color rules */
+input[type="text"]::placeholder,
+input[type="text"]::-webkit-input-placeholder,
+input[type="text"]::-moz-placeholder,
+input[type="text"]:-ms-input-placeholder,
+input[type="email"]::placeholder,
+input[type="email"]::-webkit-input-placeholder,
+input[type="email"]::-moz-placeholder,
+input[type="email"]:-ms-input-placeholder,
+input[type="password"]::placeholder,
+input[type="password"]::-webkit-input-placeholder,
+input[type="password"]::-moz-placeholder,
+input[type="password"]:-ms-input-placeholder,
+input::placeholder,
+input::-webkit-input-placeholder,
+input::-moz-placeholder,
+input:-ms-input-placeholder,
+textarea::placeholder,
+textarea::-webkit-input-placeholder,
+textarea::-moz-placeholder,
+textarea:-ms-input-placeholder {
+  color: #9CA3AF !important; /* gray-400 */
+  opacity: 1 !important;
+  -webkit-text-fill-color: #9CA3AF !important;
+}
+
 html {
   /* Ensure fullscreen coverage including safe areas but allow scrolling */
   min-height: 100vh;

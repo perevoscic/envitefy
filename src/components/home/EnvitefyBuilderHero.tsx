@@ -36,7 +36,7 @@ const QUICK_START_CARDS: BuilderCard[] = [
     label: "Wedding / Special",
     icon: "💍",
     copy: "Gallery hero, luxe typography options.",
-    href: "/event/weddings",
+    href: "/event/weddings/customize",
     accent: "from-[#B6FBFF] to-[#83A4D4]",
   },
   {

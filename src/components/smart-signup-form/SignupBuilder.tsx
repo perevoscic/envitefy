@@ -2747,7 +2747,29 @@ const SignupBuilder: React.FC<Props> = ({
   }, [previewFixedHeightPx, previewFloating]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 signup-builder">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .signup-builder input[type="text"]::placeholder,
+        .signup-builder input[type="text"]::-webkit-input-placeholder,
+        .signup-builder input[type="text"]::-moz-placeholder,
+        .signup-builder input[type="text"]:-ms-input-placeholder,
+        .signup-builder input[type="email"]::placeholder,
+        .signup-builder input[type="email"]::-webkit-input-placeholder,
+        .signup-builder input[type="email"]::-moz-placeholder,
+        .signup-builder input[type="email"]:-ms-input-placeholder,
+        .signup-builder textarea::placeholder,
+        .signup-builder textarea::-webkit-input-placeholder,
+        .signup-builder textarea::-moz-placeholder,
+        .signup-builder textarea:-ms-input-placeholder {
+          color: #9CA3AF !important;
+          opacity: 1 !important;
+          -webkit-text-fill-color: #9CA3AF !important;
+        }
+      `,
+        }}
+      />
       {showBasics && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-5 shadow-sm">
@@ -2945,7 +2967,9 @@ const SignupBuilder: React.FC<Props> = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Date</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Date
+                </label>
                 <input
                   type="date"
                   value={(((form as any).start as string) || "").slice(0, 10)}
@@ -3173,9 +3197,15 @@ const SignupBuilder: React.FC<Props> = ({
                   { key: "equipment", label: "Special equipment needed" },
                   { key: "travel", label: "Travel involved" },
                   { key: "permission", label: "Permission slip required" },
-                  { key: "sensitiveInfo", label: "Sensitive information handled" },
+                  {
+                    key: "sensitiveInfo",
+                    label: "Sensitive information handled",
+                  },
                   { key: "photoConsent", label: "Photo/video consent" },
-                  { key: "emergencyContact", label: "Emergency contact required" },
+                  {
+                    key: "emergencyContact",
+                    label: "Emergency contact required",
+                  },
                 ].map((item) => (
                   <label
                     key={item.key}
@@ -3204,7 +3234,10 @@ const SignupBuilder: React.FC<Props> = ({
                   <textarea
                     value={(form as any).safetyNotes || ""}
                     onChange={(e) =>
-                      onChange({ ...(form as any), safetyNotes: e.target.value })
+                      onChange({
+                        ...(form as any),
+                        safetyNotes: e.target.value,
+                      })
                     }
                     rows={2}
                     className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -3233,530 +3266,987 @@ const SignupBuilder: React.FC<Props> = ({
           </div>
 
           {/* Theme design picker (between Headline description and Image template) */}
-            <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-sm font-medium text-gray-700">
-                Theme design
-              </label>
-              {/* Small screens: dropdown with thumbnail */}
-              <div className="relative md:hidden">
-                <button
-                  type="button"
-                  onClick={() => setThemeMenuOpen((o) => !o)}
-                  className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition hover:bg-gray-50"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
-                      {form.header?.designTheme ? (
-                        renderThemeThumbSvg(
-                          form.header.designTheme as SignupDesignTheme
-                        )
-                      ) : (
-                        <svg
-                          viewBox="0 0 80 48"
-                          className="w-full h-full"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <rect width="80" height="48" fill="#F3F4F6" />
-                          <rect
-                            x="18"
-                            y="16"
-                            width="44"
-                            height="16"
-                            rx="3"
-                            fill="#E5E7EB"
-                          />
-                        </svg>
-                      )}
-                    </span>
-                    <span className="truncate">
-                      {form.header?.designTheme || "Choose your theme"}
-                    </span>
-                  </span>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="text-gray-500"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-                {themeMenuOpen && (
-                  <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
-                    <ul className="max-h-64 overflow-auto py-1">
-                      {THEME_NAMES.map((name) => (
-                        <li key={name}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHeader({ designTheme: name as any });
-                              setThemeMenuOpen(false);
-                            }}
-                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
-                              (form.header?.designTheme || "") === name
-                                ? "bg-gray-100 text-gray-900"
-                                : "text-gray-700 hover:bg-gray-50"
-                            }`}
-                          >
-                            <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
-                              {renderThemeThumbSvg(name as SignupDesignTheme)}
-                            </span>
-                            <span className="truncate">{name}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* md+ screens: 5-column grid */}
-              <div className="hidden md:grid grid-cols-5 gap-3">
-                {THEME_NAMES.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => setHeader({ designTheme: name as any })}
-                    className={`relative w-full rounded-xl border-2 overflow-hidden transition ${
-                      (form.header?.designTheme || "") === name
-                        ? "border-gray-900 shadow-md"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    title={name}
-                  >
-                    <div className="w-full aspect-[5/3] overflow-hidden bg-white">
-                      {renderThemeThumbSvg(name as SignupDesignTheme)}
-                    </div>
-                    <div className="px-2 py-2 bg-white text-left border-t border-gray-100">
-                      <div className="text-xs font-semibold text-gray-900 truncate">
-                        {name}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Theme images header with search */}
-            <div className="sm:col-span-2 flex items-center justify-between min-w-0 max-w-full gap-2">
-              <label className="block text-sm font-medium text-gray-700 truncate min-w-0">
-                Theme images
-              </label>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {themeImagesSearchOpen ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      value={themeImagesQuery}
-                      onChange={(e) => setThemeImagesQuery(e.target.value)}
-                      placeholder="Search..."
-                      autoFocus
-                      className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      onBlur={() => {
-                        if (!themeImagesQuery.trim()) {
-                          setThemeImagesSearchOpen(false);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") {
-                          setThemeImagesSearchOpen(false);
-                          setThemeImagesQuery("");
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setThemeImagesSearchOpen(false);
-                        setThemeImagesQuery("");
-                      }}
-                      className="h-9 w-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center hover:bg-gray-50 transition"
-                      title="Close search"
-                    >
+          <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
+            <label className="block text-sm font-medium text-gray-700">
+              Theme design
+            </label>
+            {/* Small screens: dropdown with thumbnail */}
+            <div className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setThemeMenuOpen((o) => !o)}
+                className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition hover:bg-gray-50"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
+                    {form.header?.designTheme ? (
+                      renderThemeThumbSvg(
+                        form.header.designTheme as SignupDesignTheme
+                      )
+                    ) : (
                       <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="text-gray-600"
+                        viewBox="0 0 80 48"
+                        className="w-full h-full"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                          clipRule="evenodd"
+                        <rect width="80" height="48" fill="#F3F4F6" />
+                        <rect
+                          x="18"
+                          y="16"
+                          width="44"
+                          height="16"
+                          rx="3"
+                          fill="#E5E7EB"
                         />
                       </svg>
-                    </button>
+                    )}
+                  </span>
+                  <span className="truncate">
+                    {form.header?.designTheme || "Choose your theme"}
+                  </span>
+                </span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="text-gray-500"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              {themeMenuOpen && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <ul className="max-h-64 overflow-auto py-1">
+                    {THEME_NAMES.map((name) => (
+                      <li key={name}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeader({ designTheme: name as any });
+                            setThemeMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                            (form.header?.designTheme || "") === name
+                              ? "bg-gray-100 text-gray-900"
+                              : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
+                            {renderThemeThumbSvg(name as SignupDesignTheme)}
+                          </span>
+                          <span className="truncate">{name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* md+ screens: 5-column grid */}
+            <div className="hidden md:grid grid-cols-5 gap-3">
+              {THEME_NAMES.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setHeader({ designTheme: name as any })}
+                  className={`relative w-full rounded-xl border-2 overflow-hidden transition ${
+                    (form.header?.designTheme || "") === name
+                      ? "border-gray-900 shadow-md"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  title={name}
+                >
+                  <div className="w-full aspect-[5/3] overflow-hidden bg-white">
+                    {renderThemeThumbSvg(name as SignupDesignTheme)}
                   </div>
-                ) : (
+                  <div className="px-2 py-2 bg-white text-left border-t border-gray-100">
+                    <div className="text-xs font-semibold text-gray-900 truncate">
+                      {name}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Theme images header with search */}
+          <div className="sm:col-span-2 flex items-center justify-between min-w-0 max-w-full gap-2">
+            <label className="block text-sm font-medium text-gray-700 truncate min-w-0">
+              Theme images
+            </label>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {themeImagesSearchOpen ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={themeImagesQuery}
+                    onChange={(e) => setThemeImagesQuery(e.target.value)}
+                    placeholder="Search..."
+                    autoFocus
+                    className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    onBlur={() => {
+                      if (!themeImagesQuery.trim()) {
+                        setThemeImagesSearchOpen(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setThemeImagesSearchOpen(false);
+                        setThemeImagesQuery("");
+                      }
+                    }}
+                  />
                   <button
                     type="button"
-                    onClick={() => setThemeImagesSearchOpen(true)}
+                    onClick={() => {
+                      setThemeImagesSearchOpen(false);
+                      setThemeImagesQuery("");
+                    }}
                     className="h-9 w-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center hover:bg-gray-50 transition"
-                    title="Search theme images"
+                    title="Close search"
                   >
                     <svg
                       width="14"
                       height="14"
                       viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
+                      fill="currentColor"
                       className="text-gray-600"
                     >
-                      <circle cx="9" cy="9" r="6" />
-                      <path d="m17 17-4-4" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </button>
-                )}
-              </div>
-            </div>
-            {/* Theme images carousel (from public/templates/signup/<Theme>) */}
-            <ThemeImagesCarousel
-              themeName={
-                (form.header?.designTheme || (THEME_NAMES[0] as any)) as any
-              }
-              onPick={React.useCallback(
-                (url: string) => {
-                  const templateId = form.header?.templateId || "header-1";
-                  const imageObj = {
-                    name: url.split("/").pop() || "theme-image",
-                    type: "image/jpeg",
-                    dataUrl: url,
-                  };
-
-                  // For templates 3, 4, 5, 6, set the first image to images[0]
-                  // For templates 1, 2, set it to backgroundImage
-                  if (
-                    templateId === "header-3" ||
-                    templateId === "header-4" ||
-                    templateId === "header-5" ||
-                    templateId === "header-6"
-                  ) {
-                    const currentImages = Array.isArray(form.header?.images)
-                      ? [...form.header!.images!]
-                      : [];
-                    // Ensure array has at least one slot
-                    if (currentImages.length === 0) {
-                      currentImages.push({
-                        id: generateSignupId(),
-                        ...imageObj,
-                      });
-                    } else {
-                      // Set at index 0, preserving other images
-                      currentImages[0] = {
-                        id: currentImages[0]?.id || generateSignupId(),
-                        ...imageObj,
-                      };
-                    }
-                    setHeader({ images: currentImages });
-                  } else {
-                    // For templates 1 and 2, use backgroundImage
-                    setHeader({
-                      backgroundImage: imageObj,
-                    });
-                  }
-                },
-                [form.header?.templateId, form.header?.images, setHeader]
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setThemeImagesSearchOpen(true)}
+                  className="h-9 w-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center hover:bg-gray-50 transition"
+                  title="Search theme images"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="text-gray-600"
+                  >
+                    <circle cx="9" cy="9" r="6" />
+                    <path d="m17 17-4-4" />
+                  </svg>
+                </button>
               )}
-              searchQuery={themeImagesQuery}
-              allNames={THEME_NAMES as unknown as string[]}
-              selectedUrl={(() => {
+            </div>
+          </div>
+          {/* Theme images carousel (from public/templates/signup/<Theme>) */}
+          <ThemeImagesCarousel
+            themeName={
+              (form.header?.designTheme || (THEME_NAMES[0] as any)) as any
+            }
+            onPick={React.useCallback(
+              (url: string) => {
                 const templateId = form.header?.templateId || "header-1";
+                const imageObj = {
+                  name: url.split("/").pop() || "theme-image",
+                  type: "image/jpeg",
+                  dataUrl: url,
+                };
+
+                // For templates 3, 4, 5, 6, set the first image to images[0]
+                // For templates 1, 2, set it to backgroundImage
                 if (
                   templateId === "header-3" ||
                   templateId === "header-4" ||
                   templateId === "header-5" ||
                   templateId === "header-6"
                 ) {
-                  return form.header?.images?.[0]?.dataUrl || null;
-                }
-                return form.header?.backgroundImage?.dataUrl || null;
-              })()}
-            />
-            <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-sm font-medium text-gray-700">
-                Color stories
-              </label>
-              <div className="flex flex-wrap gap-3 max-w-full">
-                {(() => {
-                  const selectedTheme =
-                    form.header?.designTheme || THEME_NAMES[0];
-                  const themeColorStoryIds =
-                    THEME_COLOR_STORIES[selectedTheme] || [];
-                  const filteredPresets = PRESETS.filter((p) =>
-                    themeColorStoryIds.includes(p.id)
-                  );
-                  return filteredPresets.map((p) => {
-                    // Use pre-calculated text colors from PRESETS
-                    const textColor1 = p.textColor1 || "#374151";
-                    const textColor2 =
-                      p.textColor2 || p.textColor1 || "#111827";
-
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() =>
-                          setHeader({
-                            themeId: p.id,
-                            backgroundColor: p.bgColor,
-                            backgroundCss: p.bgCss || null,
-                            textColor1: textColor1,
-                            textColor2: textColor2 || textColor1,
-                            buttonColor: p.buttonColor || null,
-                            buttonTextColor: p.buttonTextColor || null,
-                          })
-                        }
-                        className={`flex-1 min-w-[150px] border rounded-2xl p-[0.65rem] bg-[#f7f4f0] cursor-pointer flex flex-col gap-[0.45rem] transition-all duration-[120ms] ease text-left ${
-                          (form.header?.themeId || "") === p.id
-                            ? "border-[rgba(199,153,100,0.9)] shadow-[0_12px_30px_rgba(12,0,6,0.2)]"
-                            : "border-[rgba(0,0,0,0.08)] hover:border-[rgba(199,153,100,0.6)] hover:-translate-y-0.5"
-                        }`}
-                        style={{ color: "rgba(21, 12, 9, 0.9)" }}
-                        title={`${p.name} - ${p.description}`}
-                      >
-                        {/* Color circles */}
-                        <div className="flex gap-[0.3rem]">
-                          {p.colors.map((color, idx) => (
-                            <span
-                              key={idx}
-                              className="w-[18px] h-[18px] rounded-full border border-[rgba(0,0,0,0.08)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)]"
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Text content */}
-                        <div className="flex flex-col text-[0.65rem] leading-[1.2] tracking-[0.1em] uppercase">
-                          <span>{p.name}</span>
-                          <small className="text-[0.6rem] text-[rgba(21,12,9,0.55)] normal-case tracking-[0.05em]">
-                            {p.description}
-                          </small>
-                        </div>
-                      </button>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-
-            <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
-              <label className="block text-sm font-medium text-gray-700">
-                Image template
-              </label>
-              {/* Small screens: dropdown with thumbnail */}
-              <div className="relative md:hidden">
-                <button
-                  type="button"
-                  onClick={() => setTemplateMenuOpen((o) => !o)}
-                  className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition hover:bg-gray-50"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
-                      {renderTemplateThumbSvg(
-                        (form.header?.templateId || "") as string
-                      )}
-                    </span>
-                    <span className="truncate">
-                      {(() => {
-                        const current = TEMPLATE_OPTIONS.find(
-                          (t) => t.id === (form.header?.templateId || "")
-                        );
-                        return current ? current.label : "Choose layout";
-                      })()}
-                    </span>
-                  </span>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="text-gray-500"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-                {templateMenuOpen && (
-                  <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
-                    <ul className="max-h-64 overflow-auto py-1">
-                      {TEMPLATE_OPTIONS.map((opt) => (
-                        <li key={opt.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHeader({ templateId: opt.id as any });
-                              setTemplateMenuOpen(false);
-                            }}
-                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
-                              (form.header?.templateId || "") === opt.id
-                                ? "bg-gray-100 text-gray-900"
-                                : "text-gray-700 hover:bg-gray-50"
-                            }`}
-                          >
-                            <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
-                              {renderTemplateThumbSvg(opt.id as string)}
-                            </span>
-                            <span className="truncate">{opt.label}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* md+ screens: existing button group */}
-              <div className="hidden md:inline-flex gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setHeader({ templateId: "header-1" })}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
-                    (form.header?.templateId || "header-1") === "header-1"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Left
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeader({ templateId: "header-2" })}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
-                    form.header?.templateId === "header-2"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Right
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeader({ templateId: "header-3" })}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
-                    form.header?.templateId === "header-3"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Full-width banner
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeader({ templateId: "header-4" })}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
-                    form.header?.templateId === "header-4"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Banner + square left
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeader({ templateId: "header-5" })}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
-                    form.header?.templateId === "header-5"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Two images
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeader({ templateId: "header-6" })}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
-                    form.header?.templateId === "header-6"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Three images
-                </button>
-              </div>
-            </div>
-            {/* Hidden file inputs */}
-            <input
-              ref={headerFileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleHeaderFileChange}
-              className="hidden"
-            />
-            <input
-              ref={galleryFileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file && uploadTargetIndexRef.current !== null) {
-                  // Upload to specific index
-                  await uploadImageToIndex(uploadTargetIndexRef.current, file);
-                  uploadTargetIndexRef.current = null;
+                  const currentImages = Array.isArray(form.header?.images)
+                    ? [...form.header!.images!]
+                    : [];
+                  // Ensure array has at least one slot
+                  if (currentImages.length === 0) {
+                    currentImages.push({
+                      id: generateSignupId(),
+                      ...imageObj,
+                    });
+                  } else {
+                    // Set at index 0, preserving other images
+                    currentImages[0] = {
+                      id: currentImages[0]?.id || generateSignupId(),
+                      ...imageObj,
+                    };
+                  }
+                  setHeader({ images: currentImages });
                 } else {
-                  // Use default behavior (add to gallery)
-                  await addGalleryImages(e.target.files);
+                  // For templates 1 and 2, use backgroundImage
+                  setHeader({
+                    backgroundImage: imageObj,
+                  });
                 }
-                // Reset input
-                e.target.value = "";
-              }}
-              className="hidden"
-            />
-            {/* Preview (bottom of Basics) */}
-            <div className="sm:col-span-2 min-w-0 max-w-full">
-              <div className="relative z-10 w-full max-w-[720px] min-w-0">
-                <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
-                  <div className="bg-white backdrop-blur supports-[backdrop-filter]:backdrop-blur max-h-[70vh] overflow-auto">
-                    <section
-                      className="px-5 py-6"
+              },
+              [form.header?.templateId, form.header?.images, setHeader]
+            )}
+            searchQuery={themeImagesQuery}
+            allNames={THEME_NAMES as unknown as string[]}
+            selectedUrl={(() => {
+              const templateId = form.header?.templateId || "header-1";
+              if (
+                templateId === "header-3" ||
+                templateId === "header-4" ||
+                templateId === "header-5" ||
+                templateId === "header-6"
+              ) {
+                return form.header?.images?.[0]?.dataUrl || null;
+              }
+              return form.header?.backgroundImage?.dataUrl || null;
+            })()}
+          />
+          <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
+            <label className="block text-sm font-medium text-gray-700">
+              Color stories
+            </label>
+            <div className="flex flex-wrap gap-3 max-w-full">
+              {(() => {
+                const selectedTheme =
+                  form.header?.designTheme || THEME_NAMES[0];
+                const themeColorStoryIds =
+                  THEME_COLOR_STORIES[selectedTheme] || [];
+                const filteredPresets = PRESETS.filter((p) =>
+                  themeColorStoryIds.includes(p.id)
+                );
+                return filteredPresets.map((p) => {
+                  // Use pre-calculated text colors from PRESETS
+                  const textColor1 = p.textColor1 || "#374151";
+                  const textColor2 = p.textColor2 || p.textColor1 || "#111827";
+
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() =>
+                        setHeader({
+                          themeId: p.id,
+                          backgroundColor: p.bgColor,
+                          backgroundCss: p.bgCss || null,
+                          textColor1: textColor1,
+                          textColor2: textColor2 || textColor1,
+                          buttonColor: p.buttonColor || null,
+                          buttonTextColor: p.buttonTextColor || null,
+                        })
+                      }
+                      className={`flex-1 min-w-[150px] border rounded-2xl p-[0.65rem] bg-[#f7f4f0] cursor-pointer flex flex-col gap-[0.45rem] transition-all duration-[120ms] ease text-left ${
+                        (form.header?.themeId || "") === p.id
+                          ? "border-[rgba(199,153,100,0.9)] shadow-[0_12px_30px_rgba(12,0,6,0.2)]"
+                          : "border-[rgba(0,0,0,0.08)] hover:border-[rgba(199,153,100,0.6)] hover:-translate-y-0.5"
+                      }`}
+                      style={{ color: "rgba(21, 12, 9, 0.9)" }}
+                      title={`${p.name} - ${p.description}`}
+                    >
+                      {/* Color circles */}
+                      <div className="flex gap-[0.3rem]">
+                        {p.colors.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="w-[18px] h-[18px] rounded-full border border-[rgba(0,0,0,0.08)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)]"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Text content */}
+                      <div className="flex flex-col text-[0.65rem] leading-[1.2] tracking-[0.1em] uppercase">
+                        <span>{p.name}</span>
+                        <small className="text-[0.6rem] text-[rgba(21,12,9,0.55)] normal-case tracking-[0.05em]">
+                          {p.description}
+                        </small>
+                      </div>
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          <div className="space-y-3 sm:col-span-2 min-w-0 max-w-full">
+            <label className="block text-sm font-medium text-gray-700">
+              Image template
+            </label>
+            {/* Small screens: dropdown with thumbnail */}
+            <div className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setTemplateMenuOpen((o) => !o)}
+                className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition hover:bg-gray-50"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
+                    {renderTemplateThumbSvg(
+                      (form.header?.templateId || "") as string
+                    )}
+                  </span>
+                  <span className="truncate">
+                    {(() => {
+                      const current = TEMPLATE_OPTIONS.find(
+                        (t) => t.id === (form.header?.templateId || "")
+                      );
+                      return current ? current.label : "Choose layout";
+                    })()}
+                  </span>
+                </span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="text-gray-500"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              {templateMenuOpen && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <ul className="max-h-64 overflow-auto py-1">
+                    {TEMPLATE_OPTIONS.map((opt) => (
+                      <li key={opt.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeader({ templateId: opt.id as any });
+                            setTemplateMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                            (form.header?.templateId || "") === opt.id
+                              ? "bg-gray-100 text-gray-900"
+                              : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="h-6 w-10 overflow-hidden rounded bg-gray-100 grid place-items-center">
+                            {renderTemplateThumbSvg(opt.id as string)}
+                          </span>
+                          <span className="truncate">{opt.label}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* md+ screens: existing button group */}
+            <div className="hidden md:inline-flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setHeader({ templateId: "header-1" })}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+                  (form.header?.templateId || "header-1") === "header-1"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Left
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeader({ templateId: "header-2" })}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+                  form.header?.templateId === "header-2"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Right
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeader({ templateId: "header-3" })}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+                  form.header?.templateId === "header-3"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Full-width banner
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeader({ templateId: "header-4" })}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+                  form.header?.templateId === "header-4"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Banner + square left
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeader({ templateId: "header-5" })}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+                  form.header?.templateId === "header-5"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Two images
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeader({ templateId: "header-6" })}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+                  form.header?.templateId === "header-6"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Three images
+              </button>
+            </div>
+          </div>
+          {/* Hidden file inputs */}
+          <input
+            ref={headerFileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleHeaderFileChange}
+            className="hidden"
+          />
+          <input
+            ref={galleryFileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file && uploadTargetIndexRef.current !== null) {
+                // Upload to specific index
+                await uploadImageToIndex(uploadTargetIndexRef.current, file);
+                uploadTargetIndexRef.current = null;
+              } else {
+                // Use default behavior (add to gallery)
+                await addGalleryImages(e.target.files);
+              }
+              // Reset input
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
+          {/* Preview (bottom of Basics) */}
+          <div className="sm:col-span-2 min-w-0 max-w-full">
+            <div className="relative z-10 w-full max-w-[720px] min-w-0">
+              <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+                <div className="bg-white backdrop-blur supports-[backdrop-filter]:backdrop-blur max-h-[70vh] overflow-auto">
+                  <section
+                    className="px-5 py-6"
+                    style={{
+                      backgroundColor:
+                        form.header?.backgroundColor || undefined,
+                      backgroundImage: form.header?.backgroundCss || undefined,
+                      backgroundSize: form.header?.backgroundCss
+                        ? "cover"
+                        : undefined,
+                      backgroundPosition: form.header?.backgroundCss
+                        ? "center"
+                        : undefined,
+                    }}
+                  >
+                    <p
+                      className="text-xs mb-2 text-center opacity-75"
                       style={{
-                        backgroundColor:
-                          form.header?.backgroundColor || undefined,
-                        backgroundImage:
-                          form.header?.backgroundCss || undefined,
-                        backgroundSize: form.header?.backgroundCss
-                          ? "cover"
-                          : undefined,
-                        backgroundPosition: form.header?.backgroundCss
-                          ? "center"
-                          : undefined,
+                        color: form.header?.textColor1 || "#374151",
                       }}
                     >
-                      <p
-                        className="text-xs mb-2 text-center opacity-75"
-                        style={{
-                          color: form.header?.textColor1 || "#374151",
-                        }}
-                      >
-                        Header preview
-                      </p>
-                      {(form.header?.templateId || "header-1") ===
-                        "header-3" && (
-                        <div className="mb-4 relative">
-                          {form.header?.images?.[0]?.dataUrl ? (
-                            <div className="group relative w-full h-48 sm:h-64 md:h-72 rounded-xl border border-gray-200 overflow-hidden">
+                      Header preview
+                    </p>
+                    {(form.header?.templateId || "header-1") === "header-3" && (
+                      <div className="mb-4 relative">
+                        {form.header?.images?.[0]?.dataUrl ? (
+                          <div className="group relative w-full h-48 sm:h-64 md:h-72 rounded-xl border border-gray-200 overflow-hidden">
+                            <img
+                              src={form.header.images[0].dataUrl}
+                              alt="banner"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  galleryFileInputRef.current?.click()
+                                }
+                                className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                aria-label="Replace image"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                >
+                                  <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                  <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newImages =
+                                    form.header?.images?.filter(
+                                      (_, i) => i !== 0
+                                    ) || [];
+                                  setHeader({
+                                    images:
+                                      newImages.length > 0 ? newImages : null,
+                                  });
+                                }}
+                                className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                aria-label="Delete image"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4 text-red-600"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => galleryFileInputRef.current?.click()}
+                            className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            Full-width image
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {(form.header?.templateId || "header-1") === "header-4" && (
+                      <div className="relative mb-16">
+                        {form.header?.images?.[0]?.dataUrl ? (
+                          <div className="group relative w-full h-40 sm:h-56 rounded-xl border border-gray-200 overflow-hidden">
+                            <img
+                              src={form.header.images[0].dataUrl}
+                              alt="banner"
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Number label overlay */}
+                            <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
+                              1
+                            </div>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setGalleryImageIndex(0);
+                                }}
+                                className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                aria-label="Select from gallery"
+                                title="Select from gallery"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                >
+                                  <rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"
+                                  />
+                                  <circle cx="9" cy="9" r="2" />
+                                  <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  uploadTargetIndexRef.current = 0;
+                                  galleryFileInputRef.current?.click();
+                                }}
+                                className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                aria-label="Upload file"
+                                title="Upload file"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                >
+                                  <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                  <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newImages =
+                                    form.header?.images?.filter(
+                                      (_, i) => i !== 0
+                                    ) || [];
+                                  setHeader({
+                                    images:
+                                      newImages.length > 0 ? newImages : null,
+                                  });
+                                }}
+                                className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                aria-label="Delete image"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4 text-red-600"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors p-4">
+                            <span className="text-gray-600 text-sm font-medium">
+                              Banner image
+                            </span>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setGalleryImageIndex(0)}
+                                className="px-3 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                                title="Select from gallery"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-3 w-3"
+                                >
+                                  <rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"
+                                  />
+                                  <circle cx="9" cy="9" r="2" />
+                                  <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                </svg>
+                                Gallery
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  uploadTargetIndexRef.current = 0;
+                                  galleryFileInputRef.current?.click();
+                                }}
+                                className="px-3 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5"
+                                title="Upload file"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-3 w-3"
+                                >
+                                  <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                  <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                </svg>
+                                Upload
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute left-6 -bottom-10">
+                          {form.header?.images?.[1]?.dataUrl ? (
+                            <div className="group relative w-40 h-40 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
                               <img
-                                src={form.header.images[0].dataUrl}
-                                alt="banner"
+                                src={form.header.images[1].dataUrl}
+                                alt="square"
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Number label overlay */}
+                              <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+                                2
+                              </div>
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setGalleryImageIndex(1);
+                                  }}
+                                  className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                  aria-label="Replace image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3 w-3"
+                                  >
+                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newImages =
+                                      form.header?.images?.filter(
+                                        (_, i) => i !== 1
+                                      ) || [];
+                                    setHeader({
+                                      images:
+                                        newImages.length > 0 ? newImages : null,
+                                    });
+                                  }}
+                                  className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                  aria-label="Delete image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3 w-3 text-red-600"
+                                  >
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ) : form.header?.backgroundImage?.dataUrl ? (
+                            <div className="group relative w-40 h-40 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                              <img
+                                src={form.header.backgroundImage.dataUrl}
+                                alt="square"
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setGalleryImageIndex(1);
+                                  }}
+                                  className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                  aria-label="Replace image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3 w-3"
+                                  >
+                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setHeader({ backgroundImage: null });
+                                  }}
+                                  className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                  aria-label="Delete image"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3 w-3 text-red-600"
+                                  >
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-40 h-40 rounded-xl border border-dashed border-gray-200 bg-gray-100 hover:bg-gray-200 transition-colors flex flex-col items-center justify-center gap-2 p-2">
+                              <span className="text-gray-600 text-xs font-medium">
+                                Top-left image
+                              </span>
+                              <div className="flex flex-col gap-1.5 w-full">
+                                <button
+                                  type="button"
+                                  onClick={() => setGalleryImageIndex(1)}
+                                  className="px-2 py-1 text-[10px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
+                                  title="Select from gallery"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-2.5 w-2.5"
+                                  >
+                                    <rect
+                                      x="3"
+                                      y="3"
+                                      width="18"
+                                      height="18"
+                                      rx="2"
+                                      ry="2"
+                                    />
+                                    <circle cx="9" cy="9" r="2" />
+                                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                  </svg>
+                                  Gallery
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    uploadTargetIndexRef.current = 1;
+                                    galleryFileInputRef.current?.click();
+                                  }}
+                                  className="px-2 py-1 text-[10px] font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
+                                  title="Upload file"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-2.5 w-2.5"
+                                  >
+                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                  </svg>
+                                  Upload
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div
+                      className={`grid gap-4 items-start ${
+                        (form.header?.templateId || "header-1") === "header-2"
+                          ? "md:grid-cols-[1fr_325px]"
+                          : (form.header?.templateId || "header-1") ===
+                            "header-4"
+                          ? "md:grid-cols-[325px_1fr]"
+                          : (form.header?.templateId || "header-1") ===
+                            "header-5"
+                          ? "md:grid-cols-2"
+                          : (form.header?.templateId || "header-1") ===
+                            "header-6"
+                          ? "md:grid-cols-3"
+                          : "md:grid-cols-[325px_1fr]"
+                      }`}
+                    >
+                      {((form.header?.templateId || "header-1") ===
+                        "header-1" ||
+                        (form.header?.templateId || "header-1") ===
+                          "header-2") && (
+                        <div
+                          className={`relative ${
+                            (form.header?.templateId || "header-1") ===
+                            "header-2"
+                              ? "order-2"
+                              : "order-1"
+                          }`}
+                        >
+                          {form.header?.backgroundImage?.dataUrl ? (
+                            <div className="group relative w-full max-w-[325px] max-h-[325px] rounded-xl border border-gray-200 overflow-hidden">
+                              <img
+                                src={form.header.backgroundImage.dataUrl}
+                                alt="header"
                                 className="w-full h-full object-cover"
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    galleryFileInputRef.current?.click()
-                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    headerFileInputRef.current?.click();
+                                  }}
                                   className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
                                   aria-label="Replace image"
                                 >
@@ -3778,14 +4268,7 @@ const SignupBuilder: React.FC<Props> = ({
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const newImages =
-                                      form.header?.images?.filter(
-                                        (_, i) => i !== 0
-                                      ) || [];
-                                    setHeader({
-                                      images:
-                                        newImages.length > 0 ? newImages : null,
-                                    });
+                                    setHeader({ backgroundImage: null });
                                   }}
                                   className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
                                   aria-label="Delete image"
@@ -3811,689 +4294,204 @@ const SignupBuilder: React.FC<Props> = ({
                             <button
                               type="button"
                               onClick={() =>
-                                galleryFileInputRef.current?.click()
+                                headerFileInputRef.current?.click()
                               }
-                              className="w-full h-48 sm:h-64 md:h-72 rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+                              className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
                             >
-                              Full-width image
+                              Top-left image
                             </button>
                           )}
                         </div>
                       )}
-                      {(form.header?.templateId || "header-1") ===
-                        "header-4" && (
-                        <div className="relative mb-16">
-                          {form.header?.images?.[0]?.dataUrl ? (
-                            <div className="group relative w-full h-40 sm:h-56 rounded-xl border border-gray-200 overflow-hidden">
-                              <img
-                                src={form.header.images[0].dataUrl}
-                                alt="banner"
-                                className="w-full h-full object-cover"
-                              />
-                              {/* Number label overlay */}
-                              <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
-                                1
-                              </div>
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setGalleryImageIndex(0);
-                                  }}
-                                  className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
-                                  aria-label="Select from gallery"
-                                  title="Select from gallery"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-4 w-4"
-                                  >
-                                    <rect
-                                      x="3"
-                                      y="3"
-                                      width="18"
-                                      height="18"
-                                      rx="2"
-                                      ry="2"
-                                    />
-                                    <circle cx="9" cy="9" r="2" />
-                                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                                  </svg>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    uploadTargetIndexRef.current = 0;
-                                    galleryFileInputRef.current?.click();
-                                  }}
-                                  className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
-                                  aria-label="Upload file"
-                                  title="Upload file"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-4 w-4"
-                                  >
-                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                  </svg>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newImages =
-                                      form.header?.images?.filter(
-                                        (_, i) => i !== 0
-                                      ) || [];
-                                    setHeader({
-                                      images:
-                                        newImages.length > 0 ? newImages : null,
-                                    });
-                                  }}
-                                  className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
-                                  aria-label="Delete image"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-4 w-4 text-red-600"
-                                  >
-                                    <path d="M3 6h18" />
-                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-full h-40 sm:h-56 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors p-4">
-                              <span className="text-gray-600 text-sm font-medium">
-                                Banner image
-                              </span>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setGalleryImageIndex(0)}
-                                  className="px-3 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
-                                  title="Select from gallery"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-3 w-3"
-                                  >
-                                    <rect
-                                      x="3"
-                                      y="3"
-                                      width="18"
-                                      height="18"
-                                      rx="2"
-                                      ry="2"
-                                    />
-                                    <circle cx="9" cy="9" r="2" />
-                                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                                  </svg>
-                                  Gallery
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    uploadTargetIndexRef.current = 0;
-                                    galleryFileInputRef.current?.click();
-                                  }}
-                                  className="px-3 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5"
-                                  title="Upload file"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-3 w-3"
-                                  >
-                                    <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                    <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                  </svg>
-                                  Upload
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          <div className="absolute left-6 -bottom-10">
-                            {form.header?.images?.[1]?.dataUrl ? (
-                              <div className="group relative w-40 h-40 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-                                <img
-                                  src={form.header.images[1].dataUrl}
-                                  alt="square"
-                                  className="w-full h-full object-cover"
-                                />
-                                {/* Number label overlay */}
-                                <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
-                                  2
-                                </div>
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setGalleryImageIndex(1);
-                                    }}
-                                    className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
-                                    aria-label="Replace image"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-3 w-3"
-                                    >
-                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const newImages =
-                                        form.header?.images?.filter(
-                                          (_, i) => i !== 1
-                                        ) || [];
-                                      setHeader({
-                                        images:
-                                          newImages.length > 0
-                                            ? newImages
-                                            : null,
-                                      });
-                                    }}
-                                    className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
-                                    aria-label="Delete image"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-3 w-3 text-red-600"
-                                    >
-                                      <path d="M3 6h18" />
-                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            ) : form.header?.backgroundImage?.dataUrl ? (
-                              <div className="group relative w-40 h-40 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-                                <img
-                                  src={form.header.backgroundImage.dataUrl}
-                                  alt="square"
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setGalleryImageIndex(1);
-                                    }}
-                                    className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
-                                    aria-label="Replace image"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-3 w-3"
-                                    >
-                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setHeader({ backgroundImage: null });
-                                    }}
-                                    className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
-                                    aria-label="Delete image"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-3 w-3 text-red-600"
-                                    >
-                                      <path d="M3 6h18" />
-                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="w-40 h-40 rounded-xl border border-dashed border-gray-200 bg-gray-100 hover:bg-gray-200 transition-colors flex flex-col items-center justify-center gap-2 p-2">
-                                <span className="text-gray-600 text-xs font-medium">
-                                  Top-left image
-                                </span>
-                                <div className="flex flex-col gap-1.5 w-full">
-                                  <button
-                                    type="button"
-                                    onClick={() => setGalleryImageIndex(1)}
-                                    className="px-2 py-1 text-[10px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
-                                    title="Select from gallery"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-2.5 w-2.5"
-                                    >
-                                      <rect
-                                        x="3"
-                                        y="3"
-                                        width="18"
-                                        height="18"
-                                        rx="2"
-                                        ry="2"
-                                      />
-                                      <circle cx="9" cy="9" r="2" />
-                                      <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                                    </svg>
-                                    Gallery
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      uploadTargetIndexRef.current = 1;
-                                      galleryFileInputRef.current?.click();
-                                    }}
-                                    className="px-2 py-1 text-[10px] font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
-                                    title="Upload file"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-2.5 w-2.5"
-                                    >
-                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                    </svg>
-                                    Upload
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      <div
-                        className={`grid gap-4 items-start ${
-                          (form.header?.templateId || "header-1") === "header-2"
-                            ? "md:grid-cols-[1fr_325px]"
-                            : (form.header?.templateId || "header-1") ===
-                              "header-4"
-                            ? "md:grid-cols-[325px_1fr]"
-                            : (form.header?.templateId || "header-1") ===
-                              "header-5"
-                            ? "md:grid-cols-2"
-                            : (form.header?.templateId || "header-1") ===
-                              "header-6"
-                            ? "md:grid-cols-3"
-                            : "md:grid-cols-[325px_1fr]"
-                        }`}
-                      >
-                        {((form.header?.templateId || "header-1") ===
-                          "header-1" ||
-                          (form.header?.templateId || "header-1") ===
-                            "header-2") && (
+                      {((form.header?.templateId || "header-1") ===
+                        "header-5" ||
+                        (form.header?.templateId || "header-1") ===
+                          "header-6") && (
+                        <div
+                          className={`${
+                            (form.header?.templateId || "header-1") ===
+                            "header-6"
+                              ? "col-span-3"
+                              : "col-span-2"
+                          }`}
+                        >
                           <div
-                            className={`relative ${
-                              (form.header?.templateId || "header-1") ===
-                              "header-2"
-                                ? "order-2"
-                                : "order-1"
-                            }`}
-                          >
-                            {form.header?.backgroundImage?.dataUrl ? (
-                              <div className="group relative w-full max-w-[325px] max-h-[325px] rounded-xl border border-gray-200 overflow-hidden">
-                                <img
-                                  src={form.header.backgroundImage.dataUrl}
-                                  alt="header"
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      headerFileInputRef.current?.click();
-                                    }}
-                                    className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
-                                    aria-label="Replace image"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-4 w-4"
-                                    >
-                                      <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                      <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setHeader({ backgroundImage: null });
-                                    }}
-                                    className="p-2 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
-                                    aria-label="Delete image"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="h-4 w-4 text-red-600"
-                                    >
-                                      <path d="M3 6h18" />
-                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  headerFileInputRef.current?.click()
-                                }
-                                className="w-full max-w-[325px] h-[200px] rounded-xl border border-dashed border-gray-200 grid place-items-center text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
-                              >
-                                Top-left image
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        {((form.header?.templateId || "header-1") ===
-                          "header-5" ||
-                          (form.header?.templateId || "header-1") ===
-                            "header-6") && (
-                          <div
-                            className={`${
+                            className={`grid gap-3 ${
                               (form.header?.templateId || "header-1") ===
                               "header-6"
-                                ? "col-span-3"
-                                : "col-span-2"
+                                ? "grid-cols-3"
+                                : "grid-cols-2"
                             }`}
                           >
-                            <div
-                              className={`grid gap-3 ${
-                                (form.header?.templateId || "header-1") ===
-                                "header-6"
-                                  ? "grid-cols-3"
-                                  : "grid-cols-2"
-                              }`}
-                            >
-                              {((form.header?.templateId || "header-1") ===
-                              "header-6"
-                                ? [0, 1, 2]
-                                : [0, 1]
-                              ).map((i) =>
-                                form.header?.images?.[i]?.dataUrl ? (
-                                  <div
-                                    key={i}
-                                    className="group relative w-full h-36 rounded-xl border border-gray-200 overflow-hidden"
-                                  >
-                                    <img
-                                      src={form.header.images[i].dataUrl}
-                                      alt={`image-${i}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                    {/* Number label overlay */}
-                                    <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
-                                      {i + 1}
-                                    </div>
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (i === 1 || i === 2) {
-                                            setGalleryImageIndex(i);
-                                          } else {
-                                            galleryFileInputRef.current?.click();
-                                          }
-                                        }}
-                                        className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
-                                        aria-label="Replace image"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 24 24"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          strokeWidth="2"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          className="h-3 w-3"
-                                        >
-                                          <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                          <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                        </svg>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const templateId =
-                                            form.header?.templateId ||
-                                            "header-1";
-                                          const currentImages = Array.isArray(
-                                            form.header?.images
-                                          )
-                                            ? [...form.header!.images!]
-                                            : [];
-
-                                          // For templates 5 and 6, preserve array structure by setting to null
-                                          // For other templates, filter out
-                                          if (
-                                            templateId === "header-5" ||
-                                            templateId === "header-6"
-                                          ) {
-                                            const newImages = [
-                                              ...currentImages,
-                                            ];
-                                            newImages[i] = {
-                                              id: generateSignupId(),
-                                              name: "",
-                                              type: "image/jpeg",
-                                              dataUrl: "",
-                                            };
-                                            // Clean up trailing empty images
-                                            while (
-                                              newImages.length > 0 &&
-                                              !newImages[newImages.length - 1]
-                                                ?.dataUrl
-                                            ) {
-                                              newImages.pop();
-                                            }
-                                            setHeader({
-                                              images:
-                                                newImages.length > 0
-                                                  ? newImages
-                                                  : null,
-                                            });
-                                          } else {
-                                            const newImages =
-                                              currentImages.filter(
-                                                (_, idx) => idx !== i
-                                              );
-                                            setHeader({
-                                              images:
-                                                newImages.length > 0
-                                                  ? newImages
-                                                  : null,
-                                            });
-                                          }
-                                        }}
-                                        className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
-                                        aria-label="Delete image"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 24 24"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          strokeWidth="2"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          className="h-3 w-3 text-red-600"
-                                        >
-                                          <path d="M3 6h18" />
-                                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                        </svg>
-                                      </button>
-                                    </div>
+                            {((form.header?.templateId || "header-1") ===
+                            "header-6"
+                              ? [0, 1, 2]
+                              : [0, 1]
+                            ).map((i) =>
+                              form.header?.images?.[i]?.dataUrl ? (
+                                <div
+                                  key={i}
+                                  className="group relative w-full h-36 rounded-xl border border-gray-200 overflow-hidden"
+                                >
+                                  <img
+                                    src={form.header.images[i].dataUrl}
+                                    alt={`image-${i}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {/* Number label overlay */}
+                                  <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
+                                    {i + 1}
                                   </div>
-                                ) : (
-                                  <div
-                                    key={i}
-                                    className="relative w-full h-36 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
-                                  >
-                                    <span className="text-gray-600 text-sm">
-                                      Image {i + 1}
-                                    </span>
-                                    <div className="flex gap-2">
-                                      {i === 1 || i === 2 ? (
-                                        <>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setGalleryImageIndex(i)
-                                            }
-                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
-                                            title="Select from gallery"
-                                          >
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              className="h-3 w-3"
-                                            >
-                                              <rect
-                                                x="3"
-                                                y="3"
-                                                width="18"
-                                                height="18"
-                                                rx="2"
-                                                ry="2"
-                                              />
-                                              <circle cx="9" cy="9" r="2" />
-                                              <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                                            </svg>
-                                            Gallery
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              uploadTargetIndexRef.current = i;
-                                              galleryFileInputRef.current?.click();
-                                            }}
-                                            className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5"
-                                            title="Upload file"
-                                          >
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              className="h-3 w-3"
-                                            >
-                                              <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
-                                              <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
-                                            </svg>
-                                            Upload
-                                          </button>
-                                        </>
-                                      ) : (
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (i === 1 || i === 2) {
+                                          setGalleryImageIndex(i);
+                                        } else {
+                                          galleryFileInputRef.current?.click();
+                                        }
+                                      }}
+                                      className="p-1.5 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                                      aria-label="Replace image"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-3 w-3"
+                                      >
+                                        <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                        <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const templateId =
+                                          form.header?.templateId || "header-1";
+                                        const currentImages = Array.isArray(
+                                          form.header?.images
+                                        )
+                                          ? [...form.header!.images!]
+                                          : [];
+
+                                        // For templates 5 and 6, preserve array structure by setting to null
+                                        // For other templates, filter out
+                                        if (
+                                          templateId === "header-5" ||
+                                          templateId === "header-6"
+                                        ) {
+                                          const newImages = [...currentImages];
+                                          newImages[i] = {
+                                            id: generateSignupId(),
+                                            name: "",
+                                            type: "image/jpeg",
+                                            dataUrl: "",
+                                          };
+                                          // Clean up trailing empty images
+                                          while (
+                                            newImages.length > 0 &&
+                                            !newImages[newImages.length - 1]
+                                              ?.dataUrl
+                                          ) {
+                                            newImages.pop();
+                                          }
+                                          setHeader({
+                                            images:
+                                              newImages.length > 0
+                                                ? newImages
+                                                : null,
+                                          });
+                                        } else {
+                                          const newImages =
+                                            currentImages.filter(
+                                              (_, idx) => idx !== i
+                                            );
+                                          setHeader({
+                                            images:
+                                              newImages.length > 0
+                                                ? newImages
+                                                : null,
+                                          });
+                                        }
+                                      }}
+                                      className="p-1.5 bg-white rounded-full hover:bg-red-100 transition-colors shadow-lg"
+                                      aria-label="Delete image"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-3 w-3 text-red-600"
+                                      >
+                                        <path d="M3 6h18" />
+                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div
+                                  key={i}
+                                  className="relative w-full h-36 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                                >
+                                  <span className="text-gray-600 text-sm">
+                                    Image {i + 1}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    {i === 1 || i === 2 ? (
+                                      <>
                                         <button
                                           type="button"
                                           onClick={() =>
-                                            galleryFileInputRef.current?.click()
+                                            setGalleryImageIndex(i)
                                           }
                                           className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                                          title="Select from gallery"
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-3 w-3"
+                                          >
+                                            <rect
+                                              x="3"
+                                              y="3"
+                                              width="18"
+                                              height="18"
+                                              rx="2"
+                                              ry="2"
+                                            />
+                                            <circle cx="9" cy="9" r="2" />
+                                            <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                          </svg>
+                                          Gallery
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            uploadTargetIndexRef.current = i;
+                                            galleryFileInputRef.current?.click();
+                                          }}
+                                          className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5"
+                                          title="Upload file"
                                         >
                                           <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -4510,61 +4508,84 @@ const SignupBuilder: React.FC<Props> = ({
                                           </svg>
                                           Upload
                                         </button>
-                                      )}
-                                    </div>
+                                      </>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          galleryFileInputRef.current?.click()
+                                        }
+                                        className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          className="h-3 w-3"
+                                        >
+                                          <path d="M18.5 20L18.5 14M18.5 14L21 16.5M18.5 14L16 16.5" />
+                                          <path d="M12 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V11" />
+                                        </svg>
+                                        Upload
+                                      </button>
+                                    )}
                                   </div>
-                                )
-                              )}
-                            </div>
+                                </div>
+                              )
+                            )}
                           </div>
-                        )}
-                        <div
-                          className={`${
-                            (form.header?.templateId || "header-1") ===
-                            "header-2"
-                              ? "order-1"
-                              : "order-2"
-                          } flex flex-col gap-3`}
-                        >
-                          {form.header?.groupName ? (
-                            <div
-                              className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
-                              style={{
-                                color: form.header?.textColor1 || "#374151",
-                              }}
-                            >
-                              {form.header.groupName}
-                            </div>
-                          ) : null}
-                          <h3
-                            className="text-2xl sm:text-[1.6rem] font-semibold"
+                        </div>
+                      )}
+                      <div
+                        className={`${
+                          (form.header?.templateId || "header-1") === "header-2"
+                            ? "order-1"
+                            : "order-2"
+                        } flex flex-col gap-3`}
+                      >
+                        {form.header?.groupName ? (
+                          <div
+                            className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
                             style={{
-                              color:
-                                form.header?.textColor2 ||
-                                form.header?.textColor1 ||
-                                "#111827",
+                              color: form.header?.textColor1 || "#374151",
                             }}
                           >
-                            {form.title || "Smart sign-up"}
-                          </h3>
-                        </div>
-                      </div>
-                      {form.description && (
-                        <p
-                          className="mt-3 text-[0.95rem] max-w-2xl opacity-90"
+                            {form.header.groupName}
+                          </div>
+                        ) : null}
+                        <h3
+                          className="text-2xl sm:text-[1.6rem] font-semibold"
                           style={{
-                            color: form.header?.textColor1 || "#374151",
+                            color:
+                              form.header?.textColor2 ||
+                              form.header?.textColor1 ||
+                              "#111827",
                           }}
                         >
-                          {form.description}
-                        </p>
-                      )}
-                    </section>
-                  </div>
+                          {form.title || "Smart sign-up"}
+                        </h3>
+                      </div>
+                    </div>
+                    {form.description && (
+                      <p
+                        className="mt-3 text-[0.95rem] max-w-2xl opacity-90"
+                        style={{
+                          color: form.header?.textColor1 || "#374151",
+                        }}
+                      >
+                        {form.description}
+                      </p>
+                    )}
+                  </section>
                 </div>
               </div>
             </div>
           </div>
+        </div>
       )}
 
       {showSettings && (
