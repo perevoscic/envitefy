@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -1120,7 +1120,11 @@ export default function BirthdayTemplateCustomizePage() {
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
 
-  const template = getTemplateById(templateId);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    templateId || birthdayTemplateCatalog[0]?.id
+  );
+
+  const template = getTemplateById(selectedTemplateId);
 
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
@@ -1136,6 +1140,32 @@ export default function BirthdayTemplateCustomizePage() {
   const [professionalOpen, setProfessionalOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (templateId && templateId !== selectedTemplateId) {
+      setSelectedTemplateId(templateId);
+    }
+    if (!templateId && birthdayTemplateCatalog[0]?.id) {
+      setSelectedTemplateId(birthdayTemplateCatalog[0].id);
+    }
+  }, [templateId, selectedTemplateId]);
+
+  const handleTemplateChange = useCallback(
+    (newTemplateId: string) => {
+      setSelectedTemplateId(newTemplateId);
+      const params = new URLSearchParams(search?.toString());
+      params.set("templateId", newTemplateId);
+      if (!params.get("variationId")) {
+        const matchingTemplate = birthdayTemplateCatalog.find(
+          (item) => item.id === newTemplateId
+        );
+        const fallbackVariation = matchingTemplate?.variations?.[0]?.id;
+        if (fallbackVariation) params.set("variationId", fallbackVariation);
+      }
+      router.replace(`/event/birthdays/customize?${params.toString()}`);
+    },
+    [router, search]
+  );
 
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -1522,8 +1552,75 @@ export default function BirthdayTemplateCustomizePage() {
   );
 
   const DesignEditor = () => (
-    <EditorLayout title="Design" onBack={() => setActiveView("main")}>
+    <EditorLayout title="Design" onBack={() => setActiveView("main")}> 
       <div className="space-y-6">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">
+            Birthday Templates
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {birthdayTemplateCatalog.map((birthdayTemplate) => (
+              <button
+                key={birthdayTemplate.id}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleTemplateChange(birthdayTemplate.id);
+                }}
+                className={`group border rounded-lg overflow-hidden text-left transition-all ${
+                  selectedTemplateId === birthdayTemplate.id
+                    ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
+                    : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
+                }`}
+              >
+                <div className="relative h-24 w-full bg-slate-100">
+                  <Image
+                    src={`/templates/birthdays/${
+                      birthdayTemplate.heroImageName || `${birthdayTemplate.id}.webp`
+                    }`}
+                    alt={birthdayTemplate.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 400px"
+                  />
+                </div>
+                <div className="p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {birthdayTemplate.name}
+                    </p>
+                    {birthdayTemplate.preview?.location && (
+                      <p className="text-[11px] text-slate-500">
+                        {birthdayTemplate.preview.location}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    {(
+                      birthdayTemplate.templateConfig?.palette?.sprinkleColors ||
+                      birthdayTemplate.variations?.[0]?.sprinkleColors ||
+                      [
+                        birthdayTemplate.templateConfig?.palette?.bgGradientFrom,
+                        birthdayTemplate.templateConfig?.palette?.bgGradientTo,
+                        birthdayTemplate.templateConfig?.palette?.primary,
+                        birthdayTemplate.templateConfig?.palette?.accent,
+                      ].filter(Boolean)
+                    )
+                      .slice(0, 4)
+                      .map((color) => (
+                        <span
+                          key={color as string}
+                          className="w-4 h-4 rounded-full border border-black/5 shadow-sm"
+                          style={{ backgroundColor: color as string }}
+                        ></span>
+                      ))}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="border-b border-slate-100 pb-6">
           <button
             onClick={() => setProfessionalOpen(!professionalOpen)}
@@ -1577,27 +1674,18 @@ export default function BirthdayTemplateCustomizePage() {
                     : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-slate-700 block">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-12 w-16 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
+                    <div className="absolute inset-0 flex items-center justify-center text-[11px] text-slate-500 font-semibold">
                       {theme.themeName}
-                    </span>
-                    <span className="text-[11px] text-slate-500 leading-tight block">
-                      {theme.description}
-                    </span>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      <span className="font-semibold text-slate-700">Header:</span> {theme.headerIllustrationPrompt}
-                    </p>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      <span className="font-semibold text-slate-700">Corners:</span> {theme.cornerAccentPrompt}
-                    </p>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      <span className="font-semibold text-slate-700">Background:</span> {theme.backgroundPrompt}
-                    </p>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex gap-1">
-                      {theme.recommendedColorPalette.slice(0, 4).map((color) => (
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {theme.themeName}
+                    </p>
+                    <div className="flex gap-1 mt-1">
+                      {theme.recommendedColorPalette.slice(0, 5).map((color) => (
                         <span
                           key={color}
                           className="w-4 h-4 rounded-full border border-black/5 shadow-sm"
@@ -1605,9 +1693,6 @@ export default function BirthdayTemplateCustomizePage() {
                         ></span>
                       ))}
                     </div>
-                    <p className="text-[10px] text-slate-500 text-right leading-tight">
-                      Fonts: {theme.typography.headingFont} / {theme.typography.bodyFont} / {theme.typography.accentFont}
-                    </p>
                   </div>
                 </div>
               </button>
