@@ -18,7 +18,6 @@ import {
   Gift,
   Upload,
   Trash2,
-  Menu,
   Cake,
   Calendar as CalendarIcon,
 } from "lucide-react";
@@ -26,6 +25,7 @@ import {
   type BirthdayTemplateDefinition,
   birthdayTemplateCatalog,
 } from "@/components/event-create/BirthdayTemplateGallery";
+import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 
 function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
   if (!id) return birthdayTemplateCatalog[0];
@@ -297,7 +297,8 @@ const THEME_DESCRIPTIONS = [
     id: "mystic_unicorn",
     title: "Mystic Unicorn",
     aesthetic: "Magical, iridescent, and soft.",
-    colors: "Pastel lavender, mint, baby pink, and white with an iridescent sheen.",
+    colors:
+      "Pastel lavender, mint, baby pink, and white with an iridescent sheen.",
     graphics: "Graceful unicorn silhouette, rainbows, sparkles.",
     font: "Whimsical, flowing script.",
     primaryObjects:
@@ -348,7 +349,8 @@ const THEME_DESCRIPTIONS = [
     title: "Pirate Treasure",
     aesthetic: "Aged parchment and swashbuckling adventure.",
     colors: "Dark browns, deep reds, sandy beige, gold.",
-    graphics: "Treasure map texture, skull and crossbones, compass rose, treasure chest.",
+    graphics:
+      "Treasure map texture, skull and crossbones, compass rose, treasure chest.",
     font: "Old-style script.",
     primaryObjects:
       "A rolled treasure map background holds the text with a skull and crossbones near the RSVP details.",
@@ -458,7 +460,8 @@ const THEME_DESCRIPTIONS = [
     title: "Mad Scientist Lab",
     aesthetic: "Energetic, chaotic, and experimental.",
     colors: "Neon green, bright yellow, black, beaker blue.",
-    graphics: "Bubbling test tubes, atomic symbols, lightning bolts, safety signs.",
+    graphics:
+      "Bubbling test tubes, atomic symbols, lightning bolts, safety signs.",
     font: "Bold, industrial, slightly distressed.",
     primaryObjects:
       "Beakers and test tubes sit near the event details with lightning or radiation icons as dividers.",
@@ -467,7 +470,8 @@ const THEME_DESCRIPTIONS = [
     id: "llama_fiesta",
     title: "Llama Fiesta",
     aesthetic: "Vibrant, celebratory, and charming.",
-    colors: "Fuchsia, turquoise, orange, lime green inspired by Peruvian textiles.",
+    colors:
+      "Fuchsia, turquoise, orange, lime green inspired by Peruvian textiles.",
     graphics: "Festive llama, confetti, geometric patterns.",
     font: "Playful, bold, rounded.",
     primaryObjects:
@@ -557,7 +561,8 @@ const THEME_DESCRIPTIONS = [
     id: "superhero_city",
     title: "Superhero City",
     aesthetic: "Comic book style and iconic energy.",
-    colors: "Primary red, blue, yellow with black outlines and white highlights.",
+    colors:
+      "Primary red, blue, yellow with black outlines and white highlights.",
     graphics: "Comic speech bubbles, city skyline silhouette, shield icon.",
     font: "Bold, impactful, slightly skewed comic lettering.",
     primaryObjects:
@@ -731,7 +736,13 @@ export default function BirthdayTemplateCustomizePage() {
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const {
+    mobileMenuOpen,
+    openMobileMenu,
+    closeMobileMenu,
+    previewTouchHandlers,
+    drawerTouchHandlers,
+  } = useMobileDrawer();
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -1255,16 +1266,26 @@ export default function BirthdayTemplateCustomizePage() {
                 </div>
                 <div className="text-xs text-slate-600 space-y-1">
                   <p>
-                    <span className="font-semibold text-slate-700">Colors:</span> {theme.colors}
+                    <span className="font-semibold text-slate-700">
+                      Colors:
+                    </span>{" "}
+                    {theme.colors}
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-700">Graphics:</span> {theme.graphics}
+                    <span className="font-semibold text-slate-700">
+                      Graphics:
+                    </span>{" "}
+                    {theme.graphics}
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-700">Font:</span> {theme.font}
+                    <span className="font-semibold text-slate-700">Font:</span>{" "}
+                    {theme.font}
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-700">Primary objects:</span> {theme.primaryObjects}
+                    <span className="font-semibold text-slate-700">
+                      Primary objects:
+                    </span>{" "}
+                    {theme.primaryObjects}
                   </p>
                 </div>
               </div>
@@ -1539,10 +1560,15 @@ export default function BirthdayTemplateCustomizePage() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+    <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         ref={previewRef}
+        {...previewTouchHandlers}
         className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+        }}
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
@@ -1841,12 +1867,40 @@ export default function BirthdayTemplateCustomizePage() {
         </div>
       </div>
 
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
+          onClick={closeMobileMenu}
+          role="presentation"
+        ></div>
+      )}
+
       <div
-        className="w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative h-full transition-transform duration-300 transform md:translate-x-0"
-        style={{ transform: `translateX(${mobileMenuOpen ? "0" : ""})` }}
+        className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        {...drawerTouchHandlers}
       >
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
+        >
+          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+            <button
+              onClick={closeMobileMenu}
+              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+            >
+              <ChevronLeft size={14} />
+              Back to preview
+            </button>
+            <span className="text-sm font-semibold text-slate-700">
+              Customize
+            </span>
+          </div>
+          <div className="p-6 pt-4 md:pt-6">
             {activeView === "main" && <MainMenu />}
             {activeView === "headline" && <HeadlineEditor />}
             {activeView === "images" && <ImagesEditor />}
@@ -1869,6 +1923,19 @@ export default function BirthdayTemplateCustomizePage() {
           </button>
         </div>
       </div>
+
+      {!mobileMenuOpen && (
+        <div className="md:hidden fixed bottom-4 right-4 z-30">
+          <button
+            type="button"
+            onClick={openMobileMenu}
+            className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-3 text-sm font-semibold shadow-lg"
+          >
+            <Menu size={18} />
+            Edit
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -985,7 +985,7 @@ export default function Dashboard() {
       {/* Welcome message */}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-8 flex flex-col items-start gap-4 md:mb-10 mt-0">
-          <div className="flex flex-col items-start text-left">
+          <div className="flex flex-col items-start text-left pt-10">
             <div
               className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
               style={{

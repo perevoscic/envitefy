@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,8 +27,44 @@ import {
   Calendar as CalendarIcon,
   Clock,
   Bus,
-  Menu,
 } from "lucide-react";
+import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+
+const NAV_ITEMS = [
+  "Home",
+  "Schedule",
+  "Our Story",
+  "Wedding Party",
+  "Photos",
+  "Things To Do",
+  "Travel",
+  "RSVP",
+  "Registry",
+] as const;
+
+const NAV_SCROLL_TARGETS: Record<(typeof NAV_ITEMS)[number], string> = {
+  Home: "wedding-home",
+  Schedule: "wedding-schedule",
+  "Our Story": "wedding-story",
+  "Wedding Party": "wedding-party",
+  Photos: "wedding-photos",
+  "Things To Do": "wedding-things",
+  Travel: "wedding-travel",
+  RSVP: "wedding-rsvp",
+  Registry: "wedding-registry",
+};
+
+const NAV_EDIT_TARGETS: Record<(typeof NAV_ITEMS)[number], string> = {
+  Home: "headline",
+  Schedule: "schedule",
+  "Our Story": "story",
+  "Wedding Party": "party",
+  Photos: "photos",
+  "Things To Do": "thingsToDo",
+  Travel: "travel",
+  RSVP: "rsvp",
+  Registry: "registry",
+};
 
 // --- Constants & Data ---
 
@@ -1315,10 +1351,38 @@ const App = () => {
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const {
+    mobileMenuOpen,
+    openMobileMenu,
+    closeMobileMenu,
+    previewTouchHandlers,
+    drawerTouchHandlers,
+  } = useMobileDrawer();
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
+
+  const parseTimeValue = (value?: string | null) => {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const match = value
+      .trim()
+      .toLowerCase()
+      .match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if (!match) return Number.MAX_SAFE_INTEGER;
+    let hours = parseInt(match[1] || "0", 10);
+    const minutes = parseInt(match[2] || "0", 10);
+    const meridiem = match[3];
+    if (meridiem === "pm" && hours < 12) hours += 12;
+    if (meridiem === "am" && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  };
+
+  const sortedSchedule = useMemo(() => {
+    const items = Array.isArray(data.schedule) ? [...data.schedule] : [];
+    return items.sort(
+      (a, b) => parseTimeValue(a?.time) - parseTimeValue(b?.time)
+    );
+  }, [data.schedule]);
 
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -2366,10 +2430,15 @@ const App = () => {
   // --- Main App Structure ---
 
   return (
-    <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+    <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         ref={previewRef}
+        {...previewTouchHandlers}
         className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+        }}
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
@@ -2426,31 +2495,22 @@ const App = () => {
               <nav
                 className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent} ${currentFont.title}`}
               >
-                {[
-                  "Home",
-                  "Schedule",
-                  "Our Story",
-                  "Wedding Party",
-                  "Photos",
-                  "Things To Do",
-                  "Travel",
-                  "RSVP",
-                  "Registry",
-                ].map((item) => (
+                {NAV_ITEMS.map((item) => (
                   <span
                     key={item}
                     className="cursor-pointer hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
                     onClick={() => {
-                      const idMap = {
-                        "Things To Do": "thingsToDo",
-                        RSVP: "rsvp",
-                        Registry: "registry",
-                        Schedule: "schedule",
-                      };
-                      if (idMap[item])
-                        setActiveView(
-                          idMap[item].replace(/^[A-Z]/, (c) => c.toLowerCase())
-                        );
+                      const editTarget = NAV_EDIT_TARGETS[item];
+                      if (editTarget) setActiveView(editTarget);
+                      const anchor = NAV_SCROLL_TARGETS[item];
+                      if (anchor && typeof document !== "undefined") {
+                        document
+                          .getElementById(anchor)
+                          ?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                          });
+                      }
                     }}
                   >
                     {item}
@@ -2458,7 +2518,10 @@ const App = () => {
                 ))}
               </nav>
 
-              <div className="relative h-[400px] md:h-[500px] w-full group cursor-default">
+              <div
+                id="wedding-home"
+                className="relative h-[400px] md:h-[500px] w-full group cursor-default"
+              >
                 <img
                   src={
                     data.images.hero ||
@@ -2481,6 +2544,7 @@ const App = () => {
 
               <div className={`p-8 md:p-16 space-y-24 ${currentTheme.text}`}>
                 <section
+                  id="wedding-schedule"
                   className="max-w-4xl mx-auto"
                   onClick={() => setActiveView("schedule")}
                 >
@@ -2489,41 +2553,60 @@ const App = () => {
                   >
                     Schedule of Events
                   </h2>
-                  <div className="space-y-8 relative">
-                    <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-current opacity-20"></div>
-                    {(data.schedule || []).map((event, i) => (
-                      <div
-                        key={event.id}
-                        className={`relative flex flex-col md:flex-row gap-8 ${
-                          i % 2 === 0
-                            ? "md:text-right"
-                            : "md:flex-row-reverse md:text-left"
-                        }`}
-                      >
-                        <div className="flex-1 pt-2">
-                          <h3 className="text-xl font-bold">{event.title}</h3>
-                          <p className="opacity-70 text-sm mb-2">
-                            {event.location}
-                          </p>
-                          <p className="opacity-80 leading-relaxed text-sm">
-                            {event.description}
-                          </p>
-                        </div>
-                        <div className="absolute left-4 md:left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full bg-current ring-4 ring-white/20 mt-3"></div>
+                  <div className="relative space-y-6 md:space-y-8 max-w-4xl mx-auto">
+                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/20 pointer-events-none"></div>
+                    {sortedSchedule.map((event, index) => {
+                      const isLeft = index % 2 === 0;
+                      return (
                         <div
-                          className={`flex-1 pt-2 pl-10 md:pl-0 ${
-                            i % 2 === 0 ? "md:text-left" : "md:text-right"
-                          }`}
+                          key={event.id ?? index}
+                          className="relative grid grid-cols-1 md:grid-cols-[minmax(0,1fr),40px,minmax(0,1fr)] items-center gap-4 md:gap-6"
                         >
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-current opacity-70`}
+                          <div
+                            className={`order-1 flex flex-col gap-2 text-center ${
+                              isLeft
+                                ? "md:order-1 md:text-right md:items-end md:pr-4 md:justify-self-end"
+                                : "md:order-3 md:text-left md:items-start md:pl-4 md:justify-self-start"
+                            }`}
                           >
-                            {event.time}
-                          </span>
+                            <div className="w-full md:max-w-[420px]">
+                              <h3 className="text-2xl font-bold">
+                                {event.title}
+                              </h3>
+                              {event.location && (
+                                <p className="opacity-70 text-base mb-2">
+                                  {event.location}
+                                </p>
+                              )}
+                              {event.description && (
+                                <p className="opacity-80 leading-relaxed text-base">
+                                  {event.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="order-2 flex flex-col items-center gap-4">
+                            <div className="w-3 h-3 rounded-full bg-current shadow-[0_0_0_6px_rgba(255,255,255,0.4)]"></div>
+                          </div>
+
+                          <div
+                            className={`order-3 flex justify-center ${
+                              isLeft
+                                ? "md:order-3 md:justify-start md:pl-4"
+                                : "md:order-1 md:justify-end md:pr-4"
+                            }`}
+                          >
+                            {event.time && (
+                              <span className="relative inline-flex items-center px-4 py-2 rounded-full text-xs font-bold uppercase tracking-[0.2em] border border-current/40 bg-white/80 backdrop-blur-sm">
+                                {event.time}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {(!data.schedule || data.schedule.length === 0) && (
+                      );
+                    })}
+                    {sortedSchedule.length === 0 && (
                       <div className="text-center opacity-50 italic">
                         Click to add events...
                       </div>
@@ -2532,6 +2615,7 @@ const App = () => {
                 </section>
 
                 <section
+                  id="wedding-story"
                   className="max-w-2xl mx-auto text-center cursor-pointer hover:bg-white/5 p-4 rounded-lg transition-colors -mx-4"
                   onClick={() => setActiveView("story")}
                 >
@@ -2548,6 +2632,7 @@ const App = () => {
                 </section>
 
                 <section
+                  id="wedding-party"
                   className="max-w-4xl mx-auto"
                   onClick={() => setActiveView("party")}
                 >
@@ -2616,6 +2701,39 @@ const App = () => {
                 </section>
 
                 <section
+                  id="wedding-photos"
+                  className="max-w-4xl mx-auto"
+                  onClick={() => setActiveView("photos")}
+                >
+                  <h2
+                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                  >
+                    Photos
+                  </h2>
+                  {data.gallery.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {data.gallery.map((img) => (
+                        <div
+                          key={img.id}
+                          className="relative aspect-square rounded-lg overflow-hidden border border-white/10"
+                        >
+                          <img
+                            src={img.url}
+                            alt="Wedding gallery"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center italic opacity-40">
+                      Tap to add your favorite engagement or wedding photos.
+                    </div>
+                  )}
+                </section>
+
+                <section
+                  id="wedding-things"
                   className="max-w-4xl mx-auto"
                   onClick={() => setActiveView("thingsToDo")}
                 >
@@ -2653,6 +2771,7 @@ const App = () => {
                 </section>
 
                 <section
+                  id="wedding-travel"
                   className="max-w-3xl mx-auto cursor-pointer hover:bg-white/5 p-6 rounded-lg transition-colors -mx-6"
                   onClick={() => setActiveView("travel")}
                 >
@@ -2768,6 +2887,7 @@ const App = () => {
                 </section>
 
                 <section
+                  id="wedding-rsvp"
                   className="max-w-xl mx-auto text-center"
                   onClick={() => setActiveView("rsvp")}
                 >
@@ -2902,6 +3022,7 @@ const App = () => {
                 </section>
 
                 <section
+                  id="wedding-registry"
                   className="text-center py-5 border-t border-white/10 mb-5"
                   onClick={() => setActiveView("registry")}
                 >
@@ -2935,12 +3056,40 @@ const App = () => {
         </div>
       </div>
 
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
+          onClick={closeMobileMenu}
+          role="presentation"
+        ></div>
+      )}
+
       <div
-        className="w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative h-full transition-transform duration-300 transform md:translate-x-0 translate-x-full"
-        style={{ transform: `translateX(${mobileMenuOpen ? "0" : ""})` }}
+        className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        {...drawerTouchHandlers}
       >
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
+        >
+          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+            <button
+              onClick={closeMobileMenu}
+              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+            >
+              <ChevronLeft size={14} />
+              Back to preview
+            </button>
+            <span className="text-sm font-semibold text-slate-700">
+              Customize
+            </span>
+          </div>
+          <div className="p-6 pt-4 md:pt-6">
             {activeView === "main" && <MainMenu />}
             {activeView === "headline" && <HeadlineEditor />}
             {activeView === "images" && <ImagesEditor />}
@@ -2963,7 +3112,18 @@ const App = () => {
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-4 right-4 z-50"></div>
+      {!mobileMenuOpen && (
+        <div className="md:hidden fixed bottom-4 right-4 z-30">
+          <button
+            type="button"
+            onClick={openMobileMenu}
+            className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-3 text-sm font-semibold shadow-lg"
+          >
+            <Edit2 size={18} />
+            Edit
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -18,7 +18,6 @@ import {
   Gift,
   Upload,
   Trash2,
-  Menu,
   Baby,
   Calendar as CalendarIcon,
   Check,
@@ -28,6 +27,7 @@ import {
   type BabyShowerTemplateDefinition,
   babyShowerTemplateCatalog,
 } from "@/components/event-create/BabyShowersTemplateGallery";
+import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 
 // Import constants from wedding page (we'll reuse FONTS, FONT_SIZES, DESIGN_THEMES)
 // For now, let's create a simplified version with essential features
@@ -270,7 +270,13 @@ export default function BabyShowerTemplateCustomizePage() {
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const {
+    mobileMenuOpen,
+    openMobileMenu,
+    closeMobileMenu,
+    previewTouchHandlers,
+    drawerTouchHandlers,
+  } = useMobileDrawer();
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -1049,10 +1055,12 @@ export default function BabyShowerTemplateCustomizePage() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+    <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         ref={previewRef}
+        {...previewTouchHandlers}
         className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
@@ -1366,12 +1374,37 @@ export default function BabyShowerTemplateCustomizePage() {
         </div>
       </div>
 
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
+          onClick={closeMobileMenu}
+          role="presentation"
+        ></div>
+      )}
+
       <div
-        className="w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative h-full transition-transform duration-300 transform md:translate-x-0"
-        style={{ transform: `translateX(${mobileMenuOpen ? "0" : ""})` }}
+        className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        {...drawerTouchHandlers}
       >
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
+        >
+          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+            <button
+              onClick={closeMobileMenu}
+              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+            >
+              <ChevronLeft size={14} />
+              Back to preview
+            </button>
+            <span className="text-sm font-semibold text-slate-700">
+              Customize
+            </span>
+          </div>
+          <div className="p-6 pt-4 md:pt-6">
             {activeView === "main" && <MainMenu />}
             {activeView === "headline" && <HeadlineEditor />}
             {activeView === "images" && <ImagesEditor />}
@@ -1395,6 +1428,19 @@ export default function BabyShowerTemplateCustomizePage() {
           </button>
         </div>
       </div>
+
+      {!mobileMenuOpen && (
+        <div className="md:hidden fixed bottom-4 right-4 z-30">
+          <button
+            type="button"
+            onClick={openMobileMenu}
+            className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-3 text-sm font-semibold shadow-lg"
+          >
+            <Edit2 size={18} />
+            Edit Details
+          </button>
+        </div>
+      )}
     </div>
   );
 }
