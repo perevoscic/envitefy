@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -1120,11 +1120,7 @@ export default function BirthdayTemplateCustomizePage() {
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState(
-    templateId || birthdayTemplateCatalog[0]?.id
-  );
-
-  const template = getTemplateById(selectedTemplateId);
+  const template = getTemplateById(templateId);
 
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
@@ -1140,32 +1136,6 @@ export default function BirthdayTemplateCustomizePage() {
   const [professionalOpen, setProfessionalOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (templateId && templateId !== selectedTemplateId) {
-      setSelectedTemplateId(templateId);
-    }
-    if (!templateId && birthdayTemplateCatalog[0]?.id) {
-      setSelectedTemplateId(birthdayTemplateCatalog[0].id);
-    }
-  }, [templateId, selectedTemplateId]);
-
-  const handleTemplateChange = useCallback(
-    (newTemplateId: string) => {
-      setSelectedTemplateId(newTemplateId);
-      const params = new URLSearchParams(search?.toString());
-      params.set("templateId", newTemplateId);
-      if (!params.get("variationId")) {
-        const matchingTemplate = birthdayTemplateCatalog.find(
-          (item) => item.id === newTemplateId
-        );
-        const fallbackVariation = matchingTemplate?.variations?.[0]?.id;
-        if (fallbackVariation) params.set("variationId", fallbackVariation);
-      }
-      router.replace(`/event/birthdays/customize?${params.toString()}`);
-    },
-    [router, search]
-  );
 
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -1225,6 +1195,24 @@ export default function BirthdayTemplateCustomizePage() {
   const currentProfessionalTheme =
     PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
     PROFESSIONAL_THEMES[0];
+  const professionalPalette =
+    currentProfessionalTheme.recommendedColorPalette || [];
+  const professionalAccentColor =
+    professionalPalette[3] ??
+    professionalPalette[2] ??
+    professionalPalette[0] ??
+    undefined;
+  const professionalBackgroundStyle =
+    professionalPalette.length >= 2
+      ? {
+          backgroundImage: `linear-gradient(135deg, ${professionalPalette[0]} 0%, ${professionalPalette[1]} 100%)`,
+        }
+      : professionalPalette[0]
+        ? { backgroundColor: professionalPalette[0] }
+        : {};
+  const professionalAccentStyle = professionalAccentColor
+    ? { color: professionalAccentColor }
+    : undefined;
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
@@ -1552,75 +1540,8 @@ export default function BirthdayTemplateCustomizePage() {
   );
 
   const DesignEditor = () => (
-    <EditorLayout title="Design" onBack={() => setActiveView("main")}> 
+    <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">
-            Birthday Templates
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {birthdayTemplateCatalog.map((birthdayTemplate) => (
-              <button
-                key={birthdayTemplate.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleTemplateChange(birthdayTemplate.id);
-                }}
-                className={`group border rounded-lg overflow-hidden text-left transition-all ${
-                  selectedTemplateId === birthdayTemplate.id
-                    ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-                    : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
-                }`}
-              >
-                <div className="relative h-24 w-full bg-slate-100">
-                  <Image
-                    src={`/templates/birthdays/${
-                      birthdayTemplate.heroImageName || `${birthdayTemplate.id}.webp`
-                    }`}
-                    alt={birthdayTemplate.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 400px"
-                  />
-                </div>
-                <div className="p-3 flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {birthdayTemplate.name}
-                    </p>
-                    {birthdayTemplate.preview?.location && (
-                      <p className="text-[11px] text-slate-500">
-                        {birthdayTemplate.preview.location}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    {(
-                      birthdayTemplate.templateConfig?.palette?.sprinkleColors ||
-                      birthdayTemplate.variations?.[0]?.sprinkleColors ||
-                      [
-                        birthdayTemplate.templateConfig?.palette?.bgGradientFrom,
-                        birthdayTemplate.templateConfig?.palette?.bgGradientTo,
-                        birthdayTemplate.templateConfig?.palette?.primary,
-                        birthdayTemplate.templateConfig?.palette?.accent,
-                      ].filter(Boolean)
-                    )
-                      .slice(0, 4)
-                      .map((color) => (
-                        <span
-                          key={color as string}
-                          className="w-4 h-4 rounded-full border border-black/5 shadow-sm"
-                          style={{ backgroundColor: color as string }}
-                        ></span>
-                      ))}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="border-b border-slate-100 pb-6">
           <button
             onClick={() => setProfessionalOpen(!professionalOpen)}
@@ -2194,8 +2115,9 @@ export default function BirthdayTemplateCustomizePage() {
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
             key={`preview-${data.theme.themeId}`}
-            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-all duration-500 relative z-0`}
-          >
+          className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-all duration-500 relative z-0`}
+          style={professionalBackgroundStyle}
+        >
             <div className="relative z-10">
               <div
                 className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
@@ -2260,7 +2182,10 @@ export default function BirthdayTemplateCustomizePage() {
 
               {data.hosts.length > 0 && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                  <h2
+                    className={`text-2xl mb-6 ${currentTheme.accent}`}
+                    style={professionalAccentStyle}
+                  >
                     Hosted By
                   </h2>
                   <div className="flex flex-wrap justify-center gap-6">
@@ -2280,7 +2205,10 @@ export default function BirthdayTemplateCustomizePage() {
 
               {(data.address || data.venue) && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-4 ${currentTheme.accent}`}>
+                  <h2
+                    className={`text-2xl mb-4 ${currentTheme.accent}`}
+                    style={professionalAccentStyle}
+                  >
                     Location
                   </h2>
                   {data.venue && (
@@ -2302,6 +2230,7 @@ export default function BirthdayTemplateCustomizePage() {
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
+                    style={professionalAccentStyle}
                   >
                     Party Details
                   </h2>
@@ -2314,6 +2243,7 @@ export default function BirthdayTemplateCustomizePage() {
                     <div className="mt-4">
                       <span
                         className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${currentTheme.accent} bg-white/10`}
+                        style={professionalAccentStyle}
                       >
                         Theme: {data.partyDetails.theme}
                       </span>
@@ -2334,6 +2264,7 @@ export default function BirthdayTemplateCustomizePage() {
                 <section className="py-12 border-t border-white/10">
                   <h2
                     className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
+                    style={professionalAccentStyle}
                   >
                     Photo Gallery
                   </h2>
@@ -2358,7 +2289,10 @@ export default function BirthdayTemplateCustomizePage() {
 
               {data.registries.length > 0 && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                  <h2
+                    className={`text-2xl mb-6 ${currentTheme.accent}`}
+                    style={professionalAccentStyle}
+                  >
                     Wishlist
                   </h2>
                   <div className="flex flex-wrap justify-center gap-4">
@@ -2383,6 +2317,7 @@ export default function BirthdayTemplateCustomizePage() {
                 <section className="max-w-xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
+                    style={professionalAccentStyle}
                   >
                     RSVP
                   </h2>
