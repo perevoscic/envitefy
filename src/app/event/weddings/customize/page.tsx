@@ -2430,11 +2430,11 @@ const App = () => {
   // --- Main App Structure ---
 
   return (
-    <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+    <div className="relative flex min-h-screen w-full bg-[#F8F5FF] overflow-hidden font-sans text-slate-900">
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#F8F5FF] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
@@ -2504,12 +2504,10 @@ const App = () => {
                       if (editTarget) setActiveView(editTarget);
                       const anchor = NAV_SCROLL_TARGETS[item];
                       if (anchor && typeof document !== "undefined") {
-                        document
-                          .getElementById(anchor)
-                          ?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start",
-                          });
+                        document.getElementById(anchor)?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
                       }
                     }}
                   >

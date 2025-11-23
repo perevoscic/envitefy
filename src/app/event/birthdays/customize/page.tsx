@@ -16,6 +16,7 @@ import {
   Palette,
   CheckSquare,
   Gift,
+  Menu,
   Upload,
   Trash2,
   Cake,
@@ -65,530 +66,487 @@ const FONT_SIZES = {
 
 const DESIGN_THEMES = [
   {
-    id: "party_pop",
-    name: "Party Pop",
-    category: "Bold & Playful",
-    bg: "bg-[#fff1f2]",
-    text: "text-[#881337]",
-    accent: "text-[#e11d48]",
-    previewColor: "bg-[#ffe4e6]",
+    id: "super_star_gala",
+    name: "Super Star Gala",
+    category: "High glamour",
+    bg: "bg-gradient-to-br from-black via-slate-900 to-red-900",
+    text: "text-white",
+    accent: "text-amber-300",
+    previewColor: "bg-gradient-to-br from-black via-slate-900 to-red-900",
+    previewDot: "bg-amber-400",
+    aesthetic: "High glamour, red carpet event.",
+    colors: "Deep black, shimmering gold, and vivid ruby red.",
+    graphics: "Glittering stars, spotlights, and a subtle velvet texture background.",
+    font: "A dramatic, elegant serif for the title.",
+    primaryObjects:
+      "Gold Statuettes (trophies) framing the text block. A velvet curtain backdrop with spotlights shining from the top corners.",
+  },
+  {
+    id: "mystic_unicorn",
+    name: "Mystic Unicorn",
+    category: "Magical & soft",
+    bg: "bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100",
+    text: "text-slate-800",
+    accent: "text-purple-600",
+    previewColor: "bg-gradient-to-br from-purple-200 via-pink-200 to-blue-200",
+    previewDot: "bg-purple-300",
+    aesthetic: "Magical, iridescent, and soft.",
+    colors: "Pastel lavender, mint green, baby pink, and white, with an iridescent sheen.",
+    graphics: "A graceful unicorn silhouette, rainbows, and sparkles.",
+    font: "A whimsical, flowing script.",
+    primaryObjects:
+      "A shimmering Unicorn centered at the top of the invite title. Rainbow and star dust trails sweeping across the background.",
+  },
+  {
+    id: "dinosaur_adventure",
+    name: "Dinosaur Adventure",
+    category: "Prehistoric jungle",
+    bg: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
+    text: "text-white",
+    accent: "text-amber-200",
+    previewColor: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
+    previewDot: "bg-emerald-700",
+    aesthetic: "Prehistoric jungle exploration.",
+    colors: "Earthy greens, moss, burnt orange, and brown.",
+    graphics: "Friendly T-Rex or Triceratops illustration, palm leaves, and fossil patterns.",
+    font: "A bold, slightly rugged, stencil-like font.",
+    primaryObjects:
+      "A friendly T-Rex illustration peering in from the bottom left corner. Tropical foliage borders along the top and sides.",
   },
   {
     id: "candy_dreams",
     name: "Candy Dreams",
-    category: "Sweet & Whimsical",
-    bg: "bg-[#fdf2f8]",
-    text: "text-[#831843]",
-    accent: "text-[#ec4899]",
-    previewColor: "bg-[#fce7f3]",
-  },
-  {
-    id: "rainbow_bash",
-    name: "Rainbow Bash",
-    category: "Vibrant & Energetic",
-    bg: "bg-gradient-to-br from-pink-100 via-yellow-100 to-blue-100",
-    text: "text-slate-900",
-    accent: "text-purple-600",
-    previewColor: "bg-gradient-to-br from-pink-200 via-yellow-200 to-blue-200",
-  },
-  {
-    id: "playful_pals",
-    name: "Playful Pals",
-    category: "Casual & Friendly",
-    bg: "bg-[#f0fdf4]",
-    text: "text-[#1e293b]",
-    accent: "text-[#10b981]",
-    previewColor: "bg-[#d1fae5]",
-  },
-  {
-    id: "birthday_burst",
-    name: "Birthday Burst",
-    category: "Relaxed & Cheerful",
-    bg: "bg-[#fef3c7]",
-    text: "text-[#78350f]",
-    accent: "text-[#f59e0b]",
-    previewColor: "bg-[#fde68a]",
-  },
-  {
-    id: "sweet_celebration",
-    name: "Sweet Celebration",
-    category: "Flowing Handwriting",
-    bg: "bg-[#fdf4ff]",
-    text: "text-[#581c87]",
-    accent: "text-[#a855f7]",
-    previewColor: "bg-[#f3e8ff]",
-  },
-  {
-    id: "super_star",
-    name: "Super Star",
-    category: "Elegant Flowing",
-    bg: "bg-[#1e1b4b]",
-    text: "text-white",
-    accent: "text-[#fbbf24]",
-    previewColor: "bg-[#312e81]",
-  },
-  {
-    id: "happy_dance",
-    name: "Happy Dance",
-    category: "Lively Bouncing",
-    bg: "bg-[#fef2f2]",
-    text: "text-[#991b1b]",
-    accent: "text-[#ef4444]",
-    previewColor: "bg-[#fee2e2]",
-  },
-  {
-    id: "magic_sparkle",
-    name: "Magic Sparkle",
-    category: "Charming Handwriting",
-    bg: "bg-[#f0f9ff]",
-    text: "text-[#0c4a6e]",
-    accent: "text-[#0ea5e9]",
-    previewColor: "bg-[#bae6fd]",
-  },
-  {
-    id: "celebration_time",
-    name: "Celebration Time",
-    category: "Playful & Elegant",
-    bg: "bg-[#fff7ed]",
-    text: "text-[#9a3412]",
-    accent: "text-[#f97316]",
-    previewColor: "bg-[#ffedd5]",
-  },
-  {
-    id: "fun_fiesta",
-    name: "Fun Fiesta",
-    category: "Bold & Dynamic",
-    bg: "bg-[#ecfdf5]",
-    text: "text-[#064e3b]",
-    accent: "text-[#10b981]",
-    previewColor: "bg-[#a7f3d0]",
-  },
-  {
-    id: "joyful_jamboree",
-    name: "Joyful Jamboree",
-    category: "Clean & Elegant",
-    bg: "bg-white",
-    text: "text-slate-900",
-    accent: "text-indigo-600",
-    previewColor: "bg-indigo-50",
-  },
-  {
-    id: "whimsical_wonder",
-    name: "Whimsical Wonder",
-    category: "Flowing Decorative",
-    bg: "bg-[#fdf2f8]",
-    text: "text-[#831843]",
-    accent: "text-[#db2777]",
-    previewColor: "bg-[#fbcfe8]",
-  },
-  {
-    id: "cheerful_chaos",
-    name: "Cheerful Chaos",
-    category: "Loose & Stylish",
-    bg: "bg-[#fefce8]",
-    text: "text-[#713f12]",
-    accent: "text-[#eab308]",
-    previewColor: "bg-[#fef9c3]",
-  },
-  {
-    id: "party_parade",
-    name: "Party Parade",
-    category: "Flowing Brush",
-    bg: "bg-[#eff6ff]",
-    text: "text-[#1e3a8a]",
-    accent: "text-[#3b82f6]",
-    previewColor: "bg-[#dbeafe]",
-  },
-  {
-    id: "birthday_bliss",
-    name: "Birthday Bliss",
-    category: "Casual Vintage",
-    bg: "bg-[#fffbeb]",
-    text: "text-[#78350f]",
-    accent: "text-[#f59e0b]",
-    previewColor: "bg-[#fef3c7]",
-  },
-  {
-    id: "sparkle_splash",
-    name: "Sparkle Splash",
-    category: "Elegant Calligraphic",
-    bg: "bg-[#f8fafc]",
-    text: "text-[#0f172a]",
-    accent: "text-[#64748b]",
-    previewColor: "bg-slate-100",
-  },
-  {
-    id: "celebration_craze",
-    name: "Celebration Craze",
-    category: "Classic Cursive",
-    bg: "bg-[#fdfbf7]",
-    text: "text-[#451a03]",
-    accent: "text-[#92400e]",
-    previewColor: "bg-[#fef3c7]",
-  },
-  {
-    id: "happy_hooray",
-    name: "Happy Hooray",
-    category: "Refined Thin",
-    bg: "bg-white",
-    text: "text-slate-800",
-    accent: "text-slate-600",
-    previewColor: "bg-gray-50",
-  },
-  {
-    id: "party_palooza",
-    name: "Party Palooza",
-    category: "Vintage Flat Nib",
-    bg: "bg-[#fff7ed]",
-    text: "text-[#7c2d12]",
-    accent: "text-[#ea580c]",
-    previewColor: "bg-[#ffedd5]",
-  },
-  {
-    id: "birthday_bonanza",
-    name: "Birthday Bonanza",
-    category: "Decorative Bold",
-    bg: "bg-[#fef2f2]",
-    text: "text-[#991b1b]",
-    accent: "text-[#dc2626]",
-    previewColor: "bg-[#fee2e2]",
-  },
-  {
-    id: "sweet_surprise",
-    name: "Sweet Surprise",
-    category: "Delicate Cursive",
-    bg: "bg-[#fdf4ff]",
-    text: "text-[#6b21a8]",
-    accent: "text-[#9333ea]",
-    previewColor: "bg-[#e9d5ff]",
-  },
-  {
-    id: "party_perfect",
-    name: "Party Perfect",
-    category: "Relaxed Handwritten",
-    bg: "bg-[#f0fdf4]",
-    text: "text-[#14532d]",
-    accent: "text-[#22c55e]",
-    previewColor: "bg-[#bbf7d0]",
-  },
-  {
-    id: "birthday_bash",
-    name: "Birthday Bash",
-    category: "Ornate & Formal",
-    bg: "bg-[#1e293b]",
-    text: "text-white",
-    accent: "text-[#fbbf24]",
-    previewColor: "bg-[#334155]",
-  },
-];
-
-const THEME_DESCRIPTIONS = [
-  {
-    id: "super_star_gala",
-    title: "Super Star Gala",
-    aesthetic: "High glamour, red carpet event.",
-    colors: "Deep black, shimmering gold, vivid ruby red.",
-    graphics: "Glittering stars, spotlights, velvet texture backdrop.",
-    font: "Dramatic, elegant serif for the title.",
-    primaryObjects:
-      "Gold statuettes frame the text block with a velvet curtain and top-corner spotlights.",
-  },
-  {
-    id: "mystic_unicorn",
-    title: "Mystic Unicorn",
-    aesthetic: "Magical, iridescent, and soft.",
-    colors:
-      "Pastel lavender, mint, baby pink, and white with an iridescent sheen.",
-    graphics: "Graceful unicorn silhouette, rainbows, sparkles.",
-    font: "Whimsical, flowing script.",
-    primaryObjects:
-      "A shimmering unicorn sits above the title with rainbow and stardust trails across the background.",
-  },
-  {
-    id: "dinosaur_adventure",
-    title: "Dinosaur Adventure",
-    aesthetic: "Prehistoric jungle exploration.",
-    colors: "Earthy greens, moss, burnt orange, and brown.",
-    graphics: "Friendly dinosaurs, palm leaves, fossil patterns.",
-    font: "Bold, slightly rugged, stencil-like.",
-    primaryObjects:
-      "A friendly T-Rex peeks from the bottom left while tropical foliage borders the top and sides.",
-  },
-  {
-    id: "candy_dreams",
-    title: "Candy Dreams",
+    category: "Sweet & playful",
+    bg: "bg-gradient-to-br from-pink-100 via-yellow-100 to-purple-100",
+    text: "text-fuchsia-900",
+    accent: "text-pink-600",
+    previewColor: "bg-gradient-to-br from-pink-200 via-yellow-200 to-purple-200",
+    previewDot: "bg-pink-200",
     aesthetic: "Sweet, vibrant, and playful.",
-    colors: "Hot pink, turquoise, sunshine yellow, electric purple.",
-    graphics: "Giant lollipops, gummies, candy canes, frosting drips.",
-    font: "Bubbly, rounded, decorative.",
+    colors: "Hot pink, turquoise, sunshine yellow, and electric purple.",
+    graphics: "Giant lollipops, swirling gummies, candy canes, and drippy frosting borders.",
+    font: "A bubbly, rounded, and highly decorative font.",
     primaryObjects:
-      "Corner accents feature giant lollipops and ice cream cones with dripping frosting around the text.",
+      "Giant Lollipops and ice cream cones placed as corner accents. The text is often bordered by dripping chocolate or frosting effects.",
   },
   {
     id: "deep_space_hero",
-    title: "Deep Space Hero",
-    aesthetic: "Cosmic adventure and futuristic tech.",
-    colors: "Deep navy, black, electric blue, and silver.",
-    graphics: "Starfields, planets, spaceships, neon lines.",
-    font: "Clean, bold, futuristic sans-serif.",
+    name: "Deep Space Hero",
+    category: "Cosmic adventure",
+    bg: "bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-700",
+    text: "text-white",
+    accent: "text-sky-300",
+    previewColor: "bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-700",
+    previewDot: "bg-blue-500",
+    aesthetic: "Cosmic adventure and futuristic technology.",
+    colors: "Deep navy blue, black, electric blue, and silver.",
+    graphics: "Starfields, planets, spaceships, and geometric, neon lines.",
+    font: "A clean, bold, futuristic sans-serif.",
     primaryObjects:
-      "A stylized spaceship flies across the top banner while planets anchor the bottom corners.",
+      "A stylized Spaceship graphic flying across the top banner. Planets (e.g., Mars, Saturn) visible in the bottom corners of the starfield background.",
   },
   {
     id: "rainbow_sparkle",
-    title: "Rainbow Sparkle",
+    name: "Rainbow Sparkle",
+    category: "Joyful color",
+    bg: "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200",
+    text: "text-slate-800",
+    accent: "text-fuchsia-600",
+    previewColor: "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200",
+    previewDot: "bg-amber-300",
     aesthetic: "Joyful explosion of color.",
-    colors: "Full rainbow palette with white for readability.",
-    graphics: "Arcing rainbows, clouds, scattered glitter.",
-    font: "Fun, slightly chunky.",
+    colors: "Every color of the rainbow, with white to ensure readability.",
+    graphics: "Arcing rainbows, clouds, and scattered glitter effects.",
+    font: "A fun, slightly chunky font.",
     primaryObjects:
-      "A large rainbow stretches across the center with clouds and star accents around the text block.",
+      "A large, arcing Rainbow stretching across the center, with small Cloud and Star emojis/graphics scattered around the main text block.",
   },
   {
     id: "pirate_treasure",
-    title: "Pirate Treasure",
+    name: "Pirate Treasure",
+    category: "Swashbuckling",
+    bg: "bg-gradient-to-br from-amber-200 via-amber-100 to-stone-400",
+    text: "text-stone-800",
+    accent: "text-amber-700",
+    previewColor: "bg-gradient-to-br from-amber-200 via-amber-100 to-stone-400",
+    previewDot: "bg-amber-400",
     aesthetic: "Aged parchment and swashbuckling adventure.",
-    colors: "Dark browns, deep reds, sandy beige, gold.",
-    graphics:
-      "Treasure map texture, skull and crossbones, compass rose, treasure chest.",
-    font: "Old-style script.",
+    colors: "Dark browns, deep reds, sandy beige, and gold.",
+    graphics: "Treasure map texture background, skull and crossbones, compass rose, and chest of gold.",
+    font: "An old-style script font.",
     primaryObjects:
-      "A rolled treasure map background holds the text with a skull and crossbones near the RSVP details.",
+      "A rolled-up Scroll or Treasure Map texture serves as the background for the text. A small Skull and Crossbones icon is placed near the RSVP details.",
   },
   {
     id: "mermaid_lagoon",
-    title: "Mermaid Lagoon",
+    name: "Mermaid Lagoon",
+    category: "Undersea fantasy",
+    bg: "bg-gradient-to-br from-teal-200 via-cyan-100 to-purple-200",
+    text: "text-slate-900",
+    accent: "text-teal-700",
+    previewColor: "bg-gradient-to-br from-teal-200 via-cyan-100 to-purple-200",
+    previewDot: "bg-teal-300",
     aesthetic: "Undersea fantasy with shimmer.",
-    colors: "Teal, seafoam, deep purple, pearly white.",
-    graphics: "Fish scales, seashells, starfish, bubbles.",
-    font: "Elegant, slightly watery script.",
+    colors: "Teal, seafoam green, deep purple, and pearly white.",
+    graphics: "Detailed fish scales pattern, seashells, starfish, and shimmering bubbles.",
+    font: "An elegant, slightly watery script.",
     primaryObjects:
-      "A mermaid tail rises from the bottom center with seashells and bubbles framing a clam-shaped title.",
+      "A Mermaid tail emerging from the bottom center, surrounded by Seashells and bubbles. The event title is often framed by a clam shell shape.",
   },
   {
     id: "robot_invasion",
-    title: "Robot Invasion",
-    aesthetic: "Industrial and retro-futuristic.",
-    colors: "Metallic silver, vibrant orange, black, light gray.",
-    graphics: "Circuit boards, nuts-and-bolts borders, friendly robots.",
-    font: "Blocky, monospace.",
+    name: "Robot Invasion",
+    category: "Retro-futuristic",
+    bg: "bg-gradient-to-br from-gray-200 via-slate-100 to-orange-200",
+    text: "text-slate-900",
+    accent: "text-orange-600",
+    previewColor: "bg-gradient-to-br from-gray-200 via-slate-100 to-orange-200",
+    previewDot: "bg-slate-400",
+    aesthetic: "Industrial, mechanical, and retro-futuristic.",
+    colors: "Metallic silver, vibrant orange, black, and light gray.",
+    graphics: "Circuit board patterns, nuts and bolts borders, and a friendly-but-boxy robot illustration.",
+    font: "A blocky, monospace font.",
     primaryObjects:
-      "A friendly robot sits below the main title with gear and circuit textures as the border.",
+      "A friendly, angular Robot centered below the main title. Gear and circuit patterns form the background texture and border elements.",
   },
   {
     id: "fairy_garden",
-    title: "Fairy Garden",
-    aesthetic: "Enchanted forest and delicate nature.",
-    colors: "Soft forest green, pale yellow, moss, blush pink.",
-    graphics: "Intricate flowers, whimsical mushrooms, tiny fairies.",
-    font: "Delicate, looping calligraphy.",
+    name: "Fairy Garden",
+    category: "Enchanted forest",
+    bg: "bg-gradient-to-br from-green-100 via-lime-100 to-pink-100",
+    text: "text-emerald-900",
+    accent: "text-pink-700",
+    previewColor: "bg-gradient-to-br from-green-100 via-lime-100 to-pink-100",
+    previewDot: "bg-green-200",
+    aesthetic: "Enchanted forest, delicate and natural.",
+    colors: "Soft forest green, pale yellow, moss, and blush pink.",
+    graphics: "Intricate flower borders, whimsical mushroom caps, and tiny fairy silhouettes.",
+    font: "A delicate, looping calligraphy font.",
     primaryObjects:
-      "Tiny fairy silhouettes flutter near the title while flower vines and light orbs frame the edges.",
+      "Tiny Fairy silhouettes fluttering around the main title. Intricate Flower vines and soft light orbs frame the edges of the invite.",
   },
   {
     id: "dragons_fire",
-    title: "Dragon's Fire",
-    aesthetic: "Medieval fantasy with intensity.",
-    colors: "Deep crimson, charcoal gray, fiery orange, metallic bronze.",
-    graphics: "Dragon silhouette, castle turrets, rocky textures.",
-    font: "Dramatic, bold, slightly Gothic.",
+    name: "Dragon's Fire",
+    category: "Medieval fantasy",
+    bg: "bg-gradient-to-br from-red-900 via-amber-600 to-amber-800",
+    text: "text-white",
+    accent: "text-amber-300",
+    previewColor: "bg-gradient-to-br from-red-900 via-amber-600 to-amber-800",
+    previewDot: "bg-red-700",
+    aesthetic: "Medieval fantasy, epic scale, and intensity.",
+    colors: "Deep crimson, charcoal gray, fiery orange, and metallic bronze.",
+    graphics: "A majestic dragon silhouette breathing fire, castle turrets, and rocky textures.",
+    font: "A dramatic, bold, and slightly Gothic font.",
     primaryObjects:
-      "A dragon wraps around the top edge with subtle fire effects rising from the bottom corners.",
+      "A Dragon silhouette wrapping around the top edge of the invite. Fire effects emanate subtly from the bottom corners, framing the event details.",
   },
   {
     id: "jungle_safari",
-    title: "Jungle Safari",
+    name: "Jungle Safari",
+    category: "Tropical adventure",
+    bg: "bg-gradient-to-br from-amber-200 via-lime-200 to-green-300",
+    text: "text-emerald-900",
+    accent: "text-amber-700",
+    previewColor: "bg-gradient-to-br from-amber-200 via-lime-200 to-green-300",
+    previewDot: "bg-green-300",
     aesthetic: "Tropical, wild, and adventurous.",
-    colors: "Khaki, bright leaf green, tan, animal print accents.",
-    graphics: "Layered jungle leaves, friendly safari animals.",
-    font: "Playful, textured.",
+    colors: "Khaki, bright leaf green, tan, and splashes of animal print.",
+    graphics: "Layered jungle leaves, illustrations of friendly lions, elephants, or monkeys.",
+    font: "A playful, textured font.",
     primaryObjects:
-      "Dense palm leaves and vines border the invite with a friendly lion or monkey peeking from the side.",
+      "Layered Palm Leaves and jungle vines creating a dense border around the edges. A friendly Lion or Monkey illustration peeking from the side.",
   },
   {
     id: "princess_castle",
-    title: "Princess Castle",
+    name: "Princess Castle",
+    category: "Royal fairytale",
+    bg: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
+    text: "text-slate-800",
+    accent: "text-pink-600",
+    previewColor: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
+    previewDot: "bg-pink-300",
     aesthetic: "Royal, elegant, and fairytale-inspired.",
-    colors: "Light gold, soft pink, periwinkle blue, white.",
-    graphics: "Grand castle silhouette, ornate scrollwork, tiny crowns.",
-    font: "Formal, decorative script.",
+    colors: "Light gold, soft pink, periwinkle blue, and white.",
+    graphics: "A silhouette of a grand castle, ornate scrollwork borders, and tiny crowns.",
+    font: "A formal, decorative script font.",
     primaryObjects:
-      "A castle silhouette crowns the header with ornate scrollwork and crowns as dividers.",
+      "A grand Castle silhouette centered at the top, acting as the main header graphic. Ornate scrollwork and tiny Crowns are used as decorative dividers.",
   },
   {
     id: "knights_quest",
-    title: "Knight's Quest",
+    name: "Knight's Quest",
+    category: "Noble & brave",
+    bg: "bg-gradient-to-br from-slate-800 via-blue-800 to-red-700",
+    text: "text-white",
+    accent: "text-red-200",
+    previewColor: "bg-gradient-to-br from-slate-800 via-blue-800 to-red-700",
+    previewDot: "bg-slate-700",
     aesthetic: "Brave, noble, and historical.",
-    colors: "Silver, deep blue, deep red, slate gray.",
-    graphics: "Heraldic shields, crossed swords, chainmail textures.",
-    font: "Strong, imposing serif.",
+    colors: "Silver, deep blue, deep red, and slate gray.",
+    graphics: "A heraldic shield/crest, crossed swords, and chainmail texture background.",
+    font: "A strong, imposing serif font.",
     primaryObjects:
-      "A large heraldic shield sits behind the title with crossed swords near the date and time.",
+      "A large Heraldic Shield or Crest placed slightly behind the main title text (as a watermark). Crossed Swords used as a decorative element near the date/time.",
   },
   {
     id: "monster_mash",
-    title: "Monster Mash",
-    aesthetic: "Slightly spooky, silly, and friendly.",
-    colors: "Lime green, deep purple, black, glow-in-the-dark white.",
-    graphics: "Cute monsters, ooze and slime effects.",
-    font: "Slightly wobbly or handwritten horror style.",
+    name: "Monster Mash",
+    category: "Friendly spooky",
+    bg: "bg-gradient-to-br from-lime-200 via-purple-200 to-gray-800",
+    text: "text-white",
+    accent: "text-lime-200",
+    previewColor: "bg-gradient-to-br from-lime-200 via-purple-200 to-gray-800",
+    previewDot: "bg-lime-400",
+    aesthetic: "Slightly spooky, silly, and friendly frights.",
+    colors: "Lime green, deep purple, black, and glow-in-the-dark white.",
+    graphics: "Cute, fuzzy, multi-eyed monsters, and abstract ooze/slime effects.",
+    font: "A slightly wobbly or handwritten horror-style font.",
     primaryObjects:
-      "Fuzzy monsters peek from the borders with playful green slime dripping from the header.",
+      "Cute, fuzzy Monsters acting as border elements, peeking from the top and bottom. Silly green slime or abstract spots dripping from the header.",
   },
   {
     id: "sunny_beach_bash",
-    title: "Sunny Beach Bash",
+    name: "Sunny Beach Bash",
+    category: "Tropical chill",
+    bg: "bg-gradient-to-br from-yellow-200 via-orange-200 to-sky-200",
+    text: "text-orange-900",
+    accent: "text-sky-700",
+    previewColor: "bg-gradient-to-br from-yellow-200 via-orange-200 to-sky-200",
+    previewDot: "bg-amber-300",
     aesthetic: "Relaxed, tropical, and bright.",
-    colors: "Turquoise water, sandy yellow, coral pink, sunset orange.",
-    graphics: "Palm trees, flip-flops, sunglasses, waves.",
-    font: "Casual, hand-drawn.",
+    colors: "Turquoise water, sandy yellow, coral pink, and sunset orange.",
+    graphics: "Palm trees, flip-flops, sunglasses, beach balls, and wave patterns.",
+    font: "A casual, hand-drawn font.",
     primaryObjects:
-      "Palm trees line the sides with ocean waves along the bottom edge near the location details.",
+      "Palm Trees on the sides, casting shadows on the sandy background. A graphic of Ocean Waves along the bottom edge, where the party location is listed.",
   },
   {
     id: "winter_wonderland",
-    title: "Winter Wonderland",
+    name: "Winter Wonderland",
+    category: "Icy & serene",
+    bg: "bg-gradient-to-br from-blue-50 via-blue-100 to-slate-200",
+    text: "text-slate-800",
+    accent: "text-sky-700",
+    previewColor: "bg-gradient-to-br from-blue-50 via-blue-100 to-slate-200",
+    previewDot: "bg-blue-200",
     aesthetic: "Icy, serene, and sparkling.",
-    colors: "Icy blue, silver, crisp white, deep navy.",
-    graphics: "Snowflakes, frost patterns, bare trees, swirling snow.",
-    font: "Thin, delicate serif or elegant script.",
+    colors: "Icy blue, silver, crisp white, and deep navy.",
+    graphics: "Detailed snowflakes, frost patterns, bare tree silhouettes, and swirling snow effects.",
+    font: "A thin, delicate serif or an elegant script font.",
     primaryObjects:
-      "Large snowflakes fall across the page with a frosted border and soft tree silhouettes.",
+      "Large, detailed Snowflakes falling across the page. A subtle, frosted border and bare Tree silhouettes visible in the background texture.",
   },
   {
     id: "mad_scientist_lab",
-    title: "Mad Scientist Lab",
+    name: "Mad Scientist Lab",
+    category: "Chaotic lab",
+    bg: "bg-gradient-to-br from-lime-200 via-yellow-200 to-cyan-200",
+    text: "text-slate-900",
+    accent: "text-lime-700",
+    previewColor: "bg-gradient-to-br from-lime-200 via-yellow-200 to-cyan-200",
+    previewDot: "bg-lime-300",
     aesthetic: "Energetic, chaotic, and experimental.",
-    colors: "Neon green, bright yellow, black, beaker blue.",
-    graphics:
-      "Bubbling test tubes, atomic symbols, lightning bolts, safety signs.",
-    font: "Bold, industrial, slightly distressed.",
+    colors: "Neon green, bright yellow, black, and beaker-blue.",
+    graphics: "Bubbling test tubes, atomic symbols, lightning bolts, and safety signs.",
+    font: "A bold, industrial, or slightly erratic distressed font.",
     primaryObjects:
-      "Beakers and test tubes sit near the event details with lightning or radiation icons as dividers.",
+      "Beakers and Test Tubes placed as icons near the event location or details. Lightning bolts or radiation symbols are used as divider lines.",
   },
   {
     id: "llama_fiesta",
-    title: "Llama Fiesta",
-    aesthetic: "Vibrant, celebratory, and charming.",
-    colors:
-      "Fuchsia, turquoise, orange, lime green inspired by Peruvian textiles.",
-    graphics: "Festive llama, confetti, geometric patterns.",
-    font: "Playful, bold, rounded.",
+    name: "Llama Fiesta",
+    category: "Festive & vibrant",
+    bg: "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
+    text: "text-orange-900",
+    accent: "text-pink-700",
+    previewColor: "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
+    previewDot: "bg-pink-300",
+    aesthetic: "Vibrant, celebratory, and charmingly fuzzy.",
+    colors: "Fusia, turquoise, orange, and lime green (inspired by Peruvian textiles).",
+    graphics: "A smiling llama wearing a colorful blanket/sombrero, confetti, and geometric patterns.",
+    font: "A playful, bold, and rounded font.",
     primaryObjects:
-      "A smiling llama with a colorful blanket sits below the title while papel picado drapes across the top.",
+      "A Llama wearing a festive blanket, centered below the main title. Colorful paper 'Picado' (banners) draped across the top edge.",
   },
   {
     id: "panda_zen",
-    title: "Panda Zen",
-    aesthetic: "Calm, minimalist, bamboo inspired.",
-    colors: "Black, white, shades of green, warm gray.",
-    graphics: "Cute pandas, bamboo stalks, watercolor effects.",
-    font: "Clean, minimalist sans-serif.",
+    name: "Panda Zen",
+    category: "Calm minimal",
+    bg: "bg-gradient-to-br from-white via-gray-100 to-green-200",
+    text: "text-slate-800",
+    accent: "text-emerald-600",
+    previewColor: "bg-gradient-to-br from-white via-gray-100 to-green-200",
+    previewDot: "bg-emerald-400",
+    aesthetic: "Calm, minimalist, and bamboo forest inspired.",
+    colors: "Black, white, various shades of natural green, and warm gray.",
+    graphics: "Simple, cute panda illustrations, bamboo stalks, and subtle watercolor effects.",
+    font: "A clean, minimalist, and highly readable sans-serif font.",
     primaryObjects:
-      "A seated panda rests in a corner with bamboo stalks used as dividers or background texture.",
+      "A small, seated Panda illustration in the bottom corner. Bamboo stalks used as simple, vertical dividing elements or background textures.",
   },
   {
     id: "doggy_pawty",
-    title: "Doggy Pawty",
+    name: "Doggy Pawty",
+    category: "Energetic pups",
+    bg: "bg-gradient-to-br from-yellow-100 via-red-100 to-blue-100",
+    text: "text-slate-800",
+    accent: "text-blue-700",
+    previewColor: "bg-gradient-to-br from-yellow-100 via-red-100 to-blue-100",
+    previewDot: "bg-yellow-200",
     aesthetic: "Energetic, fun, and tail-wagging.",
-    colors: "Primary reds, blues, yellows or brown, black, bone white.",
-    graphics: "Paw prints, bones, tennis balls, cute dog breeds.",
-    font: "Friendly, rounded, slightly bouncy.",
+    colors: "Primary colors (red, blue, yellow) or a combo of brown, black, and bone-white.",
+    graphics: "Paw prints, bones, tennis balls, and various cute dog breeds.",
+    font: "A friendly, rounded, slightly bouncy font.",
     primaryObjects:
-      "Paw prints scatter the background with a large bone at the top holding the title or age.",
+      'Scattered Paw Prints throughout the background. A large Bone graphic centered at the top, containing the words "Doggy Pawty" or the child\'s age.',
   },
   {
     id: "kitten_cafe",
-    title: "Kitten Cafe",
+    name: "Kitten Cafe",
+    category: "Cozy & sweet",
+    bg: "bg-gradient-to-br from-amber-100 via-rose-50 to-stone-100",
+    text: "text-stone-800",
+    accent: "text-amber-700",
+    previewColor: "bg-gradient-to-br from-amber-100 via-rose-50 to-stone-100",
+    previewDot: "bg-amber-200",
     aesthetic: "Cozy, gentle, and sweet.",
-    colors: "Pastel peach, cream, light gray, soft brown.",
-    graphics: "Line-drawn kittens, hearts, steaming teacups, floral accents.",
-    font: "Gentle, slightly cursive or handwritten.",
+    colors: "Pastel peach, cream, light gray, and soft brown.",
+    graphics: "Simple line-drawn kittens, hearts, steaming teacups, and floral accents.",
+    font: "A gentle, slightly cursive or handwritten script.",
     primaryObjects:
-      "Simple kitten motifs sit in the corners with a steaming teacup near the RSVP or time.",
+      "Simple, line-drawn Kitten motifs near the corners. A steaming Teacup graphic placed next to the RSVP information or event time.",
   },
   {
     id: "race_car_rally",
-    title: "Race Car Rally",
-    aesthetic: "High speed and competitive energy.",
-    colors: "Bright red, black, white, neon yellow.",
-    graphics: "Racing stripes, checkered flags, speed lines, race car graphic.",
-    font: "Bold, italicized, dynamic.",
+    name: "Race Car Rally",
+    category: "High speed",
+    bg: "bg-gradient-to-br from-red-600 via-yellow-200 to-slate-900",
+    text: "text-white",
+    accent: "text-yellow-200",
+    previewColor: "bg-gradient-to-br from-red-600 via-yellow-200 to-slate-900",
+    previewDot: "bg-red-500",
+    aesthetic: "High speed, checkered flags, and competitive energy.",
+    colors: "Bright red, black, white, and neon yellow.",
+    graphics: "Racing stripes, checkered flag patterns, speed lines, and a stylized race car graphic.",
+    font: "A bold, italicized, dynamic font.",
     primaryObjects:
-      "Checkered flags border the invite with a race car near the title trailing speed lines.",
+      "Checkered Flags bordering the top and bottom of the invite. A dynamic Race Car graphic positioned near the main title, with speed lines trailing.",
   },
   {
     id: "music_festival_vibe",
-    title: "Music Festival Vibe",
+    name: "Music Festival Vibe",
+    category: "Boho & free",
+    bg: "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
+    text: "text-slate-900",
+    accent: "text-indigo-700",
+    previewColor: "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
+    previewDot: "bg-indigo-300",
     aesthetic: "Bohemian, artistic, and free-spirited.",
-    colors: "Earth tones with bright jewel accents like indigo and turquoise.",
-    graphics: "Tents, stage lights, tribal patterns, sunbursts.",
-    font: "Cool, retro, slightly distressed.",
+    colors: "Earth tones (mustard, rust, olive) paired with bright jewel tones (indigo, turquoise).",
+    graphics: "Tents, stage lights, tribal patterns, and sunbursts.",
+    font: "A cool, retro, slightly distressed font.",
     primaryObjects:
-      "A stage or tent silhouette anchors the background with feather and floral borders or headers.",
+      "A stylized stage/tent silhouette in the background. Feather and Floral arrangements used as side borders or header elements.",
   },
   {
     id: "construction_zone",
-    title: "Construction Zone",
+    name: "Construction Zone",
+    category: "Caution stripes",
+    bg: "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
+    text: "text-slate-900",
+    accent: "text-orange-800",
+    previewColor: "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
+    previewDot: "bg-yellow-400",
     aesthetic: "Industrial, safety-focused, and dynamic.",
-    colors: "Caution yellow, bright orange, black, industrial gray.",
-    graphics: "Construction tape, dump trucks, hard hats, cones.",
-    font: "Heavy, blocky, stencil style.",
+    colors: "Caution yellow, bright orange, black, and industrial gray.",
+    graphics: "Construction tape borders, dump trucks, hard hats, and traffic cones.",
+    font: "A heavy, blocky, stencil-style font.",
     primaryObjects:
-      "Caution stripes form bold borders with trucks or cranes along the bottom creating a worksite scene.",
+      "Safety Tape or Caution Stripes used as prominent border elements. Dump Trucks or Cranes positioned along the bottom edge, creating a scene.",
   },
   {
     id: "under_the_sea",
-    title: "Under the Sea",
-    aesthetic: "Deep ocean wonder and bioluminescence.",
-    colors: "Deep blues, vibrant corals, electric greens, dark teal.",
-    graphics: "Deep-sea creatures, kelp forests, glowing bubbles.",
-    font: "Slightly distorted or wavy.",
+    name: "Under the Sea",
+    category: "Deep ocean",
+    bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-700",
+    text: "text-white",
+    accent: "text-cyan-200",
+    previewColor: "bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-700",
+    previewDot: "bg-cyan-500",
+    aesthetic: "Deep ocean wonder, bioluminescent.",
+    colors: "Deep blues, vibrant corals, electric greens, and dark teal.",
+    graphics: "Silhouettes of deep-sea creatures, kelp forests, and glowing bubbles.",
+    font: "A slightly distorted or wavy font.",
     primaryObjects:
-      "Bioluminescent jellyfish float near the header with coral reefs along the bottom texture.",
+      "Bioluminescent Jellyfish floating near the header text. Coral reefs and deep-sea vents visible in the background texture along the bottom.",
   },
   {
     id: "farmyard_friends",
-    title: "Farmyard Friends",
+    name: "Farmyard Friends",
+    category: "Pastoral & rustic",
+    bg: "bg-gradient-to-br from-red-200 via-amber-200 to-green-200",
+    text: "text-emerald-900",
+    accent: "text-red-600",
+    previewColor: "bg-gradient-to-br from-red-200 via-amber-200 to-green-200",
+    previewDot: "bg-red-300",
     aesthetic: "Rustic, cheerful, and pastoral.",
-    colors: "Barn red, straw yellow, denim blue, grassy green.",
-    graphics: "Picket fences, hay bales, cute farm animals.",
-    font: "Sweet, slightly rounded, country style.",
+    colors: "Barn red, straw yellow, denim blue, and grassy green.",
+    graphics: "Picket fence border, hay bales, and simple, cute farm animal illustrations (pig, cow, chicken).",
+    font: "A sweet, slightly rounded, country-style font.",
     primaryObjects:
-      "A picket fence borders the bottom with cow and pig illustrations flanking the main text.",
+      "A Picket Fence border along the bottom. Cute illustrations of a Cow and a Pig flanking the main invitation text.",
   },
   {
     id: "superhero_city",
-    title: "Superhero City",
-    aesthetic: "Comic book style and iconic energy.",
-    colors:
-      "Primary red, blue, yellow with black outlines and white highlights.",
-    graphics: "Comic speech bubbles, city skyline silhouette, shield icon.",
-    font: "Bold, impactful, slightly skewed comic lettering.",
+    name: "Superhero City",
+    category: "Comic book",
+    bg: "bg-gradient-to-br from-blue-700 via-yellow-300 to-red-600",
+    text: "text-white",
+    accent: "text-yellow-200",
+    previewColor: "bg-gradient-to-br from-blue-700 via-yellow-300 to-red-600",
+    previewDot: "bg-blue-500",
+    aesthetic: "Comic book style, powerful, and iconic.",
+    colors: "Primary colors (red, blue, yellow) with black outlines and white highlights.",
+    graphics: 'Comic book speech bubbles ("POW!"), city skyline silhouette, and a shield icon.',
+    font: "A bold, impactful, and slightly skewed comic book lettering font.",
     primaryObjects:
-      "A city skyline forms the backdrop with a personalized hero shield at the top header.",
+      "A City Skyline silhouette forming the backdrop. A personalized Hero logo (e.g., child's initial on a shield) placed prominently at the top header.",
   },
   {
     id: "retro_arcade",
-    title: "Retro Arcade",
-    aesthetic: "8-bit, neon, and nostalgic.",
-    colors: "Electric pink, cyan, purple, black.",
-    graphics: "Pixel art characters, geometric patterns, neon tubing.",
-    font: "Pixelated or blocky 8-bit digital.",
+    name: "Retro Arcade",
+    category: "Neon arcade",
+    bg: "bg-gradient-to-br from-pink-600 via-purple-700 to-cyan-400",
+    text: "text-white",
+    accent: "text-cyan-200",
+    previewColor: "bg-gradient-to-br from-pink-600 via-purple-700 to-cyan-400",
+    previewDot: "bg-pink-500",
+    aesthetic: "8-bit, neon, and high-energy nostalgia.",
+    colors: "Electric pink, cyan, purple, and black.",
+    graphics: "Pixel art characters (Pac-Man, space invaders), geometric patterns, and neon light tubing effects.",
+    font: "A pixelated or blocky 8-bit digital font.",
     primaryObjects:
-      "Pixel characters scatter across the background with a neon-style box framing the title.",
+      "Pixelated Characters (like ghosts or cherries) scattered randomly in the background. The main title is often framed by a neon-style geometric box.",
   },
   {
     id: "viking_voyage",
-    title: "Viking Voyage",
+    name: "Viking Voyage",
+    category: "Norse epic",
+    bg: "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
+    text: "text-white",
+    accent: "text-amber-200",
+    previewColor: "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
+    previewDot: "bg-emerald-700",
     aesthetic: "Norse mythology, rugged, and epic.",
-    colors: "Dark forest green, deep brown, steel gray, rustic gold.",
-    graphics: "Longship silhouette, stylized knots and runes, Viking helmet.",
-    font: "Strong, medieval, carved wood effect.",
+    colors: "Dark forest green, deep brown, steel gray, and rustic gold.",
+    graphics: "Longship silhouette, stylized knots/runes, and a Viking helmet icon.",
+    font: "A strong, medieval, or carved wood-effect font.",
     primaryObjects:
-      "A Viking longship sails across the bottom while rune-like symbols frame the text like carved wood.",
+      "A Viking Longship sailing across the bottom of the invite. Rune-like symbols used to frame the main text block, giving a carved-wood effect.",
   },
 ];
+
 
 const INITIAL_DATA = {
   childName: "Emma",
@@ -617,7 +575,7 @@ const INITIAL_DATA = {
   theme: {
     font: "playfair",
     fontSize: "medium",
-    themeId: "rainbow_bash",
+    themeId: "rainbow_sparkle",
   },
   images: {
     hero: null,
@@ -798,6 +756,10 @@ export default function BirthdayTemplateCustomizePage() {
 
   const currentTheme =
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
+  const currentThemeDot =
+    currentTheme.previewDot ||
+    currentTheme.previewColor?.split(" ")[0] ||
+    "bg-slate-200";
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
@@ -1138,12 +1100,13 @@ export default function BirthdayTemplateCustomizePage() {
               </label>
               <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
                 <div
-                  className={`w-3 h-3 rounded-full border shadow-sm ${
-                    currentTheme.previewColor.split(" ")[0]
-                  }`}
+                  className={`w-3 h-3 rounded-full border shadow-sm ${currentThemeDot}`}
                 ></div>
                 {currentTheme.name || "Select a theme"}
               </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {currentTheme.aesthetic}
+              </p>
             </div>
             <div
               className={`p-2 rounded-full bg-slate-50 text-slate-500 group-hover:bg-slate-100 transition-all ${
@@ -1183,6 +1146,9 @@ export default function BirthdayTemplateCustomizePage() {
                 </span>
                 <span className="text-[10px] text-slate-500 uppercase tracking-wide">
                   {theme.category}
+                </span>
+                <span className="text-[11px] text-slate-500 leading-tight block">
+                  {theme.aesthetic}
                 </span>
               </button>
             ))}
@@ -1237,59 +1203,55 @@ export default function BirthdayTemplateCustomizePage() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
               <Palette size={16} />
             </div>
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Theme Visual Descriptions
+                Selected Theme Guide
               </p>
               <p className="text-sm text-slate-600">
-                Quick references for 30 curated birthday invite looks.
+                Visual recipe for {currentTheme.name}.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
-            {THEME_DESCRIPTIONS.map((theme) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
+            <div className="flex items-center gap-3">
               <div
-                key={theme.id}
-                className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2"
-              >
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-800">
-                    {theme.title}
-                  </h4>
-                  <p className="text-xs text-slate-500">{theme.aesthetic}</p>
-                </div>
-                <div className="text-xs text-slate-600 space-y-1">
-                  <p>
-                    <span className="font-semibold text-slate-700">
-                      Colors:
-                    </span>{" "}
-                    {theme.colors}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">
-                      Graphics:
-                    </span>{" "}
-                    {theme.graphics}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">Font:</span>{" "}
-                    {theme.font}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">
-                      Primary objects:
-                    </span>{" "}
-                    {theme.primaryObjects}
-                  </p>
-                </div>
+                className={`h-12 w-12 rounded-lg border border-black/5 shadow-inner ${currentTheme.previewColor}`}
+              ></div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800">
+                  {currentTheme.name}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  {currentTheme.aesthetic}
+                </p>
               </div>
-            ))}
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <p>
+                <span className="font-semibold text-slate-700">Colors:</span>{" "}
+                {currentTheme.colors}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-700">Graphics:</span>{" "}
+                {currentTheme.graphics}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-700">Font:</span>{" "}
+                {currentTheme.font}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-700">
+                  Primary objects:
+                </span>{" "}
+                {currentTheme.primaryObjects}
+              </p>
+            </div>
           </div>
         </div>
       </div>
