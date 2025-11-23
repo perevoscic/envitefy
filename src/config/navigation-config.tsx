@@ -9,12 +9,22 @@ export type NavItem = {
 };
 
 export const TEMPLATE_LINKS = [
-  { label: "Birthdays", href: "/event/birthdays", icon: "🎂" },
-  { label: "Weddings", href: "/event/weddings", icon: "💍" },
-  { label: "Baby Showers", href: "/event/baby-showers", icon: "🍼" },
-  { label: "Gender Reveal", href: "/event/gender-reveal", icon: "🎈" },
-  { label: "Sport Events", href: "/event/sport-events", icon: "🏅" },
-  { label: "General Events", href: "/event/general", icon: "📅" },
+  { label: "Birthdays", href: "/event/birthdays/customize", icon: "🎂" },
+  { label: "Weddings", href: "/event/weddings/customize", icon: "💍" },
+  { label: "Baby Showers", href: "/event/baby-showers/customize", icon: "🍼" },
+  {
+    label: "Gender Reveal",
+    href: "/event/gender-reveal/customize",
+    icon: "🎈",
+  },
+  { label: "Appointments", href: "/event/appointments/customize", icon: "🩺" },
+  { label: "Sport Events", href: "/event/sport-events/customize", icon: "🏅" },
+  { label: "General Events", href: "/event/general/customize", icon: "📅" },
+  {
+    label: "Special Events",
+    href: "/event/special-events/customize",
+    icon: "✨",
+  },
 ] as const;
 
 export const MAIN_NAV_ITEMS: NavItem[] = [
@@ -190,4 +200,3 @@ export const PROFILE_MENU_ITEMS: NavItem[] = [
     ),
   },
 ];
-
