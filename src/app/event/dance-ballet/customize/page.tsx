@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, memo } from "react";
+import React, { useCallback, useMemo, useState, useEffect, memo } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -1640,6 +1640,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         return { ...prev, [id]: next };
       });
     }, []);
+
+    // Expand themes when Design view is opened
+    useEffect(() => {
+      if (activeView === "design") {
+        setThemesExpanded(true);
+      }
+    }, [activeView]);
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
