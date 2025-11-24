@@ -1,7 +1,8 @@
 // @ts-nocheck
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -1192,6 +1193,9 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
 // --- Components ---
 
 const App = () => {
+  const search = useSearchParams();
+  const router = useRouter();
+  const editEventId = search?.get("edit") ?? undefined;
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
@@ -1206,6 +1210,7 @@ const App = () => {
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const parseTimeValue = (value?: string | null) => {
     if (!value) return Number.MAX_SAFE_INTEGER;
@@ -1297,6 +1302,108 @@ const App = () => {
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
+  const handlePublish = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (data.date) {
+        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+        const end = new Date(start);
+        end.setHours(end.getHours() + 3);
+        startISO = start.toISOString();
+        endISO = end.toISOString();
+      }
+
+      const location =
+        data.city && data.state ? `${data.city}, ${data.state}` : undefined;
+
+      const title =
+        data.partner1 && data.partner2
+          ? `${data.partner1} & ${data.partner2} Wedding`
+          : "Wedding";
+
+      const payload: any = {
+        title,
+        data: {
+          category: "Weddings",
+          createdVia: "template",
+          createdManually: true,
+          startISO,
+          endISO,
+          location,
+          description: data.story?.text || undefined,
+          rsvp: data.rsvp?.isEnabled ? data.rsvp?.deadline || "" : undefined,
+          numberOfGuests: 0,
+          templateId: "wedding",
+          variationId: data.theme.themeId || "blush_peony_arch",
+          // Customization data
+          partner1: data.partner1,
+          partner2: data.partner2,
+          date: data.date,
+          time: data.time,
+          city: data.city,
+          state: data.state,
+          story: data.story,
+          party: data.party,
+          schedule: data.schedule,
+          travel: data.travel,
+          thingsToDo: data.thingsToDo,
+          hosts: data.hosts,
+          theme: data.theme,
+          registries:
+            data.registries
+              ?.filter((r) => r?.url?.trim())
+              .map((r) => ({
+                label: r.label?.trim() || "Registry",
+                url: r.url?.trim(),
+              })) || [],
+          customHeroImage: data.images?.hero || undefined,
+          headlineBg: data.images?.headlineBg || undefined,
+          gallery: data.gallery || [],
+        },
+      };
+
+      let id: string | undefined;
+
+      if (editEventId) {
+        await fetch(`/api/history/${editEventId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: payload.title,
+            data: payload.data,
+          }),
+        });
+        id = editEventId;
+      } else {
+        const r = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        const j = await r.json().catch(() => ({}));
+        id = (j as any)?.id as string | undefined;
+      }
+
+      if (id) {
+        router.push(`/event/${id}${editEventId ? "?updated=1" : "?created=1"}`);
+      } else {
+        throw new Error(
+          editEventId ? "Failed to update event" : "Failed to create event"
+        );
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || err || "Failed to create event");
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, data, editEventId, router]);
+
   const MainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="mb-6">
@@ -1375,6 +1482,16 @@ const App = () => {
           desc="Gift registries."
           onClick={() => setActiveView("registry")}
         />
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-slate-200">
+        <button
+          onClick={handlePublish}
+          disabled={submitting}
+          className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Publishing..." : "PREVIEW AND PUBLISH"}
+        </button>
       </div>
     </div>
   );
@@ -2318,7 +2435,7 @@ const App = () => {
                     </span>
                   </h1>
                   <div
-                    className={`flex items-center gap-4 ${currentSize.body} font-medium opacity-90 ${currentFont.body} tracking-wide`}
+                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 ${currentFont.body} tracking-wide`}
                   >
                     <span>
                       {new Date(data.date).toLocaleDateString("en-US", {
@@ -2327,12 +2444,16 @@ const App = () => {
                         year: "numeric",
                       })}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                    <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
                     <span>{data.time}</span>
-                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
-                    <span>
-                      {data.city}, {data.state}
-                    </span>
+                    {(data.city || data.state) && (
+                      <>
+                        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
+                        <span className="md:truncate">
+                          {[data.city, data.state].filter(Boolean).join(", ")}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2764,57 +2885,69 @@ const App = () => {
                             <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
                               Will you be attending?
                             </label>
-                            <div className="grid grid-cols-2 gap-4">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpAttending(true);
-                                }}
-                                className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
-                                  rsvpAttending === true
-                                    ? "border-current bg-white/25 shadow-lg"
-                                    : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
-                                }`}
-                              >
-                                <div
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                    rsvpAttending === true
-                                      ? "bg-white/30"
-                                      : "bg-white/20 group-hover:bg-white/30"
-                                  }`}
-                                >
-                                  <Check size={20} className="text-current" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <label className="group relative cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="wedding-rsvp"
+                                  className="peer sr-only"
+                                  checked={rsvpAttending === true}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    setRsvpAttending(true);
+                                  }}
+                                />
+                                <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
+                                  <div className="mt-0.5">
+                                    <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                      <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                    </div>
+                                  </div>
+                                  <div className="text-left">
+                                    <div className="flex items-center gap-2 font-semibold text-base">
+                                      <Check
+                                        size={18}
+                                        className="text-current"
+                                      />
+                                      Yes, I'll be there!
+                                    </div>
+                                    <p className="text-sm opacity-70">
+                                      Ready to celebrate with you.
+                                    </p>
+                                  </div>
                                 </div>
-                                <span className="font-semibold text-base">
-                                  Yes, I'll be there!
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpAttending(false);
-                                }}
-                                className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
-                                  rsvpAttending === false
-                                    ? "border-current bg-white/25 shadow-lg"
-                                    : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
-                                }`}
-                              >
-                                <div
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                    rsvpAttending === false
-                                      ? "bg-white/30"
-                                      : "bg-white/20 group-hover:bg-white/30"
-                                  }`}
-                                >
-                                  <XIcon size={20} className="text-current" />
+                              </label>
+                              <label className="group relative cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="wedding-rsvp"
+                                  className="peer sr-only"
+                                  checked={rsvpAttending === false}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    setRsvpAttending(false);
+                                  }}
+                                />
+                                <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
+                                  <div className="mt-0.5">
+                                    <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                      <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                    </div>
+                                  </div>
+                                  <div className="text-left">
+                                    <div className="flex items-center gap-2 font-semibold text-base">
+                                      <XIcon
+                                        size={18}
+                                        className="text-current"
+                                      />
+                                      Sorry, can't make it
+                                    </div>
+                                    <p className="text-sm opacity-70">
+                                      Sending love from afar.
+                                    </p>
+                                  </div>
                                 </div>
-                                <span className="font-semibold text-base">
-                                  Sorry, can't make it
-                                </span>
-                              </button>
+                              </label>
                             </div>
                           </div>
 
@@ -2887,9 +3020,7 @@ const App = () => {
 
                 <footer className="text-center py-8 border-t border-white/10 mt-1">
                   <p className="text-sm opacity-60">
-                    Powered by{" "}
-                    <span className="font-semibold opacity-80">Envitefy</span>.
-                    Create. Share. Enjoy
+                    Powered By Envitefy. Creat. Share. Enjoy.
                   </p>
                 </footer>
               </div>
@@ -2920,7 +3051,7 @@ const App = () => {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+          <div className="sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
             <button
               onClick={closeMobileMenu}
               className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
@@ -2946,12 +3077,6 @@ const App = () => {
             {activeView === "rsvp" && <RSVPEditor />}
             {activeView === "registry" && <RegistryEditor />}
           </div>
-        </div>
-
-        <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-          <button className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg">
-            PREVIEW AND PUBLISH
-          </button>
         </div>
       </div>
 

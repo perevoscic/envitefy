@@ -48,6 +48,7 @@ import {
   CalendarIconApple,
 } from "@/components/CalendarIcons";
 import BirthdayTemplateView from "@/components/BirthdayTemplateView";
+import WeddingTemplateView from "@/components/WeddingTemplateView";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 
@@ -909,11 +910,31 @@ export default async function EventPage({
       : null;
   const isBirthdayTemplate =
     templateId && variationId && categoryNormalized === "birthdays";
+  const isWeddingTemplate =
+    templateId && variationId && categoryNormalized === "weddings";
 
   // If it's a birthday template, render the template view
   if (isBirthdayTemplate) {
     return (
       <BirthdayTemplateView
+        eventId={row.id}
+        eventData={data}
+        eventTitle={title}
+        templateId={templateId}
+        variationId={variationId}
+        isOwner={isOwner}
+        isReadOnly={isReadOnly}
+        viewerKind={viewerKind}
+        shareUrl={shareUrl}
+        sessionEmail={sessionEmail}
+      />
+    );
+  }
+
+  // If it's a wedding template, render the template view
+  if (isWeddingTemplate) {
+    return (
+      <WeddingTemplateView
         eventId={row.id}
         eventData={data}
         eventTitle={title}

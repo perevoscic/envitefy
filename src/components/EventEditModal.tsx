@@ -113,8 +113,17 @@ export default function EventEditModal({
         return "/event/baby-showers";
       }
       // Weddings
-      if (cat.includes("wedding") || title.includes("wedding"))
+      if (cat.includes("wedding") || title.includes("wedding")) {
+        if (templateId && variationId) {
+          // Route to customization page with template params
+          return `/event/weddings/customize?templateId=${encodeURIComponent(
+            templateId
+          )}&variationId=${encodeURIComponent(
+            variationId
+          )}&edit=${encodeURIComponent(eventId)}`;
+        }
         return "/event/weddings";
+      }
       return null;
     } catch {
       return null;

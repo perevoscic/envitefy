@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -1015,12 +1015,12 @@ const INITIAL_DATA = {
   registries: [
     {
       id: 1,
-      label: "Amazon Wishlist",
+      label: "Amazon Registry",
       url: "https://www.amazon.com/wishlist/emma-5th-birthday",
     },
     {
       id: 2,
-      label: "Target Wishlist",
+      label: "Target Registry",
       url: "https://www.target.com/wishlist/emma-party",
     },
   ],
@@ -1125,6 +1125,8 @@ export default function BirthdayTemplateCustomizePage() {
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [rsvpAttending, setRsvpAttending] = useState("yes");
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const {
     mobileMenuOpen,
     openMobileMenu,
@@ -1222,6 +1224,10 @@ export default function BirthdayTemplateCustomizePage() {
     template.heroImageName.trim()
       ? `/templates/birthdays/${template.heroImageName}`
       : "/templates/birthdays/rainbow-bash.webp";
+  const activeGalleryItem =
+    data.gallery.length > 0
+      ? data.gallery[Math.min(galleryIndex, data.gallery.length - 1)]
+      : null;
 
   const getAgeSuffix = (age: number) => {
     if (age === 1) return "st";
@@ -1321,6 +1327,12 @@ export default function BirthdayTemplateCustomizePage() {
     }
   }, [submitting, data, template.id, editEventId, router]);
 
+  useEffect(() => {
+    if (galleryIndex >= data.gallery.length) {
+      setGalleryIndex(Math.max(0, data.gallery.length - 1));
+    }
+  }, [data.gallery.length, galleryIndex]);
+
   const MainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="mb-6">
@@ -1376,9 +1388,9 @@ export default function BirthdayTemplateCustomizePage() {
           onClick={() => setActiveView("rsvp")}
         />
         <MenuCard
-          title="Wishlist"
+          title="Registry"
           icon={<Gift size={18} />}
-          desc="Gift wishlist links."
+          desc="Gift registry links."
           onClick={() => setActiveView("registry")}
         />
       </div>
@@ -2041,30 +2053,30 @@ export default function BirthdayTemplateCustomizePage() {
     };
 
     return (
-      <EditorLayout title="Wishlist" onBack={() => setActiveView("main")}>
+      <EditorLayout title="Registry" onBack={() => setActiveView("main")}>
         <div className="space-y-6">
           <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="text-xs font-bold text-slate-500 uppercase">
-              Add Wishlist
+              Add Registry
             </h4>
             <InputGroup
-              label="Wishlist Name"
+              label="Registry Name"
               value={newRegistry.label}
               onChange={(v) => setNewRegistry({ ...newRegistry, label: v })}
               placeholder="e.g. Amazon, Target, Toys R Us"
             />
             <InputGroup
-              label="Wishlist URL"
+              label="Registry URL"
               type="url"
               value={newRegistry.url}
               onChange={(v) => setNewRegistry({ ...newRegistry, url: v })}
-              placeholder="https://www.example.com/wishlist"
+              placeholder="https://www.example.com/registry"
             />
             <button
               onClick={addRegistry}
               className="w-full py-2 bg-indigo-600 text-white text-sm rounded-md font-medium hover:bg-indigo-700"
             >
-              Add Wishlist
+              Add Registry
             </button>
           </div>
 
@@ -2076,7 +2088,7 @@ export default function BirthdayTemplateCustomizePage() {
               >
                 <div>
                   <div className="font-bold text-slate-800">
-                    {registry.label || "Wishlist"}
+                    {registry.label || "Registry"}
                   </div>
                   <div className="text-xs text-slate-500 truncate max-w-xs">
                     {registry.url}
@@ -2137,7 +2149,7 @@ export default function BirthdayTemplateCustomizePage() {
                     </span>
                   </h1>
                   <div
-                    className={`flex items-center gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
+                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
                   >
                     <span>
                       {new Date(data.date).toLocaleDateString("en-US", {
@@ -2146,12 +2158,12 @@ export default function BirthdayTemplateCustomizePage() {
                         year: "numeric",
                       })}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                    <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
                     <span>{data.time}</span>
-                    {(data.city || data.state) && (
+                    {(data.city || data.state || data.venue) && (
                       <>
-                        <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
-                        <span>
+                        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
+                        <span className="md:truncate">
                           {[data.venue, data.city, data.state]
                             .filter(Boolean)
                             .join(", ")}
@@ -2268,22 +2280,72 @@ export default function BirthdayTemplateCustomizePage() {
                   >
                     Photo Gallery
                   </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto px-4">
-                    {data.gallery.map((img) => (
-                      <div key={img.id} className="relative aspect-square">
+                  {activeGalleryItem && (
+                    <div className="relative max-w-3xl mx-auto px-4">
+                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-black/10">
                         <img
-                          src={img.url}
-                          alt={img.caption || "Gallery"}
-                          className="w-full h-full object-cover rounded-lg"
+                          src={activeGalleryItem.url}
+                          alt={activeGalleryItem.caption || "Gallery"}
+                          className="w-full h-full object-cover"
                         />
-                        {img.caption && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
-                            {img.caption}
+                        {activeGalleryItem.caption && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-3">
+                            {activeGalleryItem.caption}
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
+                      {data.gallery.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGalleryIndex(
+                                (idx) =>
+                                  (idx - 1 + data.gallery.length) %
+                                  data.gallery.length
+                              );
+                            }}
+                            className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                            aria-label="Previous photo"
+                          >
+                            <ChevronLeft size={20} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGalleryIndex(
+                                (idx) => (idx + 1) % data.gallery.length
+                              );
+                            }}
+                            className="absolute right-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                            aria-label="Next photo"
+                          >
+                            <ChevronRight size={20} />
+                          </button>
+                          <div className="flex justify-center gap-2 mt-4">
+                            {data.gallery.map((img, idx) => (
+                              <button
+                                key={img.id}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setGalleryIndex(idx);
+                                }}
+                                className={`h-2.5 rounded-full transition-all ${
+                                  galleryIndex === idx
+                                    ? "w-6 bg-white/90"
+                                    : "w-2.5 bg-white/40 hover:bg-white/60"
+                                }`}
+                                aria-label={`Show photo ${idx + 1}`}
+                              ></button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </section>
               )}
 
@@ -2293,7 +2355,7 @@ export default function BirthdayTemplateCustomizePage() {
                     className={`text-2xl mb-6 ${currentTheme.accent}`}
                     style={professionalAccentStyle}
                   >
-                    Wishlist
+                    Registry
                   </h2>
                   <div className="flex flex-wrap justify-center gap-4">
                     {data.registries.map((registry) => (
@@ -2305,7 +2367,7 @@ export default function BirthdayTemplateCustomizePage() {
                         className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
                       >
                         <span className="uppercase tracking-widest text-sm font-semibold">
-                          {registry.label || "Wishlist"}
+                          {registry.label || "Registry"}
                         </span>
                       </a>
                     ))}
@@ -2413,9 +2475,7 @@ export default function BirthdayTemplateCustomizePage() {
 
               <footer className="text-center py-8 border-t border-white/10 mt-1">
                 <p className="text-sm opacity-60">
-                  Powered by{" "}
-                  <span className="font-semibold opacity-80">Envitefy</span>.
-                  Create. Share. Enjoy
+                  Powered By Envitefy. Creat. Share. Enjoy.
                 </p>
               </footer>
             </div>

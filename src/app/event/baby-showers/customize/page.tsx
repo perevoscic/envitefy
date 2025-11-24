@@ -1084,7 +1084,7 @@ export default function BabyShowerTemplateCustomizePage() {
                     </span>
                   </h1>
                   <div
-                    className={`flex items-center gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
+                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
                   >
                     <span>
                       {new Date(data.date).toLocaleDateString("en-US", {
@@ -1093,12 +1093,12 @@ export default function BabyShowerTemplateCustomizePage() {
                         year: "numeric",
                       })}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                    <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
                     <span>{data.time}</span>
                     {(data.city || data.state) && (
                       <>
-                        <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
-                        <span>
+                        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
+                        <span className="md:truncate">
                           {[data.city, data.state].filter(Boolean).join(", ")}
                         </span>
                       </>
@@ -1271,57 +1271,63 @@ export default function BabyShowerTemplateCustomizePage() {
                           <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
                             Will you be attending?
                           </label>
-                          <div className="grid grid-cols-2 gap-4">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRsvpAttending(true);
-                              }}
-                              className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
-                                rsvpAttending === true
-                                  ? "border-current bg-white/25 shadow-lg"
-                                  : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
-                              }`}
-                            >
-                              <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                  rsvpAttending === true
-                                    ? "bg-white/30"
-                                    : "bg-white/20 group-hover:bg-white/30"
-                                }`}
-                              >
-                                <Check size={20} className="text-current" />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <label className="group relative cursor-pointer">
+                              <input
+                                type="radio"
+                                name="baby-rsvp"
+                                className="peer sr-only"
+                                checked={rsvpAttending === true}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setRsvpAttending(true);
+                                }}
+                              />
+                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
+                                <div className="mt-0.5">
+                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                  </div>
+                                </div>
+                                <div className="text-left">
+                                  <div className="flex items-center gap-2 font-semibold text-base">
+                                    <Check size={18} className="text-current" />
+                                    Yes, I'll be there!
+                                  </div>
+                                  <p className="text-sm opacity-70">
+                                    We’ll celebrate with you.
+                                  </p>
+                                </div>
                               </div>
-                              <span className="font-semibold text-base">
-                                Yes, I'll be there!
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRsvpAttending(false);
-                              }}
-                              className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 group ${
-                                rsvpAttending === false
-                                  ? "border-current bg-white/25 shadow-lg"
-                                  : "border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50"
-                              }`}
-                            >
-                              <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                  rsvpAttending === false
-                                    ? "bg-white/30"
-                                    : "bg-white/20 group-hover:bg-white/30"
-                                }`}
-                              >
-                                <XIcon size={20} className="text-current" />
+                            </label>
+                            <label className="group relative cursor-pointer">
+                              <input
+                                type="radio"
+                                name="baby-rsvp"
+                                className="peer sr-only"
+                                checked={rsvpAttending === false}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setRsvpAttending(false);
+                                }}
+                              />
+                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
+                                <div className="mt-0.5">
+                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                  </div>
+                                </div>
+                                <div className="text-left">
+                                  <div className="flex items-center gap-2 font-semibold text-base">
+                                    <XIcon size={18} className="text-current" />
+                                    Sorry, can't make it
+                                  </div>
+                                  <p className="text-sm opacity-70">
+                                    Sending love from afar.
+                                  </p>
+                                </div>
                               </div>
-                              <span className="font-semibold text-base">
-                                Sorry, can't make it
-                              </span>
-                            </button>
+                            </label>
                           </div>
                         </div>
                         <button
@@ -1364,9 +1370,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
               <footer className="text-center py-8 border-t border-white/10 mt-1">
                 <p className="text-sm opacity-60">
-                  Powered by{" "}
-                  <span className="font-semibold opacity-80">Envitefy</span>.
-                  Create. Share. Enjoy
+                  Powered By Envitefy. Creat. Share. Enjoy.
                 </p>
               </footer>
             </div>
