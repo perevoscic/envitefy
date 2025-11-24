@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -341,6 +341,32 @@ export default function BabyShowerTemplateCustomizePage() {
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+  
+  // Detect dark background for title color
+  const isDarkBackground = useMemo(() => {
+    const bg = currentTheme?.bg?.toLowerCase() ?? "";
+    const darkTokens = [
+      "black",
+      "slate-9",
+      "stone-9",
+      "neutral-9",
+      "gray-9",
+      "grey-9",
+      "indigo-9",
+      "purple-9",
+      "violet-9",
+      "emerald-9",
+      "teal-9",
+      "blue-9",
+      "navy",
+      "midnight",
+    ];
+    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
+    const hasDarkHex = /#0[0-9a-f]{5,}/i.test(bg) || /#1[0-3][0-9a-f]{4}/i.test(bg) || /#2[0-3][0-9a-f]{4}/i.test(bg);
+    return hasDarkToken || hasDarkHex;
+  }, [currentTheme]);
+  
+  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
   const heroImageSrc = "/templates/baby-showers/moon-back.webp";
 
@@ -1076,7 +1102,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 >
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
-                    style={{ fontFamily: currentFont.preview }}
+                    style={{ fontFamily: currentFont.preview, ...(titleColor || {}) }}
                   >
                     {data.babyName}'s Baby Shower
                     <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
@@ -1127,7 +1153,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
               {data.hosts.length > 0 && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`} style={titleColor}>
                     Hosted By
                   </h2>
                   <div className="flex flex-wrap justify-center gap-6">
@@ -1147,7 +1173,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
               {(data.address || data.city || data.state) && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-4 ${currentTheme.accent}`}>
+                  <h2 className={`text-2xl mb-4 ${currentTheme.accent}`} style={titleColor}>
                     Location
                   </h2>
                   {(data.address || data.city || data.state) && (
@@ -1164,6 +1190,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     About Baby
                   </h2>
@@ -1179,6 +1206,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     About {data.momName}
                   </h2>
@@ -1194,6 +1222,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="py-12 border-t border-white/10">
                   <h2
                     className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Photo Gallery
                   </h2>
@@ -1218,7 +1247,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
               {data.registries.length > 0 && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`}>
+                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`} style={titleColor}>
                     Registry
                   </h2>
                   <div className="flex flex-wrap justify-center gap-4">

@@ -68,8 +68,10 @@ const PROFESSIONAL_THEMES = [
   {
     id: "rainbow_confetti_splash",
     themeName: "Rainbow Confetti Splash",
-    description: "Bright rainbow confetti bursting across the top for a fun celebration vibe.",
-    headerIllustrationPrompt: "watercolor rainbow confetti splash sweeping across the header",
+    description:
+      "Bright rainbow confetti bursting across the top for a fun celebration vibe.",
+    headerIllustrationPrompt:
+      "watercolor rainbow confetti splash sweeping across the header",
     cornerAccentPrompt: "colorful confetti clusters in both top corners",
     backgroundPrompt: "light pastel rainbow wash with subtle grain",
     typography: {
@@ -77,12 +79,19 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#fdebed", "#fff6d6", "#e6f7ff", "#d4e8ff", "#ffffff"],
+    recommendedColorPalette: [
+      "#fdebed",
+      "#fff6d6",
+      "#e6f7ff",
+      "#d4e8ff",
+      "#ffffff",
+    ],
   },
   {
     id: "balloon_bouquet_arch",
     themeName: "Balloon Bouquet Arch",
-    description: "Soft pastel balloons creating a festive arch over the header.",
+    description:
+      "Soft pastel balloons creating a festive arch over the header.",
     headerIllustrationPrompt:
       "pastel watercolor balloons forming an arch in pink, blue, mint, and lavender",
     cornerAccentPrompt: "curled ribbon balloon corner clusters",
@@ -92,13 +101,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#e7f5ff", "#fde5f2", "#fdf0da", "#d8e9e5", "#ffffff"],
+    recommendedColorPalette: [
+      "#e7f5ff",
+      "#fde5f2",
+      "#fdf0da",
+      "#d8e9e5",
+      "#ffffff",
+    ],
   },
   {
     id: "sparkle_starburst",
     themeName: "Sparkle Starburst",
-    description: "Starburst sparkles for magical and whimsical birthday energy.",
-    headerIllustrationPrompt: "gold and silver starburst pattern radiating across the header",
+    description:
+      "Starburst sparkles for magical and whimsical birthday energy.",
+    headerIllustrationPrompt:
+      "gold and silver starburst pattern radiating across the header",
     cornerAccentPrompt: "tiny star clusters in metallic gold",
     backgroundPrompt: "cream-to-blush gradient with sparkly dust",
     typography: {
@@ -106,12 +123,19 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Nunito",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#fff8f0", "#fde4d7", "#f5cfc3", "#f0b8a8", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff8f0",
+      "#fde4d7",
+      "#f5cfc3",
+      "#f0b8a8",
+      "#ffffff",
+    ],
   },
   {
     id: "pastel_party_animals",
     themeName: "Pastel Party Animals",
-    description: "Watercolor party animals with hats and confetti for kids’ birthdays.",
+    description:
+      "Watercolor party animals with hats and confetti for kids’ birthdays.",
     headerIllustrationPrompt:
       "watercolor giraffe, elephant, and lion wearing party hats with confetti",
     cornerAccentPrompt: "tiny pastel animal footprints",
@@ -121,7 +145,13 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Tangerine",
     },
-    recommendedColorPalette: ["#def7f3", "#fceae3", "#ffe8f1", "#e8f0ff", "#ffffff"],
+    recommendedColorPalette: [
+      "#def7f3",
+      "#fceae3",
+      "#ffe8f1",
+      "#e8f0ff",
+      "#ffffff",
+    ],
   },
   {
     id: "glitter_pink_celebration",
@@ -135,13 +165,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#ffeaf4", "#ffd0e4", "#ffaac9", "#e57aa4", "#ffffff"],
+    recommendedColorPalette: [
+      "#ffeaf4",
+      "#ffd0e4",
+      "#ffaac9",
+      "#e57aa4",
+      "#ffffff",
+    ],
   },
   {
     id: "blue_gold_birthday_luxe",
     themeName: "Blue & Gold Birthday Luxe",
-    description: "Royal blue paired with gold foil for elevated birthday styling.",
-    headerIllustrationPrompt: "gold foil frame with star-like flourishes on royal-blue header",
+    description:
+      "Royal blue paired with gold foil for elevated birthday styling.",
+    headerIllustrationPrompt:
+      "gold foil frame with star-like flourishes on royal-blue header",
     cornerAccentPrompt: "gold foil geometric corners",
     backgroundPrompt: "deep blue watercolor texture",
     typography: {
@@ -149,13 +187,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#0d1b3d", "#132c55", "#364e78", "#d8b878", "#ffffff"],
+    recommendedColorPalette: [
+      "#0d1b3d",
+      "#132c55",
+      "#364e78",
+      "#d8b878",
+      "#ffffff",
+    ],
   },
   {
     id: "dinosaur_adventure_watercolor",
     themeName: "Dinosaur Adventure",
-    description: "Cute dinosaurs in watercolor style marching across the header.",
-    headerIllustrationPrompt: "pastel watercolor dinosaurs with leaves and volcano icons in header",
+    description:
+      "Cute dinosaurs in watercolor style marching across the header.",
+    headerIllustrationPrompt:
+      "pastel watercolor dinosaurs with leaves and volcano icons in header",
     cornerAccentPrompt: "small dino tracks in corners",
     backgroundPrompt: "light sandy watercolor texture",
     typography: {
@@ -163,13 +209,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Nunito",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#faf3e7", "#e2f5e5", "#dbeeef", "#ffe3cc", "#ffffff"],
+    recommendedColorPalette: [
+      "#faf3e7",
+      "#e2f5e5",
+      "#dbeeef",
+      "#ffe3cc",
+      "#ffffff",
+    ],
   },
   {
     id: "outer_space_blast",
     themeName: "Outer Space Blast",
-    description: "Cosmic theme with rockets, stars, and planets in watercolor style.",
-    headerIllustrationPrompt: "watercolor rockets, planets, and stars forming a cosmic header",
+    description:
+      "Cosmic theme with rockets, stars, and planets in watercolor style.",
+    headerIllustrationPrompt:
+      "watercolor rockets, planets, and stars forming a cosmic header",
     cornerAccentPrompt: "tiny star clusters in navy and gold",
     backgroundPrompt: "deep navy watercolor night-sky texture",
     typography: {
@@ -177,13 +231,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#0a1230", "#1d2952", "#3f4f78", "#f0c36f", "#ffffff"],
+    recommendedColorPalette: [
+      "#0a1230",
+      "#1d2952",
+      "#3f4f78",
+      "#f0c36f",
+      "#ffffff",
+    ],
   },
   {
     id: "mermaid_sparkle_waves",
     themeName: "Mermaid Sparkle Waves",
     description: "Shimmering mermaid tails and watercolor waves.",
-    headerIllustrationPrompt: "pastel watercolor mermaid tails and glitter waves wrapping the header",
+    headerIllustrationPrompt:
+      "pastel watercolor mermaid tails and glitter waves wrapping the header",
     cornerAccentPrompt: "pearlescent shell corners",
     backgroundPrompt: "aqua watercolor gradient with shimmer",
     typography: {
@@ -191,12 +252,19 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Nunito",
       accentFont: "Tangerine",
     },
-    recommendedColorPalette: ["#dff8ff", "#cde9f7", "#bad7ef", "#8db0c9", "#ffffff"],
+    recommendedColorPalette: [
+      "#dff8ff",
+      "#cde9f7",
+      "#bad7ef",
+      "#8db0c9",
+      "#ffffff",
+    ],
   },
   {
     id: "construction_zone_party",
     themeName: "Construction Zone Party",
-    description: "Watercolor trucks, cones, and stripes for a construction-themed birthday.",
+    description:
+      "Watercolor trucks, cones, and stripes for a construction-themed birthday.",
     headerIllustrationPrompt:
       "watercolor dump trucks, traffic cones, and caution stripes across header",
     cornerAccentPrompt: "mini cones or caution stripe corners",
@@ -206,13 +274,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#f4f4f4", "#ffd972", "#e9b34c", "#333333", "#ffffff"],
+    recommendedColorPalette: [
+      "#f4f4f4",
+      "#ffd972",
+      "#e9b34c",
+      "#333333",
+      "#ffffff",
+    ],
   },
   {
     id: "unicorn_dreamland",
     themeName: "Unicorn Dreamland",
     description: "Soft pastel unicorns with dreamy clouds and stars.",
-    headerIllustrationPrompt: "watercolor unicorns jumping through clouds with sparkles",
+    headerIllustrationPrompt:
+      "watercolor unicorns jumping through clouds with sparkles",
     cornerAccentPrompt: "star and cloud corners",
     backgroundPrompt: "pastel purple-pink watercolor blend",
     typography: {
@@ -220,13 +295,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#f8eaff", "#f6d7ff", "#eebcff", "#d8a8ff", "#ffffff"],
+    recommendedColorPalette: [
+      "#f8eaff",
+      "#f6d7ff",
+      "#eebcff",
+      "#d8a8ff",
+      "#ffffff",
+    ],
   },
   {
     id: "sports_all_star",
     themeName: "Sports All-Star",
     description: "Watercolor soccer balls, basketballs, and stars.",
-    headerIllustrationPrompt: "sports balls in watercolor forming a header band with stars",
+    headerIllustrationPrompt:
+      "sports balls in watercolor forming a header band with stars",
     cornerAccentPrompt: "small sports icon corners",
     backgroundPrompt: "cool gray watercolor texture with faint stripes",
     typography: {
@@ -234,13 +316,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#f1f1f1", "#dfe4e9", "#bcc9d4", "#7d8fa3", "#ffffff"],
+    recommendedColorPalette: [
+      "#f1f1f1",
+      "#dfe4e9",
+      "#bcc9d4",
+      "#7d8fa3",
+      "#ffffff",
+    ],
   },
   {
     id: "floral_garden_birthday",
     themeName: "Floral Garden Birthday",
-    description: "Elegant watercolor florals suitable for adult birthday celebrations.",
-    headerIllustrationPrompt: "lush watercolor florals in pink, peach, and cream across header",
+    description:
+      "Elegant watercolor florals suitable for adult birthday celebrations.",
+    headerIllustrationPrompt:
+      "lush watercolor florals in pink, peach, and cream across header",
     cornerAccentPrompt: "floral botanical corners",
     backgroundPrompt: "cream paper texture with soft floral shadows",
     typography: {
@@ -248,13 +338,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#fff7f2", "#fae0d6", "#e7b6a6", "#be8d7c", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff7f2",
+      "#fae0d6",
+      "#e7b6a6",
+      "#be8d7c",
+      "#ffffff",
+    ],
   },
   {
     id: "royal_purple_celebration",
     themeName: "Royal Purple Celebration",
-    description: "Rich purple tones with gold embellishment for a luxury birthday theme.",
-    headerIllustrationPrompt: "royal purple watercolor sweep with gold foil flourishes",
+    description:
+      "Rich purple tones with gold embellishment for a luxury birthday theme.",
+    headerIllustrationPrompt:
+      "royal purple watercolor sweep with gold foil flourishes",
     cornerAccentPrompt: "gold foil corners with micro filigree",
     backgroundPrompt: "deep purple textured gradient",
     typography: {
@@ -262,13 +360,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#2c1a39", "#4c2b5a", "#734686", "#d1b07d", "#ffffff"],
+    recommendedColorPalette: [
+      "#2c1a39",
+      "#4c2b5a",
+      "#734686",
+      "#d1b07d",
+      "#ffffff",
+    ],
   },
   {
     id: "circus_big_top",
     themeName: "Circus Big Top",
     description: "Classic circus-style watercolor stripes and festive icons.",
-    headerIllustrationPrompt: "circus tent, flags, and stars in watercolor forming header border",
+    headerIllustrationPrompt:
+      "circus tent, flags, and stars in watercolor forming header border",
     cornerAccentPrompt: "circus star corners",
     backgroundPrompt: "red-and-cream faded circus stripes in watercolor",
     typography: {
@@ -276,12 +381,19 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Tangerine",
     },
-    recommendedColorPalette: ["#fff5ef", "#f2e0da", "#e3b9ad", "#cc7a66", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff5ef",
+      "#f2e0da",
+      "#e3b9ad",
+      "#cc7a66",
+      "#ffffff",
+    ],
   },
   {
     id: "rainbow_sprinkle_cake",
     themeName: "Rainbow Sprinkle Cake",
-    description: "A watercolor sprinkle cake surrounded by bright rainbow accents.",
+    description:
+      "A watercolor sprinkle cake surrounded by bright rainbow accents.",
     headerIllustrationPrompt:
       "pastel watercolor birthday cake with rainbow sprinkles and candles",
     cornerAccentPrompt: "rainbow sprinkle corner clusters",
@@ -291,13 +403,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#fff2f2", "#ffdfef", "#eaf8ff", "#f7ffd9", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff2f2",
+      "#ffdfef",
+      "#eaf8ff",
+      "#f7ffd9",
+      "#ffffff",
+    ],
   },
   {
     id: "golden_age_celebration",
     themeName: "Golden Age Celebration",
     description: "Gold confetti on black with an elegant adult birthday style.",
-    headerIllustrationPrompt: "gold foil confetti falling from the top with subtle sparkles",
+    headerIllustrationPrompt:
+      "gold foil confetti falling from the top with subtle sparkles",
     cornerAccentPrompt: "gold dusted corner flares",
     backgroundPrompt: "black-to-charcoal gradient with shimmering gold dust",
     typography: {
@@ -305,13 +424,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#1a1a1a", "#333333", "#e3c56e", "#bba256", "#ffffff"],
+    recommendedColorPalette: [
+      "#1a1a1a",
+      "#333333",
+      "#e3c56e",
+      "#bba256",
+      "#ffffff",
+    ],
   },
   {
     id: "tropical_fiesta",
     themeName: "Tropical Fiesta",
-    description: "Bright watercolor tropical leaves and fruits for a summer vibe.",
-    headerIllustrationPrompt: "palm leaves, hibiscus, and citrus watercolor band",
+    description:
+      "Bright watercolor tropical leaves and fruits for a summer vibe.",
+    headerIllustrationPrompt:
+      "palm leaves, hibiscus, and citrus watercolor band",
     cornerAccentPrompt: "tropical leaves in top corners",
     backgroundPrompt: "pale sand watercolor wash",
     typography: {
@@ -319,13 +446,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Nunito",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#fff4e8", "#fbe6d4", "#f2d8a7", "#89b97c", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff4e8",
+      "#fbe6d4",
+      "#f2d8a7",
+      "#89b97c",
+      "#ffffff",
+    ],
   },
   {
     id: "galaxy_neon_party",
     themeName: "Galaxy Neon Party",
-    description: "Bright neon elements on a galaxy backdrop for teens and adults.",
-    headerIllustrationPrompt: "neon streaks and stars over deep space watercolor background",
+    description:
+      "Bright neon elements on a galaxy backdrop for teens and adults.",
+    headerIllustrationPrompt:
+      "neon streaks and stars over deep space watercolor background",
     cornerAccentPrompt: "neon pink and blue corner starbursts",
     backgroundPrompt: "dark indigo-to-black gradient with star speckles",
     typography: {
@@ -333,12 +468,19 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Tangerine",
     },
-    recommendedColorPalette: ["#060a1e", "#121c3a", "#283766", "#ff76e1", "#61d0ff"],
+    recommendedColorPalette: [
+      "#060a1e",
+      "#121c3a",
+      "#283766",
+      "#ff76e1",
+      "#61d0ff",
+    ],
   },
   {
     id: "under_the_sea",
     themeName: "Under the Sea",
-    description: "Watercolor sea creatures and bubbles for ocean-themed birthdays.",
+    description:
+      "Watercolor sea creatures and bubbles for ocean-themed birthdays.",
     headerIllustrationPrompt:
       "watercolor dolphins, turtles, fish, and bubbles swimming across header",
     cornerAccentPrompt: "bubble corner clusters",
@@ -348,13 +490,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#e7f8ff", "#c8e6f2", "#98c7e2", "#5c93b8", "#ffffff"],
+    recommendedColorPalette: [
+      "#e7f8ff",
+      "#c8e6f2",
+      "#98c7e2",
+      "#5c93b8",
+      "#ffffff",
+    ],
   },
   {
     id: "retro_80s_neon",
     themeName: "Retro 80s Neon",
     description: "Bold geometric neon shapes inspired by 80s retro parties.",
-    headerIllustrationPrompt: "neon pink and turquoise geometric shapes layered diagonally",
+    headerIllustrationPrompt:
+      "neon pink and turquoise geometric shapes layered diagonally",
     cornerAccentPrompt: "neon triangles and squiggles",
     backgroundPrompt: "black backdrop with glowing neon gradients",
     typography: {
@@ -362,7 +511,13 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#0c0c0c", "#ff63b5", "#00f5e1", "#e0f070", "#ffffff"],
+    recommendedColorPalette: [
+      "#0c0c0c",
+      "#ff63b5",
+      "#00f5e1",
+      "#e0f070",
+      "#ffffff",
+    ],
   },
   {
     id: "little_explorer",
@@ -377,7 +532,13 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Nunito",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#f8f1e0", "#e4d3ae", "#c7b88a", "#917e60", "#ffffff"],
+    recommendedColorPalette: [
+      "#f8f1e0",
+      "#e4d3ae",
+      "#c7b88a",
+      "#917e60",
+      "#ffffff",
+    ],
   },
   {
     id: "butterfly_bloom",
@@ -392,7 +553,13 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#f7f1fa", "#eedaf2", "#d7b4e2", "#9c7eb6", "#ffffff"],
+    recommendedColorPalette: [
+      "#f7f1fa",
+      "#eedaf2",
+      "#d7b4e2",
+      "#9c7eb6",
+      "#ffffff",
+    ],
   },
   {
     id: "camping_night",
@@ -406,13 +573,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Tangerine",
     },
-    recommendedColorPalette: ["#0d1a2e", "#23324b", "#4d6580", "#d59b58", "#ffffff"],
+    recommendedColorPalette: [
+      "#0d1a2e",
+      "#23324b",
+      "#4d6580",
+      "#d59b58",
+      "#ffffff",
+    ],
   },
   {
     id: "fairy_garden_glow",
     themeName: "Fairy Garden Glow",
-    description: "Whimsical fairy lights and pastel florals for a magical birthday.",
-    headerIllustrationPrompt: "string lights with watercolor florals and fairy dust effect",
+    description:
+      "Whimsical fairy lights and pastel florals for a magical birthday.",
+    headerIllustrationPrompt:
+      "string lights with watercolor florals and fairy dust effect",
     cornerAccentPrompt: "tiny fairy dust clusters",
     backgroundPrompt: "mint and lavender watercolor gradient",
     typography: {
@@ -420,13 +595,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#f4f8f7", "#e5f1ec", "#d5e6e3", "#b2ccc4", "#ffffff"],
+    recommendedColorPalette: [
+      "#f4f8f7",
+      "#e5f1ec",
+      "#d5e6e3",
+      "#b2ccc4",
+      "#ffffff",
+    ],
   },
   {
     id: "farmyard_friends",
     themeName: "Farmyard Friends",
     description: "Cute watercolor farm animals with barn and hay textures.",
-    headerIllustrationPrompt: "watercolor cow, pig, and rooster with barn backdrop",
+    headerIllustrationPrompt:
+      "watercolor cow, pig, and rooster with barn backdrop",
     cornerAccentPrompt: "farm tool and hay illustrations",
     backgroundPrompt: "light tan paper texture with faint hay lines",
     typography: {
@@ -434,13 +616,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Nunito",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#fff4e8", "#f8e4ca", "#e5c790", "#a07e52", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff4e8",
+      "#f8e4ca",
+      "#e5c790",
+      "#a07e52",
+      "#ffffff",
+    ],
   },
   {
     id: "jungle_parade",
     themeName: "Jungle Parade",
-    description: "Watercolor jungle animals and tropical leaves marching across header.",
-    headerIllustrationPrompt: "lion, monkey, zebra, and giraffe with tropical leaves",
+    description:
+      "Watercolor jungle animals and tropical leaves marching across header.",
+    headerIllustrationPrompt:
+      "lion, monkey, zebra, and giraffe with tropical leaves",
     cornerAccentPrompt: "tropical leaf corners",
     backgroundPrompt: "green watercolor wash with leaf silhouettes",
     typography: {
@@ -448,13 +638,21 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#edf7ec", "#d2ead2", "#b3d8b4", "#77a279", "#ffffff"],
+    recommendedColorPalette: [
+      "#edf7ec",
+      "#d2ead2",
+      "#b3d8b4",
+      "#77a279",
+      "#ffffff",
+    ],
   },
   {
     id: "vintage_polaroid",
     themeName: "Vintage Polaroid",
-    description: "Retro birthday theme with Polaroid photo frames and pastel tape art.",
-    headerIllustrationPrompt: "polaroid photo frames layered diagonally with confetti",
+    description:
+      "Retro birthday theme with Polaroid photo frames and pastel tape art.",
+    headerIllustrationPrompt:
+      "polaroid photo frames layered diagonally with confetti",
     cornerAccentPrompt: "washi tape and sticker corners",
     backgroundPrompt: "off-white paper texture with faint grid",
     typography: {
@@ -462,13 +660,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Parisienne",
     },
-    recommendedColorPalette: ["#fffaf3", "#efe3d2", "#d8c6a9", "#a58c6e", "#ffffff"],
+    recommendedColorPalette: [
+      "#fffaf3",
+      "#efe3d2",
+      "#d8c6a9",
+      "#a58c6e",
+      "#ffffff",
+    ],
   },
   {
     id: "elegant_florals_gold",
     themeName: "Elegant Florals & Gold",
     description: "Delicate pink and cream flowers paired with gold foil lines.",
-    headerIllustrationPrompt: "hand-painted florals with gold foil geometric frame",
+    headerIllustrationPrompt:
+      "hand-painted florals with gold foil geometric frame",
     cornerAccentPrompt: "tiny gold floral corners",
     backgroundPrompt: "soft blush watercolor texture",
     typography: {
@@ -476,13 +681,20 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Inter",
       accentFont: "Great Vibes",
     },
-    recommendedColorPalette: ["#fff6f2", "#f7e1da", "#e5bca9", "#c48c6c", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff6f2",
+      "#f7e1da",
+      "#e5bca9",
+      "#c48c6c",
+      "#ffffff",
+    ],
   },
   {
     id: "balloons_at_sunset",
     themeName: "Balloons at Sunset",
     description: "Warm sunset gradient with floating balloons across the top.",
-    headerIllustrationPrompt: "balloons floating upward in peach and coral tones over horizon",
+    headerIllustrationPrompt:
+      "balloons floating upward in peach and coral tones over horizon",
     cornerAccentPrompt: "balloon ribbon corners",
     backgroundPrompt: "orange-to-pink watercolor sunset gradient",
     typography: {
@@ -490,7 +702,13 @@ const PROFESSIONAL_THEMES = [
       bodyFont: "Lora",
       accentFont: "Dancing Script",
     },
-    recommendedColorPalette: ["#fff1eb", "#ffd7c4", "#f9b28f", "#e58058", "#ffffff"],
+    recommendedColorPalette: [
+      "#fff1eb",
+      "#ffd7c4",
+      "#f9b28f",
+      "#e58058",
+      "#ffffff",
+    ],
   },
 ];
 
@@ -500,13 +718,14 @@ const DESIGN_THEMES = [
     name: "Super Star Gala",
     category: "High glamour",
     bg: "bg-gradient-to-br from-black via-slate-900 to-red-900",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-amber-300",
     previewColor: "bg-gradient-to-br from-black via-slate-900 to-red-900",
     previewDot: "bg-amber-400",
     aesthetic: "High glamour, red carpet event.",
     colors: "Deep black, shimmering gold, and vivid ruby red.",
-    graphics: "Glittering stars, spotlights, and a subtle velvet texture background.",
+    graphics:
+      "Glittering stars, spotlights, and a subtle velvet texture background.",
     font: "A dramatic, elegant serif for the title.",
     primaryObjects:
       "Gold Statuettes (trophies) framing the text block. A velvet curtain backdrop with spotlights shining from the top corners.",
@@ -521,7 +740,8 @@ const DESIGN_THEMES = [
     previewColor: "bg-gradient-to-br from-purple-200 via-pink-200 to-blue-200",
     previewDot: "bg-purple-300",
     aesthetic: "Magical, iridescent, and soft.",
-    colors: "Pastel lavender, mint green, baby pink, and white, with an iridescent sheen.",
+    colors:
+      "Pastel lavender, mint green, baby pink, and white, with an iridescent sheen.",
     graphics: "A graceful unicorn silhouette, rainbows, and sparkles.",
     font: "A whimsical, flowing script.",
     primaryObjects:
@@ -532,13 +752,15 @@ const DESIGN_THEMES = [
     name: "Dinosaur Adventure",
     category: "Prehistoric jungle",
     bg: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-amber-200",
-    previewColor: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
+    previewColor:
+      "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
     previewDot: "bg-emerald-700",
     aesthetic: "Prehistoric jungle exploration.",
     colors: "Earthy greens, moss, burnt orange, and brown.",
-    graphics: "Friendly T-Rex or Triceratops illustration, palm leaves, and fossil patterns.",
+    graphics:
+      "Friendly T-Rex or Triceratops illustration, palm leaves, and fossil patterns.",
     font: "A bold, slightly rugged, stencil-like font.",
     primaryObjects:
       "A friendly T-Rex illustration peering in from the bottom left corner. Tropical foliage borders along the top and sides.",
@@ -550,11 +772,13 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-pink-100 via-yellow-100 to-purple-100",
     text: "text-fuchsia-900",
     accent: "text-pink-600",
-    previewColor: "bg-gradient-to-br from-pink-200 via-yellow-200 to-purple-200",
+    previewColor:
+      "bg-gradient-to-br from-pink-200 via-yellow-200 to-purple-200",
     previewDot: "bg-pink-200",
     aesthetic: "Sweet, vibrant, and playful.",
     colors: "Hot pink, turquoise, sunshine yellow, and electric purple.",
-    graphics: "Giant lollipops, swirling gummies, candy canes, and drippy frosting borders.",
+    graphics:
+      "Giant lollipops, swirling gummies, candy canes, and drippy frosting borders.",
     font: "A bubbly, rounded, and highly decorative font.",
     primaryObjects:
       "Giant Lollipops and ice cream cones placed as corner accents. The text is often bordered by dripping chocolate or frosting effects.",
@@ -564,7 +788,7 @@ const DESIGN_THEMES = [
     name: "Deep Space Hero",
     category: "Cosmic adventure",
     bg: "bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-700",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-sky-300",
     previewColor: "bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-700",
     previewDot: "bg-blue-500",
@@ -602,7 +826,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-amber-400",
     aesthetic: "Aged parchment and swashbuckling adventure.",
     colors: "Dark browns, deep reds, sandy beige, and gold.",
-    graphics: "Treasure map texture background, skull and crossbones, compass rose, and chest of gold.",
+    graphics:
+      "Treasure map texture background, skull and crossbones, compass rose, and chest of gold.",
     font: "An old-style script font.",
     primaryObjects:
       "A rolled-up Scroll or Treasure Map texture serves as the background for the text. A small Skull and Crossbones icon is placed near the RSVP details.",
@@ -618,7 +843,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-teal-300",
     aesthetic: "Undersea fantasy with shimmer.",
     colors: "Teal, seafoam green, deep purple, and pearly white.",
-    graphics: "Detailed fish scales pattern, seashells, starfish, and shimmering bubbles.",
+    graphics:
+      "Detailed fish scales pattern, seashells, starfish, and shimmering bubbles.",
     font: "An elegant, slightly watery script.",
     primaryObjects:
       "A Mermaid tail emerging from the bottom center, surrounded by Seashells and bubbles. The event title is often framed by a clam shell shape.",
@@ -634,7 +860,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-slate-400",
     aesthetic: "Industrial, mechanical, and retro-futuristic.",
     colors: "Metallic silver, vibrant orange, black, and light gray.",
-    graphics: "Circuit board patterns, nuts and bolts borders, and a friendly-but-boxy robot illustration.",
+    graphics:
+      "Circuit board patterns, nuts and bolts borders, and a friendly-but-boxy robot illustration.",
     font: "A blocky, monospace font.",
     primaryObjects:
       "A friendly, angular Robot centered below the main title. Gear and circuit patterns form the background texture and border elements.",
@@ -650,7 +877,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-green-200",
     aesthetic: "Enchanted forest, delicate and natural.",
     colors: "Soft forest green, pale yellow, moss, and blush pink.",
-    graphics: "Intricate flower borders, whimsical mushroom caps, and tiny fairy silhouettes.",
+    graphics:
+      "Intricate flower borders, whimsical mushroom caps, and tiny fairy silhouettes.",
     font: "A delicate, looping calligraphy font.",
     primaryObjects:
       "Tiny Fairy silhouettes fluttering around the main title. Intricate Flower vines and soft light orbs frame the edges of the invite.",
@@ -660,13 +888,14 @@ const DESIGN_THEMES = [
     name: "Dragon's Fire",
     category: "Medieval fantasy",
     bg: "bg-gradient-to-br from-red-900 via-amber-600 to-amber-800",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-amber-300",
     previewColor: "bg-gradient-to-br from-red-900 via-amber-600 to-amber-800",
     previewDot: "bg-red-700",
     aesthetic: "Medieval fantasy, epic scale, and intensity.",
     colors: "Deep crimson, charcoal gray, fiery orange, and metallic bronze.",
-    graphics: "A majestic dragon silhouette breathing fire, castle turrets, and rocky textures.",
+    graphics:
+      "A majestic dragon silhouette breathing fire, castle turrets, and rocky textures.",
     font: "A dramatic, bold, and slightly Gothic font.",
     primaryObjects:
       "A Dragon silhouette wrapping around the top edge of the invite. Fire effects emanate subtly from the bottom corners, framing the event details.",
@@ -682,7 +911,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-green-300",
     aesthetic: "Tropical, wild, and adventurous.",
     colors: "Khaki, bright leaf green, tan, and splashes of animal print.",
-    graphics: "Layered jungle leaves, illustrations of friendly lions, elephants, or monkeys.",
+    graphics:
+      "Layered jungle leaves, illustrations of friendly lions, elephants, or monkeys.",
     font: "A playful, textured font.",
     primaryObjects:
       "Layered Palm Leaves and jungle vines creating a dense border around the edges. A friendly Lion or Monkey illustration peeking from the side.",
@@ -698,7 +928,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-pink-300",
     aesthetic: "Royal, elegant, and fairytale-inspired.",
     colors: "Light gold, soft pink, periwinkle blue, and white.",
-    graphics: "A silhouette of a grand castle, ornate scrollwork borders, and tiny crowns.",
+    graphics:
+      "A silhouette of a grand castle, ornate scrollwork borders, and tiny crowns.",
     font: "A formal, decorative script font.",
     primaryObjects:
       "A grand Castle silhouette centered at the top, acting as the main header graphic. Ornate scrollwork and tiny Crowns are used as decorative dividers.",
@@ -708,13 +939,14 @@ const DESIGN_THEMES = [
     name: "Knight's Quest",
     category: "Noble & brave",
     bg: "bg-gradient-to-br from-slate-800 via-blue-800 to-red-700",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-red-200",
     previewColor: "bg-gradient-to-br from-slate-800 via-blue-800 to-red-700",
     previewDot: "bg-slate-700",
     aesthetic: "Brave, noble, and historical.",
     colors: "Silver, deep blue, deep red, and slate gray.",
-    graphics: "A heraldic shield/crest, crossed swords, and chainmail texture background.",
+    graphics:
+      "A heraldic shield/crest, crossed swords, and chainmail texture background.",
     font: "A strong, imposing serif font.",
     primaryObjects:
       "A large Heraldic Shield or Crest placed slightly behind the main title text (as a watermark). Crossed Swords used as a decorative element near the date/time.",
@@ -724,13 +956,14 @@ const DESIGN_THEMES = [
     name: "Monster Mash",
     category: "Friendly spooky",
     bg: "bg-gradient-to-br from-lime-200 via-purple-200 to-gray-800",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-lime-200",
     previewColor: "bg-gradient-to-br from-lime-200 via-purple-200 to-gray-800",
     previewDot: "bg-lime-400",
     aesthetic: "Slightly spooky, silly, and friendly frights.",
     colors: "Lime green, deep purple, black, and glow-in-the-dark white.",
-    graphics: "Cute, fuzzy, multi-eyed monsters, and abstract ooze/slime effects.",
+    graphics:
+      "Cute, fuzzy, multi-eyed monsters, and abstract ooze/slime effects.",
     font: "A slightly wobbly or handwritten horror-style font.",
     primaryObjects:
       "Cute, fuzzy Monsters acting as border elements, peeking from the top and bottom. Silly green slime or abstract spots dripping from the header.",
@@ -746,7 +979,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-amber-300",
     aesthetic: "Relaxed, tropical, and bright.",
     colors: "Turquoise water, sandy yellow, coral pink, and sunset orange.",
-    graphics: "Palm trees, flip-flops, sunglasses, beach balls, and wave patterns.",
+    graphics:
+      "Palm trees, flip-flops, sunglasses, beach balls, and wave patterns.",
     font: "A casual, hand-drawn font.",
     primaryObjects:
       "Palm Trees on the sides, casting shadows on the sandy background. A graphic of Ocean Waves along the bottom edge, where the party location is listed.",
@@ -762,7 +996,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-blue-200",
     aesthetic: "Icy, serene, and sparkling.",
     colors: "Icy blue, silver, crisp white, and deep navy.",
-    graphics: "Detailed snowflakes, frost patterns, bare tree silhouettes, and swirling snow effects.",
+    graphics:
+      "Detailed snowflakes, frost patterns, bare tree silhouettes, and swirling snow effects.",
     font: "A thin, delicate serif or an elegant script font.",
     primaryObjects:
       "Large, detailed Snowflakes falling across the page. A subtle, frosted border and bare Tree silhouettes visible in the background texture.",
@@ -778,7 +1013,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-lime-300",
     aesthetic: "Energetic, chaotic, and experimental.",
     colors: "Neon green, bright yellow, black, and beaker-blue.",
-    graphics: "Bubbling test tubes, atomic symbols, lightning bolts, and safety signs.",
+    graphics:
+      "Bubbling test tubes, atomic symbols, lightning bolts, and safety signs.",
     font: "A bold, industrial, or slightly erratic distressed font.",
     primaryObjects:
       "Beakers and Test Tubes placed as icons near the event location or details. Lightning bolts or radiation symbols are used as divider lines.",
@@ -790,11 +1026,14 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
     text: "text-orange-900",
     accent: "text-pink-700",
-    previewColor: "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
+    previewColor:
+      "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
     previewDot: "bg-pink-300",
     aesthetic: "Vibrant, celebratory, and charmingly fuzzy.",
-    colors: "Fusia, turquoise, orange, and lime green (inspired by Peruvian textiles).",
-    graphics: "A smiling llama wearing a colorful blanket/sombrero, confetti, and geometric patterns.",
+    colors:
+      "Fusia, turquoise, orange, and lime green (inspired by Peruvian textiles).",
+    graphics:
+      "A smiling llama wearing a colorful blanket/sombrero, confetti, and geometric patterns.",
     font: "A playful, bold, and rounded font.",
     primaryObjects:
       "A Llama wearing a festive blanket, centered below the main title. Colorful paper 'Picado' (banners) draped across the top edge.",
@@ -810,7 +1049,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-emerald-400",
     aesthetic: "Calm, minimalist, and bamboo forest inspired.",
     colors: "Black, white, various shades of natural green, and warm gray.",
-    graphics: "Simple, cute panda illustrations, bamboo stalks, and subtle watercolor effects.",
+    graphics:
+      "Simple, cute panda illustrations, bamboo stalks, and subtle watercolor effects.",
     font: "A clean, minimalist, and highly readable sans-serif font.",
     primaryObjects:
       "A small, seated Panda illustration in the bottom corner. Bamboo stalks used as simple, vertical dividing elements or background textures.",
@@ -825,7 +1065,8 @@ const DESIGN_THEMES = [
     previewColor: "bg-gradient-to-br from-yellow-100 via-red-100 to-blue-100",
     previewDot: "bg-yellow-200",
     aesthetic: "Energetic, fun, and tail-wagging.",
-    colors: "Primary colors (red, blue, yellow) or a combo of brown, black, and bone-white.",
+    colors:
+      "Primary colors (red, blue, yellow) or a combo of brown, black, and bone-white.",
     graphics: "Paw prints, bones, tennis balls, and various cute dog breeds.",
     font: "A friendly, rounded, slightly bouncy font.",
     primaryObjects:
@@ -842,7 +1083,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-amber-200",
     aesthetic: "Cozy, gentle, and sweet.",
     colors: "Pastel peach, cream, light gray, and soft brown.",
-    graphics: "Simple line-drawn kittens, hearts, steaming teacups, and floral accents.",
+    graphics:
+      "Simple line-drawn kittens, hearts, steaming teacups, and floral accents.",
     font: "A gentle, slightly cursive or handwritten script.",
     primaryObjects:
       "Simple, line-drawn Kitten motifs near the corners. A steaming Teacup graphic placed next to the RSVP information or event time.",
@@ -852,13 +1094,14 @@ const DESIGN_THEMES = [
     name: "Race Car Rally",
     category: "High speed",
     bg: "bg-gradient-to-br from-red-600 via-yellow-200 to-slate-900",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-yellow-200",
     previewColor: "bg-gradient-to-br from-red-600 via-yellow-200 to-slate-900",
     previewDot: "bg-red-500",
     aesthetic: "High speed, checkered flags, and competitive energy.",
     colors: "Bright red, black, white, and neon yellow.",
-    graphics: "Racing stripes, checkered flag patterns, speed lines, and a stylized race car graphic.",
+    graphics:
+      "Racing stripes, checkered flag patterns, speed lines, and a stylized race car graphic.",
     font: "A bold, italicized, dynamic font.",
     primaryObjects:
       "Checkered Flags bordering the top and bottom of the invite. A dynamic Race Car graphic positioned near the main title, with speed lines trailing.",
@@ -870,10 +1113,12 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
     text: "text-slate-900",
     accent: "text-indigo-700",
-    previewColor: "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
+    previewColor:
+      "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
     previewDot: "bg-indigo-300",
     aesthetic: "Bohemian, artistic, and free-spirited.",
-    colors: "Earth tones (mustard, rust, olive) paired with bright jewel tones (indigo, turquoise).",
+    colors:
+      "Earth tones (mustard, rust, olive) paired with bright jewel tones (indigo, turquoise).",
     graphics: "Tents, stage lights, tribal patterns, and sunbursts.",
     font: "A cool, retro, slightly distressed font.",
     primaryObjects:
@@ -886,11 +1131,13 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
     text: "text-slate-900",
     accent: "text-orange-800",
-    previewColor: "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
+    previewColor:
+      "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
     previewDot: "bg-yellow-400",
     aesthetic: "Industrial, safety-focused, and dynamic.",
     colors: "Caution yellow, bright orange, black, and industrial gray.",
-    graphics: "Construction tape borders, dump trucks, hard hats, and traffic cones.",
+    graphics:
+      "Construction tape borders, dump trucks, hard hats, and traffic cones.",
     font: "A heavy, blocky, stencil-style font.",
     primaryObjects:
       "Safety Tape or Caution Stripes used as prominent border elements. Dump Trucks or Cranes positioned along the bottom edge, creating a scene.",
@@ -900,13 +1147,14 @@ const DESIGN_THEMES = [
     name: "Under the Sea",
     category: "Deep ocean",
     bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-700",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-cyan-200",
     previewColor: "bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-700",
     previewDot: "bg-cyan-500",
     aesthetic: "Deep ocean wonder, bioluminescent.",
     colors: "Deep blues, vibrant corals, electric greens, and dark teal.",
-    graphics: "Silhouettes of deep-sea creatures, kelp forests, and glowing bubbles.",
+    graphics:
+      "Silhouettes of deep-sea creatures, kelp forests, and glowing bubbles.",
     font: "A slightly distorted or wavy font.",
     primaryObjects:
       "Bioluminescent Jellyfish floating near the header text. Coral reefs and deep-sea vents visible in the background texture along the bottom.",
@@ -922,7 +1170,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-red-300",
     aesthetic: "Rustic, cheerful, and pastoral.",
     colors: "Barn red, straw yellow, denim blue, and grassy green.",
-    graphics: "Picket fence border, hay bales, and simple, cute farm animal illustrations (pig, cow, chicken).",
+    graphics:
+      "Picket fence border, hay bales, and simple, cute farm animal illustrations (pig, cow, chicken).",
     font: "A sweet, slightly rounded, country-style font.",
     primaryObjects:
       "A Picket Fence border along the bottom. Cute illustrations of a Cow and a Pig flanking the main invitation text.",
@@ -937,8 +1186,10 @@ const DESIGN_THEMES = [
     previewColor: "bg-gradient-to-br from-blue-700 via-yellow-300 to-red-600",
     previewDot: "bg-blue-500",
     aesthetic: "Comic book style, powerful, and iconic.",
-    colors: "Primary colors (red, blue, yellow) with black outlines and white highlights.",
-    graphics: 'Comic book speech bubbles ("POW!"), city skyline silhouette, and a shield icon.',
+    colors:
+      "Primary colors (red, blue, yellow) with black outlines and white highlights.",
+    graphics:
+      'Comic book speech bubbles ("POW!"), city skyline silhouette, and a shield icon.',
     font: "A bold, impactful, and slightly skewed comic book lettering font.",
     primaryObjects:
       "A City Skyline silhouette forming the backdrop. A personalized Hero logo (e.g., child's initial on a shield) placed prominently at the top header.",
@@ -954,7 +1205,8 @@ const DESIGN_THEMES = [
     previewDot: "bg-pink-500",
     aesthetic: "8-bit, neon, and high-energy nostalgia.",
     colors: "Electric pink, cyan, purple, and black.",
-    graphics: "Pixel art characters (Pac-Man, space invaders), geometric patterns, and neon light tubing effects.",
+    graphics:
+      "Pixel art characters (Pac-Man, space invaders), geometric patterns, and neon light tubing effects.",
     font: "A pixelated or blocky 8-bit digital font.",
     primaryObjects:
       "Pixelated Characters (like ghosts or cherries) scattered randomly in the background. The main title is often framed by a neon-style geometric box.",
@@ -964,19 +1216,20 @@ const DESIGN_THEMES = [
     name: "Viking Voyage",
     category: "Norse epic",
     bg: "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
-    text: "text-white",
+    text: "text-white drop-shadow-md",
     accent: "text-amber-200",
-    previewColor: "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
+    previewColor:
+      "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
     previewDot: "bg-emerald-700",
     aesthetic: "Norse mythology, rugged, and epic.",
     colors: "Dark forest green, deep brown, steel gray, and rustic gold.",
-    graphics: "Longship silhouette, stylized knots/runes, and a Viking helmet icon.",
+    graphics:
+      "Longship silhouette, stylized knots/runes, and a Viking helmet icon.",
     font: "A strong, medieval, or carved wood-effect font.",
     primaryObjects:
       "A Viking Longship sailing across the bottom of the invite. Rune-like symbols used to frame the main text block, giving a carved-wood effect.",
   },
 ];
-
 
 const INITIAL_DATA = {
   childName: "Emma",
@@ -1194,9 +1447,39 @@ export default function BirthdayTemplateCustomizePage() {
     currentTheme.previewDot ||
     currentTheme.previewColor?.split(" ")[0] ||
     "bg-slate-200";
+
+  // Detect dark background for title color
+  const isDarkBackground = useMemo(() => {
+    const bg = currentTheme?.bg?.toLowerCase() ?? "";
+    const darkTokens = [
+      "black",
+      "slate-9",
+      "stone-9",
+      "neutral-9",
+      "gray-9",
+      "grey-9",
+      "indigo-9",
+      "purple-9",
+      "violet-9",
+      "emerald-9",
+      "teal-9",
+      "blue-9",
+      "navy",
+      "midnight",
+    ];
+    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
+    const hasDarkHex =
+      /#0[0-9a-f]{5,}/i.test(bg) ||
+      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
+      /#2[0-3][0-9a-f]{4}/i.test(bg);
+    return hasDarkToken || hasDarkHex;
+  }, [currentTheme]);
+
+  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
   const currentProfessionalTheme =
-    PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
-    PROFESSIONAL_THEMES[0];
+    PROFESSIONAL_THEMES.find(
+      (theme) => theme.id === data.theme.professionalThemeId
+    ) || PROFESSIONAL_THEMES[0];
   const professionalPalette =
     currentProfessionalTheme.recommendedColorPalette || [];
   const professionalAccentColor =
@@ -1210,8 +1493,8 @@ export default function BirthdayTemplateCustomizePage() {
           backgroundImage: `linear-gradient(135deg, ${professionalPalette[0]} 0%, ${professionalPalette[1]} 100%)`,
         }
       : professionalPalette[0]
-        ? { backgroundColor: professionalPalette[0] }
-        : {};
+      ? { backgroundColor: professionalPalette[0] }
+      : {};
   const professionalAccentStyle = professionalAccentColor
     ? { color: professionalAccentColor }
     : undefined;
@@ -1568,7 +1851,8 @@ export default function BirthdayTemplateCustomizePage() {
                   className="w-3 h-3 rounded-full border shadow-sm"
                   style={{
                     backgroundColor:
-                      currentProfessionalTheme.recommendedColorPalette?.[0] || "#e2e8f0",
+                      currentProfessionalTheme.recommendedColorPalette?.[0] ||
+                      "#e2e8f0",
                   }}
                 ></div>
                 {currentProfessionalTheme.themeName || "Select a theme"}
@@ -1579,7 +1863,9 @@ export default function BirthdayTemplateCustomizePage() {
             </div>
             <div
               className={`p-2 rounded-full bg-slate-50 text-slate-500 group-hover:bg-slate-100 transition-all ${
-                professionalOpen ? "rotate-180 text-indigo-600 bg-indigo-50" : ""
+                professionalOpen
+                  ? "rotate-180 text-indigo-600 bg-indigo-50"
+                  : ""
               }`}
             >
               <ChevronDown size={16} />
@@ -1618,13 +1904,15 @@ export default function BirthdayTemplateCustomizePage() {
                       {theme.themeName}
                     </p>
                     <div className="flex gap-1 mt-1">
-                      {theme.recommendedColorPalette.slice(0, 5).map((color) => (
-                        <span
-                          key={color}
-                          className="w-4 h-4 rounded-full border border-black/5 shadow-sm"
-                          style={{ backgroundColor: color }}
-                        ></span>
-                      ))}
+                      {theme.recommendedColorPalette
+                        .slice(0, 5)
+                        .map((color) => (
+                          <span
+                            key={color}
+                            className="w-4 h-4 rounded-full border border-black/5 shadow-sm"
+                            style={{ backgroundColor: color }}
+                          ></span>
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -1812,7 +2100,9 @@ export default function BirthdayTemplateCustomizePage() {
                 {currentProfessionalTheme.cornerAccentPrompt}
               </p>
               <p>
-                <span className="font-semibold text-slate-700">Background:</span>{" "}
+                <span className="font-semibold text-slate-700">
+                  Background:
+                </span>{" "}
                 {currentProfessionalTheme.backgroundPrompt}
               </p>
             </div>
@@ -1834,14 +2124,16 @@ export default function BirthdayTemplateCustomizePage() {
                 {currentProfessionalTheme.typography.accentFont}
               </p>
               <div className="flex items-center gap-2 pt-1 flex-wrap">
-                {currentProfessionalTheme.recommendedColorPalette.map((color) => (
-                  <span
-                    key={color}
-                    className="w-6 h-6 rounded-full border border-black/5 shadow-sm"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  ></span>
-                ))}
+                {currentProfessionalTheme.recommendedColorPalette.map(
+                  (color) => (
+                    <span
+                      key={color}
+                      className="w-6 h-6 rounded-full border border-black/5 shadow-sm"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    ></span>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -2127,9 +2419,9 @@ export default function BirthdayTemplateCustomizePage() {
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
             key={`preview-${data.theme.themeId}`}
-          className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-all duration-500 relative z-0`}
-          style={professionalBackgroundStyle}
-        >
+            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-all duration-500 relative z-0`}
+            style={professionalBackgroundStyle}
+          >
             <div className="relative z-10">
               <div
                 className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
@@ -2140,7 +2432,10 @@ export default function BirthdayTemplateCustomizePage() {
                 >
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
-                    style={{ fontFamily: currentFont.preview }}
+                    style={{
+                      fontFamily: currentFont.preview,
+                      ...(titleColor || {}),
+                    }}
                   >
                     {data.childName}'s {data.age}
                     {getAgeSuffix(data.age)} Birthday
@@ -2379,7 +2674,7 @@ export default function BirthdayTemplateCustomizePage() {
                 <section className="max-w-xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
-                    style={professionalAccentStyle}
+                    style={titleColor || professionalAccentStyle}
                   >
                     RSVP
                   </h2>

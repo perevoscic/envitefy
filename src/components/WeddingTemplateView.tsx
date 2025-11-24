@@ -187,6 +187,35 @@ export default function WeddingTemplateView({
   const currentSize =
     FONT_SIZES[theme.fontSize as keyof typeof FONT_SIZES] || FONT_SIZES.medium;
 
+  // Detect dark background for title color
+  const isDarkBackground = useMemo(() => {
+    const bg = currentTheme?.bg?.toLowerCase() ?? "";
+    const darkTokens = [
+      "black",
+      "slate-9",
+      "stone-9",
+      "neutral-9",
+      "gray-9",
+      "grey-9",
+      "indigo-9",
+      "purple-9",
+      "violet-9",
+      "emerald-9",
+      "teal-9",
+      "blue-9",
+      "navy",
+      "midnight",
+    ];
+    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
+    const hasDarkHex =
+      /#0[0-9a-f]{5,}/i.test(bg) ||
+      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
+      /#2[0-3][0-9a-f]{4}/i.test(bg);
+    return hasDarkToken || hasDarkHex;
+  }, [currentTheme]);
+
+  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
+
   const partner1 = weddingData.partner1 || "";
   const partner2 = weddingData.partner2 || "";
   const date = weddingData.date;
@@ -261,6 +290,7 @@ export default function WeddingTemplateView({
               <div className="flex-1">
                 <h1
                   className={`${currentSize.h1} mb-2 ${currentFont.title} leading-tight`}
+                  style={titleColor}
                 >
                   {partner1} & {partner2}
                 </h1>
@@ -350,6 +380,7 @@ export default function WeddingTemplateView({
                 <section id="schedule" className="max-w-4xl mx-auto">
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Schedule of Events
                   </h2>
@@ -417,6 +448,7 @@ export default function WeddingTemplateView({
                 >
                   <h2
                     className={`${currentSize.h2} mb-8 ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Our Story
                   </h2>
@@ -432,6 +464,7 @@ export default function WeddingTemplateView({
                 <section id="wedding-party" className="max-w-4xl mx-auto">
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Wedding Party
                   </h2>
@@ -487,6 +520,7 @@ export default function WeddingTemplateView({
                 <section id="photos" className="max-w-4xl mx-auto">
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Photos
                   </h2>
@@ -511,6 +545,7 @@ export default function WeddingTemplateView({
                 <section id="things-to-do" className="max-w-4xl mx-auto">
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Things To Do
                   </h2>
@@ -544,6 +579,7 @@ export default function WeddingTemplateView({
                 <section id="travel" className="max-w-3xl mx-auto">
                   <h2
                     className={`${currentSize.h2} mb-10 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Travel & Stay
                   </h2>
@@ -646,6 +682,7 @@ export default function WeddingTemplateView({
                 <section id="location" className="max-w-4xl mx-auto">
                   <h2
                     className={`${currentSize.h2} mb-8 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Location
                   </h2>
@@ -659,6 +696,7 @@ export default function WeddingTemplateView({
               <section id="rsvp" className="max-w-xl mx-auto text-center">
                 <h2
                   className={`${currentSize.h2} mb-6 ${currentFont.title} ${currentTheme.accent}`}
+                  style={titleColor}
                 >
                   RSVP
                 </h2>

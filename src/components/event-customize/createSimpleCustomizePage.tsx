@@ -1,11 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, memo } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Edit2,
   Image as ImageIcon,
   Menu,
@@ -39,7 +41,7 @@ export type SimpleTemplateConfig = {
   themes: ThemeSpec[];
 };
 
-const InputGroup = ({
+const InputGroup = memo(({
   label,
   value,
   onChange,
@@ -73,7 +75,18 @@ const InputGroup = ({
       />
     )}
   </div>
-);
+), (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.label === nextProps.label &&
+    prevProps.type === nextProps.type &&
+    prevProps.placeholder === nextProps.placeholder &&
+    prevProps.onChange === nextProps.onChange
+  );
+});
+
+InputGroup.displayName = "InputGroup";
 
 const ThemeSwatch = ({
   theme,
@@ -144,6 +157,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
+    const [themesExpanded, setThemesExpanded] = useState(false);
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -198,6 +212,10 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const bodyShadow = usesLightText
       ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
       : undefined;
+    // Title color for dark backgrounds - light gold/beige
+    const titleColor = isDarkBackground
+      ? { color: "#f5e6d3" } // Light beige/gold
+      : undefined;
 
     const locationParts = [data.venue, data.city, data.state]
       .filter(Boolean)
@@ -211,12 +229,12 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const updateExtra = (key: string, value: string) => {
+    const updateExtra = useCallback((key: string, value: string) => {
       setData((prev) => ({
         ...prev,
         extra: { ...prev.extra, [key]: value },
       }));
-    };
+    }, []);
 
     const handlePublish = useCallback(async () => {
       if (submitting) return;
@@ -335,6 +353,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       style={{
                         fontFamily: "var(--font-playfair)",
                         ...(headingShadow || {}),
+                        ...(titleColor || {}),
                       }}
                     >
                       {data.title || config.displayName}
@@ -367,7 +386,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <section className="py-10 border-t border-white/10 px-6 md:px-10">
                   <h2
                     className={`text-2xl mb-3 ${accentClass}`}
-                    style={headingShadow}
+                    style={{ ...headingShadow, ...(titleColor || {}) }}
                   >
                     Details
                   </h2>
@@ -416,7 +435,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   <section className="max-w-xl mx-auto text-center p-6 md:p-8">
                     <h2
                       className={`text-2xl mb-6 ${accentClass}`}
-                      style={headingShadow}
+                      style={{ ...headingShadow, ...(titleColor || {}) }}
                     >
                       RSVP
                     </h2>
@@ -695,19 +714,31 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </div>
 
               <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Palette size={16} /> Theme
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {config.themes.map((theme) => (
-                    <ThemeSwatch
-                      key={theme.id}
-                      theme={theme}
-                      active={themeId === theme.id}
-                      onClick={() => setThemeId(theme.id)}
-                    />
-                  ))}
-                </div>
+                <button
+                  onClick={() => setThemesExpanded(!themesExpanded)}
+                  className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Palette size={16} /> Theme ({config.themes.length})
+                  </div>
+                  {themesExpanded ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {themesExpanded && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                    {config.themes.map((theme) => (
+                      <ThemeSwatch
+                        key={theme.id}
+                        theme={theme}
+                        active={themeId === theme.id}
+                        onClick={() => setThemeId(theme.id)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

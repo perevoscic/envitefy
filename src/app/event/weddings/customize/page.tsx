@@ -1302,6 +1302,35 @@ const App = () => {
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
+  // Detect dark background for title color
+  const isDarkBackground = useMemo(() => {
+    const bg = currentTheme?.bg?.toLowerCase() ?? "";
+    const darkTokens = [
+      "black",
+      "slate-9",
+      "stone-9",
+      "neutral-9",
+      "gray-9",
+      "grey-9",
+      "indigo-9",
+      "purple-9",
+      "violet-9",
+      "emerald-9",
+      "teal-9",
+      "blue-9",
+      "navy",
+      "midnight",
+    ];
+    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
+    const hasDarkHex =
+      /#0[0-9a-f]{5,}/i.test(bg) ||
+      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
+      /#2[0-3][0-9a-f]{4}/i.test(bg);
+    return hasDarkToken || hasDarkHex;
+  }, [currentTheme]);
+
+  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
+
   const handlePublish = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -2428,6 +2457,7 @@ const App = () => {
                 >
                   <h1
                     className={`${currentSize.h1} mb-2 ${currentFont.title} leading-tight`}
+                    style={titleColor}
                   >
                     {data.partner1} & {data.partner2}
                     <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
@@ -2514,6 +2544,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Schedule of Events
                   </h2>
@@ -2585,6 +2616,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-8 ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Our Story
                   </h2>
@@ -2602,6 +2634,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Wedding Party
                   </h2>
@@ -2671,6 +2704,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Photos
                   </h2>
@@ -2703,6 +2737,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Things To Do
                   </h2>
@@ -2741,6 +2776,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-10 text-center ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     Travel & Stay
                   </h2>
@@ -2857,6 +2893,7 @@ const App = () => {
                 >
                   <h2
                     className={`${currentSize.h2} mb-6 ${currentFont.title} ${currentTheme.accent}`}
+                    style={titleColor}
                   >
                     RSVP
                   </h2>
