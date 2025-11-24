@@ -21,6 +21,8 @@ import {
   Trash2,
   Cake,
   Calendar as CalendarIcon,
+  Share2,
+  Apple,
 } from "lucide-react";
 import {
   type BirthdayTemplateDefinition,
@@ -1393,6 +1395,131 @@ export default function BirthdayTemplateCustomizePage() {
   const [submitting, setSubmitting] = useState(false);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const buildCalendarDetails = () => {
+    const title = data.title || "Birthday Event";
+    let start: Date | null = null;
+    if (data.date) {
+      const tentative = new Date(`${data.date}T${data.time || "17:00"}`);
+      if (!Number.isNaN(tentative.getTime())) start = tentative;
+    }
+    if (!start) start = new Date();
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const location = [data.address, data.city, data.state]
+      .filter(Boolean)
+      .join(", ");
+    const description = data.details || "";
+    return { title, start, end, location, description };
+  };
+
+  const toGoogleDate = (d: Date) =>
+    d
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}Z$/, "Z");
+
+  const buildIcsUrl = (details: ReturnType<typeof buildCalendarDetails>) => {
+    const params = new URLSearchParams();
+    params.set("title", details.title);
+    params.set("start", details.start.toISOString());
+    params.set("end", details.end.toISOString());
+    if (details.location) params.set("location", details.location);
+    if (details.description) params.set("description", details.description);
+    params.set("disposition", "inline");
+    return `/api/ics?${params.toString()}`;
+  };
+
+  const openWithAppFallback = (appUrl: string, webUrl: string) => {
+    if (typeof window === "undefined") return;
+    const timer = setTimeout(() => {
+      window.open(webUrl, "_blank", "noopener,noreferrer");
+    }, 700);
+    const clear = () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", clear);
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") clear();
+    });
+    try {
+      window.location.href = appUrl;
+    } catch {
+      clearTimeout(timer);
+      window.open(webUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleShare = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const details = buildCalendarDetails();
+    const shareUrl =
+      typeof window !== "undefined" ? window.location.href : undefined;
+    if (
+      typeof navigator !== "undefined" &&
+      (navigator as any).share &&
+      shareUrl
+    ) {
+      (navigator as any)
+        .share({
+          title: details.title,
+          text: details.description || details.location || details.title,
+          url: shareUrl,
+        })
+        .catch(() => {
+          window.open(shareUrl, "_blank", "noopener,noreferrer");
+        });
+    } else if (shareUrl) {
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleGoogleCalendar = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const details = buildCalendarDetails();
+    const start = toGoogleDate(details.start);
+    const end = toGoogleDate(details.end);
+    const query = `action=TEMPLATE&text=${encodeURIComponent(
+      details.title
+    )}&dates=${start}/${end}&location=${encodeURIComponent(
+      details.location
+    )}&details=${encodeURIComponent(details.description || "")}`;
+    const webUrl = `https://calendar.google.com/calendar/render?${query}`;
+    const appUrl = `comgooglecalendar://?${query}`;
+    openWithAppFallback(appUrl, webUrl);
+  };
+
+  const handleOutlookCalendar = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const details = buildCalendarDetails();
+    const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
+      details.title
+    )}&body=${encodeURIComponent(
+      details.description || ""
+    )}&location=${encodeURIComponent(
+      details.location
+    )}&startdt=${encodeURIComponent(
+      details.start.toISOString()
+    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
+    const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
+      details.title
+    )}&body=${encodeURIComponent(
+      details.description || ""
+    )}&location=${encodeURIComponent(
+      details.location
+    )}&startdt=${encodeURIComponent(
+      details.start.toISOString()
+    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
+    openWithAppFallback(appUrl, webUrl);
+  };
+
+  const handleAppleCalendar = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const icsPath = buildIcsUrl(buildCalendarDetails());
+    const absolute =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${icsPath}`
+        : icsPath;
+    window.location.href = absolute;
+  };
 
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -2328,6 +2455,42 @@ export default function BirthdayTemplateCustomizePage() {
           <strong>Preview:</strong> Check the preview pane to see the RSVP form
           that your guests will see.
         </div>
+
+        <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
+          <div className="text-sm font-semibold text-slate-800">
+            Share & Add to Calendar
+          </div>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button
+              onClick={handleShare}
+              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors"
+            >
+              <Share2 size={16} />
+              <span className="hidden sm:inline">Share link</span>
+            </button>
+            <button
+              onClick={handleGoogleCalendar}
+              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-green-600 hover:text-green-700 transition-colors"
+            >
+              <CalendarIcon size={16} />
+              <span className="hidden sm:inline">Google Cal</span>
+            </button>
+            <button
+              onClick={handleAppleCalendar}
+              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-slate-700 hover:text-slate-800 transition-colors"
+            >
+              <Apple size={16} />
+              <span className="hidden sm:inline">Apple Cal</span>
+            </button>
+            <button
+              onClick={handleOutlookCalendar}
+              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-blue-600 hover:text-blue-700 transition-colors"
+            >
+              <CalendarIcon size={16} />
+              <span className="hidden sm:inline">Outlook</span>
+            </button>
+          </div>
+        </div>
       </div>
     </EditorLayout>
   );
@@ -2768,9 +2931,12 @@ export default function BirthdayTemplateCustomizePage() {
               )}
 
               <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <p className="text-sm opacity-60">
-                  Powered By Envitefy. Creat. Share. Enjoy.
-                </p>
+                <div className="space-y-1">
+                  <p className="text-sm opacity-60">
+                    Powered By Envitefy. Creat. Share. Enjoy.
+                  </p>
+                  <p className="text-xs opacity-50">Create yours now.</p>
+                </div>
               </footer>
             </div>
           </div>

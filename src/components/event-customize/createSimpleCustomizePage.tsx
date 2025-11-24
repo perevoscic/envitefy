@@ -12,6 +12,12 @@ import {
   Image as ImageIcon,
   Menu,
   Palette,
+  Type,
+  CheckSquare,
+  ChevronRight,
+  Share2,
+  Calendar as CalendarIcon,
+  Apple,
   Upload,
 } from "lucide-react";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
@@ -36,55 +42,85 @@ export type SimpleTemplateConfig = {
   slug: string;
   displayName: string;
   category: string;
+  categoryLabel?: string;
   defaultHero: string;
   detailFields: FieldSpec[];
   themes: ThemeSpec[];
+  rsvpCopy?: {
+    menuTitle?: string;
+    menuDesc?: string;
+    editorTitle?: string;
+    toggleLabel?: string;
+    deadlineLabel?: string;
+    helperText?: string;
+  };
+  prefill?: {
+    title?: string;
+    date?: string;
+    time?: string;
+    city?: string;
+    state?: string;
+    venue?: string;
+    details?: string;
+    hero?: string;
+    rsvpEnabled?: boolean;
+    rsvpDeadline?: string;
+    extra?: Record<string, string>;
+  };
 };
 
-const InputGroup = memo(({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-}) => (
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-      {label}
-    </label>
-    {type === "textarea" ? (
-      <textarea
-        className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    ) : (
-      <input
-        type={type}
-        className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    )}
-  </div>
-), (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.value === nextProps.value &&
-    prevProps.label === nextProps.label &&
-    prevProps.type === nextProps.type &&
-    prevProps.placeholder === nextProps.placeholder &&
-    prevProps.onChange === nextProps.onChange
-  );
-});
+const InputGroup = memo(
+  ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    type = "text",
+    readOnly = false,
+  }: {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+    type?: string;
+    readOnly?: boolean;
+  }) => (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+        {label}
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      ) : (
+        <input
+          type={type}
+          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      )}
+    </div>
+  ),
+  (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return (
+      prevProps.value === nextProps.value &&
+      prevProps.label === nextProps.label &&
+      prevProps.type === nextProps.type &&
+      prevProps.placeholder === nextProps.placeholder &&
+      prevProps.onChange === nextProps.onChange &&
+      prevProps.readOnly === nextProps.readOnly
+    );
+  }
+);
 
 InputGroup.displayName = "InputGroup";
 
@@ -113,6 +149,64 @@ const ThemeSwatch = ({
   </button>
 );
 
+const MenuCard = ({
+  title,
+  desc,
+  icon,
+  onClick,
+}: {
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
+  >
+    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
+      {icon}
+    </div>
+    <div className="flex-1">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="font-semibold text-slate-800">{title}</h3>
+        <ChevronRight
+          size={16}
+          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
+        />
+      </div>
+      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+    </div>
+  </button>
+);
+
+const ShareCalendarBlock = () => (
+  <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
+    <div className="text-sm font-semibold text-slate-800">
+      Share & Add to Calendar
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors">
+        <Share2 size={16} />
+        Share link
+      </button>
+      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-green-600 hover:text-green-700 transition-colors">
+        <CalendarIcon size={16} />
+        Google Cal
+      </button>
+      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-slate-700 hover:text-slate-800 transition-colors">
+        <Apple size={16} />
+        Apple Cal
+      </button>
+      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-blue-600 hover:text-blue-700 transition-colors">
+        <CalendarIcon size={16} />
+        Outlook
+      </button>
+    </div>
+  </div>
+);
+
 export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
@@ -134,26 +228,34 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [defaultDate]);
 
-    const [data, setData] = useState(() => ({
-      title: `${config.displayName}`,
-      date: initialDate,
-      time: "14:00",
-      city: "Chicago",
-      state: "IL",
-      venue: "",
-      details: "",
-      hero: "",
-      rsvpEnabled: true,
-      rsvpDeadline: (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 10);
-        return d.toISOString().split("T")[0];
-      })(),
-      extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
+  const [data, setData] = useState(() => ({
+    title: config.prefill?.title || `${config.displayName}`,
+      date: config.prefill?.date || initialDate,
+      time: config.prefill?.time || "14:00",
+      city: config.prefill?.city || "Chicago",
+      state: config.prefill?.state || "IL",
+      venue: config.prefill?.venue || "",
+      details: config.prefill?.details || "",
+      hero: config.prefill?.hero || "",
+      rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
+      rsvpDeadline:
+        config.prefill?.rsvpDeadline ||
+        (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 10);
+          return d.toISOString().split("T")[0];
+        })(),
+      extra: Object.fromEntries(
+        config.detailFields.map((f) => [
+          f.key,
+          config.prefill?.extra?.[f.key] ?? "",
+        ])
+      ),
     }));
     const [themeId, setThemeId] = useState(
       config.themes[0]?.id ?? "default-theme"
     );
+    const [activeView, setActiveView] = useState<"main" | "headline" | "images" | "design" | "details" | "rsvp">("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
@@ -193,6 +295,34 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const idHintsDark = /(night|dark)/i.test(id);
       return hasDarkToken || hasDarkHex || idHintsDark;
     }, [currentTheme]);
+
+    const EditorLayout = ({
+      title,
+      children,
+      onBack,
+    }: {
+      title: string;
+      children: React.ReactNode;
+      onBack: () => void;
+    }) => (
+      <div className="animate-fade-in-right">
+        <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
+          <button
+            onClick={onBack}
+            className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
+            Customize
+          </span>
+          <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2">
+            {title}
+          </h2>
+        </div>
+        {children}
+      </div>
+    );
 
     const rawTextClass = currentTheme?.text || "";
     const forceLightText =
@@ -302,6 +432,388 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.defaultHero,
       router,
     ]);
+
+    const rsvpCopy = {
+      menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
+      menuDesc: config.rsvpCopy?.menuDesc || "RSVP settings.",
+      editorTitle: config.rsvpCopy?.editorTitle || "RSVP",
+      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
+      deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
+      helperText:
+        config.rsvpCopy?.helperText ||
+        "The RSVP card in the preview updates with these settings.",
+    };
+
+    const buildEventDetails = () => {
+      const title = data.title || config.displayName;
+      let start: Date | null = null;
+      if (data.date) {
+        const tentative = new Date(`${data.date}T${data.time || "14:00"}`);
+        if (!Number.isNaN(tentative.getTime())) start = tentative;
+      }
+      if (!start) start = new Date();
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      const location = [data.venue, data.city, data.state]
+        .filter(Boolean)
+        .join(", ");
+      const description = data.details || "";
+      return { title, start, end, location, description };
+    };
+
+    const toGoogleDate = (d: Date) =>
+      d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+
+    const buildIcsUrl = (details: ReturnType<typeof buildEventDetails>) => {
+      const params = new URLSearchParams();
+      params.set("title", details.title);
+      if (details.start) params.set("start", details.start.toISOString());
+      if (details.end) params.set("end", details.end.toISOString());
+      if (details.location) params.set("location", details.location);
+      if (details.description) params.set("description", details.description);
+      params.set("disposition", "inline");
+      return `/api/ics?${params.toString()}`;
+    };
+
+    const openWithAppFallback = (appUrl: string, webUrl: string) => {
+      if (typeof window === "undefined") return;
+      const timer = setTimeout(() => {
+        window.open(webUrl, "_blank", "noopener,noreferrer");
+      }, 700);
+      const clear = () => {
+        clearTimeout(timer);
+        document.removeEventListener("visibilitychange", clear);
+      };
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") clear();
+      });
+      try {
+        window.location.href = appUrl;
+      } catch {
+        clearTimeout(timer);
+        window.open(webUrl, "_blank", "noopener,noreferrer");
+      }
+    };
+
+    const handleShare = () => {
+      const details = buildEventDetails();
+      const shareUrl =
+        typeof window !== "undefined" ? window.location.href : undefined;
+      if (
+        typeof navigator !== "undefined" &&
+        (navigator as any).share &&
+        shareUrl
+      ) {
+        (navigator as any)
+          .share({
+            title: details.title,
+            text: details.description || details.location || details.title,
+            url: shareUrl,
+          })
+          .catch(() => {
+            window.open(shareUrl, "_blank", "noopener,noreferrer");
+          });
+      } else if (shareUrl) {
+        window.open(shareUrl, "_blank", "noopener,noreferrer");
+      }
+    };
+
+    const handleGoogleCalendar = () => {
+      const details = buildEventDetails();
+      const start = toGoogleDate(details.start);
+      const end = toGoogleDate(details.end);
+      const query = `action=TEMPLATE&text=${encodeURIComponent(
+        details.title
+      )}&dates=${start}/${end}&location=${encodeURIComponent(
+        details.location
+      )}&details=${encodeURIComponent(details.description || "")}`;
+      const webUrl = `https://calendar.google.com/calendar/render?${query}`;
+      const appUrl = `comgooglecalendar://?${query}`;
+      openWithAppFallback(appUrl, webUrl);
+    };
+
+    const handleOutlookCalendar = () => {
+      const details = buildEventDetails();
+      const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
+        details.title
+      )}&body=${encodeURIComponent(
+        details.description || ""
+      )}&location=${encodeURIComponent(
+        details.location
+      )}&startdt=${encodeURIComponent(
+        details.start.toISOString()
+      )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
+      const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
+        details.title
+      )}&body=${encodeURIComponent(
+        details.description || ""
+      )}&location=${encodeURIComponent(
+        details.location
+      )}&startdt=${encodeURIComponent(
+        details.start.toISOString()
+      )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
+      openWithAppFallback(appUrl, webUrl);
+    };
+
+    const handleAppleCalendar = () => {
+      const details = buildEventDetails();
+      const icsPath = buildIcsUrl(details);
+      const absoluteIcs =
+        typeof window !== "undefined"
+          ? `${window.location.origin}${icsPath}`
+          : icsPath;
+      window.location.href = absoluteIcs;
+    };
+
+    const renderMainMenu = () => (
+      <div className="space-y-4 animate-fade-in pb-8">
+        <div className="mb-2">
+          <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
+            Add your details
+          </h2>
+          <p className="text-slate-500 text-sm">
+            Customize every aspect of your {config.displayName.toLowerCase()} site.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <MenuCard
+            title="Headline"
+            desc="Title, date, location."
+            icon={<Type size={18} />}
+            onClick={() => setActiveView("headline")}
+          />
+          <MenuCard
+            title="Design"
+            desc="Theme presets."
+            icon={<Palette size={18} />}
+            onClick={() => setActiveView("design")}
+          />
+          <MenuCard
+            title="Images"
+            desc="Hero & header photo."
+            icon={<ImageIcon size={18} />}
+            onClick={() => setActiveView("images")}
+          />
+          <MenuCard
+            title="Details"
+            desc="Description and category specifics."
+            icon={<Edit2 size={18} />}
+            onClick={() => setActiveView("details")}
+          />
+          <MenuCard
+            title={rsvpCopy.menuTitle}
+            desc={rsvpCopy.menuDesc}
+            icon={<CheckSquare size={18} />}
+            onClick={() => setActiveView("rsvp")}
+          />
+        </div>
+      </div>
+    );
+
+    const renderHeadlineEditor = () => (
+      <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
+        <div className="space-y-6">
+          <InputGroup
+            label="Headline"
+            value={data.title}
+            onChange={(v) => setData((p) => ({ ...p, title: v }))}
+            placeholder={`${config.displayName} title`}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <InputGroup
+              label="Date"
+              type="date"
+              value={data.date}
+              onChange={(v) => setData((p) => ({ ...p, date: v }))}
+            />
+            <InputGroup
+              label="Time"
+              type="time"
+              value={data.time}
+              onChange={(v) => setData((p) => ({ ...p, time: v }))}
+            />
+          </div>
+
+          <InputGroup
+            label="Venue"
+            value={data.venue}
+            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
+            placeholder="Venue name (optional)"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <InputGroup
+              label="City"
+              value={data.city}
+              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+            />
+            <InputGroup
+              label="State"
+              value={data.state}
+              onChange={(v) => setData((p) => ({ ...p, state: v }))}
+            />
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderImagesEditor = () => (
+      <EditorLayout title="Images" onBack={() => setActiveView("main")}>
+        <div className="space-y-4">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Hero Image
+          </label>
+          <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
+            {data.hero ? (
+              <div className="relative w-full h-40 rounded-lg overflow-hidden">
+                <img
+                  src={data.hero}
+                  alt="Hero"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => setData((p) => ({ ...p, hero: "" }))}
+                  className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <ImageIcon size={20} />
+                </div>
+                <p className="text-sm text-slate-600 mb-1">
+                  Upload header photo
+                </p>
+                <p className="text-xs text-slate-400">
+                  Recommended: 1600x900px
+                </p>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={handleFileUpload}
+            />
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderDesignEditor = () => (
+      <EditorLayout title="Design" onBack={() => setActiveView("main")}>
+        <div className="space-y-3">
+          <button
+            onClick={() => setThemesExpanded(!themesExpanded)}
+            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Palette size={16} /> Theme ({config.themes.length})
+            </div>
+            {themesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {themesExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+              {config.themes.map((theme) => (
+                <ThemeSwatch
+                  key={theme.id}
+                  theme={theme}
+                  active={themeId === theme.id}
+                  onClick={() => setThemeId(theme.id)}
+                />
+              ))}
+            </div>
+          )}
+          {!themesExpanded && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <div
+                className={`w-3 h-3 rounded-full border shadow-sm ${currentTheme.preview?.split(" ")[0] || "bg-slate-200"}`}
+              ></div>
+              <span>Current theme: {currentTheme.name}</span>
+            </div>
+          )}
+        </div>
+      </EditorLayout>
+    );
+
+    const renderDetailsEditor = () => (
+      <EditorLayout title="Details" onBack={() => setActiveView("main")}>
+        <div className="space-y-4">
+          <InputGroup
+            label="Description"
+            type="textarea"
+            value={data.details}
+            onChange={(v) => setData((p) => ({ ...p, details: v }))}
+            placeholder="Tell guests what to expect."
+          />
+
+          <InputGroup
+            label="Category"
+            value={config.categoryLabel || config.displayName}
+            onChange={() => {}}
+            readOnly
+          />
+
+          <div className="grid grid-cols-1 gap-4">
+            {config.detailFields.map((field) => (
+              <InputGroup
+                key={field.key}
+                label={field.label}
+                type={field.type === "textarea" ? "textarea" : "text"}
+                value={data.extra[field.key] || ""}
+                onChange={(v) => updateExtra(field.key, v)}
+                placeholder={field.placeholder}
+              />
+            ))}
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderRsvpEditor = () => (
+      <EditorLayout
+        title={rsvpCopy.editorTitle}
+        onBack={() => setActiveView("main")}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <span className="font-medium text-slate-700 text-sm">
+              {rsvpCopy.toggleLabel}
+            </span>
+            <button
+              onClick={() =>
+                setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))
+              }
+              className={`w-11 h-6 rounded-full transition-colors relative ${
+                data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                  data.rsvpEnabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              ></span>
+            </button>
+          </div>
+
+          <InputGroup
+            label={rsvpCopy.deadlineLabel}
+            type="date"
+            value={data.rsvpDeadline}
+            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
+            placeholder="Set a deadline"
+          />
+
+          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+            <strong>Preview:</strong> {rsvpCopy.helperText}
+          </div>
+
+          <ShareCalendarBlock />
+        </div>
+      </EditorLayout>
+    );
 
     const infoLine = (
       <div
@@ -432,18 +944,18 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 </section>
 
                 {data.rsvpEnabled && (
-                  <section className="max-w-xl mx-auto text-center p-6 md:p-8">
+                  <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
                     <h2
                       className={`text-2xl mb-6 ${accentClass}`}
                       style={{ ...headingShadow, ...(titleColor || {}) }}
                     >
-                      RSVP
+                      {rsvpCopy.editorTitle}
                     </h2>
-                    <div className="bg-white/5 border border-white/10 p-8 rounded-xl text-left">
-                      {!rsvpSubmitted ? (
-                        <div className="space-y-6">
-                          <div className="text-center mb-4">
-                            <p className="opacity-80">
+                    <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
+                  {!rsvpSubmitted ? (
+                    <div className="space-y-6">
+                      <div className="text-center mb-4">
+                        <p className="opacity-80">
                               {data.rsvpDeadline
                                 ? `Kindly respond by ${new Date(
                                     data.rsvpDeadline
@@ -551,14 +1063,64 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                           </button>
                         </div>
                       )}
+                      <div className="mt-6">
+                        <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
+                          Share & Add to Calendar
+                        </div>
+                        <div className="flex flex-wrap gap-3 justify-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShare();
+                            }}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                          >
+                            <Share2 size={16} />
+                            <span className="hidden sm:inline">Share link</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGoogleCalendar();
+                            }}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                          >
+                            <CalendarIcon size={16} />
+                            <span className="hidden sm:inline">Google Cal</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAppleCalendar();
+                            }}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                          >
+                            <Apple size={16} />
+                            <span className="hidden sm:inline">Apple Cal</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOutlookCalendar();
+                            }}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                          >
+                            <CalendarIcon size={16} />
+                            <span className="hidden sm:inline">Outlook</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </section>
                 )}
 
                 <footer className="text-center py-8 border-t border-white/10 mt-1">
-                  <p className="text-sm opacity-60">
-                    Powered By Envitefy. Creat. Share. Enjoy.
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm opacity-60">
+                      Powered By Envitefy. Creat. Share. Enjoy.
+                    </p>
+                    <p className="text-xs opacity-50">Create yours now.</p>
+                  </div>
                 </footer>
               </div>
             </div>
@@ -599,147 +1161,13 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </span>
             </div>
 
-            <div className="p-6 pt-4 md:pt-6 space-y-8">
-              <div className="space-y-3">
-                <h2 className="text-xl font-semibold text-slate-800">
-                  {config.displayName}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Tweak your date, location, and details. Themes update the
-                  preview instantly.
-                </p>
-              </div>
-
-              <InputGroup
-                label="Headline"
-                value={data.title}
-                onChange={(v) => setData((p) => ({ ...p, title: v }))}
-                placeholder={`${config.displayName} title`}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <InputGroup
-                  label="Date"
-                  type="date"
-                  value={data.date}
-                  onChange={(v) => setData((p) => ({ ...p, date: v }))}
-                />
-                <InputGroup
-                  label="Time"
-                  type="time"
-                  value={data.time}
-                  onChange={(v) => setData((p) => ({ ...p, time: v }))}
-                />
-              </div>
-
-              <InputGroup
-                label="Venue"
-                value={data.venue}
-                onChange={(v) => setData((p) => ({ ...p, venue: v }))}
-                placeholder="Venue name (optional)"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <InputGroup
-                  label="City"
-                  value={data.city}
-                  onChange={(v) => setData((p) => ({ ...p, city: v }))}
-                />
-                <InputGroup
-                  label="State"
-                  value={data.state}
-                  onChange={(v) => setData((p) => ({ ...p, state: v }))}
-                />
-              </div>
-
-              <InputGroup
-                label="Description"
-                type="textarea"
-                value={data.details}
-                onChange={(v) => setData((p) => ({ ...p, details: v }))}
-                placeholder="Tell guests what to expect."
-              />
-
-              <div className="grid grid-cols-1 gap-4">
-                {config.detailFields.map((field) => (
-                  <InputGroup
-                    key={field.key}
-                    label={field.label}
-                    type={field.type === "textarea" ? "textarea" : "text"}
-                    value={data.extra[field.key] || ""}
-                    onChange={(v) => updateExtra(field.key, v)}
-                    placeholder={field.placeholder}
-                  />
-                ))}
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Hero Image
-                </label>
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
-                  {data.hero ? (
-                    <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                      <img
-                        src={data.hero}
-                        alt="Hero"
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => setData((p) => ({ ...p, hero: "" }))}
-                        className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                        <ImageIcon size={20} />
-                      </div>
-                      <p className="text-sm text-slate-600 mb-1">
-                        Upload header photo
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        Recommended: 1600x900px
-                      </p>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={handleFileUpload}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => setThemesExpanded(!themesExpanded)}
-                  className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Palette size={16} /> Theme ({config.themes.length})
-                  </div>
-                  {themesExpanded ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {themesExpanded && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
-                    {config.themes.map((theme) => (
-                      <ThemeSwatch
-                        key={theme.id}
-                        theme={theme}
-                        active={themeId === theme.id}
-                        onClick={() => setThemeId(theme.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div className="p-6 pt-4 md:pt-6">
+              {activeView === "main" && renderMainMenu()}
+              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "images" && renderImagesEditor()}
+              {activeView === "design" && renderDesignEditor()}
+              {activeView === "details" && renderDetailsEditor()}
+              {activeView === "rsvp" && renderRsvpEditor()}
             </div>
           </div>
 

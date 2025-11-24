@@ -6,7 +6,8 @@ import { createSimpleCustomizePage } from "@/components/event-customize/createSi
 const FootballPracticePage = createSimpleCustomizePage({
   slug: "football-practice",
   displayName: "Football Practice",
-  category: "sport_events",
+  category: "sport_football_practice",
+  categoryLabel: "Football",
   defaultHero:
     "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1800&q=80",
   detailFields: [

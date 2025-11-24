@@ -6,7 +6,8 @@ import { createSimpleCustomizePage } from "@/components/event-customize/createSi
 const GeneralMeetupPage = createSimpleCustomizePage({
   slug: "general-event",
   displayName: "Meetup / Gathering",
-  category: "general",
+  category: "general_event",
+  categoryLabel: "General Event",
   defaultHero:
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80",
   detailFields: [

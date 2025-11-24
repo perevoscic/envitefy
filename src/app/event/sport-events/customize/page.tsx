@@ -6,7 +6,8 @@ import { createSimpleCustomizePage } from "@/components/event-customize/createSi
 const SportEventsPage = createSimpleCustomizePage({
   slug: "sport-event",
   displayName: "Sport Event",
-  category: "sport_events",
+  category: "sport_event",
+  categoryLabel: "Sport Event",
   defaultHero:
     "https://images.unsplash.com/photo-1502877828070-33bc4f1b8a6e?auto=format&fit=crop&w=1800&q=80",
   detailFields: [

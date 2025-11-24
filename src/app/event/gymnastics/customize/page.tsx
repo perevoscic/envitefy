@@ -6,7 +6,8 @@ import { createSimpleCustomizePage } from "@/components/event-customize/createSi
 const GymnasticsSchedulePage = createSimpleCustomizePage({
   slug: "gymnastics-schedule",
   displayName: "Gymnastics Schedule",
-  category: "sport_events",
+  category: "sport_gymnastics_schedule",
+  categoryLabel: "Gymnastics",
   defaultHero:
     "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1800&q=80",
   detailFields: [
