@@ -266,6 +266,8 @@ export default function GenderRevealTemplateCustomizePage() {
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [newHost, setNewHost] = useState({ name: "", role: "" });
+  const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
 
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -436,7 +438,8 @@ export default function GenderRevealTemplateCustomizePage() {
     }
   }, [submitting, data, template.id, editEventId, router]);
 
-  const MainMenu = () => (
+  // Render helpers instead of nested components so inputs keep focus across state updates.
+  const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="mb-6">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
@@ -500,7 +503,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </div>
   );
 
-  const HeadlineEditor = () => (
+  const renderHeadlineEditor = () => (
     <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <InputGroup
@@ -551,7 +554,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const ImagesEditor = () => (
+  const renderImagesEditor = () => (
     <EditorLayout title="Images" onBack={() => setActiveView("main")}>
       <div className="space-y-8">
         <div>
@@ -647,7 +650,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const DesignEditor = () => (
+  const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div>
@@ -763,7 +766,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const EventDetailsEditor = () => (
+  const renderEventDetailsEditor = () => (
     <EditorLayout title="Event Details" onBack={() => setActiveView("main")}>
       <div className="space-y-4">
         <InputGroup
@@ -787,9 +790,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const HostsEditor = () => {
-    const [newHost, setNewHost] = useState({ name: "", role: "" });
-
+  const renderHostsEditor = () => {
     const addHost = () => {
       if (newHost.name) {
         updateData("hosts", [...data.hosts, { ...newHost, id: Date.now() }]);
@@ -855,7 +856,7 @@ export default function GenderRevealTemplateCustomizePage() {
     );
   };
 
-  const PhotosEditor = () => (
+  const renderPhotosEditor = () => (
     <EditorLayout title="Photos" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group relative">
@@ -898,7 +899,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const RSVPEditor = () => (
+  const renderRsvpEditor = () => (
     <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -941,9 +942,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const RegistryEditor = () => {
-    const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
-
+  const renderRegistryEditor = () => {
     const addRegistry = () => {
       if (newRegistry.url) {
         updateData("registries", [
@@ -1363,15 +1362,15 @@ export default function GenderRevealTemplateCustomizePage() {
             </span>
           </div>
           <div className="p-6 pt-4 md:pt-6">
-            {activeView === "main" && <MainMenu />}
-            {activeView === "headline" && <HeadlineEditor />}
-            {activeView === "images" && <ImagesEditor />}
-            {activeView === "design" && <DesignEditor />}
-            {activeView === "eventDetails" && <EventDetailsEditor />}
-            {activeView === "hosts" && <HostsEditor />}
-            {activeView === "photos" && <PhotosEditor />}
-            {activeView === "rsvp" && <RSVPEditor />}
-            {activeView === "registry" && <RegistryEditor />}
+            {activeView === "main" && renderMainMenu()}
+            {activeView === "headline" && renderHeadlineEditor()}
+            {activeView === "images" && renderImagesEditor()}
+            {activeView === "design" && renderDesignEditor()}
+            {activeView === "eventDetails" && renderEventDetailsEditor()}
+            {activeView === "hosts" && renderHostsEditor()}
+            {activeView === "photos" && renderPhotosEditor()}
+            {activeView === "rsvp" && renderRsvpEditor()}
+            {activeView === "registry" && renderRegistryEditor()}
           </div>
         </div>
 

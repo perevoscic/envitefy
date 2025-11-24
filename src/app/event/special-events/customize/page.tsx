@@ -562,7 +562,8 @@ export default function SpecialEventsCustomizePage() {
     return grouped;
   }, []);
 
-  const MainMenu = () => (
+  // Render helpers instead of nested components so inputs keep focus across state updates.
+  const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="mb-6">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
@@ -618,7 +619,7 @@ export default function SpecialEventsCustomizePage() {
     </div>
   );
 
-  const HeadlineEditor = () => (
+  const renderHeadlineEditor = () => (
     <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <InputGroup
@@ -662,7 +663,7 @@ export default function SpecialEventsCustomizePage() {
     </EditorLayout>
   );
 
-  const ImagesEditor = () => (
+  const renderImagesEditor = () => (
     <EditorLayout title="Images" onBack={() => setActiveView("main")}>
       <div className="space-y-8">
         <div>
@@ -707,7 +708,7 @@ export default function SpecialEventsCustomizePage() {
     </EditorLayout>
   );
 
-  const DesignEditor = () => (
+  const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-8 pb-8">
         <div className="border-b border-slate-100 pb-6">
@@ -829,7 +830,7 @@ export default function SpecialEventsCustomizePage() {
     </EditorLayout>
   );
 
-  const DetailsEditor = () => (
+  const renderDetailsEditor = () => (
     <EditorLayout title="Details" onBack={() => setActiveView("main")}>
       <div className="space-y-6 pb-8">
         <InputGroup
@@ -886,7 +887,7 @@ export default function SpecialEventsCustomizePage() {
     </EditorLayout>
   );
 
-  const RSVPEditor = () => (
+  const renderRsvpEditor = () => (
     <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -1208,12 +1209,12 @@ export default function SpecialEventsCustomizePage() {
             </span>
           </div>
           <div className="p-6 pt-4 md:pt-6 pb-8">
-            {activeView === "main" && <MainMenu />}
-            {activeView === "headline" && <HeadlineEditor />}
-            {activeView === "images" && <ImagesEditor />}
-            {activeView === "design" && <DesignEditor />}
-            {activeView === "details" && <DetailsEditor />}
-            {activeView === "rsvp" && <RSVPEditor />}
+            {activeView === "main" && renderMainMenu()}
+            {activeView === "headline" && renderHeadlineEditor()}
+            {activeView === "images" && renderImagesEditor()}
+            {activeView === "design" && renderDesignEditor()}
+            {activeView === "details" && renderDetailsEditor()}
+            {activeView === "rsvp" && renderRsvpEditor()}
           </div>
         </div>
       </div>

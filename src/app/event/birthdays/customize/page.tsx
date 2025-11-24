@@ -1391,6 +1391,8 @@ export default function BirthdayTemplateCustomizePage() {
   const [professionalOpen, setProfessionalOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [newHost, setNewHost] = useState({ name: "", role: "" });
+  const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
 
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -1616,7 +1618,8 @@ export default function BirthdayTemplateCustomizePage() {
     }
   }, [data.gallery.length, galleryIndex]);
 
-  const MainMenu = () => (
+  // Render helpers instead of nested components so inputs keep focus across state updates.
+  const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="mb-6">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
@@ -1680,7 +1683,7 @@ export default function BirthdayTemplateCustomizePage() {
     </div>
   );
 
-  const HeadlineEditor = () => (
+  const renderHeadlineEditor = () => (
     <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <InputGroup
@@ -1738,7 +1741,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const ImagesEditor = () => (
+  const renderImagesEditor = () => (
     <EditorLayout title="Images" onBack={() => setActiveView("main")}>
       <div className="space-y-8">
         <div>
@@ -1834,7 +1837,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const DesignEditor = () => (
+  const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="border-b border-slate-100 pb-6">
@@ -2142,7 +2145,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const PartyDetailsEditor = () => (
+  const renderPartyDetailsEditor = () => (
     <EditorLayout title="Party Details" onBack={() => setActiveView("main")}>
       <div className="space-y-4">
         <InputGroup
@@ -2177,9 +2180,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const HostsEditor = () => {
-    const [newHost, setNewHost] = useState({ name: "", role: "" });
-
+  const renderHostsEditor = () => {
     const addHost = () => {
       if (newHost.name) {
         updateData("hosts", [...data.hosts, { ...newHost, id: Date.now() }]);
@@ -2245,7 +2246,7 @@ export default function BirthdayTemplateCustomizePage() {
     );
   };
 
-  const PhotosEditor = () => (
+  const renderPhotosEditor = () => (
     <EditorLayout title="Photos" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group relative">
@@ -2288,7 +2289,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const RSVPEditor = () => (
+  const renderRsvpEditor = () => (
     <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -2331,9 +2332,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const RegistryEditor = () => {
-    const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
-
+  const renderRegistryEditor = () => {
     const addRegistry = () => {
       if (newRegistry.url) {
         updateData("registries", [
@@ -2812,15 +2811,15 @@ export default function BirthdayTemplateCustomizePage() {
             </span>
           </div>
           <div className="p-6 pt-4 md:pt-6">
-            {activeView === "main" && <MainMenu />}
-            {activeView === "headline" && <HeadlineEditor />}
-            {activeView === "images" && <ImagesEditor />}
-            {activeView === "design" && <DesignEditor />}
-            {activeView === "partyDetails" && <PartyDetailsEditor />}
-            {activeView === "hosts" && <HostsEditor />}
-            {activeView === "photos" && <PhotosEditor />}
-            {activeView === "rsvp" && <RSVPEditor />}
-            {activeView === "registry" && <RegistryEditor />}
+            {activeView === "main" && renderMainMenu()}
+            {activeView === "headline" && renderHeadlineEditor()}
+            {activeView === "images" && renderImagesEditor()}
+            {activeView === "design" && renderDesignEditor()}
+            {activeView === "partyDetails" && renderPartyDetailsEditor()}
+            {activeView === "hosts" && renderHostsEditor()}
+            {activeView === "photos" && renderPhotosEditor()}
+            {activeView === "rsvp" && renderRsvpEditor()}
+            {activeView === "registry" && renderRegistryEditor()}
           </div>
         </div>
 

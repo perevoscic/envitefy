@@ -1211,6 +1211,29 @@ const App = () => {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    date: "",
+    time: "",
+    location: "",
+  });
+  const [newItem, setNewItem] = useState({
+    title: "",
+    description: "",
+    category: "Activity",
+  });
+  const [travelSubView, setTravelSubView] = useState("main");
+  const [tempHotel, setTempHotel] = useState({
+    name: "",
+    address: "",
+    link: "",
+    deadline: "",
+  });
+  const [tempAirport, setTempAirport] = useState({
+    name: "",
+    code: "",
+    distance: "",
+  });
 
   const parseTimeValue = (value?: string | null) => {
     if (!value) return Number.MAX_SAFE_INTEGER;
@@ -1433,7 +1456,8 @@ const App = () => {
     }
   }, [submitting, data, editEventId, router]);
 
-  const MainMenu = () => (
+  // Render helpers instead of nested components so inputs keep focus across state updates.
+  const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="mb-6">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
@@ -1525,7 +1549,7 @@ const App = () => {
     </div>
   );
 
-  const HeadlineEditor = () => (
+  const renderHeadlineEditor = () => (
     <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <InputGroup
@@ -1568,7 +1592,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const ImagesEditor = () => (
+  const renderImagesEditor = () => (
     <EditorLayout title="Images" onBack={() => setActiveView("main")}>
       <div className="space-y-8">
         <div>
@@ -1664,7 +1688,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const DesignEditor = () => (
+  const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-8">
         <div className="border-b border-slate-100 pb-6">
@@ -1788,14 +1812,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const ScheduleEditor = () => {
-    const [newEvent, setNewEvent] = useState({
-      title: "",
-      date: "",
-      time: "",
-      location: "",
-    });
-
+  const renderScheduleEditor = () => {
     const addEvent = () => {
       if (newEvent.title) {
         updateData("schedule", [
@@ -1879,7 +1896,7 @@ const App = () => {
     );
   };
 
-  const StoryEditor = () => (
+  const renderStoryEditor = () => (
     <EditorLayout title="Our Story" onBack={() => setActiveView("main")}>
       <div className="space-y-4">
         <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm mb-4">
@@ -1901,7 +1918,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const PhotosEditor = () => (
+  const renderPhotosEditor = () => (
     <EditorLayout title="Photos" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group">
@@ -1917,13 +1934,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const ThingsToDoEditor = () => {
-    const [newItem, setNewItem] = useState({
-      title: "",
-      description: "",
-      category: "Activity",
-    });
-
+  const renderThingsToDoEditor = () => {
     const addItem = () => {
       if (newItem.title) {
         updateData("thingsToDo", [
@@ -1998,7 +2009,7 @@ const App = () => {
     );
   };
 
-  const RSVPEditor = () => (
+  const renderRsvpEditor = () => (
     <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -2039,7 +2050,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const RegistryEditor = () => (
+  const renderRegistryEditor = () => (
     <EditorLayout title="Registry" onBack={() => setActiveView("main")}>
       <div className="space-y-6 text-center py-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full mb-4">
@@ -2057,20 +2068,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const TravelEditor = () => {
-    const [subView, setSubView] = useState("main");
-    const [tempHotel, setTempHotel] = useState({
-      name: "",
-      address: "",
-      link: "",
-      deadline: "",
-    });
-    const [tempAirport, setTempAirport] = useState({
-      name: "",
-      code: "",
-      distance: "",
-    });
-
+  const renderTravelEditor = () => {
     const saveHotel = () => {
       if (tempHotel.name) {
         updateTravel("hotels", [
@@ -2078,7 +2076,7 @@ const App = () => {
           { ...tempHotel, id: Date.now() },
         ]);
         setTempHotel({ name: "", address: "", link: "", deadline: "" });
-        setSubView("main");
+        setTravelSubView("main");
       }
     };
 
@@ -2089,7 +2087,7 @@ const App = () => {
           { ...tempAirport, id: Date.now() },
         ]);
         setTempAirport({ name: "", code: "", distance: "" });
-        setSubView("main");
+        setTravelSubView("main");
       }
     };
 
@@ -2106,9 +2104,12 @@ const App = () => {
       );
     };
 
-    if (subView === "addHotel") {
+    if (travelSubView === "addHotel") {
       return (
-        <EditorLayout title="Add Hotel" onBack={() => setSubView("main")}>
+        <EditorLayout
+          title="Add Hotel"
+          onBack={() => setTravelSubView("main")}
+        >
           <div className="space-y-4">
             <InputGroup
               label="Hotel Name"
@@ -2145,9 +2146,12 @@ const App = () => {
       );
     }
 
-    if (subView === "addAirport") {
+    if (travelSubView === "addAirport") {
       return (
-        <EditorLayout title="Add Airport" onBack={() => setSubView("main")}>
+        <EditorLayout
+          title="Add Airport"
+          onBack={() => setTravelSubView("main")}
+        >
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
@@ -2182,9 +2186,12 @@ const App = () => {
       );
     }
 
-    if (subView === "addDirections") {
+    if (travelSubView === "addDirections") {
       return (
-        <EditorLayout title="Directions" onBack={() => setSubView("main")}>
+        <EditorLayout
+          title="Directions"
+          onBack={() => setTravelSubView("main")}
+        >
           <div className="space-y-4">
             <label className="block space-y-2">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -2212,7 +2219,7 @@ const App = () => {
 
           <div className="grid grid-cols-3 gap-3">
             <button
-              onClick={() => setSubView("addHotel")}
+              onClick={() => setTravelSubView("addHotel")}
               className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all gap-2 bg-white shadow-sm h-32"
             >
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
@@ -2223,7 +2230,7 @@ const App = () => {
               </span>
             </button>
             <button
-              onClick={() => setSubView("addAirport")}
+              onClick={() => setTravelSubView("addAirport")}
               className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all gap-2 bg-white shadow-sm h-32"
             >
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
@@ -2234,7 +2241,7 @@ const App = () => {
               </span>
             </button>
             <button
-              onClick={() => setSubView("addDirections")}
+              onClick={() => setTravelSubView("addDirections")}
               className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all gap-2 bg-white shadow-sm h-32"
             >
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
@@ -2321,9 +2328,7 @@ const App = () => {
     );
   };
 
-  const PartyEditor = () => {
-    const [newRole, setNewRole] = useState("");
-
+  const renderPartyEditor = () => {
     const addMember = (role, side) => {
       const newMember = {
         id: Date.now(),
@@ -3101,18 +3106,18 @@ const App = () => {
             </span>
           </div>
           <div className="p-6 pt-4 md:pt-6">
-            {activeView === "main" && <MainMenu />}
-            {activeView === "headline" && <HeadlineEditor />}
-            {activeView === "images" && <ImagesEditor />}
-            {activeView === "design" && <DesignEditor />}
-            {activeView === "schedule" && <ScheduleEditor />}
-            {activeView === "story" && <StoryEditor />}
-            {activeView === "party" && <PartyEditor />}
-            {activeView === "photos" && <PhotosEditor />}
-            {activeView === "travel" && <TravelEditor />}
-            {activeView === "thingsToDo" && <ThingsToDoEditor />}
-            {activeView === "rsvp" && <RSVPEditor />}
-            {activeView === "registry" && <RegistryEditor />}
+            {activeView === "main" && renderMainMenu()}
+            {activeView === "headline" && renderHeadlineEditor()}
+            {activeView === "images" && renderImagesEditor()}
+            {activeView === "design" && renderDesignEditor()}
+            {activeView === "schedule" && renderScheduleEditor()}
+            {activeView === "story" && renderStoryEditor()}
+            {activeView === "party" && renderPartyEditor()}
+            {activeView === "photos" && renderPhotosEditor()}
+            {activeView === "travel" && renderTravelEditor()}
+            {activeView === "thingsToDo" && renderThingsToDoEditor()}
+            {activeView === "rsvp" && renderRsvpEditor()}
+            {activeView === "registry" && renderRegistryEditor()}
           </div>
         </div>
       </div>
