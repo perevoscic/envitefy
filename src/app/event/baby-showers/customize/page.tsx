@@ -301,7 +301,10 @@ export default function BabyShowerTemplateCustomizePage() {
   };
 
   const toGoogleDate = (d: Date) =>
-    d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+    d
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}Z$/, "Z");
 
   const buildIcsUrl = (details: ReturnType<typeof buildCalendarDetails>) => {
     const params = new URLSearchParams();
@@ -339,7 +342,11 @@ export default function BabyShowerTemplateCustomizePage() {
     const details = buildCalendarDetails();
     const shareUrl =
       typeof window !== "undefined" ? window.location.href : undefined;
-    if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
+    if (
+      typeof navigator !== "undefined" &&
+      (navigator as any).share &&
+      shareUrl
+    ) {
       (navigator as any)
         .share({
           title: details.title,
@@ -463,7 +470,7 @@ export default function BabyShowerTemplateCustomizePage() {
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
-  
+
   // Detect dark background for title color
   const isDarkBackground = useMemo(() => {
     const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -484,10 +491,13 @@ export default function BabyShowerTemplateCustomizePage() {
       "midnight",
     ];
     const hasDarkToken = darkTokens.some((token) => bg.includes(token));
-    const hasDarkHex = /#0[0-9a-f]{5,}/i.test(bg) || /#1[0-3][0-9a-f]{4}/i.test(bg) || /#2[0-3][0-9a-f]{4}/i.test(bg);
+    const hasDarkHex =
+      /#0[0-9a-f]{5,}/i.test(bg) ||
+      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
+      /#2[0-3][0-9a-f]{4}/i.test(bg);
     return hasDarkToken || hasDarkHex;
   }, [currentTheme]);
-  
+
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
   const heroImageSrc = "/templates/baby-showers/moon-back.webp";
@@ -1119,37 +1129,13 @@ export default function BabyShowerTemplateCustomizePage() {
           />
         )}
 
-          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
-            <strong>Preview:</strong> Check the preview pane to see the RSVP form
-            that your guests will see.
-          </div>
-
-          <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
-            <div className="text-sm font-semibold text-slate-800">
-              Share & Add to Calendar
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors">
-                <Share2 size={16} />
-                Share link
-              </button>
-              <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-green-600 hover:text-green-700 transition-colors">
-                <CalendarIcon size={16} />
-                Google Cal
-              </button>
-              <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-slate-700 hover:text-slate-800 transition-colors">
-                <Apple size={16} />
-                Apple Cal
-              </button>
-              <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-blue-600 hover:text-blue-700 transition-colors">
-                <CalendarIcon size={16} />
-                Outlook
-              </button>
-            </div>
-          </div>
+        <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+          <strong>Preview:</strong> Check the preview pane to see the RSVP form
+          that your guests will see.
         </div>
-      </EditorLayout>
-    );
+      </div>
+    </EditorLayout>
+  );
 
   const renderRegistryEditor = () => {
     const addRegistry = () => {
@@ -1229,11 +1215,18 @@ export default function BabyShowerTemplateCustomizePage() {
         ref={previewRef}
         {...previewTouchHandlers}
         className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
-        style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+        }}
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
-            className={`min-h-[800px] w-full bg-white shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-colors duration-500 relative z-0`}
+            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
+              currentTheme.bg || "bg-white"
+            } ${
+              currentFont.preview
+            } transition-colors duration-500 relative z-0`}
           >
             <div className="relative z-10">
               <div
@@ -1245,7 +1238,10 @@ export default function BabyShowerTemplateCustomizePage() {
                 >
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
-                    style={{ fontFamily: currentFont.preview, ...(titleColor || {}) }}
+                    style={{
+                      fontFamily: currentFont.preview,
+                      ...(titleColor || {}),
+                    }}
                   >
                     {data.babyName}'s Baby Shower
                     <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
@@ -1296,7 +1292,10 @@ export default function BabyShowerTemplateCustomizePage() {
 
               {data.hosts.length > 0 && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`} style={titleColor}>
+                  <h2
+                    className={`text-2xl mb-6 ${currentTheme.accent}`}
+                    style={titleColor}
+                  >
                     Hosted By
                   </h2>
                   <div className="flex flex-wrap justify-center gap-6">
@@ -1316,7 +1315,10 @@ export default function BabyShowerTemplateCustomizePage() {
 
               {(data.address || data.city || data.state) && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-4 ${currentTheme.accent}`} style={titleColor}>
+                  <h2
+                    className={`text-2xl mb-4 ${currentTheme.accent}`}
+                    style={titleColor}
+                  >
                     Location
                   </h2>
                   {(data.address || data.city || data.state) && (
@@ -1390,7 +1392,10 @@ export default function BabyShowerTemplateCustomizePage() {
 
               {data.registries.length > 0 && (
                 <section className="text-center py-12 border-t border-white/10">
-                  <h2 className={`text-2xl mb-6 ${currentTheme.accent}`} style={titleColor}>
+                  <h2
+                    className={`text-2xl mb-6 ${currentTheme.accent}`}
+                    style={titleColor}
+                  >
                     Registry
                   </h2>
                   <div className="flex flex-wrap justify-center gap-4">
@@ -1519,7 +1524,7 @@ export default function BabyShowerTemplateCustomizePage() {
                           Send RSVP
                         </button>
 
-                        <div className="mt-6">
+                        <div className="mt-4">
                           <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
                             Share & Add to Calendar
                           </div>
@@ -1529,21 +1534,27 @@ export default function BabyShowerTemplateCustomizePage() {
                               className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                             >
                               <Share2 size={16} />
-                              <span className="hidden sm:inline">Share link</span>
+                              <span className="hidden sm:inline">
+                                Share link
+                              </span>
                             </button>
                             <button
                               onClick={handleGoogleCalendar}
                               className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                             >
                               <CalendarIcon size={16} />
-                              <span className="hidden sm:inline">Google Cal</span>
+                              <span className="hidden sm:inline">
+                                Google Cal
+                              </span>
                             </button>
                             <button
                               onClick={handleAppleCalendar}
                               className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                             >
                               <Apple size={16} />
-                              <span className="hidden sm:inline">Apple Cal</span>
+                              <span className="hidden sm:inline">
+                                Apple Cal
+                              </span>
                             </button>
                             <button
                               onClick={handleOutlookCalendar}
@@ -1605,20 +1616,25 @@ export default function BabyShowerTemplateCustomizePage() {
       >
         <div
           className="flex-1 overflow-y-auto"
-          style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
         >
-          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-            <button
-              onClick={closeMobileMenu}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-            >
-              <ChevronLeft size={14} />
-              Back to preview
-            </button>
-            <span className="text-sm font-semibold text-slate-700">
-              Customize
-            </span>
-          </div>
+          {mobileMenuOpen && (
+            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+              <button
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+              >
+                <ChevronLeft size={14} />
+                Back to preview
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
+            </div>
+          )}
           <div className="p-6 pt-4 md:pt-6">
             {activeView === "main" && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}

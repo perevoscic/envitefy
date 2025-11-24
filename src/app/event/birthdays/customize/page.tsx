@@ -2455,42 +2455,6 @@ export default function BirthdayTemplateCustomizePage() {
           <strong>Preview:</strong> Check the preview pane to see the RSVP form
           that your guests will see.
         </div>
-
-        <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
-          <div className="text-sm font-semibold text-slate-800">
-            Share & Add to Calendar
-          </div>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button
-              onClick={handleShare}
-              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors"
-            >
-              <Share2 size={16} />
-              <span className="hidden sm:inline">Share link</span>
-            </button>
-            <button
-              onClick={handleGoogleCalendar}
-              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-green-600 hover:text-green-700 transition-colors"
-            >
-              <CalendarIcon size={16} />
-              <span className="hidden sm:inline">Google Cal</span>
-            </button>
-            <button
-              onClick={handleAppleCalendar}
-              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-slate-700 hover:text-slate-800 transition-colors"
-            >
-              <Apple size={16} />
-              <span className="hidden sm:inline">Apple Cal</span>
-            </button>
-            <button
-              onClick={handleOutlookCalendar}
-              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-blue-600 hover:text-blue-700 transition-colors"
-            >
-              <CalendarIcon size={16} />
-              <span className="hidden sm:inline">Outlook</span>
-            </button>
-          </div>
-        </div>
       </div>
     </EditorLayout>
   );
@@ -2909,6 +2873,48 @@ export default function BirthdayTemplateCustomizePage() {
                         >
                           Send RSVP
                         </button>
+
+                        <div className="mt-4">
+                          <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
+                            Share & Add to Calendar
+                          </div>
+                          <div className="flex flex-wrap gap-3 justify-center">
+                            <button
+                              onClick={handleShare}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <Share2 size={16} />
+                              <span className="hidden sm:inline">
+                                Share link
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleGoogleCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <CalendarIcon size={16} />
+                              <span className="hidden sm:inline">
+                                Google Cal
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleAppleCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <Apple size={16} />
+                              <span className="hidden sm:inline">
+                                Apple Cal
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleOutlookCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <CalendarIcon size={16} />
+                              <span className="hidden sm:inline">Outlook</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-12">
@@ -2964,18 +2970,20 @@ export default function BirthdayTemplateCustomizePage() {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-            <button
-              onClick={closeMobileMenu}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-            >
-              <ChevronLeft size={14} />
-              Back to preview
-            </button>
-            <span className="text-sm font-semibold text-slate-700">
-              Customize
-            </span>
-          </div>
+          {mobileMenuOpen && (
+            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+              <button
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+              >
+                <ChevronLeft size={14} />
+                Back to preview
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
+            </div>
+          )}
           <div className="p-6 pt-4 md:pt-6">
             {activeView === "main" && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}

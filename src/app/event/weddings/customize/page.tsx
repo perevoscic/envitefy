@@ -2180,30 +2180,6 @@ const App = () => {
           <strong>Preview:</strong> Check the preview pane to see the RSVP form
           that your guests will see.
         </div>
-
-        <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
-          <div className="text-sm font-semibold text-slate-800">
-            Share & Add to Calendar
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors">
-              <Share2 size={16} />
-              Share link
-            </button>
-            <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-green-600 hover:text-green-700 transition-colors">
-              <CalendarIcon size={16} />
-              Google Cal
-            </button>
-            <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-slate-700 hover:text-slate-800 transition-colors">
-              <Apple size={16} />
-              Apple Cal
-            </button>
-            <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-blue-600 hover:text-blue-700 transition-colors">
-              <CalendarIcon size={16} />
-              Outlook
-            </button>
-          </div>
-        </div>
       </div>
     </EditorLayout>
   );
@@ -2593,7 +2569,9 @@ const App = () => {
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
-            className={`min-h-[800px] w-full bg-white shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.body} transition-colors duration-500 relative z-0`}
+            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
+              currentTheme.bg || "bg-white"
+            } ${currentFont.body} transition-colors duration-500 relative z-0`}
           >
             <ThemeGraphics themeId={data.theme.themeId} />
 
@@ -2708,28 +2686,36 @@ const App = () => {
                   >
                     Schedule of Events
                   </h2>
-                  <div className="relative space-y-6 md:space-y-8 max-w-4xl mx-auto">
-                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/20 pointer-events-none"></div>
+                  <div className="relative space-y-8 md:space-y-12 max-w-4xl mx-auto">
+                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/30 pointer-events-none hidden md:block"></div>
                     {sortedSchedule.map((event, index) => {
                       const isLeft = index % 2 === 0;
                       return (
                         <div
                           key={event.id ?? index}
-                          className="relative grid grid-cols-1 md:grid-cols-[minmax(0,1fr),40px,minmax(0,1fr)] items-center gap-4 md:gap-6"
+                          className="relative flex flex-col md:flex-row items-center gap-4 md:gap-6 min-h-[80px]"
                         >
+                          {/* Timeline Circle - Absolutely positioned at center */}
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex-shrink-0">
+                            <div className="w-3 h-3 rounded-full bg-current border-2 border-white shadow-lg"></div>
+                          </div>
+
+                          {/* Event Content */}
                           <div
-                            className={`order-1 flex flex-col gap-2 text-center ${
+                            className={`flex-1 flex flex-col w-full md:w-auto ${
                               isLeft
-                                ? "md:order-1 md:text-right md:items-end md:pr-4 md:justify-self-end"
-                                : "md:order-3 md:text-left md:items-start md:pl-4 md:justify-self-start"
+                                ? "text-center md:text-right md:items-end md:pr-8"
+                                : "text-center md:text-left md:items-start md:pl-8 md:order-3"
                             }`}
                           >
-                            <div className="w-full md:max-w-[420px]">
-                              <h3 className="text-2xl font-bold">
+                            <div className="w-full max-w-md mx-auto md:mx-0">
+                              <h3
+                                className={`text-2xl md:text-3xl font-bold mb-2 ${currentFont.title}`}
+                              >
                                 {event.title}
                               </h3>
                               {event.location && (
-                                <p className="opacity-70 text-base mb-2">
+                                <p className="opacity-70 text-base mb-2 font-medium">
                                   {event.location}
                                 </p>
                               )}
@@ -2741,19 +2727,16 @@ const App = () => {
                             </div>
                           </div>
 
-                          <div className="order-2 flex flex-col items-center gap-4">
-                            <div className="w-3 h-3 rounded-full bg-current shadow-[0_0_0_6px_rgba(255,255,255,0.4)]"></div>
-                          </div>
-
+                          {/* Time Bubble */}
                           <div
-                            className={`order-3 flex justify-center ${
+                            className={`flex-1 flex w-full md:w-auto ${
                               isLeft
-                                ? "md:order-3 md:justify-start md:pl-4"
-                                : "md:order-1 md:justify-end md:pr-4"
+                                ? "justify-center md:justify-start md:pl-8 md:order-3"
+                                : "justify-center md:justify-end md:pr-8"
                             }`}
                           >
                             {event.time && (
-                              <span className="relative inline-flex items-center px-4 py-2 rounded-full text-xs font-bold uppercase tracking-[0.2em] border border-current/40 bg-white/80 backdrop-blur-sm">
+                              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-current/30 bg-white/90 backdrop-blur-sm shadow-sm">
                                 {event.time}
                               </span>
                             )}
@@ -2768,6 +2751,10 @@ const App = () => {
                     )}
                   </div>
                 </section>
+
+                {sortedSchedule.length > 0 && data.story && (
+                  <DecorativeDivider themeId={data.theme.themeId} />
+                )}
 
                 <section
                   id="wedding-story"
@@ -2786,6 +2773,10 @@ const App = () => {
                     {data.story}
                   </p>
                 </section>
+
+                {data.story && data.weddingParty.length > 0 && (
+                  <DecorativeDivider themeId={data.theme.themeId} />
+                )}
 
                 <section
                   id="wedding-party"
@@ -2857,6 +2848,10 @@ const App = () => {
                   </div>
                 </section>
 
+                {data.weddingParty.length > 0 && data.gallery.length > 0 && (
+                  <DecorativeDivider themeId={data.theme.themeId} />
+                )}
+
                 <section
                   id="wedding-photos"
                   className="max-w-4xl mx-auto"
@@ -2889,6 +2884,10 @@ const App = () => {
                     </div>
                   )}
                 </section>
+
+                {data.gallery.length > 0 && data.thingsToDo.length > 0 && (
+                  <DecorativeDivider themeId={data.theme.themeId} />
+                )}
 
                 <section
                   id="wedding-things"
@@ -2928,6 +2927,14 @@ const App = () => {
                     </div>
                   )}
                 </section>
+
+                {data.thingsToDo.length > 0 &&
+                  (data.travel.hotels.length > 0 ||
+                    data.travel.airports.length > 0 ||
+                    data.travel.directions ||
+                    data.travel.shuttle) && (
+                    <DecorativeDivider themeId={data.theme.themeId} />
+                  )}
 
                 <section
                   id="wedding-travel"
@@ -3044,6 +3051,27 @@ const App = () => {
                         </p>
                       </div>
                     )}
+                </section>
+
+                <section
+                  id="wedding-registry"
+                  className="text-center pt-4 mt-6 border-t border-white/10 mb-5"
+                  onClick={() => setActiveView("registry")}
+                >
+                  <h2
+                    className={`text-2xl mb-4 ${currentFont.title} opacity-80`}
+                  >
+                    Registry
+                  </h2>
+                  <div className="inline-block px-8 py-3 bg-white/5 border border-white/20 rounded-full">
+                    <span className="uppercase tracking-widest text-sm font-semibold opacity-80">
+                      Coming Soon
+                    </span>
+                  </div>
+                  <p className="mt-4 text-sm opacity-50 max-w-md mx-auto">
+                    We are currently registering for gifts to help kickstart our
+                    new life together! Check back soon for details.
+                  </p>
                 </section>
 
                 <section
@@ -3165,48 +3193,41 @@ const App = () => {
                             Send RSVP
                           </button>
 
-                          <div className="mt-6">
-                            <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
-                              Share & Add to Calendar
-                            </div>
-                            <div className="flex flex-wrap gap-3 justify-center">
-                              <button
-                                onClick={handleShare}
-                                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                              >
-                                <Share2 size={16} />
-                                <span className="hidden sm:inline">
-                                  Share link
-                                </span>
-                              </button>
-                              <button
-                                onClick={handleGoogleCalendar}
-                                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                              >
-                                <CalendarIcon size={16} />
-                                <span className="hidden sm:inline">
-                                  Google Cal
-                                </span>
-                              </button>
-                              <button
-                                onClick={handleAppleCalendar}
-                                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                              >
-                                <Apple size={16} />
-                                <span className="hidden sm:inline">
-                                  Apple Cal
-                                </span>
-                              </button>
-                              <button
-                                onClick={handleOutlookCalendar}
-                                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                              >
-                                <CalendarIcon size={16} />
-                                <span className="hidden sm:inline">
-                                  Outlook
-                                </span>
-                              </button>
-                            </div>
+                          <div className="mt-4 flex flex-wrap gap-3 justify-center">
+                            <button
+                              onClick={handleShare}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <Share2 size={16} />
+                              <span className="hidden sm:inline">
+                                Share link
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleGoogleCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <CalendarIcon size={16} />
+                              <span className="hidden sm:inline">
+                                Google Cal
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleAppleCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <Apple size={16} />
+                              <span className="hidden sm:inline">
+                                Apple Cal
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleOutlookCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <CalendarIcon size={16} />
+                              <span className="hidden sm:inline">Outlook</span>
+                            </button>
                           </div>
                         </div>
                       ) : (
@@ -3236,27 +3257,6 @@ const App = () => {
                       </p>
                     </div>
                   )}
-                </section>
-
-                <section
-                  id="wedding-registry"
-                  className="text-center py-5 border-t border-white/10 mb-5"
-                  onClick={() => setActiveView("registry")}
-                >
-                  <h2
-                    className={`text-2xl mb-4 ${currentFont.title} opacity-80`}
-                  >
-                    Registry
-                  </h2>
-                  <div className="inline-block px-8 py-3 bg-white/5 border border-white/20 rounded-full">
-                    <span className="uppercase tracking-widest text-sm font-semibold opacity-80">
-                      Coming Soon
-                    </span>
-                  </div>
-                  <p className="mt-4 text-sm opacity-50 max-w-md mx-auto">
-                    We are currently registering for gifts to help kickstart our
-                    new life together! Check back soon for details.
-                  </p>
                 </section>
 
                 <footer className="text-center py-8 border-t border-white/10 mt-1">
@@ -3295,18 +3295,20 @@ const App = () => {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-            <button
-              onClick={closeMobileMenu}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-            >
-              <ChevronLeft size={14} />
-              Back to preview
-            </button>
-            <span className="text-sm font-semibold text-slate-700">
-              Customize
-            </span>
-          </div>
+          {mobileMenuOpen && (
+            <div className="sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+              <button
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+              >
+                <ChevronLeft size={14} />
+                Back to preview
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
+            </div>
+          )}
           <div className="p-6 pt-4 md:pt-6">
             {activeView === "main" && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
@@ -3360,6 +3362,708 @@ const MenuCard = ({ title, icon, desc, onClick, opacity = "opacity-100" }) => (
     </div>
   </div>
 );
+
+// Decorative divider component - different styles per theme
+const DecorativeDivider = ({ themeId }) => {
+  const getDividerStyle = () => {
+    const dividers = {
+      blush_peony_arch: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M195 18 L200 20 L195 22 M205 18 L200 20 L205 22"
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="currentColor"
+          />
+        </svg>
+      ),
+      sage_eucalyptus_sweep: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      ivory_gold_crest: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="380" cy="20" r="3" fill="currentColor" />
+          <circle
+            cx="200"
+            cy="20"
+            r="5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+        </svg>
+      ),
+      dusty_blue_horizon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      champagne_linen_frame: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      lavender_garden_halo: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="200" cy="20" r="4" fill="currentColor" />
+        </svg>
+      ),
+      rosewater_filigree: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M15 20 L20 15 L20 25 M385 20 L380 15 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      botanical_vellum_veil: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q100 15, 200 20 T380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="380" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="200" cy="20" r="2.5" fill="currentColor" />
+        </svg>
+      ),
+      peony_ranunculus_corners: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </svg>
+      ),
+      bluebells_wash: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path
+            d="M195 20 L200 15 L205 20 L200 25 Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        </svg>
+      ),
+      minimal_gold_geometry: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      sage_botanical_shadow: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2" fill="currentColor" />
+          <circle cx="380" cy="20" r="2" fill="currentColor" />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      pearl_dust_elegance: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="380" cy="20" r="3" fill="currentColor" />
+          <circle
+            cx="200"
+            cy="20"
+            r="4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="200" cy="20" r="1.5" fill="currentColor" />
+        </svg>
+      ),
+      rose_gold_floral_ribbon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M195 18 L200 20 L195 22 M205 18 L200 20 L205 22"
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="currentColor"
+          />
+        </svg>
+      ),
+      linen_wildflower_set: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      emerald_garden_crest: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      terracotta_grove: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="380" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="200" cy="20" r="3.5" fill="currentColor" />
+        </svg>
+      ),
+      fig_plum_velvet: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q100 15, 200 20 T380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      navy_rose_gold_frame: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q100 15, 200 20 T380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      champagne_pampas_halo: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="380" cy="20" r="3" fill="currentColor" />
+          <circle
+            cx="200"
+            cy="20"
+            r="5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      olive_branch_horizon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      blue_porcelain_bloom: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="4" fill="currentColor" />
+        </svg>
+      ),
+      pampas_blush_horizon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="380" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      eucalyptus_crest_emblem: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      ranunculus_ribbon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </svg>
+      ),
+    };
+
+    return dividers[themeId] || dividers["blush_peony_arch"];
+  };
+
+  return (
+    <div className="flex items-center justify-center py-8">
+      <div className="w-full max-w-md">{getDividerStyle()}</div>
+    </div>
+  );
+};
 
 const EditorLayout = ({ title, onBack, children }) => (
   <div className="animate-fade-in-right">

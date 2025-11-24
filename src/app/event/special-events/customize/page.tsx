@@ -102,7 +102,8 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950",
     text: "text-white",
     accent: "text-purple-200",
-    previewColor: "bg-gradient-to-r from-slate-950 via-purple-950 to-indigo-950",
+    previewColor:
+      "bg-gradient-to-r from-slate-950 via-purple-950 to-indigo-950",
   },
   {
     id: "champagne_elegance",
@@ -156,7 +157,8 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-violet-950 via-purple-900 to-fuchsia-900",
     text: "text-white",
     accent: "text-violet-200",
-    previewColor: "bg-gradient-to-r from-violet-950 via-purple-900 to-fuchsia-900",
+    previewColor:
+      "bg-gradient-to-r from-violet-950 via-purple-900 to-fuchsia-900",
   },
   // Modern
   {
@@ -196,22 +198,23 @@ const DESIGN_THEMES = [
     previewColor: "bg-gradient-to-r from-green-950 via-emerald-900 to-teal-800",
   },
   // Classic
-    {
-      id: "gala_night",
-      name: "Gala Night",
+  {
+    id: "gala_night",
+    name: "Gala Night",
     category: "Classic",
-      bg: "bg-gradient-to-br from-slate-900 via-neutral-800 to-amber-700",
-      text: "text-white",
-      accent: "text-amber-200",
-    previewColor: "bg-gradient-to-r from-slate-900 via-neutral-800 to-amber-700",
-    },
-    {
-      id: "pearl",
-      name: "Pearl",
+    bg: "bg-gradient-to-br from-slate-900 via-neutral-800 to-amber-700",
+    text: "text-white",
+    accent: "text-amber-200",
+    previewColor:
+      "bg-gradient-to-r from-slate-900 via-neutral-800 to-amber-700",
+  },
+  {
+    id: "pearl",
+    name: "Pearl",
     category: "Classic",
-      bg: "bg-gradient-to-br from-white via-slate-50 to-rose-50",
-      text: "text-slate-900",
-      accent: "text-rose-700",
+    bg: "bg-gradient-to-br from-white via-slate-50 to-rose-50",
+    text: "text-slate-900",
+    accent: "text-rose-700",
     previewColor: "bg-gradient-to-r from-white via-slate-50 to-rose-50",
   },
   {
@@ -258,54 +261,58 @@ const DESIGN_THEMES = [
     bg: "bg-gradient-to-br from-orange-200 via-amber-100 to-yellow-100",
     text: "text-orange-900",
     accent: "text-orange-700",
-    previewColor: "bg-gradient-to-r from-orange-200 via-amber-100 to-yellow-100",
+    previewColor:
+      "bg-gradient-to-r from-orange-200 via-amber-100 to-yellow-100",
   },
 ];
 
-const InputGroup = memo(({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-}) => (
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-      {label}
-    </label>
-    {type === "textarea" ? (
-      <textarea
-        className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    ) : (
-      <input
-        type={type}
-        className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    )}
-  </div>
-), (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.value === nextProps.value &&
-    prevProps.label === nextProps.label &&
-    prevProps.type === nextProps.type &&
-    prevProps.placeholder === nextProps.placeholder &&
-    prevProps.onChange === nextProps.onChange
-  );
-});
+const InputGroup = memo(
+  ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    type = "text",
+  }: {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+    type?: string;
+  }) => (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+        {label}
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+      ) : (
+        <input
+          type={type}
+          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  ),
+  (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return (
+      prevProps.value === nextProps.value &&
+      prevProps.label === nextProps.label &&
+      prevProps.type === nextProps.type &&
+      prevProps.placeholder === nextProps.placeholder &&
+      prevProps.onChange === nextProps.onChange
+    );
+  }
+);
 
 InputGroup.displayName = "InputGroup";
 
@@ -428,7 +435,10 @@ export default function SpecialEventsCustomizePage() {
   };
 
   const toGoogleDate = (d: Date) =>
-    d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+    d
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}Z$/, "Z");
 
   const buildIcsUrl = (details: ReturnType<typeof buildCalendarDetails>) => {
     const params = new URLSearchParams();
@@ -466,7 +476,11 @@ export default function SpecialEventsCustomizePage() {
     const details = buildCalendarDetails();
     const shareUrl =
       typeof window !== "undefined" ? window.location.href : undefined;
-    if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
+    if (
+      typeof navigator !== "undefined" &&
+      (navigator as any).share &&
+      shareUrl
+    ) {
       (navigator as any)
         .share({
           title: details.title,
@@ -627,7 +641,9 @@ export default function SpecialEventsCustomizePage() {
           numberOfGuests: 0,
           templateId: "special-event",
           customFields: data.extra,
-          heroImage: data.hero || "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80",
+          heroImage:
+            data.hero ||
+            "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80",
           theme: data.theme,
         },
       };
@@ -915,7 +931,11 @@ export default function SpecialEventsCustomizePage() {
               className="w-full p-3 bg-white border border-slate-200 rounded-lg appearance-none text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
             >
               {Object.entries(FONTS).map(([key, font]) => (
-                <option key={key} value={key} style={{ fontFamily: font.preview }}>
+                <option
+                  key={key}
+                  value={key}
+                  style={{ fontFamily: font.preview }}
+                >
                   {font.name}
                 </option>
               ))}
@@ -1039,41 +1059,10 @@ export default function SpecialEventsCustomizePage() {
           />
         )}
 
-          <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
-            <div className="text-sm font-semibold text-slate-800">
-              Share & Add to Calendar
-            </div>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <button
-                onClick={handleShare}
-                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors"
-              >
-                <Share2 size={16} />
-                <span className="hidden sm:inline">Share link</span>
-              </button>
-              <button
-                onClick={handleGoogleCalendar}
-                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-green-600 hover:text-green-700 transition-colors"
-              >
-                <CalendarIcon size={16} />
-                <span className="hidden sm:inline">Google Cal</span>
-              </button>
-              <button
-                onClick={handleAppleCalendar}
-                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-slate-700 hover:text-slate-800 transition-colors"
-              >
-                <Apple size={16} />
-                <span className="hidden sm:inline">Apple Cal</span>
-              </button>
-              <button
-                onClick={handleOutlookCalendar}
-                className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white hover:border-blue-600 hover:text-blue-700 transition-colors"
-              >
-                <CalendarIcon size={16} />
-                <span className="hidden sm:inline">Outlook</span>
-              </button>
-            </div>
-          </div>
+        <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+          <strong>Preview:</strong> Check the preview pane to see the RSVP form
+          that your guests will see.
+        </div>
       </div>
     </EditorLayout>
   );
@@ -1112,10 +1101,14 @@ export default function SpecialEventsCustomizePage() {
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
-            className={`min-h-[800px] w-full bg-white shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.body} transition-colors duration-500 relative z-0`}
+            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
+              currentTheme.bg || "bg-white"
+            } ${currentFont.body} transition-colors duration-500 relative z-0`}
           >
             <div className="relative z-10">
-              <div className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}>
+              <div
+                className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
+              >
                 <div className="cursor-pointer hover:opacity-80 transition-opacity group">
                   <h1
                     className={`${currentSize.h1} mb-2 ${currentFont.title} leading-tight flex items-center gap-2`}
@@ -1298,11 +1291,55 @@ export default function SpecialEventsCustomizePage() {
                         >
                           Send RSVP
                         </button>
+
+                        <div className="mt-4">
+                          <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
+                            Share & Add to Calendar
+                          </div>
+                          <div className="flex flex-wrap gap-3 justify-center">
+                            <button
+                              onClick={handleShare}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <Share2 size={16} />
+                              <span className="hidden sm:inline">
+                                Share link
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleGoogleCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <CalendarIcon size={16} />
+                              <span className="hidden sm:inline">
+                                Google Cal
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleAppleCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <Apple size={16} />
+                              <span className="hidden sm:inline">
+                                Apple Cal
+                              </span>
+                            </button>
+                            <button
+                              onClick={handleOutlookCalendar}
+                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                              <CalendarIcon size={16} />
+                              <span className="hidden sm:inline">Outlook</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-12">
                         <div className="text-4xl mb-4">🎉</div>
-                        <h3 className={`${currentSize.h2} ${currentFont.title} mb-2`}>
+                        <h3
+                          className={`${currentSize.h2} ${currentFont.title} mb-2`}
+                        >
                           Thank you!
                         </h3>
                         <p className="opacity-70">Your RSVP has been sent.</p>
@@ -1356,18 +1393,20 @@ export default function SpecialEventsCustomizePage() {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-            <button
-              onClick={closeMobileMenu}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-            >
-              <ChevronLeft size={14} />
-              Back to preview
-            </button>
-            <span className="text-sm font-semibold text-slate-700">
-              Customize
-            </span>
-          </div>
+          {mobileMenuOpen && (
+            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+              <button
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+              >
+                <ChevronLeft size={14} />
+                Back to preview
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
+            </div>
+          )}
           <div className="p-6 pt-4 md:pt-6 pb-8">
             {activeView === "main" && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}

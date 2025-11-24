@@ -38,6 +38,32 @@ export type ThemeSpec = {
   preview: string;
 };
 
+type AdvancedSectionRenderContext = {
+  state: any;
+  setState: (updater: any) => void;
+  setActiveView: (view: string) => void;
+  inputClass: string;
+  textareaClass: string;
+};
+
+type AdvancedSectionPreviewContext = {
+  state: any;
+  textClass: string;
+  accentClass: string;
+  headingShadow?: React.CSSProperties;
+  bodyShadow?: React.CSSProperties;
+  titleColor?: React.CSSProperties;
+};
+
+type AdvancedSectionSpec = {
+  id: string;
+  menuTitle: string;
+  menuDesc: string;
+  initialState: any;
+  renderEditor: (ctx: AdvancedSectionRenderContext) => React.ReactNode;
+  renderPreview?: (ctx: AdvancedSectionPreviewContext) => React.ReactNode;
+};
+
 export type SimpleTemplateConfig = {
   slug: string;
   displayName: string;
@@ -46,6 +72,7 @@ export type SimpleTemplateConfig = {
   defaultHero: string;
   detailFields: FieldSpec[];
   themes: ThemeSpec[];
+  themesExpandedByDefault?: boolean;
   rsvpCopy?: {
     menuTitle?: string;
     menuDesc?: string;
@@ -67,7 +94,13 @@ export type SimpleTemplateConfig = {
     rsvpDeadline?: string;
     extra?: Record<string, string>;
   };
+  advancedSections?: AdvancedSectionSpec[];
 };
+
+const baseInputClass =
+  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
+const baseTextareaClass =
+  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
 const InputGroup = memo(
   ({
@@ -91,7 +124,7 @@ const InputGroup = memo(
       </label>
       {type === "textarea" ? (
         <textarea
-          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
+          className={baseTextareaClass}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -100,7 +133,7 @@ const InputGroup = memo(
       ) : (
         <input
           type={type}
-          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
+          className={baseInputClass}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -143,8 +176,8 @@ const ThemeSwatch = ({
   >
     <div className={`h-12 w-full ${theme.preview} border-b border-black/5`} />
     <div className="p-3">
-      <div className="text-sm font-semibold text-slate-800">{theme.name}</div>
-      <div className="text-xs text-slate-500">Palette preset</div>
+      <div className="text-sm font-semibold text-slate-700">{theme.name}</div>
+      <div className="text-xs text-slate-400">Palette preset</div>
     </div>
   </button>
 );
@@ -181,32 +214,6 @@ const MenuCard = ({
   </button>
 );
 
-const ShareCalendarBlock = () => (
-  <div className="space-y-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
-    <div className="text-sm font-semibold text-slate-800">
-      Share & Add to Calendar
-    </div>
-    <div className="grid grid-cols-2 gap-2">
-      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-indigo-500 hover:text-indigo-600 transition-colors">
-        <Share2 size={16} />
-        Share link
-      </button>
-      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-green-600 hover:text-green-700 transition-colors">
-        <CalendarIcon size={16} />
-        Google Cal
-      </button>
-      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-slate-700 hover:text-slate-800 transition-colors">
-        <Apple size={16} />
-        Apple Cal
-      </button>
-      <button className="flex items-center justify-center gap-2 text-sm border border-slate-200 rounded-md py-2 bg-white hover:border-blue-600 hover:text-blue-700 transition-colors">
-        <CalendarIcon size={16} />
-        Outlook
-      </button>
-    </div>
-  </div>
-);
-
 export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
@@ -228,14 +235,14 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [defaultDate]);
 
-  const [data, setData] = useState(() => ({
-    title: config.prefill?.title || `${config.displayName}`,
+    const [data, setData] = useState(() => ({
+      title: config.prefill?.title || `${config.displayName}`,
       date: config.prefill?.date || initialDate,
       time: config.prefill?.time || "14:00",
       city: config.prefill?.city || "Chicago",
       state: config.prefill?.state || "IL",
       venue: config.prefill?.venue || "",
-      details: config.prefill?.details || "",
+      details: config.prefill?.details || "Tell guests what to expect.",
       hero: config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
       rsvpDeadline:
@@ -248,18 +255,28 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
-          config.prefill?.extra?.[f.key] ?? "",
+          config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
         ])
       ),
     }));
+    const [advancedState, setAdvancedState] = useState(() => {
+      const entries =
+        config.advancedSections?.map((section) => [
+          section.id,
+          section.initialState,
+        ]) || [];
+      return Object.fromEntries(entries);
+    });
     const [themeId, setThemeId] = useState(
       config.themes[0]?.id ?? "default-theme"
     );
-    const [activeView, setActiveView] = useState<"main" | "headline" | "images" | "design" | "details" | "rsvp">("main");
+    const [activeView, setActiveView] = useState<string>("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
-    const [themesExpanded, setThemesExpanded] = useState(false);
+    const [themesExpanded, setThemesExpanded] = useState(
+      config.themesExpandedByDefault ?? false
+    );
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -267,6 +284,13 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+    const setAdvancedSectionState = useCallback((id: string, updater: any) => {
+      setAdvancedState((prev: Record<string, any>) => {
+        const current = prev?.[id];
+        const next = typeof updater === "function" ? updater(current) : updater;
+        return { ...prev, [id]: next };
+      });
+    }, []);
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
@@ -300,19 +324,25 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       title,
       children,
       onBack,
+      showBack = true,
     }: {
       title: string;
       children: React.ReactNode;
       onBack: () => void;
+      showBack?: boolean;
     }) => (
       <div className="animate-fade-in-right">
         <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-          <button
-            onClick={onBack}
-            className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            <ChevronLeft size={20} />
-          </button>
+          <div className="mr-3 w-8">
+            {showBack && (
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            )}
+          </div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
             Customize
           </span>
@@ -394,7 +424,11 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
             numberOfGuests: 0,
             templateId: config.slug,
-            customFields: data.extra,
+            customFields: {
+              ...data.extra,
+              advancedSections: advancedState,
+            },
+            advancedSections: advancedState,
             heroImage: data.hero || config.defaultHero,
           },
         };
@@ -425,6 +459,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      advancedState,
       locationParts,
       config.category,
       config.displayName,
@@ -461,7 +496,10 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const toGoogleDate = (d: Date) =>
-      d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+      d
+        .toISOString()
+        .replace(/[-:]/g, "")
+        .replace(/\.\d{3}Z$/, "Z");
 
     const buildIcsUrl = (details: ReturnType<typeof buildEventDetails>) => {
       const params = new URLSearchParams();
@@ -571,7 +609,8 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             Add your details
           </h2>
           <p className="text-slate-500 text-sm">
-            Customize every aspect of your {config.displayName.toLowerCase()} site.
+            Customize every aspect of your {config.displayName.toLowerCase()}{" "}
+            site.
           </p>
         </div>
 
@@ -606,12 +645,25 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<CheckSquare size={18} />}
             onClick={() => setActiveView("rsvp")}
           />
+          {config.advancedSections?.map((section) => (
+            <MenuCard
+              key={section.id}
+              title={section.menuTitle}
+              desc={section.menuDesc}
+              icon={<Edit2 size={18} />}
+              onClick={() => setActiveView(section.id)}
+            />
+          ))}
         </div>
       </div>
     );
 
     const renderHeadlineEditor = () => (
-      <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
+      <EditorLayout
+        title="Headline"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
         <div className="space-y-6">
           <InputGroup
             label="Headline"
@@ -658,7 +710,11 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderImagesEditor = () => (
-      <EditorLayout title="Images" onBack={() => setActiveView("main")}>
+      <EditorLayout
+        title="Images"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
         <div className="space-y-4">
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Hero Image
@@ -703,7 +759,11 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderDesignEditor = () => (
-      <EditorLayout title="Design" onBack={() => setActiveView("main")}>
+      <EditorLayout
+        title="Design"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
         <div className="space-y-3">
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
@@ -712,10 +772,14 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <div className="flex items-center gap-2">
               <Palette size={16} /> Theme ({config.themes.length})
             </div>
-            {themesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {themesExpanded ? (
+              <ChevronUp size={16} />
+            ) : (
+              <ChevronDown size={16} />
+            )}
           </button>
           {themesExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[1000px] overflow-y-auto pr-1">
               {config.themes.map((theme) => (
                 <ThemeSwatch
                   key={theme.id}
@@ -729,7 +793,9 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           {!themesExpanded && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <div
-                className={`w-3 h-3 rounded-full border shadow-sm ${currentTheme.preview?.split(" ")[0] || "bg-slate-200"}`}
+                className={`w-3 h-3 rounded-full border shadow-sm ${
+                  currentTheme.preview?.split(" ")[0] || "bg-slate-200"
+                }`}
               ></div>
               <span>Current theme: {currentTheme.name}</span>
             </div>
@@ -739,7 +805,11 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderDetailsEditor = () => (
-      <EditorLayout title="Details" onBack={() => setActiveView("main")}>
+      <EditorLayout
+        title="Details"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
         <div className="space-y-4">
           <InputGroup
             label="Description"
@@ -776,6 +846,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <EditorLayout
         title={rsvpCopy.editorTitle}
         onBack={() => setActiveView("main")}
+        showBack
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -809,9 +880,24 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
           </div>
-
-          <ShareCalendarBlock />
         </div>
+      </EditorLayout>
+    );
+
+    const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
+      <EditorLayout
+        title={section.menuTitle}
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        {section.renderEditor({
+          state: advancedState?.[section.id],
+          setState: (updater: any) =>
+            setAdvancedSectionState(section.id, updater),
+          setActiveView,
+          inputClass: baseInputClass,
+          textareaClass: baseTextareaClass,
+        })}
       </EditorLayout>
     );
 
@@ -848,7 +934,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
+          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
@@ -943,6 +1029,24 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </section>
 
+                {config.advancedSections?.map((section) =>
+                  section.renderPreview ? (
+                    <section
+                      key={section.id}
+                      className="py-8 border-t border-white/10 px-6 md:px-10"
+                    >
+                      {section.renderPreview({
+                        state: advancedState?.[section.id],
+                        textClass,
+                        accentClass,
+                        headingShadow,
+                        bodyShadow,
+                        titleColor,
+                      })}
+                    </section>
+                  ) : null
+                )}
+
                 {data.rsvpEnabled && (
                   <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
                     <h2
@@ -952,10 +1056,10 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       {rsvpCopy.editorTitle}
                     </h2>
                     <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
-                  {!rsvpSubmitted ? (
-                    <div className="space-y-6">
-                      <div className="text-center mb-4">
-                        <p className="opacity-80">
+                      {!rsvpSubmitted ? (
+                        <div className="space-y-6">
+                          <div className="text-center mb-4">
+                            <p className="opacity-80">
                               {data.rsvpDeadline
                                 ? `Kindly respond by ${new Date(
                                     data.rsvpDeadline
@@ -1063,63 +1167,50 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                           </button>
                         </div>
                       )}
-                      <div className="mt-6">
-                        <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
-                          Share & Add to Calendar
-                        </div>
-                        <div className="flex flex-wrap gap-3 justify-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShare();
-                            }}
-                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                          >
-                            <Share2 size={16} />
-                            <span className="hidden sm:inline">Share link</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleGoogleCalendar();
-                            }}
-                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                          >
-                            <CalendarIcon size={16} />
-                            <span className="hidden sm:inline">Google Cal</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAppleCalendar();
-                            }}
-                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                          >
-                            <Apple size={16} />
-                            <span className="hidden sm:inline">Apple Cal</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOutlookCalendar();
-                            }}
-                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                          >
-                            <CalendarIcon size={16} />
-                            <span className="hidden sm:inline">Outlook</span>
-                          </button>
-                        </div>
-                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-3 justify-center">
+                      <button
+                        onClick={() => handleShare()}
+                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <Share2 size={16} />
+                        <span className="hidden sm:inline">Share link</span>
+                      </button>
+                      <button
+                        onClick={() => handleGoogleCalendar()}
+                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <CalendarIcon size={16} />
+                        <span className="hidden sm:inline">Google Cal</span>
+                      </button>
+                      <button
+                        onClick={() => handleAppleCalendar()}
+                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <Apple size={16} />
+                        <span className="hidden sm:inline">Apple Cal</span>
+                      </button>
+                      <button
+                        onClick={() => handleOutlookCalendar()}
+                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <CalendarIcon size={16} />
+                        <span className="hidden sm:inline">Outlook</span>
+                      </button>
                     </div>
                   </section>
                 )}
 
-                <footer className="text-center py-8 border-t border-white/10 mt-1">
+                <footer
+                  className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
+                >
                   <div className="space-y-1">
-                    <p className="text-sm opacity-60">
-                      Powered By Envitefy. Creat. Share. Enjoy.
+                    <p className="text-sm opacity-60" style={bodyShadow}>
+                      Powered By Envitefy. Create. Share. Enjoy.
                     </p>
-                    <p className="text-xs opacity-50">Create yours now.</p>
+                    <p className="text-xs opacity-50" style={bodyShadow}>
+                      Create yours now.
+                    </p>
                   </div>
                 </footer>
               </div>
@@ -1168,6 +1259,13 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
+              {config.advancedSections?.map((section) =>
+                activeView === section.id ? (
+                  <React.Fragment key={section.id}>
+                    {renderAdvancedEditor(section)}
+                  </React.Fragment>
+                ) : null
+              )}
             </div>
           </div>
 

@@ -149,6 +149,708 @@ const ThemeGraphics = ({ themeId }: { themeId: string }) => {
   return null;
 };
 
+// Decorative divider component - different styles per theme
+const DecorativeDivider = ({ themeId }: { themeId: string }) => {
+  const getDividerStyle = () => {
+    const dividers: Record<string, React.ReactElement> = {
+      blush_peony_arch: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M195 18 L200 20 L195 22 M205 18 L200 20 L205 22"
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="currentColor"
+          />
+        </svg>
+      ),
+      sage_eucalyptus_sweep: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      ivory_gold_crest: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="380" cy="20" r="3" fill="currentColor" />
+          <circle
+            cx="200"
+            cy="20"
+            r="5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+        </svg>
+      ),
+      dusty_blue_horizon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      champagne_linen_frame: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      lavender_garden_halo: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="200" cy="20" r="4" fill="currentColor" />
+        </svg>
+      ),
+      rosewater_filigree: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M15 20 L20 15 L20 25 M385 20 L380 15 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      botanical_vellum_veil: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q100 15, 200 20 T380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="380" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="200" cy="20" r="2.5" fill="currentColor" />
+        </svg>
+      ),
+      peony_ranunculus_corners: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </svg>
+      ),
+      bluebells_wash: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path
+            d="M195 20 L200 15 L205 20 L200 25 Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        </svg>
+      ),
+      minimal_gold_geometry: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      sage_botanical_shadow: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2" fill="currentColor" />
+          <circle cx="380" cy="20" r="2" fill="currentColor" />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      pearl_dust_elegance: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="380" cy="20" r="3" fill="currentColor" />
+          <circle
+            cx="200"
+            cy="20"
+            r="4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="200" cy="20" r="1.5" fill="currentColor" />
+        </svg>
+      ),
+      rose_gold_floral_ribbon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M195 18 L200 20 L195 22 M205 18 L200 20 L205 22"
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="currentColor"
+          />
+        </svg>
+      ),
+      linen_wildflower_set: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      emerald_garden_crest: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      terracotta_grove: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="380" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="200" cy="20" r="3.5" fill="currentColor" />
+        </svg>
+      ),
+      fig_plum_velvet: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q100 15, 200 20 T380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      navy_rose_gold_frame: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q100 15, 200 20 T380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M15 20 L20 15 M15 20 L20 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M385 20 L380 15 M385 20 L380 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      champagne_pampas_halo: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="380" cy="20" r="3" fill="currentColor" />
+          <circle
+            cx="200"
+            cy="20"
+            r="5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      olive_branch_horizon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <circle cx="200" cy="20" r="2" fill="currentColor" />
+        </svg>
+      ),
+      blue_porcelain_bloom: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <circle cx="200" cy="20" r="4" fill="currentColor" />
+        </svg>
+      ),
+      pampas_blush_horizon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="380" cy="20" r="2.5" fill="currentColor" />
+          <circle cx="200" cy="20" r="3" fill="currentColor" />
+        </svg>
+      ),
+      eucalyptus_crest_emblem: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <line
+            x1="20"
+            y1="20"
+            x2="380"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
+          <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
+          <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
+        </svg>
+      ),
+      ranunculus_ribbon: (
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 400 40"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="opacity-40"
+        >
+          <path
+            d="M20 20 Q200 10, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M20 20 Q200 30, 380 20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+          <path
+            d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </svg>
+      ),
+    };
+
+    return dividers[themeId] || dividers["blush_peony_arch"];
+  };
+
+  return (
+    <div className="flex items-center justify-center py-8">
+      <div className="w-full max-w-md">{getDividerStyle()}</div>
+    </div>
+  );
+};
+
 type Props = {
   eventId: string;
   eventData: any;
@@ -269,7 +971,9 @@ export default function WeddingTemplateView({
     <div className="min-h-screen bg-[#F8F5FF]">
       <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
         <div
-          className={`min-h-[800px] w-full bg-white shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.body} transition-colors duration-500 relative z-0`}
+          className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
+            currentTheme.bg || "bg-white"
+          } ${currentFont.body} transition-colors duration-500 relative z-0`}
         >
           <ThemeGraphics themeId={currentTheme.id} />
 
@@ -384,28 +1088,36 @@ export default function WeddingTemplateView({
                   >
                     Schedule of Events
                   </h2>
-                  <div className="relative space-y-6 md:space-y-8 max-w-4xl mx-auto">
-                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/20 pointer-events-none"></div>
+                  <div className="relative space-y-8 md:space-y-12 max-w-4xl mx-auto">
+                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/30 pointer-events-none hidden md:block"></div>
                     {sortedSchedule.map((event: any, index: number) => {
                       const isLeft = index % 2 === 0;
                       return (
                         <div
                           key={event.id ?? index}
-                          className="relative grid grid-cols-1 md:grid-cols-[minmax(0,1fr),40px,minmax(0,1fr)] items-center gap-4 md:gap-6"
+                          className="relative flex flex-col md:flex-row items-center gap-4 md:gap-6 min-h-[80px]"
                         >
+                          {/* Timeline Circle - Absolutely positioned at center */}
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex-shrink-0">
+                            <div className="w-3 h-3 rounded-full bg-current border-2 border-white shadow-lg"></div>
+                          </div>
+
+                          {/* Event Content */}
                           <div
-                            className={`order-1 flex flex-col gap-2 text-center ${
+                            className={`flex-1 flex flex-col w-full md:w-auto ${
                               isLeft
-                                ? "md:order-1 md:text-right md:items-end md:pr-4 md:justify-self-end"
-                                : "md:order-3 md:text-left md:items-start md:pl-4 md:justify-self-start"
+                                ? "text-center md:text-right md:items-end md:pr-8"
+                                : "text-center md:text-left md:items-start md:pl-8 md:order-3"
                             }`}
                           >
-                            <div className="w-full md:max-w-[420px]">
-                              <h3 className="text-2xl font-bold">
+                            <div className="w-full max-w-md mx-auto md:mx-0">
+                              <h3
+                                className={`text-2xl md:text-3xl font-bold mb-2 ${currentFont.title}`}
+                              >
                                 {event.title}
                               </h3>
                               {event.location && (
-                                <p className="opacity-70 text-base mb-2">
+                                <p className="opacity-70 text-base mb-2 font-medium">
                                   {event.location}
                                 </p>
                               )}
@@ -417,19 +1129,16 @@ export default function WeddingTemplateView({
                             </div>
                           </div>
 
-                          <div className="order-2 flex flex-col items-center gap-4">
-                            <div className="w-3 h-3 rounded-full bg-current shadow-[0_0_0_6px_rgba(255,255,255,0.4)]"></div>
-                          </div>
-
+                          {/* Time Bubble */}
                           <div
-                            className={`order-3 flex justify-center ${
+                            className={`flex-1 flex w-full md:w-auto ${
                               isLeft
-                                ? "md:order-3 md:justify-start md:pl-4"
-                                : "md:order-1 md:justify-end md:pr-4"
+                                ? "justify-center md:justify-start md:pl-8 md:order-3"
+                                : "justify-center md:justify-end md:pr-8"
                             }`}
                           >
                             {event.time && (
-                              <span className="relative inline-flex items-center px-4 py-2 rounded-full text-xs font-bold uppercase tracking-[0.2em] border border-current/40 bg-white/80 backdrop-blur-sm">
+                              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-current/30 bg-white/90 backdrop-blur-sm shadow-sm">
                                 {event.time}
                               </span>
                             )}
@@ -439,6 +1148,10 @@ export default function WeddingTemplateView({
                     })}
                   </div>
                 </section>
+              )}
+
+              {sortedSchedule.length > 0 && story && (
+                <DecorativeDivider themeId={currentTheme.id} />
               )}
 
               {story && (
@@ -458,6 +1171,10 @@ export default function WeddingTemplateView({
                     {story}
                   </p>
                 </section>
+              )}
+
+              {story && weddingParty.length > 0 && (
+                <DecorativeDivider themeId={currentTheme.id} />
               )}
 
               {weddingParty.length > 0 && (
@@ -516,6 +1233,10 @@ export default function WeddingTemplateView({
                 </section>
               )}
 
+              {weddingParty.length > 0 && gallery.length > 0 && (
+                <DecorativeDivider themeId={currentTheme.id} />
+              )}
+
               {gallery.length > 0 && (
                 <section id="photos" className="max-w-4xl mx-auto">
                   <h2
@@ -539,6 +1260,10 @@ export default function WeddingTemplateView({
                     ))}
                   </div>
                 </section>
+              )}
+
+              {gallery.length > 0 && thingsToDo.length > 0 && (
+                <DecorativeDivider themeId={currentTheme.id} />
               )}
 
               {thingsToDo.length > 0 && (
@@ -571,6 +1296,14 @@ export default function WeddingTemplateView({
                   </div>
                 </section>
               )}
+
+              {thingsToDo.length > 0 &&
+                (travel.hotels?.length > 0 ||
+                  travel.airports?.length > 0 ||
+                  travel.directions ||
+                  travel.shuttle) && (
+                  <DecorativeDivider themeId={currentTheme.id} />
+                )}
 
               {(travel.hotels?.length > 0 ||
                 travel.airports?.length > 0 ||
@@ -678,6 +1411,12 @@ export default function WeddingTemplateView({
                 </section>
               )}
 
+              {(travel.hotels?.length > 0 ||
+                travel.airports?.length > 0 ||
+                travel.directions ||
+                travel.shuttle) &&
+                location && <DecorativeDivider themeId={currentTheme.id} />}
+
               {location && (
                 <section id="location" className="max-w-4xl mx-auto">
                   <h2
@@ -692,6 +1431,8 @@ export default function WeddingTemplateView({
                   </div>
                 </section>
               )}
+
+              {location && <DecorativeDivider themeId={currentTheme.id} />}
 
               <section id="rsvp" className="max-w-xl mx-auto text-center">
                 <h2
