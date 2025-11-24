@@ -8,6 +8,16 @@ export type NavItem = {
   isAction?: boolean; // If true, may trigger a modal/dropdown instead of navigation
 };
 
+export type CreateEventSection = {
+  title: string;
+  items: Array<{
+    label: string;
+    href: string;
+    icon?: React.ReactNode;
+    description?: string;
+  }>;
+};
+
 export const TEMPLATE_LINKS = [
   { label: "Birthdays", href: "/event/birthdays/customize", icon: "🎂" },
   { label: "Weddings", href: "/event/weddings/customize", icon: "💍" },
@@ -17,8 +27,30 @@ export const TEMPLATE_LINKS = [
     href: "/event/gender-reveal/customize",
     icon: "🎈",
   },
-  { label: "Appointments", href: "/event/appointments/customize", icon: "🩺" },
+  {
+    label: "Doctor Appointments",
+    href: "/event/appointments/customize",
+    icon: "🩺",
+  },
+  {
+    label: "Football Season",
+    href: "/event/football-season/customize",
+    icon: "🏈",
+  },
+  {
+    label: "Gymnastics Schedule",
+    href: "/event/gymnastics/customize",
+    icon: "🤸",
+  },
+  { label: "Cheerleading", href: "/event/cheerleading/customize", icon: "📣" },
+  { label: "Dance / Ballet", href: "/event/dance-ballet/customize", icon: "🩰" },
+  { label: "Soccer", href: "/event/soccer/customize", icon: "⚽" },
   { label: "Sport Events", href: "/event/sport-events/customize", icon: "🏅" },
+  {
+    label: "Workshops / Classes",
+    href: "/event/workshops/customize",
+    icon: "🧠",
+  },
   { label: "General Events", href: "/event/general/customize", icon: "📅" },
   {
     label: "Special Events",
@@ -26,6 +58,53 @@ export const TEMPLATE_LINKS = [
     icon: "✨",
   },
 ] as const;
+
+const pickTemplate = (label: (typeof TEMPLATE_LINKS)[number]["label"]) =>
+  TEMPLATE_LINKS.find((t) => t.label === label)!;
+
+export const CREATE_EVENT_SECTIONS: CreateEventSection[] = [
+  {
+    title: "Quick access",
+    items: [
+      { label: "Snap Event", href: "/?action=camera", icon: "📸" },
+      { label: "Upload Event", href: "/?action=upload", icon: "📤" },
+      {
+        label: "Smart sign-up forms",
+        href: "/smart-signup-form",
+        icon: "📝",
+      },
+    ],
+  },
+  {
+    title: "Life Milestones & Celebrations",
+    items: [
+      pickTemplate("Birthdays"),
+      pickTemplate("Weddings"),
+      pickTemplate("Baby Showers"),
+      pickTemplate("Gender Reveal"),
+    ],
+  },
+  {
+    title: "Sports Season '25-'26",
+    items: [
+      pickTemplate("Football Season"),
+      pickTemplate("Gymnastics Schedule"),
+      pickTemplate("Cheerleading"),
+      pickTemplate("Dance / Ballet"),
+      pickTemplate("Soccer"),
+      pickTemplate("Sport Events"),
+    ],
+  },
+  {
+    title: "Appointments & General Events",
+    items: [
+      pickTemplate("Doctor Appointments"),
+      pickTemplate("Workshops / Classes"),
+      pickTemplate("General Events"),
+      pickTemplate("Special Events"),
+    ],
+  },
+];
 
 export const MAIN_NAV_ITEMS: NavItem[] = [
   {

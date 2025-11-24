@@ -219,6 +219,7 @@ export default function LeftSidebar() {
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [adminOpenFloating, setAdminOpenFloating] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
     microsoft: boolean;
@@ -307,6 +308,10 @@ export default function LeftSidebar() {
       fetchConnectedCalendars();
     }
   }, [status, fetchConnectedCalendars]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -728,6 +733,9 @@ export default function LeftSidebar() {
       return "Doctor Appointments";
     // Generic appointments
     if (/^appointment(s)?$/.test(l)) return "Appointments";
+    // Gymnastics
+    if (/gymnastic(s)?/i.test(l) || /sport_gymnastics/i.test(l))
+      return "Gymnastics";
     // Sports/Games
     if (
       /^sport(s)?\s*event(s)?$/.test(l) ||
@@ -1947,21 +1955,25 @@ export default function LeftSidebar() {
                   </div>
                 </div>
                 {createEventOpen && (
-                  <div className="mt-3 flex flex-col gap-1 pl-2">
-                    {TEMPLATE_LINKS.map((item) => (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        onClick={() => {
-                          setCreateEventOpen(false);
-                          collapseSidebarOnTouch();
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm md:text-base font-medium text-[#2f1d47]"
-                      >
-                        <span className="text-lg">{item.icon}</span>
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
+                  <div
+                    className="mt-3 flex flex-col gap-1 pl-2"
+                    suppressHydrationWarning
+                  >
+                    {isHydrated &&
+                      TEMPLATE_LINKS.map((item) => (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => {
+                            setCreateEventOpen(false);
+                            collapseSidebarOnTouch();
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm md:text-base font-medium text-[#2f1d47]"
+                        >
+                          <span className="text-lg">{item.icon}</span>
+                          <span suppressHydrationWarning>{item.label}</span>
+                        </Link>
+                      ))}
                   </div>
                 )}
               </div>
@@ -3003,6 +3015,16 @@ export default function LeftSidebar() {
                                     >
                                       <path d="M54.4,155.7c-14.7,0-26.6-11.9-26.6-26.6s11.9-26.6,26.6-26.6S81,114.5,81,129.2S69.1,155.7,54.4,155.7z M54.4,120.3 c-4.9,0-8.9,4-8.9,8.9s4,8.9,8.9,8.9s8.9-4,8.9-8.9S59.3,120.3,54.4,120.3z M186.2,155.7c-14.7,0-26.6-11.9-26.6-26.6 s11.9-26.6,26.6-26.6s26.6,11.9,26.6,26.6S200.8,155.7,186.2,155.7z M186.2,120.3c-4.9,0-8.9,4-8.9,8.9s4,8.9,8.9,8.9s8.9-4,8.9-8.9 S191,120.3,186.2,120.3z M233.3,61.3H207l-47-47.9c-6.9-7-16.5-11.1-26.3-11.1H39.6c-7.9,0-15,4.7-18,12L2,61.3l0,62.9h16.3 c2.4-17.8,17.7-31.4,36.1-31.4s33.6,13.7,36.1,31.4h59.6c2.4-17.8,17.7-31.4,36.1-31.4s33.6,13.7,36.1,31.4H254V81.9 C254,70.5,244.7,61.3,233.3,61.3z M18,61.3l17.2-41.3c0.7-1.8,2.5-2.9,4.4-2.9h50.9v44.2H18z M105.3,61.3V17h28.5 c5.9,0,11.6,2.4,15.7,6.6l36.8,37.6H105.3z M129.5,30.2c7.5,0,13.6,6.1,13.6,13.6s-6.1,13.6-13.6,13.6s-13.6-6.1-13.6-13.6 S122,30.2,129.5,30.2z M58,30.2c7.5,0,13.6,6.1,13.6,13.6S65.4,57.4,58,57.4s-13.6-6.1-13.6-13.6S50.5,30.2,58,30.2z" />
                                     </svg>
+                                  ) : c === "Gymnastics" ? (
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                      className="h-4 w-4"
+                                      aria-hidden="true"
+                                    >
+                                      <path d="M12 2C13.1 2 14 2.9 14 4S13.1 6 12 6 10 5.1 10 4 10.9 2 12 2M15.9 8.1C15.7 8 15.4 8 15.2 8.1L11.3 9.3L7.4 8.1C6.9 7.9 6.3 8.2 6.1 8.7C5.9 9.2 6.2 9.8 6.7 10L10 11V13L6 18L7.5 19L11 14.5V22H13V14.5L16.5 19L18 18L14 13V11L17.3 10C17.8 9.8 18.1 9.2 17.9 8.7C17.7 8.2 17.2 7.9 16.7 8.1L15.9 8.1Z" />
+                                    </svg>
                                   ) : (
                                     (() => {
                                       const lower = c.toLowerCase();
@@ -3872,14 +3894,10 @@ export default function LeftSidebar() {
               return (
                 <div className="space-y-1">
                   {recentItems.map((h) => {
-                    const slug = (h.title || "")
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, "-")
-                      .replace(/^-+|-+$/g, "");
                     const dataObj: any = (h as any)?.data || {};
                     const prettyHref = dataObj?.signupForm
                       ? `/smart-signup-form/${h.id}`
-                      : `/event/${slug}-${h.id}`;
+                      : `/event/${h.id}`;
                     const explicitCat = (h as any)?.data?.category as
                       | string
                       | null;

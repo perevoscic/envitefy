@@ -12,22 +12,40 @@ type SportsCard = {
 
 const SPORTS_CARDS: SportsCard[] = [
   {
-    label: "Football Practice",
+    label: "Football Season '25-'26",
     icon: "🏈",
-    copy: "Track attendance, create repeat schedules, and manage team comms.",
-    href: "/event/sport-events",
+    copy: "Publish the full 2025-2026 season slate with home/away games, travel, and roster updates in one place.",
+    href: "/event/football-season/customize",
   },
   {
     label: "Gymnastics Schedule",
     icon: "🤸",
     copy: "Detailed class times, location maps, and coach notes.",
-    href: "/event/sport-events",
+    href: "/event/gymnastics/customize",
   },
   {
     label: "General Sports Event",
     icon: "🏆",
     copy: "Tournaments, playoffs, and team gatherings with detailed brackets.",
-    href: "/event/sport-events",
+    href: "/event/sport-events/customize",
+  },
+  {
+    label: "Cheerleading",
+    icon: "📣",
+    copy: "Warm-up order, stunt groups, music links, and uniform calls.",
+    href: "/event/cheerleading/customize",
+  },
+  {
+    label: "Dance / Ballet",
+    icon: "🩰",
+    copy: "Piece details, choreographer notes, costume/hair/makeup, and stage calls.",
+    href: "/event/dance-ballet/customize",
+  },
+  {
+    label: "Soccer Match",
+    icon: "⚽",
+    copy: "Opponents, pitch info, kit colors, lineup/formation, and warm-up windows.",
+    href: "/event/soccer/customize",
   },
 ];
 
@@ -49,7 +67,7 @@ export function SportsPracticeHero({ className }: SportsPracticeHeroProps) {
         <div className="space-y-5 lg:max-w-3xl">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#0EA5E9] shadow-sm shadow-[#7DD3FC]">
             <Trophy className="h-3.5 w-3.5" />
-            Sports & Practice Schedules
+            Sports Season '25-'26
           </span>
         </div>
 
@@ -84,4 +102,3 @@ export function SportsPracticeHero({ className }: SportsPracticeHeroProps) {
 }
 
 export const sportsPracticeCards = SPORTS_CARDS;
-

@@ -13,6 +13,10 @@ import {
 } from "@/components/CalendarIcons";
 import { useEventCategories } from "@/hooks/useEventCategories";
 import { useMenu } from "@/contexts/MenuContext";
+import {
+  CREATE_EVENT_SECTIONS,
+  TEMPLATE_LINKS,
+} from "@/config/navigation-config";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -26,24 +30,8 @@ const CALENDAR_TARGETS: Array<{
   { key: "microsoft", label: "Outlook", Icon: CalendarIconOutlook },
 ];
 
-// SHARED MENU CONFIGURATION - Update this to change both TopNav and Sidebar
-export const TEMPLATE_LINKS = [
-  { label: "Birthdays", href: "/event/birthdays/customize", icon: "🎂" },
-  { label: "Weddings", href: "/event/weddings/customize", icon: "💍" },
-  { label: "Baby Showers", href: "/event/baby-showers/customize", icon: "🍼" },
-  { label: "Gender Reveal", href: "/event/gender-reveal/customize", icon: "🎈" },
-  { label: "Doctor Appointments", href: "/event/appointments/customize", icon: "🩺" },
-  { label: "Football Practice", href: "/event/football-practice/customize", icon: "🏈" },
-  { label: "Gymnastics Schedule", href: "/event/gymnastics/customize", icon: "🤸" },
-  { label: "Sport Events", href: "/event/sport-events/customize", icon: "🏅" },
-  { label: "Workshops / Classes", href: "/event/workshops/customize", icon: "🧠" },
-  { label: "General Events", href: "/event/general/customize", icon: "📅" },
-  {
-    label: "Special Events",
-    href: "/event/special-events/customize",
-    icon: "✨",
-  },
-] as const;
+// Re-export TEMPLATE_LINKS for backward compatibility with left-sidebar
+export { TEMPLATE_LINKS };
 
 export const NAV_LINKS: Array<{
   label: string;
@@ -255,9 +243,12 @@ export function MyEventsDropdown({
           {categories
             .filter((cat) => cat.items.length > 0)
             .map((category) => (
-              <div key={category.name} className="flex flex-col min-w-[140px]">
+              <div key={category.name} className="flex flex-col min-w-[160px]">
                 <h3 className="font-serif text-xl font-bold text-[#1b1540] mb-3 flex items-center gap-2 whitespace-nowrap">
                   {category.name}
+                  <span className="text-xs font-normal bg-[#ece9ff] text-[#6b5b95] px-2 py-0.5 rounded-full">
+                    {category.items.length}
+                  </span>
                 </h3>
                 <div className="flex flex-col gap-1">
                   {category.items.slice(0, 5).map((item) => (
@@ -270,6 +261,11 @@ export function MyEventsDropdown({
                       {item.title}
                     </Link>
                   ))}
+                  {category.items.length > 5 && (
+                    <span className="text-xs text-[#9ca3af] px-2 py-1">
+                      +{category.items.length - 5} more
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -283,6 +279,48 @@ export function MyEventsDropdown({
 
   // Sidebar variant
   return null; // Sidebar will handle its own rendering
+}
+
+export function CreateEventMenu({ onSelect }: { onSelect?: () => void }) {
+  return (
+    <div className="flex min-w-[1260px] max-w-[1400px] flex-row flex-nowrap gap-10 overflow-x-auto px-2">
+      {CREATE_EVENT_SECTIONS.map((section) => (
+        <div
+          key={section.title}
+          className="flex min-w-[215px] max-w-[255px] flex-col gap-3"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="whitespace-nowrap font-sans text-[13px] font-semibold uppercase tracking-[0.14em] text-[#1b1540]/85">
+              {section.title}
+            </h3>
+            <span className="rounded-full bg-[#ece9ff] px-2 py-0.5 text-xs font-medium text-[#6b5b95]">
+              {section.items.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            {section.items.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="flex items-start gap-3 rounded-xl px-3 py-2 font-medium text-[#2f1d47] transition hover:bg-[#f6f4ff]"
+                onClick={onSelect}
+              >
+                <span className="text-lg leading-none">{item.icon ?? "•"}</span>
+                <div className="flex flex-col leading-tight">
+                  <span>{item.label}</span>
+                  {item.description && (
+                    <span className="text-xs text-[#7a7595]">
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ProfileMenu({
@@ -645,10 +683,12 @@ export default function TopNav() {
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isInitialMount, setIsInitialMount] = useState(true);
   const isDashboardView = pathname === "/";
   const navIsScrolled = isDashboardView ? isScrolled : true;
+  const createMenuTop = navIsScrolled ? 72 : 90;
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
@@ -656,6 +696,10 @@ export default function TopNav() {
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const shouldShowNav = status === "authenticated";
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (!isDashboardView) {
@@ -872,26 +916,19 @@ export default function TopNav() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
-                      </svg>
-                    </button>
-                    <div className="absolute top-full left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left z-50">
-                      <div className="rounded-2xl border border-[#ece9ff] bg-white p-2 text-sm shadow-xl">
-                        <div className="flex flex-col gap-1">
-                          {TEMPLATE_LINKS.map((item) => (
-                            <Link
-                              key={item.label}
-                              href={item.href}
-                              className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
-                            >
-                              <span className="text-lg">{item.icon}</span>
-                              <span>{item.label}</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                  </svg>
+                </button>
+                <div
+                  style={{ top: `${createMenuTop}px` }}
+                  className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex justify-center"
+                  suppressHydrationWarning
+                >
+                  <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
+                    {isHydrated && <CreateEventMenu />}
                   </div>
-                );
+                </div>
+              </div>
+            );
               }
               return (
                 <Link
@@ -990,20 +1027,12 @@ export default function TopNav() {
                 </svg>
               </button>
               {createEventOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-3xl border border-[#ece9ff] bg-white p-2 text-sm shadow-xl z-50">
-                  <div className="flex flex-col gap-1">
-                    {TEMPLATE_LINKS.map((item) => (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        onClick={() => setCreateEventOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
-                      >
-                        <span className="text-lg">{item.icon}</span>
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
-                  </div>
+                <div
+                  style={{ top: `${createMenuTop}px` }}
+                  className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl z-50 origin-top"
+                  suppressHydrationWarning
+                >
+                  <CreateEventMenu onSelect={() => setCreateEventOpen(false)} />
                 </div>
               )}
             </div>

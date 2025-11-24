@@ -15,19 +15,19 @@ const APPOINTMENT_CARDS: AppointmentCard[] = [
     label: "Doctor Appointment",
     icon: "🩺",
     copy: "Quick booking links, reminder scheduling, and secure intake forms.",
-    href: "/event/appointments",
+    href: "/event/appointments/customize",
   },
   {
     label: "General Event / Meetup",
     icon: "🗓️",
     copy: "Flexible calendar sync and simple RSVP for business or personal use.",
-    href: "/event/general",
+    href: "/event/general/customize",
   },
   {
     label: "Workshop / Class",
     icon: "🧠",
     copy: "Multi-session events with payment options and detailed syllabus outlines.",
-    href: "/event/general",
+    href: "/event/workshops/customize",
   },
 ];
 
@@ -89,4 +89,3 @@ export function AppointmentsGeneralHero({
 }
 
 export const appointmentsGeneralCards = APPOINTMENT_CARDS;
-

@@ -1503,18 +1503,23 @@ export default function GenderRevealTemplateCustomizePage() {
                       </div>
                     )}
                   </div>
-                </section>
-              )}
+              </section>
+            )}
 
-              <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <div className="space-y-1">
-                  <p className="text-sm opacity-60">
-                    Powered By Envitefy. Creat. Share. Enjoy.
-                  </p>
-                  <p className="text-xs opacity-50">Create yours now.</p>
-                </div>
-              </footer>
-            </div>
+            <footer className="text-center py-8 border-t border-white/10 mt-1">
+              <a
+                href="https://envitefy.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="space-y-1 inline-block no-underline"
+              >
+                <p className="text-sm opacity-60">
+                  Powered By Envitefy. Creat. Share. Enjoy.
+                </p>
+                <p className="text-xs opacity-50">Create yours now.</p>
+              </a>
+            </footer>
+          </div>
           </div>
         </div>
       </div>

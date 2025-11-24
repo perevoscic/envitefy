@@ -87,6 +87,7 @@ export type SimpleTemplateConfig = {
     time?: string;
     city?: string;
     state?: string;
+    address?: string;
     venue?: string;
     details?: string;
     hero?: string;
@@ -241,6 +242,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       time: config.prefill?.time || "14:00",
       city: config.prefill?.city || "Chicago",
       state: config.prefill?.state || "IL",
+      address: config.prefill?.address || "",
       venue: config.prefill?.venue || "",
       details: config.prefill?.details || "Tell guests what to expect.",
       hero: config.prefill?.hero || "",
@@ -377,7 +379,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
 
-    const locationParts = [data.venue, data.city, data.state]
+    const locationParts = [data.venue, data.address, data.city, data.state]
       .filter(Boolean)
       .join(", ");
 
@@ -414,22 +416,37 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           title: data.title || config.displayName,
           data: {
             category: config.category,
-            createdVia: "template",
+            createdVia: "simple-template",
             createdManually: true,
             startISO,
             endISO,
             location: locationParts || undefined,
+            address: data.address || undefined,
             venue: data.venue || undefined,
+            city: data.city || undefined,
+            state: data.state || undefined,
             description: data.details || undefined,
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+            rsvpEnabled: data.rsvpEnabled,
+            rsvpDeadline: data.rsvpDeadline || undefined,
             numberOfGuests: 0,
             templateId: config.slug,
+            templateConfig: {
+              displayName: config.displayName,
+              categoryLabel: config.categoryLabel || config.displayName,
+              detailFields: config.detailFields,
+              rsvpCopy: config.rsvpCopy,
+            },
             customFields: {
               ...data.extra,
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
             heroImage: data.hero || config.defaultHero,
+            themeId,
+            theme: currentTheme,
+            time: data.time,
+            date: data.date,
           },
         };
 
@@ -455,6 +472,9 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.title,
       data.details,
       data.venue,
+      data.address,
+      data.city,
+      data.state,
       data.hero,
       data.rsvpEnabled,
       data.rsvpDeadline,
@@ -462,9 +482,14 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       advancedState,
       locationParts,
       config.category,
+      config.categoryLabel,
       config.displayName,
       config.slug,
       config.defaultHero,
+      config.detailFields,
+      config.rsvpCopy,
+      themeId,
+      currentTheme,
       router,
     ]);
 
@@ -705,6 +730,13 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => setData((p) => ({ ...p, state: v }))}
             />
           </div>
+
+          <InputGroup
+            label="Address"
+            value={data.address}
+            onChange={(v) => setData((p) => ({ ...p, address: v }))}
+            placeholder="123 Main Street"
+          />
         </div>
       </EditorLayout>
     );
@@ -942,12 +974,9 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <div
                   className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
                 >
-                  <div
-                    className="cursor-pointer hover:opacity-80 transition-opacity group"
-                    onClick={() => {}}
-                  >
+                  <div>
                     <h1
-                      className={`text-3xl md:text-5xl font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      className={`text-3xl md:text-5xl font-serif mb-2 leading-tight ${textClass}`}
                       style={{
                         fontFamily: "var(--font-playfair)",
                         ...(headingShadow || {}),
@@ -955,9 +984,6 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       }}
                     >
                       {data.title || config.displayName}
-                      <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                        <Edit2 size={22} />
-                      </span>
                     </h1>
                     {infoLine}
                   </div>
@@ -1204,14 +1230,19 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <footer
                   className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
                 >
-                  <div className="space-y-1">
+                  <a
+                    href="https://envitefy.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="space-y-1 inline-block no-underline"
+                  >
                     <p className="text-sm opacity-60" style={bodyShadow}>
                       Powered By Envitefy. Create. Share. Enjoy.
                     </p>
                     <p className="text-xs opacity-50" style={bodyShadow}>
                       Create yours now.
                     </p>
-                  </div>
+                  </a>
                 </footer>
               </div>
             </div>

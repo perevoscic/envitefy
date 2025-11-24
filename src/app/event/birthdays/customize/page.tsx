@@ -30,7 +30,12 @@ import {
 } from "@/components/event-create/BirthdayTemplateGallery";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 
-function getTemplateById(id?: string | null): BirthdayTemplateDefinition {
+function getTemplateById(
+  id?: string | null
+): BirthdayTemplateDefinition | null {
+  if (!birthdayTemplateCatalog || birthdayTemplateCatalog.length === 0) {
+    return null;
+  }
   if (!id) return birthdayTemplateCatalog[0];
   return (
     birthdayTemplateCatalog.find((template) => template.id === id) ??
@@ -46,6 +51,38 @@ const FONTS = {
   dancing: { name: "Dancing Script", preview: "var(--font-dancing)" },
   allura: { name: "Allura", preview: "var(--font-allura)" },
   parisienne: { name: "Parisienne", preview: "var(--font-parisienne)" },
+  indieFlower: { name: "Indie Flower", preview: "var(--font-indie-flower)" },
+  shadowsIntoLight: {
+    name: "Shadows Into Light",
+    preview: "var(--font-shadows-into-light)",
+  },
+  kalam: { name: "Kalam", preview: "var(--font-kalam)" },
+  sofia: { name: "Sofia", preview: "var(--font-sofia)" },
+  sonsieOne: { name: "Sonsie One", preview: "var(--font-sonsie-one)" },
+  styleScript: { name: "Style Script", preview: "var(--font-style-script)" },
+  tangerine: { name: "Tangerine", preview: "var(--font-tangerine)" },
+  yellowtail: { name: "Yellowtail", preview: "var(--font-yellowtail)" },
+  alexBrush: { name: "Alex Brush", preview: "var(--font-alex-brush)" },
+  cookie: { name: "Cookie", preview: "var(--font-cookie)" },
+  courgette: { name: "Courgette", preview: "var(--font-courgette)" },
+  redressed: { name: "Redressed", preview: "var(--font-redressed)" },
+  satisfy: { name: "Satisfy", preview: "var(--font-satisfy)" },
+  sacramento: { name: "Sacramento", preview: "var(--font-sacramento)" },
+  amita: { name: "Amita", preview: "var(--font-amita)" },
+  arizonia: { name: "Arizonia", preview: "var(--font-arizonia)" },
+  euphoriaScript: {
+    name: "Euphoria Script",
+    preview: "var(--font-euphoria-script)",
+  },
+  laBelleAurore: {
+    name: "La Belle Aurore",
+    preview: "var(--font-la-belle-aurore)",
+  },
+  kaushanScript: {
+    name: "Kaushan Script",
+    preview: "var(--font-kaushan-script)",
+  },
+  monteCarlo: { name: "MonteCarlo", preview: "var(--font-monte-carlo)" },
 };
 
 const FONT_SIZES = {
@@ -1376,7 +1413,6 @@ export default function BirthdayTemplateCustomizePage() {
   const templateId = search?.get("templateId");
 
   const template = getTemplateById(templateId);
-
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
@@ -1389,7 +1425,6 @@ export default function BirthdayTemplateCustomizePage() {
     previewTouchHandlers,
     drawerTouchHandlers,
   } = useMobileDrawer();
-  const [designOpen, setDesignOpen] = useState(true);
   const [professionalOpen, setProfessionalOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -1578,7 +1613,7 @@ export default function BirthdayTemplateCustomizePage() {
     "bg-slate-200";
 
   // Detect dark background for title color
-  const isDarkBackground = useMemo(() => {
+  const isDarkBackground = React.useMemo(() => {
     const bg = currentTheme?.bg?.toLowerCase() ?? "";
     const darkTokens = [
       "black",
@@ -1603,6 +1638,15 @@ export default function BirthdayTemplateCustomizePage() {
       /#2[0-3][0-9a-f]{4}/i.test(bg);
     return hasDarkToken || hasDarkHex;
   }, [currentTheme]);
+
+  // Light text needs a soft shadow for contrast on dark themes
+  const rawTextClass = currentTheme?.text || "";
+  const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(
+    rawTextClass.toLowerCase()
+  );
+  const bodyShadow = usesLightText
+    ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
+    : undefined;
 
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
   const currentProfessionalTheme =
@@ -1683,7 +1727,7 @@ export default function BirthdayTemplateCustomizePage() {
             ? data.rsvp.deadline || undefined
             : undefined,
           numberOfGuests: 0,
-          templateId: template.id,
+          templateId: template?.id || "party-pop",
           // Customization data
           birthdayName: data.childName,
           age: data.age,
@@ -1737,7 +1781,7 @@ export default function BirthdayTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, template.id, editEventId, router]);
+  }, [submitting, data, template?.id, editEventId, router]);
 
   useEffect(() => {
     if (galleryIndex >= data.gallery.length) {
@@ -2024,11 +2068,6 @@ export default function BirthdayTemplateCustomizePage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="relative h-12 w-16 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-                    <div className="absolute inset-0 flex items-center justify-center text-[11px] text-slate-500 font-semibold">
-                      {theme.themeName}
-                    </div>
-                  </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-slate-800">
                       {theme.themeName}
@@ -2046,72 +2085,6 @@ export default function BirthdayTemplateCustomizePage() {
                     </div>
                   </div>
                 </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <button
-            onClick={() => setDesignOpen(!designOpen)}
-            className="flex items-center justify-between w-full text-left group"
-          >
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block cursor-pointer mb-1">
-                Illustrated Themes
-              </label>
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                <div
-                  className={`w-3 h-3 rounded-full border shadow-sm ${currentThemeDot}`}
-                ></div>
-                {currentTheme.name || "Select a theme"}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {currentTheme.aesthetic}
-              </p>
-            </div>
-            <div
-              className={`p-2 rounded-full bg-slate-50 text-slate-500 group-hover:bg-slate-100 transition-all ${
-                designOpen ? "rotate-180 text-indigo-600 bg-indigo-50" : ""
-              }`}
-            >
-              <ChevronDown size={16} />
-            </div>
-          </button>
-
-          <div
-            className={`grid grid-cols-2 gap-3 mt-4 overflow-y-auto transition-all duration-300 ease-in-out ${
-              designOpen
-                ? "max-h-[600px] opacity-100"
-                : "max-h-0 opacity-0 hidden"
-            }`}
-          >
-            {DESIGN_THEMES.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  updateTheme("themeId", theme.id);
-                }}
-                className={`relative overflow-hidden p-3 border rounded-lg text-left transition-all group ${
-                  data.theme.themeId === theme.id
-                    ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-                    : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
-                }`}
-              >
-                <div
-                  className={`h-12 w-full rounded-md mb-3 ${theme.previewColor} border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden`}
-                ></div>
-                <span className="text-sm font-medium text-slate-700 block truncate">
-                  {theme.name}
-                </span>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide">
-                  {theme.category}
-                </span>
-                <span className="text-[11px] text-slate-500 leading-tight block">
-                  {theme.aesthetic}
-                </span>
               </button>
             ))}
           </div>
@@ -2162,110 +2135,6 @@ export default function BirthdayTemplateCustomizePage() {
                 {size}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Palette size={16} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Selected Theme Guide
-              </p>
-              <p className="text-sm text-slate-600">
-                Visual recipe for {currentTheme.name}.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
-            <div className="flex items-center gap-3">
-              <div
-                className={`h-12 w-12 rounded-lg border border-black/5 shadow-inner ${currentTheme.previewColor}`}
-              ></div>
-              <div>
-                <h4 className="text-sm font-semibold text-slate-800">
-                  {currentTheme.name}
-                </h4>
-                <p className="text-xs text-slate-500">
-                  {currentTheme.aesthetic}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <p>
-                <span className="font-semibold text-slate-700">Colors:</span>{" "}
-                {currentTheme.colors}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Graphics:</span>{" "}
-                {currentTheme.graphics}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Font:</span>{" "}
-                {currentTheme.font}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">
-                  Primary objects:
-                </span>{" "}
-                {currentTheme.primaryObjects}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
-              <p className="text-[11px] uppercase font-semibold text-slate-500 tracking-wide">
-                Professional Header Plan
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Header:</span>{" "}
-                {currentProfessionalTheme.headerIllustrationPrompt}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Corners:</span>{" "}
-                {currentProfessionalTheme.cornerAccentPrompt}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">
-                  Background:
-                </span>{" "}
-                {currentProfessionalTheme.backgroundPrompt}
-              </p>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
-              <p className="text-[11px] uppercase font-semibold text-slate-500 tracking-wide">
-                Typography & Palette
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Heading:</span>{" "}
-                {currentProfessionalTheme.typography.headingFont}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Body:</span>{" "}
-                {currentProfessionalTheme.typography.bodyFont}
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">Accent:</span>{" "}
-                {currentProfessionalTheme.typography.accentFont}
-              </p>
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
-                {currentProfessionalTheme.recommendedColorPalette.map(
-                  (color) => (
-                    <span
-                      key={color}
-                      className="w-6 h-6 rounded-full border border-black/5 shadow-sm"
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    ></span>
-                  )
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -2797,7 +2666,7 @@ export default function BirthdayTemplateCustomizePage() {
               )}
 
               {data.rsvp.isEnabled && (
-                <section className="max-w-xl mx-auto text-center p-6 md:p-8">
+                <section className="max-w-3xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
                     style={titleColor || professionalAccentStyle}
@@ -2937,12 +2806,17 @@ export default function BirthdayTemplateCustomizePage() {
               )}
 
               <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <div className="space-y-1">
+                <a
+                  href="https://envitefy.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="space-y-1 inline-block no-underline"
+                >
                   <p className="text-sm opacity-60">
                     Powered By Envitefy. Creat. Share. Enjoy.
                   </p>
                   <p className="text-xs opacity-50">Create yours now.</p>
-                </div>
+                </a>
               </footer>
             </div>
           </div>

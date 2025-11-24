@@ -49,6 +49,7 @@ import {
 } from "@/components/CalendarIcons";
 import BirthdayTemplateView from "@/components/BirthdayTemplateView";
 import WeddingTemplateView from "@/components/WeddingTemplateView";
+import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 
@@ -908,10 +909,19 @@ export default async function EventPage({
     typeof (data as any)?.variationId === "string"
       ? (data as any).variationId
       : null;
+  const createdVia =
+    typeof (data as any)?.createdVia === "string"
+      ? (data as any).createdVia
+      : null;
   const isBirthdayTemplate =
     templateId && variationId && categoryNormalized === "birthdays";
   const isWeddingTemplate =
     templateId && variationId && categoryNormalized === "weddings";
+  const isSimpleTemplate =
+    (createdVia === "simple-template" || createdVia === "template") &&
+    templateId &&
+    !isBirthdayTemplate &&
+    !isWeddingTemplate;
 
   // If it's a birthday template, render the template view
   if (isBirthdayTemplate) {
@@ -940,6 +950,22 @@ export default async function EventPage({
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
+        isOwner={isOwner}
+        isReadOnly={isReadOnly}
+        viewerKind={viewerKind}
+        shareUrl={shareUrl}
+        sessionEmail={sessionEmail}
+      />
+    );
+  }
+
+  // If it's a simple template (gymnastics, football practice, etc.), render with SimpleTemplateView
+  if (isSimpleTemplate) {
+    return (
+      <SimpleTemplateView
+        eventId={row.id}
+        eventData={data}
+        eventTitle={title}
         isOwner={isOwner}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
