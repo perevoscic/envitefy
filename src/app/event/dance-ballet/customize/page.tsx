@@ -387,7 +387,11 @@ const eventsSection = {
                   className={inputClass}
                   value={ev.type}
                   onChange={(e) =>
-                    updateEvent(ev.id, "type", e.target.value as DanceEvent["type"])
+                    updateEvent(
+                      ev.id,
+                      "type",
+                      e.target.value as DanceEvent["type"]
+                    )
                   }
                 >
                   <option value="performance">Performance</option>
@@ -484,7 +488,9 @@ const eventsSection = {
                   className={inputClass}
                   placeholder="123 Main St, City, ST"
                   value={ev.address}
-                  onChange={(e) => updateEvent(ev.id, "address", e.target.value)}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "address", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -799,7 +805,9 @@ const practiceSection = {
                   type="time"
                   className={inputClass}
                   value={block.endTime}
-                  onChange={(e) => updateBlock(block.id, "endTime", e.target.value)}
+                  onChange={(e) =>
+                    updateBlock(block.id, "endTime", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -886,10 +894,7 @@ const practiceSection = {
               key={b.id}
               className="bg-white/5 border border-white/10 rounded-lg p-4"
             >
-              <div
-                className={`font-semibold ${textClass}`}
-                style={bodyShadow}
-              >
+              <div className={`font-semibold ${textClass}`} style={bodyShadow}>
                 {b.day} • {fmtTime(b.startTime)}-{fmtTime(b.endTime)}
               </div>
               <div
@@ -1251,7 +1256,8 @@ const logisticsSection = {
       dressingRoom: "Room B2; quick-change rack backstage left",
       meals: "Snacks provided; dinner break 6:15-6:45",
       emergencyContact: "Artistic Dir. Carter 555-555-1212",
-      logisticsNotes: "Load props via stage door on Wabash; wristbands required.",
+      logisticsNotes:
+        "Load props via stage door on Wabash; wristbands required.",
     } as LogisticsInfo,
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
@@ -2268,7 +2274,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     return (
-      <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+      <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
           className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -2645,7 +2651,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-
 const config = {
   slug: "dance-ballet-season",
   displayName: "Dance / Ballet Season",
@@ -2654,12 +2659,32 @@ const config = {
   defaultHero:
     "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=1800&q=80",
   detailFields: [
-    { key: "company", label: "Studio / Company", placeholder: "Northside Ballet Company" },
+    {
+      key: "company",
+      label: "Studio / Company",
+      placeholder: "Northside Ballet Company",
+    },
     { key: "piece", label: "Feature Piece", placeholder: "Swan Lake, Act II" },
-    { key: "choreographer", label: "Choreographer / AD", placeholder: "Ms. Alvarez" },
-    { key: "costume", label: "Costume / Hair / Makeup", placeholder: "Blue tutu, low bun, light glam" },
-    { key: "call", label: "Stage Call & Rehearsal", placeholder: "Call 5:30 PM, spacing 5:45 PM" },
-    { key: "music", label: "Music / Tech Notes", placeholder: "Track link, cues, lighting notes" },
+    {
+      key: "choreographer",
+      label: "Choreographer / AD",
+      placeholder: "Ms. Alvarez",
+    },
+    {
+      key: "costume",
+      label: "Costume / Hair / Makeup",
+      placeholder: "Blue tutu, low bun, light glam",
+    },
+    {
+      key: "call",
+      label: "Stage Call & Rehearsal",
+      placeholder: "Call 5:30 PM, spacing 5:45 PM",
+    },
+    {
+      key: "music",
+      label: "Music / Tech Notes",
+      placeholder: "Track link, cues, lighting notes",
+    },
   ],
   prefill: {
     title: "Company Season — Swan Lake Highlights",
@@ -2683,7 +2708,13 @@ const config = {
       music: "https://drive.example.com/swan-track",
     },
   },
-  advancedSections: [eventsSection, practiceSection, rosterSection, logisticsSection, gearSection],
+  advancedSections: [
+    eventsSection,
+    practiceSection,
+    rosterSection,
+    logisticsSection,
+    gearSection,
+  ],
   themes: [
     {
       id: "stadium_nights",
@@ -2708,6 +2739,166 @@ const config = {
       text: "text-white",
       accent: "text-amber-100",
       preview: "bg-gradient-to-r from-orange-900 via-amber-700 to-rose-600",
+    },
+    {
+      id: "ballet_pink",
+      name: "Ballet Pink",
+      bg: "bg-gradient-to-br from-pink-200 via-rose-100 to-pink-50",
+      text: "text-slate-900",
+      accent: "text-rose-700",
+      preview: "bg-gradient-to-r from-pink-200 via-rose-100 to-pink-50",
+    },
+    {
+      id: "elegant_ivory",
+      name: "Elegant Ivory",
+      bg: "bg-gradient-to-br from-amber-50 via-yellow-50 to-white",
+      text: "text-slate-900",
+      accent: "text-amber-800",
+      preview: "bg-gradient-to-r from-amber-50 via-yellow-50 to-white",
+    },
+    {
+      id: "royal_purple",
+      name: "Royal Purple",
+      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
+      text: "text-white",
+      accent: "text-purple-200",
+      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-purple-700",
+    },
+    {
+      id: "midnight_swan",
+      name: "Midnight Swan",
+      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
+      text: "text-white",
+      accent: "text-indigo-200",
+      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
+    },
+    {
+      id: "rose_garden",
+      name: "Rose Garden",
+      bg: "bg-gradient-to-br from-rose-300 via-pink-200 to-rose-100",
+      text: "text-slate-900",
+      accent: "text-rose-800",
+      preview: "bg-gradient-to-r from-rose-300 via-pink-200 to-rose-100",
+    },
+    {
+      id: "lavender_dream",
+      name: "Lavender Dream",
+      bg: "bg-gradient-to-br from-violet-200 via-purple-100 to-violet-50",
+      text: "text-slate-900",
+      accent: "text-violet-800",
+      preview: "bg-gradient-to-r from-violet-200 via-purple-100 to-violet-50",
+    },
+    {
+      id: "pearl_white",
+      name: "Pearl White",
+      bg: "bg-gradient-to-br from-white via-slate-50 to-gray-50",
+      text: "text-slate-900",
+      accent: "text-indigo-700",
+      preview: "bg-gradient-to-r from-white via-slate-50 to-gray-50",
+    },
+    {
+      id: "sapphire_serenade",
+      name: "Sapphire Serenade",
+      bg: "bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-700",
+    },
+    {
+      id: "golden_glow",
+      name: "Golden Glow",
+      bg: "bg-gradient-to-br from-yellow-400 via-amber-300 to-yellow-200",
+      text: "text-slate-900",
+      accent: "text-amber-900",
+      preview: "bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-200",
+    },
+    {
+      id: "emerald_elegance",
+      name: "Emerald Elegance",
+      bg: "bg-gradient-to-br from-emerald-800 via-green-700 to-emerald-600",
+      text: "text-white",
+      accent: "text-emerald-200",
+      preview: "bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-600",
+    },
+    {
+      id: "crimson_curtain",
+      name: "Crimson Curtain",
+      bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-red-900 via-rose-800 to-red-700",
+    },
+    {
+      id: "silver_mist",
+      name: "Silver Mist",
+      bg: "bg-gradient-to-br from-slate-300 via-gray-200 to-slate-100",
+      text: "text-slate-900",
+      accent: "text-slate-700",
+      preview: "bg-gradient-to-r from-slate-300 via-gray-200 to-slate-100",
+    },
+    {
+      id: "teal_tutu",
+      name: "Teal Tutu",
+      bg: "bg-gradient-to-br from-teal-300 via-cyan-200 to-teal-100",
+      text: "text-slate-900",
+      accent: "text-teal-800",
+      preview: "bg-gradient-to-r from-teal-300 via-cyan-200 to-teal-100",
+    },
+    {
+      id: "plum_performance",
+      name: "Plum Performance",
+      bg: "bg-gradient-to-br from-purple-800 via-violet-700 to-purple-600",
+      text: "text-white",
+      accent: "text-purple-200",
+      preview: "bg-gradient-to-r from-purple-800 via-violet-700 to-purple-600",
+    },
+    {
+      id: "coral_choreography",
+      name: "Coral Choreography",
+      bg: "bg-gradient-to-br from-orange-300 via-rose-200 to-orange-100",
+      text: "text-slate-900",
+      accent: "text-orange-800",
+      preview: "bg-gradient-to-r from-orange-300 via-rose-200 to-orange-100",
+    },
+    {
+      id: "navy_night",
+      name: "Navy Night",
+      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
+    },
+    {
+      id: "mint_movement",
+      name: "Mint Movement",
+      bg: "bg-gradient-to-br from-emerald-200 via-teal-100 to-emerald-50",
+      text: "text-slate-900",
+      accent: "text-emerald-800",
+      preview: "bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-50",
+    },
+    {
+      id: "copper_crescendo",
+      name: "Copper Crescendo",
+      bg: "bg-gradient-to-br from-amber-700 via-orange-600 to-amber-500",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-amber-700 via-orange-600 to-amber-500",
+    },
+    {
+      id: "fuchsia_finale",
+      name: "Fuchsia Finale",
+      bg: "bg-gradient-to-br from-fuchsia-800 via-pink-700 to-fuchsia-600",
+      text: "text-white",
+      accent: "text-fuchsia-200",
+      preview: "bg-gradient-to-r from-fuchsia-800 via-pink-700 to-fuchsia-600",
+    },
+    {
+      id: "sky_serenity",
+      name: "Sky Serenity",
+      bg: "bg-gradient-to-br from-sky-200 via-blue-100 to-sky-50",
+      text: "text-slate-900",
+      accent: "text-sky-800",
+      preview: "bg-gradient-to-r from-sky-200 via-blue-100 to-sky-50",
     },
   ],
 };

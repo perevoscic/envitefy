@@ -925,7 +925,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     return (
-      <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+      <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
           className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -1302,7 +1302,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-
 const config = {
   slug: "sport-event",
   displayName: "Sport Event",
@@ -1312,10 +1311,26 @@ const config = {
     "https://images.unsplash.com/photo-1502877828070-33bc4f1b8a6e?auto=format&fit=crop&w=1800&q=80",
   detailFields: [
     { key: "opponent", label: "Opponent", placeholder: "vs Central City" },
-    { key: "league", label: "League / Division", placeholder: "Conference play" },
-    { key: "tickets", label: "Tickets / Link", placeholder: "https://tickets.example.com" },
-    { key: "broadcast", label: "Broadcast", placeholder: "ESPN+, Live stream link" },
-    { key: "parking", label: "Parking / Arrival", placeholder: "Gate B, Lot C" },
+    {
+      key: "league",
+      label: "League / Division",
+      placeholder: "Conference play",
+    },
+    {
+      key: "tickets",
+      label: "Tickets / Link",
+      placeholder: "https://tickets.example.com",
+    },
+    {
+      key: "broadcast",
+      label: "Broadcast",
+      placeholder: "ESPN+, Live stream link",
+    },
+    {
+      key: "parking",
+      label: "Parking / Arrival",
+      placeholder: "Gate B, Lot C",
+    },
   ],
   themes: [
     {
@@ -1341,6 +1356,158 @@ const config = {
       text: "text-white",
       accent: "text-amber-100",
       preview: "bg-gradient-to-r from-orange-900 via-amber-700 to-rose-600",
+    },
+    {
+      id: "championship_gold",
+      name: "Championship Gold",
+      bg: "bg-gradient-to-br from-amber-800 via-yellow-700 to-amber-600",
+      text: "text-white",
+      accent: "text-yellow-100",
+      preview: "bg-gradient-to-r from-amber-800 via-yellow-700 to-amber-600",
+    },
+    {
+      id: "victory_blue",
+      name: "Victory Blue",
+      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
+    },
+    {
+      id: "trophy_silver",
+      name: "Trophy Silver",
+      bg: "bg-gradient-to-br from-slate-800 via-gray-700 to-slate-600",
+      text: "text-white",
+      accent: "text-slate-200",
+      preview: "bg-gradient-to-r from-slate-800 via-gray-700 to-slate-600",
+    },
+    {
+      id: "champion_red",
+      name: "Champion Red",
+      bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-red-900 via-rose-800 to-red-700",
+    },
+    {
+      id: "elite_purple",
+      name: "Elite Purple",
+      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
+      text: "text-white",
+      accent: "text-purple-200",
+      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-purple-700",
+    },
+    {
+      id: "energy_green",
+      name: "Energy Green",
+      bg: "bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700",
+      text: "text-white",
+      accent: "text-emerald-200",
+      preview: "bg-gradient-to-r from-emerald-900 via-green-800 to-emerald-700",
+    },
+    {
+      id: "dynamic_orange",
+      name: "Dynamic Orange",
+      bg: "bg-gradient-to-br from-orange-800 via-red-700 to-orange-600",
+      text: "text-white",
+      accent: "text-orange-100",
+      preview: "bg-gradient-to-r from-orange-800 via-red-700 to-orange-600",
+    },
+    {
+      id: "midnight_elite",
+      name: "Midnight Elite",
+      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
+      text: "text-white",
+      accent: "text-indigo-200",
+      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
+    },
+    {
+      id: "ocean_depth",
+      name: "Ocean Depth",
+      bg: "bg-gradient-to-br from-cyan-900 via-blue-800 to-teal-700",
+      text: "text-white",
+      accent: "text-cyan-200",
+      preview: "bg-gradient-to-r from-cyan-900 via-blue-800 to-teal-700",
+    },
+    {
+      id: "bronze_medal",
+      name: "Bronze Medal",
+      bg: "bg-gradient-to-br from-amber-900 via-orange-800 to-amber-700",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-amber-900 via-orange-800 to-amber-700",
+    },
+    {
+      id: "royal_navy",
+      name: "Royal Navy",
+      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-800",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-800",
+    },
+    {
+      id: "forest_strong",
+      name: "Forest Strong",
+      bg: "bg-gradient-to-br from-green-900 via-emerald-800 to-green-700",
+      text: "text-white",
+      accent: "text-green-200",
+      preview: "bg-gradient-to-r from-green-900 via-emerald-800 to-green-700",
+    },
+    {
+      id: "crimson_power",
+      name: "Crimson Power",
+      bg: "bg-gradient-to-br from-red-950 via-red-800 to-rose-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-red-950 via-red-800 to-rose-700",
+    },
+    {
+      id: "sapphire_sky",
+      name: "Sapphire Sky",
+      bg: "bg-gradient-to-br from-sky-950 via-blue-900 to-sky-700",
+      text: "text-white",
+      accent: "text-sky-200",
+      preview: "bg-gradient-to-r from-sky-950 via-blue-900 to-sky-700",
+    },
+    {
+      id: "violet_velocity",
+      name: "Violet Velocity",
+      bg: "bg-gradient-to-br from-violet-950 via-purple-900 to-violet-800",
+      text: "text-white",
+      accent: "text-violet-200",
+      preview: "bg-gradient-to-r from-violet-950 via-purple-900 to-violet-800",
+    },
+    {
+      id: "teal_tenacity",
+      name: "Teal Tenacity",
+      bg: "bg-gradient-to-br from-teal-900 via-cyan-800 to-teal-700",
+      text: "text-white",
+      accent: "text-teal-100",
+      preview: "bg-gradient-to-r from-teal-900 via-cyan-800 to-teal-700",
+    },
+    {
+      id: "copper_charge",
+      name: "Copper Charge",
+      bg: "bg-gradient-to-br from-orange-900 via-amber-800 to-orange-700",
+      text: "text-white",
+      accent: "text-orange-100",
+      preview: "bg-gradient-to-r from-orange-900 via-amber-800 to-orange-700",
+    },
+    {
+      id: "maroon_might",
+      name: "Maroon Might",
+      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-rose-700",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-900 via-rose-800 to-rose-700",
+    },
+    {
+      id: "lime_lightning",
+      name: "Lime Lightning",
+      bg: "bg-gradient-to-br from-lime-800 via-green-700 to-emerald-600",
+      text: "text-white",
+      accent: "text-lime-100",
+      preview: "bg-gradient-to-r from-lime-800 via-green-700 to-emerald-600",
     },
   ],
 };

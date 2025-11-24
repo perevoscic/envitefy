@@ -2401,7 +2401,7 @@ export default function BirthdayTemplateCustomizePage() {
   };
 
   return (
-    <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+    <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         ref={previewRef}
         {...previewTouchHandlers}

@@ -925,7 +925,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     return (
-      <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+      <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
           className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -1302,7 +1302,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-
 const config = {
   slug: "soccer",
   displayName: "Soccer Match",
@@ -1313,10 +1312,26 @@ const config = {
   detailFields: [
     { key: "opponent", label: "Opponent", placeholder: "vs River City FC" },
     { key: "league", label: "League / Division", placeholder: "U12 Premier" },
-    { key: "field", label: "Field / Pitch", placeholder: "Field 3, East Complex" },
-    { key: "kit", label: "Uniform Colors", placeholder: "Home: Navy/White, Away: White/Navy" },
-    { key: "warmup", label: "Warm-up & Arrival", placeholder: "Arrive 45 min early; warm-up 2:15 PM" },
-    { key: "lineup", label: "Lineup / Formation", placeholder: "4-3-3; who starts where" },
+    {
+      key: "field",
+      label: "Field / Pitch",
+      placeholder: "Field 3, East Complex",
+    },
+    {
+      key: "kit",
+      label: "Uniform Colors",
+      placeholder: "Home: Navy/White, Away: White/Navy",
+    },
+    {
+      key: "warmup",
+      label: "Warm-up & Arrival",
+      placeholder: "Arrive 45 min early; warm-up 2:15 PM",
+    },
+    {
+      key: "lineup",
+      label: "Lineup / Formation",
+      placeholder: "4-3-3; who starts where",
+    },
   ],
   themes: [
     {
@@ -1342,6 +1357,158 @@ const config = {
       text: "text-white",
       accent: "text-amber-100",
       preview: "bg-gradient-to-r from-orange-900 via-amber-700 to-rose-600",
+    },
+    {
+      id: "pitch_perfect",
+      name: "Pitch Perfect",
+      bg: "bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700",
+      text: "text-white",
+      accent: "text-emerald-200",
+      preview: "bg-gradient-to-r from-emerald-900 via-green-800 to-emerald-700",
+    },
+    {
+      id: "world_cup_blue",
+      name: "World Cup Blue",
+      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-cyan-700",
+      text: "text-white",
+      accent: "text-cyan-200",
+      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-cyan-700",
+    },
+    {
+      id: "stadium_lights",
+      name: "Stadium Lights",
+      bg: "bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-800",
+      text: "text-white",
+      accent: "text-indigo-200",
+      preview: "bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-800",
+    },
+    {
+      id: "champions_red",
+      name: "Champions Red",
+      bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-red-900 via-rose-800 to-red-700",
+    },
+    {
+      id: "golden_goal",
+      name: "Golden Goal",
+      bg: "bg-gradient-to-br from-yellow-700 via-amber-700 to-yellow-600",
+      text: "text-white",
+      accent: "text-yellow-100",
+      preview: "bg-gradient-to-r from-yellow-700 via-amber-700 to-yellow-600",
+    },
+    {
+      id: "ocean_blue",
+      name: "Ocean Blue",
+      bg: "bg-gradient-to-br from-cyan-900 via-blue-800 to-teal-700",
+      text: "text-white",
+      accent: "text-cyan-200",
+      preview: "bg-gradient-to-r from-cyan-900 via-blue-800 to-teal-700",
+    },
+    {
+      id: "midnight_match",
+      name: "Midnight Match",
+      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
+      text: "text-white",
+      accent: "text-indigo-200",
+      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
+    },
+    {
+      id: "turf_green",
+      name: "Turf Green",
+      bg: "bg-gradient-to-br from-green-900 via-emerald-800 to-green-700",
+      text: "text-white",
+      accent: "text-green-200",
+      preview: "bg-gradient-to-r from-green-900 via-emerald-800 to-green-700",
+    },
+    {
+      id: "royal_purple",
+      name: "Royal Purple",
+      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
+      text: "text-white",
+      accent: "text-purple-200",
+      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-purple-700",
+    },
+    {
+      id: "fire_orange",
+      name: "Fire Orange",
+      bg: "bg-gradient-to-br from-orange-800 via-red-700 to-orange-600",
+      text: "text-white",
+      accent: "text-orange-100",
+      preview: "bg-gradient-to-r from-orange-800 via-red-700 to-orange-600",
+    },
+    {
+      id: "silver_streak",
+      name: "Silver Streak",
+      bg: "bg-gradient-to-br from-slate-800 via-gray-700 to-slate-600",
+      text: "text-white",
+      accent: "text-slate-200",
+      preview: "bg-gradient-to-r from-slate-800 via-gray-700 to-slate-600",
+    },
+    {
+      id: "crimson_charge",
+      name: "Crimson Charge",
+      bg: "bg-gradient-to-br from-red-950 via-red-800 to-rose-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-red-950 via-red-800 to-rose-700",
+    },
+    {
+      id: "azure_sky",
+      name: "Azure Sky",
+      bg: "bg-gradient-to-br from-sky-950 via-blue-900 to-sky-700",
+      text: "text-white",
+      accent: "text-sky-200",
+      preview: "bg-gradient-to-r from-sky-950 via-blue-900 to-sky-700",
+    },
+    {
+      id: "lime_light",
+      name: "Lime Light",
+      bg: "bg-gradient-to-br from-lime-800 via-green-700 to-emerald-600",
+      text: "text-white",
+      accent: "text-lime-100",
+      preview: "bg-gradient-to-r from-lime-800 via-green-700 to-emerald-600",
+    },
+    {
+      id: "bronze_medal",
+      name: "Bronze Medal",
+      bg: "bg-gradient-to-br from-amber-900 via-orange-800 to-amber-700",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-amber-900 via-orange-800 to-amber-700",
+    },
+    {
+      id: "navy_anchor",
+      name: "Navy Anchor",
+      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
+    },
+    {
+      id: "teal_tide",
+      name: "Teal Tide",
+      bg: "bg-gradient-to-br from-teal-900 via-cyan-800 to-teal-700",
+      text: "text-white",
+      accent: "text-teal-100",
+      preview: "bg-gradient-to-r from-teal-900 via-cyan-800 to-teal-700",
+    },
+    {
+      id: "maroon_maestro",
+      name: "Maroon Maestro",
+      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-rose-700",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-900 via-rose-800 to-rose-700",
+    },
+    {
+      id: "violet_victory",
+      name: "Violet Victory",
+      bg: "bg-gradient-to-br from-violet-950 via-purple-900 to-violet-800",
+      text: "text-white",
+      accent: "text-violet-200",
+      preview: "bg-gradient-to-r from-violet-950 via-purple-900 to-violet-800",
     },
   ],
 };

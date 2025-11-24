@@ -264,6 +264,81 @@ const DESIGN_THEMES = [
     previewColor:
       "bg-gradient-to-r from-orange-200 via-amber-100 to-yellow-100",
   },
+  {
+    id: "ruby_royale",
+    name: "Ruby Royale",
+    category: "Elegant",
+    bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-700",
+    text: "text-white",
+    accent: "text-red-100",
+    previewColor: "bg-gradient-to-r from-red-900 via-rose-800 to-red-700",
+  },
+  {
+    id: "bronze_glory",
+    name: "Bronze Glory",
+    category: "Elegant",
+    bg: "bg-gradient-to-br from-amber-900 via-orange-800 to-amber-700",
+    text: "text-white",
+    accent: "text-amber-100",
+    previewColor: "bg-gradient-to-r from-amber-900 via-orange-800 to-amber-700",
+  },
+  {
+    id: "neon_nights",
+    name: "Neon Nights",
+    category: "Modern",
+    bg: "bg-gradient-to-br from-fuchsia-900 via-pink-700 to-rose-600",
+    text: "text-white",
+    accent: "text-fuchsia-200",
+    previewColor: "bg-gradient-to-r from-fuchsia-900 via-pink-700 to-rose-600",
+  },
+  {
+    id: "cyber_blue",
+    name: "Cyber Blue",
+    category: "Modern",
+    bg: "bg-gradient-to-br from-cyan-900 via-blue-800 to-indigo-700",
+    text: "text-white",
+    accent: "text-cyan-200",
+    previewColor: "bg-gradient-to-r from-cyan-900 via-blue-800 to-indigo-700",
+  },
+  {
+    id: "vintage_gold",
+    name: "Vintage Gold",
+    category: "Classic",
+    bg: "bg-gradient-to-br from-yellow-700 via-amber-600 to-yellow-500",
+    text: "text-white",
+    accent: "text-yellow-100",
+    previewColor:
+      "bg-gradient-to-r from-yellow-700 via-amber-600 to-yellow-500",
+  },
+  {
+    id: "navy_formal",
+    name: "Navy Formal",
+    category: "Classic",
+    bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
+    text: "text-white",
+    accent: "text-blue-200",
+    previewColor: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
+  },
+  {
+    id: "lavender_cloud",
+    name: "Lavender Cloud",
+    category: "Soft",
+    bg: "bg-gradient-to-br from-violet-200 via-purple-100 to-violet-50",
+    text: "text-slate-900",
+    accent: "text-violet-800",
+    previewColor:
+      "bg-gradient-to-r from-violet-200 via-purple-100 to-violet-50",
+  },
+  {
+    id: "mint_fresh",
+    name: "Mint Fresh",
+    category: "Soft",
+    bg: "bg-gradient-to-br from-emerald-200 via-teal-100 to-emerald-50",
+    text: "text-slate-900",
+    accent: "text-emerald-800",
+    previewColor:
+      "bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-50",
+  },
 ];
 
 const InputGroup = memo(
@@ -1090,7 +1165,7 @@ export default function SpecialEventsCustomizePage() {
   );
 
   return (
-    <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+    <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         {...previewTouchHandlers}
         className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

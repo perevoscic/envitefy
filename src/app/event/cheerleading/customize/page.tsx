@@ -443,7 +443,11 @@ const eventsSection = {
                   className={inputClass}
                   value={ev.type}
                   onChange={(e) =>
-                    updateEvent(ev.id, "type", e.target.value as CheerEvent["type"])
+                    updateEvent(
+                      ev.id,
+                      "type",
+                      e.target.value as CheerEvent["type"]
+                    )
                   }
                 >
                   <option value="competition">Competition</option>
@@ -483,7 +487,9 @@ const eventsSection = {
                 <select
                   className={inputClass}
                   value={ev.homeAway}
-                  onChange={(e) => updateEvent(ev.id, "homeAway", e.target.value)}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "homeAway", e.target.value)
+                  }
                 >
                   <option value="home">🏠 Home</option>
                   <option value="away">✈️ Away</option>
@@ -511,7 +517,9 @@ const eventsSection = {
                   className={inputClass}
                   placeholder="123 Main St, City, ST"
                   value={ev.address}
-                  onChange={(e) => updateEvent(ev.id, "address", e.target.value)}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "address", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -525,7 +533,9 @@ const eventsSection = {
                   type="time"
                   className={inputClass}
                   value={ev.callTime}
-                  onChange={(e) => updateEvent(ev.id, "callTime", e.target.value)}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "callTime", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -536,7 +546,9 @@ const eventsSection = {
                   type="time"
                   className={inputClass}
                   value={ev.warmupTime}
-                  onChange={(e) => updateEvent(ev.id, "warmupTime", e.target.value)}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "warmupTime", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -547,7 +559,9 @@ const eventsSection = {
                   type="time"
                   className={inputClass}
                   value={ev.onMatTime}
-                  onChange={(e) => updateEvent(ev.id, "onMatTime", e.target.value)}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "onMatTime", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -591,12 +605,24 @@ const eventsSection = {
       </div>
     );
   },
-  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+  renderPreview: ({
+    state,
+    textClass,
+    accentClass,
+    headingShadow,
+    bodyShadow,
+    titleColor,
+  }) => {
     const events: CheerEvent[] = state?.events || [];
     if (events.length === 0) return null;
 
     const fmtDate = (d?: string) =>
-      d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+      d
+        ? new Date(d).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : "";
     const fmtTime = (t?: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
@@ -861,7 +887,9 @@ const practiceSection = {
                   type="time"
                   className={inputClass}
                   value={block.endTime}
-                  onChange={(e) => updateBlock(block.id, "endTime", e.target.value)}
+                  onChange={(e) =>
+                    updateBlock(block.id, "endTime", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -914,7 +942,14 @@ const practiceSection = {
       </div>
     );
   },
-  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+  renderPreview: ({
+    state,
+    textClass,
+    accentClass,
+    headingShadow,
+    bodyShadow,
+    titleColor,
+  }) => {
     const blocks: PracticeBlock[] = state?.blocks || [];
     if (blocks.length === 0) return null;
 
@@ -941,10 +976,7 @@ const practiceSection = {
               key={b.id}
               className="bg-white/5 border border-white/10 rounded-lg p-4"
             >
-              <div
-                className={`font-semibold ${textClass}`}
-                style={bodyShadow}
-              >
+              <div className={`font-semibold ${textClass}`} style={bodyShadow}>
                 {b.day} • {fmtTime(b.startTime)}-{fmtTime(b.endTime)}
               </div>
               <div
@@ -1208,7 +1240,14 @@ const rosterSection = {
       </div>
     );
   },
-  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+  renderPreview: ({
+    state,
+    textClass,
+    accentClass,
+    headingShadow,
+    bodyShadow,
+    titleColor,
+  }) => {
     const athletes: RosterAthlete[] = state?.athletes || [];
     if (athletes.length === 0) return null;
 
@@ -1364,7 +1403,14 @@ const logisticsSection = {
       </div>
     );
   },
-  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+  renderPreview: ({
+    state,
+    textClass,
+    accentClass,
+    headingShadow,
+    bodyShadow,
+    titleColor,
+  }) => {
     const info: LogisticsInfo = state?.info || {};
     if (
       !info.busCall &&
@@ -1495,7 +1541,14 @@ const gearSection = {
       </div>
     );
   },
-  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+  renderPreview: ({
+    state,
+    textClass,
+    accentClass,
+    headingShadow,
+    bodyShadow,
+    titleColor,
+  }) => {
     const gear: GearInfo = state?.gear || {};
     if (
       !gear.uniform &&
@@ -2271,7 +2324,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     return (
-      <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+      <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
           className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -2648,7 +2701,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-
 const config = {
   slug: "cheerleading-season",
   displayName: "Cheerleading Season",
@@ -2659,12 +2711,36 @@ const config = {
   detailFields: [
     { key: "team", label: "Team / Squad", placeholder: "Varsity Cheer" },
     { key: "season", label: "Season / Year", placeholder: "2024-2025" },
-    { key: "division", label: "Division / Level", placeholder: "UCA Game Day - Large Varsity" },
-    { key: "coach", label: "Coach / Contacts", placeholder: "Coach Rivera, Asst. Lee" },
-    { key: "music", label: "Music / Mix Link", placeholder: "https://music.example.com" },
-    { key: "uniform", label: "Uniform & Hair", placeholder: "Red top, white bow; high pony" },
-    { key: "warmup", label: "Warm-up & Call Time", placeholder: "Warm-up 2:15 PM, on mat 2:45 PM" },
-    { key: "routine", label: "Routine Notes", placeholder: "Stunt order, pyramid adjustments" },
+    {
+      key: "division",
+      label: "Division / Level",
+      placeholder: "UCA Game Day - Large Varsity",
+    },
+    {
+      key: "coach",
+      label: "Coach / Contacts",
+      placeholder: "Coach Rivera, Asst. Lee",
+    },
+    {
+      key: "music",
+      label: "Music / Mix Link",
+      placeholder: "https://music.example.com",
+    },
+    {
+      key: "uniform",
+      label: "Uniform & Hair",
+      placeholder: "Red top, white bow; high pony",
+    },
+    {
+      key: "warmup",
+      label: "Warm-up & Call Time",
+      placeholder: "Warm-up 2:15 PM, on mat 2:45 PM",
+    },
+    {
+      key: "routine",
+      label: "Routine Notes",
+      placeholder: "Stunt order, pyramid adjustments",
+    },
   ],
   prefill: {
     title: "Varsity Cheer Season",
@@ -2690,7 +2766,13 @@ const config = {
       routine: "Stunt order: Group A/B/C; basket after count 52",
     },
   },
-  advancedSections: [eventsSection, practiceSection, rosterSection, logisticsSection, gearSection],
+  advancedSections: [
+    eventsSection,
+    practiceSection,
+    rosterSection,
+    logisticsSection,
+    gearSection,
+  ],
   themes: [
     {
       id: "stadium_nights",
@@ -2715,6 +2797,158 @@ const config = {
       text: "text-white",
       accent: "text-amber-100",
       preview: "bg-gradient-to-r from-orange-900 via-amber-700 to-rose-600",
+    },
+    {
+      id: "spirit_pink",
+      name: "Spirit Pink",
+      bg: "bg-gradient-to-br from-pink-900 via-rose-800 to-pink-700",
+      text: "text-white",
+      accent: "text-pink-100",
+      preview: "bg-gradient-to-r from-pink-900 via-rose-800 to-pink-700",
+    },
+    {
+      id: "golden_sparkle",
+      name: "Golden Sparkle",
+      bg: "bg-gradient-to-br from-yellow-700 via-amber-700 to-yellow-600",
+      text: "text-white",
+      accent: "text-yellow-100",
+      preview: "bg-gradient-to-r from-yellow-700 via-amber-700 to-yellow-600",
+    },
+    {
+      id: "royal_purple",
+      name: "Royal Purple",
+      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
+      text: "text-white",
+      accent: "text-purple-200",
+      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-purple-700",
+    },
+    {
+      id: "electric_blue",
+      name: "Electric Blue",
+      bg: "bg-gradient-to-br from-blue-900 via-cyan-800 to-blue-700",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-900 via-cyan-800 to-blue-700",
+    },
+    {
+      id: "crimson_cheer",
+      name: "Crimson Cheer",
+      bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-red-900 via-rose-800 to-red-700",
+    },
+    {
+      id: "emerald_energy",
+      name: "Emerald Energy",
+      bg: "bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700",
+      text: "text-white",
+      accent: "text-emerald-200",
+      preview: "bg-gradient-to-r from-emerald-900 via-green-800 to-emerald-700",
+    },
+    {
+      id: "orange_blast",
+      name: "Orange Blast",
+      bg: "bg-gradient-to-br from-orange-800 via-red-700 to-orange-600",
+      text: "text-white",
+      accent: "text-orange-100",
+      preview: "bg-gradient-to-r from-orange-800 via-red-700 to-orange-600",
+    },
+    {
+      id: "midnight_magic",
+      name: "Midnight Magic",
+      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
+      text: "text-white",
+      accent: "text-indigo-200",
+      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
+    },
+    {
+      id: "teal_thunder",
+      name: "Teal Thunder",
+      bg: "bg-gradient-to-br from-teal-900 via-cyan-800 to-teal-700",
+      text: "text-white",
+      accent: "text-teal-100",
+      preview: "bg-gradient-to-r from-teal-900 via-cyan-800 to-teal-700",
+    },
+    {
+      id: "violet_vibes",
+      name: "Violet Vibes",
+      bg: "bg-gradient-to-br from-violet-950 via-purple-900 to-violet-800",
+      text: "text-white",
+      accent: "text-violet-200",
+      preview: "bg-gradient-to-r from-violet-950 via-purple-900 to-violet-800",
+    },
+    {
+      id: "rose_radiance",
+      name: "Rose Radiance",
+      bg: "bg-gradient-to-br from-rose-900 via-pink-800 to-rose-700",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-900 via-pink-800 to-rose-700",
+    },
+    {
+      id: "sapphire_spirit",
+      name: "Sapphire Spirit",
+      bg: "bg-gradient-to-br from-sky-950 via-blue-900 to-sky-700",
+      text: "text-white",
+      accent: "text-sky-200",
+      preview: "bg-gradient-to-r from-sky-950 via-blue-900 to-sky-700",
+    },
+    {
+      id: "lime_lightning",
+      name: "Lime Lightning",
+      bg: "bg-gradient-to-br from-lime-800 via-green-700 to-emerald-600",
+      text: "text-white",
+      accent: "text-lime-100",
+      preview: "bg-gradient-to-r from-lime-800 via-green-700 to-emerald-600",
+    },
+    {
+      id: "bronze_brilliance",
+      name: "Bronze Brilliance",
+      bg: "bg-gradient-to-br from-amber-900 via-orange-800 to-amber-700",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-amber-900 via-orange-800 to-amber-700",
+    },
+    {
+      id: "navy_night",
+      name: "Navy Night",
+      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
+      text: "text-white",
+      accent: "text-blue-200",
+      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
+    },
+    {
+      id: "coral_crush",
+      name: "Coral Crush",
+      bg: "bg-gradient-to-br from-orange-900 via-rose-800 to-orange-700",
+      text: "text-white",
+      accent: "text-orange-100",
+      preview: "bg-gradient-to-r from-orange-900 via-rose-800 to-orange-700",
+    },
+    {
+      id: "platinum_power",
+      name: "Platinum Power",
+      bg: "bg-gradient-to-br from-slate-800 via-gray-700 to-slate-600",
+      text: "text-white",
+      accent: "text-slate-200",
+      preview: "bg-gradient-to-r from-slate-800 via-gray-700 to-slate-600",
+    },
+    {
+      id: "fuchsia_fire",
+      name: "Fuchsia Fire",
+      bg: "bg-gradient-to-br from-fuchsia-900 via-pink-800 to-fuchsia-700",
+      text: "text-white",
+      accent: "text-fuchsia-200",
+      preview: "bg-gradient-to-r from-fuchsia-900 via-pink-800 to-fuchsia-700",
+    },
+    {
+      id: "aqua_aura",
+      name: "Aqua Aura",
+      bg: "bg-gradient-to-br from-cyan-900 via-teal-800 to-cyan-700",
+      text: "text-white",
+      accent: "text-cyan-200",
+      preview: "bg-gradient-to-r from-cyan-900 via-teal-800 to-cyan-700",
     },
   ],
 };
