@@ -267,56 +267,44 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = memo(
-  ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = "text",
-    readOnly = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-    readOnly?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  ),
-  (prevProps, nextProps) => {
-    return (
-      prevProps.value === nextProps.value &&
-      prevProps.label === nextProps.label &&
-      prevProps.type === nextProps.type &&
-      prevProps.placeholder === nextProps.placeholder &&
-      // onChange excluded - parent creates new functions on each render
-      prevProps.readOnly === nextProps.readOnly
-    );
-  }
+const InputGroup = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  readOnly = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  readOnly?: boolean;
+}) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+      {label}
+    </label>
+    {type === "textarea" ? (
+      <textarea
+        className={baseTextareaClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    ) : (
+      <input
+        type={type}
+        className={baseInputClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    )}
+  </div>
 );
 
 InputGroup.displayName = "InputGroup";
@@ -454,6 +442,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     } = useMobileDrawer();
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
+    const updateData = useCallback((field: string, value: any) => {
+      setData((prev) => ({ ...prev, [field]: value }));
+    }, []);
+
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -1068,55 +1060,74 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const renderHeadlineEditor = () => (
-      <EditorLayout
-        title="Headline"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-6">
-          <InputGroup
-            label="Headline"
-            value={data.title}
-            onChange={(v) => setData((p) => ({ ...p, title: v }))}
-            placeholder={`${config.displayName} title`}
-          />
+    const handleBackToMain = useCallback(() => {
+      setActiveView("main");
+    }, []);
 
-          <div className="grid grid-cols-2 gap-4">
+    const renderHeadlineEditor = useMemo(
+      () => (
+        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
             <InputGroup
-              label="Date"
-              type="date"
-              value={data.date}
-              onChange={(v) => setData((p) => ({ ...p, date: v }))}
+              key="title"
+              label="Headline"
+              value={data.title}
+              onChange={(v) => updateData("title", v)}
+              placeholder={`${config.displayName} title`}
             />
-            <InputGroup
-              label="Time"
-              type="time"
-              value={data.time}
-              onChange={(v) => setData((p) => ({ ...p, time: v }))}
-            />
-          </div>
 
-          <InputGroup
-            label="Venue"
-            value={data.venue}
-            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
-            placeholder="Venue name (optional)"
-          />
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="date"
+                label="Date"
+                type="date"
+                value={data.date}
+                onChange={(v) => updateData("date", v)}
+              />
+              <InputGroup
+                key="time"
+                label="Time"
+                type="time"
+                value={data.time}
+                onChange={(v) => updateData("time", v)}
+              />
+            </div>
+
             <InputGroup
-              label="City"
-              value={data.city}
-              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+              key="venue"
+              label="Venue"
+              value={data.venue}
+              onChange={(v) => updateData("venue", v)}
+              placeholder="Venue name (optional)"
             />
-            <InputGroup
-              label="State"
-              value={data.state}
-              onChange={(v) => setData((p) => ({ ...p, state: v }))}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="city"
+                label="City"
+                value={data.city}
+                onChange={(v) => updateData("city", v)}
+              />
+              <InputGroup
+                key="state"
+                label="State"
+                value={data.state}
+                onChange={(v) => updateData("state", v)}
+              />
+            </div>
           </div>
-        </div>
-      </EditorLayout>
+        </EditorLayout>
+      ),
+      [
+        data.title,
+        data.date,
+        data.time,
+        data.venue,
+        data.city,
+        data.state,
+        updateData,
+        handleBackToMain,
+        config.displayName,
+      ]
     );
 
     const renderImagesEditor = () => (
@@ -1264,7 +1275,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label="Description"
             type="textarea"
             value={data.details}
-            onChange={(v) => setData((p) => ({ ...p, details: v }))}
+            onChange={(v) => updateData("details", v)}
             placeholder="Tell guests what to expect."
           />
 
@@ -1337,7 +1348,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label={rsvpCopy.deadlineLabel}
             type="date"
             value={data.rsvpDeadline}
-            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
+            onChange={(v) => updateData("rsvpDeadline", v)}
             placeholder="Set a deadline"
           />
 
@@ -1703,7 +1714,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}

@@ -1,33 +1,12 @@
 // @ts-nocheck
 "use client";
 
-import React, {
-  useCallback,
-  useMemo,
-  useState,
-  useEffect,
-  memo,
-  useRef,
-} from "react";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { memo } from "react";
 import {
-  ChevronLeft,
-  ChevronDown,
-  ChevronUp,
-  Edit2,
-  Image as ImageIcon,
-  Menu,
-  Palette,
-  Type,
-  CheckSquare,
-  ChevronRight,
-  Share2,
-  Calendar as CalendarIcon,
-  Apple,
-  Upload,
   ClipboardList,
   Users,
+  Home,
+  Plane,
   MapPin,
   Clock,
   Phone,
@@ -36,207 +15,22 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 
-type FieldSpec = {
-  key: string;
-  label: string;
-  placeholder?: string;
-  type?: "text" | "textarea";
-};
-
-type ThemeSpec = {
+type CheerEvent = {
   id: string;
   name: string;
-  bg: string;
-  text: string;
-  accent: string;
-  preview: string;
-};
-
-type AdvancedSectionRenderContext = {
-  state: any;
-  setState: (updater: any) => void;
-  setActiveView: (view: string) => void;
-  inputClass: string;
-  textareaClass: string;
-};
-
-type AdvancedSectionPreviewContext = {
-  state: any;
-  textClass: string;
-  accentClass: string;
-  headingShadow?: React.CSSProperties;
-  bodyShadow?: React.CSSProperties;
-  titleColor?: React.CSSProperties;
-};
-
-type AdvancedSectionSpec = {
-  id: string;
-  menuTitle: string;
-  menuDesc: string;
-  initialState: any;
-  renderEditor: (ctx: AdvancedSectionRenderContext) => React.ReactNode;
-  renderPreview?: (ctx: AdvancedSectionPreviewContext) => React.ReactNode;
-};
-
-type SimpleTemplateConfig = {
-  slug: string;
-  displayName: string;
-  category: string;
-  categoryLabel?: string;
-  defaultHero: string;
-  detailFields: FieldSpec[];
-  themes: ThemeSpec[];
-  themesExpandedByDefault?: boolean;
-  rsvpCopy?: {
-    menuTitle?: string;
-    menuDesc?: string;
-    editorTitle?: string;
-    toggleLabel?: string;
-    deadlineLabel?: string;
-    helperText?: string;
-  };
-  prefill?: {
-    title?: string;
-    date?: string;
-    time?: string;
-    city?: string;
-    state?: string;
-    venue?: string;
-    details?: string;
-    hero?: string;
-    rsvpEnabled?: boolean;
-    rsvpDeadline?: string;
-    extra?: Record<string, string>;
-    fontId?: string;
-  };
-  advancedSections?: AdvancedSectionSpec[];
-};
-
-const DANCE_FONTS = [
-  {
-    id: "playfair",
-    name: "Playfair Display",
-    css: "'Playfair Display', 'Times New Roman', serif",
-  },
-  {
-    id: "cormorant-garamond",
-    name: "Cormorant Garamond",
-    css: "'Cormorant Garamond', 'Garamond', serif",
-  },
-  {
-    id: "great-vibes",
-    name: "Great Vibes",
-    css: "'Great Vibes', 'Lucida Calligraphy', cursive",
-  },
-  {
-    id: "parisienne",
-    name: "Parisienne",
-    css: "'Parisienne', 'Brush Script MT', cursive",
-  },
-  { id: "allura", name: "Allura", css: "'Allura', 'Brush Script MT', cursive" },
-  {
-    id: "dancing-script",
-    name: "Dancing Script",
-    css: "'Dancing Script', 'Comic Sans MS', cursive",
-  },
-  {
-    id: "cinzel-decorative",
-    name: "Cinzel Decorative",
-    css: "'Cinzel Decorative', 'Cinzel', serif",
-  },
-  { id: "fraunces", name: "Fraunces", css: "'Fraunces', 'Georgia', serif" },
-  {
-    id: "libre-baskerville",
-    name: "Libre Baskerville",
-    css: "'Libre Baskerville', 'Baskerville', serif",
-  },
-  {
-    id: "marcellus",
-    name: "Marcellus",
-    css: "'Marcellus', 'Times New Roman', serif",
-  },
-  {
-    id: "quattrocento",
-    name: "Quattrocento",
-    css: "'Quattrocento', 'Garamond', serif",
-  },
-  { id: "petrona", name: "Petrona", css: "'Petrona', 'Georgia', serif" },
-  {
-    id: "pinyon-script",
-    name: "Pinyon Script",
-    css: "'Pinyon Script', 'Edwardian Script ITC', cursive",
-  },
-  {
-    id: "dm-serif-display",
-    name: "DM Serif Display",
-    css: "'DM Serif Display', 'Times New Roman', serif",
-  },
-  {
-    id: "sorts-mill-goudy",
-    name: "Sorts Mill Goudy",
-    css: "'Sorts Mill Goudy', 'Goudy Old Style', serif",
-  },
-  { id: "gloock", name: "Gloock", css: "'Gloock', 'Georgia', serif" },
-  { id: "italiana", name: "Italiana", css: "'Italiana', 'Didot', serif" },
-  {
-    id: "la-belle-aurore",
-    name: "La Belle Aurore",
-    css: "'La Belle Aurore', 'Bradley Hand', cursive",
-  },
-  {
-    id: "meddon",
-    name: "Meddon",
-    css: "'Meddon', 'Lucida Handwriting', cursive",
-  },
-  {
-    id: "tangerine",
-    name: "Tangerine",
-    css: "'Tangerine', 'Brush Script MT', cursive",
-  },
-];
-
-const DANCE_GOOGLE_FONT_FAMILIES = [
-  "Playfair+Display:wght@400;600;700",
-  "Cormorant+Garamond:wght@400;500;600",
-  "Great+Vibes",
-  "Parisienne",
-  "Allura",
-  "Dancing+Script:wght@400;600;700",
-  "Cinzel+Decorative:wght@400;700",
-  "Fraunces:wght@400;600;700",
-  "Libre+Baskerville:wght@400;700",
-  "Marcellus",
-  "Quattrocento:wght@400;700",
-  "Petrona:wght@400;600;700",
-  "Pinyon+Script",
-  "DM+Serif+Display",
-  "Sorts+Mill+Goudy",
-  "Gloock",
-  "Italiana",
-  "La+Belle+Aurore",
-  "Meddon",
-  "Tangerine:wght@400;700",
-];
-
-const DANCE_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${DANCE_GOOGLE_FONT_FAMILIES.join(
-  "&family="
-)}&display=swap`;
-
-type DanceEvent = {
-  id: string;
-  name: string;
-  type: "performance" | "rehearsal" | "competition";
+  type: "competition" | "game" | "pep_rally";
+  opponent?: string;
   date?: string;
   time?: string;
-  callTime?: string;
-  spacingTime?: string;
-  stageTime?: string;
+  homeAway?: "home" | "away";
   venue?: string;
   address?: string;
+  callTime?: string;
+  warmupTime?: string;
+  onMatTime?: string;
   notes?: string;
-  result?: string;
+  score?: string;
 };
 
 type PracticeBlock = {
@@ -249,12 +43,12 @@ type PracticeBlock = {
   groups: string[];
 };
 
-type RosterDancer = {
+type RosterAthlete = {
   id: string;
   name: string;
   role: string;
-  piece?: string;
-  status: "performing" | "understudy" | "injured";
+  stuntGroup?: string;
+  status: "active" | "alternate" | "injured";
   notes?: string;
   parentName?: string;
   parentPhone?: string;
@@ -262,16 +56,16 @@ type RosterDancer = {
 };
 
 type LogisticsInfo = {
-  transport?: string;
+  busCall?: string;
   hotel?: string;
-  dressingRoom?: string;
+  rooming?: string;
   meals?: string;
   emergencyContact?: string;
-  logisticsNotes?: string;
+  travelNotes?: string;
 };
 
 type GearInfo = {
-  costume?: string;
+  uniform?: string;
   hairMakeup?: string;
   shoes?: string;
   props?: string;
@@ -293,49 +87,66 @@ const DAYS = [
   "Saturday",
   "Sunday",
 ];
-const DANCE_GROUPS = ["Company", "Pre-Pro", "Ensemble", "Apprentice", "Youth"];
-const DANCE_ROLES = ["Principal", "Soloist", "Corps", "Understudy", "Coach"];
+
+const CHEER_GROUPS = ["Varsity", "JV", "Game Day", "Competition"];
+const STUNT_ROLES = ["Flyer", "Base", "Backspot", "Tumbler", "Coach"];
+
 const genId = () => Math.random().toString(36).slice(2, 9);
 
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  readOnly = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  readOnly?: boolean;
-}) => (
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-      {label}
-    </label>
-    {type === "textarea" ? (
-      <textarea
-        className={baseTextareaClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-      />
-    ) : (
-      <input
-        type={type}
-        className={baseInputClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-      />
-    )}
-  </div>
+const InputGroup = memo(
+  ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    type = "text",
+    readOnly = false,
+  }: {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+    type?: string;
+    readOnly?: boolean;
+  }) => (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+        {label}
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          className={baseTextareaClass}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      ) : (
+        <input
+          type={type}
+          className={baseInputClass}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      )}
+    </div>
+  ),
+  (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return (
+      prevProps.value === nextProps.value &&
+      prevProps.label === nextProps.label &&
+      prevProps.type === nextProps.type &&
+      prevProps.placeholder === nextProps.placeholder &&
+      // onChange excluded - parent creates new functions on each render
+      prevProps.readOnly === nextProps.readOnly
+    );
+  }
 );
+
+InputGroup.displayName = "InputGroup";
 
 const ThemeSwatch = ({
   theme,
@@ -362,48 +173,84 @@ const ThemeSwatch = ({
   </button>
 );
 
+const MenuCard = ({
+  title,
+  desc,
+  icon,
+  onClick,
+}: {
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
+  >
+    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
+      {icon}
+    </div>
+    <div className="flex-1">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="font-semibold text-slate-800">{title}</h3>
+        <ChevronRight
+          size={16}
+          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
+        />
+      </div>
+      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+    </div>
+  </button>
+);
+
 // ───────────────────────────────
-// Dance/Ballet advanced sections
+// Cheer-specific advanced sections
 // ───────────────────────────────
 
 const eventsSection = {
   id: "events",
-  menuTitle: "Performances & Shows",
-  menuDesc: "Performances, rehearsals, stage times, and tech notes.",
+  menuTitle: "Events & Competitions",
+  menuDesc: "Home/away games, competitions, rallies, mat times.",
   initialState: {
     events: [
       {
         id: genId(),
-        name: "Swan Lake, Act II",
-        type: "performance",
+        name: "UCA Regionals",
+        type: "competition",
+        opponent: "",
         date: "",
-        time: "19:00",
-        callTime: "17:45",
-        spacingTime: "18:15",
-        stageTime: "19:00",
-        venue: "Lyric Theater",
-        address: "123 Main St, Chicago, IL",
-        notes: "Black swan cast; fog effect; quick-change after Scene 3.",
-        result: "",
+        time: "10:00",
+        homeAway: "away",
+        venue: "Convention Center - Hall B",
+        address: "123 Expo Way, Chicago, IL",
+        callTime: "08:30",
+        warmupTime: "09:15",
+        onMatTime: "09:45",
+        notes: "Full outs; bring signs/poms.",
+        score: "",
       },
       {
         id: genId(),
-        name: "Spacing Rehearsal",
-        type: "rehearsal",
+        name: "Home vs Central High",
+        type: "game",
+        opponent: "Central High",
         date: "",
-        time: "16:00",
-        callTime: "15:45",
-        spacingTime: "",
-        stageTime: "",
-        venue: "Studio A",
-        address: "Downtown Arts Center",
-        notes: "Marks only; focus on corps lines and exits.",
-        result: "",
+        time: "19:00",
+        homeAway: "home",
+        venue: "Panther Stadium",
+        address: "500 Stadium Dr, Chicago, IL",
+        callTime: "17:45",
+        warmupTime: "18:15",
+        onMatTime: "",
+        notes: "Sidelines set A; halftime routine.",
+        score: "",
       },
-    ] as DanceEvent[],
+    ] as CheerEvent[],
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
-    const events: DanceEvent[] = state?.events || [];
+    const events: CheerEvent[] = state?.events || [];
     const addEvent = () => {
       setState((s: any) => ({
         ...s,
@@ -412,24 +259,26 @@ const eventsSection = {
           {
             id: genId(),
             name: "",
-            type: "performance",
+            type: "competition",
+            opponent: "",
             date: "",
-            time: "19:00",
-            callTime: "",
-            spacingTime: "",
-            stageTime: "",
+            time: "17:00",
+            homeAway: "home",
             venue: "",
             address: "",
+            callTime: "",
+            warmupTime: "",
+            onMatTime: "",
             notes: "",
-            result: "",
-          } as DanceEvent,
+            score: "",
+          } as CheerEvent,
         ],
       }));
     };
     const updateEvent = (id: string, field: string, value: any) => {
       setState((s: any) => ({
         ...s,
-        events: (s?.events || []).map((ev: DanceEvent) =>
+        events: (s?.events || []).map((ev: CheerEvent) =>
           ev.id === id ? { ...ev, [field]: value } : ev
         ),
       }));
@@ -437,18 +286,21 @@ const eventsSection = {
     const removeEvent = (id: string) => {
       setState((s: any) => ({
         ...s,
-        events: (s?.events || []).filter((ev: DanceEvent) => ev.id !== id),
+        events: (s?.events || []).filter((ev: CheerEvent) => ev.id !== id),
       }));
     };
 
     return (
       <div className="space-y-6">
-        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 flex gap-3 items-start">
-          <ClipboardList className="text-indigo-600 mt-0.5" size={18} />
+        <div className="bg-pink-50 border border-pink-100 rounded-lg p-4 flex gap-3 items-start">
+          <ClipboardList className="text-pink-600 mt-0.5" size={18} />
           <div>
-            <h4 className="font-semibold text-indigo-900">Show & Tech Calls</h4>
-            <p className="text-sm text-indigo-700">
-              Track performances, rehearsals, call times, and stage windows.
+            <h4 className="font-semibold text-pink-900">
+              Cheer Season Schedule
+            </h4>
+            <p className="text-sm text-pink-700">
+              Track competitions, football games, pep rallies, and mat times
+              with home/away notes.
             </p>
           </div>
         </div>
@@ -459,9 +311,20 @@ const eventsSection = {
             className="border border-slate-200 rounded-xl p-4 space-y-4 bg-white shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase">
-                Event #{idx + 1}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase">
+                  Event #{idx + 1}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    ev.homeAway === "home"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {ev.homeAway === "home" ? "HOME" : "AWAY"}
+                </span>
+              </div>
               <button
                 onClick={() => removeEvent(ev.id)}
                 className="text-red-400 hover:text-red-600 p-1"
@@ -473,11 +336,11 @@ const eventsSection = {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Title
+                  Event / Opponent
                 </label>
                 <input
                   className={inputClass}
-                  placeholder="Nutcracker – Snow Scene"
+                  placeholder="vs Central High or UCA Regionals"
                   value={ev.name}
                   onChange={(e) => updateEvent(ev.id, "name", e.target.value)}
                 />
@@ -493,13 +356,13 @@ const eventsSection = {
                     updateEvent(
                       ev.id,
                       "type",
-                      e.target.value as DanceEvent["type"]
+                      e.target.value as CheerEvent["type"]
                     )
                   }
                 >
-                  <option value="performance">Performance</option>
-                  <option value="rehearsal">Rehearsal / Spacing</option>
-                  <option value="competition">Competition / Festival</option>
+                  <option value="competition">Competition</option>
+                  <option value="game">Football/Basketball Game</option>
+                  <option value="pep_rally">Pep Rally</option>
                 </select>
               </div>
             </div>
@@ -529,45 +392,18 @@ const eventsSection = {
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Stage / Performance Time
+                  Home / Away
                 </label>
-                <input
-                  type="time"
+                <select
                   className={inputClass}
-                  value={ev.stageTime}
+                  value={ev.homeAway}
                   onChange={(e) =>
-                    updateEvent(ev.id, "stageTime", e.target.value)
+                    updateEvent(ev.id, "homeAway", e.target.value)
                   }
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Call Time
-                </label>
-                <input
-                  type="time"
-                  className={inputClass}
-                  value={ev.callTime}
-                  onChange={(e) =>
-                    updateEvent(ev.id, "callTime", e.target.value)
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Spacing / Tech
-                </label>
-                <input
-                  type="time"
-                  className={inputClass}
-                  value={ev.spacingTime}
-                  onChange={(e) =>
-                    updateEvent(ev.id, "spacingTime", e.target.value)
-                  }
-                />
+                >
+                  <option value="home">🏠 Home</option>
+                  <option value="away">✈️ Away</option>
+                </select>
               </div>
             </div>
 
@@ -578,7 +414,7 @@ const eventsSection = {
                 </label>
                 <input
                   className={inputClass}
-                  placeholder="Lyric Theater"
+                  placeholder="Panther Stadium / Convention Center"
                   value={ev.venue}
                   onChange={(e) => updateEvent(ev.id, "venue", e.target.value)}
                 />
@@ -598,6 +434,48 @@ const eventsSection = {
               </div>
             </div>
 
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  Call Time
+                </label>
+                <input
+                  type="time"
+                  className={inputClass}
+                  value={ev.callTime}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "callTime", e.target.value)
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  Warm-up
+                </label>
+                <input
+                  type="time"
+                  className={inputClass}
+                  value={ev.warmupTime}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "warmupTime", e.target.value)
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  On Mat / Performance
+                </label>
+                <input
+                  type="time"
+                  className={inputClass}
+                  value={ev.onMatTime}
+                  onChange={(e) =>
+                    updateEvent(ev.id, "onMatTime", e.target.value)
+                  }
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
@@ -606,20 +484,20 @@ const eventsSection = {
                 <textarea
                   className={textareaClass}
                   rows={2}
-                  placeholder="Quick change cues, prop handoffs, lighting notes"
+                  placeholder="Stunt order, basket toss reminders, mat size"
                   value={ev.notes}
                   onChange={(e) => updateEvent(ev.id, "notes", e.target.value)}
                 />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Result / Scores
+                  Result / Score
                 </label>
                 <input
                   className={inputClass}
-                  placeholder="Adjudication or judge notes"
-                  value={ev.result}
-                  onChange={(e) => updateEvent(ev.id, "result", e.target.value)}
+                  placeholder="94.25 or W/L"
+                  value={ev.score}
+                  onChange={(e) => updateEvent(ev.id, "score", e.target.value)}
                 />
               </div>
             </div>
@@ -629,7 +507,7 @@ const eventsSection = {
         <button
           type="button"
           onClick={addEvent}
-          className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-pink-400 hover:text-pink-600 transition-colors flex items-center justify-center gap-2"
         >
           <Plus size={18} />
           Add Event
@@ -646,7 +524,7 @@ const eventsSection = {
     titleColor,
     headingFontStyle,
   }) => {
-    const events: DanceEvent[] = state?.events || [];
+    const events: CheerEvent[] = state?.events || [];
     if (events.length === 0) return null;
 
     const fmtDate = (d?: string) =>
@@ -668,7 +546,7 @@ const eventsSection = {
     return (
       <>
         <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
-          Performances & Tech
+          Cheer Events & Competitions
         </h2>
         <div className="space-y-3">
           {events.map((ev) => (
@@ -677,16 +555,27 @@ const eventsSection = {
               className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-1"
             >
               <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-50 rounded text-xs font-medium">
-                  {ev.type === "performance"
-                    ? "Performance"
-                    : ev.type === "rehearsal"
-                    ? "Rehearsal"
-                    : "Competition"}
-                </span>
-                {ev.result && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      ev.homeAway === "home"
+                        ? "bg-green-500/20 text-green-200"
+                        : "bg-blue-500/20 text-blue-200"
+                    }`}
+                  >
+                    {ev.homeAway === "home" ? "HOME" : "AWAY"}
+                  </span>
+                  <span className="px-2 py-0.5 bg-pink-500/20 text-pink-50 rounded text-xs font-medium">
+                    {ev.type === "competition"
+                      ? "Competition"
+                      : ev.type === "game"
+                      ? "Game"
+                      : "Pep Rally"}
+                  </span>
+                </div>
+                {ev.score && (
                   <span className="text-sm font-semibold opacity-80">
-                    {ev.result}
+                    {ev.score}
                   </span>
                 )}
               </div>
@@ -710,7 +599,7 @@ const eventsSection = {
                   </>
                 )}
               </div>
-              {(ev.callTime || ev.spacingTime || ev.stageTime) && (
+              {(ev.callTime || ev.warmupTime || ev.onMatTime) && (
                 <div
                   className={`text-xs opacity-75 flex flex-wrap gap-3 items-center ${textClass}`}
                   style={bodyShadow}
@@ -720,14 +609,14 @@ const eventsSection = {
                       <Clock size={12} /> Call {fmtTime(ev.callTime)}
                     </span>
                   )}
-                  {ev.spacingTime && (
+                  {ev.warmupTime && (
                     <span className="flex items-center gap-1">
-                      <Clock size={12} /> Spacing {fmtTime(ev.spacingTime)}
+                      <Clock size={12} /> Warm-up {fmtTime(ev.warmupTime)}
                     </span>
                   )}
-                  {ev.stageTime && (
+                  {ev.onMatTime && (
                     <span className="flex items-center gap-1">
-                      <Clock size={12} /> Stage {fmtTime(ev.stageTime)}
+                      <Clock size={12} /> On Mat {fmtTime(ev.onMatTime)}
                     </span>
                   )}
                 </div>
@@ -750,27 +639,27 @@ const eventsSection = {
 
 const practiceSection = {
   id: "practice",
-  menuTitle: "Rehearsal Blocks",
-  menuDesc: "Daily rehearsal schedule, arrival, focus, groups.",
+  menuTitle: "Practice Plan",
+  menuDesc: "Weekly practices, arrival, focus, stunt groups.",
   initialState: {
     blocks: [
       {
         id: genId(),
-        day: "Tuesday",
-        startTime: "16:00",
-        endTime: "18:00",
-        arrivalTime: "15:45",
-        focus: "Technique + Corps lines (Act II)",
-        groups: ["Company", "Ensemble"],
+        day: "Monday",
+        startTime: "15:30",
+        endTime: "17:30",
+        arrivalTime: "15:15",
+        focus: "Stunts, tumbling, counts review",
+        groups: ["Varsity"],
       },
       {
         id: genId(),
-        day: "Thursday",
-        startTime: "16:00",
-        endTime: "18:30",
-        arrivalTime: "15:45",
-        focus: "Full run, spacing, lifts",
-        groups: ["Company", "Pre-Pro"],
+        day: "Wednesday",
+        startTime: "15:30",
+        endTime: "17:00",
+        arrivalTime: "15:15",
+        focus: "Sidelines, pyramids, baskets",
+        groups: ["Varsity", "JV"],
       },
     ] as PracticeBlock[],
   },
@@ -783,10 +672,10 @@ const practiceSection = {
           ...(s?.blocks || []),
           {
             id: genId(),
-            day: "Monday",
-            startTime: "16:00",
-            endTime: "18:00",
-            arrivalTime: "15:45",
+            day: "Tuesday",
+            startTime: "15:30",
+            endTime: "17:30",
+            arrivalTime: "15:15",
             focus: "",
             groups: [],
           },
@@ -828,9 +717,9 @@ const practiceSection = {
         <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 flex gap-3 items-start">
           <ClipboardList className="text-emerald-600 mt-0.5" size={18} />
           <div>
-            <h4 className="font-semibold text-emerald-900">Rehearsal Plan</h4>
+            <h4 className="font-semibold text-emerald-900">Practice Blocks</h4>
             <p className="text-sm text-emerald-700">
-              Set rehearsal times, arrival, focus, and groups.
+              Set weekly practice times, arrival, and focus.
             </p>
           </div>
         </div>
@@ -842,7 +731,7 @@ const practiceSection = {
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400 uppercase">
-                Rehearsal #{idx + 1}
+                Practice #{idx + 1}
               </span>
               <button
                 onClick={() => removeBlock(block.id)}
@@ -918,7 +807,7 @@ const practiceSection = {
                 Groups
               </label>
               <div className="flex flex-wrap gap-2">
-                {DANCE_GROUPS.map((group) => (
+                {CHEER_GROUPS.map((group) => (
                   <button
                     key={group}
                     type="button"
@@ -942,7 +831,7 @@ const practiceSection = {
               <textarea
                 className={textareaClass}
                 rows={2}
-                placeholder="Lift transitions, counts, musicality..."
+                placeholder="Stunts, tumbling, sidelines, timing..."
                 value={block.focus}
                 onChange={(e) => updateBlock(block.id, "focus", e.target.value)}
               />
@@ -956,7 +845,7 @@ const practiceSection = {
           className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-emerald-400 hover:text-emerald-600 transition-colors flex items-center justify-center gap-2"
         >
           <Plus size={18} />
-          Add Rehearsal
+          Add Practice
         </button>
       </div>
     );
@@ -985,7 +874,7 @@ const practiceSection = {
     return (
       <>
         <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
-          Rehearsal Schedule
+          Practice Schedule
         </h2>
         <div className="space-y-3">
           {blocks.map((b) => (
@@ -1030,67 +919,67 @@ const practiceSection = {
 
 const rosterSection = {
   id: "roster",
-  menuTitle: "Cast & Roster",
-  menuDesc: "Dancers, roles, pieces, parent contacts.",
+  menuTitle: "Roster & Stunt Groups",
+  menuDesc: "Athletes, roles, parent contacts, stunt groups.",
   initialState: {
-    dancers: [
+    athletes: [
       {
         id: genId(),
-        name: "Elena Torres",
-        role: "Principal",
-        piece: "Odette",
-        status: "performing",
-        notes: "Covers Odile as understudy.",
-        parentName: "Marisol Torres",
-        parentPhone: "555-201-8899",
-        parentEmail: "marisol@example.com",
+        name: "Alexis Carter",
+        role: "Flyer",
+        stuntGroup: "Group A",
+        status: "active",
+        notes: "Works full-up; needs new grips.",
+        parentName: "Dana Carter",
+        parentPhone: "555-123-4567",
+        parentEmail: "dana@example.com",
       },
       {
         id: genId(),
-        name: "Maya Chen",
-        role: "Corps",
-        piece: "Swan Corps",
-        status: "performing",
-        notes: "Watch timing on diagonal entry.",
-        parentName: "Li Chen",
-        parentPhone: "555-441-7723",
-        parentEmail: "li@example.com",
+        name: "Jordan Lee",
+        role: "Base",
+        stuntGroup: "Group A",
+        status: "active",
+        notes: "Ankle brace for left ankle.",
+        parentName: "Chris Lee",
+        parentPhone: "555-987-6543",
+        parentEmail: "chris@example.com",
       },
-    ] as RosterDancer[],
+    ] as RosterAthlete[],
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
-    const dancers: RosterDancer[] = state?.dancers || [];
-    const addDancer = () => {
+    const athletes: RosterAthlete[] = state?.athletes || [];
+    const addAthlete = () => {
       setState((s: any) => ({
         ...s,
-        dancers: [
-          ...(s?.dancers || []),
+        athletes: [
+          ...(s?.athletes || []),
           {
             id: genId(),
             name: "",
-            role: "Corps",
-            piece: "",
-            status: "performing",
+            role: "Flyer",
+            stuntGroup: "",
+            status: "active",
             notes: "",
             parentName: "",
             parentPhone: "",
             parentEmail: "",
-          } as RosterDancer,
+          } as RosterAthlete,
         ],
       }));
     };
-    const updateDancer = (id: string, field: string, value: any) => {
+    const updateAthlete = (id: string, field: string, value: any) => {
       setState((s: any) => ({
         ...s,
-        dancers: (s?.dancers || []).map((d: RosterDancer) =>
-          d.id === id ? { ...d, [field]: value } : d
+        athletes: (s?.athletes || []).map((a: RosterAthlete) =>
+          a.id === id ? { ...a, [field]: value } : a
         ),
       }));
     };
-    const removeDancer = (id: string) => {
+    const removeAthlete = (id: string) => {
       setState((s: any) => ({
         ...s,
-        dancers: (s?.dancers || []).filter((d: RosterDancer) => d.id !== id),
+        athletes: (s?.athletes || []).filter((a: RosterAthlete) => a.id !== id),
       }));
     };
 
@@ -1099,24 +988,24 @@ const rosterSection = {
         <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 flex gap-3 items-start">
           <Users className="text-purple-600 mt-0.5" size={18} />
           <div>
-            <h4 className="font-semibold text-purple-900">Cast List</h4>
+            <h4 className="font-semibold text-purple-900">Roster & Roles</h4>
             <p className="text-sm text-purple-700">
-              Track roles, pieces, status, and contacts.
+              Track flyers, bases, backspots, tumblers, and contacts.
             </p>
           </div>
         </div>
 
-        {dancers.map((d, idx) => (
+        {athletes.map((a, idx) => (
           <div
-            key={d.id}
+            key={a.id}
             className="border border-slate-200 rounded-xl p-4 space-y-4 bg-white shadow-sm"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400 uppercase">
-                Dancer #{idx + 1}
+                Athlete #{idx + 1}
               </span>
               <button
-                onClick={() => removeDancer(d.id)}
+                onClick={() => removeAthlete(a.id)}
                 className="text-red-400 hover:text-red-600 p-1"
               >
                 <Trash2 size={16} />
@@ -1130,9 +1019,9 @@ const rosterSection = {
                 </label>
                 <input
                   className={inputClass}
-                  placeholder="Elena Torres"
-                  value={d.name}
-                  onChange={(e) => updateDancer(d.id, "name", e.target.value)}
+                  placeholder="Alexis Carter"
+                  value={a.name}
+                  onChange={(e) => updateAthlete(a.id, "name", e.target.value)}
                 />
               </div>
               <div>
@@ -1141,10 +1030,10 @@ const rosterSection = {
                 </label>
                 <select
                   className={inputClass}
-                  value={d.role}
-                  onChange={(e) => updateDancer(d.id, "role", e.target.value)}
+                  value={a.role}
+                  onChange={(e) => updateAthlete(a.id, "role", e.target.value)}
                 >
-                  {DANCE_ROLES.map((r) => (
+                  {STUNT_ROLES.map((r) => (
                     <option key={r} value={r}>
                       {r}
                     </option>
@@ -1156,13 +1045,15 @@ const rosterSection = {
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Piece / Part
+                  Stunt Group
                 </label>
                 <input
                   className={inputClass}
-                  placeholder="Odette / Swan Corps"
-                  value={d.piece}
-                  onChange={(e) => updateDancer(d.id, "piece", e.target.value)}
+                  placeholder="Group A / Pyramid Line 1"
+                  value={a.stuntGroup}
+                  onChange={(e) =>
+                    updateAthlete(a.id, "stuntGroup", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -1171,17 +1062,17 @@ const rosterSection = {
                 </label>
                 <select
                   className={inputClass}
-                  value={d.status}
+                  value={a.status}
                   onChange={(e) =>
-                    updateDancer(
-                      d.id,
+                    updateAthlete(
+                      a.id,
                       "status",
-                      e.target.value as RosterDancer["status"]
+                      e.target.value as RosterAthlete["status"]
                     )
                   }
                 >
-                  <option value="performing">Performing</option>
-                  <option value="understudy">Understudy</option>
+                  <option value="active">Active</option>
+                  <option value="alternate">Alternate</option>
                   <option value="injured">Injured/Modified</option>
                 </select>
               </div>
@@ -1192,9 +1083,9 @@ const rosterSection = {
                 <input
                   className={inputClass}
                   placeholder="Parent/Guardian"
-                  value={d.parentName}
+                  value={a.parentName}
                   onChange={(e) =>
-                    updateDancer(d.id, "parentName", e.target.value)
+                    updateAthlete(a.id, "parentName", e.target.value)
                   }
                 />
               </div>
@@ -1208,9 +1099,9 @@ const rosterSection = {
                 <input
                   className={inputClass}
                   placeholder="555-123-4567"
-                  value={d.parentPhone}
+                  value={a.parentPhone}
                   onChange={(e) =>
-                    updateDancer(d.id, "parentPhone", e.target.value)
+                    updateAthlete(a.id, "parentPhone", e.target.value)
                   }
                 />
               </div>
@@ -1221,9 +1112,9 @@ const rosterSection = {
                 <input
                   className={inputClass}
                   placeholder="parent@email.com"
-                  value={d.parentEmail}
+                  value={a.parentEmail}
                   onChange={(e) =>
-                    updateDancer(d.id, "parentEmail", e.target.value)
+                    updateAthlete(a.id, "parentEmail", e.target.value)
                   }
                 />
               </div>
@@ -1236,9 +1127,9 @@ const rosterSection = {
               <textarea
                 className={textareaClass}
                 rows={2}
-                placeholder="Covers, injuries, musicality notes..."
-                value={d.notes}
-                onChange={(e) => updateDancer(d.id, "notes", e.target.value)}
+                placeholder="Injuries, mat restrictions, role swaps..."
+                value={a.notes}
+                onChange={(e) => updateAthlete(a.id, "notes", e.target.value)}
               />
             </div>
           </div>
@@ -1246,11 +1137,11 @@ const rosterSection = {
 
         <button
           type="button"
-          onClick={addDancer}
+          onClick={addAthlete}
           className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center gap-2"
         >
           <Plus size={18} />
-          Add Dancer
+          Add Athlete
         </button>
       </div>
     );
@@ -1264,72 +1155,71 @@ const rosterSection = {
     titleColor,
     headingFontStyle,
   }) => {
-    const dancers: RosterDancer[] = state?.dancers || [];
-    if (dancers.length === 0) return null;
+    const athletes: RosterAthlete[] = state?.athletes || [];
+    if (athletes.length === 0) return null;
 
     return (
       <>
         <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
-          Cast & Roster
+          Roster & Stunt Groups
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {dancers.map((d) => (
+          {athletes.map((a) => (
             <div
-              key={d.id}
+              key={a.id}
               className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-1"
             >
               <div
                 className={`font-semibold text-lg ${textClass}`}
                 style={bodyShadow}
               >
-                {d.name || "Unnamed"}
+                {a.name || "Unnamed"}
               </div>
               <div
                 className={`text-sm opacity-75 flex gap-3 items-center ${textClass}`}
                 style={bodyShadow}
               >
-                <span>{d.role}</span>
-                {d.piece && (
+                <span>{a.role}</span>
+                {a.stuntGroup && (
                   <span className="flex items-center gap-1">
-                    <MapPin size={12} />
-                    {d.piece}
+                    <Users size={12} /> {a.stuntGroup}
                   </span>
                 )}
                 <span
                   className={`px-2 py-0.5 rounded text-xs ${
-                    d.status === "performing"
+                    a.status === "active"
                       ? "bg-green-500/20 text-green-200"
-                      : d.status === "understudy"
+                      : a.status === "alternate"
                       ? "bg-yellow-500/20 text-yellow-100"
                       : "bg-red-500/20 text-red-200"
                   }`}
                 >
-                  {d.status}
+                  {a.status}
                 </span>
               </div>
-              {d.notes && (
+              {a.notes && (
                 <div
                   className={`text-sm opacity-80 ${textClass}`}
                   style={bodyShadow}
                 >
-                  {d.notes}
+                  {a.notes}
                 </div>
               )}
-              {(d.parentPhone || d.parentEmail) && (
+              {(a.parentPhone || a.parentEmail) && (
                 <div
                   className={`text-xs opacity-75 flex gap-3 items-center ${textClass}`}
                   style={bodyShadow}
                 >
-                  {d.parentPhone && (
+                  {a.parentPhone && (
                     <span className="flex items-center gap-1">
                       <Phone size={12} />
-                      {d.parentPhone}
+                      {a.parentPhone}
                     </span>
                   )}
-                  {d.parentEmail && (
+                  {a.parentEmail && (
                     <span className="flex items-center gap-1">
                       <Mail size={12} />
-                      {d.parentEmail}
+                      {a.parentEmail}
                     </span>
                   )}
                 </div>
@@ -1344,17 +1234,16 @@ const rosterSection = {
 
 const logisticsSection = {
   id: "logistics",
-  menuTitle: "Logistics",
-  menuDesc: "Transport, hotel, dressing rooms, meals, emergency contact.",
+  menuTitle: "Travel & Logistics",
+  menuDesc: "Buses, hotels, rooming, meals, emergency contact.",
   initialState: {
     info: {
-      transport: "Call van at 4:45 PM from studio",
-      hotel: "Hilton Downtown – block reserved for touring cast",
-      dressingRoom: "Room B2; quick-change rack backstage left",
-      meals: "Snacks provided; dinner break 6:15-6:45",
-      emergencyContact: "Artistic Dir. Carter 555-555-1212",
-      logisticsNotes:
-        "Load props via stage door on Wabash; wristbands required.",
+      busCall: "Bus call 12:45 PM from Main Gym (Lot A)",
+      hotel: "Hilton Downtown Chicago – confirmation sent",
+      rooming: "See rooming chart (Groups A/B/C)",
+      meals: "Team dinner Fri 6 PM; breakfast hotel buffet",
+      emergencyContact: "Coach Rivera 555-321-7788",
+      travelNotes: "Load signs/poms in bin 2; chaperones: Smith, Lee",
     } as LogisticsInfo,
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
@@ -1371,49 +1260,49 @@ const logisticsSection = {
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3 items-start">
           <MapPin className="text-blue-600 mt-0.5" size={18} />
           <div>
-            <h4 className="font-semibold text-blue-900">Logistics</h4>
+            <h4 className="font-semibold text-blue-900">Travel Details</h4>
             <p className="text-sm text-blue-700">
-              Travel, dressing rooms, meals, and who to contact.
+              Share how the team is traveling and who to contact.
             </p>
           </div>
         </div>
 
         <InputGroup
-          label="Transport / Call"
-          value={info.transport || ""}
-          onChange={(v) => update("transport", v)}
-          placeholder="Call van at 4:45 PM from studio"
+          label="Bus Call / Departure"
+          value={info.busCall || ""}
+          onChange={(v) => update("busCall", v)}
+          placeholder="Bus call 12:45 PM from Main Gym"
         />
         <InputGroup
           label="Hotel"
           value={info.hotel || ""}
           onChange={(v) => update("hotel", v)}
-          placeholder="Tour block / confirmation"
+          placeholder="Hilton Downtown, confirmation codes"
         />
         <InputGroup
-          label="Dressing Room"
-          value={info.dressingRoom || ""}
-          onChange={(v) => update("dressingRoom", v)}
-          placeholder="Room B2; quick-change rack"
+          label="Rooming"
+          value={info.rooming || ""}
+          onChange={(v) => update("rooming", v)}
+          placeholder="Rooming list / roommates"
         />
         <InputGroup
           label="Meals"
           value={info.meals || ""}
           onChange={(v) => update("meals", v)}
-          placeholder="Snacks provided; dinner break 6:15-6:45"
+          placeholder="Team dinner 6 PM; per diem; snacks to pack"
         />
         <InputGroup
           label="Emergency Contact"
           value={info.emergencyContact || ""}
           onChange={(v) => update("emergencyContact", v)}
-          placeholder="Artistic Dir. Carter 555-555-1212"
+          placeholder="Coach Rivera 555-123-4567"
         />
         <InputGroup
-          label="Notes"
+          label="Travel Notes"
           type="textarea"
-          value={info.logisticsNotes || ""}
-          onChange={(v) => update("logisticsNotes", v)}
-          placeholder="Load-in, stage door, wristbands..."
+          value={info.travelNotes || ""}
+          onChange={(v) => update("travelNotes", v)}
+          placeholder="Parking lot to load, bus seating, chaperones"
         />
       </div>
     );
@@ -1429,24 +1318,24 @@ const logisticsSection = {
   }) => {
     const info: LogisticsInfo = state?.info || {};
     if (
-      !info.transport &&
+      !info.busCall &&
       !info.hotel &&
-      !info.dressingRoom &&
+      !info.rooming &&
       !info.meals &&
       !info.emergencyContact &&
-      !info.logisticsNotes
+      !info.travelNotes
     ) {
       return null;
     }
     return (
       <>
         <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
-          Logistics
+          Travel & Logistics
         </h2>
         <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-2">
-          {info.transport && (
+          {info.busCall && (
             <div className={`text-sm ${textClass}`} style={bodyShadow}>
-              <strong>Transport / Call:</strong> {info.transport}
+              <strong>Bus / Call:</strong> {info.busCall}
             </div>
           )}
           {info.hotel && (
@@ -1454,9 +1343,9 @@ const logisticsSection = {
               <strong>Hotel:</strong> {info.hotel}
             </div>
           )}
-          {info.dressingRoom && (
+          {info.rooming && (
             <div className={`text-sm ${textClass}`} style={bodyShadow}>
-              <strong>Dressing Room:</strong> {info.dressingRoom}
+              <strong>Rooming:</strong> {info.rooming}
             </div>
           )}
           {info.meals && (
@@ -1469,9 +1358,9 @@ const logisticsSection = {
               <strong>Emergency:</strong> {info.emergencyContact}
             </div>
           )}
-          {info.logisticsNotes && (
+          {info.travelNotes && (
             <div className={`text-sm ${textClass}`} style={bodyShadow}>
-              <strong>Notes:</strong> {info.logisticsNotes}
+              <strong>Notes:</strong> {info.travelNotes}
             </div>
           )}
         </div>
@@ -1482,16 +1371,16 @@ const logisticsSection = {
 
 const gearSection = {
   id: "gear",
-  menuTitle: "Costume & Props",
-  menuDesc: "Costume call, hair/makeup, shoes, props, music link.",
+  menuTitle: "Uniform & Props",
+  menuDesc: "Uniform call, hair/makeup, shoes, props, music link.",
   initialState: {
     gear: {
-      costume: "Blue tutu + white bodice (Act II)",
-      hairMakeup: "Low bun, clean stage face",
-      shoes: "Freed Classics (2 pairs), pointe pads",
-      props: "Veils for corps; fans for coda",
-      musicLink: "https://drive.example.com/swan-track",
-      checklist: "Rosin, tape, sewing kit, extra ribbons",
+      uniform: "Red top, white skirt, comp bow",
+      hairMakeup: "High pony, red bow, light glam",
+      shoes: "Nfinity Vengeance, white crew socks",
+      props: "Silver poms, megaphone, signs bag",
+      musicLink: "https://drive.example.com/cheer-mix",
+      checklist: "Water, tape, brace, snacks, backup bow",
     } as GearInfo,
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
@@ -1508,48 +1397,48 @@ const gearSection = {
         <div className="bg-orange-50 border border-orange-100 rounded-lg p-4 flex gap-3 items-start">
           <Shirt className="text-orange-600 mt-0.5" size={18} />
           <div>
-            <h4 className="font-semibold text-orange-900">Costume Call</h4>
+            <h4 className="font-semibold text-orange-900">Uniform Call</h4>
             <p className="text-sm text-orange-700">
-              Keep dancers and parents aligned on wardrobe and props.
+              Keep parents clear on what to pack for each event.
             </p>
           </div>
         </div>
         <InputGroup
-          label="Costume"
-          value={gear.costume || ""}
-          onChange={(v) => update("costume", v)}
-          placeholder="Blue tutu + white bodice (Act II)"
+          label="Uniform"
+          value={gear.uniform || ""}
+          onChange={(v) => update("uniform", v)}
+          placeholder="Red top, white skirt, comp bow"
         />
         <InputGroup
           label="Hair / Makeup"
           value={gear.hairMakeup || ""}
           onChange={(v) => update("hairMakeup", v)}
-          placeholder="Low bun, clean stage face"
+          placeholder="High pony, red bow, natural glam"
         />
         <InputGroup
           label="Shoes / Accessories"
           value={gear.shoes || ""}
           onChange={(v) => update("shoes", v)}
-          placeholder="Pointe shoes, flats, pads, rosin"
+          placeholder="Nfinity Vengeance, grips, tape"
         />
         <InputGroup
-          label="Props"
+          label="Props / Signs / Poms"
           value={gear.props || ""}
           onChange={(v) => update("props", v)}
-          placeholder="Fans, veils, handheld props"
+          placeholder="Silver poms, megaphone, signs bag"
         />
         <InputGroup
           label="Music Link"
           value={gear.musicLink || ""}
           onChange={(v) => update("musicLink", v)}
-          placeholder="https://drive.example.com/track"
+          placeholder="https://drive.example.com/music"
         />
         <InputGroup
           label="Checklist"
           type="textarea"
           value={gear.checklist || ""}
           onChange={(v) => update("checklist", v)}
-          placeholder="Rosin, sewing kit, extra ribbons..."
+          placeholder="Pack bow, water bottle, tape, meds..."
         />
       </div>
     );
@@ -1565,7 +1454,7 @@ const gearSection = {
   }) => {
     const gear: GearInfo = state?.gear || {};
     if (
-      !gear.costume &&
+      !gear.uniform &&
       !gear.hairMakeup &&
       !gear.shoes &&
       !gear.props &&
@@ -1577,12 +1466,12 @@ const gearSection = {
     return (
       <>
         <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
-          Costume & Props
+          Uniform & Props
         </h2>
         <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-2">
-          {gear.costume && (
+          {gear.uniform && (
             <div className={`text-sm ${textClass}`} style={bodyShadow}>
-              <strong>Costume:</strong> {gear.costume}
+              <strong>Uniform:</strong> {gear.uniform}
             </div>
           )}
           {gear.hairMakeup && (
@@ -1624,38 +1513,6 @@ const gearSection = {
   },
 };
 
-const MenuCard = ({
-  title,
-  desc,
-  icon,
-  onClick,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </button>
-);
-
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
@@ -1694,7 +1551,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
-      fontId: config.prefill?.fontId || DANCE_FONTS[0]?.id || "playfair",
+      fontId:
+        (config as any)?.prefill?.fontId || CHEER_FONTS[0]?.id || "playfair",
+      fontSize: (config as any)?.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -1729,10 +1588,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     } = useMobileDrawer();
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
-    const updateData = useCallback((field: string, value: any) => {
-      setData((prev) => ({ ...prev, [field]: value }));
-    }, []);
-
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -1748,22 +1603,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [activeView]);
 
-    // Load elegant dance fonts into the designer/preview
+    // Load elegant/cheer fonts into the designer/preview
     useEffect(() => {
       let link =
         document.querySelector<HTMLLinkElement>(
-          'link[data-dance-fonts="true"]'
+          'link[data-cheer-fonts="true"]'
         ) || null;
       let added = false;
 
       if (!link) {
         link = document.createElement("link");
         link.rel = "stylesheet";
-        link.setAttribute("data-dance-fonts", "true");
+        link.setAttribute("data-cheer-fonts", "true");
         added = true;
       }
 
-      link.href = DANCE_GOOGLE_FONTS_URL;
+      link.href = CHEER_GOOGLE_FONTS_URL;
 
       if (added) {
         document.head.appendChild(link);
@@ -1786,7 +1641,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.themes.find((t) => t.id === themeId) || config.themes[0];
 
     const selectedFont =
-      DANCE_FONTS.find((f) => f.id === data.fontId) || DANCE_FONTS[0];
+      CHEER_FONTS.find((f) => f.id === data.fontId) || CHEER_FONTS[0];
+    const selectedSize =
+      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
+      FONT_SIZE_OPTIONS[1];
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -1874,6 +1732,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
+    const headingSizeClass =
+      selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
     const locationParts = [data.venue, data.city, data.state]
       .filter(Boolean)
@@ -2202,7 +2062,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <MenuCard
             title="Design"
-            desc="Theme presets."
+            desc="Theme presets and typography."
             icon={<Palette size={18} />}
             onClick={() => setActiveView("design")}
           />
@@ -2237,74 +2097,55 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const handleBackToMain = useCallback(() => {
-      setActiveView("main");
-    }, []);
+    const renderHeadlineEditor = () => (
+      <EditorLayout
+        title="Headline"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        <div className="space-y-6">
+          <InputGroup
+            label="Headline"
+            value={data.title}
+            onChange={(v) => setData((p) => ({ ...p, title: v }))}
+            placeholder={`${config.displayName} title`}
+          />
 
-    const renderHeadlineEditor = useMemo(
-      () => (
-        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
-          <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
             <InputGroup
-              key="title"
-              label="Headline"
-              value={data.title}
-              onChange={(v) => updateData("title", v)}
-              placeholder={`${config.displayName} title`}
+              label="Date"
+              type="date"
+              value={data.date}
+              onChange={(v) => setData((p) => ({ ...p, date: v }))}
             />
-
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                key="date"
-                label="Date"
-                type="date"
-                value={data.date}
-                onChange={(v) => updateData("date", v)}
-              />
-              <InputGroup
-                key="time"
-                label="Time"
-                type="time"
-                value={data.time}
-                onChange={(v) => updateData("time", v)}
-              />
-            </div>
-
             <InputGroup
-              key="venue"
-              label="Venue"
-              value={data.venue}
-              onChange={(v) => updateData("venue", v)}
-              placeholder="Venue name (optional)"
+              label="Time"
+              type="time"
+              value={data.time}
+              onChange={(v) => setData((p) => ({ ...p, time: v }))}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                key="city"
-                label="City"
-                value={data.city}
-                onChange={(v) => updateData("city", v)}
-              />
-              <InputGroup
-                key="state"
-                label="State"
-                value={data.state}
-                onChange={(v) => updateData("state", v)}
-              />
-            </div>
           </div>
-        </EditorLayout>
-      ),
-      [
-        data.title,
-        data.date,
-        data.time,
-        data.venue,
-        data.city,
-        data.state,
-        updateData,
-        handleBackToMain,
-        config.displayName,
-      ]
+
+          <InputGroup
+            label="Venue"
+            value={data.venue}
+            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
+            placeholder="Venue name (optional)"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <InputGroup
+              label="City"
+              value={data.city}
+              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+            />
+            <InputGroup
+              label="State"
+              value={data.state}
+              onChange={(v) => setData((p) => ({ ...p, state: v }))}
+            />
+          </div>
+        </div>
+      </EditorLayout>
     );
 
     const renderImagesEditor = () => (
@@ -2410,9 +2251,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
             <div
               ref={fontListRef}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1"
+              className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1"
             >
-              {DANCE_FONTS.map((f) => (
+              {CHEER_FONTS.map((f) => (
                 <button
                   key={f.id}
                   onClick={() => {
@@ -2434,6 +2275,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-2">
+              {FONT_SIZE_OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
+                  className={`px-3 py-1.5 text-sm rounded border ${
+                    data.fontSize === o.id
+                      ? "border-indigo-600 text-indigo-700 bg-indigo-50"
+                      : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </EditorLayout>
@@ -2450,7 +2306,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label="Description"
             type="textarea"
             value={data.details}
-            onChange={(v) => updateData("details", v)}
+            onChange={(v) => setData((p) => ({ ...p, details: v }))}
             placeholder="Tell guests what to expect."
           />
 
@@ -2508,7 +2364,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label={rsvpCopy.deadlineLabel}
             type="date"
             value={data.rsvpDeadline}
-            onChange={(v) => updateData("rsvpDeadline", v)}
+            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
             placeholder="Set a deadline"
           />
 
@@ -2582,7 +2438,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     onClick={() => {}}
                   >
                     <h1
-                      className={`text-3xl md:text-5xl font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      className={`${headingSizeClass} font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
                       style={headingFontStyle}
                     >
                       {data.title || config.displayName}
@@ -2720,9 +2576,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         textClass,
                         accentClass,
                         headingShadow,
-                        headingFontStyle,
                         bodyShadow,
                         titleColor,
+                        headingFontStyle,
                       })}
                     </section>
                   ) : null
@@ -2787,7 +2643,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                                       Joyfully Accept
                                     </div>
                                     <p className="text-sm opacity-70">
-                                      We'll be there.
+                                      We’ll be there.
                                     </p>
                                   </div>
                                 </div>
@@ -2943,7 +2799,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor}
+              {activeView === "headline" && renderHeadlineEditor()}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
@@ -2986,61 +2842,71 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
+
+
 const config = {
-  slug: "dance-ballet-season",
-  displayName: "Dance / Ballet Season",
-  category: "sport_dance_ballet",
-  categoryLabel: "Dance / Ballet",
+  slug: "cheerleading-season",
+  displayName: "Cheerleading Season",
+  category: "sport_cheerleading",
+  categoryLabel: "Cheerleading",
   defaultHero:
-    "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=1800&q=80",
+    "https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=1800&q=80",
   detailFields: [
+    { key: "team", label: "Team / Squad", placeholder: "Varsity Cheer" },
+    { key: "season", label: "Season / Year", placeholder: "2024-2025" },
     {
-      key: "company",
-      label: "Studio / Company",
-      placeholder: "Northside Ballet Company",
-    },
-    { key: "piece", label: "Feature Piece", placeholder: "Swan Lake, Act II" },
-    {
-      key: "choreographer",
-      label: "Choreographer / AD",
-      placeholder: "Ms. Alvarez",
+      key: "division",
+      label: "Division / Level",
+      placeholder: "UCA Game Day - Large Varsity",
     },
     {
-      key: "costume",
-      label: "Costume / Hair / Makeup",
-      placeholder: "Blue tutu, low bun, light glam",
-    },
-    {
-      key: "call",
-      label: "Stage Call & Rehearsal",
-      placeholder: "Call 5:30 PM, spacing 5:45 PM",
+      key: "coach",
+      label: "Coach / Contacts",
+      placeholder: "Coach Rivera, Asst. Lee",
     },
     {
       key: "music",
-      label: "Music / Tech Notes",
-      placeholder: "Track link, cues, lighting notes",
+      label: "Music / Mix Link",
+      placeholder: "https://music.example.com",
+    },
+    {
+      key: "uniform",
+      label: "Uniform & Hair",
+      placeholder: "Red top, white bow; high pony",
+    },
+    {
+      key: "warmup",
+      label: "Warm-up & Call Time",
+      placeholder: "Warm-up 2:15 PM, on mat 2:45 PM",
+    },
+    {
+      key: "routine",
+      label: "Routine Notes",
+      placeholder: "Stunt order, pyramid adjustments",
     },
   ],
   prefill: {
-    title: "Company Season — Swan Lake Highlights",
+    title: "Varsity Cheer Season",
     date: (() => {
       const d = new Date();
-      d.setDate(d.getDate() + 5);
+      d.setDate(d.getDate() + 3);
       return d.toISOString().split("T")[0];
     })(),
-    time: "19:00",
+    time: "17:00",
     city: "Chicago",
     state: "IL",
-    venue: "Lyric Theater",
+    venue: "Panther Stadium",
     details:
-      "Follow our season with performances, spacing calls, rehearsals, and costume notes in one place.",
+      "Follow our full cheer season with games, comps, warm-ups, and travel details in one place.",
     extra: {
-      company: "Northside Ballet Company",
-      piece: "Swan Lake, Act II",
-      choreographer: "Ms. Alvarez",
-      costume: "Blue tutu, low bun, light glam",
-      call: "Call 5:30 PM, spacing 5:45 PM",
-      music: "https://drive.example.com/swan-track",
+      team: "Varsity Cheer",
+      season: "2024-2025",
+      division: "UCA Game Day - Large Varsity",
+      coach: "Coach Rivera, Asst. Lee",
+      music: "https://drive.example.com/cheer-mix",
+      uniform: "Red top, white bow; high pony",
+      warmup: "Warm-up 2:15 PM, on mat 2:45 PM",
+      routine: "Stunt order: Group A/B/C; basket after count 52",
     },
   },
   advancedSections: [
@@ -3052,198 +2918,213 @@ const config = {
   ],
   themes: [
     {
-      id: "blush_reverie",
-      name: "Blush Reverie",
-      bg: "bg-gradient-to-br from-rose-200 via-rose-100 to-amber-50",
-      text: "text-slate-900",
-      accent: "text-rose-700",
-      preview: "bg-gradient-to-r from-rose-200 via-rose-100 to-amber-50",
+      id: "pep_rally_pink",
+      name: "Pep Rally Pink",
+      bg: "bg-gradient-to-br from-fuchsia-700 via-pink-600 to-slate-950",
+      text: "text-white",
+      accent: "text-pink-100",
+      preview: "bg-gradient-to-r from-fuchsia-700 via-pink-600 to-slate-950",
     },
     {
-      id: "prima_ballerina",
-      name: "Prima Ballerina",
-      bg: "bg-gradient-to-br from-rose-300 via-amber-100 to-rose-50",
-      text: "text-slate-900",
-      accent: "text-rose-800",
-      preview: "bg-gradient-to-r from-rose-300 via-amber-100 to-rose-50",
+      id: "royal_spirit",
+      name: "Royal Spirit",
+      bg: "bg-gradient-to-br from-blue-900 via-blue-800 to-slate-50",
+      text: "text-white",
+      accent: "text-sky-200",
+      preview: "bg-gradient-to-r from-blue-900 via-blue-800 to-slate-50",
     },
     {
-      id: "violet_pirouette",
-      name: "Violet Pirouette",
-      bg: "bg-gradient-to-br from-purple-200 via-violet-200 to-purple-100",
-      text: "text-slate-900",
-      accent: "text-purple-800",
-      preview: "bg-gradient-to-r from-purple-200 via-violet-200 to-purple-100",
+      id: "cheer_classic",
+      name: "Cheer Classic",
+      bg: "bg-gradient-to-br from-red-900 via-red-700 to-slate-50",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-red-900 via-red-700 to-slate-50",
     },
     {
-      id: "rosette_waltz",
-      name: "Rosette Waltz",
-      bg: "bg-gradient-to-br from-rose-400 via-rose-300 to-amber-50",
-      text: "text-slate-900",
-      accent: "text-rose-900",
-      preview: "bg-gradient-to-r from-rose-400 via-rose-300 to-amber-50",
+      id: "silver_starlight",
+      name: "Silver Starlight",
+      bg: "bg-gradient-to-br from-purple-800 via-purple-600 to-slate-200",
+      text: "text-white",
+      accent: "text-slate-100",
+      preview: "bg-gradient-to-r from-purple-800 via-purple-600 to-slate-200",
     },
     {
-      id: "moonlit_stage",
-      name: "Moonlit Stage",
-      bg: "bg-gradient-to-br from-slate-100 via-gray-50 to-white",
-      text: "text-slate-900",
-      accent: "text-slate-700",
-      preview: "bg-gradient-to-r from-slate-100 via-gray-50 to-white",
+      id: "electric_teal",
+      name: "Electric Teal",
+      bg: "bg-gradient-to-br from-slate-950 via-teal-900 to-teal-600",
+      text: "text-white",
+      accent: "text-teal-100",
+      preview: "bg-gradient-to-r from-slate-950 via-teal-900 to-teal-600",
     },
     {
-      id: "swan_lake_blue",
-      name: "Swan Lake Blue",
-      bg: "bg-gradient-to-br from-sky-200 via-blue-100 to-white",
-      text: "text-slate-900",
-      accent: "text-sky-800",
-      preview: "bg-gradient-to-r from-sky-200 via-blue-100 to-white",
+      id: "victory_navy",
+      name: "Victory Navy",
+      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-amber-500",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-amber-500",
     },
     {
-      id: "golden_pointe",
-      name: "Golden Pointe",
-      bg: "bg-gradient-to-br from-rose-200 via-amber-100 to-amber-50",
+      id: "spirit_orange",
+      name: "Spirit Orange",
+      bg: "bg-gradient-to-br from-orange-600 via-orange-500 to-amber-100",
       text: "text-slate-900",
-      accent: "text-amber-800",
-      preview: "bg-gradient-to-r from-rose-200 via-amber-100 to-amber-50",
+      accent: "text-orange-700",
+      preview: "bg-gradient-to-r from-orange-600 via-orange-500 to-amber-100",
     },
     {
-      id: "champagne_elegance",
-      name: "Champagne Elegance",
+      id: "shamrock_shout",
+      name: "Shamrock Shout",
+      bg: "bg-gradient-to-br from-green-700 via-emerald-600 to-emerald-50",
+      text: "text-slate-900",
+      accent: "text-emerald-700",
+      preview: "bg-gradient-to-r from-green-700 via-emerald-600 to-emerald-50",
+    },
+    {
+      id: "thunder_maroon",
+      name: "Thunder Maroon",
+      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-slate-300",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-900 via-rose-800 to-slate-300",
+    },
+    {
+      id: "golden_cheer",
+      name: "Golden Cheer",
+      bg: "bg-gradient-to-br from-slate-950 via-black to-amber-500",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-slate-950 via-black to-amber-500",
+    },
+    {
+      id: "glitter_pop",
+      name: "Glitter Pop",
+      bg: "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-slate-200",
+      text: "text-slate-900",
+      accent: "text-fuchsia-700",
+      preview: "bg-gradient-to-r from-pink-500 via-fuchsia-500 to-slate-200",
+    },
+    {
+      id: "rivalry_red",
+      name: "Rivalry Red",
+      bg: "bg-gradient-to-br from-slate-950 via-red-900 to-red-700",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-slate-950 via-red-900 to-red-700",
+    },
+    {
+      id: "skyline_spirit",
+      name: "Skyline Spirit",
+      bg: "bg-gradient-to-br from-sky-500 via-sky-400 to-white",
+      text: "text-slate-900",
+      accent: "text-sky-700",
+      preview: "bg-gradient-to-r from-sky-500 via-sky-400 to-white",
+    },
+    {
+      id: "majestic_motion",
+      name: "Majestic Motion",
+      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-amber-400",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-amber-400",
+    },
+    {
+      id: "aqua_energy",
+      name: "Aqua Energy",
+      bg: "bg-gradient-to-br from-cyan-500 via-teal-400 to-white",
+      text: "text-slate-900",
+      accent: "text-teal-700",
+      preview: "bg-gradient-to-r from-cyan-500 via-teal-400 to-white",
+    },
+    {
+      id: "coral_crush",
+      name: "Coral Crush",
+      bg: "bg-gradient-to-br from-orange-400 via-rose-400 to-blue-900",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-orange-400 via-rose-400 to-blue-900",
+    },
+    {
+      id: "mint_sparkle",
+      name: "Mint Sparkle",
+      bg: "bg-gradient-to-br from-emerald-200 via-green-200 to-amber-200",
+      text: "text-slate-900",
+      accent: "text-emerald-700",
+      preview: "bg-gradient-to-r from-emerald-200 via-green-200 to-amber-200",
+    },
+    {
+      id: "crimson_cheer",
+      name: "Crimson Cheer",
+      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-rose-100",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-900 via-rose-800 to-rose-100",
+    },
+    {
+      id: "power_pink",
+      name: "Power Pink",
+      bg: "bg-gradient-to-br from-slate-950 via-black to-fuchsia-700",
+      text: "text-white",
+      accent: "text-fuchsia-200",
+      preview: "bg-gradient-to-r from-slate-950 via-black to-fuchsia-700",
+    },
+    {
+      id: "neon_hype",
+      name: "Neon Hype",
+      bg: "bg-gradient-to-br from-slate-950 via-lime-700 to-lime-500",
+      text: "text-white",
+      accent: "text-lime-200",
+      preview: "bg-gradient-to-r from-slate-950 via-lime-700 to-lime-500",
+    },
+    {
+      id: "fire_flash",
+      name: "Fire & Flash",
+      bg: "bg-gradient-to-br from-red-800 via-red-700 to-slate-200",
+      text: "text-white",
+      accent: "text-slate-100",
+      preview: "bg-gradient-to-r from-red-800 via-red-700 to-slate-200",
+    },
+    {
+      id: "golden_glow",
+      name: "Golden Glow",
       bg: "bg-gradient-to-br from-amber-100 via-amber-50 to-white",
       text: "text-slate-900",
       accent: "text-amber-700",
       preview: "bg-gradient-to-r from-amber-100 via-amber-50 to-white",
     },
     {
-      id: "peach_arabesque",
-      name: "Peach Arabesque",
-      bg: "bg-gradient-to-br from-orange-200 via-amber-200 to-rose-100",
+      id: "royal_rally",
+      name: "Royal Rally",
+      bg: "bg-gradient-to-br from-purple-800 via-purple-600 to-white",
       text: "text-slate-900",
-      accent: "text-orange-800",
-      preview: "bg-gradient-to-r from-orange-200 via-amber-200 to-rose-100",
+      accent: "text-purple-700",
+      preview: "bg-gradient-to-r from-purple-800 via-purple-600 to-white",
     },
     {
-      id: "mint_en_pointe",
-      name: "Mint En Pointe",
-      bg: "bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-50",
-      text: "text-slate-900",
-      accent: "text-emerald-700",
-      preview: "bg-gradient-to-r from-emerald-100 via-teal-100 to-emerald-50",
-    },
-    {
-      id: "shadow_ballet",
-      name: "Shadow Ballet",
-      bg: "bg-gradient-to-br from-slate-950 via-slate-900 to-rose-200",
+      id: "frost_spirit",
+      name: "Frost Spirit",
+      bg: "bg-gradient-to-br from-blue-900 via-slate-500 to-gray-100",
       text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-slate-950 via-slate-900 to-rose-200",
-    },
-    {
-      id: "royal_ballet",
-      name: "Royal Ballet",
-      bg: "bg-gradient-to-br from-purple-900 via-purple-800 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-purple-900 via-purple-800 to-amber-500",
-    },
-    {
-      id: "coral_curtain",
-      name: "Coral Curtain",
-      bg: "bg-gradient-to-br from-orange-200 via-rose-100 to-amber-50",
-      text: "text-slate-900",
-      accent: "text-orange-800",
-      preview: "bg-gradient-to-r from-orange-200 via-rose-100 to-amber-50",
-    },
-    {
-      id: "crimson_pas_de_deux",
-      name: "Crimson Pas de Deux",
-      bg: "bg-gradient-to-br from-rose-900 via-rose-700 to-rose-200",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-rose-900 via-rose-700 to-rose-200",
-    },
-    {
-      id: "dreamy_lift",
-      name: "Dreamy Lift",
-      bg: "bg-gradient-to-br from-sky-200 via-blue-100 to-violet-100",
-      text: "text-slate-900",
-      accent: "text-sky-800",
-      preview: "bg-gradient-to-r from-sky-200 via-blue-100 to-violet-100",
-    },
-    {
-      id: "silk_slippers",
-      name: "Silk Slippers",
-      bg: "bg-gradient-to-br from-stone-300 via-stone-200 to-rose-100",
-      text: "text-slate-900",
-      accent: "text-rose-700",
-      preview: "bg-gradient-to-r from-stone-300 via-stone-200 to-rose-100",
-    },
-    {
-      id: "midnight_encore",
-      name: "Midnight Encore",
-      bg: "bg-gradient-to-br from-slate-950 via-blue-900 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-slate-950 via-blue-900 to-amber-500",
-    },
-    {
-      id: "gilded_tulle",
-      name: "Gilded Tulle",
-      bg: "bg-gradient-to-br from-white via-amber-50 to-amber-200",
-      text: "text-slate-900",
-      accent: "text-amber-800",
-      preview: "bg-gradient-to-r from-white via-amber-50 to-amber-200",
-    },
-    {
-      id: "twilight_dance",
-      name: "Twilight Dance",
-      bg: "bg-gradient-to-br from-rose-200 via-slate-200 to-sky-200",
-      text: "text-slate-900",
-      accent: "text-rose-800",
-      preview: "bg-gradient-to-r from-rose-200 via-slate-200 to-sky-200",
-    },
-    {
-      id: "feathered_grace",
-      name: "Feathered Grace",
-      bg: "bg-gradient-to-br from-slate-200 via-gray-200 to-rose-100",
-      text: "text-slate-900",
-      accent: "text-rose-700",
-      preview: "bg-gradient-to-r from-slate-200 via-gray-200 to-rose-100",
-    },
-    {
-      id: "regal_performance",
-      name: "Regal Performance",
-      bg: "bg-gradient-to-br from-purple-950 via-purple-900 to-slate-400",
-      text: "text-white",
-      accent: "text-slate-100",
-      preview: "bg-gradient-to-r from-purple-950 via-purple-900 to-slate-400",
-    },
-    {
-      id: "recital_pastels",
-      name: "Recital Pastels",
-      bg: "bg-gradient-to-br from-pink-200 via-sky-200 to-pink-100",
-      text: "text-slate-900",
-      accent: "text-sky-700",
-      preview: "bg-gradient-to-r from-pink-200 via-sky-200 to-pink-100",
-    },
-    {
-      id: "studio_warmth",
-      name: "Studio Warmth",
-      bg: "bg-gradient-to-br from-amber-100 via-amber-200 to-orange-100",
-      text: "text-slate-900",
-      accent: "text-amber-800",
-      preview: "bg-gradient-to-r from-amber-100 via-amber-200 to-orange-100",
-    },
-    {
-      id: "orchestra_glow",
-      name: "Orchestra Glow",
-      bg: "bg-gradient-to-br from-slate-950 via-rose-900 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-slate-950 via-rose-900 to-amber-500",
+      accent: "text-sky-100",
+      preview: "bg-gradient-to-r from-blue-900 via-slate-500 to-gray-100",
     },
   ],
 };
-const Page = createSimpleCustomizePage(config);
-export default Page;
+
+
+export { 
+  config, 
+  eventsSection,
+  practiceSection,
+  rosterSection,
+  logisticsSection,
+  gearSection
+};
+export type { 
+  CheerEvent, 
+  PracticeBlock, 
+  RosterAthlete, 
+  LogisticsInfo, 
+  GearInfo 
+};

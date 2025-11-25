@@ -102,57 +102,44 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = memo(
-  ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = "text",
-    readOnly = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-    readOnly?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  ),
-  (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    return (
-      prevProps.value === nextProps.value &&
-      prevProps.label === nextProps.label &&
-      prevProps.type === nextProps.type &&
-      prevProps.placeholder === nextProps.placeholder &&
-      // onChange excluded - parent creates new functions on each render
-      prevProps.readOnly === nextProps.readOnly
-    );
-  }
+const InputGroup = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  readOnly = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  readOnly?: boolean;
+}) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+      {label}
+    </label>
+    {type === "textarea" ? (
+      <textarea
+        className={baseTextareaClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    ) : (
+      <input
+        type={type}
+        className={baseInputClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    )}
+  </div>
 );
 
 InputGroup.displayName = "InputGroup";
@@ -284,6 +271,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+    const updateData = useCallback((field: string, value: any) => {
+      setData((prev) => ({ ...prev, [field]: value }));
+    }, []);
+
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -658,55 +649,74 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const renderHeadlineEditor = () => (
-      <EditorLayout
-        title="Headline"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-6">
-          <InputGroup
-            label="Headline"
-            value={data.title}
-            onChange={(v) => setData((p) => ({ ...p, title: v }))}
-            placeholder={`${config.displayName} title`}
-          />
+    const handleBackToMain = useCallback(() => {
+      setActiveView("main");
+    }, []);
 
-          <div className="grid grid-cols-2 gap-4">
+    const renderHeadlineEditor = useMemo(
+      () => (
+        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
             <InputGroup
-              label="Date"
-              type="date"
-              value={data.date}
-              onChange={(v) => setData((p) => ({ ...p, date: v }))}
+              key="title"
+              label="Headline"
+              value={data.title}
+              onChange={(v) => updateData("title", v)}
+              placeholder={`${config.displayName} title`}
             />
-            <InputGroup
-              label="Time"
-              type="time"
-              value={data.time}
-              onChange={(v) => setData((p) => ({ ...p, time: v }))}
-            />
-          </div>
 
-          <InputGroup
-            label="Venue"
-            value={data.venue}
-            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
-            placeholder="Venue name (optional)"
-          />
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="date"
+                label="Date"
+                type="date"
+                value={data.date}
+                onChange={(v) => updateData("date", v)}
+              />
+              <InputGroup
+                key="time"
+                label="Time"
+                type="time"
+                value={data.time}
+                onChange={(v) => updateData("time", v)}
+              />
+            </div>
+
             <InputGroup
-              label="City"
-              value={data.city}
-              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+              key="venue"
+              label="Venue"
+              value={data.venue}
+              onChange={(v) => updateData("venue", v)}
+              placeholder="Venue name (optional)"
             />
-            <InputGroup
-              label="State"
-              value={data.state}
-              onChange={(v) => setData((p) => ({ ...p, state: v }))}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="city"
+                label="City"
+                value={data.city}
+                onChange={(v) => updateData("city", v)}
+              />
+              <InputGroup
+                key="state"
+                label="State"
+                value={data.state}
+                onChange={(v) => updateData("state", v)}
+              />
+            </div>
           </div>
-        </div>
-      </EditorLayout>
+        </EditorLayout>
+      ),
+      [
+        data.title,
+        data.date,
+        data.time,
+        data.venue,
+        data.city,
+        data.state,
+        updateData,
+        handleBackToMain,
+        config.displayName,
+      ]
     );
 
     const renderImagesEditor = () => (
@@ -815,7 +825,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label="Description"
             type="textarea"
             value={data.details}
-            onChange={(v) => setData((p) => ({ ...p, details: v }))}
+            onChange={(v) => updateData("details", v)}
             placeholder="Tell guests what to expect."
           />
 
@@ -873,7 +883,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label={rsvpCopy.deadlineLabel}
             type="date"
             value={data.rsvpDeadline}
-            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
+            onChange={(v) => updateData("rsvpDeadline", v)}
             placeholder="Set a deadline"
           />
 
@@ -1259,7 +1269,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
@@ -1302,376 +1312,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-const config = {
-  slug: "doctor-appointment",
-  displayName: "Doctor Appointment",
-  category: "doctor_appointment",
-  categoryLabel: "Doctor Appointment",
-  defaultHero:
-    "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1800&q=80",
-  rsvpCopy: {
-    menuTitle: "Reminders",
-    menuDesc: "Confirmations, follow-ups, and deadlines.",
-    editorTitle: "Reminders",
-    toggleLabel: "Enable reminders",
-    deadlineLabel: "Confirm by",
-    helperText:
-      "Patients see the confirmation deadline and can respond in the preview card.",
-  },
-  prefill: {
-    title: "Office Visit with Dr. Ramirez",
-    time: "10:30",
-    city: "Chicago",
-    state: "IL",
-    venue: "Downtown Family Care",
-    details:
-      "Please arrive a few minutes early to complete intake. Bring your medication list and recent labs for a thorough review.",
-    rsvpDeadline: (() => {
-      const d = new Date();
-      d.setDate(d.getDate() + 5);
-      return d.toISOString().split("T")[0];
-    })(),
-    extra: {
-      provider: "Dr. Elena Ramirez, MD",
-      specialty: "Primary Care / Preventive Medicine",
-      practice: "Downtown Family Care",
-      visitType: "Annual checkup + follow-up",
-      reason: "Blood pressure follow-up, medication review",
-      prep: "Arrive 15 minutes early. Fasting not required. Bring your current meds list and home BP readings.",
-      insurance: "BlueCross PPO #8472930, photo ID required",
-      copay: "$25 copay due at check-in (card accepted)",
-      documents: "Recent labs, imaging reports, referral letter if available",
-      telehealth: "https://practice.example.com/visit",
-      portal: "https://portal.example.com",
-      contact: "(555) 123-4567",
-      address: "123 Main St, Suite 400",
-      parking:
-        "Garage P2, validated parking; take elevator to 4th floor and check in at front desk",
-      notes:
-        "Masks optional. Please reschedule if you have fever or respiratory symptoms.",
-    },
-  },
-  detailFields: [
-    { key: "provider", label: "Provider", placeholder: "Dr. Ramirez, MD" },
-    {
-      key: "specialty",
-      label: "Specialty",
-      placeholder: "Primary Care / Cardiology",
-    },
-    {
-      key: "practice",
-      label: "Practice / Clinic",
-      placeholder: "Downtown Family Care",
-    },
-    {
-      key: "visitType",
-      label: "Visit Type",
-      placeholder: "Annual checkup / Follow-up",
-    },
-    {
-      key: "reason",
-      label: "Reason for Visit",
-      placeholder: "Chest discomfort, med review",
-    },
-    {
-      key: "prep",
-      label: "Preparation",
-      placeholder: "Arrive 15 min early, fasting, bring meds list",
-      type: "textarea",
-    },
-    {
-      key: "insurance",
-      label: "Insurance / ID",
-      placeholder: "BlueCross #1234567, photo ID required",
-    },
-    {
-      key: "copay",
-      label: "Copay / Payment",
-      placeholder: "$25 copay, card accepted",
-    },
-    {
-      key: "documents",
-      label: "Documents to Bring",
-      placeholder: "Lab results, imaging CDs, referral letter",
-    },
-    {
-      key: "telehealth",
-      label: "Telehealth Link",
-      placeholder: "https://practice.example.com/visit",
-    },
-    {
-      key: "portal",
-      label: "Patient Portal",
-      placeholder: "https://portal.example.com",
-    },
-    { key: "contact", label: "Office Phone", placeholder: "(555) 123-4567" },
-    {
-      key: "address",
-      label: "Office Address / Suite",
-      placeholder: "123 Main St, Suite 400",
-    },
-    {
-      key: "parking",
-      label: "Parking & Arrival",
-      placeholder: "Garage P2, validated parking, check in at 4th floor",
-    },
-    {
-      key: "notes",
-      label: "Additional Notes",
-      placeholder: "Masks optional; reschedule if symptomatic",
-      type: "textarea",
-    },
-  ],
-  themes: [
-    {
-      id: "sterile_white",
-      name: "Sterile White",
-      bg: "bg-gradient-to-br from-white via-slate-50 to-blue-50",
-      text: "text-slate-900",
-      accent: "text-blue-700",
-      preview: "bg-gradient-to-r from-white via-slate-50 to-blue-50",
-    },
-    {
-      id: "calm_clinic",
-      name: "Calm Clinic",
-      bg: "bg-gradient-to-br from-slate-100 via-cyan-50 to-slate-200",
-      text: "text-slate-900",
-      accent: "text-cyan-700",
-      preview: "bg-gradient-to-r from-slate-100 via-cyan-50 to-slate-200",
-    },
-    {
-      id: "deep_care",
-      name: "Deep Care",
-      bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-sky-700",
-      text: "text-white",
-      accent: "text-sky-200",
-      preview: "bg-gradient-to-r from-slate-900 via-blue-900 to-sky-700",
-    },
-    {
-      id: "navy_trust",
-      name: "Navy Trust",
-      bg: "bg-gradient-to-br from-slate-950 via-slate-900 to-blue-800",
-      text: "text-white",
-      accent: "text-sky-100",
-      preview: "bg-gradient-to-r from-slate-950 via-slate-900 to-blue-800",
-    },
-    {
-      id: "mint_fresh",
-      name: "Mint Fresh",
-      bg: "bg-gradient-to-br from-emerald-50 via-teal-50 to-white",
-      text: "text-slate-900",
-      accent: "text-emerald-700",
-      preview: "bg-gradient-to-r from-emerald-50 via-teal-50 to-white",
-    },
-    {
-      id: "slate_minimal",
-      name: "Slate Minimal",
-      bg: "bg-gradient-to-br from-slate-100 via-slate-50 to-white",
-      text: "text-slate-900",
-      accent: "text-indigo-700",
-      preview: "bg-gradient-to-r from-slate-100 via-slate-50 to-white",
-    },
-    {
-      id: "skyline_clinic",
-      name: "Skyline Clinic",
-      bg: "bg-gradient-to-br from-sky-100 via-white to-slate-50",
-      text: "text-slate-900",
-      accent: "text-sky-700",
-      preview: "bg-gradient-to-r from-sky-100 via-white to-slate-50",
-    },
-    {
-      id: "lavender_relief",
-      name: "Lavender Relief",
-      bg: "bg-gradient-to-br from-indigo-50 via-purple-50 to-white",
-      text: "text-slate-900",
-      accent: "text-indigo-700",
-      preview: "bg-gradient-to-r from-indigo-50 via-purple-50 to-white",
-    },
-    {
-      id: "teal_trust",
-      name: "Teal Trust",
-      bg: "bg-gradient-to-br from-teal-900 via-emerald-800 to-teal-600",
-      text: "text-white",
-      accent: "text-emerald-200",
-      preview: "bg-gradient-to-r from-teal-900 via-emerald-800 to-teal-600",
-    },
-    {
-      id: "soft_sand",
-      name: "Soft Sand",
-      bg: "bg-gradient-to-br from-amber-50 via-amber-100 to-white",
-      text: "text-amber-900",
-      accent: "text-amber-700",
-      preview: "bg-gradient-to-r from-amber-50 via-amber-100 to-white",
-    },
-    {
-      id: "graphite_focus",
-      name: "Graphite Focus",
-      bg: "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700",
-      text: "text-white",
-      accent: "text-cyan-200",
-      preview: "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700",
-    },
-    {
-      id: "seafoam_calm",
-      name: "Seafoam Calm",
-      bg: "bg-gradient-to-br from-emerald-50 via-teal-100 to-white",
-      text: "text-slate-900",
-      accent: "text-emerald-700",
-      preview: "bg-gradient-to-r from-emerald-50 via-teal-100 to-white",
-    },
-    {
-      id: "copper_warmth",
-      name: "Copper Warmth",
-      bg: "bg-gradient-to-br from-amber-200 via-orange-100 to-rose-50",
-      text: "text-amber-950",
-      accent: "text-rose-800",
-      preview: "bg-gradient-to-r from-amber-200 via-orange-100 to-rose-50",
-    },
-    {
-      id: "charcoal_blue",
-      name: "Charcoal Blue",
-      bg: "bg-gradient-to-br from-slate-950 via-slate-900 to-blue-900",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-slate-950 via-slate-900 to-blue-900",
-    },
-    {
-      id: "misty_green",
-      name: "Misty Green",
-      bg: "bg-gradient-to-br from-green-50 via-slate-50 to-white",
-      text: "text-slate-900",
-      accent: "text-emerald-700",
-      preview: "bg-gradient-to-r from-green-50 via-slate-50 to-white",
-    },
-    {
-      id: "clinical_gray",
-      name: "Clinical Gray",
-      bg: "bg-gradient-to-br from-gray-50 via-gray-100 to-white",
-      text: "text-slate-900",
-      accent: "text-blue-700",
-      preview: "bg-gradient-to-r from-gray-50 via-gray-100 to-white",
-    },
-    {
-      id: "soft_blue",
-      name: "Soft Blue",
-      bg: "bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50",
-      text: "text-slate-900",
-      accent: "text-blue-700",
-      preview: "bg-gradient-to-r from-blue-50 via-sky-50 to-cyan-50",
-    },
-    {
-      id: "warm_peach",
-      name: "Warm Peach",
-      bg: "bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50",
-      text: "text-slate-900",
-      accent: "text-orange-700",
-      preview: "bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50",
-    },
-    {
-      id: "lavender_calm",
-      name: "Lavender Calm",
-      bg: "bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50",
-      text: "text-slate-900",
-      accent: "text-violet-700",
-      preview: "bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50",
-    },
-    {
-      id: "ocean_serenity",
-      name: "Ocean Serenity",
-      bg: "bg-gradient-to-br from-cyan-100 via-teal-50 to-blue-50",
-      text: "text-slate-900",
-      accent: "text-cyan-800",
-      preview: "bg-gradient-to-r from-cyan-100 via-teal-50 to-blue-50",
-    },
-    {
-      id: "sage_wellness",
-      name: "Sage Wellness",
-      bg: "bg-gradient-to-br from-emerald-100 via-green-50 to-teal-50",
-      text: "text-slate-900",
-      accent: "text-emerald-800",
-      preview: "bg-gradient-to-r from-emerald-100 via-green-50 to-teal-50",
-    },
-    {
-      id: "rose_comfort",
-      name: "Rose Comfort",
-      bg: "bg-gradient-to-br from-rose-50 via-pink-50 to-rose-100",
-      text: "text-slate-900",
-      accent: "text-rose-700",
-      preview: "bg-gradient-to-r from-rose-50 via-pink-50 to-rose-100",
-    },
-    {
-      id: "professional_navy",
-      name: "Professional Navy",
-      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
-    },
-    {
-      id: "trust_teal",
-      name: "Trust Teal",
-      bg: "bg-gradient-to-br from-teal-800 via-cyan-700 to-teal-600",
-      text: "text-white",
-      accent: "text-teal-100",
-      preview: "bg-gradient-to-r from-teal-800 via-cyan-700 to-teal-600",
-    },
-    {
-      id: "healing_green",
-      name: "Healing Green",
-      bg: "bg-gradient-to-br from-emerald-700 via-green-600 to-emerald-500",
-      text: "text-white",
-      accent: "text-emerald-100",
-      preview: "bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-500",
-    },
-    {
-      id: "soothing_purple",
-      name: "Soothing Purple",
-      bg: "bg-gradient-to-br from-purple-800 via-violet-700 to-purple-600",
-      text: "text-white",
-      accent: "text-purple-200",
-      preview: "bg-gradient-to-r from-purple-800 via-violet-700 to-purple-600",
-    },
-    {
-      id: "calm_indigo",
-      name: "Calm Indigo",
-      bg: "bg-gradient-to-br from-indigo-900 via-blue-800 to-indigo-700",
-      text: "text-white",
-      accent: "text-indigo-200",
-      preview: "bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-700",
-    },
-    {
-      id: "gentle_slate",
-      name: "Gentle Slate",
-      bg: "bg-gradient-to-br from-slate-200 via-gray-100 to-slate-50",
-      text: "text-slate-900",
-      accent: "text-slate-700",
-      preview: "bg-gradient-to-r from-slate-200 via-gray-100 to-slate-50",
-    },
-    {
-      id: "warm_ivory",
-      name: "Warm Ivory",
-      bg: "bg-gradient-to-br from-amber-50 via-yellow-50 to-white",
-      text: "text-slate-900",
-      accent: "text-amber-700",
-      preview: "bg-gradient-to-r from-amber-50 via-yellow-50 to-white",
-    },
-    {
-      id: "crisp_white",
-      name: "Crisp White",
-      bg: "bg-gradient-to-br from-white via-slate-50 to-gray-50",
-      text: "text-slate-900",
-      accent: "text-indigo-600",
-      preview: "bg-gradient-to-r from-white via-slate-50 to-gray-50",
-    },
-    {
-      id: "peaceful_blue",
-      name: "Peaceful Blue",
-      bg: "bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-50",
-      text: "text-slate-900",
-      accent: "text-sky-700",
-      preview: "bg-gradient-to-r from-sky-100 via-blue-50 to-cyan-50",
-    },
-  ],
-};
+import { config } from "@/components/event-templates/AppointmentsTemplate";
+
 const Page = createSimpleCustomizePage(config);
 export default Page;

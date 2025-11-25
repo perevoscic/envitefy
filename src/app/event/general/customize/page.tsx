@@ -102,57 +102,44 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = memo(
-  ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = "text",
-    readOnly = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-    readOnly?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  ),
-  (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    return (
-      prevProps.value === nextProps.value &&
-      prevProps.label === nextProps.label &&
-      prevProps.type === nextProps.type &&
-      prevProps.placeholder === nextProps.placeholder &&
-      // onChange excluded - parent creates new functions on each render
-      prevProps.readOnly === nextProps.readOnly
-    );
-  }
+const InputGroup = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  readOnly = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  readOnly?: boolean;
+}) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+      {label}
+    </label>
+    {type === "textarea" ? (
+      <textarea
+        className={baseTextareaClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    ) : (
+      <input
+        type={type}
+        className={baseInputClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    )}
+  </div>
 );
 
 InputGroup.displayName = "InputGroup";
@@ -284,6 +271,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+    const updateData = useCallback((field: string, value: any) => {
+      setData((prev) => ({ ...prev, [field]: value }));
+    }, []);
+
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -665,55 +656,74 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const renderHeadlineEditor = () => (
-      <EditorLayout
-        title="Headline"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-6">
-          <InputGroup
-            label="Headline"
-            value={data.title}
-            onChange={(v) => setData((p) => ({ ...p, title: v }))}
-            placeholder={`${config.displayName} title`}
-          />
+    const handleBackToMain = useCallback(() => {
+      setActiveView("main");
+    }, []);
 
-          <div className="grid grid-cols-2 gap-4">
+    const renderHeadlineEditor = useMemo(
+      () => (
+        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
             <InputGroup
-              label="Date"
-              type="date"
-              value={data.date}
-              onChange={(v) => setData((p) => ({ ...p, date: v }))}
+              key="title"
+              label="Headline"
+              value={data.title}
+              onChange={(v) => updateData("title", v)}
+              placeholder={`${config.displayName} title`}
             />
-            <InputGroup
-              label="Time"
-              type="time"
-              value={data.time}
-              onChange={(v) => setData((p) => ({ ...p, time: v }))}
-            />
-          </div>
 
-          <InputGroup
-            label="Venue"
-            value={data.venue}
-            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
-            placeholder="Venue name (optional)"
-          />
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="date"
+                label="Date"
+                type="date"
+                value={data.date}
+                onChange={(v) => updateData("date", v)}
+              />
+              <InputGroup
+                key="time"
+                label="Time"
+                type="time"
+                value={data.time}
+                onChange={(v) => updateData("time", v)}
+              />
+            </div>
+
             <InputGroup
-              label="City"
-              value={data.city}
-              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+              key="venue"
+              label="Venue"
+              value={data.venue}
+              onChange={(v) => updateData("venue", v)}
+              placeholder="Venue name (optional)"
             />
-            <InputGroup
-              label="State"
-              value={data.state}
-              onChange={(v) => setData((p) => ({ ...p, state: v }))}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="city"
+                label="City"
+                value={data.city}
+                onChange={(v) => updateData("city", v)}
+              />
+              <InputGroup
+                key="state"
+                label="State"
+                value={data.state}
+                onChange={(v) => updateData("state", v)}
+              />
+            </div>
           </div>
-        </div>
-      </EditorLayout>
+        </EditorLayout>
+      ),
+      [
+        data.title,
+        data.date,
+        data.time,
+        data.venue,
+        data.city,
+        data.state,
+        updateData,
+        handleBackToMain,
+        config.displayName,
+      ]
     );
 
     const renderImagesEditor = () => (
@@ -822,7 +832,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label="Description"
             type="textarea"
             value={data.details}
-            onChange={(v) => setData((p) => ({ ...p, details: v }))}
+            onChange={(v) => updateData("details", v)}
             placeholder="Tell guests what to expect."
           />
 
@@ -880,7 +890,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label={rsvpCopy.deadlineLabel}
             type="date"
             value={data.rsvpDeadline}
-            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
+            onChange={(v) => updateData("rsvpDeadline", v)}
             placeholder="Set a deadline"
           />
 
@@ -1266,7 +1276,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
@@ -1309,207 +1319,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-const config = {
-  slug: "general-event",
-  displayName: "Meetup / Gathering",
-  category: "general_event",
-  categoryLabel: "General Event",
-  defaultHero:
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80",
-  detailFields: [
-    { key: "host", label: "Host / Organizer", placeholder: "Community Guild" },
-    {
-      key: "agenda",
-      label: "Agenda",
-      placeholder: "Networking, lightning talks",
-    },
-    { key: "cost", label: "Cost", placeholder: "Free / $10 suggested" },
-    { key: "dress", label: "Dress Code", placeholder: "Casual" },
-    {
-      key: "parking",
-      label: "Parking / Arrival",
-      placeholder: "Street parking, check-in at lobby",
-    },
-    { key: "contact", label: "Contact", placeholder: "organizer@email.com" },
-  ],
-  themes: [
-    {
-      id: "civic_blue",
-      name: "Civic Blue",
-      bg: "bg-gradient-to-br from-slate-900 via-blue-800 to-sky-600",
-      text: "text-white",
-      accent: "text-sky-200",
-      preview: "bg-gradient-to-r from-slate-900 via-blue-800 to-sky-600",
-    },
-    {
-      id: "urban_warmth",
-      name: "Urban Warmth",
-      bg: "bg-gradient-to-br from-amber-900 via-amber-700 to-rose-500",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-amber-900 via-amber-700 to-rose-500",
-    },
-    {
-      id: "minimal_air",
-      name: "Minimal Air",
-      bg: "bg-gradient-to-br from-white via-slate-50 to-slate-100",
-      text: "text-slate-900",
-      accent: "text-indigo-600",
-      preview: "bg-gradient-to-r from-white via-slate-50 to-slate-100",
-    },
-    {
-      id: "championship_gold",
-      name: "Championship Gold",
-      bg: "bg-gradient-to-br from-amber-800 via-yellow-700 to-amber-600",
-      text: "text-white",
-      accent: "text-yellow-100",
-      preview: "bg-gradient-to-r from-amber-800 via-yellow-700 to-amber-600",
-    },
-    {
-      id: "victory_blue",
-      name: "Victory Blue",
-      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
-    },
-    {
-      id: "trophy_silver",
-      name: "Trophy Silver",
-      bg: "bg-gradient-to-br from-slate-800 via-gray-700 to-slate-600",
-      text: "text-white",
-      accent: "text-slate-200",
-      preview: "bg-gradient-to-r from-slate-800 via-gray-700 to-slate-600",
-    },
-    {
-      id: "champion_red",
-      name: "Champion Red",
-      bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-700",
-      text: "text-white",
-      accent: "text-red-100",
-      preview: "bg-gradient-to-r from-red-900 via-rose-800 to-red-700",
-    },
-    {
-      id: "elite_purple",
-      name: "Elite Purple",
-      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
-      text: "text-white",
-      accent: "text-purple-200",
-      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-purple-700",
-    },
-    {
-      id: "energy_green",
-      name: "Energy Green",
-      bg: "bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700",
-      text: "text-white",
-      accent: "text-emerald-200",
-      preview: "bg-gradient-to-r from-emerald-900 via-green-800 to-emerald-700",
-    },
-    {
-      id: "dynamic_orange",
-      name: "Dynamic Orange",
-      bg: "bg-gradient-to-br from-orange-800 via-red-700 to-orange-600",
-      text: "text-white",
-      accent: "text-orange-100",
-      preview: "bg-gradient-to-r from-orange-800 via-red-700 to-orange-600",
-    },
-    {
-      id: "midnight_elite",
-      name: "Midnight Elite",
-      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
-      text: "text-white",
-      accent: "text-indigo-200",
-      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
-    },
-    {
-      id: "ocean_depth",
-      name: "Ocean Depth",
-      bg: "bg-gradient-to-br from-cyan-900 via-blue-800 to-teal-700",
-      text: "text-white",
-      accent: "text-cyan-200",
-      preview: "bg-gradient-to-r from-cyan-900 via-blue-800 to-teal-700",
-    },
-    {
-      id: "bronze_medal",
-      name: "Bronze Medal",
-      bg: "bg-gradient-to-br from-amber-900 via-orange-800 to-amber-700",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-amber-900 via-orange-800 to-amber-700",
-    },
-    {
-      id: "royal_navy",
-      name: "Royal Navy",
-      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-800",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-800",
-    },
-    {
-      id: "forest_strong",
-      name: "Forest Strong",
-      bg: "bg-gradient-to-br from-green-900 via-emerald-800 to-green-700",
-      text: "text-white",
-      accent: "text-green-200",
-      preview: "bg-gradient-to-r from-green-900 via-emerald-800 to-green-700",
-    },
-    {
-      id: "crimson_power",
-      name: "Crimson Power",
-      bg: "bg-gradient-to-br from-red-950 via-red-800 to-rose-700",
-      text: "text-white",
-      accent: "text-red-100",
-      preview: "bg-gradient-to-r from-red-950 via-red-800 to-rose-700",
-    },
-    {
-      id: "sapphire_sky",
-      name: "Sapphire Sky",
-      bg: "bg-gradient-to-br from-sky-950 via-blue-900 to-sky-700",
-      text: "text-white",
-      accent: "text-sky-200",
-      preview: "bg-gradient-to-r from-sky-950 via-blue-900 to-sky-700",
-    },
-    {
-      id: "violet_velocity",
-      name: "Violet Velocity",
-      bg: "bg-gradient-to-br from-violet-950 via-purple-900 to-violet-800",
-      text: "text-white",
-      accent: "text-violet-200",
-      preview: "bg-gradient-to-r from-violet-950 via-purple-900 to-violet-800",
-    },
-    {
-      id: "teal_tenacity",
-      name: "Teal Tenacity",
-      bg: "bg-gradient-to-br from-teal-900 via-cyan-800 to-teal-700",
-      text: "text-white",
-      accent: "text-teal-100",
-      preview: "bg-gradient-to-r from-teal-900 via-cyan-800 to-teal-700",
-    },
-    {
-      id: "copper_charge",
-      name: "Copper Charge",
-      bg: "bg-gradient-to-br from-orange-900 via-amber-800 to-orange-700",
-      text: "text-white",
-      accent: "text-orange-100",
-      preview: "bg-gradient-to-r from-orange-900 via-amber-800 to-orange-700",
-    },
-    {
-      id: "maroon_might",
-      name: "Maroon Might",
-      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-rose-700",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-rose-900 via-rose-800 to-rose-700",
-    },
-    {
-      id: "lime_lightning",
-      name: "Lime Lightning",
-      bg: "bg-gradient-to-br from-lime-800 via-green-700 to-emerald-600",
-      text: "text-white",
-      accent: "text-lime-100",
-      preview: "bg-gradient-to-r from-lime-800 via-green-700 to-emerald-600",
-    },
-  ],
-};
+import { config } from "@/components/event-templates/GeneralEventsTemplate";
+
 const Page = createSimpleCustomizePage(config);
 export default Page;

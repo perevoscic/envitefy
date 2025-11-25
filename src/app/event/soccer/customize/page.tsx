@@ -198,57 +198,44 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = memo(
-  ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = "text",
-    readOnly = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-    readOnly?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  ),
-  (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    return (
-      prevProps.value === nextProps.value &&
-      prevProps.label === nextProps.label &&
-      prevProps.type === nextProps.type &&
-      prevProps.placeholder === nextProps.placeholder &&
-      // onChange excluded - parent creates new functions on each render
-      prevProps.readOnly === nextProps.readOnly
-    );
-  }
+const InputGroup = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  readOnly = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  readOnly?: boolean;
+}) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+      {label}
+    </label>
+    {type === "textarea" ? (
+      <textarea
+        className={baseTextareaClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    ) : (
+      <input
+        type={type}
+        className={baseInputClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    )}
+  </div>
 );
 
 InputGroup.displayName = "InputGroup";
@@ -413,6 +400,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
       };
     }, []);
+    const updateData = useCallback((field: string, value: any) => {
+      setData((prev) => ({ ...prev, [field]: value }));
+    }, []);
+
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -877,55 +868,74 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const renderHeadlineEditor = () => (
-      <EditorLayout
-        title="Headline"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-6">
-          <InputGroup
-            label="Headline"
-            value={data.title}
-            onChange={(v) => setData((p) => ({ ...p, title: v }))}
-            placeholder={`${config.displayName} title`}
-          />
+    const handleBackToMain = useCallback(() => {
+      setActiveView("main");
+    }, []);
 
-          <div className="grid grid-cols-2 gap-4">
+    const renderHeadlineEditor = useMemo(
+      () => (
+        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
             <InputGroup
-              label="Date"
-              type="date"
-              value={data.date}
-              onChange={(v) => setData((p) => ({ ...p, date: v }))}
+              key="title"
+              label="Headline"
+              value={data.title}
+              onChange={(v) => updateData("title", v)}
+              placeholder={`${config.displayName} title`}
             />
-            <InputGroup
-              label="Time"
-              type="time"
-              value={data.time}
-              onChange={(v) => setData((p) => ({ ...p, time: v }))}
-            />
-          </div>
 
-          <InputGroup
-            label="Venue"
-            value={data.venue}
-            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
-            placeholder="Venue name (optional)"
-          />
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="date"
+                label="Date"
+                type="date"
+                value={data.date}
+                onChange={(v) => updateData("date", v)}
+              />
+              <InputGroup
+                key="time"
+                label="Time"
+                type="time"
+                value={data.time}
+                onChange={(v) => updateData("time", v)}
+              />
+            </div>
+
             <InputGroup
-              label="City"
-              value={data.city}
-              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+              key="venue"
+              label="Venue"
+              value={data.venue}
+              onChange={(v) => updateData("venue", v)}
+              placeholder="Venue name (optional)"
             />
-            <InputGroup
-              label="State"
-              value={data.state}
-              onChange={(v) => setData((p) => ({ ...p, state: v }))}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="city"
+                label="City"
+                value={data.city}
+                onChange={(v) => updateData("city", v)}
+              />
+              <InputGroup
+                key="state"
+                label="State"
+                value={data.state}
+                onChange={(v) => updateData("state", v)}
+              />
+            </div>
           </div>
-        </div>
-      </EditorLayout>
+        </EditorLayout>
+      ),
+      [
+        data.title,
+        data.date,
+        data.time,
+        data.venue,
+        data.city,
+        data.state,
+        updateData,
+        handleBackToMain,
+        config.displayName,
+      ]
     );
 
     const renderImagesEditor = () => (
@@ -1086,7 +1096,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label="Description"
             type="textarea"
             value={data.details}
-            onChange={(v) => setData((p) => ({ ...p, details: v }))}
+            onChange={(v) => updateData("details", v)}
             placeholder="Tell guests what to expect."
           />
 
@@ -1144,7 +1154,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label={rsvpCopy.deadlineLabel}
             type="date"
             value={data.rsvpDeadline}
-            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
+            onChange={(v) => updateData("rsvpDeadline", v)}
             placeholder="Set a deadline"
           />
 
@@ -1579,7 +1589,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
@@ -1622,232 +1632,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-const config = {
-  slug: "soccer",
-  displayName: "Soccer Match",
-  category: "sport_soccer",
-  categoryLabel: "Soccer",
-  defaultHero:
-    "https://images.unsplash.com/photo-1517927033932-b3d18e61fb3a?auto=format&fit=crop&w=1800&q=80",
-  detailFields: [
-    { key: "opponent", label: "Opponent", placeholder: "vs River City FC" },
-    { key: "league", label: "League / Division", placeholder: "U12 Premier" },
-    {
-      key: "field",
-      label: "Field / Pitch",
-      placeholder: "Field 3, East Complex",
-    },
-    {
-      key: "kit",
-      label: "Uniform Colors",
-      placeholder: "Home: Navy/White, Away: White/Navy",
-    },
-    {
-      key: "warmup",
-      label: "Warm-up & Arrival",
-      placeholder: "Arrive 45 min early; warm-up 2:15 PM",
-    },
-    {
-      key: "lineup",
-      label: "Lineup / Formation",
-      placeholder: "4-3-3; who starts where",
-    },
-  ],
-  themes: [
-    {
-      id: "pitch_royal",
-      name: "Pitch Royal",
-      bg: "bg-gradient-to-br from-blue-900 via-blue-800 to-slate-100",
-      text: "text-white",
-      accent: "text-sky-200",
-      preview: "bg-gradient-to-r from-blue-900 via-blue-800 to-slate-100",
-    },
-    {
-      id: "striker_red",
-      name: "Striker Red",
-      bg: "bg-gradient-to-br from-red-900 via-red-800 to-rose-300",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-red-900 via-red-800 to-rose-300",
-    },
-    {
-      id: "classic_kit",
-      name: "Classic Kit",
-      bg: "bg-gradient-to-br from-slate-950 via-slate-700 to-slate-300",
-      text: "text-white",
-      accent: "text-slate-100",
-      preview: "bg-gradient-to-r from-slate-950 via-slate-700 to-slate-300",
-    },
-    {
-      id: "field_green",
-      name: "Field Green",
-      bg: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-emerald-500",
-      text: "text-white",
-      accent: "text-emerald-100",
-      preview:
-        "bg-gradient-to-r from-emerald-900 via-emerald-700 to-emerald-500",
-    },
-    {
-      id: "navy_united",
-      name: "Navy United",
-      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-slate-200",
-      text: "text-white",
-      accent: "text-slate-100",
-      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-slate-200",
-    },
-    {
-      id: "attack_red",
-      name: "Attack Red",
-      bg: "bg-gradient-to-br from-slate-950 via-red-900 to-red-700",
-      text: "text-white",
-      accent: "text-red-100",
-      preview: "bg-gradient-to-r from-slate-950 via-red-900 to-red-700",
-    },
-    {
-      id: "midnight_fc",
-      name: "Midnight FC",
-      bg: "bg-gradient-to-br from-slate-950 via-blue-900 to-blue-700",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-slate-950 via-blue-900 to-blue-700",
-    },
-    {
-      id: "crimson_club",
-      name: "Crimson Club",
-      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-rose-400",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-rose-900 via-rose-800 to-rose-400",
-    },
-    {
-      id: "golden_cleats",
-      name: "Golden Cleats",
-      bg: "bg-gradient-to-br from-slate-950 via-black to-amber-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-slate-950 via-black to-amber-500",
-    },
-    {
-      id: "championship_white",
-      name: "Championship White",
-      bg: "bg-gradient-to-br from-white via-amber-50 to-amber-200",
-      text: "text-slate-900",
-      accent: "text-amber-700",
-      preview: "bg-gradient-to-r from-white via-amber-50 to-amber-200",
-    },
-    {
-      id: "aqua_fc",
-      name: "Aqua FC",
-      bg: "bg-gradient-to-br from-slate-950 via-teal-900 to-teal-600",
-      text: "text-white",
-      accent: "text-teal-100",
-      preview: "bg-gradient-to-r from-slate-950 via-teal-900 to-teal-600",
-    },
-    {
-      id: "sunset_strikers",
-      name: "Sunset Strikers",
-      bg: "bg-gradient-to-br from-slate-950 via-orange-800 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-slate-950 via-orange-800 to-amber-500",
-    },
-    {
-      id: "violet_victory",
-      name: "Violet Victory",
-      bg: "bg-gradient-to-br from-violet-900 via-purple-800 to-slate-100",
-      text: "text-white",
-      accent: "text-violet-100",
-      preview: "bg-gradient-to-r from-violet-900 via-purple-800 to-slate-100",
-    },
-    {
-      id: "elite_navy",
-      name: "Elite Navy",
-      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-amber-500",
-    },
-    {
-      id: "skyline_fc",
-      name: "Skyline FC",
-      bg: "bg-gradient-to-br from-sky-500 via-sky-400 to-blue-900",
-      text: "text-white",
-      accent: "text-sky-100",
-      preview: "bg-gradient-to-r from-sky-500 via-sky-400 to-blue-900",
-    },
-    {
-      id: "goalkeeper_yellow",
-      name: "Goalkeeper Yellow",
-      bg: "bg-gradient-to-br from-slate-950 via-amber-700 to-yellow-500",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-slate-950 via-amber-700 to-yellow-500",
-    },
-    {
-      id: "columbia_crest",
-      name: "Columbia Crest",
-      bg: "bg-gradient-to-br from-sky-400 via-sky-200 to-white",
-      text: "text-slate-900",
-      accent: "text-sky-700",
-      preview: "bg-gradient-to-r from-sky-400 via-sky-200 to-white",
-    },
-    {
-      id: "forest_fc",
-      name: "Forest FC",
-      bg: "bg-gradient-to-br from-emerald-900 via-green-800 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-emerald-900 via-green-800 to-amber-500",
-    },
-    {
-      id: "patriot_fc",
-      name: "Patriot FC",
-      bg: "bg-gradient-to-br from-red-900 via-rose-700 to-blue-900",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-red-900 via-rose-700 to-blue-900",
-    },
-    {
-      id: "silver_maroon",
-      name: "Silver Maroon",
-      bg: "bg-gradient-to-br from-rose-900 via-rose-700 to-slate-300",
-      text: "text-white",
-      accent: "text-slate-100",
-      preview: "bg-gradient-to-r from-rose-900 via-rose-700 to-slate-300",
-    },
-    {
-      id: "derby_black",
-      name: "Derby Black",
-      bg: "bg-gradient-to-br from-slate-950 via-black to-red-700",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-slate-950 via-black to-red-700",
-    },
-    {
-      id: "coastal_fc",
-      name: "Coastal FC",
-      bg: "bg-gradient-to-br from-white via-teal-100 to-teal-500",
-      text: "text-slate-900",
-      accent: "text-teal-700",
-      preview: "bg-gradient-to-r from-white via-teal-100 to-teal-500",
-    },
-    {
-      id: "steel_blue",
-      name: "Steel Blue",
-      bg: "bg-gradient-to-br from-slate-900 via-blue-700 to-slate-300",
-      text: "text-white",
-      accent: "text-slate-100",
-      preview: "bg-gradient-to-r from-slate-900 via-blue-700 to-slate-300",
-    },
-    {
-      id: "neon_striker",
-      name: "Neon Striker",
-      bg: "bg-gradient-to-br from-slate-950 via-black to-lime-500",
-      text: "text-white",
-      accent: "text-lime-200",
-      preview: "bg-gradient-to-r from-slate-950 via-black to-lime-500",
-    },
-  ],
-};
+import { config } from "@/components/event-templates/SoccerTemplate";
+
 const Page = createSimpleCustomizePage(config);
 export default Page;

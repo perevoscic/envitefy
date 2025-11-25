@@ -1048,61 +1048,82 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({ ...prev, [field]: value }));
     }, []);
 
-    const renderHeadlineEditor = () => (
-      <EditorLayout
-        title="Headline"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-6">
-          <InputGroup
-            label="Headline"
-            value={data.title}
-            onChange={(v) => updateData("title", v)}
-            placeholder={`${config.displayName} title`}
-          />
+    const handleBackToMain = useCallback(() => {
+      setActiveView("main");
+    }, []);
 
-          <div className="grid grid-cols-2 gap-4">
+    const renderHeadlineEditor = useMemo(
+      () => (
+        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
             <InputGroup
-              label="Date"
-              type="date"
-              value={data.date}
-              onChange={(v) => updateData("date", v)}
+              key="title"
+              label="Headline"
+              value={data.title}
+              onChange={(v) => updateData("title", v)}
+              placeholder={`${config.displayName} title`}
             />
-            <InputGroup
-              label="Time"
-              type="time"
-              value={data.time}
-              onChange={(v) => updateData("time", v)}
-            />
-          </div>
 
-          <InputGroup
-            label="Venue"
-            value={data.venue}
-            onChange={(v) => updateData("venue", v)}
-            placeholder="Venue name (optional)"
-          />
-          <InputGroup
-            label="Address"
-            value={data.address}
-            onChange={(v) => updateData("address", v)}
-            placeholder="Street address (optional)"
-          />
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="date"
+                label="Date"
+                type="date"
+                value={data.date}
+                onChange={(v) => updateData("date", v)}
+              />
+              <InputGroup
+                key="time"
+                label="Time"
+                type="time"
+                value={data.time}
+                onChange={(v) => updateData("time", v)}
+              />
+            </div>
+
             <InputGroup
-              label="City"
-              value={data.city}
-              onChange={(v) => updateData("city", v)}
+              key="venue"
+              label="Venue"
+              value={data.venue}
+              onChange={(v) => updateData("venue", v)}
+              placeholder="Venue name (optional)"
             />
             <InputGroup
-              label="State"
-              value={data.state}
-              onChange={(v) => updateData("state", v)}
+              key="address"
+              label="Address"
+              value={data.address}
+              onChange={(v) => updateData("address", v)}
+              placeholder="Street address (optional)"
             />
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="city"
+                label="City"
+                value={data.city}
+                onChange={(v) => updateData("city", v)}
+              />
+              <InputGroup
+                key="state"
+                label="State"
+                value={data.state}
+                onChange={(v) => updateData("state", v)}
+              />
+            </div>
           </div>
-        </div>
-      </EditorLayout>
+        </EditorLayout>
+      ),
+      [
+        data.title,
+        data.date,
+        data.time,
+        data.venue,
+        data.address,
+        data.city,
+        data.state,
+        updateData,
+        handleBackToMain,
+        config.displayName,
+      ]
     );
 
     const renderImagesEditor = () => (
@@ -1751,7 +1772,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}

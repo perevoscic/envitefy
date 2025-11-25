@@ -102,57 +102,44 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = memo(
-  ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = "text",
-    readOnly = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-    readOnly?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  ),
-  (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    return (
-      prevProps.value === nextProps.value &&
-      prevProps.label === nextProps.label &&
-      prevProps.type === nextProps.type &&
-      prevProps.placeholder === nextProps.placeholder &&
-      // onChange excluded - parent creates new functions on each render
-      prevProps.readOnly === nextProps.readOnly
-    );
-  }
+const InputGroup = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  readOnly = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  readOnly?: boolean;
+}) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+      {label}
+    </label>
+    {type === "textarea" ? (
+      <textarea
+        className={baseTextareaClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    ) : (
+      <input
+        type={type}
+        className={baseInputClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+      />
+    )}
+  </div>
 );
 
 InputGroup.displayName = "InputGroup";
@@ -284,6 +271,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+    const updateData = useCallback((field: string, value: any) => {
+      setData((prev) => ({ ...prev, [field]: value }));
+    }, []);
+
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -658,55 +649,74 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const renderHeadlineEditor = () => (
-      <EditorLayout
-        title="Headline"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-6">
-          <InputGroup
-            label="Headline"
-            value={data.title}
-            onChange={(v) => setData((p) => ({ ...p, title: v }))}
-            placeholder={`${config.displayName} title`}
-          />
+    const handleBackToMain = useCallback(() => {
+      setActiveView("main");
+    }, []);
 
-          <div className="grid grid-cols-2 gap-4">
+    const renderHeadlineEditor = useMemo(
+      () => (
+        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
             <InputGroup
-              label="Date"
-              type="date"
-              value={data.date}
-              onChange={(v) => setData((p) => ({ ...p, date: v }))}
+              key="title"
+              label="Headline"
+              value={data.title}
+              onChange={(v) => updateData("title", v)}
+              placeholder={`${config.displayName} title`}
             />
-            <InputGroup
-              label="Time"
-              type="time"
-              value={data.time}
-              onChange={(v) => setData((p) => ({ ...p, time: v }))}
-            />
-          </div>
 
-          <InputGroup
-            label="Venue"
-            value={data.venue}
-            onChange={(v) => setData((p) => ({ ...p, venue: v }))}
-            placeholder="Venue name (optional)"
-          />
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="date"
+                label="Date"
+                type="date"
+                value={data.date}
+                onChange={(v) => updateData("date", v)}
+              />
+              <InputGroup
+                key="time"
+                label="Time"
+                type="time"
+                value={data.time}
+                onChange={(v) => updateData("time", v)}
+              />
+            </div>
+
             <InputGroup
-              label="City"
-              value={data.city}
-              onChange={(v) => setData((p) => ({ ...p, city: v }))}
+              key="venue"
+              label="Venue"
+              value={data.venue}
+              onChange={(v) => updateData("venue", v)}
+              placeholder="Venue name (optional)"
             />
-            <InputGroup
-              label="State"
-              value={data.state}
-              onChange={(v) => setData((p) => ({ ...p, state: v }))}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                key="city"
+                label="City"
+                value={data.city}
+                onChange={(v) => updateData("city", v)}
+              />
+              <InputGroup
+                key="state"
+                label="State"
+                value={data.state}
+                onChange={(v) => updateData("state", v)}
+              />
+            </div>
           </div>
-        </div>
-      </EditorLayout>
+        </EditorLayout>
+      ),
+      [
+        data.title,
+        data.date,
+        data.time,
+        data.venue,
+        data.city,
+        data.state,
+        updateData,
+        handleBackToMain,
+        config.displayName,
+      ]
     );
 
     const renderImagesEditor = () => (
@@ -815,7 +825,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label="Description"
             type="textarea"
             value={data.details}
-            onChange={(v) => setData((p) => ({ ...p, details: v }))}
+            onChange={(v) => updateData("details", v)}
             placeholder="Tell guests what to expect."
           />
 
@@ -873,7 +883,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             label={rsvpCopy.deadlineLabel}
             type="date"
             value={data.rsvpDeadline}
-            onChange={(v) => setData((p) => ({ ...p, rsvpDeadline: v }))}
+            onChange={(v) => updateData("rsvpDeadline", v)}
             placeholder="Set a deadline"
           />
 
@@ -1259,7 +1269,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor()}
+              {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
@@ -1302,224 +1312,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-const config = {
-  slug: "workshop-class",
-  displayName: "Workshop / Class",
-  category: "workshop_class",
-  categoryLabel: "Workshop / Class",
-  defaultHero:
-    "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1800&q=80",
-  detailFields: [
-    { key: "instructor", label: "Instructor", placeholder: "Alex Lee" },
-    {
-      key: "syllabus",
-      label: "Agenda / Syllabus",
-      placeholder: "Module overview, hands-on lab",
-      type: "textarea",
-    },
-    {
-      key: "materials",
-      label: "Materials",
-      placeholder: "Laptop, notebook, bring sample data",
-    },
-    {
-      key: "prereqs",
-      label: "Prerequisites",
-      placeholder: "Basic Python, laptop charged",
-    },
-    { key: "price", label: "Price", placeholder: "$99 / Free for members" },
-    {
-      key: "registration",
-      label: "Registration Link",
-      placeholder: "https://register.example.com",
-    },
-  ],
-  themes: [
-    {
-      id: "studio",
-      name: "Studio",
-      bg: "bg-gradient-to-br from-slate-900 via-indigo-800 to-purple-600",
-      text: "text-white",
-      accent: "text-indigo-200",
-      preview: "bg-gradient-to-r from-slate-900 via-indigo-800 to-purple-600",
-    },
-    {
-      id: "paper",
-      name: "Paper",
-      bg: "bg-gradient-to-br from-white via-slate-50 to-amber-50",
-      text: "text-slate-900",
-      accent: "text-amber-600",
-      preview: "bg-gradient-to-r from-white via-slate-50 to-amber-50",
-    },
-    {
-      id: "creative_burst",
-      name: "Creative Burst",
-      bg: "bg-gradient-to-br from-rose-900 via-orange-700 to-yellow-500",
-      text: "text-white",
-      accent: "text-yellow-100",
-      preview: "bg-gradient-to-r from-rose-900 via-orange-700 to-yellow-500",
-    },
-    {
-      id: "artistic_blue",
-      name: "Artistic Blue",
-      bg: "bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-blue-900 via-indigo-800 to-purple-700",
-    },
-    {
-      id: "warm_studio",
-      name: "Warm Studio",
-      bg: "bg-gradient-to-br from-amber-200 via-orange-100 to-yellow-50",
-      text: "text-slate-900",
-      accent: "text-amber-800",
-      preview: "bg-gradient-to-r from-amber-200 via-orange-100 to-yellow-50",
-    },
-    {
-      id: "cool_workspace",
-      name: "Cool Workspace",
-      bg: "bg-gradient-to-br from-cyan-100 via-blue-50 to-indigo-50",
-      text: "text-slate-900",
-      accent: "text-cyan-800",
-      preview: "bg-gradient-to-r from-cyan-100 via-blue-50 to-indigo-50",
-    },
-    {
-      id: "vibrant_palette",
-      name: "Vibrant Palette",
-      bg: "bg-gradient-to-br from-pink-800 via-rose-700 to-fuchsia-600",
-      text: "text-white",
-      accent: "text-pink-200",
-      preview: "bg-gradient-to-r from-pink-800 via-rose-700 to-fuchsia-600",
-    },
-    {
-      id: "earth_tones",
-      name: "Earth Tones",
-      bg: "bg-gradient-to-br from-amber-800 via-orange-700 to-amber-600",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-amber-800 via-orange-700 to-amber-600",
-    },
-    {
-      id: "ocean_inspiration",
-      name: "Ocean Inspiration",
-      bg: "bg-gradient-to-br from-teal-900 via-cyan-800 to-blue-700",
-      text: "text-white",
-      accent: "text-teal-200",
-      preview: "bg-gradient-to-r from-teal-900 via-cyan-800 to-blue-700",
-    },
-    {
-      id: "sunset_creative",
-      name: "Sunset Creative",
-      bg: "bg-gradient-to-br from-orange-600 via-rose-500 to-pink-500",
-      text: "text-white",
-      accent: "text-orange-100",
-      preview: "bg-gradient-to-r from-orange-600 via-rose-500 to-pink-500",
-    },
-    {
-      id: "forest_workshop",
-      name: "Forest Workshop",
-      bg: "bg-gradient-to-br from-emerald-800 via-green-700 to-emerald-600",
-      text: "text-white",
-      accent: "text-emerald-200",
-      preview: "bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-600",
-    },
-    {
-      id: "lavender_dreams",
-      name: "Lavender Dreams",
-      bg: "bg-gradient-to-br from-violet-300 via-purple-200 to-violet-100",
-      text: "text-slate-900",
-      accent: "text-violet-800",
-      preview: "bg-gradient-to-r from-violet-300 via-purple-200 to-violet-100",
-    },
-    {
-      id: "midnight_art",
-      name: "Midnight Art",
-      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
-      text: "text-white",
-      accent: "text-indigo-200",
-      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
-    },
-    {
-      id: "coral_workshop",
-      name: "Coral Workshop",
-      bg: "bg-gradient-to-br from-orange-400 via-rose-300 to-pink-200",
-      text: "text-slate-900",
-      accent: "text-orange-800",
-      preview: "bg-gradient-to-r from-orange-400 via-rose-300 to-pink-200",
-    },
-    {
-      id: "sage_serenity",
-      name: "Sage Serenity",
-      bg: "bg-gradient-to-br from-emerald-200 via-teal-100 to-green-50",
-      text: "text-slate-900",
-      accent: "text-emerald-800",
-      preview: "bg-gradient-to-r from-emerald-200 via-teal-100 to-green-50",
-    },
-    {
-      id: "royal_purple",
-      name: "Royal Purple",
-      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
-      text: "text-white",
-      accent: "text-purple-200",
-      preview: "bg-gradient-to-r from-purple-900 via-violet-800 to-purple-700",
-    },
-    {
-      id: "golden_hour",
-      name: "Golden Hour",
-      bg: "bg-gradient-to-br from-yellow-500 via-amber-400 to-orange-300",
-      text: "text-slate-900",
-      accent: "text-yellow-900",
-      preview: "bg-gradient-to-r from-yellow-500 via-amber-400 to-orange-300",
-    },
-    {
-      id: "steel_workshop",
-      name: "Steel Workshop",
-      bg: "bg-gradient-to-br from-slate-700 via-gray-600 to-slate-500",
-      text: "text-white",
-      accent: "text-slate-200",
-      preview: "bg-gradient-to-r from-slate-700 via-gray-600 to-slate-500",
-    },
-    {
-      id: "mint_fresh",
-      name: "Mint Fresh",
-      bg: "bg-gradient-to-br from-emerald-300 via-teal-200 to-cyan-100",
-      text: "text-slate-900",
-      accent: "text-emerald-800",
-      preview: "bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-100",
-    },
-    {
-      id: "crimson_creative",
-      name: "Crimson Creative",
-      bg: "bg-gradient-to-br from-red-800 via-rose-700 to-red-600",
-      text: "text-white",
-      accent: "text-red-100",
-      preview: "bg-gradient-to-r from-red-800 via-rose-700 to-red-600",
-    },
-    {
-      id: "azure_sky",
-      name: "Azure Sky",
-      bg: "bg-gradient-to-br from-sky-400 via-blue-300 to-cyan-200",
-      text: "text-slate-900",
-      accent: "text-sky-800",
-      preview: "bg-gradient-to-r from-sky-400 via-blue-300 to-cyan-200",
-    },
-    {
-      id: "copper_craft",
-      name: "Copper Craft",
-      bg: "bg-gradient-to-br from-amber-700 via-orange-600 to-amber-500",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-amber-700 via-orange-600 to-amber-500",
-    },
-    {
-      id: "plum_passion",
-      name: "Plum Passion",
-      bg: "bg-gradient-to-br from-purple-800 via-violet-700 to-purple-600",
-      text: "text-white",
-      accent: "text-purple-200",
-      preview: "bg-gradient-to-r from-purple-800 via-violet-700 to-purple-600",
-    },
-  ],
-};
+import { config } from "@/components/event-templates/WorkshopsTemplate";
+
 const Page = createSimpleCustomizePage(config);
 export default Page;
