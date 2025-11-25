@@ -185,13 +185,20 @@ export default async function OgImage(props: {
       data.attachment.dataUrl.length > 0 &&
       data.attachment.dataUrl.startsWith("data:image");
 
+    // Debug logging
+    console.log("OG Image - Thumbnail check:", {
+      hasThumbnail,
+      hasAttachment,
+      thumbnailLength: hasThumbnail ? data.thumbnail.length : 0,
+      attachmentLength: hasAttachment ? data.attachment.dataUrl.length : 0,
+      eventId: awaitedParams.id,
+    });
+
     // Use event thumbnail/attachment if available, otherwise use default
+    // ImageResponse supports data URLs directly in img src
     if (hasThumbnail) {
-      // Use the event's thumbnail directly as data URL
-      // ImageResponse should support data URLs, but keep size reasonable
       bg = data.thumbnail;
     } else if (hasAttachment) {
-      // Fall back to attachment if no thumbnail
       bg = data.attachment.dataUrl;
     } else {
       // Final fallback: use default OG image
