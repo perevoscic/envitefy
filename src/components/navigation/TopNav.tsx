@@ -946,7 +946,11 @@ export default function TopNav() {
             })}
 
             {/* My Events Dropdown */}
-            <div className="relative group" ref={myEventsRef}>
+            <div
+              className="relative group"
+              ref={myEventsRef}
+              onMouseLeave={() => setMyEventsOpen(false)}
+            >
               <button
                 className="rounded-full px-4 py-1.5 transition hover:bg-white/70 flex items-center gap-1"
                 onMouseEnter={() => setMyEventsOpen(true)}
