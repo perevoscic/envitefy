@@ -232,46 +232,51 @@ export function MyEventsDropdown({
     return (
       <div
         ref={myEventsRef}
-        className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max max-w-[90vw] bg-white rounded-2xl border border-[#ece9ff] shadow-2xl p-6 z-50 transition-all duration-200 origin-top ${
+        className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-max max-w-[90vw] z-50 transition-all duration-200 origin-top ${
           isOpen
             ? "opacity-100 visible scale-100"
             : "opacity-0 invisible scale-95"
         }`}
         onMouseLeave={onClose}
       >
-        <div className="flex flex-row flex-wrap gap-8">
-          {categories
-            .filter((cat) => cat.items.length > 0)
-            .map((category) => (
-              <div key={category.name} className="flex flex-col min-w-[160px]">
-                <h3 className="font-serif text-xl font-bold text-[#1b1540] mb-3 flex items-center gap-2 whitespace-nowrap">
-                  {category.name}
-                  <span className="text-xs font-normal bg-[#ece9ff] text-[#6b5b95] px-2 py-0.5 rounded-full">
-                    {category.items.length}
-                  </span>
-                </h3>
-                <div className="flex flex-col gap-1">
-                  {category.items.slice(0, 5).map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/event/${item.id}`}
-                      className="text-sm text-[#564d7a] hover:text-[#2f1d47] hover:bg-[#f3f0ff] px-2 py-1 -mx-2 rounded-lg transition-colors truncate max-w-[200px]"
-                      onClick={onClose}
-                    >
-                      {item.title}
-                    </Link>
-                  ))}
-                  {category.items.length > 5 && (
-                    <span className="text-xs text-[#9ca3af] px-2 py-1">
-                      +{category.items.length - 5} more
+        <div className="bg-white rounded-2xl border border-[#ece9ff] shadow-2xl p-6">
+          <div className="flex flex-row flex-wrap gap-8">
+            {categories
+              .filter((cat) => cat.items.length > 0)
+              .map((category) => (
+                <div
+                  key={category.name}
+                  className="flex flex-col min-w-[160px]"
+                >
+                  <h3 className="font-serif text-xl font-bold text-[#1b1540] mb-3 flex items-center gap-2 whitespace-nowrap">
+                    {category.name}
+                    <span className="text-xs font-normal bg-[#ece9ff] text-[#6b5b95] px-2 py-0.5 rounded-full">
+                      {category.items.length}
                     </span>
-                  )}
+                  </h3>
+                  <div className="flex flex-col gap-1">
+                    {category.items.slice(0, 5).map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/event/${item.id}`}
+                        className="text-sm text-[#564d7a] hover:text-[#2f1d47] hover:bg-[#f3f0ff] px-2 py-1 -mx-2 rounded-lg transition-colors truncate max-w-[200px]"
+                        onClick={onClose}
+                      >
+                        {item.title}
+                      </Link>
+                    ))}
+                    {category.items.length > 5 && (
+                      <span className="text-xs text-[#9ca3af] px-2 py-1">
+                        +{category.items.length - 5} more
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          {categories.filter((cat) => cat.items.length > 0).length === 0 && (
-            <div className="px-4 py-2 text-[#9ca3af]">No events yet</div>
-          )}
+              ))}
+            {categories.filter((cat) => cat.items.length > 0).length === 0 && (
+              <div className="px-4 py-2 text-[#9ca3af]">No events yet</div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -916,19 +921,19 @@ export default function TopNav() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
-                  </svg>
-                </button>
-                <div
-                  style={{ top: `${createMenuTop}px` }}
-                  className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex justify-center"
-                  suppressHydrationWarning
-                >
-                  <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
-                    {isHydrated && <CreateEventMenu />}
+                      </svg>
+                    </button>
+                    <div
+                      style={{ top: `${createMenuTop}px` }}
+                      className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex justify-center"
+                      suppressHydrationWarning
+                    >
+                      <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
+                        {isHydrated && <CreateEventMenu />}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
+                );
               }
               return (
                 <Link
@@ -949,11 +954,11 @@ export default function TopNav() {
             <div
               className="relative group"
               ref={myEventsRef}
+              onMouseEnter={() => setMyEventsOpen(true)}
               onMouseLeave={() => setMyEventsOpen(false)}
             >
               <button
                 className="rounded-full px-4 py-1.5 transition hover:bg-white/70 flex items-center gap-1"
-                onMouseEnter={() => setMyEventsOpen(true)}
                 onClick={() => setMyEventsOpen((prev) => !prev)}
               >
                 My events
@@ -1005,7 +1010,12 @@ export default function TopNav() {
                 </div>
               )}
             </div>
-            <div className="relative" ref={createDropdownRef}>
+            <div
+              className="relative"
+              ref={createDropdownRef}
+              onMouseEnter={() => setCreateEventOpen(true)}
+              onMouseLeave={() => setCreateEventOpen(false)}
+            >
               <button
                 type="button"
                 onClick={() => setCreateEventOpen((prev) => !prev)}
@@ -1033,10 +1043,15 @@ export default function TopNav() {
               {createEventOpen && (
                 <div
                   style={{ top: `${createMenuTop}px` }}
-                  className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl z-50 origin-top"
+                  className="fixed left-1/2 -translate-x-1/2 pt-2 w-full max-w-[95vw] z-50 origin-top"
                   suppressHydrationWarning
+                  onMouseLeave={() => setCreateEventOpen(false)}
                 >
-                  <CreateEventMenu onSelect={() => setCreateEventOpen(false)} />
+                  <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
+                    <CreateEventMenu
+                      onSelect={() => setCreateEventOpen(false)}
+                    />
+                  </div>
                 </div>
               )}
             </div>

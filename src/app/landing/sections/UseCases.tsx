@@ -134,11 +134,14 @@ export default function UseCases() {
     },
   ];
   return (
-    <section aria-labelledby="use-cases" className="w-full">
+    <section
+      aria-labelledby="use-cases"
+      className="w-full bg-white/5 pb-12 transition"
+    >
       <div className="max-w-7xl mx-auto px-6 py-12">
         <h2
           id="use-cases"
-          className="text-2xl sm:text-3xl font-bold text-center"
+          className="text-2xl sm:text-3xl font-bold text-center text-[#2b1b16]"
         >
           Who it’s for
         </h2>
@@ -146,17 +149,17 @@ export default function UseCases() {
           {items.map((i) => (
             <div
               key={i.title}
-              className="rounded-2xl bg-surface/70 border border-border p-6 shadow"
+              className="rounded-3xl bg-white/90 border border-[#d9c5b8] p-6 shadow-[0_30px_40px_rgba(38,22,13,0.08)] transition hover:-translate-y-1 hover:shadow-[0_40px_50px_rgba(38,22,13,0.15)]"
             >
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-[#2b1b16]">
                 <span
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${i.badgeClass}`}
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${i.badgeClass}`}
                 >
                   {i.icon}
                 </span>
                 {i.title}
               </h3>
-              <p className="mt-1 text-foreground/70">{i.text}</p>
+              <p className="mt-2 text-sm text-[#4a382f]">{i.text}</p>
             </div>
           ))}
         </div>

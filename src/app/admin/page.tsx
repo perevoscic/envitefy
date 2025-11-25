@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
@@ -168,7 +168,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground transition-colors"
+      className="min-h-[100dvh] bg-white text-[#2b1b16] transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -178,12 +178,12 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col gap-2 pt-8" suppressHydrationWarning>
           <h1
-            className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
+            className="text-3xl font-bold bg-gradient-to-r from-[#58a6ff] to-[#f97316] bg-clip-text text-transparent"
             suppressHydrationWarning
           >
             Admin Dashboard
           </h1>
-          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+          <p className="text-sm text-[#adbcd6]" suppressHydrationWarning>
             Platform insights, user analytics, and administrative tools
           </p>
         </div>
@@ -193,46 +193,46 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link
               href="/admin/campaigns"
-              className="group relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 hover:shadow-md hover:scale-[1.02] hover:ring-border/80 cursor-pointer"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-white shadow transition-all hover:shadow-lg"
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">
                       Email Campaigns
                     </p>
                     <p className="text-sm text-foreground/80">
                       Send bulk emails to users
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl shadow-lg flex-shrink-0">
-                    ✉️
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#dcb887] to-[#c57f5f] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#3d1e10]">
+                    EC
                   </div>
                 </div>
               </div>
-              <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <div className="h-1 bg-gradient-to-r from-[#2d6ef4] to-[#7c3aed] opacity-80" />
             </Link>
 
             <Link
               href="/admin/emails"
-              className="group relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 hover:shadow-md hover:scale-[1.02] hover:ring-border/80 cursor-pointer"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-white shadow transition-all hover:shadow-lg"
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">
                       Email Templates
                     </p>
                     <p className="text-sm text-foreground/80">
                       Preview email designs
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xl shadow-lg flex-shrink-0">
-                    📧
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#dcb887] to-[#c57f5f] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#3d1e10]">
+                    ET
                   </div>
                 </div>
               </div>
-              <div className="h-1 bg-gradient-to-r from-pink-500 to-rose-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <div className="h-1 bg-gradient-to-r from-[#1dd1a1] to-[#0f766e] opacity-80" />
             </Link>
           </div>
         </section>
@@ -300,8 +300,8 @@ export default function AdminPage() {
               <StatCard
                 label="Total Users"
                 value={overview.totalUsers}
-                icon="👥"
-                gradient="from-blue-500 to-cyan-500"
+                icon="U"
+                gradient="from-[#22d3ee] to-[#1d4ed8]"
                 onClick={() => handleStatClick("all")}
                 isActive={activeStatView === "all"}
               />
@@ -322,7 +322,7 @@ export default function AdminPage() {
         {/* User Search */}
         <section suppressHydrationWarning>
           <div
-            className="bg-surface rounded-xl ring-1 ring-border/60 overflow-hidden shadow-sm"
+            className="bg-white border border-border rounded-2xl overflow-hidden shadow-xl"
             suppressHydrationWarning
           >
             <div
@@ -392,7 +392,7 @@ export default function AdminPage() {
                     }}
                     placeholder="Search by email, first or last name..."
                     disabled={!!activeStatView}
-                    className="w-full pl-11 pr-10 py-3 text-sm rounded-lg border border-border bg-surface/85 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full pl-11 pr-10 py-3 text-sm rounded-2xl border border-border bg-white text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     suppressHydrationWarning
                   />
                   <svg
@@ -412,7 +412,7 @@ export default function AdminPage() {
                   {q && (
                     <button
                       onClick={handleClearSearch}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-surface/80"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[#fff0e3]"
                       title="Clear search"
                     >
                       <svg
@@ -434,7 +434,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleSearch}
                   disabled={usersLoading || !!activeStatView}
-                  className="px-6 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="px-6 py-3 text-sm font-semibold rounded-2xl bg-gradient-to-r from-[#c58b71] to-[#a35b3a] hover:from-[#c58b71] hover:to-[#a35b3a] text-white shadow-lg shadow-[#b99c8b]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {usersLoading ? (
                     <>
@@ -510,97 +510,141 @@ export default function AdminPage() {
                 <>
                   {/* Mobile Card View */}
                   <div className="md:hidden space-y-3">
-                    {users.map((u) => (
-                      <div
-                        key={u.id}
-                        className="rounded-lg border border-border bg-surface/85 p-4 space-y-3"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                              Name
+                    {users.map((u) => {
+                      const breakdown = getEventTypeStats(u);
+                      const eventTotal = breakdown.reduce(
+                        (sum, item) => sum + item.count,
+                        0
+                      );
+                      const scanTotal =
+                        typeof u.scans_total === "number" &&
+                        Number.isFinite(u.scans_total)
+                          ? u.scans_total
+                          : 0;
+                      return (
+                        <div
+                          key={u.id}
+                          className="rounded-2xl border border-border bg-white p-4 space-y-4"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-xs uppercase tracking-[0.3em] text-[#6a5549]">
+                                Name
+                              </p>
+                              <p className="text-base font-semibold text-[#2b1b16] truncate">
+                                {[u.first_name, u.last_name]
+                                  .filter(Boolean)
+                                  .join(" ") || "-"}
+                              </p>
+                              <p className="text-xs uppercase tracking-[0.3em] text-[#6a5549]">
+                                Email
+                              </p>
+                              <p className="text-sm text-[#4a382f] break-words">
+                                {u.email}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-border space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-[10px] uppercase tracking-[0.4em] text-[#6a5549]">
+                                  Events
+                                </p>
+                                <BreakdownPopup
+                                  label="Events"
+                                  count={eventTotal}
+                                  breakdown={breakdown}
+                                  variant="inline"
+                                />
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase tracking-[0.4em] text-[#6a5549]">
+                                  Scans
+                                </p>
+                                <BreakdownPopup
+                                  label="Scans"
+                                  count={scanTotal}
+                                  breakdown={breakdown}
+                                  variant="inline"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-border">
+                            <p className="text-xs uppercase tracking-wider text-[#6a5549] mb-1">
+                              Joined
                             </p>
-                            <p className="text-base font-semibold text-foreground truncate">
-                              {[u.first_name, u.last_name]
-                                .filter(Boolean)
-                                .join(" ") || "-"}
-                            </p>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                              Email
-                            </p>
-                            <p className="text-sm text-foreground/85 break-words">
-                              {u.email}
+                            <p className="text-sm text-[#4a382f]">
+                              {formatDate(u.created_at)}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                              Scans
-                            </p>
-                            <p className="text-2xl font-bold text-foreground">
-                              {u.scans_total ?? 0}
-                            </p>
-                          </div>
                         </div>
-
-                        <div className="pt-2 border-t border-border space-y-1">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                            Event types
-                          </p>
-                          <EventTypeBadges user={u} limit={4} />
-                        </div>
-
-                        <div className="pt-2 border-t border-border">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                            Joined
-                          </p>
-                          <p className="text-sm text-foreground/80">
-                            {formatDate(u.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Desktop Table View */}
                   <div
-                    className="hidden md:block overflow-x-auto rounded-lg border border-border"
+                    className="hidden md:block overflow-x-auto rounded-2xl border border-border bg-white shadow-lg"
                     suppressHydrationWarning
                   >
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-surface/80 text-xs uppercase tracking-wider font-semibold text-foreground/80 border-b border-border">
+                      <thead className="bg-white/80 text-xs uppercase tracking-wider font-semibold text-muted-foreground border-b border-border">
                         <tr>
                           <th className="px-4 py-3">Name</th>
                           <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3 text-right">Scans</th>
-                          <th className="px-4 py-3">Event types</th>
+                          <th className="px-4 py-3">Events</th>
                           <th className="px-4 py-3">Joined</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border bg-surface/85">
-                        {users.map((u) => (
-                          <tr
-                            key={u.id}
-                            className="hover:bg-surface/75 transition-colors"
-                          >
-                            <td className="px-4 py-3 text-foreground/80">
-                              {[u.first_name, u.last_name]
-                                .filter(Boolean)
-                                .join(" ") || "-"}
-                            </td>
-                            <td className="px-4 py-3 font-medium text-foreground">
-                              {u.email}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-foreground">
-                              {u.scans_total ?? 0}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-foreground/80">
-                              <EventTypeBadges user={u} />
-                            </td>
-                            <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
-                              {formatDate(u.created_at)}
-                            </td>
-                          </tr>
-                        ))}
+                      <tbody className="divide-y divide-border/60 bg-white">
+                        {users.map((u) => {
+                          const breakdown = getEventTypeStats(u);
+                          const eventTotal = breakdown.reduce(
+                            (sum, item) => sum + item.count,
+                            0
+                          );
+                          const scanTotal =
+                            typeof u.scans_total === "number" &&
+                            Number.isFinite(u.scans_total)
+                              ? u.scans_total
+                              : 0;
+                          return (
+                            <tr
+                              key={u.id}
+                              className="hover:bg-white/80 transition-colors"
+                            >
+                              <td className="px-4 py-3 text-foreground/80">
+                                {[u.first_name, u.last_name]
+                                  .filter(Boolean)
+                                  .join(" ") || "-"}
+                              </td>
+                              <td className="px-4 py-3 font-medium text-foreground">
+                                {u.email}
+                              </td>
+                              <td className="px-4 py-3 text-right font-semibold text-foreground">
+                                <BreakdownPopup
+                                  label="Scans"
+                                  count={scanTotal}
+                                  breakdown={breakdown}
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-sm text-foreground/80">
+                                <BreakdownPopup
+                                  label="Events"
+                                  count={eventTotal}
+                                  breakdown={breakdown}
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
+                                {formatDate(u.created_at)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -613,7 +657,7 @@ export default function AdminPage() {
                       <button
                         onClick={handleLoadMore}
                         disabled={usersLoading}
-                        className="px-4 py-2 text-sm font-medium rounded-lg border border-border bg-surface/85 text-foreground/80 hover:bg-surface/80 hover:border-foreground/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm font-medium rounded-2xl border border-border bg-white text-foreground hover:bg-white/80 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {usersLoading ? "Loading…" : "Load more"}
                       </button>
@@ -647,30 +691,20 @@ function StatCard({
   helperText?: string;
 }) {
   const activeBorderClass = isActive
-    ? gradient.includes("blue")
-      ? "border-2 border-blue-500 shadow-lg"
-      : gradient.includes("emerald")
-      ? "border-2 border-emerald-500 shadow-lg"
-      : gradient.includes("orange")
-      ? "border-2 border-orange-500 shadow-lg"
-      : gradient.includes("purple")
-      ? "border-2 border-purple-500 shadow-lg"
-      : gradient.includes("amber")
-      ? "border-2 border-amber-500 shadow-lg"
-      : "border-2 border-indigo-500 shadow-lg"
-    : "border-border hover:border-foreground/40";
+    ? "border-2 border-indigo-500 shadow-2xl"
+    : "";
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm cursor-pointer ring-1 ring-border/50 ${activeBorderClass} ${
-        onClick ? "hover:shadow-md hover:scale-[1.02] hover:ring-border/80" : ""
+      className={`relative overflow-hidden rounded-xl bg-white border border-border transition-all shadow-lg cursor-pointer ring-1 ring-border/50 ${activeBorderClass} ${
+        onClick ? "hover:-translate-y-0.5" : ""
       }`}
       onClick={onClick}
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">
               {label}
             </p>
             <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
@@ -683,19 +717,13 @@ function StatCard({
             )}
           </div>
           <div
-            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0 ${
-              isActive ? "ring-2 ring-background" : ""
-            }`}
+            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-2xl border border-border/20`}
           >
             {icon}
           </div>
         </div>
       </div>
-      <div
-        className={`h-1 bg-gradient-to-r ${gradient} ${
-          isActive ? "opacity-100" : "opacity-60"
-        }`}
-      />
+      <div className={`h-1 bg-gradient-to-r ${gradient} opacity-80`} />
     </div>
   );
 }
@@ -710,7 +738,7 @@ function CategoryBreakdownCard({
   total: number;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 border-border">
+    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-border/50 border border-border">
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
@@ -721,7 +749,7 @@ function CategoryBreakdownCard({
               {total.toLocaleString()}
             </p>
           </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#dcb887] to-[#c57f5f] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
             🗂️
           </div>
         </div>
@@ -749,7 +777,7 @@ function CategoryBreakdownCard({
           )}
         </div>
       </div>
-      <div className="h-1 bg-gradient-to-r from-amber-500 to-yellow-500 opacity-60" />
+      <div className="h-1 bg-gradient-to-r from-[#dcb887] to-[#c57f5f] opacity-60" />
     </div>
   );
 }
@@ -764,7 +792,7 @@ function ScanBreakdownCard({
   total: number;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm ring-1 ring-border/50 border-border">
+    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-border/50 border border-border">
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
@@ -775,7 +803,7 @@ function ScanBreakdownCard({
               {total.toLocaleString()}
             </p>
           </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#91b48c] to-[#7a8b6c] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
             🌀
           </div>
         </div>
@@ -796,12 +824,117 @@ function ScanBreakdownCard({
                 </div>
               ))}
             </div>
+          ) : total > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Scans not categorized
+            </p>
           ) : (
             <p className="text-xs text-muted-foreground">No scans yet</p>
           )}
         </div>
       </div>
-      <div className="h-1 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-60" />
+      <div className="h-1 bg-gradient-to-r from-[#91b48c] to-[#7a8b6c] opacity-60" />
+    </div>
+  );
+}
+
+type BreakdownPopupVariant = "popover" | "inline";
+
+type BreakdownPopupProps = {
+  label: string;
+  count: number;
+  breakdown: Array<{ key: EventTypeKey; label: string; count: number }>;
+  variant?: BreakdownPopupVariant;
+};
+
+function BreakdownPopup({
+  label,
+  count,
+  breakdown,
+  variant = "popover",
+}: BreakdownPopupProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const normalizedCount = Number.isFinite(count) ? count : 0;
+  const hasItems = breakdown.length > 0;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (event: MouseEvent | TouchEvent) => {
+      if (ref.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      setOpen(false);
+    }
+  }, [normalizedCount, breakdown.length]);
+
+  const summary = (
+    <button
+      type="button"
+      onClick={() => setOpen((prev) => !prev)}
+      className="flex flex-col items-start gap-0.5 text-left focus-visible:outline-2 focus-visible:outline-primary"
+      aria-expanded={open}
+    >
+      <span className="text-2xl font-semibold text-foreground">
+        {normalizedCount.toLocaleString()}
+      </span>
+    </button>
+  );
+
+  const content = (
+    <div className="space-y-2 text-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        {label} by type
+      </p>
+      {hasItems ? (
+        breakdown.map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center justify-between text-xs text-foreground"
+          >
+            <span className="truncate">{item.label}</span>
+            <span className="font-semibold">{item.count.toLocaleString()}</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No {label.toLowerCase()} yet
+        </p>
+      )}
+    </div>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div ref={ref} className="w-full">
+        {summary}
+        {open && (
+          <div className="mt-2 rounded-2xl border border-border bg-white p-3 shadow-xl">
+            {content}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative inline-flex">
+      {summary}
+      {open && (
+        <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-border bg-white p-3 shadow-xl">
+          {content}
+        </div>
+      )}
     </div>
   );
 }
@@ -818,33 +951,6 @@ function getEventTypeStats(
     })
     .filter((item) => item.count > 0)
     .sort((a, b) => b.count - a.count);
-}
-
-function EventTypeBadges({ user, limit = 4 }: { user: any; limit?: number }) {
-  const breakdown = getEventTypeStats(user);
-  if (breakdown.length === 0) {
-    return <span className="text-muted-foreground text-sm">-</span>;
-  }
-  const visible = breakdown.slice(0, limit);
-  const remaining = breakdown.length - visible.length;
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {visible.map((item) => (
-        <span
-          key={item.key}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface/80 border border-border text-foreground/80"
-        >
-          {item.label}
-          <span className="ml-1 font-semibold text-foreground">
-            {item.count}
-          </span>
-        </span>
-      ))}
-      {remaining > 0 && (
-        <span className="text-xs text-muted-foreground">+{remaining} more</span>
-      )}
-    </div>
-  );
 }
 
 function Th({ children }: { children: any }) {

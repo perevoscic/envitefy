@@ -25,6 +25,7 @@
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
     "chrono-node": "^2.8.4",
+    "cli": "^1.0.1",
     "cookie": "^1.0.2",
     "dotenv": "^16.4.5",
     "googleapis": "^156.0.0",

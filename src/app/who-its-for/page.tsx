@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Script from "next/script";
 import UseCases from "../landing/sections/UseCases";
 
@@ -45,14 +46,22 @@ export default function WhoItsForPage() {
     ],
   };
   return (
-    <main className="min-h-screen w-full bg-background text-foreground">
+    <main className="min-h-screen w-full bg-[#fdf3ea] text-[#2b1b16]">
       <section className="max-w-5xl mx-auto px-6 pt-10">
         <h1 className="text-3xl sm:text-4xl font-bold text-center">
           Who it’s for
         </h1>
-        <p className="mt-3 text-center text-foreground/70">
+        <p className="mt-3 text-center text-[#4a382f]">
           Envitefy helps busy families, teams, and classrooms stay coordinated.
         </p>
+        <div className="mt-6 flex justify-center">
+          <Link
+            href="/open"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#c58b71] to-[#a35b3a] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#b99c8b]/40 transition hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a35b3a]"
+          >
+            Open the app
+          </Link>
+        </div>
       </section>
       <UseCases />
       <Script
