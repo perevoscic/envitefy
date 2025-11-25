@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, memo } from "react";
+import React, { useCallback, useEffect, useMemo, useState, memo } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ import {
   Calendar as CalendarIcon,
   Apple,
   Upload,
+  MapPin,
 } from "lucide-react";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 
@@ -53,6 +54,7 @@ type AdvancedSectionPreviewContext = {
   headingShadow?: React.CSSProperties;
   bodyShadow?: React.CSSProperties;
   titleColor?: React.CSSProperties;
+  headingFontStyle?: React.CSSProperties;
 };
 
 type AdvancedSectionSpec = {
@@ -96,6 +98,46 @@ type SimpleTemplateConfig = {
   };
   advancedSections?: AdvancedSectionSpec[];
 };
+
+const SPORT_FONTS = [
+  { id: "anton", name: "Anton", css: "'Anton', 'Impact', 'Arial Black', sans-serif" },
+  { id: "bebas", name: "Bebas Neue", css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif" },
+  { id: "oswald", name: "Oswald", css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif" },
+  { id: "teko", name: "Teko", css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif" },
+  { id: "russo-one", name: "Russo One", css: "'Russo One', 'Anton', 'Impact', sans-serif" },
+  { id: "bangers", name: "Bangers", css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive" },
+  { id: "black-ops-one", name: "Black Ops One", css: "'Black Ops One', 'Russo One', 'Anton', sans-serif" },
+  { id: "archivo-black", name: "Archivo Black (Impact-like)", css: "'Archivo Black', 'Impact', 'Anton', sans-serif" },
+  { id: "chakra-petch", name: "Chakra Petch", css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif" },
+  { id: "rajdhani", name: "Rajdhani", css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif" },
+  { id: "barlow-condensed", name: "Barlow Condensed", css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif" },
+  { id: "league-spartan", name: "League Spartan", css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif" },
+];
+
+const SPORT_GOOGLE_FONT_FAMILIES = [
+  "Anton",
+  "Bebas+Neue",
+  "Oswald:wght@400;600;700",
+  "Teko:wght@500;700",
+  "Russo+One",
+  "Bangers",
+  "Black+Ops+One",
+  "Archivo+Black",
+  "Chakra+Petch:wght@600;700",
+  "Rajdhani:wght@500;600;700",
+  "Barlow+Condensed:wght@500;700",
+  "League+Spartan:wght@600;700",
+];
+
+const SPORT_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${SPORT_GOOGLE_FONT_FAMILIES.join(
+  "&family="
+)}&display=swap`;
+
+const FONT_SIZE_OPTIONS = [
+  { id: "small", label: "Small", className: "text-3xl md:text-4xl" },
+  { id: "medium", label: "Medium", className: "text-4xl md:text-5xl" },
+  { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
+];
 
 const baseInputClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
@@ -252,6 +294,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
+      fontId:
+        (config as any)?.prefill?.fontId || SPORT_FONTS[0]?.id || "anton",
+      fontSize:
+        (config as any)?.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -284,6 +330,34 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+
+    // Load shared sporty headline fonts for the general sports template
+    useEffect(() => {
+      let link =
+        document.querySelector<HTMLLinkElement>(
+          'link[data-sport-fonts="true"]'
+        ) || null;
+      let added = false;
+
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.setAttribute("data-sport-fonts", "true");
+        added = true;
+      }
+
+      link.href = SPORT_GOOGLE_FONTS_URL;
+
+      if (added) {
+        document.head.appendChild(link);
+      }
+
+      return () => {
+        if (added && link?.parentElement) {
+          link.parentElement.removeChild(link);
+        }
+      };
+    }, []);
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -294,6 +368,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
+
+    const selectedFont =
+      SPORT_FONTS.find((f) => f.id === data.fontId) || SPORT_FONTS[0];
+    const selectedSize =
+      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
+      FONT_SIZE_OPTIONS[1];
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -376,10 +456,81 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const titleColor = isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
+    const headingFontStyle = {
+      fontFamily: selectedFont?.css,
+      ...(headingShadow || {}),
+      ...(titleColor || {}),
+    };
+    const headingSizeClass =
+      selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
     const locationParts = [data.venue, data.city, data.state]
       .filter(Boolean)
       .join(", ");
+    const addressLine = "";
+
+    const navItems = useMemo(
+      () =>
+        [
+          { id: "details", label: "Details", enabled: true },
+          { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
+        ].filter((item) => item.enabled),
+      [data.rsvpEnabled]
+    );
+
+    const [activeSection, setActiveSection] = useState<string>(
+      navItems[0]?.id || "details"
+    );
+
+    useEffect(() => {
+      if (!navItems.length) return;
+      if (!navItems.some((i) => i.id === activeSection)) {
+        setActiveSection(navItems[0].id);
+      }
+    }, [activeSection, navItems]);
+
+    useEffect(() => {
+      if (typeof window === "undefined" || !navItems.length) return;
+      const hash = window.location.hash.replace("#", "");
+      if (hash && navItems.some((i) => i.id === hash)) {
+        setActiveSection(hash);
+      }
+    }, [navItems]);
+
+    useEffect(() => {
+      if (!navItems.length) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              if (id && navItems.some((i) => i.id === id)) {
+                setActiveSection(id);
+                if (
+                  typeof window !== "undefined" &&
+                  window.location.hash !== `#${id}`
+                ) {
+                  window.history.replaceState(null, "", `#${id}`);
+                }
+              }
+            }
+          });
+        },
+        {
+          root: null,
+          rootMargin: "-25% 0px -60% 0px",
+          threshold: 0,
+        }
+      );
+
+      const targets = navItems
+        .map((item) => document.getElementById(item.id))
+        .filter(Boolean) as HTMLElement[];
+      targets.forEach((el) => observer.observe(el));
+
+      return () => observer.disconnect();
+    }, [navItems]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -623,7 +774,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <MenuCard
             title="Design"
-            desc="Theme presets."
+            desc="Theme presets and typography."
             icon={<Palette size={18} />}
             onClick={() => setActiveView("design")}
           />
@@ -800,6 +951,53 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <span>Current theme: {currentTheme.name}</span>
             </div>
           )}
+
+          <div className="pt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Typography
+              </p>
+              <span className="text-[11px] text-slate-400">
+                Headlines & section titles
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+              {SPORT_FONTS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
+                  className={`border rounded-lg p-3 text-left transition-colors ${
+                    data.fontId === f.id
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-slate-200 hover:border-indigo-300"
+                  }`}
+                >
+                  <div
+                    className="text-base font-semibold"
+                    style={{ fontFamily: f.css }}
+                  >
+                    {f.name}
+                  </div>
+                  <div className="text-xs text-slate-500">{f.css}</div>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              {FONT_SIZE_OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
+                  className={`px-3 py-1.5 text-sm rounded border ${
+                    data.fontSize === o.id
+                      ? "border-indigo-600 text-indigo-700 bg-indigo-50"
+                      : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </EditorLayout>
     );
@@ -947,12 +1145,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     onClick={() => {}}
                   >
                     <h1
-                      className={`text-3xl md:text-5xl font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
-                      style={{
-                        fontFamily: "var(--font-playfair)",
-                        ...(headingShadow || {}),
-                        ...(titleColor || {}),
-                      }}
+                      className={`${headingSizeClass} font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      style={headingFontStyle}
                     >
                       {data.title || config.displayName}
                       <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
@@ -960,6 +1154,51 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       </span>
                     </h1>
                     {infoLine}
+                    {addressLine && (
+                      <div
+                        className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        <MapPin size={14} />
+                        <span className="truncate">{addressLine}</span>
+                      </div>
+                    )}
+                    {navItems.length > 1 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {navItems.map((item) => {
+                          const isActive = activeSection === item.id;
+                          return (
+                            <a
+                              key={item.id}
+                              href={`#${item.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const el = document.getElementById(item.id);
+                                if (el) {
+                                  el.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                  setActiveSection(item.id);
+                                  window.history.replaceState(
+                                    null,
+                                    "",
+                                    `#${item.id}`
+                                  );
+                                }
+                              }}
+                              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
+                                isActive
+                                  ? "bg-white/85 text-slate-900 border-white shadow"
+                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                              }`}
+                            >
+                              {item.label}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -981,10 +1220,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   )}
                 </div>
 
-                <section className="py-10 border-t border-white/10 px-6 md:px-10">
+                <section
+                  id="details"
+                  className="py-10 border-t border-white/10 px-6 md:px-10"
+                >
                   <h2
                     className={`text-2xl mb-3 ${accentClass}`}
-                    style={{ ...headingShadow, ...(titleColor || {}) }}
+                    style={headingFontStyle}
                   >
                     Details
                   </h2>
@@ -1033,25 +1275,30 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   section.renderPreview ? (
                     <section
                       key={section.id}
+                      id={section.id}
                       className="py-8 border-t border-white/10 px-6 md:px-10"
                     >
-                      {section.renderPreview({
-                        state: advancedState?.[section.id],
-                        textClass,
-                        accentClass,
-                        headingShadow,
-                        bodyShadow,
-                        titleColor,
-                      })}
-                    </section>
-                  ) : null
-                )}
+            {section.renderPreview({
+              state: advancedState?.[section.id],
+              textClass,
+              accentClass,
+              headingShadow,
+              bodyShadow,
+              titleColor,
+              headingFontStyle,
+            })}
+          </section>
+        ) : null
+      )}
 
                 {data.rsvpEnabled && (
-                  <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
+                  <section
+                    id="rsvp"
+                    className="max-w-2xl mx-auto text-center p-6 md:p-10"
+                  >
                     <h2
                       className={`text-2xl mb-6 ${accentClass}`}
-                      style={{ ...headingShadow, ...(titleColor || {}) }}
+                      style={headingFontStyle}
                     >
                       {rsvpCopy.editorTitle}
                     </h2>

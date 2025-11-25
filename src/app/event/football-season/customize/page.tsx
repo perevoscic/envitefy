@@ -123,54 +123,91 @@ type SimpleTemplateConfig = {
 };
 
 const FOOTBALL_FONTS = [
-  { id: "anton", name: "Anton", css: "'Anton', Impact, sans-serif" },
+  {
+    id: "anton",
+    name: "Anton",
+    css: "'Anton', 'Impact', 'Arial Black', sans-serif",
+  },
   {
     id: "bebas",
     name: "Bebas Neue",
-    css: "'Bebas Neue', 'Oswald', sans-serif",
-  },
-  { id: "graduate", name: "Graduate", css: "'Graduate', 'Oswald', sans-serif" },
-  {
-    id: "archivo-black",
-    name: "Archivo Black",
-    css: "'Archivo Black', 'Arial Black', sans-serif",
-  },
-  {
-    id: "barlow-condensed",
-    name: "Barlow Condensed",
-    css: "'Barlow Condensed', 'Roboto Condensed', sans-serif",
+    css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif",
   },
   {
     id: "oswald",
     name: "Oswald",
-    css: "'Oswald', 'Roboto Condensed', sans-serif",
+    css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif",
   },
   {
-    id: "league-spartan",
-    name: "League Spartan",
-    css: "'League Spartan', 'Montserrat', sans-serif",
+    id: "teko",
+    name: "Teko",
+    css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "russo-one",
+    name: "Russo One",
+    css: "'Russo One', 'Anton', 'Impact', sans-serif",
+  },
+  {
+    id: "bangers",
+    name: "Bangers",
+    css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive",
+  },
+  {
+    id: "black-ops-one",
+    name: "Black Ops One",
+    css: "'Black Ops One', 'Russo One', 'Anton', sans-serif",
+  },
+  {
+    id: "archivo-black",
+    name: "Archivo Black (Impact-like)",
+    css: "'Archivo Black', 'Impact', 'Anton', sans-serif",
+  },
+  {
+    id: "chakra-petch",
+    name: "Chakra Petch",
+    css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif",
   },
   {
     id: "rajdhani",
     name: "Rajdhani",
-    css: "'Rajdhani', 'Roboto Condensed', sans-serif",
+    css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif",
   },
   {
-    id: "titan-one",
-    name: "Titan One",
-    css: "'Titan One', 'Bangers', cursive",
+    id: "barlow-condensed",
+    name: "Barlow Condensed",
+    css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif",
   },
-  { id: "impact", name: "Impact Bold", css: "Impact, 'Anton', sans-serif" },
-  { id: "kanit", name: "Kanit SemiBold", css: "'Kanit', 'Barlow Condensed', sans-serif" },
-  { id: "chivo", name: "Chivo Black", css: "'Chivo', 'Archivo Black', sans-serif" },
-  { id: "teko", name: "Teko Bold", css: "'Teko', 'Bebas Neue', sans-serif" },
-  { id: "saira-condensed", name: "Saira Condensed", css: "'Saira Condensed', 'Oswald', sans-serif" },
-  { id: "alfa-slab", name: "Alfa Slab One", css: "'Alfa Slab One', 'Rockwell', serif" },
-  { id: "russo-one", name: "Russo One", css: "'Russo One', 'Montserrat', sans-serif" },
-  { id: "staatliches", name: "Staatliches", css: "'Staatliches', 'Oswald', sans-serif" },
-  { id: "exo2", name: "Exo 2 SemiBold", css: "'Exo 2', 'Barlow', sans-serif" },
-  { id: "audiowide", name: "Audiowide", css: "'Audiowide', 'Orbitron', sans-serif" },
-  { id: "bank-gothic", name: "Bank Gothic", css: "'BankGothic', 'Eurostile', sans-serif" },
+  {
+    id: "league-spartan",
+    name: "League Spartan",
+    css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif",
+  },
+];
+
+const FOOTBALL_GOOGLE_FONT_FAMILIES = [
+  "Anton",
+  "Bebas+Neue",
+  "Oswald:wght@400;600;700",
+  "Teko:wght@500;700",
+  "Russo+One",
+  "Bangers",
+  "Black+Ops+One",
+  "Archivo+Black",
+  "Chakra+Petch:wght@600;700",
+  "Rajdhani:wght@500;600;700",
+  "Barlow+Condensed:wght@500;700",
+  "League+Spartan:wght@600;700",
+];
+
+const FOOTBALL_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${FOOTBALL_GOOGLE_FONT_FAMILIES.join(
+  "&family="
+)}&display=swap`;
+
+const FONT_SIZE_OPTIONS = [
+  { id: "small", label: "Small", className: "text-3xl md:text-4xl" },
+  { id: "medium", label: "Medium", className: "text-4xl md:text-5xl" },
+  { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
 ];
 
 const baseInputClass =
@@ -329,6 +366,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         })(),
       fontId:
         (config as any)?.prefill?.fontId || FOOTBALL_FONTS[0]?.id || "anton",
+      fontSize:
+        (config as any)?.prefill?.fontSize ||
+        "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -376,11 +416,42 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [activeView]);
 
+    // Ensure headline fonts are available in the designer/preview
+    useEffect(() => {
+      let link =
+        document.querySelector<HTMLLinkElement>(
+          'link[data-football-fonts="true"]'
+        ) || null;
+      let added = false;
+
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.setAttribute("data-football-fonts", "true");
+        added = true;
+      }
+
+      link.href = FOOTBALL_GOOGLE_FONTS_URL;
+
+      if (added) {
+        document.head.appendChild(link);
+      }
+
+      return () => {
+        if (added && link?.parentElement) {
+          link.parentElement.removeChild(link);
+        }
+      };
+    }, []);
+
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
 
     const selectedFont =
       FOOTBALL_FONTS.find((f) => f.id === data.fontId) || FOOTBALL_FONTS[0];
+    const selectedSize =
+      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
+      FONT_SIZE_OPTIONS[1];
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -465,15 +536,105 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
+  const headingSizeClass = selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
-    const locationParts = [data.venue, data.city, data.state]
-      .filter(Boolean)
-      .join(", ");
+  const locationParts = [data.venue, data.city, data.state]
+    .filter(Boolean)
+    .join(", ");
+  const addressLine =
+    data.extra?.stadiumAddress || data.extra?.address || "";
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
+  const hasGames = (advancedState?.games?.games?.length ?? 0) > 0;
+  const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
+  const hasRoster = (advancedState?.roster?.players?.length ?? 0) > 0;
+  const hasLogistics = Boolean(
+    advancedState?.logistics?.travelMode ||
+      advancedState?.logistics?.callTime ||
+      advancedState?.logistics?.weatherPolicy
+  );
+  const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
+  const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
+  const hasRsvpSection = data.rsvpEnabled;
+
+  const navItems = useMemo(
+    () =>
+      [
+        { id: "details", label: "Details", enabled: true },
+        { id: "games", label: "Game Schedule", enabled: hasGames },
+        { id: "practice", label: "Practice", enabled: hasPractice },
+        { id: "roster", label: "Roster", enabled: hasRoster },
+        { id: "logistics", label: "Logistics", enabled: hasLogistics },
+        { id: "gear", label: "Gear", enabled: hasGear },
+        { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
+        { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
+      ].filter((item) => item.enabled),
+    [
+      hasGames,
+      hasGear,
+      hasLogistics,
+      hasPractice,
+      hasRoster,
+      hasRsvpSection,
+      hasVolunteers,
+    ]
+  );
+
+  const [activeSection, setActiveSection] = useState<string>(
+    navItems[0]?.id || "details"
+  );
+
+  useEffect(() => {
+    if (!navItems.length) return;
+    if (!navItems.some((i) => i.id === activeSection)) {
+      setActiveSection(navItems[0].id);
+    }
+  }, [activeSection, navItems]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !navItems.length) return;
+
+    const hash = window.location.hash.replace("#", "");
+    if (hash && navItems.some((i) => i.id === hash)) {
+      setActiveSection(hash);
+    }
+  }, [navItems]);
+
+  useEffect(() => {
+    if (!navItems.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            if (id && navItems.some((i) => i.id === id)) {
+              setActiveSection(id);
+              if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
+                window.history.replaceState(null, "", `#${id}`);
+              }
+            }
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: "-25% 0px -60% 0px",
+        threshold: 0,
+      }
+    );
+
+    const targets = navItems
+      .map((item) => document.getElementById(item.id))
+      .filter(Boolean) as HTMLElement[];
+    targets.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [navItems]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
         setData((prev) => ({ ...prev, hero: url }));
       }
     };
@@ -896,11 +1057,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 Typography
               </p>
               <span className="text-[11px] text-slate-400">
-                Headlines & section titles
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
-              {FOOTBALL_FONTS.map((f) => (
+            Headlines & section titles
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+          {FOOTBALL_FONTS.map((f) => (
                 <button
                   key={f.id}
                   onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
@@ -958,10 +1119,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 placeholder={field.placeholder}
               />
             ))}
-          </div>
         </div>
-      </EditorLayout>
-    );
+        <div className="flex items-center gap-2">
+          {FONT_SIZE_OPTIONS.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
+              className={`px-3 py-1.5 text-sm rounded border ${
+                data.fontSize === o.id
+                  ? "border-indigo-600 text-indigo-700 bg-indigo-50"
+                  : "border-slate-200 text-slate-600 hover:border-indigo-300"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </EditorLayout>
+  );
 
     const renderRsvpEditor = () => (
       <EditorLayout
@@ -1068,15 +1244,60 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     onClick={() => {}}
                   >
                     <h1
-                className={`text-3xl md:text-5xl font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
-                style={headingFontStyle}
-              >
-                {data.title || config.displayName}
-                <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                  <Edit2 size={22} />
-                </span>
+                      className={`${headingSizeClass} font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      style={headingFontStyle}
+                    >
+                      {data.title || config.displayName}
+                      <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
+                        <Edit2 size={22} />
+                      </span>
                     </h1>
                     {infoLine}
+                    {addressLine && (
+                      <div
+                        className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        <MapPin size={14} />
+                        <span className="truncate">{addressLine}</span>
+                      </div>
+                    )}
+                    {navItems.length > 1 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {navItems.map((item) => {
+                          const isActive = activeSection === item.id;
+                          return (
+                            <a
+                              key={item.id}
+                              href={`#${item.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const el = document.getElementById(item.id);
+                                if (el) {
+                                  el.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                  setActiveSection(item.id);
+                                  window.history.replaceState(
+                                    null,
+                                    "",
+                                    `#${item.id}`
+                                  );
+                                }
+                              }}
+                              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
+                                isActive
+                                  ? "bg-white/85 text-slate-900 border-white shadow"
+                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                              }`}
+                            >
+                              {item.label}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1098,7 +1319,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   )}
                 </div>
 
-                <section className="py-10 border-t border-white/10 px-6 md:px-10">
+                <section
+                  id="details"
+                  className="py-10 border-t border-white/10 px-6 md:px-10"
+                >
                   <h2
                     className={`text-2xl mb-3 ${accentClass}`}
                     style={headingFontStyle}
@@ -1150,6 +1374,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         section.renderPreview ? (
           <section
             key={section.id}
+            id={section.id}
             className="py-8 border-t border-white/10 px-6 md:px-10"
           >
             {section.renderPreview({
@@ -1166,7 +1391,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       )}
 
                 {data.rsvpEnabled && (
-                  <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
+                  <section
+                    id="rsvp"
+                    className="max-w-2xl mx-auto text-center p-6 md:p-10"
+                  >
                     <h2
                       className={`text-2xl mb-6 ${accentClass}`}
                       style={headingFontStyle}

@@ -966,6 +966,46 @@ export default function WeddingTemplateView({
   const startISO = weddingData.startISO || null;
   const endISO = weddingData.endISO || null;
   const location = city && state ? `${city}, ${state}` : undefined;
+  const address = weddingData.address || "";
+  const hasTravelSection =
+    (travel.hotels?.length ?? 0) > 0 ||
+    (travel.airports?.length ?? 0) > 0 ||
+    Boolean(travel.directions) ||
+    Boolean(travel.shuttle);
+
+  const navigationItems = useMemo(
+    () =>
+      [
+        { id: "home", label: "Home", enabled: true },
+        { id: "schedule", label: "Schedule", enabled: sortedSchedule.length > 0 },
+        { id: "our-story", label: "Our Story", enabled: Boolean(story) },
+        {
+          id: "wedding-party",
+          label: "Wedding Party",
+          enabled: weddingParty.length > 0,
+        },
+        { id: "photos", label: "Photos", enabled: gallery.length > 0 },
+        {
+          id: "things-to-do",
+          label: "Things To Do",
+          enabled: thingsToDo.length > 0,
+        },
+        { id: "travel", label: "Travel", enabled: hasTravelSection },
+        { id: "location", label: "Location", enabled: Boolean(location) },
+        { id: "rsvp", label: "RSVP", enabled: true },
+        { id: "registry", label: "Registry", enabled: registries.length > 0 },
+      ].filter((item) => item.enabled),
+    [
+      gallery.length,
+      hasTravelSection,
+      location,
+      registries.length,
+      sortedSchedule.length,
+      story,
+      thingsToDo.length,
+      weddingParty.length,
+    ]
+  );
 
   return (
     <div className="min-h-screen bg-[#F8F5FF]">
@@ -1021,6 +1061,13 @@ export default function WeddingTemplateView({
                     </>
                   )}
                 </div>
+                {address && (
+                  <div
+                    className={`${currentSize.body} font-medium opacity-80 ${currentFont.body} mt-1`}
+                  >
+                    {address}
+                  </div>
+                )}
               </div>
               {isOwner && !isReadOnly && (
                 <div className="flex items-center gap-2 ml-4">
@@ -1037,23 +1084,13 @@ export default function WeddingTemplateView({
             <nav
               className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent} ${currentFont.title}`}
             >
-              {[
-                "Home",
-                "Schedule",
-                "Our Story",
-                "Wedding Party",
-                "Photos",
-                "Things To Do",
-                "Travel",
-                "RSVP",
-                "Registry",
-              ].map((item) => (
+              {navigationItems.map((item) => (
                 <a
-                  key={item}
-                  href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
+                  key={item.id}
+                  href={`#${item.id}`}
                   className="hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
                 >
-                  {item}
+                  {item.label}
                 </a>
               ))}
             </nav>

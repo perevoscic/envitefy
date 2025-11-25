@@ -122,14 +122,6 @@ function getTemplateById(id: string): BirthdayTemplateDefinition {
   );
 }
 
-// Convert menu item to hash ID
-function menuItemToHash(item: string): string {
-  return item
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
-
 function formatDateLabel(value?: string) {
   if (!value) return undefined;
   const parsed = new Date(value);
@@ -245,6 +237,9 @@ export default function BirthdayTemplateView({
 
   const venue = eventData?.venue || "";
   const location = eventData?.location || "";
+  const address = eventData?.address || "";
+  const city = eventData?.city || "";
+  const state = eventData?.state || "";
   const description = eventData?.description || "";
   const rsvp = eventData?.rsvp || "";
   const numberOfGuests = eventData?.numberOfGuests || 0;
@@ -320,17 +315,47 @@ export default function BirthdayTemplateView({
       : undefined;
   const zoomValue = parseCoordinateValue(eventData?.zoom);
 
+  const hasDirectionSection = Boolean(location || venue);
+  const hasDescriptionSection = Boolean(description);
+  const hasWishlistSection = registryLinks.length > 0;
+  const hasRsvpSection = hasRsvpContact && !isReadOnly;
+
+  const navItems = useMemo(
+    () =>
+      [
+        { id: "home", label: "Home", enabled: true },
+        { id: "party-details", label: "Party Details", enabled: true },
+        { id: "direction", label: "Direction", enabled: hasDirectionSection },
+        { id: "description", label: "Description", enabled: hasDescriptionSection },
+        { id: "wishlist", label: "Wishlist", enabled: hasWishlistSection },
+        { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
+      ].filter((item) => item.enabled),
+    [
+      hasDescriptionSection,
+      hasDirectionSection,
+      hasRsvpSection,
+      hasWishlistSection,
+    ]
+  );
+
   // Navigation active state tracking
   const [activeSection, setActiveSection] = useState<string>("home");
+
+  // Keep active section valid when nav items change
+  useEffect(() => {
+    if (!navItems.some((item) => item.id === activeSection)) {
+      setActiveSection(navItems[0]?.id || "home");
+    }
+  }, [activeSection, navItems]);
 
   // Update active section based on hash and scroll position
   useEffect(() => {
     const updateActiveSection = () => {
       const hash = window.location.hash.slice(1);
-      if (hash) {
+      if (hash && navItems.some((item) => item.id === hash)) {
         setActiveSection(hash);
       } else {
-        setActiveSection("home");
+        setActiveSection(navItems[0]?.id || "home");
       }
     };
 
@@ -342,10 +367,12 @@ export default function BirthdayTemplateView({
 
     // Update on scroll using IntersectionObserver (wait for DOM)
     const setupObserver = () => {
-      const sections = template.menu.map((item) => ({
-        id: menuItemToHash(item),
-        element: document.getElementById(menuItemToHash(item)),
-      }));
+      const sections = navItems
+        .map((item) => ({
+          id: item.id,
+          element: document.getElementById(item.id),
+        }))
+        .filter((entry) => entry.element);
 
       const observerOptions = {
         root: null,
@@ -390,7 +417,7 @@ export default function BirthdayTemplateView({
         observer.disconnect();
       }
     };
-  }, [templateId]);
+  }, [navItems, templateId]);
 
   const viewContent = (
     <section className="mx-auto w-full max-w-7xl">
@@ -426,16 +453,32 @@ export default function BirthdayTemplateView({
                   {previewDateLabel}
                   {previewTime ? ` • ${previewTime}` : ""}
                 </p>
+                {(city || state || venue || location) && (
+                  <p
+                    className={styles.previewMeta}
+                    style={{ color: variation.titleColor }}
+                  >
+                    {[city, state].filter(Boolean).join(", ") ||
+                      venue ||
+                      location}
+                    {address ? (
+                      <>
+                        <br />
+                        <span className="opacity-80">{address}</span>
+                      </>
+                    ) : null}
+                  </p>
+                )}
                 <div
                   className={styles.previewNav}
                   style={{ color: variation.titleColor }}
                 >
-                  {template.menu.map((item) => {
-                    const hashId = menuItemToHash(item);
+                  {navItems.map((item) => {
+                    const hashId = item.id;
                     const isActive = activeSection === hashId;
                     return (
                       <a
-                        key={item}
+                        key={hashId}
                         href={`#${hashId}`}
                         className={`${styles.previewNavItem} ${
                           isActive ? styles.previewNavItemActive : ""
@@ -454,7 +497,7 @@ export default function BirthdayTemplateView({
                           }
                         }}
                       >
-                        {item}
+                        {item.label}
                       </a>
                     );
                   })}
@@ -711,7 +754,7 @@ export default function BirthdayTemplateView({
           {calendarLinks && (
             <section
               className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
-              id="party-details"
+              id="add-to-calendar"
             >
               <h2 className="text-xl font-semibold text-stone-900 mb-4">
                 Add to Calendar

@@ -102,9 +102,60 @@ type SimpleTemplateConfig = {
     rsvpEnabled?: boolean;
     rsvpDeadline?: string;
     extra?: Record<string, string>;
+    fontId?: string;
   };
   advancedSections?: AdvancedSectionSpec[];
 };
+
+const DANCE_FONTS = [
+  { id: "playfair", name: "Playfair Display", css: "'Playfair Display', 'Times New Roman', serif" },
+  { id: "cormorant-garamond", name: "Cormorant Garamond", css: "'Cormorant Garamond', 'Garamond', serif" },
+  { id: "great-vibes", name: "Great Vibes", css: "'Great Vibes', 'Lucida Calligraphy', cursive" },
+  { id: "parisienne", name: "Parisienne", css: "'Parisienne', 'Brush Script MT', cursive" },
+  { id: "allura", name: "Allura", css: "'Allura', 'Brush Script MT', cursive" },
+  { id: "dancing-script", name: "Dancing Script", css: "'Dancing Script', 'Comic Sans MS', cursive" },
+  { id: "cinzel-decorative", name: "Cinzel Decorative", css: "'Cinzel Decorative', 'Cinzel', serif" },
+  { id: "fraunces", name: "Fraunces", css: "'Fraunces', 'Georgia', serif" },
+  { id: "libre-baskerville", name: "Libre Baskerville", css: "'Libre Baskerville', 'Baskerville', serif" },
+  { id: "marcellus", name: "Marcellus", css: "'Marcellus', 'Times New Roman', serif" },
+  { id: "quattrocento", name: "Quattrocento", css: "'Quattrocento', 'Garamond', serif" },
+  { id: "petrona", name: "Petrona", css: "'Petrona', 'Georgia', serif" },
+  { id: "pinyon-script", name: "Pinyon Script", css: "'Pinyon Script', 'Edwardian Script ITC', cursive" },
+  { id: "dm-serif-display", name: "DM Serif Display", css: "'DM Serif Display', 'Times New Roman', serif" },
+  { id: "sorts-mill-goudy", name: "Sorts Mill Goudy", css: "'Sorts Mill Goudy', 'Goudy Old Style', serif" },
+  { id: "gloock", name: "Gloock", css: "'Gloock', 'Georgia', serif" },
+  { id: "italiana", name: "Italiana", css: "'Italiana', 'Didot', serif" },
+  { id: "la-belle-aurore", name: "La Belle Aurore", css: "'La Belle Aurore', 'Bradley Hand', cursive" },
+  { id: "meddon", name: "Meddon", css: "'Meddon', 'Lucida Handwriting', cursive" },
+  { id: "tangerine", name: "Tangerine", css: "'Tangerine', 'Brush Script MT', cursive" },
+];
+
+const DANCE_GOOGLE_FONT_FAMILIES = [
+  "Playfair+Display:wght@400;600;700",
+  "Cormorant+Garamond:wght@400;500;600",
+  "Great+Vibes",
+  "Parisienne",
+  "Allura",
+  "Dancing+Script:wght@400;600;700",
+  "Cinzel+Decorative:wght@400;700",
+  "Fraunces:wght@400;600;700",
+  "Libre+Baskerville:wght@400;700",
+  "Marcellus",
+  "Quattrocento:wght@400;700",
+  "Petrona:wght@400;600;700",
+  "Pinyon+Script",
+  "DM+Serif+Display",
+  "Sorts+Mill+Goudy",
+  "Gloock",
+  "Italiana",
+  "La+Belle+Aurore",
+  "Meddon",
+  "Tangerine:wght@400;700",
+];
+
+const DANCE_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${DANCE_GOOGLE_FONT_FAMILIES.join(
+  "&family="
+)}&display=swap`;
 
 type DanceEvent = {
   id: string;
@@ -565,7 +616,7 @@ const eventsSection = {
       <>
         <h2
           className={`text-2xl mb-4 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingFontStyle}
         >
           Performances & Tech
         </h2>
@@ -884,7 +935,7 @@ const practiceSection = {
       <>
         <h2
           className={`text-2xl mb-4 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingFontStyle}
         >
           Rehearsal Schedule
         </h2>
@@ -1171,7 +1222,7 @@ const rosterSection = {
       <>
         <h2
           className={`text-2xl mb-4 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingFontStyle}
         >
           Cast & Roster
         </h2>
@@ -1344,7 +1395,7 @@ const logisticsSection = {
       <>
         <h2
           className={`text-2xl mb-4 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingFontStyle}
         >
           Logistics
         </h2>
@@ -1482,7 +1533,7 @@ const gearSection = {
       <>
         <h2
           className={`text-2xl mb-4 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingFontStyle}
         >
           Costume & Props
         </h2>
@@ -1601,6 +1652,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
+      fontId: config.prefill?.fontId || DANCE_FONTS[0]?.id || "playfair",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -1648,8 +1700,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [activeView]);
 
+    // Load elegant dance fonts into the designer/preview
+    useEffect(() => {
+      let link =
+        document.querySelector<HTMLLinkElement>(
+          'link[data-dance-fonts="true"]'
+        ) || null;
+      let added = false;
+
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.setAttribute("data-dance-fonts", "true");
+        added = true;
+      }
+
+      link.href = DANCE_GOOGLE_FONTS_URL;
+
+      if (added) {
+        document.head.appendChild(link);
+      }
+
+      return () => {
+        if (added && link?.parentElement) {
+          link.parentElement.removeChild(link);
+        }
+      };
+    }, []);
+
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
+
+    const selectedFont =
+      DANCE_FONTS.find((f) => f.id === data.fontId) || DANCE_FONTS[0];
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -1732,10 +1815,98 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const titleColor = isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
+    const headingFontStyle = {
+      fontFamily: selectedFont?.css,
+      ...(headingShadow || {}),
+      ...(titleColor || {}),
+    };
 
     const locationParts = [data.venue, data.city, data.state]
       .filter(Boolean)
       .join(", ");
+    const addressLine = "";
+
+    const hasEvents = (advancedState?.events?.events?.length ?? 0) > 0;
+    const hasPractice =
+      (advancedState?.practice?.blocks?.length ?? 0) > 0;
+    const hasRoster =
+      (advancedState?.roster?.athletes?.length ?? 0) > 0;
+    const hasLogistics = Boolean(
+      advancedState?.logistics?.travelMode ||
+        advancedState?.logistics?.departure ||
+        advancedState?.logistics?.pickupWindow
+    );
+    const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
+
+    const navItems = useMemo(
+      () =>
+        [
+          { id: "details", label: "Details", enabled: true },
+          { id: "events", label: "Events", enabled: hasEvents },
+          { id: "practice", label: "Practice", enabled: hasPractice },
+          { id: "roster", label: "Roster", enabled: hasRoster },
+          { id: "logistics", label: "Logistics", enabled: hasLogistics },
+          { id: "gear", label: "Gear", enabled: hasGear },
+          { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
+        ].filter((item) => item.enabled),
+      [
+        hasEvents,
+        hasGear,
+        hasLogistics,
+        hasPractice,
+        hasRoster,
+        data.rsvpEnabled,
+      ]
+    );
+
+    const [activeSection, setActiveSection] = useState<string>(
+      navItems[0]?.id || "details"
+    );
+
+    useEffect(() => {
+      if (!navItems.length) return;
+      if (!navItems.some((i) => i.id === activeSection)) {
+        setActiveSection(navItems[0].id);
+      }
+    }, [activeSection, navItems]);
+
+    useEffect(() => {
+      if (typeof window === "undefined" || !navItems.length) return;
+      const hash = window.location.hash.replace("#", "");
+      if (hash && navItems.some((i) => i.id === hash)) {
+        setActiveSection(hash);
+      }
+    }, [navItems]);
+
+    useEffect(() => {
+      if (!navItems.length) return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              if (id && navItems.some((i) => i.id === id)) {
+                setActiveSection(id);
+                if (
+                  typeof window !== "undefined" &&
+                  window.location.hash !== `#${id}`
+                ) {
+                  window.history.replaceState(null, "", `#${id}`);
+                }
+              }
+            }
+          });
+        },
+        { root: null, rootMargin: "-25% 0px -60% 0px", threshold: 0 }
+      );
+
+      const targets = navItems
+        .map((item) => document.getElementById(item.id))
+        .filter(Boolean) as HTMLElement[];
+      targets.forEach((el) => observer.observe(el));
+
+      return () => observer.disconnect();
+    }, [navItems]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -2156,6 +2327,38 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <span>Current theme: {currentTheme.name}</span>
             </div>
           )}
+
+          <div className="pt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Typography
+              </p>
+              <span className="text-[11px] text-slate-400">
+                Headlines & section titles
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+              {DANCE_FONTS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
+                  className={`border rounded-lg p-3 text-left transition-colors ${
+                    data.fontId === f.id
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-slate-200 hover:border-indigo-300"
+                  }`}
+                >
+                  <div
+                    className="text-base font-semibold"
+                    style={{ fontFamily: f.css }}
+                  >
+                    {f.name}
+                  </div>
+                  <div className="text-xs text-slate-500">{f.css}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </EditorLayout>
     );
@@ -2304,11 +2507,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     <h1
                       className={`text-3xl md:text-5xl font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
-                      style={{
-                        fontFamily: "var(--font-playfair)",
-                        ...(headingShadow || {}),
-                        ...(titleColor || {}),
-                      }}
+                      style={headingFontStyle}
                     >
                       {data.title || config.displayName}
                       <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
@@ -2316,6 +2515,51 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       </span>
                     </h1>
                     {infoLine}
+                    {addressLine && (
+                      <div
+                        className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        <MapPin size={14} />
+                        <span className="truncate">{addressLine}</span>
+                      </div>
+                    )}
+                    {navItems.length > 1 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {navItems.map((item) => {
+                          const isActive = activeSection === item.id;
+                          return (
+                            <a
+                              key={item.id}
+                              href={`#${item.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const el = document.getElementById(item.id);
+                                if (el) {
+                                  el.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                  setActiveSection(item.id);
+                                  window.history.replaceState(
+                                    null,
+                                    "",
+                                    `#${item.id}`
+                                  );
+                                }
+                              }}
+                              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
+                                isActive
+                                  ? "bg-white/85 text-slate-900 border-white shadow"
+                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                              }`}
+                            >
+                              {item.label}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2337,10 +2581,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   )}
                 </div>
 
-                <section className="py-10 border-t border-white/10 px-6 md:px-10">
+                <section
+                  id="details"
+                  className="py-10 border-t border-white/10 px-6 md:px-10"
+                >
                   <h2
                     className={`text-2xl mb-3 ${accentClass}`}
-                    style={{ ...headingShadow, ...(titleColor || {}) }}
+                    style={headingFontStyle}
                   >
                     Details
                   </h2>
@@ -2389,6 +2636,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   section.renderPreview ? (
                     <section
                       key={section.id}
+                      id={section.id}
                       className="py-8 border-t border-white/10 px-6 md:px-10"
                     >
                       {section.renderPreview({
@@ -2396,6 +2644,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         textClass,
                         accentClass,
                         headingShadow,
+                        headingFontStyle,
                         bodyShadow,
                         titleColor,
                       })}
@@ -2404,10 +2653,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 )}
 
                 {data.rsvpEnabled && (
-                  <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
+                  <section
+                    id="rsvp"
+                    className="max-w-2xl mx-auto text-center p-6 md:p-10"
+                  >
                     <h2
                       className={`text-2xl mb-6 ${accentClass}`}
-                      style={{ ...headingShadow, ...(titleColor || {}) }}
+                      style={headingFontStyle}
                     >
                       {rsvpCopy.editorTitle}
                     </h2>

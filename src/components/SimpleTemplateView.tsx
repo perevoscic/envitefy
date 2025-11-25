@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   Share2,
@@ -335,6 +335,109 @@ export default function SimpleTemplateView({
     window.location.href = absoluteIcs;
   };
 
+  // Section presence flags and navigation items
+  const hasRoster = Array.isArray(advancedSections?.roster?.athletes)
+    ? advancedSections.roster.athletes.length > 0
+    : false;
+  const hasMeet = Boolean(advancedSections?.meet?.session);
+  const hasPractice = Array.isArray(advancedSections?.practice?.blocks)
+    ? advancedSections.practice.blocks.length > 0
+    : false;
+  const hasLogistics = (() => {
+    const logistics = advancedSections?.logistics;
+    if (!logistics) return false;
+    return (
+      Boolean(logistics.transport) ||
+      Boolean(logistics.hotel) ||
+      Boolean(logistics.meals) ||
+      (logistics.forms?.length ?? 0) > 0
+    );
+  })();
+  const hasGear = (advancedSections?.gear?.items?.length ?? 0) > 0;
+  const hasVolunteers =
+    (advancedSections?.volunteers?.slots?.length ?? 0) > 0 ||
+    (advancedSections?.volunteers?.carpools?.length ?? 0) > 0;
+  const hasAnnouncements =
+    (advancedSections?.announcements?.items?.length ?? 0) > 0;
+  const hasRsvpSection = rsvpEnabled;
+
+  const navItems = useMemo(
+    () =>
+      [
+        { id: "details", label: "Details", enabled: true },
+        { id: "roster", label: "Roster", enabled: hasRoster },
+        { id: "meet", label: "Meet", enabled: hasMeet },
+        { id: "practice", label: "Practice", enabled: hasPractice },
+        { id: "logistics", label: "Logistics", enabled: hasLogistics },
+        { id: "gear", label: "Gear", enabled: hasGear },
+        { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
+        { id: "announcements", label: "Announcements", enabled: hasAnnouncements },
+        { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
+      ].filter((item) => item.enabled),
+    [
+      hasAnnouncements,
+      hasGear,
+      hasLogistics,
+      hasMeet,
+      hasPractice,
+      hasRoster,
+      hasRsvpSection,
+      hasVolunteers,
+    ]
+  );
+
+  const [activeSection, setActiveSection] = useState<string>(
+    navItems[0]?.id || "details"
+  );
+
+  useEffect(() => {
+    if (!navItems.length) return;
+
+    const updateActiveFromHash = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (hash && navItems.some((i) => i.id === hash)) {
+        setActiveSection(hash);
+      } else {
+        setActiveSection(navItems[0].id);
+      }
+    };
+
+    updateActiveFromHash();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            if (id && navItems.some((i) => i.id === id)) {
+              setActiveSection(id);
+              if (window.location.hash !== `#${id}`) {
+                window.history.replaceState(null, "", `#${id}`);
+              }
+            }
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: "-20% 0px -60% 0px",
+        threshold: 0,
+      }
+    );
+
+    const targets = navItems
+      .map((item) => document.getElementById(item.id))
+      .filter(Boolean) as HTMLElement[];
+    targets.forEach((el) => observer.observe(el));
+
+    window.addEventListener("hashchange", updateActiveFromHash);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("hashchange", updateActiveFromHash);
+    };
+  }, [navItems]);
+
   // Render roster section
   const renderRosterSection = () => {
     const roster = advancedSections?.roster;
@@ -361,7 +464,10 @@ export default function SimpleTemplateView({
     ).length;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="roster"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -411,7 +517,10 @@ export default function SimpleTemplateView({
     if (!meet?.session) return null;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="meet"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -504,7 +613,10 @@ export default function SimpleTemplateView({
     if (!practice?.blocks?.length) return null;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="practice"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -557,7 +669,10 @@ export default function SimpleTemplateView({
     if (!hasContent) return null;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="logistics"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -662,7 +777,10 @@ export default function SimpleTemplateView({
     if (!gear?.items?.length) return null;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="gear"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -701,7 +819,10 @@ export default function SimpleTemplateView({
       return null;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="volunteers"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -790,7 +911,10 @@ export default function SimpleTemplateView({
     if (!announcements?.items?.length) return null;
 
     return (
-      <section className="py-8 border-t border-white/10 px-6 md:px-10">
+      <section
+        id="announcements"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -915,6 +1039,39 @@ export default function SimpleTemplateView({
                     <span>{address}</span>
                   </div>
                 )}
+                {navItems.length > 1 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {navItems.map((item) => {
+                      const isActive = activeSection === item.id;
+                      return (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const el = document.getElementById(item.id);
+                            if (el) {
+                              el.scrollIntoView({ behavior: "smooth" });
+                              window.history.replaceState(
+                                null,
+                                "",
+                                `#${item.id}`
+                              );
+                              setActiveSection(item.id);
+                            }
+                          }}
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
+                            isActive
+                              ? "bg-white/80 text-[#1b1540] border-white/90 shadow"
+                              : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                          }`}
+                        >
+                          {item.label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -942,7 +1099,10 @@ export default function SimpleTemplateView({
             </div>
 
             {/* Details Section */}
-            <section className="py-10 border-t border-white/10 px-6 md:px-10">
+            <section
+              id="details"
+              className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+            >
               <h2
                 className={`text-2xl mb-3 ${accentClass}`}
                 style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -1006,7 +1166,10 @@ export default function SimpleTemplateView({
 
             {/* RSVP Section */}
             {rsvpEnabled && (
-              <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
+              <section
+                id="rsvp"
+                className="max-w-2xl mx-auto text-center p-6 md:p-10 scroll-mt-24"
+              >
                 <h2
                   className={`text-2xl mb-6 ${accentClass}`}
                   style={{ ...headingShadow, ...(titleColor || {}) }}
