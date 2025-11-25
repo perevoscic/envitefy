@@ -183,6 +183,20 @@ const FOOTBALL_FONTS = [
     name: "League Spartan",
     css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif",
   },
+
+  { id: "black-han-sans", name: "Black Han Sans", css: "'Black Han Sans', 'Anton', sans-serif" },
+  { id: "bungee", name: "Bungee", css: "'Bungee', 'Bebas Neue', cursive" },
+  { id: "bungee-shade", name: "Bungee Shade", css: "'Bungee Shade', 'Bungee', cursive" },
+  { id: "anton-sc", name: "Anton SC", css: "'Anton SC', 'Anton', sans-serif" },
+  { id: "aldrich", name: "Aldrich", css: "'Aldrich', 'Oswald', sans-serif" },
+  { id: "smooch-sans", name: "Smooch Sans Black", css: "'Smooch Sans', 'Inter', sans-serif" },
+  { id: "rowdies", name: "Rowdies", css: "'Rowdies', 'Baloo', cursive" },
+  { id: "russo-one-expanded", name: "Russo One Expanded", css: "'Russo One', 'Montserrat', sans-serif" },
+  { id: "tomorrow", name: "Tomorrow ExtraBold", css: "'Tomorrow', 'Manrope', sans-serif" },
+  { id: "teko-semibold", name: "Teko SemiBold", css: "'Teko', 'Bebas Neue', sans-serif" },
+  { id: "magra", name: "Magra ExtraBold", css: "'Magra', 'Poppins', sans-serif" },
+  { id: "michroma", name: "Michroma", css: "'Michroma', 'Orbitron', sans-serif" },
+
 ];
 
 const FOOTBALL_GOOGLE_FONT_FAMILIES = [
@@ -330,6 +344,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+    const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -417,6 +432,72 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setThemesExpanded(true);
       }
     }, [activeView]);
+
+    // Load existing event data when editing
+    useEffect(() => {
+      const loadExisting = async () => {
+        if (!editEventId) return;
+        try {
+          const res = await fetch(`/api/history/${editEventId}`);
+          if (!res.ok) return;
+          const json = await res.json();
+          const existing = json?.data || {};
+
+          const startIso = existing.start || existing.startISO || existing.startIso;
+          let loadedDate = data.date;
+          let loadedTime = data.time;
+          if (startIso) {
+            const d = new Date(startIso);
+            if (!Number.isNaN(d.getTime())) {
+              loadedDate = d.toISOString().split("T")[0];
+              loadedTime = d.toISOString().slice(11, 16);
+            }
+          }
+
+          setData((prev) => ({
+            ...prev,
+            title: json?.title || existing.title || prev.title,
+            date: existing.date || loadedDate,
+            time: existing.time || loadedTime,
+            city: existing.city || prev.city,
+            state: existing.state || prev.state,
+            venue: existing.venue || existing.location || prev.venue,
+            details:
+              existing.details ||
+              existing.description ||
+              prev.details,
+            hero: existing.heroImage || existing.hero || prev.hero,
+            rsvpEnabled:
+              typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvpEnabled,
+            rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
+            fontId: existing.fontId || prev.fontId,
+            fontSize: existing.fontSize || prev.fontSize,
+            extra: {
+              ...prev.extra,
+              ...(existing.extra || {}),
+              ...(existing.customFields || {}),
+            },
+          }));
+
+          const incomingAdvanced =
+            existing.advancedSections ||
+            existing.customFields?.advancedSections ||
+            existing.advanced ||
+            {};
+          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
+            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
+          }
+
+          if (existing.themeId) setThemeId(existing.themeId);
+        } catch {
+          // ignore to keep edit usable
+        }
+      };
+      loadExisting();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editEventId]);
 
     // Ensure headline fonts are available in the designer/preview
     useEffect(() => {
@@ -669,41 +750,68 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
+        const heroToSave =
+          data.hero && !/^blob:|^data:/i.test(data.hero)
+            ? data.hero
+            : config.defaultHero;
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
             category: config.category,
+            displayName: config.displayName,
             createdVia: "template",
             createdManually: true,
             startISO,
             endISO,
+            date: data.date,
+            time: data.time,
+            city: data.city,
+            state: data.state,
             location: locationParts || undefined,
             venue: data.venue || undefined,
             description: data.details || undefined,
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+            rsvpEnabled: data.rsvpEnabled,
+            rsvpDeadline: data.rsvpDeadline || undefined,
             numberOfGuests: 0,
             templateId: config.slug,
+            themeId,
+            fontId: data.fontId,
+            fontSize: data.fontSize,
             customFields: {
               ...data.extra,
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
-            heroImage: data.hero || config.defaultHero,
+            heroImage: heroToSave,
+            extra: data.extra,
           },
         };
 
-        const res = await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json().catch(() => ({}));
-        const id = (json as any)?.id as string | undefined;
-        if (!id) throw new Error("Failed to create event");
-        router.push(`/event/${id}?created=1`);
+        if (editEventId) {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: payload.title, data: payload.data }),
+          });
+          if (!res.ok) throw new Error("Failed to update event");
+          router.push(`/event/${editEventId}?updated=1`);
+        } else {
+          const res = await fetch("/api/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json().catch(() => ({}));
+          const id = (json as any)?.id as string | undefined;
+          if (!id) throw new Error("Failed to create event");
+          router.push(`/event/${id}?created=1`);
+        }
       } catch (err: any) {
-        alert(String(err?.message || err || "Failed to create event"));
+        alert(String(err?.message || err || "Failed to save event"));
       } finally {
         setSubmitting(false);
       }
@@ -714,16 +822,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.title,
       data.details,
       data.venue,
+      data.city,
+      data.state,
       data.hero,
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      data.fontId,
+      data.fontSize,
       advancedState,
+      themeId,
       locationParts,
       config.category,
       config.displayName,
       config.slug,
       config.defaultHero,
+      editEventId,
       router,
     ]);
 
@@ -882,7 +996,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <MenuCard
             title="Design"
-            desc="Theme presets."
+            desc="Theme presets and typography."
             icon={<Palette size={18} />}
             onClick={() => setActiveView("design")}
           />
@@ -1313,22 +1427,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </div>
 
-                <div className="relative w-full h-64 md:h-96">
-                  {data.hero ? (
-                    <img
-                      src={data.hero}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Image
-                      src={config.defaultHero}
-                      alt="Hero"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 1000px"
-                    />
-                  )}
+                <div className="relative w-full h-64 md:h-96 bg-black/10">
+                  <Image
+                    src={data.hero || config.defaultHero}
+                    alt="Hero"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 1000px"
+                    unoptimized
+                  />
                 </div>
 
                 <section
@@ -3506,7 +3613,7 @@ const config: SimpleTemplateConfig = {
   categoryLabel: "Football Season",
   themesExpandedByDefault: true,
   defaultHero:
-    "https://images.unsplash.com/photo-1508098682722-e99c643e7f0b?auto=format&fit=crop&w=1800&q=80",
+    "https://images.unsplash.com/photo-1444492417251-9c84a5fa18e0?auto=format&fit=crop&w=1800&q=80",
   detailFields: [
     { key: "team", label: "Team Name", placeholder: "Varsity Panthers" },
     { key: "season", label: "Season", placeholder: "Fall 2025" },
@@ -3565,188 +3672,196 @@ const config: SimpleTemplateConfig = {
   },
   themes: [
     {
-      id: "friday_night",
-      name: "Friday Night Lights",
-      bg: "bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-800",
-      text: "text-white",
-      accent: "text-emerald-200",
-      preview: "bg-gradient-to-r from-slate-900 via-emerald-900 to-slate-800",
-    },
-    {
-      id: "gridiron_sunset",
-      name: "Gridiron Sunset",
-      bg: "bg-gradient-to-br from-slate-900 via-amber-800 to-orange-500",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-slate-900 via-amber-800 to-orange-500",
-    },
-    {
-      id: "crimson_pride",
-      name: "Crimson Pride",
-      bg: "bg-gradient-to-br from-red-900 via-red-800 to-red-700",
+      id: "rivalry_red",
+      name: "Rivalry Red",
+      bg: "bg-gradient-to-br from-red-900 via-slate-950 to-red-700",
       text: "text-white",
       accent: "text-red-100",
-      preview: "bg-gradient-to-r from-red-900 to-red-700",
+      preview: "bg-gradient-to-r from-red-900 via-slate-950 to-red-700",
     },
     {
-      id: "blue_steel",
-      name: "Blue Steel",
-      bg: "bg-gradient-to-br from-blue-900 via-slate-800 to-blue-800",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-blue-900 to-blue-800",
-    },
-    {
-      id: "gold_rush",
-      name: "Gold Rush",
-      bg: "bg-gradient-to-br from-yellow-700 via-amber-700 to-yellow-800",
-      text: "text-white",
-      accent: "text-yellow-100",
-      preview: "bg-gradient-to-r from-yellow-700 to-yellow-800",
-    },
-    {
-      id: "purple_reign",
-      name: "Purple Reign",
-      bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-purple-700",
-      text: "text-white",
-      accent: "text-purple-200",
-      preview: "bg-gradient-to-r from-purple-900 to-purple-700",
-    },
-    {
-      id: "forest_green",
-      name: "Forest Green",
-      bg: "bg-gradient-to-br from-green-900 via-emerald-800 to-green-700",
-      text: "text-white",
-      accent: "text-green-200",
-      preview: "bg-gradient-to-r from-green-900 to-green-700",
-    },
-    {
-      id: "orange_crush",
-      name: "Orange Crush",
-      bg: "bg-gradient-to-br from-orange-800 via-red-700 to-orange-600",
-      text: "text-white",
-      accent: "text-orange-100",
-      preview: "bg-gradient-to-r from-orange-800 to-orange-600",
-    },
-    {
-      id: "navy_gold",
-      name: "Navy & Gold",
-      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-amber-700",
-      text: "text-white",
-      accent: "text-amber-200",
-      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-amber-700",
-    },
-    {
-      id: "black_silver",
-      name: "Black & Silver",
-      bg: "bg-gradient-to-br from-slate-900 via-gray-800 to-slate-700",
-      text: "text-white",
-      accent: "text-slate-200",
-      preview: "bg-gradient-to-r from-slate-900 via-gray-800 to-slate-700",
-    },
-    {
-      id: "maroon_white",
-      name: "Maroon & White",
-      bg: "bg-gradient-to-br from-rose-900 via-rose-800 to-rose-700",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-rose-900 to-rose-700",
-    },
-    {
-      id: "teal_pride",
-      name: "Teal Pride",
-      bg: "bg-gradient-to-br from-teal-900 via-cyan-800 to-teal-700",
-      text: "text-white",
-      accent: "text-teal-100",
-      preview: "bg-gradient-to-r from-teal-900 to-teal-700",
-    },
-    {
-      id: "championship_gold",
-      name: "Championship Gold",
-      bg: "bg-gradient-to-br from-amber-800 via-yellow-700 to-amber-600",
-      text: "text-white",
-      accent: "text-yellow-100",
-      preview: "bg-gradient-to-r from-amber-800 via-yellow-700 to-amber-600",
-    },
-    {
-      id: "midnight_warrior",
-      name: "Midnight Warrior",
-      bg: "bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900",
-      text: "text-white",
-      accent: "text-indigo-200",
-      preview: "bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900",
-    },
-    {
-      id: "cardinal_fire",
-      name: "Cardinal Fire",
-      bg: "bg-gradient-to-br from-red-950 via-red-800 to-rose-700",
-      text: "text-white",
-      accent: "text-red-100",
-      preview: "bg-gradient-to-r from-red-950 via-red-800 to-rose-700",
-    },
-    {
-      id: "royal_blue",
-      name: "Royal Blue",
-      bg: "bg-gradient-to-br from-blue-950 via-indigo-900 to-blue-800",
-      text: "text-white",
-      accent: "text-blue-200",
-      preview: "bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-800",
-    },
-    {
-      id: "emerald_field",
-      name: "Emerald Field",
-      bg: "bg-gradient-to-br from-emerald-950 via-green-800 to-emerald-700",
-      text: "text-white",
-      accent: "text-emerald-200",
-      preview: "bg-gradient-to-r from-emerald-950 via-green-800 to-emerald-700",
-    },
-    {
-      id: "bronze_glory",
-      name: "Bronze Glory",
-      bg: "bg-gradient-to-br from-amber-900 via-orange-800 to-amber-700",
-      text: "text-white",
-      accent: "text-amber-100",
-      preview: "bg-gradient-to-r from-amber-900 via-orange-800 to-amber-700",
-    },
-    {
-      id: "violet_storm",
-      name: "Violet Storm",
-      bg: "bg-gradient-to-br from-violet-950 via-purple-900 to-violet-800",
-      text: "text-white",
-      accent: "text-violet-200",
-      preview: "bg-gradient-to-r from-violet-950 via-purple-900 to-violet-800",
-    },
-    {
-      id: "scarlet_knights",
-      name: "Scarlet Knights",
-      bg: "bg-gradient-to-br from-red-900 via-rose-800 to-red-600",
-      text: "text-white",
-      accent: "text-rose-100",
-      preview: "bg-gradient-to-r from-red-900 via-rose-800 to-red-600",
-    },
-    {
-      id: "sapphire_elite",
-      name: "Sapphire Elite",
-      bg: "bg-gradient-to-br from-sky-950 via-blue-900 to-sky-700",
+      id: "victory_blue",
+      name: "Victory Blue",
+      bg: "bg-gradient-to-br from-blue-900 via-blue-800 to-sky-600",
       text: "text-white",
       accent: "text-sky-200",
-      preview: "bg-gradient-to-r from-sky-950 via-blue-900 to-sky-700",
+      preview: "bg-gradient-to-r from-blue-900 via-blue-800 to-sky-600",
     },
     {
-      id: "copper_charge",
-      name: "Copper Charge",
-      bg: "bg-gradient-to-br from-orange-900 via-amber-800 to-orange-700",
+      id: "championship_crimson",
+      name: "Championship Crimson",
+      bg: "bg-gradient-to-br from-red-900 via-red-800 to-rose-600",
       text: "text-white",
-      accent: "text-orange-100",
-      preview: "bg-gradient-to-r from-orange-900 via-amber-800 to-orange-700",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-red-900 via-red-800 to-rose-600",
     },
     {
-      id: "platinum_force",
-      name: "Platinum Force",
-      bg: "bg-gradient-to-br from-slate-800 via-gray-700 to-slate-600",
+      id: "panther_gold",
+      name: "Panther Gold",
+      bg: "bg-gradient-to-br from-slate-950 via-black to-amber-600",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-slate-950 via-black to-amber-600",
+    },
+    {
+      id: "royal_spirit",
+      name: "Royal Spirit",
+      bg: "bg-gradient-to-br from-purple-900 via-indigo-900 to-amber-500",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-purple-900 via-indigo-900 to-amber-500",
+    },
+    {
+      id: "falcon_green",
+      name: "Falcon Green",
+      bg: "bg-gradient-to-br from-emerald-900 via-emerald-800 to-amber-500",
+      text: "text-white",
+      accent: "text-emerald-100",
+      preview: "bg-gradient-to-r from-emerald-900 via-emerald-800 to-amber-500",
+    },
+    {
+      id: "tiger_fire",
+      name: "Tiger Fire",
+      bg: "bg-gradient-to-br from-slate-950 via-orange-800 to-amber-600",
+      text: "text-white",
+      accent: "text-orange-200",
+      preview: "bg-gradient-to-r from-slate-950 via-orange-800 to-amber-600",
+    },
+    {
+      id: "patriot_navy",
+      name: "Patriot Navy",
+      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-amber-500",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-amber-500",
+    },
+    {
+      id: "warrior_maroon",
+      name: "Warrior Maroon",
+      bg: "bg-gradient-to-br from-rose-950 via-rose-800 to-rose-600",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-950 via-rose-800 to-rose-600",
+    },
+    {
+      id: "evergreen_pride",
+      name: "Evergreen Pride",
+      bg: "bg-gradient-to-br from-emerald-950 via-green-800 to-emerald-500",
+      text: "text-white",
+      accent: "text-emerald-100",
+      preview: "bg-gradient-to-r from-emerald-950 via-green-800 to-emerald-500",
+    },
+    {
+      id: "royal_honor",
+      name: "Royal Honor",
+      bg: "bg-gradient-to-br from-indigo-900 via-blue-800 to-amber-400",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-indigo-900 via-blue-800 to-amber-400",
+    },
+    {
+      id: "steel_shadow",
+      name: "Steel Shadow",
+      bg: "bg-gradient-to-br from-slate-950 via-gray-800 to-slate-600",
+      text: "text-white",
+      accent: "text-slate-200",
+      preview: "bg-gradient-to-r from-slate-950 via-gray-800 to-slate-600",
+    },
+    {
+      id: "cardinal_glory",
+      name: "Cardinal Glory",
+      bg: "bg-gradient-to-br from-red-950 via-red-800 to-amber-500",
+      text: "text-white",
+      accent: "text-amber-200",
+      preview: "bg-gradient-to-r from-red-950 via-red-800 to-amber-500",
+    },
+    {
+      id: "sailor_navy",
+      name: "Sailor Navy",
+      bg: "bg-gradient-to-br from-blue-950 via-blue-900 to-slate-300",
       text: "text-white",
       accent: "text-slate-100",
-      preview: "bg-gradient-to-r from-slate-800 via-gray-700 to-slate-600",
+      preview: "bg-gradient-to-r from-blue-950 via-blue-900 to-slate-300",
+    },
+    {
+      id: "violet_victory",
+      name: "Violet Victory",
+      bg: "bg-gradient-to-br from-violet-900 via-purple-800 to-violet-500",
+      text: "text-white",
+      accent: "text-violet-100",
+      preview: "bg-gradient-to-r from-violet-900 via-purple-800 to-violet-500",
+    },
+    {
+      id: "midnight_crimson",
+      name: "Midnight Crimson",
+      bg: "bg-gradient-to-br from-slate-950 via-slate-900 to-red-700",
+      text: "text-white",
+      accent: "text-red-200",
+      preview: "bg-gradient-to-r from-slate-950 via-slate-900 to-red-700",
+    },
+    {
+      id: "shamrock_spirit",
+      name: "Shamrock Spirit",
+      bg: "bg-gradient-to-br from-green-800 via-emerald-700 to-amber-300",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-green-800 via-emerald-700 to-amber-300",
+    },
+    {
+      id: "grizzly_gold",
+      name: "Grizzly Gold",
+      bg: "bg-gradient-to-br from-amber-900 via-orange-900 to-yellow-600",
+      text: "text-white",
+      accent: "text-amber-100",
+      preview: "bg-gradient-to-r from-amber-900 via-orange-900 to-yellow-600",
+    },
+    {
+      id: "patriot_fusion",
+      name: "Patriot Fusion",
+      bg: "bg-gradient-to-br from-blue-900 via-indigo-800 to-red-600",
+      text: "text-white",
+      accent: "text-red-100",
+      preview: "bg-gradient-to-r from-blue-900 via-indigo-800 to-red-600",
+    },
+    {
+      id: "iron_maroon",
+      name: "Iron Maroon",
+      bg: "bg-gradient-to-br from-rose-950 via-slate-700 to-rose-700",
+      text: "text-white",
+      accent: "text-rose-100",
+      preview: "bg-gradient-to-r from-rose-950 via-slate-700 to-rose-700",
+    },
+    {
+      id: "shadow_blaze",
+      name: "Shadow Blaze",
+      bg: "bg-gradient-to-br from-slate-950 via-slate-900 to-orange-700",
+      text: "text-white",
+      accent: "text-orange-200",
+      preview: "bg-gradient-to-r from-slate-950 via-slate-900 to-orange-700",
+    },
+    {
+      id: "golden_light",
+      name: "Golden Light",
+      bg: "bg-gradient-to-br from-amber-200 via-yellow-200 to-amber-400",
+      text: "text-slate-900",
+      accent: "text-amber-700",
+      preview: "bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-400",
+    },
+    {
+      id: "storm_teal",
+      name: "Storm Teal",
+      bg: "bg-gradient-to-br from-slate-950 via-teal-900 to-cyan-700",
+      text: "text-white",
+      accent: "text-cyan-100",
+      preview: "bg-gradient-to-r from-slate-950 via-teal-900 to-cyan-700",
+    },
+    {
+      id: "skyline_blue",
+      name: "Skyline Blue",
+      bg: "bg-gradient-to-br from-sky-800 via-sky-600 to-sky-300",
+      text: "text-white",
+      accent: "text-sky-100",
+      preview: "bg-gradient-to-r from-sky-800 via-sky-600 to-sky-300",
     },
   ],
   advancedSections: [

@@ -412,6 +412,11 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
+        const heroToSave =
+          data.hero && !/^blob:|^data:/i.test(data.hero)
+            ? data.hero
+            : config.defaultHero;
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
@@ -442,7 +447,7 @@ export function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
-            heroImage: data.hero || config.defaultHero,
+            heroImage: heroToSave,
             themeId,
             theme: currentTheme,
             time: data.time,

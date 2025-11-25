@@ -13,7 +13,6 @@ import {
   type TemplateLayoutConfig,
 } from "@/components/event-create/BirthdayTemplateGallery";
 import EventActions from "@/components/EventActions";
-import EventEditModal from "@/components/EventEditModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import LocationLink from "@/components/LocationLink";
 import EventMap from "@/components/EventMap";
@@ -30,6 +29,8 @@ import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { CandyDreamsLayout } from "@/components/templates/CandyDreamsLayout";
+import Link from "next/link";
+import { resolveEditHref } from "@/utils/event-edit-route";
 // Format event range display - simplified version
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
@@ -508,11 +509,30 @@ export default function BirthdayTemplateView({
                     <div className="flex items-center gap-2 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 py-1.5 shadow">
                       {isOwner && (
                         <>
-                          <EventEditModal
-                            eventId={eventId}
-                            eventData={eventData}
-                            eventTitle={eventTitle}
-                          />
+                          <Link
+                            href={resolveEditHref(
+                              eventId,
+                              eventData,
+                              eventTitle
+                            )}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                            title="Edit event"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                            >
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            <span className="hidden sm:inline">Edit</span>
+                          </Link>
                           <EventDeleteModal
                             eventId={eventId}
                             eventTitle={eventTitle}
