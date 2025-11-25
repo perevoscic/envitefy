@@ -92,21 +92,59 @@ export async function generateMetadata(props: {
   const data: any = row?.data || {};
   const title =
     (typeof data?.title === "string" && data.title) || row?.title || "Event";
+  
+  // Extract description for metadata
+  const description =
+    typeof data?.description === "string" && data.description
+      ? data.description.slice(0, 200)
+      : "Create and share events with Envitefy. Turn flyers, invites, and schedules into shareable plans in seconds.";
+  
+  // Extract location for metadata
+  const location =
+    typeof data?.location === "string" && data.location
+      ? data.location
+      : undefined;
+  
+  // Generate OG image URL
   const img = await absoluteUrl(
     `/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`
+  );
+  
+  // Generate canonical URL
+  const url = await absoluteUrl(
+    `/event/${encodeURIComponent(awaitedParams.id)}`
   );
 
   return {
     title: `${title} — Envitefy`,
+    description,
     openGraph: {
       title: `${title} — Envitefy`,
-      images: [{ url: img, width: 1200, height: 630, alt: title }],
+      description,
+      url,
+      siteName: "Envitefy",
+      images: [
+        {
+          url: img,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
       type: "article",
+      ...(location && {
+        // Add location if available (some platforms support this)
+        locale: "en_US",
+      }),
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} — Envitefy`,
+      description,
       images: [img],
+    },
+    alternates: {
+      canonical: url,
     },
   };
 }
