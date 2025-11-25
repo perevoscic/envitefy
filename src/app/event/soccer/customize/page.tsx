@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, memo } from "react";
+import React, { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -371,6 +371,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setThemesExpanded(true);
       }
     }, [activeView]);
+
+    useEffect(() => {
+      if (fontListRef.current) {
+        fontListRef.current.scrollTop = fontScrollTop;
+      }
+    }, [fontScrollTop, data.fontId]);
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
@@ -958,36 +964,41 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           )}
 
-          <div className="pt-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Typography
-              </p>
-              <span className="text-[11px] text-slate-400">
-                Headlines & section titles
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
-              {SOCCER_FONTS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
-                  className={`border rounded-lg p-3 text-left transition-colors ${
-                    data.fontId === f.id
-                      ? "border-indigo-600 bg-indigo-50"
-                      : "border-slate-200 hover:border-indigo-300"
-                  }`}
+        <div className="pt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Typography
+            </p>
+            <span className="text-[11px] text-slate-400">
+              Headlines & section titles
+            </span>
+          </div>
+          <div
+            ref={fontListRef}
+            className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1"
+          >
+            {SOCCER_FONTS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => {
+                  setFontScrollTop(fontListRef.current?.scrollTop || 0);
+                  setData((p) => ({ ...p, fontId: f.id }));
+                }}
+                className={`border rounded-lg p-3 text-left transition-colors ${
+                  data.fontId === f.id
+                    ? "border-indigo-600 bg-indigo-50"
+                    : "border-slate-200 hover:border-indigo-300"
+                }`}
+              >
+                <div
+                  className="text-base font-semibold"
+                  style={{ fontFamily: f.css }}
                 >
-                  <div
-                    className="text-base font-semibold"
-                    style={{ fontFamily: f.css }}
-                  >
-                    {f.name}
-                  </div>
-                  <div className="text-xs text-slate-500">{f.css}</div>
-                </button>
-              ))}
-            </div>
+                  {f.name}
+                </div>
+              </button>
+            ))}
+          </div>
             <div className="flex items-center gap-2">
               {FONT_SIZE_OPTIONS.map((o) => (
                 <button

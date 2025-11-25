@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, memo } from "react";
+import React, { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -1685,6 +1685,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+    const fontListRef = useRef<HTMLDivElement | null>(null);
+    const [fontScrollTop, setFontScrollTop] = useState(0);
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -1727,6 +1729,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
       };
     }, []);
+
+    useEffect(() => {
+      if (fontListRef.current) {
+        fontListRef.current.scrollTop = fontScrollTop;
+      }
+    }, [fontScrollTop, data.fontId]);
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
@@ -2337,11 +2345,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 Headlines & section titles
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+            <div
+              ref={fontListRef}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1"
+            >
               {DANCE_FONTS.map((f) => (
                 <button
                   key={f.id}
-                  onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
+                  onClick={() => {
+                    setFontScrollTop(fontListRef.current?.scrollTop || 0);
+                    setData((p) => ({ ...p, fontId: f.id }));
+                  }}
                   className={`border rounded-lg p-3 text-left transition-colors ${
                     data.fontId === f.id
                       ? "border-indigo-600 bg-indigo-50"
@@ -2354,7 +2368,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     {f.name}
                   </div>
-                  <div className="text-xs text-slate-500">{f.css}</div>
                 </button>
               ))}
             </div>

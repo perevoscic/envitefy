@@ -122,16 +122,26 @@ type SimpleTemplateConfig = {
 };
 
 const GYM_FONTS = [
-  { id: "inter", name: "Inter", css: "'Inter', 'Segoe UI', sans-serif" },
-  { id: "manrope", name: "Manrope", css: "'Manrope', 'Inter', sans-serif" },
-  { id: "poppins", name: "Poppins SemiBold", css: "'Poppins', 'Inter', sans-serif" },
-  { id: "archivo", name: "Archivo SemiBold", css: "'Archivo', 'Roboto', sans-serif" },
+  { id: "anton", name: "Anton", css: "'Anton', Impact, sans-serif" },
+  { id: "bebas", name: "Bebas Neue", css: "'Bebas Neue', 'Oswald', sans-serif" },
+  { id: "montserrat", name: "Montserrat", css: "'Montserrat', 'Inter', sans-serif" },
+  { id: "oswald", name: "Oswald", css: "'Oswald', 'Roboto Condensed', sans-serif" },
+  { id: "teko", name: "Teko", css: "'Teko', 'Bebas Neue', sans-serif" },
+  { id: "chakra-petch", name: "Chakra Petch", css: "'Chakra Petch', 'Rajdhani', sans-serif" },
+  { id: "russo-one", name: "Russo One", css: "'Russo One', 'Montserrat', sans-serif" },
   { id: "barlow-condensed", name: "Barlow Condensed", css: "'Barlow Condensed', 'Roboto Condensed', sans-serif" },
   { id: "rajdhani", name: "Rajdhani", css: "'Rajdhani', 'Roboto Condensed', sans-serif" },
-  { id: "space-grotesk", name: "Space Grotesk", css: "'Space Grotesk', 'Inter', sans-serif" },
-  { id: "lexend", name: "Lexend", css: "'Lexend', 'Manrope', sans-serif" },
-  { id: "prompt", name: "Prompt", css: "'Prompt', 'Inter', sans-serif" },
-  { id: "kumbh", name: "Kumbh Sans", css: "'Kumbh Sans', 'Inter', sans-serif" },
+  { id: "league-spartan", name: "League Spartan", css: "'League Spartan', 'Montserrat', sans-serif" },
+  { id: "exo2", name: "Exo 2", css: "'Exo 2', 'Manrope', sans-serif" },
+  { id: "saira-condensed", name: "Saira Condensed", css: "'Saira Condensed', 'Oswald', sans-serif" },
+  { id: "kanit", name: "Kanit", css: "'Kanit', 'Barlow Condensed', sans-serif" },
+  { id: "archivo-black", name: "Archivo Black", css: "'Archivo Black', 'Arial Black', sans-serif" },
+  { id: "orbitron", name: "Orbitron", css: "'Orbitron', 'Audiowide', sans-serif" },
+  { id: "righteous", name: "Righteous", css: "'Righteous', 'Baloo', cursive" },
+  { id: "syncopate", name: "Syncopate", css: "'Syncopate', 'Montserrat', sans-serif" },
+  { id: "poppins", name: "Poppins", css: "'Poppins', 'Inter', sans-serif" },
+  { id: "playfair", name: "Playfair Display", css: "'Playfair Display', 'Times New Roman', serif" },
+  { id: "cormorant", name: "Cormorant Garamond", css: "'Cormorant Garamond', 'Garamond', serif" },
 ];
 
 const FONT_SIZE_OPTIONS = [

@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, memo } from "react";
+import React, { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -401,6 +401,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
+    const fontListRef = useRef<HTMLDivElement | null>(null);
+    const [fontScrollTop, setFontScrollTop] = useState(0);
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -443,6 +445,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
       };
     }, []);
+
+    // restore scroll inside font list after selection
+    useEffect(() => {
+      if (fontListRef.current) {
+        fontListRef.current.scrollTop = fontScrollTop;
+      }
+    }, [fontScrollTop, data.fontId]);
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
@@ -1014,57 +1023,61 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         onBack={() => setActiveView("main")}
         showBack
       >
-        <div className="space-y-3">
-          <button
-            onClick={() => setThemesExpanded(!themesExpanded)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Palette size={16} /> Theme ({config.themes.length})
-            </div>
-            {themesExpanded ? (
-              <ChevronUp size={16} />
-            ) : (
-              <ChevronDown size={16} />
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <button
+              onClick={() => setThemesExpanded(!themesExpanded)}
+              className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Palette size={16} /> Theme ({config.themes.length})
+              </div>
+              {themesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {themesExpanded && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
+                {config.themes.map((theme) => (
+                  <ThemeSwatch
+                    key={theme.id}
+                    theme={theme}
+                    active={themeId === theme.id}
+                    onClick={() => setThemeId(theme.id)}
+                  />
+                ))}
+              </div>
             )}
-          </button>
-          {themesExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[1000px] overflow-y-auto pr-1">
-              {config.themes.map((theme) => (
-                <ThemeSwatch
-                  key={theme.id}
-                  theme={theme}
-                  active={themeId === theme.id}
-                  onClick={() => setThemeId(theme.id)}
-                />
-              ))}
-            </div>
-          )}
-          {!themesExpanded && (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <div
-                className={`w-3 h-3 rounded-full border shadow-sm ${
-                  currentTheme.preview?.split(" ")[0] || "bg-slate-200"
-                }`}
-              ></div>
-              <span>Current theme: {currentTheme.name}</span>
-            </div>
-          )}
+            {!themesExpanded && (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div
+                  className={`w-3 h-3 rounded-full border shadow-sm ${
+                    currentTheme.preview?.split(" ")[0] || "bg-slate-200"
+                  }`}
+                ></div>
+                <span>Current theme: {currentTheme.name}</span>
+              </div>
+            )}
+          </div>
 
-          <div className="pt-4 space-y-2">
+          <div className="pt-2 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Typography
               </p>
               <span className="text-[11px] text-slate-400">
-            Headlines & section titles
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
-          {FOOTBALL_FONTS.map((f) => (
+                Headlines & section titles
+              </span>
+            </div>
+            <div
+              ref={fontListRef}
+              className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1"
+            >
+              {FOOTBALL_FONTS.map((f) => (
                 <button
                   key={f.id}
-                  onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
+                  onClick={() => {
+                    setFontScrollTop(fontListRef.current?.scrollTop || 0);
+                    setData((p) => ({ ...p, fontId: f.id }));
+                  }}
                   className={`border rounded-lg p-3 text-left transition-colors ${
                     data.fontId === f.id
                       ? "border-indigo-600 bg-indigo-50"
@@ -1077,7 +1090,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     {f.name}
                   </div>
-                  <div className="text-xs text-slate-500">{f.css}</div>
                 </button>
               ))}
             </div>
