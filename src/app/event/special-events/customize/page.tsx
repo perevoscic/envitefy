@@ -379,12 +379,13 @@ const InputGroup = memo(
   ),
   (prevProps, nextProps) => {
     // Custom comparison to prevent unnecessary re-renders
+    // Note: onChange is excluded from comparison since parent creates new functions on each render
     return (
       prevProps.value === nextProps.value &&
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange
+      prevProps.readOnly === nextProps.readOnly
     );
   }
 );

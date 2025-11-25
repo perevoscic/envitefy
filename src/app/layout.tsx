@@ -58,13 +58,13 @@ import {
   MonteCarlo,
 } from "next/font/google";
 import Script from "next/script";
-import Link from "next/link";
 import Providers from "./providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
 import TopNav from "@/components/navigation/TopNav";
 import { MenuProvider } from "@/contexts/MenuContext";
+import ConditionalFooter from "@/components/ConditionalFooter";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import type { CSSProperties } from "react";
@@ -781,44 +781,7 @@ export default async function RootLayout({
             data-static-illustration="true"
           >
             <div className="flex-1 min-w-0">{children}</div>
-            <footer className="bg-gradient-to-b from-[#F8F5FF] via-white to-white w-full">
-              <div className="max-w-7xl mx-auto px-3 py-6 text-[10px] sm:text-xs md:text-sm text-foreground/80">
-                <div className="w-full">
-                  <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1 sm:whitespace-nowrap">
-                    <Link
-                      href="/how-it-works"
-                      className="hover:text-foreground"
-                    >
-                      How it works
-                    </Link>
-                    <span className="opacity-40 hidden sm:inline">•</span>
-                    <Link href="/who-its-for" className="hover:text-foreground">
-                      Who it's for
-                    </Link>
-                    <span className="opacity-40 hidden sm:inline">•</span>
-                    <Link href="/faq" className="hover:text-foreground">
-                      FAQ
-                    </Link>
-                    <span className="opacity-40 hidden sm:inline">•</span>
-                    <Link
-                      href="https://envitefy.com/terms"
-                      className="hover:text-foreground"
-                    >
-                      Terms of Use
-                    </Link>
-                    <span className="opacity-40 hidden sm:inline">•</span>
-                    <Link
-                      href="https://envitefy.com/privacy"
-                      className="hover:text-foreground"
-                    >
-                      Privacy Policy
-                    </Link>
-                    <span className="opacity-40 hidden sm:inline">•</span>
-                    <span>© {new Date().getFullYear()} Envitefy</span>
-                  </div>
-                </div>
-              </div>
-            </footer>
+            <ConditionalFooter serverSession={session} />
           </div>
         </Providers>
       </body>

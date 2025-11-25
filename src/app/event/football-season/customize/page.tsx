@@ -1,7 +1,14 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  memo,
+  useRef,
+} from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -184,19 +191,50 @@ const FOOTBALL_FONTS = [
     css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif",
   },
 
-  { id: "black-han-sans", name: "Black Han Sans", css: "'Black Han Sans', 'Anton', sans-serif" },
+  {
+    id: "black-han-sans",
+    name: "Black Han Sans",
+    css: "'Black Han Sans', 'Anton', sans-serif",
+  },
   { id: "bungee", name: "Bungee", css: "'Bungee', 'Bebas Neue', cursive" },
-  { id: "bungee-shade", name: "Bungee Shade", css: "'Bungee Shade', 'Bungee', cursive" },
+  {
+    id: "bungee-shade",
+    name: "Bungee Shade",
+    css: "'Bungee Shade', 'Bungee', cursive",
+  },
   { id: "anton-sc", name: "Anton SC", css: "'Anton SC', 'Anton', sans-serif" },
   { id: "aldrich", name: "Aldrich", css: "'Aldrich', 'Oswald', sans-serif" },
-  { id: "smooch-sans", name: "Smooch Sans Black", css: "'Smooch Sans', 'Inter', sans-serif" },
+  {
+    id: "smooch-sans",
+    name: "Smooch Sans Black",
+    css: "'Smooch Sans', 'Inter', sans-serif",
+  },
   { id: "rowdies", name: "Rowdies", css: "'Rowdies', 'Baloo', cursive" },
-  { id: "russo-one-expanded", name: "Russo One Expanded", css: "'Russo One', 'Montserrat', sans-serif" },
-  { id: "tomorrow", name: "Tomorrow ExtraBold", css: "'Tomorrow', 'Manrope', sans-serif" },
-  { id: "teko-semibold", name: "Teko SemiBold", css: "'Teko', 'Bebas Neue', sans-serif" },
-  { id: "magra", name: "Magra ExtraBold", css: "'Magra', 'Poppins', sans-serif" },
-  { id: "michroma", name: "Michroma", css: "'Michroma', 'Orbitron', sans-serif" },
-
+  {
+    id: "russo-one-expanded",
+    name: "Russo One Expanded",
+    css: "'Russo One', 'Montserrat', sans-serif",
+  },
+  {
+    id: "tomorrow",
+    name: "Tomorrow ExtraBold",
+    css: "'Tomorrow', 'Manrope', sans-serif",
+  },
+  {
+    id: "teko-semibold",
+    name: "Teko SemiBold",
+    css: "'Teko', 'Bebas Neue', sans-serif",
+  },
+  {
+    id: "magra",
+    name: "Magra ExtraBold",
+    css: "'Magra', 'Poppins', sans-serif",
+  },
+  {
+    id: "michroma",
+    name: "Michroma",
+    css: "'Michroma', 'Orbitron', sans-serif",
+  },
 ];
 
 const FOOTBALL_GOOGLE_FONT_FAMILIES = [
@@ -275,7 +313,7 @@ const InputGroup = memo(
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange &&
+      // onChange excluded - parent creates new functions on each render
       prevProps.readOnly === nextProps.readOnly
     );
   }
@@ -381,9 +419,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         })(),
       fontId:
         (config as any)?.prefill?.fontId || FOOTBALL_FONTS[0]?.id || "anton",
-      fontSize:
-        (config as any)?.prefill?.fontSize ||
-        "medium",
+      fontSize: (config as any)?.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -443,7 +479,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const json = await res.json();
           const existing = json?.data || {};
 
-          const startIso = existing.start || existing.startISO || existing.startIso;
+          const startIso =
+            existing.start || existing.startISO || existing.startIso;
           let loadedDate = data.date;
           let loadedTime = data.time;
           if (startIso) {
@@ -462,10 +499,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             city: existing.city || prev.city,
             state: existing.state || prev.state,
             venue: existing.venue || existing.location || prev.venue,
-            details:
-              existing.details ||
-              existing.description ||
-              prev.details,
+            details: existing.details || existing.description || prev.details,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
               typeof existing.rsvpEnabled === "boolean"
@@ -626,105 +660,108 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
-  const headingSizeClass = selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
+    const headingSizeClass =
+      selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
-  const locationParts = [data.venue, data.city, data.state]
-    .filter(Boolean)
-    .join(", ");
-  const addressLine =
-    data.extra?.stadiumAddress || data.extra?.address || "";
+    const locationParts = [data.venue, data.city, data.state]
+      .filter(Boolean)
+      .join(", ");
+    const addressLine = data.extra?.stadiumAddress || data.extra?.address || "";
 
-  const hasGames = (advancedState?.games?.games?.length ?? 0) > 0;
-  const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
-  const hasRoster = (advancedState?.roster?.players?.length ?? 0) > 0;
-  const hasLogistics = Boolean(
-    advancedState?.logistics?.travelMode ||
-      advancedState?.logistics?.callTime ||
-      advancedState?.logistics?.weatherPolicy
-  );
-  const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
-  const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
-  const hasRsvpSection = data.rsvpEnabled;
+    const hasGames = (advancedState?.games?.games?.length ?? 0) > 0;
+    const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
+    const hasRoster = (advancedState?.roster?.players?.length ?? 0) > 0;
+    const hasLogistics = Boolean(
+      advancedState?.logistics?.travelMode ||
+        advancedState?.logistics?.callTime ||
+        advancedState?.logistics?.weatherPolicy
+    );
+    const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
+    const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
+    const hasRsvpSection = data.rsvpEnabled;
 
-  const navItems = useMemo(
-    () =>
+    const navItems = useMemo(
+      () =>
+        [
+          { id: "details", label: "Details", enabled: true },
+          { id: "games", label: "Game Schedule", enabled: hasGames },
+          { id: "practice", label: "Practice", enabled: hasPractice },
+          { id: "roster", label: "Roster", enabled: hasRoster },
+          { id: "logistics", label: "Logistics", enabled: hasLogistics },
+          { id: "gear", label: "Gear", enabled: hasGear },
+          { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
+          { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
+        ].filter((item) => item.enabled),
       [
-        { id: "details", label: "Details", enabled: true },
-        { id: "games", label: "Game Schedule", enabled: hasGames },
-        { id: "practice", label: "Practice", enabled: hasPractice },
-        { id: "roster", label: "Roster", enabled: hasRoster },
-        { id: "logistics", label: "Logistics", enabled: hasLogistics },
-        { id: "gear", label: "Gear", enabled: hasGear },
-        { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
-        { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
-      ].filter((item) => item.enabled),
-    [
-      hasGames,
-      hasGear,
-      hasLogistics,
-      hasPractice,
-      hasRoster,
-      hasRsvpSection,
-      hasVolunteers,
-    ]
-  );
-
-  const [activeSection, setActiveSection] = useState<string>(
-    navItems[0]?.id || "details"
-  );
-
-  useEffect(() => {
-    if (!navItems.length) return;
-    if (!navItems.some((i) => i.id === activeSection)) {
-      setActiveSection(navItems[0].id);
-    }
-  }, [activeSection, navItems]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !navItems.length) return;
-
-    const hash = window.location.hash.replace("#", "");
-    if (hash && navItems.some((i) => i.id === hash)) {
-      setActiveSection(hash);
-    }
-  }, [navItems]);
-
-  useEffect(() => {
-    if (!navItems.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = entry.target.id;
-            if (id && navItems.some((i) => i.id === id)) {
-              setActiveSection(id);
-              if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
-                window.history.replaceState(null, "", `#${id}`);
-              }
-            }
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: "-25% 0px -60% 0px",
-        threshold: 0,
-      }
+        hasGames,
+        hasGear,
+        hasLogistics,
+        hasPractice,
+        hasRoster,
+        hasRsvpSection,
+        hasVolunteers,
+      ]
     );
 
-    const targets = navItems
-      .map((item) => document.getElementById(item.id))
-      .filter(Boolean) as HTMLElement[];
-    targets.forEach((el) => observer.observe(el));
+    const [activeSection, setActiveSection] = useState<string>(
+      navItems[0]?.id || "details"
+    );
 
-    return () => observer.disconnect();
-  }, [navItems]);
+    useEffect(() => {
+      if (!navItems.length) return;
+      if (!navItems.some((i) => i.id === activeSection)) {
+        setActiveSection(navItems[0].id);
+      }
+    }, [activeSection, navItems]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
+    useEffect(() => {
+      if (typeof window === "undefined" || !navItems.length) return;
+
+      const hash = window.location.hash.replace("#", "");
+      if (hash && navItems.some((i) => i.id === hash)) {
+        setActiveSection(hash);
+      }
+    }, [navItems]);
+
+    useEffect(() => {
+      if (!navItems.length) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              if (id && navItems.some((i) => i.id === id)) {
+                setActiveSection(id);
+                if (
+                  typeof window !== "undefined" &&
+                  window.location.hash !== `#${id}`
+                ) {
+                  window.history.replaceState(null, "", `#${id}`);
+                }
+              }
+            }
+          });
+        },
+        {
+          root: null,
+          rootMargin: "-25% 0px -60% 0px",
+          threshold: 0,
+        }
+      );
+
+      const targets = navItems
+        .map((item) => document.getElementById(item.id))
+        .filter(Boolean) as HTMLElement[];
+      targets.forEach((el) => observer.observe(el));
+
+      return () => observer.disconnect();
+    }, [navItems]);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
         setData((prev) => ({ ...prev, hero: url }));
       }
     };
@@ -1146,7 +1183,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <div className="flex items-center gap-2">
                 <Palette size={16} /> Theme ({config.themes.length})
               </div>
-              {themesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {themesExpanded ? (
+                <ChevronUp size={16} />
+              ) : (
+                <ChevronDown size={16} />
+              )}
             </button>
             {themesExpanded && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
@@ -1245,25 +1286,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 placeholder={field.placeholder}
               />
             ))}
+          </div>
+          <div className="flex items-center gap-2">
+            {FONT_SIZE_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
+                className={`px-3 py-1.5 text-sm rounded border ${
+                  data.fontSize === o.id
+                    ? "border-indigo-600 text-indigo-700 bg-indigo-50"
+                    : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {FONT_SIZE_OPTIONS.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
-              className={`px-3 py-1.5 text-sm rounded border ${
-                data.fontSize === o.id
-                  ? "border-indigo-600 text-indigo-700 bg-indigo-50"
-                  : "border-slate-200 text-slate-600 hover:border-indigo-300"
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </EditorLayout>
-  );
+      </EditorLayout>
+    );
 
     const renderRsvpEditor = () => (
       <EditorLayout
@@ -1489,25 +1530,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </section>
 
-      {config.advancedSections?.map((section) =>
-        section.renderPreview ? (
-          <section
-            key={section.id}
-            id={section.id}
-            className="py-8 border-t border-white/10 px-6 md:px-10"
-          >
-            {section.renderPreview({
-              state: advancedState?.[section.id],
-              textClass,
-              accentClass,
-              headingShadow,
-              bodyShadow,
-              titleColor,
-              headingFontStyle,
-            })}
-          </section>
-        ) : null
-      )}
+                {config.advancedSections?.map((section) =>
+                  section.renderPreview ? (
+                    <section
+                      key={section.id}
+                      id={section.id}
+                      className="py-8 border-t border-white/10 px-6 md:px-10"
+                    >
+                      {section.renderPreview({
+                        state: advancedState?.[section.id],
+                        textClass,
+                        accentClass,
+                        headingShadow,
+                        bodyShadow,
+                        titleColor,
+                        headingFontStyle,
+                      })}
+                    </section>
+                  ) : null
+                )}
 
                 {data.rsvpEnabled && (
                   <section
@@ -2114,10 +2155,7 @@ const gameScheduleSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Game Schedule
         </h2>
         <div className="space-y-3">
@@ -2466,10 +2504,7 @@ const rosterSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Team Roster
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2827,10 +2862,7 @@ const practiceSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Practice Schedule
         </h2>
         <div className="space-y-3">
@@ -3040,10 +3072,7 @@ const logisticsSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Travel & Logistics
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -3348,10 +3377,7 @@ const gearSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Equipment Checklist
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3551,10 +3577,7 @@ const volunteersSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Volunteers Needed
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generate multiple images for each birthday theme (3 per theme by default)
+// Generate one image per birthday theme featuring 3 different characters/animals/objects in a single scene
 // Inspired by scripts/generate-birthdays-images.mjs
 import "dotenv/config";
 import fs from "node:fs/promises";
@@ -30,7 +30,7 @@ const provider = (getArg("--provider") || "openai").toString(); // openai | goog
 const forceRegenerate = getArg("--force") !== null || getArg("--regenerate") !== null;
 const themeFilter = getArg("--theme");
 const sourceFilter = (getArg("--source") || "all").toString(); // professional | design | all
-const imageCount = Math.max(1, parseInt(getArg("--count") || "3", 10) || 3);
+const imageCount = Math.max(1, parseInt(getArg("--count") || "1", 10) || 1);
 
 let openaiClient = null;
 if (provider === "openai") {
@@ -104,16 +104,14 @@ function parseArrayLiteral(literal, label) {
 }
 
 /**
- * Extract both PROFESSIONAL_THEMES and DESIGN_THEMES from the customize page.
+ * Extract PROFESSIONAL_THEMES from the customize page.
  */
 async function extractBirthdayThemes() {
   const fileContent = await fs.readFile(birthdayThemesSourcePath, "utf8");
 
   const professionalLiteral = extractArrayLiteral(fileContent, "const PROFESSIONAL_THEMES");
-  const designLiteral = extractArrayLiteral(fileContent, "const DESIGN_THEMES");
 
   const professionalThemesRaw = parseArrayLiteral(professionalLiteral, "PROFESSIONAL_THEMES");
-  const designThemesRaw = parseArrayLiteral(designLiteral, "DESIGN_THEMES");
 
   const themes = [];
 
@@ -139,26 +137,6 @@ async function extractBirthdayThemes() {
     });
   }
 
-  for (const theme of designThemesRaw) {
-    const name = theme.name || theme.id;
-    const descriptionParts = [theme.category, theme.aesthetic].filter(Boolean).map(normalize);
-    const colors = theme.colors ? `Colors: ${normalize(theme.colors)}` : null;
-
-    themes.push({
-      id: theme.id || slugify(name),
-      slug: slugify(theme.id || name),
-      name,
-      description: descriptionParts.join(". "),
-      headerIllustrationPrompt: normalize(theme.graphics),
-      cornerAccentPrompt: null,
-      backgroundPrompt: null,
-      primaryObjects: normalize(theme.primaryObjects),
-      graphics: normalize(theme.graphics),
-      colors,
-      source: "design",
-    });
-  }
-
   if (themes.length === 0) {
     throw new Error("No themes parsed from customize page");
   }
@@ -176,32 +154,96 @@ function themeMatchesFilter(theme, filterList) {
   );
 }
 
-function buildVariationHint(index) {
-  const hints = [
-    "Vary the camera angle and object placement while keeping the theme intact.",
-    "Swap which props lead the scene and adjust lighting warmth slightly.",
-    "Use a different mix of the theme objects and rearrange them around the frame.",
-  ];
-  return hints[index % hints.length];
-}
+// Mapping of theme IDs/names to their 3 objects
+const THEME_OBJECTS = {
+  "rainbow_confetti_splash": ["a rainbow arch", "a confetti burst", "a colorful balloon"],
+  "balloon_bouquet_arch": ["a balloon cluster", "a curling ribbon", "a pastel balloon"],
+  "sparkle_starburst": ["a glitter star", "a sparkle firework burst", "a gold swirl"],
+  "pastel_party_animals": ["a pastel bunny", "pastel bear", "pastel lion"],
+  "glitter_pink_celebration": ["a pink glitter star", "a sparkly pink bow", "a pink gift box"],
+  "blue_gold_birthday_luxe": ["a blue balloon", "a gold crown", "a gold confetti sparkle"],
+  "dinosaur_adventure_watercolor": ["a cartoon T-rex", "a cracked dinosaur egg", "a small volcano"],
+  "outer_space_blast": ["a rocket ship", "astronaut helmet", "a planet with rings"],
+  "mermaid_sparkle_waves": ["a mermaid tail", "a pastel seashell", "a starfish"],
+  "construction_zone_party": ["a dump truck", "traffic cone", "caution sign"],
+  "unicorn_dreamland": ["a unicorn head", "a rainbow", "a fluffy cloud"],
+  "sports_all_star": ["a soccer ball", "a baseball glove", "a gold trophy"],
+  "floral_garden_birthday": ["a rose", "a daisy", "a butterfly"],
+  "royal_purple_celebration": ["a purple crown", "gold scepter", "purple balloon"],
+  "circus_big_top": ["a circus tent", "a clown-face balloon", "a popcorn bucket"],
+  "rainbow_sprinkle_cake": ["rainbow sprinkles cluster", "a cake slice", "a birthday candle"],
+  "golden_age_celebration": ["a gold balloon", "laurel wreath", "ribbon"],
+  "tropical_fiesta": ["a pineapple", "a palm leaf", "a cute toucan"],
+  "galaxy_neon_party": ["a neon planet", "neon star", "glowing ring"],
+  "under_the_sea": ["a colorful fish", "coral piece", "a sea turtle"],
+  "retro_80s_neon": ["neon cassette tape", "neon sunglasses", "a boombox"],
+  "little_explorer": ["a compass", "binoculars", "an explorer backpack"],
+  "butterfly_bloom": ["a butterfly", "a flower", "a leaf"],
+  "camping_night": ["a tent", "a lantern", "a simple campfire (cute style)"],
+  "fairy_garden_glow": ["fairy wings", "a mushroom", "a magical sparkle trail"],
+  "farmyard_friends": ["a cow", "chicken", "a barn"],
+  "jungle_parade": ["a monkey", "a giraffe", "a large tropical leaf"],
+  "vintage_polaroid": ["a Polaroid frame", "a vintage camera", "a film strip"],
+  "elegant_florals_gold": ["a white rose", "a gold leaf", "a floral wreath"],
+  "balloons_at_sunset": ["a sunset-colored balloon", "a fluffy cloud", "a warm light ray icon"],
+};
 
-function buildThemePrompt(theme, variationIndex) {
-  const parts = [
-    `${theme.name} birthday invitation background.`,
-    theme.description,
-    theme.colors,
-    theme.headerIllustrationPrompt && `Header idea: ${theme.headerIllustrationPrompt}.`,
-    theme.cornerAccentPrompt && `Edge or corner accents: ${theme.cornerAccentPrompt}.`,
-    theme.backgroundPrompt && `Background texture: ${theme.backgroundPrompt}.`,
-    theme.graphics && `Graphic motifs: ${theme.graphics}.`,
-    theme.primaryObjects && `Primary objects to feature: ${theme.primaryObjects}.`,
-    "Create a 16:9 landscape scene with at least three distinct objects, characters, or animals that clearly express the theme.",
-    "Arrange props near the edges/foreground so the center stays calm for future text overlay.",
-    "No words or logos in the artwork. High resolution, natural lighting, polished but playful look.",
-    `Variation ${variationIndex + 1}: ${buildVariationHint(variationIndex)}`,
-  ];
+function buildThemePrompt(theme) {
+  const themeId = theme.id || "";
+  const themeName = theme.name || theme.themeName || "";
+  
+  // Try to find objects by theme ID first
+  let objects = THEME_OBJECTS[themeId];
+  
+  // Try to find by slug
+  if (!objects) {
+    const slug = theme.slug || "";
+    objects = THEME_OBJECTS[slug];
+  }
+  
+  // Try to find by name (normalized)
+  if (!objects) {
+    const normalizedName = slugify(themeName).replace(/-/g, "_");
+    objects = THEME_OBJECTS[normalizedName];
+  }
+  
+  // Build the prompt with strict rules
+  const systemRules = `Create exactly 3 SEPARATE 2D CLIPART OBJECTS. 
 
-  return parts.filter(Boolean).join(" ");
+Each object must be fully isolated, with large empty space between them. 
+
+Do NOT create a scene, do NOT connect objects, do NOT add backgrounds, shadows, gradients, 3D shading, or blending. 
+
+Each object must look like a flat vector sticker.
+
+Style rules:
+- FLAT 2D VECTOR
+- NO 3D shapes
+- NO lighting, NO shadows
+- NO realistic rendering
+- NO perspective
+- NO scene composition
+- PURE clipart icons
+
+Output ONLY the 3 objects on a plain white background.`;
+
+  if (objects && objects.length === 3) {
+    return `${systemRules}
+
+Objects:
+1. ${objects[0]}
+2. ${objects[1]}
+3. ${objects[2]}`;
+  }
+  
+  // Fallback: use generic prompt with theme context
+  const description = theme.description || "";
+  const headerPrompt = theme.headerIllustrationPrompt || "";
+  const context = [description, headerPrompt].filter(Boolean).join(". ");
+  
+  return `${systemRules}
+
+Generate 3 distinct theme-appropriate objects for "${themeName}" theme. ${context ? `Theme details: ${context}. ` : ""}`;
 }
 
 /**
@@ -456,18 +498,18 @@ async function run() {
   for (const theme of themes) {
     console.log(`Theme: ${theme.name} (${theme.source})`);
     for (let i = 0; i < imageCount; i++) {
-      const filename = `${theme.slug}-${i + 1}.webp`;
+      const filename = imageCount === 1 ? `${theme.slug}.webp` : `${theme.slug}-${i + 1}.webp`;
       const filePath = path.join(outputDir, filename);
 
       if (!forceRegenerate && (await fileExists(filePath))) {
-        console.log(`  ✓ Exists, skipping image ${i + 1}: ${filename}`);
+        console.log(`  ✓ Exists, skipping image ${i + 1}/${imageCount}: ${filename}`);
         skipped++;
         continue;
       }
 
       try {
-        console.log(`  Generating image ${i + 1}/${imageCount}...`);
-        const prompt = buildThemePrompt(theme, i);
+        console.log(`  Generating image ${i + 1}/${imageCount} with 3 different decorative objects/accessories...`);
+        const prompt = buildThemePrompt(theme);
         const buffer = await generateImage(prompt);
         await saveImage(buffer, filePath);
         console.log(`  ✓ Generated: ${filename}`);

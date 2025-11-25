@@ -1,7 +1,14 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, memo, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  memo,
+  useRef,
+} from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -100,18 +107,66 @@ type SimpleTemplateConfig = {
 };
 
 const SPORT_FONTS = [
-  { id: "anton", name: "Anton", css: "'Anton', 'Impact', 'Arial Black', sans-serif" },
-  { id: "bebas", name: "Bebas Neue", css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif" },
-  { id: "oswald", name: "Oswald", css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif" },
-  { id: "teko", name: "Teko", css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif" },
-  { id: "russo-one", name: "Russo One", css: "'Russo One', 'Anton', 'Impact', sans-serif" },
-  { id: "bangers", name: "Bangers", css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive" },
-  { id: "black-ops-one", name: "Black Ops One", css: "'Black Ops One', 'Russo One', 'Anton', sans-serif" },
-  { id: "archivo-black", name: "Archivo Black (Impact-like)", css: "'Archivo Black', 'Impact', 'Anton', sans-serif" },
-  { id: "chakra-petch", name: "Chakra Petch", css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif" },
-  { id: "rajdhani", name: "Rajdhani", css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif" },
-  { id: "barlow-condensed", name: "Barlow Condensed", css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif" },
-  { id: "league-spartan", name: "League Spartan", css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif" },
+  {
+    id: "anton",
+    name: "Anton",
+    css: "'Anton', 'Impact', 'Arial Black', sans-serif",
+  },
+  {
+    id: "bebas",
+    name: "Bebas Neue",
+    css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "oswald",
+    name: "Oswald",
+    css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif",
+  },
+  {
+    id: "teko",
+    name: "Teko",
+    css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "russo-one",
+    name: "Russo One",
+    css: "'Russo One', 'Anton', 'Impact', sans-serif",
+  },
+  {
+    id: "bangers",
+    name: "Bangers",
+    css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive",
+  },
+  {
+    id: "black-ops-one",
+    name: "Black Ops One",
+    css: "'Black Ops One', 'Russo One', 'Anton', sans-serif",
+  },
+  {
+    id: "archivo-black",
+    name: "Archivo Black (Impact-like)",
+    css: "'Archivo Black', 'Impact', 'Anton', sans-serif",
+  },
+  {
+    id: "chakra-petch",
+    name: "Chakra Petch",
+    css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif",
+  },
+  {
+    id: "rajdhani",
+    name: "Rajdhani",
+    css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif",
+  },
+  {
+    id: "barlow-condensed",
+    name: "Barlow Condensed",
+    css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "league-spartan",
+    name: "League Spartan",
+    css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif",
+  },
 ];
 
 const SPORT_GOOGLE_FONT_FAMILIES = [
@@ -191,7 +246,7 @@ const InputGroup = memo(
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange &&
+      // onChange excluded - parent creates new functions on each render
       prevProps.readOnly === nextProps.readOnly
     );
   }
@@ -294,10 +349,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
-      fontId:
-        (config as any)?.prefill?.fontId || SPORT_FONTS[0]?.id || "anton",
-      fontSize:
-        (config as any)?.prefill?.fontSize || "medium",
+      fontId: (config as any)?.prefill?.fontId || SPORT_FONTS[0]?.id || "anton",
+      fontSize: (config as any)?.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -1291,18 +1344,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       id={section.id}
                       className="py-8 border-t border-white/10 px-6 md:px-10"
                     >
-            {section.renderPreview({
-              state: advancedState?.[section.id],
-              textClass,
-              accentClass,
-              headingShadow,
-              bodyShadow,
-              titleColor,
-              headingFontStyle,
-            })}
-          </section>
-        ) : null
-      )}
+                      {section.renderPreview({
+                        state: advancedState?.[section.id],
+                        textClass,
+                        accentClass,
+                        headingShadow,
+                        bodyShadow,
+                        titleColor,
+                        headingFontStyle,
+                      })}
+                    </section>
+                  ) : null
+                )}
 
                 {data.rsvpEnabled && (
                   <section

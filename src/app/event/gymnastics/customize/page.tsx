@@ -123,25 +123,85 @@ type SimpleTemplateConfig = {
 
 const GYM_FONTS = [
   { id: "anton", name: "Anton", css: "'Anton', Impact, sans-serif" },
-  { id: "bebas", name: "Bebas Neue", css: "'Bebas Neue', 'Oswald', sans-serif" },
-  { id: "montserrat", name: "Montserrat", css: "'Montserrat', 'Inter', sans-serif" },
-  { id: "oswald", name: "Oswald", css: "'Oswald', 'Roboto Condensed', sans-serif" },
+  {
+    id: "bebas",
+    name: "Bebas Neue",
+    css: "'Bebas Neue', 'Oswald', sans-serif",
+  },
+  {
+    id: "montserrat",
+    name: "Montserrat",
+    css: "'Montserrat', 'Inter', sans-serif",
+  },
+  {
+    id: "oswald",
+    name: "Oswald",
+    css: "'Oswald', 'Roboto Condensed', sans-serif",
+  },
   { id: "teko", name: "Teko", css: "'Teko', 'Bebas Neue', sans-serif" },
-  { id: "chakra-petch", name: "Chakra Petch", css: "'Chakra Petch', 'Rajdhani', sans-serif" },
-  { id: "russo-one", name: "Russo One", css: "'Russo One', 'Montserrat', sans-serif" },
-  { id: "barlow-condensed", name: "Barlow Condensed", css: "'Barlow Condensed', 'Roboto Condensed', sans-serif" },
-  { id: "rajdhani", name: "Rajdhani", css: "'Rajdhani', 'Roboto Condensed', sans-serif" },
-  { id: "league-spartan", name: "League Spartan", css: "'League Spartan', 'Montserrat', sans-serif" },
+  {
+    id: "chakra-petch",
+    name: "Chakra Petch",
+    css: "'Chakra Petch', 'Rajdhani', sans-serif",
+  },
+  {
+    id: "russo-one",
+    name: "Russo One",
+    css: "'Russo One', 'Montserrat', sans-serif",
+  },
+  {
+    id: "barlow-condensed",
+    name: "Barlow Condensed",
+    css: "'Barlow Condensed', 'Roboto Condensed', sans-serif",
+  },
+  {
+    id: "rajdhani",
+    name: "Rajdhani",
+    css: "'Rajdhani', 'Roboto Condensed', sans-serif",
+  },
+  {
+    id: "league-spartan",
+    name: "League Spartan",
+    css: "'League Spartan', 'Montserrat', sans-serif",
+  },
   { id: "exo2", name: "Exo 2", css: "'Exo 2', 'Manrope', sans-serif" },
-  { id: "saira-condensed", name: "Saira Condensed", css: "'Saira Condensed', 'Oswald', sans-serif" },
-  { id: "kanit", name: "Kanit", css: "'Kanit', 'Barlow Condensed', sans-serif" },
-  { id: "archivo-black", name: "Archivo Black", css: "'Archivo Black', 'Arial Black', sans-serif" },
-  { id: "orbitron", name: "Orbitron", css: "'Orbitron', 'Audiowide', sans-serif" },
+  {
+    id: "saira-condensed",
+    name: "Saira Condensed",
+    css: "'Saira Condensed', 'Oswald', sans-serif",
+  },
+  {
+    id: "kanit",
+    name: "Kanit",
+    css: "'Kanit', 'Barlow Condensed', sans-serif",
+  },
+  {
+    id: "archivo-black",
+    name: "Archivo Black",
+    css: "'Archivo Black', 'Arial Black', sans-serif",
+  },
+  {
+    id: "orbitron",
+    name: "Orbitron",
+    css: "'Orbitron', 'Audiowide', sans-serif",
+  },
   { id: "righteous", name: "Righteous", css: "'Righteous', 'Baloo', cursive" },
-  { id: "syncopate", name: "Syncopate", css: "'Syncopate', 'Montserrat', sans-serif" },
+  {
+    id: "syncopate",
+    name: "Syncopate",
+    css: "'Syncopate', 'Montserrat', sans-serif",
+  },
   { id: "poppins", name: "Poppins", css: "'Poppins', 'Inter', sans-serif" },
-  { id: "playfair", name: "Playfair Display", css: "'Playfair Display', 'Times New Roman', serif" },
-  { id: "cormorant", name: "Cormorant Garamond", css: "'Cormorant Garamond', 'Garamond', serif" },
+  {
+    id: "playfair",
+    name: "Playfair Display",
+    css: "'Playfair Display', 'Times New Roman', serif",
+  },
+  {
+    id: "cormorant",
+    name: "Cormorant Garamond",
+    css: "'Cormorant Garamond', 'Garamond', serif",
+  },
 ];
 
 const FONT_SIZE_OPTIONS = [
@@ -197,12 +257,12 @@ const InputGroup = memo(
   ),
   (prevProps, nextProps) => {
     // Custom comparison to prevent unnecessary re-renders
+    // Note: onChange is excluded from comparison since parent creates new functions on each render
     return (
       prevProps.value === nextProps.value &&
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange &&
       prevProps.readOnly === nextProps.readOnly
     );
   }
@@ -271,6 +331,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+    const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -306,10 +367,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
-      fontId:
-        (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
-      fontSize:
-        (config as any)?.prefill?.fontSize || "medium",
+      fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
+      fontSize: (config as any)?.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -332,6 +391,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(false);
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
@@ -453,11 +513,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       .join(", ");
     const addressLine = data.address || "";
 
-    const hasRoster =
-      (advancedState?.roster?.athletes?.length ?? 0) > 0;
+    const hasRoster = (advancedState?.roster?.athletes?.length ?? 0) > 0;
     const hasMeet = Boolean(advancedState?.meet);
-    const hasPractice =
-      (advancedState?.practice?.blocks?.length ?? 0) > 0;
+    const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
     const hasLogistics = Boolean(
       advancedState?.logistics?.travelMode ||
         advancedState?.logistics?.callTime ||
@@ -465,8 +523,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         advancedState?.logistics?.hotelName
     );
     const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
-    const hasVolunteers =
-      (advancedState?.volunteers?.slots?.length ?? 0) > 0;
+    const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
     const hasAnnouncements =
       (advancedState?.announcements?.items?.length ?? 0) > 0;
     const navItems = useMemo(
@@ -479,7 +536,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           { id: "logistics", label: "Logistics", enabled: hasLogistics },
           { id: "gear", label: "Gear", enabled: hasGear },
           { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
-          { id: "announcements", label: "Announcements", enabled: hasAnnouncements },
+          {
+            id: "announcements",
+            label: "Announcements",
+            enabled: hasAnnouncements,
+          },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
         ].filter((item) => item.enabled),
       [
@@ -512,6 +573,99 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setActiveSection(hash);
       }
     }, [navItems]);
+
+    // Load existing event data when editing
+    useEffect(() => {
+      const loadExisting = async () => {
+        if (!editEventId) return;
+        setLoadingExisting(true);
+        try {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            console.error("[Edit] Failed to load event:", res.status);
+            setLoadingExisting(false);
+            return;
+          }
+          const json = await res.json();
+          const existing = json?.data || {};
+
+          console.log("[Edit] Loaded event data:", {
+            title: json?.title,
+            heroImage: existing.heroImage,
+            themeId: existing.themeId,
+            fontId: existing.fontId,
+            fontSize: existing.fontSize,
+            existing,
+          });
+
+          const startIso =
+            existing.start || existing.startISO || existing.startIso;
+          let loadedDate: string | undefined = undefined;
+          let loadedTime: string | undefined = undefined;
+          if (startIso) {
+            const d = new Date(startIso);
+            if (!Number.isNaN(d.getTime())) {
+              loadedDate = d.toISOString().split("T")[0];
+              loadedTime = d.toISOString().slice(11, 16);
+            }
+          }
+
+          // Load all data fields, prioritizing existing values
+          setData((prev) => ({
+            ...prev,
+            title: json?.title || existing.title || prev.title,
+            date: existing.date || loadedDate || prev.date,
+            time: existing.time || loadedTime || prev.time,
+            city: existing.city || prev.city,
+            state: existing.state || prev.state,
+            address: existing.address || prev.address,
+            venue: existing.venue || existing.location || prev.venue,
+            details: existing.details || existing.description || prev.details,
+            hero: existing.heroImage || existing.hero || prev.hero,
+            rsvpEnabled:
+              typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvpEnabled,
+            rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
+            fontId: existing.fontId || prev.fontId,
+            fontSize: existing.fontSize || prev.fontSize,
+            extra: {
+              ...prev.extra,
+              ...(existing.extra || {}),
+              ...(existing.customFields || {}),
+            },
+          }));
+
+          const incomingAdvanced =
+            existing.advancedSections ||
+            existing.customFields?.advancedSections ||
+            existing.advanced ||
+            {};
+          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
+            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
+          }
+
+          // Load theme - this is critical!
+          if (existing.themeId) {
+            console.log("[Edit] Setting themeId:", existing.themeId);
+            setThemeId(existing.themeId);
+          } else {
+            console.warn("[Edit] No themeId found in existing data");
+          }
+
+          setLoadingExisting(false);
+        } catch (err) {
+          console.error("[Edit] Error loading event:", err);
+          setLoadingExisting(false);
+          // Don't silently fail - show error to user
+          alert("Failed to load event data. Please refresh the page.");
+        }
+      };
+      loadExisting();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editEventId]);
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -577,6 +731,43 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
+        // Convert blob URLs to data URLs for saving
+        let heroToSave = config.defaultHero;
+        if (data.hero) {
+          if (/^blob:/i.test(data.hero)) {
+            // Convert blob URL to data URL
+            try {
+              const response = await fetch(data.hero);
+              const blob = await response.blob();
+              const reader = new FileReader();
+              heroToSave = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                  const result = reader.result as string;
+                  resolve(result || config.defaultHero);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } catch (err) {
+              console.error("Failed to convert blob URL:", err);
+              heroToSave = config.defaultHero;
+            }
+          } else if (/^data:/i.test(data.hero)) {
+            // Already a data URL, use as-is
+            heroToSave = data.hero;
+          } else {
+            // Regular URL (http/https), use as-is
+            heroToSave = data.hero;
+          }
+        }
+
+        // Get current font and size for saving
+        const currentSelectedFont =
+          GYM_FONTS.find((f) => f.id === data.fontId) || GYM_FONTS[0];
+        const currentSelectedSize =
+          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
+          FONT_SIZE_OPTIONS[1];
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
@@ -607,24 +798,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
-            heroImage: data.hero || config.defaultHero,
+            heroImage: heroToSave,
             themeId,
             theme: currentTheme,
+            fontId: data.fontId,
+            fontSize: data.fontSize,
+            fontFamily: currentSelectedFont?.css,
+            fontSizeClass: currentSelectedSize?.className,
             time: data.time,
             date: data.date,
           },
         };
 
-        const res = await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json().catch(() => ({}));
-        const id = (json as any)?.id as string | undefined;
-        if (!id) throw new Error("Failed to create event");
-        router.push(`/event/${id}?created=1`);
+        if (editEventId) {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: payload.title, data: payload.data }),
+          });
+          if (!res.ok) throw new Error("Failed to update event");
+          router.push(`/event/${editEventId}?updated=1`);
+        } else {
+          const res = await fetch("/api/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json().catch(() => ({}));
+          const id = (json as any)?.id as string | undefined;
+          if (!id) throw new Error("Failed to create event");
+          router.push(`/event/${id}?created=1`);
+        }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -641,6 +847,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.city,
       data.state,
       data.hero,
+      data.fontId,
+      data.fontSize,
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
@@ -655,6 +863,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.rsvpCopy,
       themeId,
       currentTheme,
+      editEventId,
       router,
     ]);
 
@@ -1323,18 +1532,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       id={section.id}
                       className="py-8 border-t border-white/10 px-6 md:px-10"
                     >
-              {section.renderPreview({
-                state: advancedState?.[section.id],
-                textClass,
-                accentClass,
-                headingShadow,
-                bodyShadow,
-                titleColor,
-                headingFontStyle,
-              })}
-            </section>
-          ) : null
-        )}
+                      {section.renderPreview({
+                        state: advancedState?.[section.id],
+                        textClass,
+                        accentClass,
+                        headingShadow,
+                        bodyShadow,
+                        titleColor,
+                        headingFontStyle,
+                      })}
+                    </section>
+                  ) : null
+                )}
 
                 {data.rsvpEnabled && (
                   <section
@@ -3052,7 +3261,8 @@ const logisticsSection = {
     headingShadow,
     bodyShadow,
     titleColor,
-  headingFontStyle, }) => {
+    headingFontStyle,
+  }) => {
     const logistics: LogisticsInfo = state || {};
     const hasData =
       logistics.travelMode || logistics.hotelName || logistics.feeAmount;
@@ -3420,7 +3630,8 @@ const gearSection = {
     headingShadow,
     bodyShadow,
     titleColor,
-  headingFontStyle, }) => {
+    headingFontStyle,
+  }) => {
     const items: GearItem[] = state?.items || [];
     const hasData = state?.leotardOfDay || items.length > 0;
     if (!hasData) return null;
@@ -3792,7 +4003,8 @@ const volunteersSection = {
     headingShadow,
     bodyShadow,
     titleColor,
-  headingFontStyle, }) => {
+    headingFontStyle,
+  }) => {
     const slots: VolunteerSlot[] = state?.volunteerSlots || [];
     const carpools: CarpoolOffer[] = state?.carpoolOffers || [];
     if (slots.length === 0 && carpools.length === 0) return null;
@@ -4058,7 +4270,8 @@ const announcementsSection = {
     headingShadow,
     bodyShadow,
     titleColor,
-  headingFontStyle, }) => {
+    headingFontStyle,
+  }) => {
     const announcements =
       state?.announcements?.filter((a: any) => a.text) || [];
     if (announcements.length === 0) return null;

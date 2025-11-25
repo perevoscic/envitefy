@@ -149,7 +149,7 @@ const InputGroup = memo(
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange &&
+      // onChange excluded - parent creates new functions on each render
       prevProps.readOnly === nextProps.readOnly
     );
   }

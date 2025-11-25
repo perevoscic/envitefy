@@ -1,7 +1,14 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  memo,
+  useRef,
+} from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -108,26 +115,86 @@ type SimpleTemplateConfig = {
 };
 
 const DANCE_FONTS = [
-  { id: "playfair", name: "Playfair Display", css: "'Playfair Display', 'Times New Roman', serif" },
-  { id: "cormorant-garamond", name: "Cormorant Garamond", css: "'Cormorant Garamond', 'Garamond', serif" },
-  { id: "great-vibes", name: "Great Vibes", css: "'Great Vibes', 'Lucida Calligraphy', cursive" },
-  { id: "parisienne", name: "Parisienne", css: "'Parisienne', 'Brush Script MT', cursive" },
+  {
+    id: "playfair",
+    name: "Playfair Display",
+    css: "'Playfair Display', 'Times New Roman', serif",
+  },
+  {
+    id: "cormorant-garamond",
+    name: "Cormorant Garamond",
+    css: "'Cormorant Garamond', 'Garamond', serif",
+  },
+  {
+    id: "great-vibes",
+    name: "Great Vibes",
+    css: "'Great Vibes', 'Lucida Calligraphy', cursive",
+  },
+  {
+    id: "parisienne",
+    name: "Parisienne",
+    css: "'Parisienne', 'Brush Script MT', cursive",
+  },
   { id: "allura", name: "Allura", css: "'Allura', 'Brush Script MT', cursive" },
-  { id: "dancing-script", name: "Dancing Script", css: "'Dancing Script', 'Comic Sans MS', cursive" },
-  { id: "cinzel-decorative", name: "Cinzel Decorative", css: "'Cinzel Decorative', 'Cinzel', serif" },
+  {
+    id: "dancing-script",
+    name: "Dancing Script",
+    css: "'Dancing Script', 'Comic Sans MS', cursive",
+  },
+  {
+    id: "cinzel-decorative",
+    name: "Cinzel Decorative",
+    css: "'Cinzel Decorative', 'Cinzel', serif",
+  },
   { id: "fraunces", name: "Fraunces", css: "'Fraunces', 'Georgia', serif" },
-  { id: "libre-baskerville", name: "Libre Baskerville", css: "'Libre Baskerville', 'Baskerville', serif" },
-  { id: "marcellus", name: "Marcellus", css: "'Marcellus', 'Times New Roman', serif" },
-  { id: "quattrocento", name: "Quattrocento", css: "'Quattrocento', 'Garamond', serif" },
+  {
+    id: "libre-baskerville",
+    name: "Libre Baskerville",
+    css: "'Libre Baskerville', 'Baskerville', serif",
+  },
+  {
+    id: "marcellus",
+    name: "Marcellus",
+    css: "'Marcellus', 'Times New Roman', serif",
+  },
+  {
+    id: "quattrocento",
+    name: "Quattrocento",
+    css: "'Quattrocento', 'Garamond', serif",
+  },
   { id: "petrona", name: "Petrona", css: "'Petrona', 'Georgia', serif" },
-  { id: "pinyon-script", name: "Pinyon Script", css: "'Pinyon Script', 'Edwardian Script ITC', cursive" },
-  { id: "dm-serif-display", name: "DM Serif Display", css: "'DM Serif Display', 'Times New Roman', serif" },
-  { id: "sorts-mill-goudy", name: "Sorts Mill Goudy", css: "'Sorts Mill Goudy', 'Goudy Old Style', serif" },
+  {
+    id: "pinyon-script",
+    name: "Pinyon Script",
+    css: "'Pinyon Script', 'Edwardian Script ITC', cursive",
+  },
+  {
+    id: "dm-serif-display",
+    name: "DM Serif Display",
+    css: "'DM Serif Display', 'Times New Roman', serif",
+  },
+  {
+    id: "sorts-mill-goudy",
+    name: "Sorts Mill Goudy",
+    css: "'Sorts Mill Goudy', 'Goudy Old Style', serif",
+  },
   { id: "gloock", name: "Gloock", css: "'Gloock', 'Georgia', serif" },
   { id: "italiana", name: "Italiana", css: "'Italiana', 'Didot', serif" },
-  { id: "la-belle-aurore", name: "La Belle Aurore", css: "'La Belle Aurore', 'Bradley Hand', cursive" },
-  { id: "meddon", name: "Meddon", css: "'Meddon', 'Lucida Handwriting', cursive" },
-  { id: "tangerine", name: "Tangerine", css: "'Tangerine', 'Brush Script MT', cursive" },
+  {
+    id: "la-belle-aurore",
+    name: "La Belle Aurore",
+    css: "'La Belle Aurore', 'Bradley Hand', cursive",
+  },
+  {
+    id: "meddon",
+    name: "Meddon",
+    css: "'Meddon', 'Lucida Handwriting', cursive",
+  },
+  {
+    id: "tangerine",
+    name: "Tangerine",
+    css: "'Tangerine', 'Brush Script MT', cursive",
+  },
 ];
 
 const DANCE_GOOGLE_FONT_FAMILIES = [
@@ -277,7 +344,7 @@ const InputGroup = memo(
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange &&
+      // onChange excluded - parent creates new functions on each render
       prevProps.readOnly === nextProps.readOnly
     );
   }
@@ -615,10 +682,7 @@ const eventsSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Performances & Tech
         </h2>
         <div className="space-y-3">
@@ -935,10 +999,7 @@ const practiceSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Rehearsal Schedule
         </h2>
         <div className="space-y-3">
@@ -1223,10 +1284,7 @@ const rosterSection = {
 
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Cast & Roster
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1397,10 +1455,7 @@ const logisticsSection = {
     }
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Logistics
         </h2>
         <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-2">
@@ -1536,10 +1591,7 @@ const gearSection = {
     }
     return (
       <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={headingFontStyle}
-        >
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
           Costume & Props
         </h2>
         <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-2">
@@ -1840,10 +1892,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const addressLine = "";
 
     const hasEvents = (advancedState?.events?.events?.length ?? 0) > 0;
-    const hasPractice =
-      (advancedState?.practice?.blocks?.length ?? 0) > 0;
-    const hasRoster =
-      (advancedState?.roster?.athletes?.length ?? 0) > 0;
+    const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
+    const hasRoster = (advancedState?.roster?.athletes?.length ?? 0) > 0;
     const hasLogistics = Boolean(
       advancedState?.logistics?.travelMode ||
         advancedState?.logistics?.departure ||

@@ -372,50 +372,52 @@ export default function PwaInstallButton({
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
 
+  // Helper to check if app is installed (synchronous check)
+  const checkIsInstalled = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      // iOS/iPadOS Safari exposes `navigator.standalone`
+      if ((window.navigator as any).standalone === true) return true;
+      if (!window.matchMedia) return false;
+      const standaloneMatch = window.matchMedia(
+        "(display-mode: standalone)"
+      ).matches;
+      const fullscreenMatch = window.matchMedia(
+        "(display-mode: fullscreen)"
+      ).matches;
+      const minimalUiMatch = window.matchMedia(
+        "(display-mode: minimal-ui)"
+      ).matches;
+
+      // If any display-mode indicates standalone, trust it (app is installed)
+      // This is especially important for Android where referrer checks can be unreliable
+      if (standaloneMatch || fullscreenMatch || minimalUiMatch) {
+        return true;
+      }
+
+      // Additional Android-specific check: if referrer indicates app launch
+      const isAndroid = /Android/i.test(navigator.userAgent || "");
+      if (isAndroid) {
+        const ref = document.referrer || "";
+        const androidStandalone =
+          ref.startsWith("android-app://") ||
+          ref.startsWith("chrome-extension://");
+        if (androidStandalone) return true;
+      }
+
+      return false;
+    } catch {
+      // best effort only
+    }
+    return false;
+  }, []);
+
   // Hide if already installed or running in standalone
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const isStandalone = () => {
-      try {
-        // iOS/iPadOS Safari exposes `navigator.standalone`
-        if ((window.navigator as any).standalone === true) return true;
-        if (!window.matchMedia) return false;
-        const standaloneMatch = window.matchMedia(
-          "(display-mode: standalone)"
-        ).matches;
-        const fullscreenMatch = window.matchMedia(
-          "(display-mode: fullscreen)"
-        ).matches;
-        const minimalUiMatch = window.matchMedia(
-          "(display-mode: minimal-ui)"
-        ).matches;
-
-        // If any display-mode indicates standalone, trust it (app is installed)
-        // This is especially important for Android where referrer checks can be unreliable
-        if (standaloneMatch || fullscreenMatch || minimalUiMatch) {
-          return true;
-        }
-
-        // Additional Android-specific check: if referrer indicates app launch
-        const isAndroid = /Android/i.test(navigator.userAgent || "");
-        if (isAndroid) {
-          const ref = document.referrer || "";
-          const androidStandalone =
-            ref.startsWith("android-app://") ||
-            ref.startsWith("chrome-extension://");
-          if (androidStandalone) return true;
-        }
-
-        return false;
-      } catch {
-        // best effort only
-      }
-      return false;
-    };
-
     const checkInstalled = () => {
-      const standalone = isStandalone();
+      const standalone = checkIsInstalled();
       if (standalone) {
         setCanInstall(false);
         setHideUi(true);
@@ -792,20 +794,9 @@ export default function PwaInstallButton({
   }, [guidePulse]);
 
   // Additional safety check: hide if running in standalone mode
-  if (typeof window !== "undefined") {
-    try {
-      if ((window.navigator as any).standalone === true) return null;
-      if (window.matchMedia) {
-        const isStandalone =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          window.matchMedia("(display-mode: fullscreen)").matches ||
-          window.matchMedia("(display-mode: minimal-ui)").matches;
-        if (isStandalone) return null;
-      }
-    } catch {
-      // best effort only
-    }
-  }
+  // This check runs synchronously on every render to ensure we never show when installed
+  const isInstalled = checkIsInstalled();
+  if (isInstalled) return null;
 
   if (hideUi) return null;
 

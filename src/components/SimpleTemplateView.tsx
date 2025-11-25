@@ -20,6 +20,9 @@ import {
   CheckSquare,
   Car,
   Megaphone,
+  Link as LinkIcon,
+  Phone,
+  AlertCircle,
 } from "lucide-react";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventActions from "@/components/EventActions";
@@ -340,7 +343,13 @@ export default function SimpleTemplateView({
   const hasRoster = Array.isArray(advancedSections?.roster?.athletes)
     ? advancedSections.roster.athletes.length > 0
     : false;
-  const hasMeet = Boolean(advancedSections?.meet?.session);
+  const hasMeet = Boolean(
+    advancedSections?.meet?.session ||
+      advancedSections?.meet?.sessionNumber ||
+      advancedSections?.meet?.warmUpTime ||
+      advancedSections?.meet?.marchInTime ||
+      advancedSections?.meet?.startApparatus
+  );
   const hasPractice = Array.isArray(advancedSections?.practice?.blocks)
     ? advancedSections.practice.blocks.length > 0
     : false;
@@ -348,18 +357,29 @@ export default function SimpleTemplateView({
     const logistics = advancedSections?.logistics;
     if (!logistics) return false;
     return (
+      Boolean(logistics.travelMode) ||
       Boolean(logistics.transport) ||
       Boolean(logistics.hotel) ||
+      Boolean(logistics.hotelName) ||
       Boolean(logistics.meals) ||
-      (logistics.forms?.length ?? 0) > 0
+      Boolean(logistics.mealPlan) ||
+      Boolean(logistics.callTime) ||
+      Boolean(logistics.pickupWindow) ||
+      Boolean(logistics.feeAmount) ||
+      Boolean(logistics.paymentLink) ||
+      (logistics.forms?.length ?? 0) > 0 ||
+      (logistics.waiverLinks?.length ?? 0) > 0
     );
   })();
   const hasGear = (advancedSections?.gear?.items?.length ?? 0) > 0;
   const hasVolunteers =
+    (advancedSections?.volunteers?.volunteerSlots?.length ?? 0) > 0 ||
     (advancedSections?.volunteers?.slots?.length ?? 0) > 0 ||
+    (advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
     (advancedSections?.volunteers?.carpools?.length ?? 0) > 0;
   const hasAnnouncements =
-    (advancedSections?.announcements?.items?.length ?? 0) > 0;
+    (advancedSections?.announcements?.items?.length ?? 0) > 0 ||
+    (advancedSections?.announcements?.announcements?.length ?? 0) > 0;
   const hasRsvpSection = rsvpEnabled;
 
   const navItems = useMemo(
@@ -372,7 +392,11 @@ export default function SimpleTemplateView({
         { id: "logistics", label: "Logistics", enabled: hasLogistics },
         { id: "gear", label: "Gear", enabled: hasGear },
         { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
-        { id: "announcements", label: "Announcements", enabled: hasAnnouncements },
+        {
+          id: "announcements",
+          label: "Announcements",
+          enabled: hasAnnouncements,
+        },
         { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
       ].filter((item) => item.enabled),
     [
@@ -515,7 +539,18 @@ export default function SimpleTemplateView({
   // Render meet section
   const renderMeetSection = () => {
     const meet = advancedSections?.meet;
-    if (!meet?.session) return null;
+    if (!meet) return null;
+
+    const hasData =
+      meet.session ||
+      meet.sessionNumber ||
+      meet.warmUpTime ||
+      meet.marchInTime ||
+      meet.startApparatus ||
+      meet.rotationOrder?.length ||
+      meet.judgingNotes ||
+      meet.scoresLink;
+    if (!hasData) return null;
 
     return (
       <section
@@ -536,7 +571,7 @@ export default function SimpleTemplateView({
               Session
             </div>
             <div className={`mt-1 font-bold ${textClass}`} style={bodyShadow}>
-              {meet.session}
+              {meet.session || meet.sessionNumber || "—"}
             </div>
           </div>
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -546,7 +581,7 @@ export default function SimpleTemplateView({
               Warm-up
             </div>
             <div className={`mt-1 font-bold ${textClass}`} style={bodyShadow}>
-              {meet.warmupTime || "—"}
+              {meet.warmupTime || meet.warmUpTime || "—"}
             </div>
           </div>
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -556,7 +591,7 @@ export default function SimpleTemplateView({
               March-in
             </div>
             <div className={`mt-1 font-bold ${textClass}`} style={bodyShadow}>
-              {meet.marchInTime || "—"}
+              {meet.marchInTime || meet.marchinTime || "—"}
             </div>
           </div>
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -588,9 +623,9 @@ export default function SimpleTemplateView({
             ))}
           </div>
         )}
-        {meet.notes && (
+        {(meet.notes || meet.judgingNotes) && (
           <p className={`text-sm opacity-80 ${textClass}`} style={bodyShadow}>
-            {meet.notes}
+            {meet.notes || meet.judgingNotes}
           </p>
         )}
         {meet.scoresLink && (
@@ -613,6 +648,44 @@ export default function SimpleTemplateView({
     const practice = advancedSections?.practice;
     if (!practice?.blocks?.length) return null;
 
+    // Helper to format time from startTime/endTime or use time field
+    const formatTime = (block: any) => {
+      if (block.time) return block.time;
+      if (block.startTime && block.endTime) {
+        const formatTimeStr = (timeStr: string) => {
+          if (!timeStr) return "";
+          // Handle both "16:30" and "4:30 PM" formats
+          if (timeStr.includes(":")) {
+            const [hours, minutes] = timeStr.split(":");
+            const hour = parseInt(hours, 10);
+            if (hour >= 12) {
+              const pmHour = hour === 12 ? 12 : hour - 12;
+              return `${pmHour}:${minutes} PM`;
+            } else {
+              const amHour = hour === 0 ? 12 : hour;
+              return `${amHour}:${minutes} AM`;
+            }
+          }
+          return timeStr;
+        };
+        return `${formatTimeStr(block.startTime)} - ${formatTimeStr(
+          block.endTime
+        )}`;
+      }
+      return "";
+    };
+
+    // Helper to get description from various possible fields
+    const getDescription = (block: any) => {
+      return (
+        block.skillGoals ||
+        block.description ||
+        block.goals ||
+        block.details ||
+        ""
+      );
+    };
+
     return (
       <section
         id="practice"
@@ -625,33 +698,46 @@ export default function SimpleTemplateView({
           Practice Schedule
         </h2>
         <div className="space-y-4">
-          {practice.blocks.map((block: any, idx: number) => (
-            <div
-              key={idx}
-              className="bg-white/5 border border-white/10 rounded-lg p-4"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span
-                  className={`font-semibold ${textClass}`}
-                  style={bodyShadow}
-                >
-                  {block.day}
-                </span>
-                <span className={`text-sm opacity-70 ${textClass}`}>
-                  {block.time}
-                </span>
+          {practice.blocks.map((block: any, idx: number) => {
+            const timeStr = formatTime(block);
+            const description = getDescription(block);
+            return (
+              <div
+                key={idx}
+                className="bg-white/5 border border-white/10 rounded-lg p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span
+                    className={`font-semibold ${textClass}`}
+                    style={bodyShadow}
+                  >
+                    {block.day}
+                  </span>
+                  {timeStr && (
+                    <span className={`text-sm opacity-70 ${textClass}`}>
+                      {timeStr}
+                    </span>
+                  )}
+                </div>
+                {block.focus &&
+                  (Array.isArray(block.focus)
+                    ? block.focus.length > 0
+                    : block.focus) && (
+                    <div className={`text-sm ${textClass}`} style={bodyShadow}>
+                      <span className="opacity-70">Focus:</span>{" "}
+                      {Array.isArray(block.focus)
+                        ? block.focus.join(", ")
+                        : block.focus}
+                    </div>
+                  )}
+                {description && (
+                  <p className={`text-sm opacity-70 mt-2 ${textClass}`}>
+                    {description}
+                  </p>
+                )}
               </div>
-              <div className={`text-sm ${textClass}`} style={bodyShadow}>
-                <span className="opacity-70">Focus:</span>{" "}
-                {block.focus?.join(", ") || "General"}
-              </div>
-              {block.goals && (
-                <p className={`text-sm opacity-70 mt-2 ${textClass}`}>
-                  {block.goals}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     );
@@ -663,10 +749,18 @@ export default function SimpleTemplateView({
     if (!logistics) return null;
 
     const hasContent =
+      logistics.travelMode ||
       logistics.transport ||
       logistics.hotel ||
+      logistics.hotelName ||
       logistics.meals ||
-      logistics.forms?.length;
+      logistics.mealPlan ||
+      logistics.forms?.length ||
+      logistics.feeAmount ||
+      logistics.paymentLink ||
+      logistics.waiverLinks?.length ||
+      logistics.callTime ||
+      logistics.pickupWindow;
     if (!hasContent) return null;
 
     return (
@@ -681,7 +775,11 @@ export default function SimpleTemplateView({
           Logistics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {logistics.transport && (
+          {/* Transportation - show if travelMode, callTime, pickupWindow, or transport exists */}
+          {(logistics.travelMode ||
+            logistics.callTime ||
+            logistics.pickupWindow ||
+            logistics.transport) && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Bus size={18} className={accentClass} />
@@ -689,21 +787,47 @@ export default function SimpleTemplateView({
                   className={`font-semibold ${textClass}`}
                   style={bodyShadow}
                 >
-                  Transportation
+                  TRANSPORTATION
                 </span>
               </div>
-              <p className={`text-sm opacity-80 ${textClass}`}>
-                {logistics.transport}
-              </p>
+              {logistics.transport && (
+                <p className={`text-sm opacity-80 ${textClass}`}>
+                  {logistics.transport}
+                </p>
+              )}
+              {logistics.travelMode && !logistics.transport && (
+                <p className={`text-sm opacity-80 ${textClass}`}>
+                  {logistics.travelMode === "bus" && "🚌 Team Bus"}
+                  {logistics.travelMode === "parent_drive" && "🚗 Parent Drive"}
+                  {logistics.travelMode === "carpool" && "🚙 Carpool"}
+                  {logistics.travelMode === "other" && "Other"}
+                </p>
+              )}
               {logistics.callTime && (
                 <p className={`text-sm mt-2 ${textClass}`}>
                   <span className="opacity-70">Call time:</span>{" "}
-                  {logistics.callTime}
+                  {logistics.callTime.includes(":") &&
+                  !logistics.callTime.includes("AM") &&
+                  !logistics.callTime.includes("PM")
+                    ? (() => {
+                        const [hours, minutes] = logistics.callTime.split(":");
+                        const hour = parseInt(hours, 10);
+                        if (hour >= 12) {
+                          const pmHour = hour === 12 ? 12 : hour - 12;
+                          return `${pmHour}:${minutes} PM`;
+                        } else {
+                          const amHour = hour === 0 ? 12 : hour;
+                          return `${amHour}:${minutes} AM`;
+                        }
+                      })()
+                    : logistics.callTime}
                 </p>
               )}
             </div>
           )}
-          {logistics.hotel && (
+
+          {/* Hotel - show if hotelName or hotel exists */}
+          {(logistics.hotelName || logistics.hotel) && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Hotel size={18} className={accentClass} />
@@ -711,26 +835,106 @@ export default function SimpleTemplateView({
                   className={`font-semibold ${textClass}`}
                   style={bodyShadow}
                 >
-                  Hotel
+                  HOTEL
                 </span>
               </div>
-              <p className={`text-sm opacity-80 ${textClass}`}>
-                {logistics.hotel}
-              </p>
+              {logistics.hotelName && (
+                <p
+                  className={`text-sm font-medium opacity-90 ${textClass}`}
+                  style={bodyShadow}
+                >
+                  {logistics.hotelName}
+                </p>
+              )}
+              {logistics.hotelAddress && (
+                <p className={`text-sm opacity-80 mt-1 ${textClass}`}>
+                  {logistics.hotelAddress}
+                </p>
+              )}
+              {logistics.hotelCheckIn && (
+                <p className={`text-sm opacity-70 mt-1 ${textClass}`}>
+                  <span className="opacity-70">Check-in:</span>{" "}
+                  {logistics.hotelCheckIn}
+                </p>
+              )}
+              {logistics.hotel && !logistics.hotelName && (
+                <p className={`text-sm opacity-80 ${textClass}`}>
+                  {logistics.hotel}
+                </p>
+              )}
             </div>
           )}
-          {logistics.meals && (
+
+          {/* Fee - show if feeAmount, paymentLink, or waiverLinks exist */}
+          {(logistics.feeAmount ||
+            logistics.paymentLink ||
+            logistics.waiverLinks?.length) && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
+                <FileText size={18} className={accentClass} />
                 <span
                   className={`font-semibold ${textClass}`}
                   style={bodyShadow}
                 >
-                  🍽️ Meals
+                  FEE
+                </span>
+              </div>
+              {logistics.feeAmount && (
+                <p className={`text-sm opacity-80 ${textClass}`}>
+                  {logistics.feeAmount}
+                </p>
+              )}
+              {logistics.feeDueDate && (
+                <p className={`text-sm opacity-70 mt-1 ${textClass}`}>
+                  <span className="opacity-70">Due:</span>{" "}
+                  {new Date(logistics.feeDueDate).toLocaleDateString()}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {logistics.paymentLink && (
+                  <a
+                    href={logistics.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
+                  >
+                    <LinkIcon size={16} />
+                    Pay Fees
+                  </a>
+                )}
+                {(logistics.waiverLinks || []).map(
+                  (link: string, idx: number) =>
+                    link && (
+                      <a
+                        key={idx}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
+                      >
+                        <FileText size={16} />
+                        Form #{idx + 1}
+                      </a>
+                    )
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Meals - show if mealPlan or meals exists */}
+          {(logistics.mealPlan || logistics.meals) && (
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={18} className={accentClass} />
+                <span
+                  className={`font-semibold ${textClass}`}
+                  style={bodyShadow}
+                >
+                  MEALS
                 </span>
               </div>
               <p className={`text-sm opacity-80 ${textClass}`}>
-                {logistics.meals}
+                {logistics.mealPlan || logistics.meals}
               </p>
             </div>
           )}
@@ -767,6 +971,43 @@ export default function SimpleTemplateView({
               </ul>
             </div>
           )}
+          {/* Forms - only if not already shown in Fee section */}
+          {logistics.forms?.length > 0 &&
+            !logistics.feeAmount &&
+            !logistics.paymentLink &&
+            !logistics.waiverLinks?.length && (
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText size={18} className={accentClass} />
+                  <span
+                    className={`font-semibold ${textClass}`}
+                    style={bodyShadow}
+                  >
+                    Required Forms
+                  </span>
+                </div>
+                <ul className="space-y-1">
+                  {logistics.forms.map((form: any, idx: number) => (
+                    <li key={idx}>
+                      {form.url ? (
+                        <a
+                          href={form.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`text-sm underline ${accentClass}`}
+                        >
+                          {form.name}
+                        </a>
+                      ) : (
+                        <span className={`text-sm opacity-80 ${textClass}`}>
+                          {form.name}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
         </div>
       </section>
     );
@@ -776,6 +1017,21 @@ export default function SimpleTemplateView({
   const renderGearSection = () => {
     const gear = advancedSections?.gear;
     if (!gear?.items?.length) return null;
+
+    // Track checked items in local state for interactive checklist
+    const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+
+    const toggleItem = (itemId: string) => {
+      setCheckedItems((prev) => {
+        const next = new Set(prev);
+        if (next.has(itemId)) {
+          next.delete(itemId);
+        } else {
+          next.add(itemId);
+        }
+        return next;
+      });
+    };
 
     return (
       <section
@@ -789,17 +1045,34 @@ export default function SimpleTemplateView({
           Gear & Uniform Checklist
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {gear.items.map((item: any, idx: number) => (
-            <div
-              key={idx}
-              className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3"
-            >
-              <CheckSquare size={18} className={accentClass} />
-              <span className={`${textClass}`} style={bodyShadow}>
-                {item.name || item}
-              </span>
-            </div>
-          ))}
+          {gear.items.map((item: any, idx: number) => {
+            const itemId = item.id || item.name || String(idx);
+            const itemName = item.name || item;
+            const isChecked = checkedItems.has(itemId);
+            return (
+              <label
+                key={idx}
+                className={`flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-colors ${
+                  isChecked ? "bg-white/10 border-white/20" : ""
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleItem(itemId)}
+                  className="w-5 h-5 rounded border-white/30 bg-white/10 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-transparent cursor-pointer"
+                />
+                <span
+                  className={`flex-1 ${textClass} ${
+                    isChecked ? "line-through opacity-60" : ""
+                  }`}
+                  style={bodyShadow}
+                >
+                  {itemName}
+                </span>
+              </label>
+            );
+          })}
         </div>
         {gear.notes && (
           <p
@@ -813,92 +1086,153 @@ export default function SimpleTemplateView({
     );
   };
 
-  // Render volunteers section
+  // Render volunteers section - handle both data structures
   const renderVolunteersSection = () => {
     const volunteers = advancedSections?.volunteers;
-    if (!volunteers?.slots?.length && !volunteers?.carpools?.length)
-      return null;
+
+    // Handle both data structures: slots/carpools and volunteerSlots/carpoolOffers
+    const slots = volunteers?.volunteerSlots || volunteers?.slots || [];
+    const carpools = volunteers?.carpoolOffers || volunteers?.carpools || [];
+
+    if (!slots.length && !carpools.length) return null;
+
+    // Format time helper
+    const formatTime = (timeStr: string) => {
+      if (!timeStr) return "";
+      if (
+        timeStr.includes(":") &&
+        !timeStr.includes("AM") &&
+        !timeStr.includes("PM")
+      ) {
+        const [hours, minutes] = timeStr.split(":");
+        const hour = parseInt(hours, 10);
+        if (hour >= 12) {
+          const pmHour = hour === 12 ? 12 : hour - 12;
+          return `${pmHour}:${minutes} PM`;
+        } else {
+          const amHour = hour === 0 ? 12 : hour;
+          return `${amHour}:${minutes} AM`;
+        }
+      }
+      return timeStr;
+    };
 
     return (
       <section
         id="volunteers"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
-        >
-          Volunteers & Carpool
-        </h2>
-        {volunteers.slots?.length > 0 && (
-          <div className="mb-6">
-            <h3
-              className={`text-lg font-semibold mb-3 ${textClass}`}
-              style={bodyShadow}
+        {slots.length > 0 && (
+          <div className="mb-8">
+            <h2
+              className={`text-2xl mb-4 ${accentClass}`}
+              style={{ ...headingShadow, ...(titleColor || {}) }}
             >
-              Volunteer Slots
-            </h3>
+              Volunteers Needed
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {volunteers.slots.map((slot: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3"
-                >
-                  <div>
-                    <div
-                      className={`font-medium ${textClass}`}
-                      style={bodyShadow}
-                    >
-                      {slot.role}
-                    </div>
-                    {slot.assignee && (
-                      <div className={`text-sm opacity-70 ${textClass}`}>
-                        {slot.assignee}
+              {slots.map((slot: any, idx: number) => {
+                const isFilled = slot.filled || slot.assignee || slot.name;
+                const assigneeName = slot.assignee || slot.name || "";
+                return (
+                  <div
+                    key={slot.id || idx}
+                    className={`flex items-center justify-between rounded-lg p-3 ${
+                      isFilled
+                        ? "bg-green-500/20 border border-green-400/30"
+                        : "bg-white/5 border border-white/10"
+                    }`}
+                  >
+                    <div>
+                      <div
+                        className={`font-medium ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        {slot.role}
                       </div>
+                      {assigneeName && (
+                        <div className={`text-sm opacity-70 ${textClass}`}>
+                          {assigneeName}
+                        </div>
+                      )}
+                    </div>
+                    {isFilled ? (
+                      <Check size={18} className="text-green-400" />
+                    ) : (
+                      <span className="text-xs px-2 py-1 bg-orange-500/30 text-orange-200 rounded">
+                        Open
+                      </span>
                     )}
                   </div>
-                  {slot.assignee ? (
-                    <Check size={18} className="text-green-400" />
-                  ) : (
-                    <span
-                      className={`text-xs px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded`}
-                    >
-                      Open
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
-        {volunteers.carpools?.length > 0 && (
+        {carpools.length > 0 && (
           <div>
-            <h3
-              className={`text-lg font-semibold mb-3 ${textClass}`}
-              style={bodyShadow}
+            <h2
+              className={`text-2xl mb-4 ${accentClass}`}
+              style={{ ...headingShadow, ...(titleColor || {}) }}
             >
-              Carpool
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {volunteers.carpools.map((carpool: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3"
-                >
-                  <Car size={18} className={accentClass} />
-                  <div>
+              Carpool Offers
+            </h2>
+            <div className="space-y-3">
+              {carpools
+                .filter((cp: any) => cp.driverName || cp.driver)
+                .map((carpool: any, idx: number) => {
+                  const driverName = carpool.driverName || carpool.driver || "";
+                  const seats = carpool.seatsAvailable || carpool.seats || 0;
+                  const phone = carpool.phone || "";
+                  const departureLocation = carpool.departureLocation || "";
+                  const departureTime = carpool.departureTime || "";
+                  const direction = carpool.direction || "";
+
+                  return (
                     <div
-                      className={`font-medium ${textClass}`}
-                      style={bodyShadow}
+                      key={carpool.id || idx}
+                      className="bg-white/5 border border-white/10 rounded-lg p-4"
                     >
-                      {carpool.driver}
+                      <div className="flex items-center justify-between mb-2">
+                        <div
+                          className={`font-semibold ${textClass}`}
+                          style={bodyShadow}
+                        >
+                          {driverName}
+                        </div>
+                        <span className="px-2 py-1 bg-cyan-500/30 rounded text-cyan-200 text-sm">
+                          {seats} seat{seats !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      {(departureLocation || departureTime) && (
+                        <div
+                          className={`text-sm opacity-70 ${textClass}`}
+                          style={bodyShadow}
+                        >
+                          {departureLocation && (
+                            <span>{departureLocation}</span>
+                          )}
+                          {departureTime && (
+                            <span> • {formatTime(departureTime)}</span>
+                          )}
+                        </div>
+                      )}
+                      {direction && !departureLocation && !departureTime && (
+                        <div className={`text-sm opacity-70 ${textClass}`}>
+                          {direction}
+                        </div>
+                      )}
+                      {phone && (
+                        <a
+                          href={`tel:${phone}`}
+                          className={`inline-flex items-center gap-1 text-sm mt-2 opacity-80 hover:opacity-100 ${textClass}`}
+                        >
+                          <Phone size={14} /> {phone}
+                        </a>
+                      )}
                     </div>
-                    <div className={`text-sm opacity-70 ${textClass}`}>
-                      {carpool.seats} seats • {carpool.direction || "Both ways"}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           </div>
         )}
@@ -906,10 +1240,17 @@ export default function SimpleTemplateView({
     );
   };
 
-  // Render announcements section
+  // Render announcements section - handle both data structures
   const renderAnnouncementsSection = () => {
     const announcements = advancedSections?.announcements;
-    if (!announcements?.items?.length) return null;
+
+    // Handle both data structures: items array and announcements array
+    const items = announcements?.items || announcements?.announcements || [];
+    const filteredItems = items.filter(
+      (item: any) => item.text || item.message || item.title
+    );
+
+    if (!filteredItems.length) return null;
 
     return (
       <section
@@ -920,40 +1261,64 @@ export default function SimpleTemplateView({
           className={`text-2xl mb-6 ${accentClass}`}
           style={{ ...headingShadow, ...(titleColor || {}) }}
         >
-          Announcements
+          Announcements/Urgent
         </h2>
         <div className="space-y-4">
-          {announcements.items.map((item: any, idx: number) => (
-            <div
-              key={idx}
-              className="bg-white/5 border border-white/10 rounded-lg p-4"
-            >
-              <div className="flex items-start gap-3">
-                <Megaphone size={20} className={accentClass} />
-                <div>
-                  {item.title && (
-                    <div
-                      className={`font-semibold mb-1 ${textClass}`}
-                      style={bodyShadow}
-                    >
-                      {item.title}
-                    </div>
+          {filteredItems.map((item: any, idx: number) => {
+            const isUrgent = item.priority === "urgent" || item.urgent;
+            const message = item.text || item.message || "";
+            const title = item.title || "";
+            const date = item.date || item.createdAt;
+
+            return (
+              <div
+                key={item.id || idx}
+                className={`rounded-lg p-4 ${
+                  isUrgent
+                    ? "bg-red-500/20 border border-red-400/30"
+                    : "bg-white/5 border border-white/10"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {isUrgent ? (
+                    <AlertCircle size={20} className="text-red-400" />
+                  ) : (
+                    <Megaphone size={20} className={accentClass} />
                   )}
-                  <p
-                    className={`text-sm opacity-90 ${textClass}`}
-                    style={bodyShadow}
-                  >
-                    {item.message}
-                  </p>
-                  {item.date && (
-                    <p className={`text-xs opacity-50 mt-2 ${textClass}`}>
-                      {item.date}
-                    </p>
-                  )}
+                  <div className="flex-1">
+                    {isUrgent && (
+                      <div className="flex items-center gap-2 mb-2 text-red-200">
+                        <span className="text-xs font-bold uppercase">
+                          Urgent
+                        </span>
+                      </div>
+                    )}
+                    {title && (
+                      <div
+                        className={`font-semibold mb-1 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        {title}
+                      </div>
+                    )}
+                    {message && (
+                      <p
+                        className={`text-sm opacity-90 whitespace-pre-wrap ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        {message}
+                      </p>
+                    )}
+                    {date && (
+                      <p className={`text-xs opacity-50 mt-2 ${textClass}`}>
+                        {new Date(date).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     );
@@ -1035,9 +1400,11 @@ export default function SimpleTemplateView({
               )}
               <div className="pr-32">
                 <h1
-                  className={`text-3xl md:text-5xl font-serif mb-2 leading-tight ${textClass}`}
+                  className={`${
+                    eventData?.fontSizeClass || "text-3xl md:text-5xl"
+                  } mb-2 leading-tight ${textClass}`}
                   style={{
-                    fontFamily: "var(--font-playfair)",
+                    fontFamily: eventData?.fontFamily || "var(--font-playfair)",
                     ...(headingShadow || {}),
                     ...(titleColor || {}),
                   }}

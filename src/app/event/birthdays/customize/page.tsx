@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Edit2,
   Heart,
   Users,
@@ -110,7 +111,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Bright rainbow confetti bursting across the top for a fun celebration vibe.",
     headerIllustrationPrompt:
-      "watercolor rainbow confetti splash sweeping across the header",
+      "Rainbow ribbons, colorful confetti, and pastel balloons arranged in a cheerful birthday scene on a clean white background.",
     cornerAccentPrompt: "colorful confetti clusters in both top corners",
     backgroundPrompt: "light pastel rainbow wash with subtle grain",
     typography: {
@@ -132,7 +133,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Soft pastel balloons creating a festive arch over the header.",
     headerIllustrationPrompt:
-      "pastel watercolor balloons forming an arch in pink, blue, mint, and lavender",
+      "A tall balloon arch, floating balloons, and curling ribbons forming a playful celebration scene on a white background.",
     cornerAccentPrompt: "curled ribbon balloon corner clusters",
     backgroundPrompt: "soft sky-blue watercolor texture",
     typography: {
@@ -154,7 +155,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Starburst sparkles for magical and whimsical birthday energy.",
     headerIllustrationPrompt:
-      "gold and silver starburst pattern radiating across the header",
+      "Glittering stars, sparkling bursts, and metallic streamers creating a bright starburst theme on a white background.",
     cornerAccentPrompt: "tiny star clusters in metallic gold",
     backgroundPrompt: "cream-to-blush gradient with sparkly dust",
     typography: {
@@ -174,9 +175,9 @@ const PROFESSIONAL_THEMES = [
     id: "pastel_party_animals",
     themeName: "Pastel Party Animals",
     description:
-      "Watercolor party animals with hats and confetti for kids’ birthdays.",
+      "Watercolor party animals with hats and confetti for kids' birthdays.",
     headerIllustrationPrompt:
-      "watercolor giraffe, elephant, and lion wearing party hats with confetti",
+      "Pastel-colored bunny, bear, and lion characters celebrating together on a soft white background.",
     cornerAccentPrompt: "tiny pastel animal footprints",
     backgroundPrompt: "mint watercolor wash with subtle texture",
     typography: {
@@ -196,7 +197,8 @@ const PROFESSIONAL_THEMES = [
     id: "glitter_pink_celebration",
     themeName: "Glitter Pink Celebration",
     description: "Pink glitter accents perfect for glamorous birthday themes.",
-    headerIllustrationPrompt: "pink glitter watercolor sweep with sparkles",
+    headerIllustrationPrompt:
+      "A pink glitter heart, sparkly bow, and glossy pink balloons arranged festively on a white background.",
     cornerAccentPrompt: "rose glitter corner dust",
     backgroundPrompt: "light pink glitter-textured gradient",
     typography: {
@@ -218,7 +220,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Royal blue paired with gold foil for elevated birthday styling.",
     headerIllustrationPrompt:
-      "gold foil frame with star-like flourishes on royal-blue header",
+      "Blue balloons, gold confetti, and a small gold crown arranged in a luxury birthday style on a white background.",
     cornerAccentPrompt: "gold foil geometric corners",
     backgroundPrompt: "deep blue watercolor texture",
     typography: {
@@ -240,7 +242,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Cute dinosaurs in watercolor style marching across the header.",
     headerIllustrationPrompt:
-      "pastel watercolor dinosaurs with leaves and volcano icons in header",
+      "A friendly T-rex, happy triceratops, and a cartoon volcano with smoke, all on a clean white background.",
     cornerAccentPrompt: "small dino tracks in corners",
     backgroundPrompt: "light sandy watercolor texture",
     typography: {
@@ -262,7 +264,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Cosmic theme with rockets, stars, and planets in watercolor style.",
     headerIllustrationPrompt:
-      "watercolor rockets, planets, and stars forming a cosmic header",
+      "A rocket ship, cute astronaut, and colorful planets floating together on a crisp white background.",
     cornerAccentPrompt: "tiny star clusters in navy and gold",
     backgroundPrompt: "deep navy watercolor night-sky texture",
     typography: {
@@ -283,7 +285,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Mermaid Sparkle Waves",
     description: "Shimmering mermaid tails and watercolor waves.",
     headerIllustrationPrompt:
-      "pastel watercolor mermaid tails and glitter waves wrapping the header",
+      "A shimmering mermaid tail, pastel seashells, and starfish forming a magical undersea scene on a white background.",
     cornerAccentPrompt: "pearlescent shell corners",
     backgroundPrompt: "aqua watercolor gradient with shimmer",
     typography: {
@@ -305,7 +307,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Watercolor trucks, cones, and stripes for a construction-themed birthday.",
     headerIllustrationPrompt:
-      "watercolor dump trucks, traffic cones, and caution stripes across header",
+      "A bright dump truck, orange traffic cone, and caution sign arranged in a construction theme on a white background.",
     cornerAccentPrompt: "mini cones or caution stripe corners",
     backgroundPrompt: "light gray concrete-like watercolor texture",
     typography: {
@@ -326,7 +328,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Unicorn Dreamland",
     description: "Soft pastel unicorns with dreamy clouds and stars.",
     headerIllustrationPrompt:
-      "watercolor unicorns jumping through clouds with sparkles",
+      "A magical unicorn standing beside soft clouds and a pastel rainbow on a clean white background.",
     cornerAccentPrompt: "star and cloud corners",
     backgroundPrompt: "pastel purple-pink watercolor blend",
     typography: {
@@ -347,7 +349,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Sports All-Star",
     description: "Watercolor soccer balls, basketballs, and stars.",
     headerIllustrationPrompt:
-      "sports balls in watercolor forming a header band with stars",
+      "Soccer ball, baseball glove, and a gold trophy arranged in an all-star sports theme on a white background.",
     cornerAccentPrompt: "small sports icon corners",
     backgroundPrompt: "cool gray watercolor texture with faint stripes",
     typography: {
@@ -369,7 +371,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Elegant watercolor florals suitable for adult birthday celebrations.",
     headerIllustrationPrompt:
-      "lush watercolor florals in pink, peach, and cream across header",
+      "Roses, daisies, and butterflies arranged in a soft floral birthday style on a white background.",
     cornerAccentPrompt: "floral botanical corners",
     backgroundPrompt: "cream paper texture with soft floral shadows",
     typography: {
@@ -391,7 +393,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Rich purple tones with gold embellishment for a luxury birthday theme.",
     headerIllustrationPrompt:
-      "royal purple watercolor sweep with gold foil flourishes",
+      "A royal crown, purple balloons, and a small gold scepter displayed on a white background.",
     cornerAccentPrompt: "gold foil corners with micro filigree",
     backgroundPrompt: "deep purple textured gradient",
     typography: {
@@ -412,7 +414,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Circus Big Top",
     description: "Classic circus-style watercolor stripes and festive icons.",
     headerIllustrationPrompt:
-      "circus tent, flags, and stars in watercolor forming header border",
+      "A colorful circus tent, clown-themed balloon, and popcorn bucket arranged on a white background.",
     cornerAccentPrompt: "circus star corners",
     backgroundPrompt: "red-and-cream faded circus stripes in watercolor",
     typography: {
@@ -434,7 +436,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "A watercolor sprinkle cake surrounded by bright rainbow accents.",
     headerIllustrationPrompt:
-      "pastel watercolor birthday cake with rainbow sprinkles and candles",
+      "Rainbow sprinkles, cute birthday cake, and colorful candles displayed on a clean white background.",
     cornerAccentPrompt: "rainbow sprinkle corner clusters",
     backgroundPrompt: "soft pastel rainbow gradient with grain texture",
     typography: {
@@ -455,7 +457,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Golden Age Celebration",
     description: "Gold confetti on black with an elegant adult birthday style.",
     headerIllustrationPrompt:
-      "gold foil confetti falling from the top with subtle sparkles",
+      "Golden balloons, gold ribbon, and elegant clinking champagne glasses (empty) on a white background.",
     cornerAccentPrompt: "gold dusted corner flares",
     backgroundPrompt: "black-to-charcoal gradient with shimmering gold dust",
     typography: {
@@ -477,7 +479,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Bright watercolor tropical leaves and fruits for a summer vibe.",
     headerIllustrationPrompt:
-      "palm leaves, hibiscus, and citrus watercolor band",
+      "A pineapple, bright palm leaves, and a cute toucan arranged in a tropical fiesta theme on a white background.",
     cornerAccentPrompt: "tropical leaves in top corners",
     backgroundPrompt: "pale sand watercolor wash",
     typography: {
@@ -499,7 +501,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Bright neon elements on a galaxy backdrop for teens and adults.",
     headerIllustrationPrompt:
-      "neon streaks and stars over deep space watercolor background",
+      "Neon planets, glowing cosmic rings, and vibrant neon stars floating on a white background.",
     cornerAccentPrompt: "neon pink and blue corner starbursts",
     backgroundPrompt: "dark indigo-to-black gradient with star speckles",
     typography: {
@@ -521,7 +523,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Watercolor sea creatures and bubbles for ocean-themed birthdays.",
     headerIllustrationPrompt:
-      "watercolor dolphins, turtles, fish, and bubbles swimming across header",
+      "A happy fish, coral branches, and a cute sea turtle swimming together on a white background.",
     cornerAccentPrompt: "bubble corner clusters",
     backgroundPrompt: "aqua watercolor gradient with ripple texture",
     typography: {
@@ -542,7 +544,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Retro 80s Neon",
     description: "Bold geometric neon shapes inspired by 80s retro parties.",
     headerIllustrationPrompt:
-      "neon pink and turquoise geometric shapes layered diagonally",
+      "A retro cassette tape, neon grid shapes, and a colorful boombox arranged on a white background.",
     cornerAccentPrompt: "neon triangles and squiggles",
     backgroundPrompt: "black backdrop with glowing neon gradients",
     typography: {
@@ -563,7 +565,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Little Explorer",
     description: "Adventure-themed watercolor compass, map, and binoculars.",
     headerIllustrationPrompt:
-      "watercolor compass and map with footprints and binoculars",
+      "A child-sized compass, small binoculars, and explorer backpack arranged on a white background.",
     cornerAccentPrompt: "footprint trail corners",
     backgroundPrompt: "beige map-textured watercolor background",
     typography: {
@@ -584,7 +586,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Butterfly Bloom",
     description: "Pastel butterflies and florals fluttering across the header.",
     headerIllustrationPrompt:
-      "watercolor butterflies with pink and purple blooms in header",
+      "Colorful butterflies, soft flowers, and delicate vines arranged gracefully on a white background.",
     cornerAccentPrompt: "tiny floral and butterfly corners",
     backgroundPrompt: "soft lilac watercolor wash",
     typography: {
@@ -604,7 +606,8 @@ const PROFESSIONAL_THEMES = [
     id: "camping_night",
     themeName: "Camping Night",
     description: "Campfire, tents, and stars for an outdoor-themed birthday.",
-    headerIllustrationPrompt: "watercolor tents and campfire under starry sky",
+    headerIllustrationPrompt:
+      "A cute tent, friendly campfire illustration (no flames touching), and a lantern on a white background.",
     cornerAccentPrompt: "forest silhouette corners",
     backgroundPrompt: "navy blue night-sky watercolor texture",
     typography: {
@@ -626,7 +629,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Whimsical fairy lights and pastel florals for a magical birthday.",
     headerIllustrationPrompt:
-      "string lights with watercolor florals and fairy dust effect",
+      "Delicate fairy wings, whimsical mushrooms, and soft glowing sparkles arranged on a white background.",
     cornerAccentPrompt: "tiny fairy dust clusters",
     backgroundPrompt: "mint and lavender watercolor gradient",
     typography: {
@@ -647,7 +650,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Farmyard Friends",
     description: "Cute watercolor farm animals with barn and hay textures.",
     headerIllustrationPrompt:
-      "watercolor cow, pig, and rooster with barn backdrop",
+      "A happy cow, cute chicken, and small red barn arranged on a white background.",
     cornerAccentPrompt: "farm tool and hay illustrations",
     backgroundPrompt: "light tan paper texture with faint hay lines",
     typography: {
@@ -669,7 +672,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Watercolor jungle animals and tropical leaves marching across header.",
     headerIllustrationPrompt:
-      "lion, monkey, zebra, and giraffe with tropical leaves",
+      "A playful monkey, tall giraffe, and big tropical leaves arranged on a white background.",
     cornerAccentPrompt: "tropical leaf corners",
     backgroundPrompt: "green watercolor wash with leaf silhouettes",
     typography: {
@@ -691,7 +694,7 @@ const PROFESSIONAL_THEMES = [
     description:
       "Retro birthday theme with Polaroid photo frames and pastel tape art.",
     headerIllustrationPrompt:
-      "polaroid photo frames layered diagonally with confetti",
+      "A retro Polaroid frame, vintage camera, and small film strip arranged on a clean white background.",
     cornerAccentPrompt: "washi tape and sticker corners",
     backgroundPrompt: "off-white paper texture with faint grid",
     typography: {
@@ -712,7 +715,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Elegant Florals & Gold",
     description: "Delicate pink and cream flowers paired with gold foil lines.",
     headerIllustrationPrompt:
-      "hand-painted florals with gold foil geometric frame",
+      "Gold leaves, white roses, and an elegant floral border arranged on a white background.",
     cornerAccentPrompt: "tiny gold floral corners",
     backgroundPrompt: "soft blush watercolor texture",
     typography: {
@@ -733,7 +736,7 @@ const PROFESSIONAL_THEMES = [
     themeName: "Balloons at Sunset",
     description: "Warm sunset gradient with floating balloons across the top.",
     headerIllustrationPrompt:
-      "balloons floating upward in peach and coral tones over horizon",
+      "A cluster of sunset-toned balloons with soft clouds and warm light rays, all on a clean white background.",
     cornerAccentPrompt: "balloon ribbon corners",
     backgroundPrompt: "orange-to-pink watercolor sunset gradient",
     typography: {
@@ -748,525 +751,6 @@ const PROFESSIONAL_THEMES = [
       "#e58058",
       "#ffffff",
     ],
-  },
-];
-
-const DESIGN_THEMES = [
-  {
-    id: "super_star_gala",
-    name: "Super Star Gala",
-    category: "High glamour",
-    bg: "bg-gradient-to-br from-black via-slate-900 to-red-900",
-    text: "text-white drop-shadow-md",
-    accent: "text-amber-300",
-    previewColor: "bg-gradient-to-br from-black via-slate-900 to-red-900",
-    previewDot: "bg-amber-400",
-    aesthetic: "High glamour, red carpet event.",
-    colors: "Deep black, shimmering gold, and vivid ruby red.",
-    graphics:
-      "Glittering stars, spotlights, and a subtle velvet texture background.",
-    font: "A dramatic, elegant serif for the title.",
-    primaryObjects:
-      "Gold Statuettes (trophies) framing the text block. A velvet curtain backdrop with spotlights shining from the top corners.",
-  },
-  {
-    id: "mystic_unicorn",
-    name: "Mystic Unicorn",
-    category: "Magical & soft",
-    bg: "bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100",
-    text: "text-slate-800",
-    accent: "text-purple-600",
-    previewColor: "bg-gradient-to-br from-purple-200 via-pink-200 to-blue-200",
-    previewDot: "bg-purple-300",
-    aesthetic: "Magical, iridescent, and soft.",
-    colors:
-      "Pastel lavender, mint green, baby pink, and white, with an iridescent sheen.",
-    graphics: "A graceful unicorn silhouette, rainbows, and sparkles.",
-    font: "A whimsical, flowing script.",
-    primaryObjects:
-      "A shimmering Unicorn centered at the top of the invite title. Rainbow and star dust trails sweeping across the background.",
-  },
-  {
-    id: "dinosaur_adventure",
-    name: "Dinosaur Adventure",
-    category: "Prehistoric jungle",
-    bg: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
-    text: "text-white drop-shadow-md",
-    accent: "text-amber-200",
-    previewColor:
-      "bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700",
-    previewDot: "bg-emerald-700",
-    aesthetic: "Prehistoric jungle exploration.",
-    colors: "Earthy greens, moss, burnt orange, and brown.",
-    graphics:
-      "Friendly T-Rex or Triceratops illustration, palm leaves, and fossil patterns.",
-    font: "A bold, slightly rugged, stencil-like font.",
-    primaryObjects:
-      "A friendly T-Rex illustration peering in from the bottom left corner. Tropical foliage borders along the top and sides.",
-  },
-  {
-    id: "candy_dreams",
-    name: "Candy Dreams",
-    category: "Sweet & playful",
-    bg: "bg-gradient-to-br from-pink-100 via-yellow-100 to-purple-100",
-    text: "text-fuchsia-900",
-    accent: "text-pink-600",
-    previewColor:
-      "bg-gradient-to-br from-pink-200 via-yellow-200 to-purple-200",
-    previewDot: "bg-pink-200",
-    aesthetic: "Sweet, vibrant, and playful.",
-    colors: "Hot pink, turquoise, sunshine yellow, and electric purple.",
-    graphics:
-      "Giant lollipops, swirling gummies, candy canes, and drippy frosting borders.",
-    font: "A bubbly, rounded, and highly decorative font.",
-    primaryObjects:
-      "Giant Lollipops and ice cream cones placed as corner accents. The text is often bordered by dripping chocolate or frosting effects.",
-  },
-  {
-    id: "deep_space_hero",
-    name: "Deep Space Hero",
-    category: "Cosmic adventure",
-    bg: "bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-700",
-    text: "text-white drop-shadow-md",
-    accent: "text-sky-300",
-    previewColor: "bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-700",
-    previewDot: "bg-blue-500",
-    aesthetic: "Cosmic adventure and futuristic technology.",
-    colors: "Deep navy blue, black, electric blue, and silver.",
-    graphics: "Starfields, planets, spaceships, and geometric, neon lines.",
-    font: "A clean, bold, futuristic sans-serif.",
-    primaryObjects:
-      "A stylized Spaceship graphic flying across the top banner. Planets (e.g., Mars, Saturn) visible in the bottom corners of the starfield background.",
-  },
-  {
-    id: "rainbow_sparkle",
-    name: "Rainbow Sparkle",
-    category: "Joyful color",
-    bg: "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200",
-    text: "text-slate-800",
-    accent: "text-fuchsia-600",
-    previewColor: "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200",
-    previewDot: "bg-amber-300",
-    aesthetic: "Joyful explosion of color.",
-    colors: "Every color of the rainbow, with white to ensure readability.",
-    graphics: "Arcing rainbows, clouds, and scattered glitter effects.",
-    font: "A fun, slightly chunky font.",
-    primaryObjects:
-      "A large, arcing Rainbow stretching across the center, with small Cloud and Star emojis/graphics scattered around the main text block.",
-  },
-  {
-    id: "pirate_treasure",
-    name: "Pirate Treasure",
-    category: "Swashbuckling",
-    bg: "bg-gradient-to-br from-amber-200 via-amber-100 to-stone-400",
-    text: "text-stone-800",
-    accent: "text-amber-700",
-    previewColor: "bg-gradient-to-br from-amber-200 via-amber-100 to-stone-400",
-    previewDot: "bg-amber-400",
-    aesthetic: "Aged parchment and swashbuckling adventure.",
-    colors: "Dark browns, deep reds, sandy beige, and gold.",
-    graphics:
-      "Treasure map texture background, skull and crossbones, compass rose, and chest of gold.",
-    font: "An old-style script font.",
-    primaryObjects:
-      "A rolled-up Scroll or Treasure Map texture serves as the background for the text. A small Skull and Crossbones icon is placed near the RSVP details.",
-  },
-  {
-    id: "mermaid_lagoon",
-    name: "Mermaid Lagoon",
-    category: "Undersea fantasy",
-    bg: "bg-gradient-to-br from-teal-200 via-cyan-100 to-purple-200",
-    text: "text-slate-900",
-    accent: "text-teal-700",
-    previewColor: "bg-gradient-to-br from-teal-200 via-cyan-100 to-purple-200",
-    previewDot: "bg-teal-300",
-    aesthetic: "Undersea fantasy with shimmer.",
-    colors: "Teal, seafoam green, deep purple, and pearly white.",
-    graphics:
-      "Detailed fish scales pattern, seashells, starfish, and shimmering bubbles.",
-    font: "An elegant, slightly watery script.",
-    primaryObjects:
-      "A Mermaid tail emerging from the bottom center, surrounded by Seashells and bubbles. The event title is often framed by a clam shell shape.",
-  },
-  {
-    id: "robot_invasion",
-    name: "Robot Invasion",
-    category: "Retro-futuristic",
-    bg: "bg-gradient-to-br from-gray-200 via-slate-100 to-orange-200",
-    text: "text-slate-900",
-    accent: "text-orange-600",
-    previewColor: "bg-gradient-to-br from-gray-200 via-slate-100 to-orange-200",
-    previewDot: "bg-slate-400",
-    aesthetic: "Industrial, mechanical, and retro-futuristic.",
-    colors: "Metallic silver, vibrant orange, black, and light gray.",
-    graphics:
-      "Circuit board patterns, nuts and bolts borders, and a friendly-but-boxy robot illustration.",
-    font: "A blocky, monospace font.",
-    primaryObjects:
-      "A friendly, angular Robot centered below the main title. Gear and circuit patterns form the background texture and border elements.",
-  },
-  {
-    id: "fairy_garden",
-    name: "Fairy Garden",
-    category: "Enchanted forest",
-    bg: "bg-gradient-to-br from-green-100 via-lime-100 to-pink-100",
-    text: "text-emerald-900",
-    accent: "text-pink-700",
-    previewColor: "bg-gradient-to-br from-green-100 via-lime-100 to-pink-100",
-    previewDot: "bg-green-200",
-    aesthetic: "Enchanted forest, delicate and natural.",
-    colors: "Soft forest green, pale yellow, moss, and blush pink.",
-    graphics:
-      "Intricate flower borders, whimsical mushroom caps, and tiny fairy silhouettes.",
-    font: "A delicate, looping calligraphy font.",
-    primaryObjects:
-      "Tiny Fairy silhouettes fluttering around the main title. Intricate Flower vines and soft light orbs frame the edges of the invite.",
-  },
-  {
-    id: "dragons_fire",
-    name: "Dragon's Fire",
-    category: "Medieval fantasy",
-    bg: "bg-gradient-to-br from-red-900 via-amber-600 to-amber-800",
-    text: "text-white drop-shadow-md",
-    accent: "text-amber-300",
-    previewColor: "bg-gradient-to-br from-red-900 via-amber-600 to-amber-800",
-    previewDot: "bg-red-700",
-    aesthetic: "Medieval fantasy, epic scale, and intensity.",
-    colors: "Deep crimson, charcoal gray, fiery orange, and metallic bronze.",
-    graphics:
-      "A majestic dragon silhouette breathing fire, castle turrets, and rocky textures.",
-    font: "A dramatic, bold, and slightly Gothic font.",
-    primaryObjects:
-      "A Dragon silhouette wrapping around the top edge of the invite. Fire effects emanate subtly from the bottom corners, framing the event details.",
-  },
-  {
-    id: "jungle_safari",
-    name: "Jungle Safari",
-    category: "Tropical adventure",
-    bg: "bg-gradient-to-br from-amber-200 via-lime-200 to-green-300",
-    text: "text-emerald-900",
-    accent: "text-amber-700",
-    previewColor: "bg-gradient-to-br from-amber-200 via-lime-200 to-green-300",
-    previewDot: "bg-green-300",
-    aesthetic: "Tropical, wild, and adventurous.",
-    colors: "Khaki, bright leaf green, tan, and splashes of animal print.",
-    graphics:
-      "Layered jungle leaves, illustrations of friendly lions, elephants, or monkeys.",
-    font: "A playful, textured font.",
-    primaryObjects:
-      "Layered Palm Leaves and jungle vines creating a dense border around the edges. A friendly Lion or Monkey illustration peeking from the side.",
-  },
-  {
-    id: "princess_castle",
-    name: "Princess Castle",
-    category: "Royal fairytale",
-    bg: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
-    text: "text-slate-800",
-    accent: "text-pink-600",
-    previewColor: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
-    previewDot: "bg-pink-300",
-    aesthetic: "Royal, elegant, and fairytale-inspired.",
-    colors: "Light gold, soft pink, periwinkle blue, and white.",
-    graphics:
-      "A silhouette of a grand castle, ornate scrollwork borders, and tiny crowns.",
-    font: "A formal, decorative script font.",
-    primaryObjects:
-      "A grand Castle silhouette centered at the top, acting as the main header graphic. Ornate scrollwork and tiny Crowns are used as decorative dividers.",
-  },
-  {
-    id: "knights_quest",
-    name: "Knight's Quest",
-    category: "Noble & brave",
-    bg: "bg-gradient-to-br from-slate-800 via-blue-800 to-red-700",
-    text: "text-white drop-shadow-md",
-    accent: "text-red-200",
-    previewColor: "bg-gradient-to-br from-slate-800 via-blue-800 to-red-700",
-    previewDot: "bg-slate-700",
-    aesthetic: "Brave, noble, and historical.",
-    colors: "Silver, deep blue, deep red, and slate gray.",
-    graphics:
-      "A heraldic shield/crest, crossed swords, and chainmail texture background.",
-    font: "A strong, imposing serif font.",
-    primaryObjects:
-      "A large Heraldic Shield or Crest placed slightly behind the main title text (as a watermark). Crossed Swords used as a decorative element near the date/time.",
-  },
-  {
-    id: "monster_mash",
-    name: "Monster Mash",
-    category: "Friendly spooky",
-    bg: "bg-gradient-to-br from-lime-200 via-purple-200 to-gray-800",
-    text: "text-white drop-shadow-md",
-    accent: "text-lime-200",
-    previewColor: "bg-gradient-to-br from-lime-200 via-purple-200 to-gray-800",
-    previewDot: "bg-lime-400",
-    aesthetic: "Slightly spooky, silly, and friendly frights.",
-    colors: "Lime green, deep purple, black, and glow-in-the-dark white.",
-    graphics:
-      "Cute, fuzzy, multi-eyed monsters, and abstract ooze/slime effects.",
-    font: "A slightly wobbly or handwritten horror-style font.",
-    primaryObjects:
-      "Cute, fuzzy Monsters acting as border elements, peeking from the top and bottom. Silly green slime or abstract spots dripping from the header.",
-  },
-  {
-    id: "sunny_beach_bash",
-    name: "Sunny Beach Bash",
-    category: "Tropical chill",
-    bg: "bg-gradient-to-br from-yellow-200 via-orange-200 to-sky-200",
-    text: "text-orange-900",
-    accent: "text-sky-700",
-    previewColor: "bg-gradient-to-br from-yellow-200 via-orange-200 to-sky-200",
-    previewDot: "bg-amber-300",
-    aesthetic: "Relaxed, tropical, and bright.",
-    colors: "Turquoise water, sandy yellow, coral pink, and sunset orange.",
-    graphics:
-      "Palm trees, flip-flops, sunglasses, beach balls, and wave patterns.",
-    font: "A casual, hand-drawn font.",
-    primaryObjects:
-      "Palm Trees on the sides, casting shadows on the sandy background. A graphic of Ocean Waves along the bottom edge, where the party location is listed.",
-  },
-  {
-    id: "winter_wonderland",
-    name: "Winter Wonderland",
-    category: "Icy & serene",
-    bg: "bg-gradient-to-br from-blue-50 via-blue-100 to-slate-200",
-    text: "text-slate-800",
-    accent: "text-sky-700",
-    previewColor: "bg-gradient-to-br from-blue-50 via-blue-100 to-slate-200",
-    previewDot: "bg-blue-200",
-    aesthetic: "Icy, serene, and sparkling.",
-    colors: "Icy blue, silver, crisp white, and deep navy.",
-    graphics:
-      "Detailed snowflakes, frost patterns, bare tree silhouettes, and swirling snow effects.",
-    font: "A thin, delicate serif or an elegant script font.",
-    primaryObjects:
-      "Large, detailed Snowflakes falling across the page. A subtle, frosted border and bare Tree silhouettes visible in the background texture.",
-  },
-  {
-    id: "mad_scientist_lab",
-    name: "Mad Scientist Lab",
-    category: "Chaotic lab",
-    bg: "bg-gradient-to-br from-lime-200 via-yellow-200 to-cyan-200",
-    text: "text-slate-900",
-    accent: "text-lime-700",
-    previewColor: "bg-gradient-to-br from-lime-200 via-yellow-200 to-cyan-200",
-    previewDot: "bg-lime-300",
-    aesthetic: "Energetic, chaotic, and experimental.",
-    colors: "Neon green, bright yellow, black, and beaker-blue.",
-    graphics:
-      "Bubbling test tubes, atomic symbols, lightning bolts, and safety signs.",
-    font: "A bold, industrial, or slightly erratic distressed font.",
-    primaryObjects:
-      "Beakers and Test Tubes placed as icons near the event location or details. Lightning bolts or radiation symbols are used as divider lines.",
-  },
-  {
-    id: "llama_fiesta",
-    name: "Llama Fiesta",
-    category: "Festive & vibrant",
-    bg: "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
-    text: "text-orange-900",
-    accent: "text-pink-700",
-    previewColor:
-      "bg-gradient-to-br from-pink-200 via-orange-200 to-emerald-200",
-    previewDot: "bg-pink-300",
-    aesthetic: "Vibrant, celebratory, and charmingly fuzzy.",
-    colors:
-      "Fusia, turquoise, orange, and lime green (inspired by Peruvian textiles).",
-    graphics:
-      "A smiling llama wearing a colorful blanket/sombrero, confetti, and geometric patterns.",
-    font: "A playful, bold, and rounded font.",
-    primaryObjects:
-      "A Llama wearing a festive blanket, centered below the main title. Colorful paper 'Picado' (banners) draped across the top edge.",
-  },
-  {
-    id: "panda_zen",
-    name: "Panda Zen",
-    category: "Calm minimal",
-    bg: "bg-gradient-to-br from-white via-gray-100 to-green-200",
-    text: "text-slate-800",
-    accent: "text-emerald-600",
-    previewColor: "bg-gradient-to-br from-white via-gray-100 to-green-200",
-    previewDot: "bg-emerald-400",
-    aesthetic: "Calm, minimalist, and bamboo forest inspired.",
-    colors: "Black, white, various shades of natural green, and warm gray.",
-    graphics:
-      "Simple, cute panda illustrations, bamboo stalks, and subtle watercolor effects.",
-    font: "A clean, minimalist, and highly readable sans-serif font.",
-    primaryObjects:
-      "A small, seated Panda illustration in the bottom corner. Bamboo stalks used as simple, vertical dividing elements or background textures.",
-  },
-  {
-    id: "doggy_pawty",
-    name: "Doggy Pawty",
-    category: "Energetic pups",
-    bg: "bg-gradient-to-br from-yellow-100 via-red-100 to-blue-100",
-    text: "text-slate-800",
-    accent: "text-blue-700",
-    previewColor: "bg-gradient-to-br from-yellow-100 via-red-100 to-blue-100",
-    previewDot: "bg-yellow-200",
-    aesthetic: "Energetic, fun, and tail-wagging.",
-    colors:
-      "Primary colors (red, blue, yellow) or a combo of brown, black, and bone-white.",
-    graphics: "Paw prints, bones, tennis balls, and various cute dog breeds.",
-    font: "A friendly, rounded, slightly bouncy font.",
-    primaryObjects:
-      'Scattered Paw Prints throughout the background. A large Bone graphic centered at the top, containing the words "Doggy Pawty" or the child\'s age.',
-  },
-  {
-    id: "kitten_cafe",
-    name: "Kitten Cafe",
-    category: "Cozy & sweet",
-    bg: "bg-gradient-to-br from-amber-100 via-rose-50 to-stone-100",
-    text: "text-stone-800",
-    accent: "text-amber-700",
-    previewColor: "bg-gradient-to-br from-amber-100 via-rose-50 to-stone-100",
-    previewDot: "bg-amber-200",
-    aesthetic: "Cozy, gentle, and sweet.",
-    colors: "Pastel peach, cream, light gray, and soft brown.",
-    graphics:
-      "Simple line-drawn kittens, hearts, steaming teacups, and floral accents.",
-    font: "A gentle, slightly cursive or handwritten script.",
-    primaryObjects:
-      "Simple, line-drawn Kitten motifs near the corners. A steaming Teacup graphic placed next to the RSVP information or event time.",
-  },
-  {
-    id: "race_car_rally",
-    name: "Race Car Rally",
-    category: "High speed",
-    bg: "bg-gradient-to-br from-red-600 via-yellow-200 to-slate-900",
-    text: "text-white drop-shadow-md",
-    accent: "text-yellow-200",
-    previewColor: "bg-gradient-to-br from-red-600 via-yellow-200 to-slate-900",
-    previewDot: "bg-red-500",
-    aesthetic: "High speed, checkered flags, and competitive energy.",
-    colors: "Bright red, black, white, and neon yellow.",
-    graphics:
-      "Racing stripes, checkered flag patterns, speed lines, and a stylized race car graphic.",
-    font: "A bold, italicized, dynamic font.",
-    primaryObjects:
-      "Checkered Flags bordering the top and bottom of the invite. A dynamic Race Car graphic positioned near the main title, with speed lines trailing.",
-  },
-  {
-    id: "music_festival_vibe",
-    name: "Music Festival Vibe",
-    category: "Boho & free",
-    bg: "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
-    text: "text-slate-900",
-    accent: "text-indigo-700",
-    previewColor:
-      "bg-gradient-to-br from-amber-200 via-emerald-200 to-indigo-300",
-    previewDot: "bg-indigo-300",
-    aesthetic: "Bohemian, artistic, and free-spirited.",
-    colors:
-      "Earth tones (mustard, rust, olive) paired with bright jewel tones (indigo, turquoise).",
-    graphics: "Tents, stage lights, tribal patterns, and sunbursts.",
-    font: "A cool, retro, slightly distressed font.",
-    primaryObjects:
-      "A stylized stage/tent silhouette in the background. Feather and Floral arrangements used as side borders or header elements.",
-  },
-  {
-    id: "construction_zone",
-    name: "Construction Zone",
-    category: "Caution stripes",
-    bg: "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
-    text: "text-slate-900",
-    accent: "text-orange-800",
-    previewColor:
-      "bg-gradient-to-br from-yellow-300 via-orange-300 to-gray-500",
-    previewDot: "bg-yellow-400",
-    aesthetic: "Industrial, safety-focused, and dynamic.",
-    colors: "Caution yellow, bright orange, black, and industrial gray.",
-    graphics:
-      "Construction tape borders, dump trucks, hard hats, and traffic cones.",
-    font: "A heavy, blocky, stencil-style font.",
-    primaryObjects:
-      "Safety Tape or Caution Stripes used as prominent border elements. Dump Trucks or Cranes positioned along the bottom edge, creating a scene.",
-  },
-  {
-    id: "under_the_sea",
-    name: "Under the Sea",
-    category: "Deep ocean",
-    bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-700",
-    text: "text-white drop-shadow-md",
-    accent: "text-cyan-200",
-    previewColor: "bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-700",
-    previewDot: "bg-cyan-500",
-    aesthetic: "Deep ocean wonder, bioluminescent.",
-    colors: "Deep blues, vibrant corals, electric greens, and dark teal.",
-    graphics:
-      "Silhouettes of deep-sea creatures, kelp forests, and glowing bubbles.",
-    font: "A slightly distorted or wavy font.",
-    primaryObjects:
-      "Bioluminescent Jellyfish floating near the header text. Coral reefs and deep-sea vents visible in the background texture along the bottom.",
-  },
-  {
-    id: "farmyard_friends",
-    name: "Farmyard Friends",
-    category: "Pastoral & rustic",
-    bg: "bg-gradient-to-br from-red-200 via-amber-200 to-green-200",
-    text: "text-emerald-900",
-    accent: "text-red-600",
-    previewColor: "bg-gradient-to-br from-red-200 via-amber-200 to-green-200",
-    previewDot: "bg-red-300",
-    aesthetic: "Rustic, cheerful, and pastoral.",
-    colors: "Barn red, straw yellow, denim blue, and grassy green.",
-    graphics:
-      "Picket fence border, hay bales, and simple, cute farm animal illustrations (pig, cow, chicken).",
-    font: "A sweet, slightly rounded, country-style font.",
-    primaryObjects:
-      "A Picket Fence border along the bottom. Cute illustrations of a Cow and a Pig flanking the main invitation text.",
-  },
-  {
-    id: "superhero_city",
-    name: "Superhero City",
-    category: "Comic book",
-    bg: "bg-gradient-to-br from-blue-700 via-yellow-300 to-red-600",
-    text: "text-white",
-    accent: "text-yellow-200",
-    previewColor: "bg-gradient-to-br from-blue-700 via-yellow-300 to-red-600",
-    previewDot: "bg-blue-500",
-    aesthetic: "Comic book style, powerful, and iconic.",
-    colors:
-      "Primary colors (red, blue, yellow) with black outlines and white highlights.",
-    graphics:
-      'Comic book speech bubbles ("POW!"), city skyline silhouette, and a shield icon.',
-    font: "A bold, impactful, and slightly skewed comic book lettering font.",
-    primaryObjects:
-      "A City Skyline silhouette forming the backdrop. A personalized Hero logo (e.g., child's initial on a shield) placed prominently at the top header.",
-  },
-  {
-    id: "retro_arcade",
-    name: "Retro Arcade",
-    category: "Neon arcade",
-    bg: "bg-gradient-to-br from-pink-600 via-purple-700 to-cyan-400",
-    text: "text-white",
-    accent: "text-cyan-200",
-    previewColor: "bg-gradient-to-br from-pink-600 via-purple-700 to-cyan-400",
-    previewDot: "bg-pink-500",
-    aesthetic: "8-bit, neon, and high-energy nostalgia.",
-    colors: "Electric pink, cyan, purple, and black.",
-    graphics:
-      "Pixel art characters (Pac-Man, space invaders), geometric patterns, and neon light tubing effects.",
-    font: "A pixelated or blocky 8-bit digital font.",
-    primaryObjects:
-      "Pixelated Characters (like ghosts or cherries) scattered randomly in the background. The main title is often framed by a neon-style geometric box.",
-  },
-  {
-    id: "viking_voyage",
-    name: "Viking Voyage",
-    category: "Norse epic",
-    bg: "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
-    text: "text-white drop-shadow-md",
-    accent: "text-amber-200",
-    previewColor:
-      "bg-gradient-to-br from-emerald-900 via-stone-700 to-amber-700",
-    previewDot: "bg-emerald-700",
-    aesthetic: "Norse mythology, rugged, and epic.",
-    colors: "Dark forest green, deep brown, steel gray, and rustic gold.",
-    graphics:
-      "Longship silhouette, stylized knots/runes, and a Viking helmet icon.",
-    font: "A strong, medieval, or carved wood-effect font.",
-    primaryObjects:
-      "A Viking Longship sailing across the bottom of the invite. Rune-like symbols used to frame the main text block, giving a carved-wood effect.",
   },
 ];
 
@@ -1297,7 +781,6 @@ const INITIAL_DATA = {
   theme: {
     font: "playfair",
     fontSize: "medium",
-    themeId: "rainbow_sparkle",
     professionalThemeId: "rainbow_confetti_splash",
   },
   images: {
@@ -1405,6 +888,85 @@ const InputGroup = ({
   </div>
 );
 
+// Helper function to calculate luminance from hex color (0-1, higher = lighter)
+const getLuminance = (hex: string): number => {
+  const rgb = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!rgb) return 0.5; // Default to medium if invalid
+
+  const r = parseInt(rgb[1], 16) / 255;
+  const g = parseInt(rgb[2], 16) / 255;
+  const b = parseInt(rgb[3], 16) / 255;
+
+  // Relative luminance formula
+  const [rLinear, gLinear, bLinear] = [r, g, b].map((val) => {
+    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+  });
+
+  return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+};
+
+// Determine if a palette is dark (average luminance < 0.5)
+const isPaletteDark = (palette: string[]): boolean => {
+  if (!palette || palette.length === 0) return false;
+  const colors = palette.filter(Boolean).slice(0, 3); // Use first 3 colors (gradient)
+  if (colors.length === 0) return false;
+
+  const luminances = colors.map(getLuminance);
+  const avgLuminance =
+    luminances.reduce((a, b) => a + b, 0) / luminances.length;
+  return avgLuminance < 0.5; // Dark if average luminance < 0.5
+};
+
+// Helper function to create preview gradient from color palette (like football-season)
+const getPreviewStyle = (palette: string[]) => {
+  if (!palette || palette.length === 0) {
+    return { backgroundColor: "#e2e8f0" };
+  }
+  const colors = palette.filter(Boolean);
+  if (colors.length === 1) {
+    return { backgroundColor: colors[0] };
+  }
+  if (colors.length === 2) {
+    return {
+      backgroundImage: `linear-gradient(to right, ${colors[0]}, ${colors[1]})`,
+    };
+  }
+  // Use first 3 colors for gradient (like football-season uses 3 colors)
+  return {
+    backgroundImage: `linear-gradient(to right, ${colors[0]}, ${colors[1]}, ${colors[2]})`,
+  };
+};
+
+const ThemeSwatch = ({
+  theme,
+  active,
+  onClick,
+}: {
+  theme: (typeof PROFESSIONAL_THEMES)[0];
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={`relative overflow-hidden rounded-lg border text-left transition-all ${
+      active
+        ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
+        : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
+    }`}
+  >
+    <div
+      className="h-12 w-full border-b border-black/5"
+      style={getPreviewStyle(theme.recommendedColorPalette)}
+    />
+    <div className="p-3">
+      <div className="text-sm font-semibold text-slate-700">
+        {theme.themeName}
+      </div>
+      <div className="text-xs text-slate-400">Palette preset</div>
+    </div>
+  </button>
+);
+
 export default function BirthdayTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
@@ -1425,8 +987,11 @@ export default function BirthdayTemplateCustomizePage() {
     previewTouchHandlers,
     drawerTouchHandlers,
   } = useMobileDrawer();
-  const [professionalOpen, setProfessionalOpen] = useState(true);
+  const [themesExpanded, setThemesExpanded] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const fontListRef = useRef<HTMLDivElement | null>(null);
+  const [fontScrollTop, setFontScrollTop] = useState(0);
+  const [activeSection, setActiveSection] = useState<string>("details");
   const [submitting, setSubmitting] = useState(false);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
@@ -1605,74 +1170,149 @@ export default function BirthdayTemplateCustomizePage() {
     }));
   };
 
-  const currentTheme =
-    DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
-  const currentThemeDot =
-    currentTheme.previewDot ||
-    currentTheme.previewColor?.split(" ")[0] ||
-    "bg-slate-200";
+  // Default theme fallback for CSS classes (styling is primarily handled by professional theme inline styles)
+  const currentTheme = {
+    bg: "",
+    text: "text-slate-800",
+    accent: "",
+    previewDot: "bg-slate-200",
+    previewColor: "bg-slate-200",
+  };
+  const currentThemeDot = currentTheme.previewDot;
 
-  // Detect dark background for title color
-  const isDarkBackground = React.useMemo(() => {
-    const bg = currentTheme?.bg?.toLowerCase() ?? "";
-    const darkTokens = [
-      "black",
-      "slate-9",
-      "stone-9",
-      "neutral-9",
-      "gray-9",
-      "grey-9",
-      "indigo-9",
-      "purple-9",
-      "violet-9",
-      "emerald-9",
-      "teal-9",
-      "blue-9",
-      "navy",
-      "midnight",
-    ];
-    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
-    const hasDarkHex =
-      /#0[0-9a-f]{5,}/i.test(bg) ||
-      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
-      /#2[0-3][0-9a-f]{4}/i.test(bg);
-    return hasDarkToken || hasDarkHex;
-  }, [currentTheme]);
-
-  // Light text needs a soft shadow for contrast on dark themes
-  const rawTextClass = currentTheme?.text || "";
-  const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(
-    rawTextClass.toLowerCase()
-  );
-  const bodyShadow = usesLightText
-    ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
-    : undefined;
-
-  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
   const currentProfessionalTheme =
     PROFESSIONAL_THEMES.find(
       (theme) => theme.id === data.theme.professionalThemeId
     ) || PROFESSIONAL_THEMES[0];
   const professionalPalette =
     currentProfessionalTheme.recommendedColorPalette || [];
+
+  // Analyze palette to determine if it's dark or light
+  const isDarkPalette = React.useMemo(
+    () => isPaletteDark(professionalPalette),
+    [professionalPalette]
+  );
+
+  // Set text colors based on palette darkness
+  const textColorStyle = isDarkPalette
+    ? { color: "#ffffff" } // White text on dark backgrounds
+    : { color: "#1e293b" }; // Dark slate text on light backgrounds
+
+  const accentColorStyle = isDarkPalette
+    ? { color: "#f1f5f9" } // Light accent on dark
+    : { color: "#475569" }; // Medium accent on light
+
   const professionalAccentColor =
     professionalPalette[3] ??
     professionalPalette[2] ??
     professionalPalette[0] ??
     undefined;
+
+  // Create gradient like football-season (using first 3 colors for smooth gradient)
   const professionalBackgroundStyle =
-    professionalPalette.length >= 2
+    professionalPalette.length >= 3
       ? {
-          backgroundImage: `linear-gradient(135deg, ${professionalPalette[0]} 0%, ${professionalPalette[1]} 100%)`,
+          backgroundImage: `linear-gradient(to bottom right, ${professionalPalette[0]}, ${professionalPalette[1]}, ${professionalPalette[2]})`,
+        }
+      : professionalPalette.length === 2
+      ? {
+          backgroundImage: `linear-gradient(to bottom right, ${professionalPalette[0]}, ${professionalPalette[1]})`,
         }
       : professionalPalette[0]
       ? { backgroundColor: professionalPalette[0] }
       : {};
+
+  // Use accent color from palette if available, otherwise use computed accent
   const professionalAccentStyle = professionalAccentColor
     ? { color: professionalAccentColor }
+    : accentColorStyle;
+
+  // Text shadow for better contrast on dark backgrounds
+  const textShadowStyle = isDarkPalette
+    ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" }
     : undefined;
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+
+  // Navigation items for birthday template
+  const navItems = React.useMemo(() => {
+    const items = [
+      { id: "details", label: "Details", enabled: true },
+      { id: "hosts", label: "Hosts", enabled: data.hosts.length > 0 },
+      {
+        id: "location",
+        label: "Location",
+        enabled: !!(data.address || data.venue),
+      },
+      {
+        id: "party",
+        label: "Party Details",
+        enabled: !!data.partyDetails.notes,
+      },
+      { id: "gallery", label: "Gallery", enabled: data.gallery.length > 0 },
+      {
+        id: "registry",
+        label: "Registry",
+        enabled: data.registries.length > 0,
+      },
+      { id: "rsvp", label: "RSVP", enabled: data.rsvp.isEnabled },
+    ];
+    return items.filter((item) => item.enabled);
+  }, [
+    data.hosts.length,
+    data.address,
+    data.venue,
+    data.partyDetails.notes,
+    data.gallery.length,
+    data.registries.length,
+    data.rsvp.isEnabled,
+  ]);
+
+  // Sync activeSection with navItems
+  React.useEffect(() => {
+    if (!navItems.length) return;
+    if (!navItems.some((i) => i.id === activeSection)) {
+      setActiveSection(navItems[0].id);
+    }
+  }, [activeSection, navItems]);
+
+  // Handle hash navigation
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !navItems.length) return;
+    const hash = window.location.hash.replace("#", "");
+    if (hash && navItems.some((i) => i.id === hash)) {
+      setActiveSection(hash);
+    }
+  }, [navItems]);
+
+  // Intersection observer for auto-scroll detection
+  React.useEffect(() => {
+    if (!navItems.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            if (id && navItems.some((i) => i.id === id)) {
+              setActiveSection(id);
+              if (
+                typeof window !== "undefined" &&
+                window.location.hash !== `#${id}`
+              ) {
+                window.history.replaceState(null, "", `#${id}`);
+              }
+            }
+          }
+        });
+      },
+      { root: null, rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+    );
+    const targets = navItems
+      .map((item) => document.getElementById(item.id))
+      .filter(Boolean) as HTMLElement[];
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [navItems]);
 
   const heroImageSrc =
     template?.heroImageName &&
@@ -1788,6 +1428,20 @@ export default function BirthdayTemplateCustomizePage() {
       setGalleryIndex(Math.max(0, data.gallery.length - 1));
     }
   }, [data.gallery.length, galleryIndex]);
+
+  // Expand themes when Design view is opened
+  useEffect(() => {
+    if (activeView === "design") {
+      setThemesExpanded(true);
+    }
+  }, [activeView]);
+
+  // Restore scroll position in font list after selection
+  useEffect(() => {
+    if (fontListRef.current && fontScrollTop > 0) {
+      fontListRef.current.scrollTop = fontScrollTop;
+    }
+  }, [fontScrollTop, data.theme.font]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -2011,109 +1665,79 @@ export default function BirthdayTemplateCustomizePage() {
   const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
-        <div className="border-b border-slate-100 pb-6">
+        <div className="space-y-3">
           <button
-            onClick={() => setProfessionalOpen(!professionalOpen)}
-            className="flex items-center justify-between w-full text-left group"
+            onClick={() => setThemesExpanded(!themesExpanded)}
+            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
           >
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block cursor-pointer mb-1">
-                Professional Themes
-              </label>
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                <div
-                  className="w-3 h-3 rounded-full border shadow-sm"
-                  style={{
-                    backgroundColor:
-                      currentProfessionalTheme.recommendedColorPalette?.[0] ||
-                      "#e2e8f0",
-                  }}
-                ></div>
-                {currentProfessionalTheme.themeName || "Select a theme"}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {currentProfessionalTheme.description}
-              </p>
+            <div className="flex items-center gap-2">
+              <Palette size={16} /> Theme ({PROFESSIONAL_THEMES.length})
             </div>
-            <div
-              className={`p-2 rounded-full bg-slate-50 text-slate-500 group-hover:bg-slate-100 transition-all ${
-                professionalOpen
-                  ? "rotate-180 text-indigo-600 bg-indigo-50"
-                  : ""
-              }`}
-            >
+            {themesExpanded ? (
+              <ChevronUp size={16} />
+            ) : (
               <ChevronDown size={16} />
-            </div>
+            )}
           </button>
-
-          <div
-            className={`grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 overflow-y-auto transition-all duration-300 ease-in-out ${
-              professionalOpen
-                ? "max-h-[800px] opacity-100"
-                : "max-h-0 opacity-0 hidden"
-            }`}
-          >
-            {PROFESSIONAL_THEMES.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  updateTheme("professionalThemeId", theme.id);
-                }}
-                className={`relative overflow-hidden p-3 border rounded-lg text-left transition-all group ${
-                  data.theme.professionalThemeId === theme.id
-                    ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-                    : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-800">
-                      {theme.themeName}
-                    </p>
-                    <div className="flex gap-1 mt-1">
-                      {theme.recommendedColorPalette
-                        .slice(0, 5)
-                        .map((color) => (
-                          <span
-                            key={color}
-                            className="w-4 h-4 rounded-full border border-black/5 shadow-sm"
-                            style={{ backgroundColor: color }}
-                          ></span>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+          {themesExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
+              {PROFESSIONAL_THEMES.map((theme) => (
+                <ThemeSwatch
+                  key={theme.id}
+                  theme={theme}
+                  active={data.theme.professionalThemeId === theme.id}
+                  onClick={() => updateTheme("professionalThemeId", theme.id)}
+                />
+              ))}
+            </div>
+          )}
+          {!themesExpanded && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <div
+                className="w-3 h-3 rounded-full border shadow-sm"
+                style={getPreviewStyle(
+                  currentProfessionalTheme.recommendedColorPalette || []
+                )}
+              ></div>
+              <span>Current theme: {currentProfessionalTheme.themeName}</span>
+            </div>
+          )}
         </div>
 
-        <div>
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-            Typography
-          </label>
-          <div className="relative">
-            <select
-              value={data.theme.font}
-              onChange={(e) => updateTheme("font", e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-lg appearance-none text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-            >
-              {Object.entries(FONTS).map(([key, font]) => (
-                <option
-                  key={key}
-                  value={key}
+        <div className="pt-2 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Typography
+            </p>
+            <span className="text-[11px] text-slate-400">
+              Headlines & section titles
+            </span>
+          </div>
+          <div
+            ref={fontListRef}
+            className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1"
+          >
+            {Object.entries(FONTS).map(([key, font]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setFontScrollTop(fontListRef.current?.scrollTop || 0);
+                  updateTheme("font", key);
+                }}
+                className={`border rounded-lg p-3 text-left transition-colors ${
+                  data.theme.font === key
+                    ? "border-indigo-600 bg-indigo-50"
+                    : "border-slate-200 hover:border-indigo-300"
+                }`}
+              >
+                <div
+                  className="text-base font-semibold"
                   style={{ fontFamily: font.preview }}
                 >
                   {font.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-3 top-3.5 text-slate-400 pointer-events-none"
-              size={16}
-            />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -2413,13 +2037,18 @@ export default function BirthdayTemplateCustomizePage() {
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
-            key={`preview-${data.theme.themeId}`}
+            key={`preview-${data.theme.professionalThemeId}`}
             className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${currentFont.preview} transition-all duration-500 relative z-0`}
             style={professionalBackgroundStyle}
           >
             <div className="relative z-10">
               <div
-                className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
+                className={`p-6 md:p-8 border-b border-white/10 ${currentTheme.text}`}
+                style={{
+                  borderBottomColor: isDarkPalette
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.1)",
+                }}
               >
                 <div
                   className="cursor-pointer hover:opacity-80 transition-opacity group"
@@ -2429,7 +2058,8 @@ export default function BirthdayTemplateCustomizePage() {
                     className={`${currentSize.h1} mb-2 leading-tight`}
                     style={{
                       fontFamily: currentFont.preview,
-                      ...(titleColor || {}),
+                      ...textColorStyle,
+                      ...textShadowStyle,
                     }}
                   >
                     {data.childName}'s {data.age}
@@ -2440,6 +2070,7 @@ export default function BirthdayTemplateCustomizePage() {
                   </h1>
                   <div
                     className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
+                    style={textColorStyle}
                   >
                     <span>
                       {new Date(data.date).toLocaleDateString("en-US", {
@@ -2462,363 +2093,748 @@ export default function BirthdayTemplateCustomizePage() {
                     )}
                   </div>
                 </div>
-              </div>
-
-              <div className="relative w-full h-64 md:h-96">
-                {data.images.hero ? (
-                  <img
-                    src={data.images.hero}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Image
-                    src={heroImageSrc}
-                    alt="Hero"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 1000px"
-                  />
+                {navItems.length > 1 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {navItems.map((item) => {
+                      const isActive = activeSection === item.id;
+                      return (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const el = document.getElementById(item.id);
+                            if (el) {
+                              el.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                              setActiveSection(item.id);
+                              window.history.replaceState(
+                                null,
+                                "",
+                                `#${item.id}`
+                              );
+                            }
+                          }}
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
+                            isActive
+                              ? isDarkPalette
+                                ? "bg-white/85 text-slate-900 border-white shadow"
+                                : "bg-slate-900/85 text-white border-slate-900 shadow"
+                              : isDarkPalette
+                              ? "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                              : "bg-black/10 text-inherit border-black/20 hover:bg-black/20"
+                          }`}
+                          style={!isActive ? textColorStyle : undefined}
+                        >
+                          {item.label}
+                        </a>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
+            </div>
 
-              {data.hosts.length > 0 && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={professionalAccentStyle}
-                  >
-                    Hosted By
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-6">
-                    {data.hosts.map((host) => (
-                      <div key={host.id} className="text-center">
-                        <div className="font-semibold text-lg mb-1">
-                          {host.name}
-                        </div>
-                        {host.role && (
-                          <div className="text-sm opacity-70">{host.role}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
+            <div id="details" className="relative w-full h-64 md:h-96">
+              {data.images.hero ? (
+                <img
+                  src={data.images.hero}
+                  alt="Hero"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={heroImageSrc}
+                  alt="Hero"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1000px"
+                />
               )}
+            </div>
 
-              {(data.address || data.venue) && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-4 ${currentTheme.accent}`}
-                    style={professionalAccentStyle}
-                  >
-                    Location
-                  </h2>
-                  {data.venue && (
-                    <div className="font-semibold text-lg mb-2">
-                      {data.venue}
-                    </div>
-                  )}
-                  {(data.address || data.city || data.state) && (
-                    <div className="opacity-80">
-                      {[data.address, data.city, data.state]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {data.partyDetails.notes && (
-                <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
-                  <h2
-                    className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
-                    style={professionalAccentStyle}
-                  >
-                    Party Details
-                  </h2>
-                  <p
-                    className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
-                  >
-                    {data.partyDetails.notes}
-                  </p>
-                  {data.partyDetails.theme && (
-                    <div className="mt-4">
-                      <span
-                        className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${currentTheme.accent} bg-white/10`}
-                        style={professionalAccentStyle}
+            {data.hosts.length > 0 && (
+              <section
+                className="text-center py-12"
+                style={{
+                  borderTop: isDarkPalette
+                    ? "1px solid rgba(255,255,255,0.1)"
+                    : "1px solid rgba(0,0,0,0.1)",
+                }}
+              >
+                <h2
+                  id="hosts"
+                  className="text-2xl mb-6"
+                  style={{
+                    fontFamily: currentFont.preview,
+                    ...textColorStyle,
+                    ...textShadowStyle,
+                  }}
+                >
+                  Hosted By
+                </h2>
+                <div className="flex flex-wrap justify-center gap-6">
+                  {data.hosts.map((host) => (
+                    <div key={host.id} className="text-center">
+                      <div
+                        className="font-semibold text-lg mb-1"
+                        style={textColorStyle}
                       >
-                        Theme: {data.partyDetails.theme}
-                      </span>
-                    </div>
-                  )}
-                  {data.partyDetails.activities && (
-                    <div className="mt-4 text-left">
-                      <h3 className="font-semibold mb-2">Activities:</h3>
-                      <p className="opacity-80 whitespace-pre-wrap">
-                        {data.partyDetails.activities}
-                      </p>
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {data.gallery.length > 0 && (
-                <section className="py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
-                    style={professionalAccentStyle}
-                  >
-                    Photo Gallery
-                  </h2>
-                  {activeGalleryItem && (
-                    <div className="relative max-w-3xl mx-auto px-4">
-                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-black/10">
-                        <img
-                          src={activeGalleryItem.url}
-                          alt={activeGalleryItem.caption || "Gallery"}
-                          className="w-full h-full object-cover"
-                        />
-                        {activeGalleryItem.caption && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-3">
-                            {activeGalleryItem.caption}
-                          </div>
-                        )}
+                        {host.name}
                       </div>
-                      {data.gallery.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setGalleryIndex(
-                                (idx) =>
-                                  (idx - 1 + data.gallery.length) %
-                                  data.gallery.length
-                              );
-                            }}
-                            className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
-                            aria-label="Previous photo"
-                          >
-                            <ChevronLeft size={20} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setGalleryIndex(
-                                (idx) => (idx + 1) % data.gallery.length
-                              );
-                            }}
-                            className="absolute right-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
-                            aria-label="Next photo"
-                          >
-                            <ChevronRight size={20} />
-                          </button>
-                          <div className="flex justify-center gap-2 mt-4">
-                            {data.gallery.map((img, idx) => (
-                              <button
-                                key={img.id}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setGalleryIndex(idx);
-                                }}
-                                className={`h-2.5 rounded-full transition-all ${
-                                  galleryIndex === idx
-                                    ? "w-6 bg-white/90"
-                                    : "w-2.5 bg-white/40 hover:bg-white/60"
-                                }`}
-                                aria-label={`Show photo ${idx + 1}`}
-                              ></button>
-                            ))}
-                          </div>
-                        </>
+                      {host.role && (
+                        <div
+                          className="text-sm opacity-70"
+                          style={textColorStyle}
+                        >
+                          {host.role}
+                        </div>
                       )}
                     </div>
-                  )}
-                </section>
-              )}
+                  ))}
+                </div>
+              </section>
+            )}
 
-              {data.registries.length > 0 && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={professionalAccentStyle}
+            {(data.address || data.venue) && (
+              <section
+                id="location"
+                className="text-center py-12"
+                style={{
+                  borderTop: isDarkPalette
+                    ? "1px solid rgba(255,255,255,0.1)"
+                    : "1px solid rgba(0,0,0,0.1)",
+                }}
+              >
+                <h2
+                  className="text-2xl mb-4"
+                  style={{
+                    fontFamily: currentFont.preview,
+                    ...textColorStyle,
+                    ...textShadowStyle,
+                  }}
+                >
+                  Location
+                </h2>
+                {data.venue && (
+                  <div
+                    className="font-semibold text-lg mb-2"
+                    style={textColorStyle}
                   >
-                    Registry
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-4">
-                    {data.registries.map((registry) => (
-                      <a
-                        key={registry.id}
-                        href={registry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
-                      >
-                        <span className="uppercase tracking-widest text-sm font-semibold">
-                          {registry.label || "Registry"}
-                        </span>
-                      </a>
-                    ))}
+                    {data.venue}
                   </div>
-                </section>
-              )}
+                )}
+                {(data.address || data.city || data.state) && (
+                  <div className="opacity-80" style={textColorStyle}>
+                    {[data.address, data.city, data.state]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </div>
+                )}
+              </section>
+            )}
 
-              {data.rsvp.isEnabled && (
-                <section className="max-w-3xl mx-auto text-center p-6 md:p-8">
-                  <h2
-                    className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
-                    style={titleColor || professionalAccentStyle}
-                  >
-                    RSVP
-                  </h2>
-                  <div className="bg-white/5 border border-white/10 p-8 rounded-xl text-left">
-                    {!rsvpSubmitted ? (
-                      <div className="space-y-6">
-                        <div className="text-center mb-4">
-                          <p className="opacity-80">
-                            {data.rsvp.deadline
-                              ? `Kindly respond by ${new Date(
-                                  data.rsvp.deadline
-                                ).toLocaleDateString()}`
-                              : "Please RSVP"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                            placeholder="Guest Name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                            Attending?
-                          </label>
-                          <div className="grid grid-cols-2 gap-4">
-                            <label className="relative cursor-pointer group">
-                              <input
-                                type="radio"
-                                name="attending"
-                                className="peer sr-only"
-                                defaultChecked
-                              />
-                              <div className="p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20">
-                                <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                                  <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                                <span className="font-semibold">
-                                  Joyfully Accept
-                                </span>
-                              </div>
-                            </label>
-                            <label className="relative cursor-pointer group">
-                              <input
-                                type="radio"
-                                name="attending"
-                                className="peer sr-only"
-                              />
-                              <div className="p-6 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 peer-checked:border-current peer-checked:bg-white/20">
-                                <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                                  <div className="w-5 h-5 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                                <span className="font-semibold">
-                                  Regretfully Decline
-                                </span>
-                              </div>
-                            </label>
-                          </div>
-                        </div>
+            {data.partyDetails.notes && (
+              <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
+                <h2
+                  id="party"
+                  className={currentSize.h2 + " mb-4"}
+                  style={{
+                    fontFamily: currentFont.preview,
+                    ...textColorStyle,
+                    ...textShadowStyle,
+                  }}
+                >
+                  Party Details
+                </h2>
+                <p
+                  className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
+                  style={textColorStyle}
+                >
+                  {data.partyDetails.notes}
+                </p>
+                {data.partyDetails.theme && (
+                  <div className="mt-4">
+                    <span
+                      className="inline-block px-4 py-2 rounded-full text-sm font-semibold"
+                      style={{
+                        ...textColorStyle,
+                        backgroundColor: isDarkPalette
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      Theme: {data.partyDetails.theme}
+                    </span>
+                  </div>
+                )}
+                {data.partyDetails.activities && (
+                  <div className="mt-4 text-left">
+                    <h3 className="font-semibold mb-2" style={textColorStyle}>
+                      Activities:
+                    </h3>
+                    <p
+                      className="opacity-80 whitespace-pre-wrap"
+                      style={textColorStyle}
+                    >
+                      {data.partyDetails.activities}
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
 
+            {data.gallery.length > 0 && (
+              <section
+                id="gallery"
+                className="py-12"
+                style={{
+                  borderTop: isDarkPalette
+                    ? "1px solid rgba(255,255,255,0.1)"
+                    : "1px solid rgba(0,0,0,0.1)",
+                }}
+              >
+                <h2
+                  className="text-2xl mb-6 text-center"
+                  style={{
+                    fontFamily: currentFont.preview,
+                    ...textColorStyle,
+                    ...textShadowStyle,
+                  }}
+                >
+                  Photo Gallery
+                </h2>
+                {activeGalleryItem && (
+                  <div className="relative max-w-3xl mx-auto px-4">
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-black/10">
+                      <img
+                        src={activeGalleryItem.url}
+                        alt={activeGalleryItem.caption || "Gallery"}
+                        className="w-full h-full object-cover"
+                      />
+                      {activeGalleryItem.caption && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-3">
+                          {activeGalleryItem.caption}
+                        </div>
+                      )}
+                    </div>
+                    {data.gallery.length > 1 && (
+                      <>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setRsvpSubmitted(true);
+                            setGalleryIndex(
+                              (idx) =>
+                                (idx - 1 + data.gallery.length) %
+                                data.gallery.length
+                            );
                           }}
-                          className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
+                          className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                          aria-label="Previous photo"
                         >
-                          Send RSVP
+                          <ChevronLeft size={20} />
                         </button>
-
-                        <div className="mt-4">
-                          <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
-                            Share & Add to Calendar
-                          </div>
-                          <div className="flex flex-wrap gap-3 justify-center">
-                            <button
-                              onClick={handleShare}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Share2 size={16} />
-                              <span className="hidden sm:inline">
-                                Share link
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleGoogleCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <CalendarIcon size={16} />
-                              <span className="hidden sm:inline">
-                                Google Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleAppleCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Apple size={16} />
-                              <span className="hidden sm:inline">
-                                Apple Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleOutlookCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <CalendarIcon size={16} />
-                              <span className="hidden sm:inline">Outlook</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="text-4xl mb-4">🎉</div>
-                        <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
-                        <p className="opacity-70">Your RSVP has been sent.</p>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setRsvpSubmitted(false);
+                            setGalleryIndex(
+                              (idx) => (idx + 1) % data.gallery.length
+                            );
                           }}
-                          className="text-sm underline mt-6 opacity-50 hover:opacity-100"
+                          className="absolute right-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                          aria-label="Next photo"
                         >
-                          Send another response
+                          <ChevronRight size={20} />
                         </button>
-                      </div>
+                        <div className="flex justify-center gap-2 mt-4">
+                          {data.gallery.map((img, idx) => (
+                            <button
+                              key={img.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setGalleryIndex(idx);
+                              }}
+                              className={`h-2.5 rounded-full transition-all ${
+                                galleryIndex === idx
+                                  ? "w-6 bg-white/90"
+                                  : "w-2.5 bg-white/40 hover:bg-white/60"
+                              }`}
+                              aria-label={`Show photo ${idx + 1}`}
+                            ></button>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
-                </section>
-              )}
+                )}
+              </section>
+            )}
 
-              <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <a
-                  href="https://envitefy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="space-y-1 inline-block no-underline"
+            {data.registries.length > 0 && (
+              <section
+                className="text-center py-12"
+                style={{
+                  borderTop: isDarkPalette
+                    ? "1px solid rgba(255,255,255,0.1)"
+                    : "1px solid rgba(0,0,0,0.1)",
+                }}
+              >
+                <h2
+                  id="registry"
+                  className="text-2xl mb-6"
+                  style={{
+                    fontFamily: currentFont.preview,
+                    ...textColorStyle,
+                    ...textShadowStyle,
+                  }}
                 >
-                  <p className="text-sm opacity-60">
-                    Powered By Envitefy. Creat. Share. Enjoy.
-                  </p>
-                  <p className="text-xs opacity-50">Create yours now.</p>
-                </a>
-              </footer>
-            </div>
+                  Registry
+                </h2>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {data.registries.map((registry) => (
+                    <a
+                      key={registry.id}
+                      href={registry.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-6 py-3 rounded-full transition-colors"
+                      style={{
+                        backgroundColor: isDarkPalette
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.1)",
+                        border: isDarkPalette
+                          ? "1px solid rgba(255,255,255,0.2)"
+                          : "1px solid rgba(0,0,0,0.2)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = isDarkPalette
+                          ? "rgba(255,255,255,0.2)"
+                          : "rgba(0,0,0,0.2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = isDarkPalette
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.1)";
+                      }}
+                    >
+                      <span
+                        className="uppercase tracking-widest text-sm font-semibold"
+                        style={textColorStyle}
+                      >
+                        {registry.label || "Registry"}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {data.rsvp.isEnabled && (
+              <section
+                id="rsvp"
+                className="max-w-3xl mx-auto text-center p-6 md:p-8"
+              >
+                <h2
+                  className={currentSize.h2 + " mb-6"}
+                  style={{
+                    fontFamily: currentFont.preview,
+                    ...textColorStyle,
+                    ...textShadowStyle,
+                  }}
+                >
+                  RSVP
+                </h2>
+                <div
+                  className="p-8 rounded-xl text-left"
+                  style={{
+                    backgroundColor: isDarkPalette
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.05)",
+                    border: isDarkPalette
+                      ? "1px solid rgba(255,255,255,0.1)"
+                      : "1px solid rgba(0,0,0,0.1)",
+                  }}
+                >
+                  {!rsvpSubmitted ? (
+                    <div className="space-y-6">
+                      <div className="text-center mb-4">
+                        <p className="opacity-80" style={textColorStyle}>
+                          {data.rsvp.deadline
+                            ? `Kindly respond by ${new Date(
+                                data.rsvp.deadline
+                              ).toLocaleDateString()}`
+                            : "Please RSVP"}
+                        </p>
+                      </div>
+                      <div>
+                        <label
+                          className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2"
+                          style={textColorStyle}
+                        >
+                          Full Name
+                        </label>
+                        <input
+                          className="w-full p-4 rounded-lg outline-none transition-colors"
+                          placeholder="Guest Name"
+                          style={{
+                            backgroundColor: isDarkPalette
+                              ? "rgba(255,255,255,0.1)"
+                              : "rgba(0,0,0,0.1)",
+                            border: isDarkPalette
+                              ? "1px solid rgba(255,255,255,0.2)"
+                              : "1px solid rgba(0,0,0,0.2)",
+                            color: textColorStyle.color,
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = isDarkPalette
+                              ? "rgba(255,255,255,0.5)"
+                              : "rgba(0,0,0,0.5)";
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = isDarkPalette
+                              ? "rgba(255,255,255,0.2)"
+                              : "rgba(0,0,0,0.2)";
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3"
+                          style={textColorStyle}
+                        >
+                          Attending?
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <label className="relative cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="attending"
+                              className="peer sr-only"
+                              defaultChecked
+                            />
+                            <div
+                              className="p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 peer-checked:bg-opacity-20"
+                              style={{
+                                borderColor: isDarkPalette
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)",
+                                backgroundColor: isDarkPalette
+                                  ? "rgba(255,255,255,0.05)"
+                                  : "rgba(0,0,0,0.05)",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (
+                                  !e.currentTarget.classList.contains(
+                                    "peer-checked"
+                                  )
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    isDarkPalette
+                                      ? "rgba(255,255,255,0.1)"
+                                      : "rgba(0,0,0,0.1)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (
+                                  !e.currentTarget.classList.contains(
+                                    "peer-checked"
+                                  )
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    isDarkPalette
+                                      ? "rgba(255,255,255,0.05)"
+                                      : "rgba(0,0,0,0.05)";
+                                }
+                              }}
+                            >
+                              <div
+                                className="w-8 h-8 rounded-full border-2 flex items-center justify-center"
+                                style={{
+                                  borderColor: textColorStyle.color,
+                                }}
+                              >
+                                <div
+                                  className="w-5 h-5 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"
+                                  style={{
+                                    backgroundColor: textColorStyle.color,
+                                  }}
+                                />
+                              </div>
+                              <span
+                                className="font-semibold"
+                                style={textColorStyle}
+                              >
+                                Joyfully Accept
+                              </span>
+                            </div>
+                          </label>
+                          <label className="relative cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="attending"
+                              className="peer sr-only"
+                            />
+                            <div
+                              className="p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 peer-checked:bg-opacity-20"
+                              style={{
+                                borderColor: isDarkPalette
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)",
+                                backgroundColor: isDarkPalette
+                                  ? "rgba(255,255,255,0.05)"
+                                  : "rgba(0,0,0,0.05)",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (
+                                  !e.currentTarget.classList.contains(
+                                    "peer-checked"
+                                  )
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    isDarkPalette
+                                      ? "rgba(255,255,255,0.1)"
+                                      : "rgba(0,0,0,0.1)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (
+                                  !e.currentTarget.classList.contains(
+                                    "peer-checked"
+                                  )
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    isDarkPalette
+                                      ? "rgba(255,255,255,0.05)"
+                                      : "rgba(0,0,0,0.05)";
+                                }
+                              }}
+                            >
+                              <div
+                                className="w-8 h-8 rounded-full border-2 flex items-center justify-center"
+                                style={{
+                                  borderColor: textColorStyle.color,
+                                }}
+                              >
+                                <div
+                                  className="w-5 h-5 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"
+                                  style={{
+                                    backgroundColor: textColorStyle.color,
+                                  }}
+                                />
+                              </div>
+                              <span
+                                className="font-semibold"
+                                style={textColorStyle}
+                              >
+                                Regretfully Decline
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRsvpSubmitted(true);
+                        }}
+                        className="w-full py-4 mt-2 font-bold uppercase tracking-widest text-sm rounded-lg transition-colors shadow-lg"
+                        style={{
+                          backgroundColor: isDarkPalette
+                            ? "#ffffff"
+                            : "#1e293b",
+                          color: isDarkPalette ? "#1e293b" : "#ffffff",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = isDarkPalette
+                            ? "#f1f5f9"
+                            : "#334155";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = isDarkPalette
+                            ? "#ffffff"
+                            : "#1e293b";
+                        }}
+                      >
+                        Send RSVP
+                      </button>
+
+                      <div className="mt-4">
+                        <div
+                          className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3"
+                          style={textColorStyle}
+                        >
+                          Share & Add to Calendar
+                        </div>
+                        <div className="flex flex-wrap gap-3 justify-center">
+                          <button
+                            onClick={handleShare}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm rounded-md transition-colors"
+                            style={{
+                              border: isDarkPalette
+                                ? "1px solid rgba(255,255,255,0.2)"
+                                : "1px solid rgba(0,0,0,0.2)",
+                              backgroundColor: isDarkPalette
+                                ? "rgba(255,255,255,0.1)"
+                                : "rgba(0,0,0,0.1)",
+                              color: textColorStyle.color,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.1)"
+                                  : "rgba(0,0,0,0.1)";
+                            }}
+                          >
+                            <Share2 size={16} />
+                            <span className="hidden sm:inline">Share link</span>
+                          </button>
+                          <button
+                            onClick={handleGoogleCalendar}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm rounded-md transition-colors"
+                            style={{
+                              border: isDarkPalette
+                                ? "1px solid rgba(255,255,255,0.2)"
+                                : "1px solid rgba(0,0,0,0.2)",
+                              backgroundColor: isDarkPalette
+                                ? "rgba(255,255,255,0.1)"
+                                : "rgba(0,0,0,0.1)",
+                              color: textColorStyle.color,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.1)"
+                                  : "rgba(0,0,0,0.1)";
+                            }}
+                          >
+                            <CalendarIcon size={16} />
+                            <span className="hidden sm:inline">Google Cal</span>
+                          </button>
+                          <button
+                            onClick={handleAppleCalendar}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm rounded-md transition-colors"
+                            style={{
+                              border: isDarkPalette
+                                ? "1px solid rgba(255,255,255,0.2)"
+                                : "1px solid rgba(0,0,0,0.2)",
+                              backgroundColor: isDarkPalette
+                                ? "rgba(255,255,255,0.1)"
+                                : "rgba(0,0,0,0.1)",
+                              color: textColorStyle.color,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.1)"
+                                  : "rgba(0,0,0,0.1)";
+                            }}
+                          >
+                            <Apple size={16} />
+                            <span className="hidden sm:inline">Apple Cal</span>
+                          </button>
+                          <button
+                            onClick={handleOutlookCalendar}
+                            className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm rounded-md transition-colors"
+                            style={{
+                              border: isDarkPalette
+                                ? "1px solid rgba(255,255,255,0.2)"
+                                : "1px solid rgba(0,0,0,0.2)",
+                              backgroundColor: isDarkPalette
+                                ? "rgba(255,255,255,0.1)"
+                                : "rgba(0,0,0,0.1)",
+                              color: textColorStyle.color,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isDarkPalette
+                                  ? "rgba(255,255,255,0.1)"
+                                  : "rgba(0,0,0,0.1)";
+                            }}
+                          >
+                            <CalendarIcon size={16} />
+                            <span className="hidden sm:inline">Outlook</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="text-4xl mb-4">🎉</div>
+                      <h3
+                        className="text-2xl font-serif mb-2"
+                        style={textColorStyle}
+                      >
+                        Thank you!
+                      </h3>
+                      <p className="opacity-70" style={textColorStyle}>
+                        Your RSVP has been sent.
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRsvpSubmitted(false);
+                        }}
+                        className="text-sm underline mt-6 opacity-50 hover:opacity-100 transition-opacity"
+                        style={textColorStyle}
+                      >
+                        Send another response
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            <footer
+              className="text-center py-8 mt-1"
+              style={{
+                borderTop: isDarkPalette
+                  ? "1px solid rgba(255,255,255,0.1)"
+                  : "1px solid rgba(0,0,0,0.1)",
+              }}
+            >
+              <a
+                href="https://envitefy.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="space-y-1 inline-block no-underline"
+              >
+                <p className="text-sm opacity-60">
+                  Powered By Envitefy. Creat. Share. Enjoy.
+                </p>
+                <p className="text-xs opacity-50">Create yours now.</p>
+              </a>
+            </footer>
           </div>
         </div>
       </div>

@@ -13,7 +13,9 @@
     "signup:templates": "node scripts/generate-signup-templates-openai.mjs",
     "signup:templates:nana": "node scripts/generate-signup-templates-google.mjs --profile=nana",
     "signup:templates:openrouter": "node scripts/generate-signup-templates-openrouter.mjs",
-    "signup:templates:openrouter:nana": "node scripts/generate-signup-templates-openrouter.mjs --profile=nana"
+    "signup:templates:openrouter:nana": "node scripts/generate-signup-templates-openrouter.mjs --profile=nana",
+    "birthday:themes": "node scripts/generate-birthday-theme-images.mjs",
+    "birthday:extract-elements": "node scripts/extract-theme-elements.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.887.0",

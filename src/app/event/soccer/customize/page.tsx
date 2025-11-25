@@ -1,7 +1,14 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  memo,
+  useRef,
+} from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -99,18 +106,66 @@ type SimpleTemplateConfig = {
 };
 
 const SOCCER_FONTS = [
-  { id: "anton", name: "Anton", css: "'Anton', 'Impact', 'Arial Black', sans-serif" },
-  { id: "bebas", name: "Bebas Neue", css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif" },
-  { id: "oswald", name: "Oswald", css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif" },
-  { id: "teko", name: "Teko", css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif" },
-  { id: "russo-one", name: "Russo One", css: "'Russo One', 'Anton', 'Impact', sans-serif" },
-  { id: "bangers", name: "Bangers", css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive" },
-  { id: "black-ops-one", name: "Black Ops One", css: "'Black Ops One', 'Russo One', 'Anton', sans-serif" },
-  { id: "archivo-black", name: "Archivo Black (Impact-like)", css: "'Archivo Black', 'Impact', 'Anton', sans-serif" },
-  { id: "chakra-petch", name: "Chakra Petch", css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif" },
-  { id: "rajdhani", name: "Rajdhani", css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif" },
-  { id: "barlow-condensed", name: "Barlow Condensed", css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif" },
-  { id: "league-spartan", name: "League Spartan", css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif" },
+  {
+    id: "anton",
+    name: "Anton",
+    css: "'Anton', 'Impact', 'Arial Black', sans-serif",
+  },
+  {
+    id: "bebas",
+    name: "Bebas Neue",
+    css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "oswald",
+    name: "Oswald",
+    css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif",
+  },
+  {
+    id: "teko",
+    name: "Teko",
+    css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "russo-one",
+    name: "Russo One",
+    css: "'Russo One', 'Anton', 'Impact', sans-serif",
+  },
+  {
+    id: "bangers",
+    name: "Bangers",
+    css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive",
+  },
+  {
+    id: "black-ops-one",
+    name: "Black Ops One",
+    css: "'Black Ops One', 'Russo One', 'Anton', sans-serif",
+  },
+  {
+    id: "archivo-black",
+    name: "Archivo Black (Impact-like)",
+    css: "'Archivo Black', 'Impact', 'Anton', sans-serif",
+  },
+  {
+    id: "chakra-petch",
+    name: "Chakra Petch",
+    css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif",
+  },
+  {
+    id: "rajdhani",
+    name: "Rajdhani",
+    css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif",
+  },
+  {
+    id: "barlow-condensed",
+    name: "Barlow Condensed",
+    css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif",
+  },
+  {
+    id: "league-spartan",
+    name: "League Spartan",
+    css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif",
+  },
 ];
 
 const SOCCER_GOOGLE_FONT_FAMILIES = [
@@ -190,7 +245,7 @@ const InputGroup = memo(
       prevProps.label === nextProps.label &&
       prevProps.type === nextProps.type &&
       prevProps.placeholder === nextProps.placeholder &&
-      prevProps.onChange === nextProps.onChange &&
+      // onChange excluded - parent creates new functions on each render
       prevProps.readOnly === nextProps.readOnly
     );
   }
@@ -295,8 +350,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         })(),
       fontId:
         (config as any)?.prefill?.fontId || SOCCER_FONTS[0]?.id || "anton",
-      fontSize:
-        (config as any)?.prefill?.fontSize || "medium",
+      fontSize: (config as any)?.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -966,41 +1020,41 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           )}
 
-        <div className="pt-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Typography
-            </p>
-            <span className="text-[11px] text-slate-400">
-              Headlines & section titles
-            </span>
-          </div>
-          <div
-            ref={fontListRef}
-            className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1"
-          >
-            {SOCCER_FONTS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => {
-                  setFontScrollTop(fontListRef.current?.scrollTop || 0);
-                  setData((p) => ({ ...p, fontId: f.id }));
-                }}
-                className={`border rounded-lg p-3 text-left transition-colors ${
-                  data.fontId === f.id
-                    ? "border-indigo-600 bg-indigo-50"
-                    : "border-slate-200 hover:border-indigo-300"
-                }`}
-              >
-                <div
-                  className="text-base font-semibold"
-                  style={{ fontFamily: f.css }}
+          <div className="pt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Typography
+              </p>
+              <span className="text-[11px] text-slate-400">
+                Headlines & section titles
+              </span>
+            </div>
+            <div
+              ref={fontListRef}
+              className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1"
+            >
+              {SOCCER_FONTS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    setFontScrollTop(fontListRef.current?.scrollTop || 0);
+                    setData((p) => ({ ...p, fontId: f.id }));
+                  }}
+                  className={`border rounded-lg p-3 text-left transition-colors ${
+                    data.fontId === f.id
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-slate-200 hover:border-indigo-300"
+                  }`}
                 >
-                  {f.name}
-                </div>
-              </button>
-            ))}
-          </div>
+                  <div
+                    className="text-base font-semibold"
+                    style={{ fontFamily: f.css }}
+                  >
+                    {f.name}
+                  </div>
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-2">
               {FONT_SIZE_OPTIONS.map((o) => (
                 <button
@@ -1297,15 +1351,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       id={section.id}
                       className="py-8 border-t border-white/10 px-6 md:px-10"
                     >
-            {section.renderPreview({
-              state: advancedState?.[section.id],
-              textClass,
-              accentClass,
-              headingShadow,
-              bodyShadow,
-              titleColor,
-              headingFontStyle,
-            })}
+                      {section.renderPreview({
+                        state: advancedState?.[section.id],
+                        textClass,
+                        accentClass,
+                        headingShadow,
+                        bodyShadow,
+                        titleColor,
+                        headingFontStyle,
+                      })}
                     </section>
                   ) : null
                 )}
@@ -1630,7 +1684,8 @@ const config = {
       bg: "bg-gradient-to-br from-emerald-900 via-emerald-700 to-emerald-500",
       text: "text-white",
       accent: "text-emerald-100",
-      preview: "bg-gradient-to-r from-emerald-900 via-emerald-700 to-emerald-500",
+      preview:
+        "bg-gradient-to-r from-emerald-900 via-emerald-700 to-emerald-500",
     },
     {
       id: "navy_united",
