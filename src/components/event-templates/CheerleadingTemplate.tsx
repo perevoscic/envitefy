@@ -2842,15 +2842,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-
-
 const config = {
   slug: "cheerleading-season",
   displayName: "Cheerleading Season",
   category: "sport_cheerleading",
   categoryLabel: "Cheerleading",
-  defaultHero:
-    "https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/cheerleading-hero.jpeg",
   detailFields: [
     { key: "team", label: "Team / Squad", placeholder: "Varsity Cheer" },
     { key: "season", label: "Season / Year", placeholder: "2024-2025" },
@@ -3112,19 +3109,18 @@ const config = {
   ],
 };
 
-
-export { 
-  config, 
+export {
+  config,
   eventsSection,
   practiceSection,
   rosterSection,
   logisticsSection,
-  gearSection
+  gearSection,
 };
-export type { 
-  CheerEvent, 
-  PracticeBlock, 
-  RosterAthlete, 
-  LogisticsInfo, 
-  GearInfo 
+export type {
+  CheerEvent,
+  PracticeBlock,
+  RosterAthlete,
+  LogisticsInfo,
+  GearInfo,
 };

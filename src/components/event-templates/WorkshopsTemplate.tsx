@@ -8,8 +8,7 @@ const config = {
   displayName: "Workshop / Class",
   category: "workshop_class",
   categoryLabel: "Workshop / Class",
-  defaultHero:
-    "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/workshop-classes-hero.jpeg",
   detailFields: [
     { key: "instructor", label: "Instructor", placeholder: "Alex Lee" },
     {
@@ -222,6 +221,5 @@ const config = {
     },
   ],
 };
-
 
 export { config };

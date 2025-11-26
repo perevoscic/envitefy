@@ -1149,8 +1149,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   className="w-full h-full object-cover"
                 />
                 <button
-                  onClick={() => setData((p) => ({ ...p, hero: "" }))}
-                  className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setData((p) => ({ ...p, hero: "" }));
+                  }}
+                  className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500 z-10"
                 >
                   Remove
                 </button>
@@ -1229,9 +1233,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Typography
               </p>
-              <span className="text-[11px] text-slate-400">
-                Headlines & section titles
-              </span>
             </div>
             <div
               ref={fontListRef}
@@ -1256,6 +1257,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     {f.name}
                   </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+              Text Size
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+              {["small", "medium", "large"].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
+                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                    data.fontSize === size
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {size}
                 </button>
               ))}
             </div>
@@ -1296,21 +1318,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 onChange={(v) => updateExtra(field.key, v)}
                 placeholder={field.placeholder}
               />
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            {FONT_SIZE_OPTIONS.map((o) => (
-              <button
-                key={o.id}
-                onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
-                className={`px-3 py-1.5 text-sm rounded border ${
-                  data.fontSize === o.id
-                    ? "border-indigo-600 text-indigo-700 bg-indigo-50"
-                    : "border-slate-200 text-slate-600 hover:border-indigo-300"
-                }`}
-              >
-                {o.label}
-              </button>
             ))}
           </div>
         </div>
@@ -1479,15 +1486,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </div>
 
-                <div className="relative w-full h-64 md:h-96 bg-black/10">
-                  <Image
-                    src={data.hero || config.defaultHero}
-                    alt="Hero"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 1000px"
-                    unoptimized
-                  />
+                <div className="relative w-full aspect-video bg-black/10">
+                  {data.hero ? (
+                    <img
+                      src={data.hero}
+                      alt="Hero"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={config.defaultHero}
+                      alt="Hero"
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                      unoptimized
+                    />
+                  )}
                 </div>
 
                 <section

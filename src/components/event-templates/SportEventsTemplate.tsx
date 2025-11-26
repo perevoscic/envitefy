@@ -8,8 +8,7 @@ const config = {
   displayName: "Sport Event",
   category: "sport_event",
   categoryLabel: "Sport Event",
-  defaultHero:
-    "https://images.unsplash.com/photo-1502877828070-33bc4f1b8a6e?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/general-sport-hero.jpeg",
   detailFields: [
     { key: "opponent", label: "Opponent", placeholder: "vs Central City" },
     {
@@ -212,6 +211,5 @@ const config = {
     },
   ],
 };
-
 
 export { config };

@@ -2791,15 +2791,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   };
 }
 
-
-
 const config = {
   slug: "dance-ballet-season",
   displayName: "Dance / Ballet Season",
   category: "sport_dance_ballet",
   categoryLabel: "Dance / Ballet",
-  defaultHero:
-    "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/balet-dance-hero.jpeg",
   detailFields: [
     {
       key: "company",
@@ -3053,19 +3050,18 @@ const config = {
   ],
 };
 
-
-export { 
-  config, 
+export {
+  config,
   eventsSection,
   practiceSection,
   rosterSection,
   logisticsSection,
-  gearSection
+  gearSection,
 };
-export type { 
-  DanceEvent, 
-  PracticeBlock, 
-  RosterDancer, 
-  LogisticsInfo, 
-  GearInfo 
+export type {
+  DanceEvent,
+  PracticeBlock,
+  RosterDancer,
+  LogisticsInfo,
+  GearInfo,
 };

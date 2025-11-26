@@ -239,6 +239,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
+      fontSize: config.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -421,6 +422,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             advancedSections: advancedState,
             heroImage: data.hero || config.defaultHero,
+            fontSize: data.fontSize,
           },
         };
 
@@ -450,6 +452,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      data.fontSize,
       advancedState,
       locationParts,
       config.category,
@@ -810,6 +813,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <span>Current theme: {currentTheme.name}</span>
             </div>
           )}
+
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+              Text Size
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+              {["small", "medium", "large"].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
+                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                    data.fontSize === size
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </EditorLayout>
     );
@@ -986,7 +1010,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       alt="Hero"
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 1000px"
+                      sizes="100vw"
                     />
                   )}
                 </div>

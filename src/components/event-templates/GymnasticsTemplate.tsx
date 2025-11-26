@@ -2537,16 +2537,13 @@ const announcementsSection = {
 // MAIN CONFIG
 // ═══════════════════════════════════════════════════════════════════════════
 
-
-
 const config = {
   slug: "gymnastics-schedule",
   displayName: "Gymnastics Schedule",
   category: "sport_gymnastics_schedule",
   categoryLabel: "Gymnastics",
   themesExpandedByDefault: false,
-  defaultHero:
-    "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/gymnastics-hero.jpeg",
   rsvpCopy: {
     menuTitle: "Attendance",
     menuDesc: "Response settings for athletes.",
@@ -2793,7 +2790,23 @@ const config = {
   ],
 };
 
-
-
-export { config, rosterSection, meetSection, practiceSection, logisticsSection, gearSection, volunteersSection, announcementsSection };
-export type { AthleteStatus, Athlete, MeetInfo, PracticeBlock, LogisticsInfo, GearItem, VolunteerSlot, CarpoolOffer };
+export {
+  config,
+  rosterSection,
+  meetSection,
+  practiceSection,
+  logisticsSection,
+  gearSection,
+  volunteersSection,
+  announcementsSection,
+};
+export type {
+  AthleteStatus,
+  Athlete,
+  MeetInfo,
+  PracticeBlock,
+  LogisticsInfo,
+  GearItem,
+  VolunteerSlot,
+  CarpoolOffer,
+};

@@ -8,8 +8,7 @@ const config = {
   displayName: "Doctor Appointment",
   category: "doctor_appointment",
   categoryLabel: "Doctor Appointment",
-  defaultHero:
-    "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/dr-appinments-hero.jpeg",
   rsvpCopy: {
     menuTitle: "Reminders",
     menuDesc: "Confirmations, follow-ups, and deadlines.",
@@ -374,6 +373,5 @@ const config = {
     },
   ],
 };
-
 
 export { config };

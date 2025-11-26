@@ -1695,6 +1695,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           return d.toISOString().split("T")[0];
         })(),
       fontId: config.prefill?.fontId || DANCE_FONTS[0]?.id || "playfair",
+      fontSize: config.prefill?.fontSize || "medium",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -2009,6 +2010,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             advancedSections: advancedState,
             heroImage: data.hero || config.defaultHero,
+            fontId: data.fontId,
+            fontSize: data.fontSize,
           },
         };
 
@@ -2038,6 +2041,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      data.fontId,
+      data.fontSize,
       advancedState,
       locationParts,
       config.category,
@@ -2404,9 +2409,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Typography
               </p>
-              <span className="text-[11px] text-slate-400">
-                Headlines & section titles
-              </span>
             </div>
             <div
               ref={fontListRef}
@@ -2431,6 +2433,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     {f.name}
                   </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+              Text Size
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+              {["small", "medium", "large"].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
+                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                    data.fontSize === size
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {size}
                 </button>
               ))}
             </div>
@@ -2639,7 +2662,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </div>
 
-                <div className="relative w-full h-64 md:h-96">
+                <div className="relative w-full aspect-video">
                   {data.hero ? (
                     <img
                       src={data.hero}
@@ -2652,7 +2675,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       alt="Hero"
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 1000px"
+                      sizes="100vw"
                     />
                   )}
                 </div>
@@ -2991,8 +3014,7 @@ const config = {
   displayName: "Dance / Ballet Season",
   category: "sport_dance_ballet",
   categoryLabel: "Dance / Ballet",
-  defaultHero:
-    "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/balet-dance-hero.jpeg",
   detailFields: [
     {
       key: "company",

@@ -880,7 +880,7 @@ export default function TopNav() {
           <div className="flex flex-shrink-0 items-center gap-3">
             <Link
               href="/"
-              className="inline-flex items-center pr-10 gap-2 text-[#7f8cff] opacity-100"
+              className="inline-flex items-center gap-2 text-[#7f8cff] opacity-100"
               suppressHydrationWarning
             >
               <Image

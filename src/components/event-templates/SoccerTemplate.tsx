@@ -8,8 +8,7 @@ const config = {
   displayName: "Soccer Match",
   category: "sport_soccer",
   categoryLabel: "Soccer",
-  defaultHero:
-    "https://images.unsplash.com/photo-1517927033932-b3d18e61fb3a?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/soccer-hero.jpeg",
   detailFields: [
     { key: "opponent", label: "Opponent", placeholder: "vs River City FC" },
     { key: "league", label: "League / Division", placeholder: "U12 Premier" },
@@ -230,6 +229,5 @@ const config = {
     },
   ],
 };
-
 
 export { config };

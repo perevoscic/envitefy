@@ -1459,6 +1459,36 @@ const App = () => {
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
+  // Helper to get font-family CSS value from title string
+  const getTitleFontFamily = () => {
+    // Extract font-family value from the title string format: [font-family:var(--font-name),_"fallback",_serif]
+    const titleStr = currentFont.title;
+    const match = titleStr.match(/var\(--font-[^,)]+\)/);
+    if (match) {
+      // Get fallback fonts from the title string (quoted font names)
+      const quotedFonts =
+        titleStr
+          .match(/"([^"]+)"/g)
+          ?.map((f) => f.replace(/"/g, "").replace(/_/g, " ")) || [];
+      // Get generic font families (serif, sans-serif, cursive, etc.)
+      const genericMatch = titleStr.match(/_([a-z-]+)(?:[,\]]|$)/i);
+      const generic = genericMatch ? genericMatch[1] : null;
+
+      const parts = [match[0]];
+      if (quotedFonts.length > 0) {
+        parts.push(...quotedFonts);
+      }
+      if (generic) {
+        parts.push(generic);
+      }
+      return parts.join(", ");
+    }
+    // Fallback to preview if parsing fails
+    return currentFont.preview;
+  };
+
+  const titleFontFamily = getTitleFontFamily();
+
   // Detect dark background for title color
   const isDarkBackground = useMemo(() => {
     const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -1896,29 +1926,30 @@ const App = () => {
         </div>
 
         <div>
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-            Typography
-          </label>
-          <div className="relative">
-            <select
-              value={data.theme.font}
-              onChange={(e) => updateTheme("font", e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-lg appearance-none text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-            >
-              {Object.entries(FONTS).map(([key, font]) => (
-                <option
-                  key={key}
-                  value={key}
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Typography
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+            {Object.entries(FONTS).map(([key, font]) => (
+              <button
+                key={key}
+                onClick={() => updateTheme("font", key)}
+                className={`border rounded-lg p-3 text-left transition-colors ${
+                  data.theme.font === key
+                    ? "border-indigo-600 bg-indigo-50"
+                    : "border-slate-200 hover:border-indigo-300"
+                }`}
+              >
+                <div
+                  className="text-base font-semibold"
                   style={{ fontFamily: font.preview }}
                 >
                   {font.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-3 top-3.5 text-slate-400 pointer-events-none"
-              size={16}
-            />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -2594,8 +2625,8 @@ const App = () => {
                   onClick={() => setActiveView("headline")}
                 >
                   <h1
-                    className={`${currentSize.h1} mb-2 ${currentFont.title} leading-tight`}
-                    style={titleColor}
+                    className={`${currentSize.h1} mb-2 leading-tight`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     {data.partner1} & {data.partner2}
                     <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
@@ -2627,7 +2658,7 @@ const App = () => {
               </div>
 
               <nav
-                className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent} ${currentFont.title}`}
+                className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent}`}
               >
                 {NAV_ITEMS.map((item) => (
                   <span
@@ -2681,8 +2712,8 @@ const App = () => {
                   onClick={() => setActiveView("schedule")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-12 text-center ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     Schedule of Events
                   </h2>
@@ -2710,7 +2741,8 @@ const App = () => {
                           >
                             <div className="w-full max-w-md mx-auto md:mx-0">
                               <h3
-                                className={`text-2xl md:text-3xl font-bold mb-2 ${currentFont.title}`}
+                                className={`text-2xl md:text-3xl font-bold mb-2`}
+                                style={{ fontFamily: titleFontFamily }}
                               >
                                 {event.title}
                               </h3>
@@ -2762,8 +2794,8 @@ const App = () => {
                   onClick={() => setActiveView("story")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-8 ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-8 ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     Our Story
                   </h2>
@@ -2784,8 +2816,8 @@ const App = () => {
                   onClick={() => setActiveView("party")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-12 text-center ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     Wedding Party
                   </h2>
@@ -2858,8 +2890,8 @@ const App = () => {
                   onClick={() => setActiveView("photos")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-12 text-center ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     Photos
                   </h2>
@@ -2895,8 +2927,8 @@ const App = () => {
                   onClick={() => setActiveView("thingsToDo")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-12 text-center ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     Things To Do
                   </h2>
@@ -2942,8 +2974,8 @@ const App = () => {
                   onClick={() => setActiveView("travel")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-10 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-10 text-center ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     Travel & Stay
                   </h2>
@@ -3059,7 +3091,8 @@ const App = () => {
                   onClick={() => setActiveView("registry")}
                 >
                   <h2
-                    className={`text-2xl mb-4 ${currentFont.title} opacity-80`}
+                    className={`text-2xl mb-4 opacity-80`}
+                    style={{ fontFamily: titleFontFamily }}
                   >
                     Registry
                   </h2>
@@ -3080,8 +3113,8 @@ const App = () => {
                   onClick={() => setActiveView("rsvp")}
                 >
                   <h2
-                    className={`${currentSize.h2} mb-6 ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
+                    className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
+                    style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     RSVP
                   </h2>

@@ -479,7 +479,7 @@ export default function GenderRevealTemplateCustomizePage() {
 
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
-  const heroImageSrc = "/templates/baby-showers/moon-back.webp";
+  const heroImageSrc = "/templates/hero-images/gender reveal-hero.jpeg";
 
   const handlePublish = useCallback(async () => {
     if (submitting) return;
@@ -1207,7 +1207,7 @@ export default function GenderRevealTemplateCustomizePage() {
                 </div>
               </div>
 
-              <div className="relative w-full h-64 md:h-96">
+              <div className="relative w-full aspect-video">
                 {data.images.hero ? (
                   <img
                     src={data.images.hero}
@@ -1220,7 +1220,7 @@ export default function GenderRevealTemplateCustomizePage() {
                     alt="Hero"
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 1000px"
+                    sizes="100vw"
                   />
                 )}
               </div>

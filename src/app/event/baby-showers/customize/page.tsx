@@ -500,8 +500,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
-  const heroImageSrc =
-    "https://images.unsplash.com/photo-1526676315444-3f40d0601f86?auto=format&fit=crop&w=1800&q=80";
+  const heroImageSrc = "/templates/hero-images/baby-shower-hero.jpeg";
 
   const handlePublish = useCallback(async () => {
     if (submitting) return;
@@ -1273,7 +1272,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 </div>
               </div>
 
-              <div className="relative w-full h-64 md:h-96">
+              <div className="relative w-full aspect-video">
                 {data.images.hero ? (
                   <img
                     src={data.images.hero}
@@ -1286,7 +1285,7 @@ export default function BabyShowerTemplateCustomizePage() {
                     alt="Hero"
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 1000px"
+                    sizes="100vw"
                   />
                 )}
               </div>

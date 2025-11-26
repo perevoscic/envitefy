@@ -1223,9 +1223,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Typography
               </p>
-              <span className="text-[11px] text-slate-400">
-                Headlines & section titles
-              </span>
             </div>
             <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
               {GYM_FONTS.map((f) => (
@@ -1244,22 +1241,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     {f.name}
                   </div>
-                  <div className="text-xs text-slate-500">{f.css}</div>
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2">
-              {FONT_SIZE_OPTIONS.map((o) => (
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+              Text Size
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+              {["small", "medium", "large"].map((size) => (
                 <button
-                  key={o.id}
-                  onClick={() => setData((p) => ({ ...p, fontSize: o.id }))}
-                  className={`px-3 py-1.5 text-sm rounded border ${
-                    data.fontSize === o.id
-                      ? "border-indigo-600 text-indigo-700 bg-indigo-50"
-                      : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                  key={size}
+                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
+                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                    data.fontSize === size
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  {o.label}
+                  {size}
                 </button>
               ))}
             </div>
@@ -1468,7 +1470,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </div>
 
-                <div className="relative w-full h-64 md:h-96">
+                <div className="relative w-full aspect-video">
                   {data.hero ? (
                     <img
                       src={data.hero}
@@ -1481,7 +1483,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       alt="Hero"
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 1000px"
+                      sizes="100vw"
                     />
                   )}
                 </div>

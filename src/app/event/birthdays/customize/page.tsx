@@ -1709,9 +1709,6 @@ export default function BirthdayTemplateCustomizePage() {
             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Typography
             </p>
-            <span className="text-[11px] text-slate-400">
-              Headlines & section titles
-            </span>
           </div>
           <div
             ref={fontListRef}
@@ -2137,7 +2134,7 @@ export default function BirthdayTemplateCustomizePage() {
               </div>
             </div>
 
-            <div id="details" className="relative w-full h-64 md:h-96">
+            <div id="details" className="relative w-full aspect-video">
               {data.images.hero ? (
                 <img
                   src={data.images.hero}
@@ -2150,7 +2147,7 @@ export default function BirthdayTemplateCustomizePage() {
                   alt="Hero"
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 1000px"
+                  sizes="100vw"
                 />
               )}
             </div>

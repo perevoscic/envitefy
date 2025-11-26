@@ -8,8 +8,7 @@ const config = {
   displayName: "Meetup / Gathering",
   category: "general_event",
   categoryLabel: "General Event",
-  defaultHero:
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/general-events-hero.jpeg",
   detailFields: [
     { key: "host", label: "Host / Organizer", placeholder: "Community Guild" },
     {
@@ -205,6 +204,5 @@ const config = {
     },
   ],
 };
-
 
 export { config };

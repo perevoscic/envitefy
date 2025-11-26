@@ -1907,16 +1907,13 @@ const volunteersSection = {
 // CONFIGURATION & EXPORT
 // ═══════════════════════════════════════════════════════════════════════════
 
-
-
 const config: SimpleTemplateConfig = {
   slug: "football-season",
   displayName: "Football Season",
   category: "sport_football_season",
   categoryLabel: "Football Season",
   themesExpandedByDefault: true,
-  defaultHero:
-    "https://images.unsplash.com/photo-1444492417251-9c84a5fa18e0?auto=format&fit=crop&w=1800&q=80",
+  defaultHero: "/templates/hero-images/football-hero.jpeg",
   detailFields: [
     { key: "team", label: "Team Name", placeholder: "Varsity Panthers" },
     { key: "season", label: "Season", placeholder: "Fall 2025" },
@@ -2177,23 +2174,21 @@ const config: SimpleTemplateConfig = {
   ],
 };
 
-
-
-export { 
-  config, 
+export {
+  config,
   gameScheduleSection,
   practiceSection,
   rosterSection,
   logisticsSection,
   gearSection,
-  volunteersSection
+  volunteersSection,
 };
-export type { 
-  PlayerStatus, 
-  Player, 
-  Game, 
-  PracticeBlock, 
-  LogisticsInfo, 
-  GearItem, 
-  VolunteerSlot 
+export type {
+  PlayerStatus,
+  Player,
+  Game,
+  PracticeBlock,
+  LogisticsInfo,
+  GearItem,
+  VolunteerSlot,
 };
