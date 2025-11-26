@@ -1174,7 +1174,13 @@ export default function SpecialEventsCustomizePage() {
           disabled={submitting}
           className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {submitting ? "Publishing..." : "PREVIEW AND PUBLISH"}
+          {submitting
+            ? editEventId
+              ? "Saving..."
+              : "Publishing..."
+            : editEventId
+            ? "Save"
+            : "Publish"}
         </button>
       </div>
     </div>
@@ -1488,7 +1494,7 @@ export default function SpecialEventsCustomizePage() {
           )
         );
       } else {
-        setNewSponsor({ ...newSponsor, logo: url });
+        setNewSponsor((prev) => ({ ...prev, logo: url }));
       }
     }
   };
@@ -1503,13 +1509,15 @@ export default function SpecialEventsCustomizePage() {
           <InputGroup
             label="Sponsor Name"
             value={newSponsor.name}
-            onChange={(v) => setNewSponsor({ ...newSponsor, name: v })}
+            onChange={(v) => setNewSponsor((prev) => ({ ...prev, name: v }))}
             placeholder="Company or Organization Name"
           />
           <InputGroup
             label="Category"
             value={newSponsor.category}
-            onChange={(v) => setNewSponsor({ ...newSponsor, category: v })}
+            onChange={(v) =>
+              setNewSponsor((prev) => ({ ...prev, category: v }))
+            }
             placeholder="e.g., Platinum Sponsor, Gold Sponsor, Community Partner"
           />
           <div>
@@ -1526,7 +1534,9 @@ export default function SpecialEventsCustomizePage() {
                   />
                   <button
                     type="button"
-                    onClick={() => setNewSponsor({ ...newSponsor, logo: "" })}
+                    onClick={() =>
+                      setNewSponsor((prev) => ({ ...prev, logo: "" }))
+                    }
                     className="mt-2 text-xs text-red-600 hover:text-red-700"
                   >
                     Remove
@@ -1710,7 +1720,7 @@ export default function SpecialEventsCustomizePage() {
     <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",

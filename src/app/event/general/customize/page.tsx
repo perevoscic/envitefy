@@ -205,6 +205,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+    const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -969,7 +970,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
@@ -983,12 +984,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <div
                   className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
                 >
-                  <div
-                    className="cursor-pointer hover:opacity-80 transition-opacity group"
-                    onClick={() => {}}
-                  >
+                  <div>
                     <h1
-                      className={`text-3xl md:text-5xl font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      className={`text-3xl md:text-5xl font-serif mb-2 leading-tight ${textClass}`}
                       style={{
                         fontFamily: "var(--font-playfair)",
                         ...(headingShadow || {}),
@@ -996,9 +994,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       }}
                     >
                       {data.title || config.displayName}
-                      <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                        <Edit2 size={22} />
-                      </span>
                     </h1>
                     {infoLine}
                   </div>
@@ -1321,7 +1316,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               disabled={submitting}
               className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? "Publishing..." : "Publish"}
+              {submitting
+                ? editEventId
+                  ? "Saving..."
+                  : "Publishing..."
+                : editEventId
+                ? "Save"
+                : "Publish"}
             </button>
           </div>
         </div>

@@ -210,11 +210,6 @@ const FONT_SIZE_OPTIONS = [
   { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
 ];
 
-const baseInputClass =
-  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
-const baseTextareaClass =
-  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
-
 const InputGroup = ({
   label,
   value,
@@ -229,31 +224,48 @@ const InputGroup = ({
   placeholder?: string;
   type?: string;
   readOnly?: boolean;
-}) => (
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-      {label}
-    </label>
-    {type === "textarea" ? (
-      <textarea
-        className={baseTextareaClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-      />
-    ) : (
-      <input
-        type={type}
-        className={baseInputClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-      />
-    )}
-  </div>
-);
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  // Sync local state when value prop changes (from external updates)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+        {label}
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      ) : (
+        <input
+          type={type}
+          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      )}
+    </div>
+  );
+};
 
 InputGroup.displayName = "InputGroup";
 
@@ -1045,7 +1057,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const updateData = useCallback((field: string, value: any) => {
-      setData((prev) => ({ ...prev, [field]: value }));
+      setData((prev) => {
+        // Only update if the value actually changed to prevent unnecessary re-renders
+        if (prev[field] === value) return prev;
+        return { ...prev, [field]: value };
+      });
     }, []);
 
     const handleBackToMain = useCallback(() => {
@@ -1057,7 +1073,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
           <div className="space-y-6">
             <InputGroup
-              key="title"
               label="Headline"
               value={data.title}
               onChange={(v) => updateData("title", v)}
@@ -1066,14 +1081,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             <div className="grid grid-cols-2 gap-4">
               <InputGroup
-                key="date"
                 label="Date"
                 type="date"
                 value={data.date}
                 onChange={(v) => updateData("date", v)}
               />
               <InputGroup
-                key="time"
                 label="Time"
                 type="time"
                 value={data.time}
@@ -1082,14 +1095,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
 
             <InputGroup
-              key="venue"
               label="Venue"
               value={data.venue}
               onChange={(v) => updateData("venue", v)}
               placeholder="Venue name (optional)"
             />
             <InputGroup
-              key="address"
               label="Address"
               value={data.address}
               onChange={(v) => updateData("address", v)}
@@ -1097,13 +1108,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             />
             <div className="grid grid-cols-2 gap-4">
               <InputGroup
-                key="city"
                 label="City"
                 value={data.city}
                 onChange={(v) => updateData("city", v)}
               />
               <InputGroup
-                key="state"
                 label="State"
                 value={data.state}
                 onChange={(v) => updateData("state", v)}
@@ -1120,7 +1129,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.address,
         data.city,
         data.state,
-        updateData,
         handleBackToMain,
         config.displayName,
       ]
@@ -1394,7 +1402,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-y-auto font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
@@ -1408,18 +1416,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <div
                   className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
                 >
-                  <div
-                    className="cursor-pointer hover:opacity-80 transition-opacity group"
-                    onClick={() => {}}
-                  >
+                  <div>
                     <h1
-                      className={`${headingSizeClass} font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      className={`${headingSizeClass} font-serif mb-2 leading-tight ${textClass}`}
                       style={headingFontStyle}
                     >
                       {data.title || config.displayName}
-                      <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                        <Edit2 size={22} />
-                      </span>
                     </h1>
                     {infoLine}
                     {data.address && (
@@ -1750,7 +1752,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
             mobileMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
-          {...drawerTouchHandlers}
         >
           <div
             className="flex-1 overflow-y-auto"
@@ -1758,6 +1759,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               WebkitOverflowScrolling: "touch",
               overscrollBehavior: "contain",
             }}
+            {...drawerTouchHandlers}
           >
             <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
@@ -1772,7 +1774,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </span>
             </div>
 
-            <div className="p-6 pt-4 md:pt-6">
+            <div className="p-6 pt-4 md:pt-6" style={{ pointerEvents: "auto" }}>
               {activeView === "main" && renderMainMenu()}
               {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
@@ -1795,7 +1797,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               disabled={submitting}
               className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? "Publishing..." : "Publish"}
+              {submitting
+                ? editEventId
+                  ? "Saving..."
+                  : "Publishing..."
+                : editEventId
+                ? "Save"
+                : "Publish"}
             </button>
           </div>
         </div>

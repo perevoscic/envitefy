@@ -213,31 +213,48 @@ const InputGroup = ({
   placeholder?: string;
   type?: string;
   readOnly?: boolean;
-}) => (
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-      {label}
-    </label>
-    {type === "textarea" ? (
-      <textarea
-        className={baseTextareaClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-      />
-    ) : (
-      <input
-        type={type}
-        className={baseInputClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-      />
-    )}
-  </div>
-);
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  // Sync local state when value prop changes (from external updates)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+        {label}
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          className={baseTextareaClass}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      ) : (
+        <input
+          type={type}
+          className={baseInputClass}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          readOnly={readOnly}
+        />
+      )}
+    </div>
+  );
+};
 
 InputGroup.displayName = "InputGroup";
 
@@ -302,6 +319,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+    const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -1205,7 +1223,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
@@ -1219,18 +1237,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <div
                   className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
                 >
-                  <div
-                    className="cursor-pointer hover:opacity-80 transition-opacity group"
-                    onClick={() => {}}
-                  >
+                  <div>
                     <h1
-                      className={`${headingSizeClass} font-serif mb-2 leading-tight flex items-center gap-2 ${textClass}`}
+                      className={`${headingSizeClass} font-serif mb-2 leading-tight ${textClass}`}
                       style={headingFontStyle}
                     >
                       {data.title || config.displayName}
-                      <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                        <Edit2 size={22} />
-                      </span>
                     </h1>
                     {infoLine}
                     {addressLine && (
@@ -1606,7 +1618,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               disabled={submitting}
               className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? "Publishing..." : "Publish"}
+              {submitting
+                ? editEventId
+                  ? "Saving..."
+                  : "Publishing..."
+                : editEventId
+                ? "Save"
+                : "Publish"}
             </button>
           </div>
         </div>

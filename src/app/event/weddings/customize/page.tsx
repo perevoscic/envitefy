@@ -1707,7 +1707,13 @@ const App = () => {
           disabled={submitting}
           className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {submitting ? "Publishing..." : "PREVIEW AND PUBLISH"}
+          {submitting
+            ? editEventId
+              ? "Saving..."
+              : "Publishing..."
+            : editEventId
+            ? "Save"
+            : "Publish"}
         </button>
       </div>
     </div>
@@ -2086,7 +2092,7 @@ const App = () => {
   const renderPhotosEditor = () => (
     <EditorLayout title="Photos" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
-        <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group">
+        <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group relative">
           <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <Upload size={20} className="text-indigo-600" />
           </div>
@@ -2094,7 +2100,34 @@ const App = () => {
             Upload Photos
           </h3>
           <p className="text-xs text-slate-500">JPG or PNG up to 5MB</p>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            onChange={handleGalleryUpload}
+          />
         </div>
+
+        {data.gallery.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {data.gallery.map((img) => (
+              <div key={img.id} className="relative group">
+                <img
+                  src={img.url}
+                  alt="Gallery"
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <button
+                  onClick={() => removeGalleryImage(img.id)}
+                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </EditorLayout>
   );
@@ -2592,7 +2625,7 @@ const App = () => {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#F8F5FF] flex justify-center"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#F8F5FF] flex justify-center md:justify-end md:pr-25"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
@@ -2620,18 +2653,12 @@ const App = () => {
               <div
                 className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
               >
-                <div
-                  className="cursor-pointer hover:opacity-80 transition-opacity group"
-                  onClick={() => setActiveView("headline")}
-                >
+                <div>
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
                     style={{ ...titleColor, fontFamily: titleFontFamily }}
                   >
                     {data.partner1} & {data.partner2}
-                    <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                      <Edit2 size={24} />
-                    </span>
                   </h1>
                   <div
                     className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 ${currentFont.body} tracking-wide`}

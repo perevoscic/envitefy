@@ -1944,7 +1944,7 @@ const config: SimpleTemplateConfig = {
     title: "Panthers Football 2025",
     details:
       "Welcome to the 2025 Football Season! This page has everything players and parents need - game schedule, practice times, equipment list, travel info, and volunteer sign-ups. Go Panthers! 🏈",
-    hero: "https://images.unsplash.com/photo-1508098682722-e99c643e7f0b?auto=format&fit=crop&w=1800&q=80",
+    hero: "/templates/hero-images/football-hero.jpeg",
     date: "2025-11-30",
     time: "14:00",
     city: "Chicago",

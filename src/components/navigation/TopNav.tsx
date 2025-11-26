@@ -41,7 +41,7 @@ export const NAV_LINKS: Array<{
 }> = [
   { label: "Home", href: "/", match: (path) => path === "/" },
   {
-    label: "Create Event",
+    label: "New Event",
     href: "/event/new",
     match: (path) =>
       path.startsWith("/event") && !path.startsWith("/event/new"),
@@ -82,7 +82,6 @@ export function useUnifiedMenu() {
 
   const [openRecent, setOpenRecent] = useState(false);
   const [myEventsOpen, setMyEventsOpen] = useState(false);
-  const [createEventOpen, setCreateEventOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
@@ -182,8 +181,6 @@ export function useUnifiedMenu() {
     setOpenRecent,
     myEventsOpen,
     setMyEventsOpen,
-    createEventOpen,
-    setCreateEventOpen,
     profileOpen,
     setProfileOpen,
     calendarsOpen,
@@ -378,7 +375,7 @@ export function ProfileMenu({
       ref={profileRef}
       className={`${
         variant === "topnav"
-          ? "absolute right-0 mt-2 w-64 rounded-3xl border border-[#ece9ff] bg-white p-2 text-sm shadow-xl z-50"
+          ? "absolute left-1/2 -translate-x-1/2 mt-2 w-64 rounded-3xl border border-[#ece9ff] bg-white p-2 text-sm shadow-xl z-50"
           : "p-2"
       }`}
     >
@@ -685,7 +682,6 @@ export default function TopNav() {
 
   const [openRecent, setOpenRecent] = useState(false);
   const [myEventsOpen, setMyEventsOpen] = useState(false);
-  const [createEventOpen, setCreateEventOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -697,7 +693,6 @@ export default function TopNav() {
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
-  const createDropdownRef = useRef<HTMLDivElement | null>(null);
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const shouldShowNav = status === "authenticated";
@@ -742,8 +737,7 @@ export default function TopNav() {
   }, [shouldShowNav]);
 
   useEffect(() => {
-    if (!openRecent && !createEventOpen && !profileOpen && !myEventsOpen)
-      return;
+    if (!openRecent && !profileOpen && !myEventsOpen) return;
     const handleClick = (event: MouseEvent) => {
       if (
         openRecent &&
@@ -752,14 +746,6 @@ export default function TopNav() {
         !dropdownRef.current.contains(event.target)
       ) {
         setOpenRecent(false);
-      }
-      if (
-        createEventOpen &&
-        createDropdownRef.current &&
-        event.target instanceof Node &&
-        !createDropdownRef.current.contains(event.target)
-      ) {
-        setCreateEventOpen(false);
       }
       if (
         profileOpen &&
@@ -782,7 +768,6 @@ export default function TopNav() {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpenRecent(false);
-        setCreateEventOpen(false);
         setProfileOpen(false);
         setCalendarsOpen(false);
         setMyEventsOpen(false);
@@ -796,11 +781,9 @@ export default function TopNav() {
     };
   }, [
     openRecent,
-    createEventOpen,
     profileOpen,
     myEventsOpen,
     setOpenRecent,
-    setCreateEventOpen,
     setProfileOpen,
     setCalendarsOpen,
     setMyEventsOpen,
@@ -872,15 +855,15 @@ export default function TopNav() {
         suppressHydrationWarning
       >
         <div
-          className={`mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 ${
+          className={`mx-auto flex w-full max-w-7xl items-center gap-4 px-3 md:px-8 ${
             navIsScrolled ? "py-3" : "py-5"
           }`}
           suppressHydrationWarning
         >
-          <div className="flex flex-shrink-0 items-center gap-3">
+          <div className="flex flex-shrink-0 items-center -ml-10 md:-ml-6">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-[#7f8cff] opacity-100"
+              className="inline-flex items-center text-[#7f8cff] opacity-100"
               suppressHydrationWarning
             >
               <Image
@@ -895,7 +878,7 @@ export default function TopNav() {
           <nav className="flex items-center gap-3 text-sm font-semibold text-[#564d7a]">
             {NAV_LINKS.map((link) => {
               const active = link.match(pathname || "");
-              if (link.label === "Create Event") {
+              if (link.label === "New Event") {
                 return (
                   <div key={link.href} className="relative group">
                     <button
@@ -972,7 +955,7 @@ export default function TopNav() {
               />
             </div>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
@@ -1007,51 +990,6 @@ export default function TopNav() {
                       ))}
                     </ul>
                   )}
-                </div>
-              )}
-            </div>
-            <div
-              className="relative"
-              ref={createDropdownRef}
-              onMouseEnter={() => setCreateEventOpen(true)}
-              onMouseLeave={() => setCreateEventOpen(false)}
-            >
-              <button
-                type="button"
-                onClick={() => setCreateEventOpen((prev) => !prev)}
-                className="rounded-full bg-[#7f8cff] px-4 py-1.5 text-sm font-semibold text-white shadow-lg shadow-[#7f8cff]/30 transition hover:-translate-y-0.5 flex items-center gap-2"
-                aria-haspopup="true"
-                aria-expanded={createEventOpen}
-              >
-                <span>New event</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`h-4 w-4 transition-transform ${
-                    createEventOpen ? "rotate-180" : ""
-                  }`}
-                  aria-hidden="true"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-              {createEventOpen && (
-                <div
-                  style={{ top: `${createMenuTop}px` }}
-                  className="fixed left-1/2 -translate-x-1/2 pt-2 w-full max-w-[95vw] z-50 origin-top"
-                  suppressHydrationWarning
-                  onMouseLeave={() => setCreateEventOpen(false)}
-                >
-                  <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
-                    <CreateEventMenu
-                      onSelect={() => setCreateEventOpen(false)}
-                    />
-                  </div>
                 </div>
               )}
             </div>

@@ -2026,7 +2026,7 @@ export default function BirthdayTemplateCustomizePage() {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
@@ -2047,10 +2047,7 @@ export default function BirthdayTemplateCustomizePage() {
                     : "rgba(0,0,0,0.1)",
                 }}
               >
-                <div
-                  className="cursor-pointer hover:opacity-80 transition-opacity group"
-                  onClick={() => setActiveView("headline")}
-                >
+                <div>
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
                     style={{
@@ -2061,9 +2058,6 @@ export default function BirthdayTemplateCustomizePage() {
                   >
                     {data.childName}'s {data.age}
                     {getAgeSuffix(data.age)} Birthday
-                    <span className="inline-block ml-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                      <Edit2 size={24} />
-                    </span>
                   </h1>
                   <div
                     className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
@@ -2890,7 +2884,13 @@ export default function BirthdayTemplateCustomizePage() {
             disabled={submitting}
             className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? "Publishing..." : "PREVIEW AND PUBLISH"}
+            {submitting
+              ? editEventId
+                ? "Saving..."
+                : "Publishing..."
+              : editEventId
+              ? "Save"
+              : "Publish"}
           </button>
         </div>
       </div>
