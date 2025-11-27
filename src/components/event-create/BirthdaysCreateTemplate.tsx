@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Baloo_2, Poppins } from "next/font/google";
 import {
   birthdayTemplateCatalog,
   type BirthdayTemplateDefinition,
@@ -49,17 +48,7 @@ type FilterState = {
   format: TemplateFormat | "all";
 };
 
-const baloo = Baloo_2({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-baloo",
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
-});
+const FONT_CLASS = "font-vars";
 
 const AGE_FILTERS = [
   { value: "all", label: "All ages" },
@@ -809,7 +798,7 @@ export default function BirthdaysCreateTemplate({ defaultDate }: Props) {
     : null;
 
   return (
-    <main className={`${poppins.className} ${baloo.variable} bg-[#FAFAFA]`}>
+    <main className={`${FONT_CLASS} bg-[#FAFAFA]`}>
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 py-10 sm:px-6 lg:px-10">
         <HeroSection
           onBrowse={() =>
