@@ -7,7 +7,18 @@ export function getAuthOptions(): NextAuthOptions {
   const secret =
     process.env.AUTH_SECRET ??
     process.env.NEXTAUTH_SECRET ??
-    (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
+    // Fallback to a dev-only secret to avoid hard crashes during local prod builds/start.
+    "dev-build-secret";
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    !process.env.AUTH_SECRET &&
+    !process.env.NEXTAUTH_SECRET
+  ) {
+    console.warn(
+      "[auth] Missing AUTH_SECRET/NEXTAUTH_SECRET; using dev-build-secret fallback. Set a real secret in production."
+    );
+  }
 
   return {
     debug: true,              // TEMP: leave on while debugging
