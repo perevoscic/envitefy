@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useMemo, useRef, useState, useCallback } from "react";
+import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -1216,6 +1216,7 @@ const App = () => {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
@@ -1457,6 +1458,91 @@ const App = () => {
     }));
   };
 
+  // Load an existing wedding when editing
+  useEffect(() => {
+    const loadExisting = async () => {
+      if (!editEventId) return;
+      setLoadingExisting(true);
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          console.error("[Edit] Failed to load event", res.status);
+          setLoadingExisting(false);
+          return;
+        }
+
+        const json = await res.json();
+        const existing = json?.data || {};
+
+        const startIso = existing.startISO || existing.start || existing.startIso;
+        let loadedDate: string | undefined;
+        let loadedTime: string | undefined;
+        if (startIso) {
+          const parsed = new Date(startIso);
+          if (!Number.isNaN(parsed.getTime())) {
+            loadedDate = parsed.toISOString().split("T")[0];
+            loadedTime = parsed.toISOString().slice(11, 16);
+          }
+        }
+
+        const themeId =
+          existing.theme?.themeId || existing.themeId || existing.variationId;
+
+        setData((prev) => ({
+          ...prev,
+          partner1: existing.partner1 || prev.partner1,
+          partner2: existing.partner2 || prev.partner2,
+          date: existing.date || loadedDate || prev.date,
+          time: existing.time || loadedTime || prev.time,
+          city: existing.city || prev.city,
+          state: existing.state || prev.state,
+          story: existing.story || existing.description || prev.story,
+          weddingParty: existing.weddingParty || prev.weddingParty,
+          travel: { ...prev.travel, ...(existing.travel || {}) },
+          schedule: existing.schedule || prev.schedule,
+          thingsToDo: existing.thingsToDo || prev.thingsToDo,
+          hosts: existing.hosts || prev.hosts,
+          theme: {
+            ...prev.theme,
+            ...(existing.theme || {}),
+            themeId: themeId || prev.theme.themeId,
+          },
+          images: {
+            ...prev.images,
+            hero:
+              existing.customHeroImage ||
+              existing.heroImage ||
+              existing.hero ||
+              prev.images.hero,
+            headlineBg: existing.headlineBg || prev.images.headlineBg,
+          },
+          registries: existing.registries || prev.registries,
+          rsvp: {
+            isEnabled:
+              typeof existing.rsvp?.isEnabled === "boolean"
+                ? existing.rsvp.isEnabled
+                : typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvp.isEnabled,
+            deadline:
+              existing.rsvp?.deadline ||
+              existing.rsvpDeadline ||
+              prev.rsvp.deadline,
+          },
+          gallery: existing.gallery || prev.gallery,
+        }));
+      } catch (err) {
+        console.error("[Edit] Error loading event", err);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExisting();
+  }, [editEventId]);
+
   const currentTheme =
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
@@ -1538,6 +1624,13 @@ const App = () => {
       const location =
         data.city && data.state ? `${data.city}, ${data.state}` : undefined;
 
+      const themeToSave =
+        DESIGN_THEMES.find((c) => c.id === data.theme.themeId) ||
+        DESIGN_THEMES[0];
+
+      const heroToSave =
+        data.images?.hero || data.images?.headlineBg || config.heroImage;
+
       const title =
         data.partner1 && data.partner2
           ? `${data.partner1} & ${data.partner2} Wedding`
@@ -1570,7 +1663,10 @@ const App = () => {
           travel: data.travel,
           thingsToDo: data.thingsToDo,
           hosts: data.hosts,
-          theme: data.theme,
+          themeId: data.theme.themeId,
+          theme: { ...themeToSave, ...data.theme },
+          font: data.theme.font,
+          fontSize: data.theme.fontSize,
           registries:
             data.registries
               ?.filter((r) => r?.url?.trim())
@@ -1578,7 +1674,7 @@ const App = () => {
                 label: r.label?.trim() || "Registry",
                 url: r.url?.trim(),
               })) || [],
-          customHeroImage: data.images?.hero || undefined,
+          customHeroImage: heroToSave || undefined,
           headlineBg: data.images?.headlineBg || undefined,
           gallery: data.gallery || [],
         },
@@ -1717,12 +1813,14 @@ const App = () => {
           )}
           <button
             onClick={handlePublish}
-            disabled={submitting}
+            disabled={submitting || loadingExisting}
             className={`${
               editEventId ? "flex-1" : "w-full"
             } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
           >
-            {submitting
+            {loadingExisting
+              ? "Loading..."
+              : submitting
               ? editEventId
                 ? "Saving..."
                 : "Publishing..."

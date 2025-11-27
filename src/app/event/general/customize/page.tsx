@@ -260,6 +260,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         ])
       ),
     }));
+    const [loadingExisting, setLoadingExisting] = useState(false);
     const [advancedState, setAdvancedState] = useState(() => {
       const entries =
         config.advancedSections?.map((section) => [
@@ -408,6 +409,78 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
+    useEffect(() => {
+      const loadExisting = async () => {
+        if (!editEventId) return;
+        setLoadingExisting(true);
+        try {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            console.error("[Edit] Failed to load event", res.status);
+            return;
+          }
+          const json = await res.json();
+          const existing = json?.data || {};
+
+          const startIso = existing.startISO || existing.start || existing.startIso;
+          let loadedDate: string | undefined;
+          let loadedTime: string | undefined;
+          if (startIso) {
+            const parsed = new Date(startIso);
+            if (!Number.isNaN(parsed.getTime())) {
+              loadedDate = parsed.toISOString().split("T")[0];
+              loadedTime = parsed.toISOString().slice(11, 16);
+            }
+          }
+
+          setThemeId(
+            (existing.themeId as string) ||
+              (existing.theme && existing.theme.id) ||
+              themeId
+          );
+
+          setAdvancedState((prev) => ({
+            ...prev,
+            ...(existing.advancedSections ||
+              (existing.customFields && existing.customFields.advancedSections) ||
+              {}),
+          }));
+
+          setData((prev) => ({
+            ...prev,
+            title: existing.title || prev.title,
+            date: existing.date || loadedDate || prev.date,
+            time: existing.time || loadedTime || prev.time,
+            city: existing.city || prev.city,
+            state: existing.state || prev.state,
+            venue: existing.venue || prev.venue,
+            details: existing.description || prev.details,
+            hero: existing.heroImage || existing.hero || prev.hero,
+            rsvpEnabled:
+              typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvpEnabled,
+            rsvpDeadline:
+              existing.rsvpDeadline || existing.rsvp || prev.rsvpDeadline,
+            extra: {
+              ...prev.extra,
+              ...(existing.customFields || existing.extra || {}),
+            },
+            passcodeRequired:
+              existing.accessControl?.requirePasscode ?? prev.passcodeRequired,
+          }));
+        } catch (err) {
+          console.error("[Edit] Error loading event", err);
+        } finally {
+          setLoadingExisting(false);
+        }
+      };
+
+      loadExisting();
+    }, [editEventId, themeId]);
+
     const handlePublish = useCallback(async () => {
       if (submitting) return;
       setSubmitting(true);
@@ -442,6 +515,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             advancedSections: advancedState,
             heroImage: data.hero || config.defaultHero,
+            themeId,
+            theme: currentTheme,
             fontSize: data.fontSize,
             ...(data.passcodeRequired && data.passcode
               ? {
@@ -462,16 +537,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           },
         };
 
-        const res = await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json().catch(() => ({}));
-        const id = (json as any)?.id as string | undefined;
-        if (!id) throw new Error("Failed to create event");
-        router.push(buildEventPath(id, payload.title, { created: true }));
+        if (editEventId) {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              title: payload.title,
+              data: payload.data,
+              category: config.category,
+            }),
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Failed to update event");
+          }
+          router.push(
+            buildEventPath(editEventId, payload.title, {
+              updated: true,
+              t: Date.now(),
+            })
+          );
+        } else {
+          const res = await fetch("/api/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json().catch(() => ({}));
+          const id = (json as any)?.id as string | undefined;
+          if (!id) throw new Error("Failed to create event");
+          router.push(buildEventPath(id, payload.title, { created: true }));
+        }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -493,6 +591,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.passcode,
       advancedState,
       locationParts,
+      themeId,
+      currentTheme,
+      editEventId,
       config.category,
       config.displayName,
       config.slug,
@@ -1473,12 +1574,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
               <button
                 onClick={handlePublish}
-                disabled={submitting}
+                disabled={submitting || loadingExisting}
                 className={`${
                   editEventId ? "flex-1" : "w-full"
                 } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
               >
-                {submitting
+                {loadingExisting
+                  ? "Loading..."
+                  : submitting
                   ? editEventId
                     ? "Saving..."
                     : "Publishing..."

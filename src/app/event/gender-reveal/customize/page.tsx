@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback, useMemo } from "react";
+import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -270,6 +270,7 @@ export default function GenderRevealTemplateCustomizePage() {
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(false);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
   const buildCalendarDetails = () => {
@@ -447,6 +448,91 @@ export default function GenderRevealTemplateCustomizePage() {
     }));
   };
 
+  // Load existing event when editing
+  useEffect(() => {
+    const loadExisting = async () => {
+      if (!editEventId) return;
+      setLoadingExisting(true);
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          console.error("[Edit] Failed to load event", res.status);
+          setLoadingExisting(false);
+          return;
+        }
+
+        const json = await res.json();
+        const existing = json?.data || {};
+
+        const startIso = existing.startISO || existing.start || existing.startIso;
+        let loadedDate: string | undefined;
+        let loadedTime: string | undefined;
+        if (startIso) {
+          const parsed = new Date(startIso);
+          if (!Number.isNaN(parsed.getTime())) {
+            loadedDate = parsed.toISOString().split("T")[0];
+            loadedTime = parsed.toISOString().slice(11, 16);
+          }
+        }
+
+        const themeId =
+          existing.theme?.themeId || existing.themeId || existing.variationId;
+
+        setData((prev) => ({
+          ...prev,
+          eventTitle: existing.eventTitle || existing.title || prev.eventTitle,
+          parentsName: existing.parentsName || prev.parentsName,
+          date: existing.date || loadedDate || prev.date,
+          time: existing.time || loadedTime || prev.time,
+          city: existing.city || prev.city,
+          state: existing.state || prev.state,
+          address: existing.address || existing.location || prev.address,
+          eventDetails: {
+            ...prev.eventDetails,
+            ...(existing.eventDetails || {}),
+          },
+          hosts: existing.hosts || prev.hosts,
+          theme: {
+            ...prev.theme,
+            ...(existing.theme || {}),
+            themeId: themeId || prev.theme.themeId,
+          },
+          images: {
+            ...prev.images,
+            hero:
+              existing.customHeroImage ||
+              existing.heroImage ||
+              existing.hero ||
+              prev.images.hero,
+            headlineBg: existing.headlineBg || prev.images.headlineBg,
+          },
+          registries: existing.registries || prev.registries,
+          rsvp: {
+            isEnabled:
+              typeof existing.rsvp?.isEnabled === "boolean"
+                ? existing.rsvp.isEnabled
+                : typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvp.isEnabled,
+            deadline:
+              existing.rsvp?.deadline ||
+              existing.rsvpDeadline ||
+              prev.rsvp.deadline,
+          },
+          gallery: existing.gallery || prev.gallery,
+        }));
+      } catch (err) {
+        console.error("[Edit] Error loading event", err);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExisting();
+  }, [editEventId]);
+
   const currentTheme =
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
@@ -500,6 +586,16 @@ export default function GenderRevealTemplateCustomizePage() {
       const location =
         data.city && data.state ? `${data.city}, ${data.state}` : undefined;
 
+      const themeToSave =
+        DESIGN_THEMES.find((c) => c.id === data.theme.themeId) ||
+        DESIGN_THEMES[0];
+
+      const heroToSave =
+        data.images.hero ||
+        data.images.headlineBg ||
+        template?.defaultHero ||
+        heroImageSrc;
+
       const payload: any = {
         title: data.eventTitle || "Gender Reveal Party",
         data: {
@@ -520,14 +616,17 @@ export default function GenderRevealTemplateCustomizePage() {
           parentsName: data.parentsName,
           eventDetails: data.eventDetails,
           hosts: data.hosts,
-          theme: data.theme,
+          themeId: data.theme.themeId,
+          theme: { ...themeToSave, ...data.theme },
+          font: data.theme.font,
+          fontSize: data.theme.fontSize,
           registries: data.registries
             .filter((r) => r.url.trim())
             .map((r) => ({
               label: r.label.trim() || "Registry",
               url: r.url.trim(),
             })),
-          customHeroImage: data.images.hero || undefined,
+          customHeroImage: heroToSave || undefined,
         },
       };
 
@@ -1649,12 +1748,14 @@ export default function GenderRevealTemplateCustomizePage() {
             )}
             <button
               onClick={handlePublish}
-              disabled={submitting}
+              disabled={submitting || loadingExisting}
               className={`${
                 editEventId ? "flex-1" : "w-full"
               } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
             >
-              {submitting
+              {loadingExisting
+                ? "Loading..."
+                : submitting
                 ? editEventId
                   ? "Saving..."
                   : "Publishing..."

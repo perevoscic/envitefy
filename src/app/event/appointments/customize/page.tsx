@@ -265,6 +265,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(false);
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
@@ -391,6 +392,77 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
+    useEffect(() => {
+      const loadExisting = async () => {
+        if (!editEventId) return;
+        setLoadingExisting(true);
+        try {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            console.error("[Edit] Failed to load event", res.status);
+            return;
+          }
+          const json = await res.json();
+          const existing = json?.data || {};
+
+          const startIso = existing.startISO || existing.start || existing.startIso;
+          let loadedDate: string | undefined;
+          let loadedTime: string | undefined;
+          if (startIso) {
+            const parsed = new Date(startIso);
+            if (!Number.isNaN(parsed.getTime())) {
+              loadedDate = parsed.toISOString().split("T")[0];
+              loadedTime = parsed.toISOString().slice(11, 16);
+            }
+          }
+
+          setThemeId(
+            (existing.themeId as string) ||
+              (existing.theme && existing.theme.id) ||
+              themeId
+          );
+
+          setAdvancedState((prev) => ({
+            ...prev,
+            ...(existing.advancedSections ||
+              (existing.customFields && existing.customFields.advancedSections) ||
+              {}),
+          }));
+
+          setData((prev) => ({
+            ...prev,
+            title: existing.title || json?.title || prev.title,
+            date: existing.date || loadedDate || prev.date,
+            time: existing.time || loadedTime || prev.time,
+            city: existing.city || prev.city,
+            state: existing.state || prev.state,
+            venue: existing.venue || prev.venue,
+            details: existing.description || prev.details,
+            hero: existing.heroImage || existing.hero || prev.hero,
+            rsvpEnabled:
+              typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvpEnabled,
+            rsvpDeadline:
+              existing.rsvpDeadline || existing.rsvp || prev.rsvpDeadline,
+            fontSize: existing.fontSize || prev.fontSize,
+            extra: {
+              ...prev.extra,
+              ...(existing.customFields || existing.extra || {}),
+            },
+          }));
+        } catch (err) {
+          console.error("[Edit] Error loading event", err);
+        } finally {
+          setLoadingExisting(false);
+        }
+      };
+
+      loadExisting();
+    }, [editEventId, themeId]);
+
     const handlePublish = useCallback(async () => {
       if (submitting) return;
       setSubmitting(true);
@@ -425,20 +497,42 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             advancedSections: advancedState,
             heroImage: data.hero || config.defaultHero,
+            themeId,
+            theme: currentTheme,
             fontSize: data.fontSize,
           },
         };
 
-        const res = await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json().catch(() => ({}));
-        const id = (json as any)?.id as string | undefined;
-        if (!id) throw new Error("Failed to create event");
-        router.push(buildEventPath(id, payload.title, { created: true }));
+        if (editEventId) {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              title: payload.title,
+              data: payload.data,
+              category: config.category,
+            }),
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Failed to update event");
+          }
+          router.push(
+            buildEventPath(editEventId, payload.title, { updated: true })
+          );
+        } else {
+          const res = await fetch("/api/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json().catch(() => ({}));
+          const id = (json as any)?.id as string | undefined;
+          if (!id) throw new Error("Failed to create event");
+          router.push(buildEventPath(id, payload.title, { created: true }));
+        }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -458,6 +552,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.fontSize,
       advancedState,
       locationParts,
+      themeId,
+      currentTheme,
+      editEventId,
       config.category,
       config.displayName,
       config.slug,

@@ -31,7 +31,11 @@ import {
 } from "lucide-react";
 import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
+import {
+  hydrateTemplateFromHistory,
+  prepareTemplatePayload,
+  saveTemplateEvent,
+} from "@/utils/simple-template-events";
 
 type FieldSpec = {
   key: string;
@@ -368,6 +372,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         ])
       ),
     }));
+    const detailFieldKeys = useMemo(
+      () => config.detailFields.map((f) => f.key),
+      [config.detailFields]
+    );
     const [advancedState, setAdvancedState] = useState(() => {
       const entries =
         config.advancedSections?.map((section) => [
@@ -438,105 +446,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     // Load existing event data when editing
     useEffect(() => {
-      const loadExisting = async () => {
-        if (!editEventId) return;
-        setLoadingExisting(true);
-        try {
-          const res = await fetch(`/api/history/${editEventId}`, {
-            cache: "no-store",
-          });
-          if (!res.ok) {
-            console.error("[Edit] Failed to load event:", res.status);
-            setLoadingExisting(false);
-            return;
-          }
-          const json = await res.json();
-          const existing = json?.data || {};
-
-          const startIso =
-            existing.start || existing.startISO || existing.startIso;
-          let loadedDate: string | undefined;
-          let loadedTime: string | undefined;
-          if (startIso) {
-            const d = new Date(startIso);
-            if (!Number.isNaN(d.getTime())) {
-              loadedDate = d.toISOString().split("T")[0];
-              loadedTime = d.toISOString().slice(11, 16);
-            }
-          }
-
-          const accessControl = existing.accessControl || {};
-          const hasPasscode = Boolean(
-            accessControl?.passcodeHash || accessControl?.requirePasscode
-          );
-
-          setData((prev) => ({
-            ...prev,
-            title: json?.title || existing.title || prev.title,
-            date: existing.date || loadedDate || prev.date,
-            time: existing.time || loadedTime || prev.time,
-            city: existing.city || prev.city,
-            state: existing.state || prev.state,
-            venue: existing.venue || existing.location || prev.venue,
-            details: existing.details || existing.description || prev.details,
-            hero: existing.heroImage || existing.hero || prev.hero,
-            rsvpEnabled:
-              typeof existing.rsvpEnabled === "boolean"
-                ? existing.rsvpEnabled
-                : prev.rsvpEnabled,
-            rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
-            fontId:
-              existing.fontId &&
-              SOCCER_FONTS.find((f) => f.id === existing.fontId)
-                ? existing.fontId
-                : prev.fontId,
-            fontSize:
-              existing.fontSize &&
-              FONT_SIZE_OPTIONS.find((o) => o.id === existing.fontSize)
-                ? existing.fontSize
-                : prev.fontSize,
-            passcodeRequired: hasPasscode,
-            passcode: "", // Never load plain passcode for security
-            extra: {
-              ...prev.extra,
-              ...(existing.extra || {}),
-              ...(existing.customFields || {}),
-            },
-          }));
-
-          const incomingAdvanced =
-            existing.advancedSections ||
-            existing.customFields?.advancedSections ||
-            existing.advanced ||
-            {};
-          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
-            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
-          }
-
-          if (
-            existing.themeId &&
-            config.themes.find((t) => t.id === existing.themeId)
-          ) {
-            setThemeId(existing.themeId);
-          } else if (
-            existing.theme?.id &&
-            config.themes.find((t) => t.id === existing.theme.id)
-          ) {
-            setThemeId(existing.theme.id);
-          } else {
-            setThemeId(config.themes[0]?.id ?? "default-theme");
-          }
-
-          setLoadingExisting(false);
-        } catch (err) {
-          console.error("[Edit] Error loading event:", err);
-          setLoadingExisting(false);
-          alert("Failed to load event data. Please refresh the page.");
-        }
-      };
-      loadExisting();
+      hydrateTemplateFromHistory({
+        editEventId,
+        themes: config.themes,
+        fonts: SOCCER_FONTS,
+        fontSizes: FONT_SIZE_OPTIONS,
+        defaultThemeId: config.themes[0]?.id ?? "default-theme",
+        defaultHero: config.defaultHero,
+        templateFieldKeys: detailFieldKeys,
+        setData,
+        setAdvancedState,
+        setThemeId,
+        setLoading: setLoadingExisting,
+      });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editEventId]);
+    }, [editEventId, config.themes, config.defaultHero, detailFieldKeys]);
 
     // Expand themes when Design view is opened
     useEffect(() => {
@@ -734,149 +658,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
     const handlePublish = useCallback(async () => {
-      if (submitting) return;
+      if (submitting || loadingExisting) return;
       setSubmitting(true);
       try {
-        let startISO: string | null = null;
-        let endISO: string | null = null;
-        if (data.date) {
-          const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const end = new Date(start);
-          end.setHours(end.getHours() + 2);
-          startISO = start.toISOString();
-          endISO = end.toISOString();
-        }
+        const { payload } = await prepareTemplatePayload({
+          data,
+          config,
+          advancedState,
+          themes: config.themes,
+          fonts: SOCCER_FONTS,
+          fontSizes: FONT_SIZE_OPTIONS,
+          themeId,
+          location: locationParts,
+          defaultHero: config.defaultHero,
+          templateFieldKeys: detailFieldKeys,
+        });
 
-        // Convert blob URLs to data URLs for saving so edits persist
-        let heroToSave = config.defaultHero;
-        if (data.hero) {
-          if (/^blob:/i.test(data.hero)) {
-            try {
-              const response = await fetch(data.hero);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              heroToSave = await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => {
-                  const result = reader.result as string;
-                  resolve(result || config.defaultHero);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-            } catch (err) {
-              console.error("Failed to convert blob URL:", err);
-              heroToSave = config.defaultHero;
-            }
-          } else if (/^data:/i.test(data.hero)) {
-            heroToSave = data.hero;
-          } else {
-            heroToSave = data.hero;
-          }
-        }
-
-        const validThemeId =
-          themeId && config.themes.find((t) => t.id === themeId)
-            ? themeId
-            : config.themes[0]?.id || "default-theme";
-        const themeToSave =
-          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
-        const validFontId =
-          data.fontId && SOCCER_FONTS.find((f) => f.id === data.fontId)
-            ? data.fontId
-            : SOCCER_FONTS[0]?.id || "anton";
-        const validFontSize =
-          data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
-            ? data.fontSize
-            : "medium";
-        const currentSelectedFont =
-          SOCCER_FONTS.find((f) => f.id === validFontId) || SOCCER_FONTS[0];
-        const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) ||
-          FONT_SIZE_OPTIONS[1];
-
-        const payload: any = {
-          title: data.title || config.displayName,
-          data: {
-            category: config.category,
-            createdVia: "simple-template",
-            createdManually: true,
-            startISO,
-            endISO,
-            location: locationParts || undefined,
-            venue: data.venue || undefined,
-            description: data.details || undefined,
-            rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-            numberOfGuests: 0,
-            templateId: config.slug,
-            templateConfig: {
-              displayName: config.displayName,
-              categoryLabel: config.categoryLabel || config.displayName,
-              detailFields: config.detailFields,
-              rsvpCopy: config.rsvpCopy,
-            },
-            customFields: {
-              ...data.extra,
-              advancedSections: advancedState,
-            },
-            advancedSections: advancedState,
-            heroImage: heroToSave,
-            themeId: validThemeId,
-            theme: themeToSave,
-            fontId: validFontId,
-            fontSize: validFontSize,
-            fontFamily: currentSelectedFont?.css,
-            fontSizeClass: currentSelectedSize?.className,
-            time: data.time,
-            date: data.date,
-            ...(data.passcodeRequired && data.passcode
-              ? {
-                  accessControl: {
-                    mode: "access-code",
-                    passcodePlain: data.passcode,
-                    requirePasscode: true,
-                  },
-                }
-              : data.passcodeRequired === false
-              ? {
-                  accessControl: {
-                    mode: "public",
-                    requirePasscode: false,
-                  },
-                }
-              : {}),
-          },
-        };
-
-        if (editEventId) {
-          const res = await fetch(`/api/history/${editEventId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ title: payload.title, data: payload.data }),
-          });
-          if (!res.ok) {
-            const txt = await res.text().catch(() => "");
-            console.error("[Edit] Update failed:", res.status, txt);
-            throw new Error("Failed to update event");
-          }
-          router.push(
-            buildEventPath(editEventId, payload.title, {
-              updated: true,
-              t: Date.now(),
-            })
-          );
-        } else {
-          const res = await fetch("/api/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          const json = await res.json().catch(() => ({}));
-          const id = (json as any)?.id as string | undefined;
-          if (!id) throw new Error("Failed to create event");
-          router.push(buildEventPath(id, payload.title, { created: true }));
-        }
+        await saveTemplateEvent({ payload, editEventId, router });
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -884,27 +682,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [
       submitting,
-      data.date,
-      data.time,
-      data.title,
-      data.details,
-      data.venue,
-      data.hero,
-      data.rsvpEnabled,
-      data.rsvpDeadline,
-      data.extra,
-      data.passcodeRequired,
-      data.passcode,
+      loadingExisting,
+      data,
+      config,
       advancedState,
-      locationParts,
-      config.category,
-      config.displayName,
-      config.slug,
-      config.defaultHero,
-      config.detailFields,
-      config.rsvpCopy,
-      router,
       themeId,
+      locationParts,
+      editEventId,
+      router,
+      detailFieldKeys,
     ]);
 
     const rsvpCopy = {
