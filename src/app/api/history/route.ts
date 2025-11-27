@@ -174,6 +174,8 @@ export async function POST(req: Request) {
     const rawTitle = (body.title as string) || "Event";
     const title = String(rawTitle).slice(0, 300);
     const data = body.data ?? {};
+    const dataJson = JSON.stringify(data);
+    const dataPayloadBytes = Buffer.byteLength(dataJson, "utf8");
     if (data && typeof data === "object" && "accessControl" in data) {
       data.accessControl = await normalizeAccessControlPayload(
         data.accessControl
@@ -188,6 +190,7 @@ export async function POST(req: Request) {
           sessionEmail: sessionUser?.email || null,
           title,
           category: data?.category || null,
+          payloadBytes: dataPayloadBytes,
         }
       );
     } catch {}

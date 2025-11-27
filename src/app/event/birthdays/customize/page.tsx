@@ -1065,6 +1065,15 @@ export default function BirthdayTemplateCustomizePage() {
   const [fontScrollTop, setFontScrollTop] = useState(0);
   const [activeSection, setActiveSection] = useState<string>("details");
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingAssets, setUploadingAssets] = useState(false);
+  const assetUploadCounterRef = useRef(0);
+  const bumpAssetUploadCounter = useCallback((delta: number) => {
+    assetUploadCounterRef.current = Math.max(
+      0,
+      assetUploadCounterRef.current + delta
+    );
+    setUploadingAssets(assetUploadCounterRef.current > 0);
+  }, []);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
   const buildCalendarDetails = () => {
@@ -1224,36 +1233,109 @@ const updateTheme = (field, value) => {
     }));
   };
 
-  const handleImageUpload = (field, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
+  const uploadBirthdayAsset = useCallback(
+    async (file: File) => {
+      if (!file) return null;
+      bumpAssetUploadCounter(1);
+      try {
+        const formData = new FormData();
+        formData.append("file", file, file.name);
+        const res = await fetch("/api/uploads/birthday-asset", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(text || "Upload failed");
+        }
+        const payload = await res.json().catch(() => null);
+        return payload?.url || null;
+      } catch (err) {
+        console.error("[Birthday] asset upload failed", err);
+        return null;
+      } finally {
+        bumpAssetUploadCounter(-1);
+      }
+    },
+    [bumpAssetUploadCounter]
+  );
+
+  const handleImageUpload = useCallback(
+    async (field, e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const previewUrl = URL.createObjectURL(file);
       setData((prev) => ({
         ...prev,
-        images: { ...prev.images, [field]: imageUrl },
+        images: { ...prev.images, [field]: previewUrl },
       }));
-    }
-  };
+      const uploadedUrl = await uploadBirthdayAsset(file);
+      if (!uploadedUrl) return;
+      setData((prev) => {
+        if (prev.images[field] !== previewUrl) return prev;
+        if (previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrl);
+        }
+        return {
+          ...prev,
+          images: { ...prev.images, [field]: uploadedUrl },
+        };
+      });
+    },
+    [uploadBirthdayAsset]
+  );
 
-  const handleGalleryUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const newImages = files.map((file) => ({
-      id: `${file.name}-${Date.now()}`,
-      url: URL.createObjectURL(file),
-    }));
-    setData((prev) => ({
-      ...prev,
-      gallery: [...prev.gallery, ...newImages],
-    }));
-  };
+  const handleGalleryUpload = useCallback(
+    async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      const entries = files.map((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        return {
+          file,
+          id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(
+            2
+          )}`,
+          previewUrl,
+        };
+      });
+      setData((prev) => ({
+        ...prev,
+        gallery: [
+          ...prev.gallery,
+          ...entries.map(({ id, previewUrl }) => ({ id, url: previewUrl })),
+        ],
+      }));
+      for (const entry of entries) {
+        const uploadedUrl = await uploadBirthdayAsset(entry.file);
+        if (!uploadedUrl) continue;
+        setData((prev) => ({
+          ...prev,
+          gallery: prev.gallery.map((item) => {
+            if (item.id !== entry.id || item.url !== entry.previewUrl) return item;
+            if (entry.previewUrl.startsWith("blob:")) {
+              URL.revokeObjectURL(entry.previewUrl);
+            }
+            return { ...item, url: uploadedUrl };
+          }),
+        }));
+      }
+    },
+    [uploadBirthdayAsset]
+  );
 
-  const removeGalleryImage = (id) => {
-    setData((prev) => ({
-      ...prev,
-      gallery: prev.gallery.filter((img) => img.id !== id),
-    }));
-  };
+  const removeGalleryImage = useCallback((id) => {
+    setData((prev) => {
+      const removed = prev.gallery.find((img) => img.id === id);
+      if (removed?.url?.startsWith("blob:")) {
+        URL.revokeObjectURL(removed.url);
+      }
+      return {
+        ...prev,
+        gallery: prev.gallery.filter((img) => img.id !== id),
+      };
+    });
+  }, []);
 
   // Default theme fallback for CSS classes (styling is primarily handled by professional theme inline styles)
   const currentTheme = {
@@ -1594,6 +1676,11 @@ const updateTheme = (field, value) => {
   const handlePublish = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
+    if (uploadingAssets) {
+      alert("Still uploading images—please wait for the uploads to finish.");
+      setSubmitting(false);
+      return;
+    }
     try {
       const toDataUrlIfBlob = async (
         input: string | null | undefined
@@ -1779,6 +1866,7 @@ const updateTheme = (field, value) => {
     }
   }, [
     submitting,
+    uploadingAssets,
     data,
     template?.id,
     template?.heroImageName,
@@ -3333,32 +3421,38 @@ const updateTheme = (field, value) => {
         </ScrollBoundary>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-          <div className="flex gap-3">
-            {editEventId && (
+            <div className="flex gap-3">
+              {editEventId && (
+                <button
+                  onClick={() => router.push(`/event/${editEventId}`)}
+                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+              )}
               <button
-                onClick={() => router.push(`/event/${editEventId}`)}
-                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                onClick={handlePublish}
+                disabled={submitting || uploadingAssets}
+                className={`${
+                  editEventId ? "flex-1" : "w-full"
+                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
               >
-                Cancel
+                {submitting
+                  ? editEventId
+                    ? "Saving..."
+                    : "Publishing..."
+                  : editEventId
+                  ? "Save"
+                  : "Publish"}
               </button>
+            </div>
+            {uploadingAssets && (
+              <p className="mt-2 text-xs text-slate-500">
+                Uploading one or more images—publish will finish once the upload
+                completes.
+              </p>
             )}
-            <button
-              onClick={handlePublish}
-              disabled={submitting}
-              className={`${
-                editEventId ? "flex-1" : "w-full"
-              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                ? "Save"
-                : "Publish"}
-            </button>
           </div>
-        </div>
       </div>
 
       {!mobileMenuOpen && (
