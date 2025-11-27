@@ -23,11 +23,14 @@ import {
   Link as LinkIcon,
   Phone,
   AlertCircle,
+  Plus,
+  Mail,
 } from "lucide-react";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventActions from "@/components/EventActions";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import AccessCodeGate from "@/components/AccessCodeGate";
 
 type ThemeSpec = {
   id: string;
@@ -36,6 +39,7 @@ type ThemeSpec = {
   text: string;
   accent: string;
   preview?: string;
+  backgroundStyle?: React.CSSProperties;
 };
 
 type SimpleTemplateViewProps = {
@@ -47,6 +51,17 @@ type SimpleTemplateViewProps = {
   viewerKind: "owner" | "guest" | "readonly";
   shareUrl: string;
   sessionEmail: string | null;
+  protectSensitiveSections?: boolean;
+  protectedSectionFlags?: {
+    roster?: boolean;
+    meet?: boolean;
+    practice?: boolean;
+    logistics?: boolean;
+    volunteers?: boolean;
+  };
+  lockedReason?: "access-code" | "unauthenticated" | "unauthorized" | "pending" | null;
+  authCtaHref?: string | null;
+  accessCodeHint?: string | null;
 };
 
 export default function SimpleTemplateView({
@@ -58,9 +73,64 @@ export default function SimpleTemplateView({
   viewerKind,
   shareUrl,
   sessionEmail,
+  protectSensitiveSections: protectSensitiveSectionsProp = false,
+  protectedSectionFlags: protectedSectionFlagsProp = {},
+  lockedReason = null,
+  authCtaHref = null,
+  accessCodeHint = null,
 }: SimpleTemplateViewProps) {
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState("yes");
+  const [volunteerSignupModal, setVolunteerSignupModal] = useState<{
+    open: boolean;
+    slotId: string | null;
+    slotRole: string | null;
+  }>({ open: false, slotId: null, slotRole: null });
+  const [volunteerSignupForm, setVolunteerSignupForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [volunteerSubmitting, setVolunteerSubmitting] = useState(false);
+  const [carpoolAddModal, setCarpoolAddModal] = useState(false);
+  const [carpoolSignupModal, setCarpoolSignupModal] = useState<{
+    open: boolean;
+    carpool: any | null;
+  }>({ open: false, carpool: null });
+  const [carpoolContactModal, setCarpoolContactModal] = useState<{
+    open: boolean;
+    carpool: any | null;
+  }>({ open: false, carpool: null });
+  const [carpoolForm, setCarpoolForm] = useState({
+    driverName: "",
+    phone: "",
+    email: "",
+    seatsAvailable: 1,
+    departureLocation: "",
+    departureTime: "",
+    direction: "",
+  });
+  const [carpoolSignupForm, setCarpoolSignupForm] = useState({
+    passengerName: "",
+    passengerPhone: "",
+    passengerEmail: "",
+    seatsRequested: 1,
+  });
+  const [carpoolSubmitting, setCarpoolSubmitting] = useState(false);
+  const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
+  const [eventDataState, setEventDataState] = useState(eventData);
+  const [rsvpNameInput, setRsvpNameInput] = useState("");
+  const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
+
+  const protectSensitiveSections = Boolean(protectSensitiveSectionsProp);
+  const protectedSectionFlags = protectedSectionFlagsProp || {};
+  const isLocked = Boolean(lockedReason);
+  const isAccessCodeLock = lockedReason === "access-code";
+
+  // Use state data if available, fallback to prop
+  const currentData = eventDataState || eventData;
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -74,19 +144,19 @@ export default function SimpleTemplateView({
 
   // Extract theme directly from event data - it should have the full theme object
   const theme: ThemeSpec = (() => {
-    // The theme object should be stored directly in eventData.theme
-    const storedTheme = eventData?.theme;
+    // The theme object should be stored directly in currentData.theme
+    const storedTheme = currentData?.theme;
 
     // Debug logging
     if (typeof window !== "undefined") {
-      console.log("[SimpleTemplateView] eventData.theme:", storedTheme);
+      console.log("[SimpleTemplateView] currentData.theme:", storedTheme);
       console.log(
-        "[SimpleTemplateView] eventData.themeId:",
-        eventData?.themeId
+        "[SimpleTemplateView] currentData.themeId:",
+        currentData?.themeId
       );
       console.log(
-        "[SimpleTemplateView] eventData.address:",
-        eventData?.address
+        "[SimpleTemplateView] currentData.address:",
+        currentData?.address
       );
     }
 
@@ -97,7 +167,7 @@ export default function SimpleTemplateView({
   })();
 
   // Template config
-  const templateConfig = eventData?.templateConfig || {};
+  const templateConfig = currentData?.templateConfig || {};
   const detailFields = templateConfig?.detailFields || [];
   const rsvpCopy = templateConfig?.rsvpCopy || {
     editorTitle: "RSVP",
@@ -105,20 +175,68 @@ export default function SimpleTemplateView({
     deadlineLabel: "RSVP Deadline",
   };
 
-  // Event data extraction
-  const heroImage = eventData?.heroImage || "";
-  const description = eventData?.description || "";
-  const customFields = eventData?.customFields || {};
+  // Palette helpers (mirrors customize UI)
+  const getLuminance = (hex: string): number => {
+    const rgb = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!rgb) return 0.5;
+    const [r, g, b] = [rgb[1], rgb[2], rgb[3]].map((val) =>
+      parseInt(val, 16)
+    );
+    const toLinear = (v: number) => {
+      const n = v / 255;
+      return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+    };
+    const [rl, gl, bl] = [r, g, b].map(toLinear);
+    return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+  };
+
+  const isPaletteDark = (palette: string[]): boolean => {
+    if (!palette || palette.length === 0) return false;
+    const colors = palette.filter(Boolean).slice(0, 3);
+    if (!colors.length) return false;
+    const avg =
+      colors.map(getLuminance).reduce((a, b) => a + b, 0) / colors.length;
+    return avg < 0.5;
+  };
+
+  const paletteToBackgroundStyle = (palette: string[]) => {
+    const colors = (palette || []).filter(Boolean);
+    if (!colors.length) return undefined;
+    if (colors.length === 1) return { backgroundColor: colors[0] };
+    if (colors.length === 2) {
+      return {
+        backgroundImage: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`,
+      };
+    }
+    return {
+      backgroundImage: `linear-gradient(135deg, ${colors[0]}, ${colors[1]}, ${colors[2]})`,
+    };
+  };
+
+  const paletteColors =
+    Array.isArray(currentData?.themePalette) &&
+    currentData.themePalette.filter(Boolean).length
+      ? currentData.themePalette.filter(Boolean)
+      : [];
+  const paletteBackgroundStyle = paletteToBackgroundStyle(paletteColors);
+  const paletteIsDark =
+    paletteColors.length > 0 ? isPaletteDark(paletteColors) : null;
+
+  // Event data extraction - use state data if available, fallback to prop
+  const heroImage = currentData?.heroImage || "";
+  const description = currentData?.description || "";
+  const customFields = currentData?.customFields || {};
   const advancedSections =
-    eventData?.advancedSections || customFields?.advancedSections || {};
-  const rsvpEnabled = eventData?.rsvpEnabled ?? false;
-  const rsvpDeadline = eventData?.rsvpDeadline || "";
-  const venue = eventData?.venue || "";
-  const city = eventData?.city || "";
-  const state = eventData?.state || "";
-  const address = eventData?.address || "";
-  const time = eventData?.time || "";
-  const date = eventData?.date || "";
+    currentData?.advancedSections || customFields?.advancedSections || {};
+  const rsvpEnabled = currentData?.rsvpEnabled ?? false;
+  const rsvpDeadline = currentData?.rsvpDeadline || "";
+  const isSignedIn = Boolean(sessionEmail);
+  const venue = currentData?.venue || "";
+  const city = currentData?.city || "";
+  const state = currentData?.state || "";
+  const address = currentData?.address || "";
+  const time = currentData?.time || "";
+  const date = currentData?.date || "";
 
   // Format date
   const formatDate = (d: string) => {
@@ -149,13 +267,15 @@ export default function SimpleTemplateView({
     }
   };
 
-  // Build location string for header (compact)
-  const headerLocation = [venue, city, state].filter(Boolean).join(", ");
-  // Full location with address
-  const fullLocation = [venue, address, city, state].filter(Boolean).join(", ");
+  // Build location string for header (compact) - exclude city and state
+  const headerLocation = [venue].filter(Boolean).join(", ");
+  // Full location with address - exclude city and state
+  const fullLocation = [venue, address].filter(Boolean).join(", ");
 
   // Theme classes
   const isDarkBackground = (() => {
+    // Prefer palette inference when available
+    if (paletteIsDark !== null) return paletteIsDark;
     const bg = theme?.bg?.toLowerCase() ?? "";
     const id = theme?.id?.toLowerCase() ?? "";
     const darkTokens = [
@@ -198,13 +318,26 @@ export default function SimpleTemplateView({
     );
   })();
 
-  const rawTextClass = theme?.text || "";
+  const paletteTextFallback =
+    paletteIsDark === null
+      ? ""
+      : paletteIsDark
+      ? "text-white"
+      : "text-slate-900";
+
+  const rawTextClass = theme?.text || paletteTextFallback;
   const forceLightText =
     isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
   const textClass = forceLightText
     ? "text-white"
     : rawTextClass || "text-white";
-  const accentClass = theme?.accent || textClass;
+  const accentClass =
+    theme?.accent ||
+    (paletteIsDark !== null
+      ? paletteIsDark
+        ? "text-slate-100"
+        : "text-slate-700"
+      : textClass);
   const usesLightText =
     /text-(white|slate-50|neutral-50|gray-50)/.test(textClass) ||
     isDarkBackground;
@@ -215,6 +348,20 @@ export default function SimpleTemplateView({
     ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
     : undefined;
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
+  const headingFontFamily =
+    currentData?.fontFamily ||
+    currentData?.theme?.fontFamily ||
+    "var(--font-playfair)";
+  const headingSizeClass =
+    currentData?.fontSizeClass ||
+    currentData?.theme?.fontSizeH1 ||
+    "text-3xl md:text-5xl";
+
+  const headingStyle = {
+    ...(headingShadow || {}),
+    ...(titleColor || {}),
+    fontFamily: headingFontFamily,
+  };
 
   // Calendar handlers
   const toGoogleDate = (d: Date) =>
@@ -339,22 +486,44 @@ export default function SimpleTemplateView({
     window.location.href = absoluteIcs;
   };
 
+  const rosterAthletes = Array.isArray(advancedSections?.roster?.athletes)
+    ? advancedSections.roster.athletes
+    : [];
+
   // Section presence flags and navigation items
-  const hasRoster = Array.isArray(advancedSections?.roster?.athletes)
-    ? advancedSections.roster.athletes.length > 0
-    : false;
-  const hasMeet = Boolean(
-    advancedSections?.meet?.session ||
-      advancedSections?.meet?.sessionNumber ||
-      advancedSections?.meet?.warmUpTime ||
-      advancedSections?.meet?.marchInTime ||
-      advancedSections?.meet?.startApparatus
-  );
-  const hasPractice = Array.isArray(advancedSections?.practice?.blocks)
-    ? advancedSections.practice.blocks.length > 0
-    : false;
+  const hasRoster =
+    protectSensitiveSections && protectedSectionFlags?.roster !== undefined
+      ? Boolean(protectedSectionFlags.roster)
+      : rosterAthletes.length > 0;
+  const hasMeet =
+    protectSensitiveSections && protectedSectionFlags?.meet !== undefined
+      ? Boolean(protectedSectionFlags.meet)
+      : Boolean(
+          advancedSections?.meet?.session ||
+            advancedSections?.meet?.sessionNumber ||
+            advancedSections?.meet?.warmUpTime ||
+            advancedSections?.meet?.marchInTime ||
+            advancedSections?.meet?.startApparatus
+        );
+  const hasPractice = (() => {
+    if (
+      protectSensitiveSections &&
+      protectedSectionFlags?.practice !== undefined
+    ) {
+      return Boolean(protectedSectionFlags.practice);
+    }
+    if (Array.isArray(advancedSections?.practice?.blocks)) {
+      return advancedSections.practice.blocks.length > 0;
+    }
+    return false;
+  })();
   const hasLogistics = (() => {
     const logistics = advancedSections?.logistics;
+    const hasFlag =
+      protectSensitiveSections && protectedSectionFlags?.logistics !== undefined
+        ? Boolean(protectedSectionFlags.logistics)
+        : null;
+    if (hasFlag !== null) return hasFlag;
     if (!logistics) return false;
     return (
       Boolean(logistics.travelMode) ||
@@ -373,10 +542,12 @@ export default function SimpleTemplateView({
   })();
   const hasGear = (advancedSections?.gear?.items?.length ?? 0) > 0;
   const hasVolunteers =
-    (advancedSections?.volunteers?.volunteerSlots?.length ?? 0) > 0 ||
-    (advancedSections?.volunteers?.slots?.length ?? 0) > 0 ||
-    (advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
-    (advancedSections?.volunteers?.carpools?.length ?? 0) > 0;
+    protectSensitiveSections && protectedSectionFlags?.volunteers !== undefined
+      ? Boolean(protectedSectionFlags.volunteers)
+      : (advancedSections?.volunteers?.volunteerSlots?.length ?? 0) > 0 ||
+        (advancedSections?.volunteers?.slots?.length ?? 0) > 0 ||
+        (advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
+        (advancedSections?.volunteers?.carpools?.length ?? 0) > 0;
   const hasAnnouncements =
     (advancedSections?.announcements?.items?.length ?? 0) > 0 ||
     (advancedSections?.announcements?.announcements?.length ?? 0) > 0;
@@ -414,6 +585,12 @@ export default function SimpleTemplateView({
   const [activeSection, setActiveSection] = useState<string>(
     navItems[0]?.id || "details"
   );
+
+  useEffect(() => {
+    if (!selectedAthleteId && rosterAthletes.length > 0) {
+      setSelectedAthleteId(rosterAthletes[0].id || "");
+    }
+  }, [selectedAthleteId, rosterAthletes]);
 
   useEffect(() => {
     if (!navItems.length) return;
@@ -463,9 +640,53 @@ export default function SimpleTemplateView({
     };
   }, [navItems]);
 
+  const wrapProtected = (node: React.ReactNode) => {
+    if (isSignedIn) return node;
+    const loginHref =
+      typeof window !== "undefined"
+        ? `/login?callbackUrl=${encodeURIComponent(window.location.href)}`
+        : "/login";
+    return (
+      <div className="relative">
+        <div className="blur-sm pointer-events-none select-none">{node}</div>
+        <div className="absolute inset-0 flex items-center justify-center px-4">
+          <div className="bg-black/70 text-white text-sm rounded-lg px-4 py-3 text-center shadow-lg max-w-sm">
+            Sign in required to view this information.
+            <a
+              href={loginHref}
+              className="block mt-2 underline font-semibold text-white"
+            >
+              Sign in
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Render roster section
   const renderRosterSection = () => {
     const roster = advancedSections?.roster;
+    if (protectSensitiveSections) {
+      if (!hasRoster) return null;
+      return wrapProtected(
+        <section
+          id="roster"
+          className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+        >
+          <h2
+            className={`text-2xl mb-4 ${accentClass}`}
+            style={headingStyle}
+          >
+            Team Roster
+          </h2>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80">
+            Roster details are private. Please sign in to view athlete names,
+            levels, and attendance.
+          </div>
+        </section>
+      );
+    }
     if (!roster?.athletes?.length) return null;
 
     const statusIcon = (status: string) => {
@@ -473,6 +694,7 @@ export default function SimpleTemplateView({
         case "going":
           return <Check size={16} className="text-green-400" />;
         case "notgoing":
+        case "not_going":
           return <X size={16} className="text-red-400" />;
         case "maybe":
           return <HelpCircle size={16} className="text-yellow-400" />;
@@ -484,18 +706,19 @@ export default function SimpleTemplateView({
     const confirmed = roster.athletes.filter(
       (a: any) => a.status === "going"
     ).length;
-    const pending = roster.athletes.filter(
-      (a: any) => a.status !== "going" && a.status !== "notgoing"
-    ).length;
+    const pending = roster.athletes.filter((a: any) => {
+      const s = (a.status || "").toLowerCase();
+      return s !== "going" && s !== "notgoing" && s !== "not_going";
+    }).length;
 
-    return (
+    return wrapProtected(
       <section
         id="roster"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingStyle}
         >
           Team Roster
         </h2>
@@ -539,6 +762,26 @@ export default function SimpleTemplateView({
   // Render meet section
   const renderMeetSection = () => {
     const meet = advancedSections?.meet;
+    if (protectSensitiveSections) {
+      if (!hasMeet) return null;
+      return wrapProtected(
+        <section
+          id="meet"
+          className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+        >
+          <h2
+            className={`text-2xl mb-4 ${accentClass}`}
+            style={headingStyle}
+          >
+            Meet Details
+          </h2>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80">
+            Meet session times, rotations, and score links are only visible to
+            signed-in teammates.
+          </div>
+        </section>
+      );
+    }
     if (!meet) return null;
 
     const hasData =
@@ -552,14 +795,14 @@ export default function SimpleTemplateView({
       meet.scoresLink;
     if (!hasData) return null;
 
-    return (
+    return wrapProtected(
       <section
         id="meet"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingStyle}
         >
           Meet Details
         </h2>
@@ -646,6 +889,26 @@ export default function SimpleTemplateView({
   // Render practice section
   const renderPracticeSection = () => {
     const practice = advancedSections?.practice;
+    if (protectSensitiveSections) {
+      if (!hasPractice) return null;
+      return wrapProtected(
+        <section
+          id="practice"
+          className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+        >
+          <h2
+            className={`text-2xl mb-4 ${accentClass}`}
+            style={headingStyle}
+          >
+            Practice Schedule
+          </h2>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80">
+            Weekly practice blocks are hidden for public viewers. Sign in to see
+            times and focus areas.
+          </div>
+        </section>
+      );
+    }
     if (!practice?.blocks?.length) return null;
 
     // Helper to format time from startTime/endTime or use time field
@@ -686,14 +949,14 @@ export default function SimpleTemplateView({
       );
     };
 
-    return (
+    return wrapProtected(
       <section
         id="practice"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingStyle}
         >
           Practice Schedule
         </h2>
@@ -746,6 +1009,26 @@ export default function SimpleTemplateView({
   // Render logistics section
   const renderLogisticsSection = () => {
     const logistics = advancedSections?.logistics;
+    if (protectSensitiveSections) {
+      if (!hasLogistics) return null;
+      return wrapProtected(
+        <section
+          id="logistics"
+          className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+        >
+          <h2
+            className={`text-2xl mb-4 ${accentClass}`}
+            style={headingStyle}
+          >
+            Logistics
+          </h2>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80 space-y-2">
+            <p>Travel, hotel, fees, and meal plans stay private.</p>
+            <p>Please sign in to view the full trip logistics.</p>
+          </div>
+        </section>
+      );
+    }
     if (!logistics) return null;
 
     const hasContent =
@@ -763,14 +1046,14 @@ export default function SimpleTemplateView({
       logistics.pickupWindow;
     if (!hasContent) return null;
 
-    return (
+    return wrapProtected(
       <section
         id="logistics"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingStyle}
         >
           Logistics
         </h2>
@@ -1040,7 +1323,7 @@ export default function SimpleTemplateView({
       >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingStyle}
         >
           Gear & Uniform Checklist
         </h2>
@@ -1086,9 +1369,236 @@ export default function SimpleTemplateView({
     );
   };
 
+  // Update eventDataState when eventData prop changes
+  useEffect(() => {
+    setEventDataState(eventData);
+  }, [eventData]);
+
+  const handleRsvpSubmit = async () => {
+    // Redirect guests to sign-in
+    if (!isSignedIn) {
+      const loginHref =
+        typeof window !== "undefined"
+          ? `/login?callbackUrl=${encodeURIComponent(window.location.href)}`
+          : "/login";
+      window.location.href = loginHref;
+      return;
+    }
+
+    if (!selectedAthleteId && !rsvpNameInput.trim()) {
+      setRsvpError("Select an athlete or enter a name.");
+      return;
+    }
+
+    setRsvpError(null);
+    setRsvpSubmitting(true);
+    try {
+      const res = await fetch("/api/rsvp/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
+          status: rsvpAttending === "yes" ? "going" : "notgoing",
+          athleteId: selectedAthleteId || null,
+          athleteName: rsvpNameInput.trim() || null,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.ok) {
+        setRsvpError(json?.error || "Failed to submit attendance.");
+        return;
+      }
+      if (json?.updatedEvent?.data) {
+        setEventDataState(json.updatedEvent.data);
+      }
+      setRsvpSubmitted(true);
+    } catch (err: any) {
+      setRsvpError(err?.message || "Failed to submit attendance.");
+    } finally {
+      setRsvpSubmitting(false);
+    }
+  };
+
+  // Handle volunteer signup
+  const handleVolunteerSignup = async () => {
+    if (!volunteerSignupModal.slotId || !volunteerSignupForm.name.trim()) {
+      return;
+    }
+
+    setVolunteerSubmitting(true);
+    try {
+      const response = await fetch(`/api/history/${eventId}/volunteer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotId: volunteerSignupModal.slotId,
+          name: volunteerSignupForm.name.trim(),
+          email: volunteerSignupForm.email.trim() || undefined,
+          phone: volunteerSignupForm.phone.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        alert(error.error || "Failed to sign up for volunteer slot");
+        return;
+      }
+
+      // Refresh event data
+      const updatedResponse = await fetch(`/api/history/${eventId}`, {
+        cache: "no-store",
+      });
+      if (updatedResponse.ok) {
+        const updated = await updatedResponse.json();
+        setEventDataState(updated.data || updated);
+      }
+
+      // Close modal and reset form
+      setVolunteerSignupModal({ open: false, slotId: null, slotRole: null });
+      setVolunteerSignupForm({ name: "", email: "", phone: "" });
+    } catch (err: any) {
+      alert(err?.message || "Failed to sign up for volunteer slot");
+    } finally {
+      setVolunteerSubmitting(false);
+    }
+  };
+
+  // Handle adding carpool offer
+  const handleAddCarpool = async () => {
+    if (!carpoolForm.driverName.trim() || !carpoolForm.seatsAvailable) {
+      return;
+    }
+
+    setCarpoolSubmitting(true);
+    try {
+      const response = await fetch(`/api/history/${eventId}/carpool`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          driverName: carpoolForm.driverName.trim(),
+          phone: carpoolForm.phone.trim() || undefined,
+          email: carpoolForm.email.trim() || undefined,
+          seatsAvailable: Number(carpoolForm.seatsAvailable) || 1,
+          departureLocation: carpoolForm.departureLocation.trim() || undefined,
+          departureTime: carpoolForm.departureTime.trim() || undefined,
+          direction: carpoolForm.direction.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        alert(error.error || "Failed to add carpool offer");
+        return;
+      }
+
+      // Refresh event data
+      const updatedResponse = await fetch(`/api/history/${eventId}`, {
+        cache: "no-store",
+      });
+      if (updatedResponse.ok) {
+        const updated = await updatedResponse.json();
+        setEventDataState(updated.data || updated);
+      }
+
+      // Close modal and reset form
+      setCarpoolAddModal(false);
+      setCarpoolForm({
+        driverName: "",
+        phone: "",
+        email: "",
+        seatsAvailable: 1,
+        departureLocation: "",
+        departureTime: "",
+        direction: "",
+      });
+    } catch (err: any) {
+      alert(err?.message || "Failed to add carpool offer");
+    } finally {
+      setCarpoolSubmitting(false);
+    }
+  };
+
+  // Handle carpool signup
+  const handleCarpoolSignup = async () => {
+    if (
+      !carpoolSignupModal.carpool ||
+      !carpoolSignupForm.passengerName.trim() ||
+      !carpoolSignupForm.seatsRequested
+    ) {
+      return;
+    }
+
+    setCarpoolSignupSubmitting(true);
+    try {
+      const response = await fetch(`/api/history/${eventId}/carpool`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "signup",
+          carpoolId: carpoolSignupModal.carpool.id,
+          passengerName: carpoolSignupForm.passengerName.trim(),
+          passengerPhone: carpoolSignupForm.passengerPhone.trim() || undefined,
+          passengerEmail: carpoolSignupForm.passengerEmail.trim() || undefined,
+          seatsRequested: Number(carpoolSignupForm.seatsRequested) || 1,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        alert(error.error || "Failed to sign up for carpool");
+        return;
+      }
+
+      // Refresh event data
+      const updatedResponse = await fetch(`/api/history/${eventId}`, {
+        cache: "no-store",
+      });
+      if (updatedResponse.ok) {
+        const updated = await updatedResponse.json();
+        setEventDataState(updated.data || updated);
+      }
+
+      // Close modal and reset form
+      setCarpoolSignupModal({ open: false, carpool: null });
+      setCarpoolSignupForm({
+        passengerName: "",
+        passengerPhone: "",
+        passengerEmail: "",
+        seatsRequested: 1,
+      });
+    } catch (err: any) {
+      alert(err?.message || "Failed to sign up for carpool");
+    } finally {
+      setCarpoolSignupSubmitting(false);
+    }
+  };
+
   // Render volunteers section - handle both data structures
   const renderVolunteersSection = () => {
+    const advancedSections = currentData?.advancedSections || {};
     const volunteers = advancedSections?.volunteers;
+
+    if (protectSensitiveSections) {
+      if (!hasVolunteers) return null;
+      return wrapProtected(
+        <section
+          id="volunteers"
+          className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+        >
+          <h2
+            className={`text-2xl mb-4 ${accentClass}`}
+            style={headingStyle}
+          >
+            Volunteers & Carpool
+          </h2>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80 space-y-2">
+            <p>Volunteer roles and carpool offers are private.</p>
+            <p>Sign in to view and respond to openings.</p>
+          </div>
+        </section>
+      );
+    }
 
     // Handle both data structures: slots/carpools and volunteerSlots/carpoolOffers
     const slots = volunteers?.volunteerSlots || volunteers?.slots || [];
@@ -1117,7 +1627,7 @@ export default function SimpleTemplateView({
       return timeStr;
     };
 
-    return (
+    return wrapProtected(
       <section
         id="volunteers"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
@@ -1126,7 +1636,7 @@ export default function SimpleTemplateView({
           <div className="mb-8">
             <h2
               className={`text-2xl mb-4 ${accentClass}`}
-              style={{ ...headingShadow, ...(titleColor || {}) }}
+              style={headingStyle}
             >
               Volunteers Needed
             </h2>
@@ -1159,9 +1669,18 @@ export default function SimpleTemplateView({
                     {isFilled ? (
                       <Check size={18} className="text-green-400" />
                     ) : (
-                      <span className="text-xs px-2 py-1 bg-orange-500/30 text-orange-200 rounded">
-                        Open
-                      </span>
+                      <button
+                        onClick={() =>
+                          setVolunteerSignupModal({
+                            open: true,
+                            slotId: slot.id || String(idx),
+                            slotRole: slot.role || "Volunteer",
+                          })
+                        }
+                        className="text-xs px-3 py-1.5 bg-orange-500/30 hover:bg-orange-500/50 text-orange-200 rounded transition-colors font-medium"
+                      >
+                        Sign Up
+                      </button>
                     )}
                   </div>
                 );
@@ -1169,24 +1688,36 @@ export default function SimpleTemplateView({
             </div>
           </div>
         )}
-        {carpools.length > 0 && (
-          <div>
+        <div>
+          <div className="flex items-center justify-between mb-4">
             <h2
-              className={`text-2xl mb-4 ${accentClass}`}
-              style={{ ...headingShadow, ...(titleColor || {}) }}
+              className={`text-2xl ${accentClass}`}
+              style={headingStyle}
             >
               Carpool Offers
             </h2>
+            <button
+              onClick={() => setCarpoolAddModal(true)}
+              className="text-xs px-3 py-1.5 bg-cyan-500/30 hover:bg-cyan-500/50 text-cyan-200 rounded transition-colors font-medium flex items-center gap-1"
+            >
+              <Plus size={14} /> Add Offer
+            </button>
+          </div>
+          {carpools.length > 0 ? (
             <div className="space-y-3">
               {carpools
                 .filter((cp: any) => cp.driverName || cp.driver)
                 .map((carpool: any, idx: number) => {
                   const driverName = carpool.driverName || carpool.driver || "";
-                  const seats = carpool.seatsAvailable || carpool.seats || 0;
+                  const seatsAvailable =
+                    carpool.seatsAvailable || carpool.seats || 0;
+                  const seatsTaken = carpool.seatsTaken || 0;
+                  const seatsRemaining = seatsAvailable - seatsTaken;
                   const phone = carpool.phone || "";
                   const departureLocation = carpool.departureLocation || "";
                   const departureTime = carpool.departureTime || "";
                   const direction = carpool.direction || "";
+                  const signups = carpool.signups || [];
 
                   return (
                     <div
@@ -1200,8 +1731,15 @@ export default function SimpleTemplateView({
                         >
                           {driverName}
                         </div>
-                        <span className="px-2 py-1 bg-cyan-500/30 rounded text-cyan-200 text-sm">
-                          {seats} seat{seats !== 1 ? "s" : ""}
+                        <span
+                          className={`px-2 py-1 rounded text-sm ${
+                            seatsRemaining > 0
+                              ? "bg-cyan-500/30 text-cyan-200"
+                              : "bg-red-500/30 text-red-200"
+                          }`}
+                        >
+                          {seatsRemaining} of {seatsAvailable} seat
+                          {seatsAvailable !== 1 ? "s" : ""} available
                         </span>
                       </div>
                       {(departureLocation || departureTime) && (
@@ -1222,20 +1760,68 @@ export default function SimpleTemplateView({
                           {direction}
                         </div>
                       )}
-                      {phone && (
-                        <a
-                          href={`tel:${phone}`}
-                          className={`inline-flex items-center gap-1 text-sm mt-2 opacity-80 hover:opacity-100 ${textClass}`}
-                        >
-                          <Phone size={14} /> {phone}
-                        </a>
+                      {signups.length > 0 && (
+                        <div className="mt-2 mb-2">
+                          <div
+                            className={`text-xs opacity-70 ${textClass}`}
+                            style={bodyShadow}
+                          >
+                            Passengers:{" "}
+                            {signups
+                              .map(
+                                (s: any) =>
+                                  `${s.passengerName} (${
+                                    s.seatsRequested
+                                  } seat${s.seatsRequested !== 1 ? "s" : ""})`
+                              )
+                              .join(", ")}
+                          </div>
+                        </div>
                       )}
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {seatsRemaining > 0 && (
+                          <button
+                            onClick={() => {
+                              setCarpoolSignupModal({ open: true, carpool });
+                              setCarpoolSignupForm({
+                                passengerName: "",
+                                passengerPhone: "",
+                                passengerEmail: "",
+                                seatsRequested: 1,
+                              });
+                            }}
+                            className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-orange-500/30 hover:bg-orange-500/50 text-orange-200 rounded transition-colors font-medium`}
+                          >
+                            <Users size={14} /> Sign Up
+                          </button>
+                        )}
+                        {phone && (
+                          <a
+                            href={`tel:${phone}`}
+                            className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors ${textClass}`}
+                          >
+                            <Phone size={14} /> Call
+                          </a>
+                        )}
+                        <button
+                          onClick={() =>
+                            setCarpoolContactModal({ open: true, carpool })
+                          }
+                          className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors ${textClass}`}
+                        >
+                          <Mail size={14} /> Contact
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className={`text-sm opacity-70 ${textClass}`} style={bodyShadow}>
+              No carpool offers yet. Be the first to add one!
+            </p>
+          )}
+        </div>
       </section>
     );
   };
@@ -1259,7 +1845,7 @@ export default function SimpleTemplateView({
       >
         <h2
           className={`text-2xl mb-6 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
+          style={headingStyle}
         >
           Announcements/Urgent
         </h2>
@@ -1348,7 +1934,8 @@ export default function SimpleTemplateView({
     <div className="min-h-screen w-full bg-[#f0f2f5] flex justify-center py-4 md:py-8">
       <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
         <div
-          className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${theme.bg} ${textClass} transition-all duration-500 relative z-0`}
+          className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${theme?.bg || ""} ${textClass} transition-all duration-500 relative z-0`}
+          style={paletteBackgroundStyle || theme?.backgroundStyle}
         >
           <div className="relative z-10">
             {/* Header */}
@@ -1356,7 +1943,7 @@ export default function SimpleTemplateView({
               className={`relative p-6 md:p-8 border-b border-white/10 ${textClass}`}
             >
               {/* Actions - White background bar with Edit/Delete/Share/Email */}
-              {!isReadOnly && (
+              {!isLocked && !isReadOnly && (
                 <div className="absolute top-3 right-3 z-40">
                   <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
                     {isOwner && (
@@ -1398,16 +1985,30 @@ export default function SimpleTemplateView({
                   </div>
                 </div>
               )}
+              {isLocked && authCtaHref && (
+                <div className="absolute top-3 right-3 z-40">
+                  <Link
+                    href={authCtaHref}
+                    className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-lg backdrop-blur transition-colors hover:bg-white"
+                  >
+                    Sign in / Sign up
+                  </Link>
+                </div>
+              )}
+              {isLocked && (
+                <div className="absolute top-3 left-3 z-40 text-xs font-semibold uppercase tracking-wide text-white/80">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 backdrop-blur">
+                    Locked
+                    <span className="hidden sm:inline text-white/70">
+                      Private invite required
+                    </span>
+                  </span>
+                </div>
+              )}
               <div className="pr-32">
                 <h1
-                  className={`${
-                    eventData?.fontSizeClass || "text-3xl md:text-5xl"
-                  } mb-2 leading-tight ${textClass}`}
-                  style={{
-                    fontFamily: eventData?.fontFamily || "var(--font-playfair)",
-                    ...(headingShadow || {}),
-                    ...(titleColor || {}),
-                  }}
+                  className={`${headingSizeClass} mb-2 leading-tight ${textClass}`}
+                  style={headingStyle}
                 >
                   {eventTitle}
                 </h1>
@@ -1422,7 +2023,7 @@ export default function SimpleTemplateView({
                     <span>{address}</span>
                   </div>
                 )}
-                {navItems.length > 1 && (
+                {navItems.length > 1 && !isLocked && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {navItems.map((item) => {
                       const isActive = activeSection === item.id;
@@ -1481,6 +2082,59 @@ export default function SimpleTemplateView({
               )}
             </div>
 
+            {isLocked ? (
+              <section className="bg-white text-neutral-900 px-6 md:px-10 py-10 border-t border-white/10">
+                <div className="max-w-2xl mx-auto space-y-4">
+                  <h2 className="text-2xl font-semibold text-neutral-900">
+                    {isAccessCodeLock ? "Enter the team access code" : "Sign in to view this event"}
+                  </h2>
+                  <p className="text-neutral-700 leading-relaxed">
+                    {isAccessCodeLock
+                      ? "This invite is protected so only families with the link and password can view it. Ask your coach for the access code and enter it below."
+                      : "For privacy, the roster, meet details, practice schedule, logistics, volunteers, carpool offers, and RSVP are hidden until you sign in with the email or phone number the organizer used to invite you."}
+                  </p>
+                  {!isAccessCodeLock && lockedReason === "pending" && (
+                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      We see an invitation is pending for your account. Accept it from your inbox, then refresh to continue.
+                    </p>
+                  )}
+                  {!isAccessCodeLock && lockedReason === "unauthorized" && (
+                    <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      This event is limited to invited contacts. Ask the organizer to share it with your account to get access.
+                    </p>
+                  )}
+                  {isAccessCodeLock ? (
+                    <>
+                      {accessCodeHint && (
+                        <p className="text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                          Hint from the organizer: {accessCodeHint}
+                        </p>
+                      )}
+                      <AccessCodeGate eventId={eventId} hint={accessCodeHint} />
+                      <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                        <p className="font-semibold">How it works</p>
+                        <p>Open link -&gt; see lock screen -&gt; enter the shared code -&gt; the full event unlocks.</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                      {authCtaHref && (
+                        <Link
+                          href={authCtaHref}
+                          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors"
+                        >
+                          Sign in / Sign up
+                        </Link>
+                      )}
+                      <span className="text-sm text-neutral-600">
+                        Use the same email or phone number that received this invite.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            ) : (
+              <React.Fragment>
             {/* Details Section */}
             <section
               id="details"
@@ -1488,7 +2142,7 @@ export default function SimpleTemplateView({
             >
               <h2
                 className={`text-2xl mb-3 ${accentClass}`}
-                style={{ ...headingShadow, ...(titleColor || {}) }}
+                style={headingStyle}
               >
                 Details
               </h2>
@@ -1555,7 +2209,7 @@ export default function SimpleTemplateView({
               >
                 <h2
                   className={`text-2xl mb-6 ${accentClass}`}
-                  style={{ ...headingShadow, ...(titleColor || {}) }}
+                  style={headingStyle}
                 >
                   {rsvpCopy.editorTitle || "RSVP"}
                 </h2>
@@ -1578,8 +2232,40 @@ export default function SimpleTemplateView({
                         <input
                           className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
                           placeholder="Guest Name"
+                          value={rsvpNameInput}
+                          onChange={(e) => setRsvpNameInput(e.target.value)}
                         />
                       </div>
+                      {hasRoster && (
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                            Select Athlete (updates roster)
+                          </label>
+                          <select
+                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                            value={selectedAthleteId}
+                            onChange={(e) =>
+                              setSelectedAthleteId(
+                                e.target.value === "__other"
+                                  ? ""
+                                  : e.target.value
+                              )
+                            }
+                          >
+                            <option value="">Choose athlete</option>
+                            {rosterAthletes.map((ath: any) => (
+                              <option key={ath.id} value={ath.id}>
+                                {ath.name}{" "}
+                                {ath.level ? `• ${ath.level}` : ""}{" "}
+                                {ath.primaryEvents?.length
+                                  ? `• ${ath.primaryEvents.join(", ")}`
+                                  : ""}
+                              </option>
+                            ))}
+                            <option value="__other">Not listed / other</option>
+                          </select>
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
                           Attending?
@@ -1635,11 +2321,22 @@ export default function SimpleTemplateView({
                           </label>
                         </div>
                       </div>
+                      {!isSignedIn && (
+                        <div className="text-sm text-center text-red-100 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                          Sign in to confirm attendance and view roster details.
+                        </div>
+                      )}
+                      {rsvpError && (
+                        <div className="text-sm text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                          {rsvpError}
+                        </div>
+                      )}
                       <button
-                        onClick={() => setRsvpSubmitted(true)}
-                        className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
+                        onClick={handleRsvpSubmit}
+                        disabled={rsvpSubmitting}
+                        className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        Send RSVP
+                        {rsvpSubmitting ? "Submitting..." : "Send RSVP"}
                       </button>
                     </div>
                   ) : (
@@ -1676,21 +2373,39 @@ export default function SimpleTemplateView({
                   onClick={handleGoogleCalendar}
                   className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                 >
-                  <CalendarIcon size={16} />
+                  <Image
+                    src="/brands/google-white.svg"
+                    alt="Google"
+                    width={16}
+                    height={16}
+                    className="w-4 h-4"
+                  />
                   Google Calendar
                 </button>
                 <button
                   onClick={handleAppleCalendar}
                   className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                 >
-                  <Apple size={16} />
+                  <Image
+                    src="/brands/apple-white.svg"
+                    alt="Apple"
+                    width={16}
+                    height={16}
+                    className="w-4 h-4"
+                  />
                   Apple Calendar
                 </button>
                 <button
                   onClick={handleOutlookCalendar}
                   className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                 >
-                  <CalendarIcon size={16} />
+                  <Image
+                    src="/brands/microsoft-white.svg"
+                    alt="Microsoft"
+                    width={16}
+                    height={16}
+                    className="w-4 h-4"
+                  />
                   Outlook
                 </button>
               </div>
@@ -1713,10 +2428,562 @@ export default function SimpleTemplateView({
                   Create yours now.
                 </p>
               </a>
+              <div className="flex items-center justify-center gap-4 mt-4">
+                <a
+                  href="https://www.facebook.com/envitefy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-60 hover:opacity-100 transition-opacity"
+                  aria-label="Facebook"
+                >
+                  <Image
+                    src="/email/social-facebook.svg"
+                    alt="Facebook"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </a>
+                <a
+                  href="https://www.instagram.com/envitefy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-60 hover:opacity-100 transition-opacity"
+                  aria-label="Instagram"
+                >
+                  <Image
+                    src="/email/social-instagram.svg"
+                    alt="Instagram"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </a>
+                <a
+                  href="https://www.tiktok.com/@envitefy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-60 hover:opacity-100 transition-opacity"
+                  aria-label="TikTok"
+                >
+                  <Image
+                    src="/email/social-tiktok.svg"
+                    alt="TikTok"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </a>
+                <a
+                  href="https://www.youtube.com/@Envitefy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-60 hover:opacity-100 transition-opacity"
+                  aria-label="YouTube"
+                >
+                  <Image
+                    src="/email/social-youtube.svg"
+                    alt="YouTube"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                </a>
+              </div>
             </footer>
+              </React.Fragment>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Volunteer Signup Modal */}
+      {volunteerSignupModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() =>
+                setVolunteerSignupModal({
+                  open: false,
+                  slotId: null,
+                  slotRole: null,
+                })
+              }
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              Sign Up for {volunteerSignupModal.slotRole}
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Fill out the form below to volunteer for this position.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={volunteerSignupForm.name}
+                  onChange={(e) =>
+                    setVolunteerSignupForm({
+                      ...volunteerSignupForm,
+                      name: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Email (optional)
+                </label>
+                <input
+                  type="email"
+                  value={volunteerSignupForm.email}
+                  onChange={(e) =>
+                    setVolunteerSignupForm({
+                      ...volunteerSignupForm,
+                      email: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Phone (optional)
+                </label>
+                <input
+                  type="tel"
+                  value={volunteerSignupForm.phone}
+                  onChange={(e) =>
+                    setVolunteerSignupForm({
+                      ...volunteerSignupForm,
+                      phone: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() =>
+                    setVolunteerSignupModal({
+                      open: false,
+                      slotId: null,
+                      slotRole: null,
+                    })
+                  }
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleVolunteerSignup}
+                  disabled={
+                    volunteerSubmitting || !volunteerSignupForm.name.trim()
+                  }
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {volunteerSubmitting ? "Signing Up..." : "Sign Up"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Carpool Modal */}
+      {carpoolAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setCarpoolAddModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              Add Carpool Offer
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Share your carpool details so others can join you.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Driver Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={carpoolForm.driverName}
+                  onChange={(e) =>
+                    setCarpoolForm({
+                      ...carpoolForm,
+                      driverName: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={carpoolForm.phone}
+                    onChange={(e) =>
+                      setCarpoolForm({ ...carpoolForm, phone: e.target.value })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={carpoolForm.email}
+                    onChange={(e) =>
+                      setCarpoolForm({ ...carpoolForm, email: e.target.value })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Seats Available <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={carpoolForm.seatsAvailable}
+                  onChange={(e) =>
+                    setCarpoolForm({
+                      ...carpoolForm,
+                      seatsAvailable: Number(e.target.value) || 1,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="1"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Departure Location
+                </label>
+                <input
+                  type="text"
+                  value={carpoolForm.departureLocation}
+                  onChange={(e) =>
+                    setCarpoolForm({
+                      ...carpoolForm,
+                      departureLocation: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="e.g., NIU Recreation Center parking lot"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Departure Time
+                </label>
+                <input
+                  type="time"
+                  value={carpoolForm.departureTime}
+                  onChange={(e) =>
+                    setCarpoolForm({
+                      ...carpoolForm,
+                      departureTime: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Direction (optional)
+                </label>
+                <input
+                  type="text"
+                  value={carpoolForm.direction}
+                  onChange={(e) =>
+                    setCarpoolForm({
+                      ...carpoolForm,
+                      direction: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="e.g., To/From venue"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setCarpoolAddModal(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCarpool}
+                  disabled={
+                    carpoolSubmitting ||
+                    !carpoolForm.driverName.trim() ||
+                    !carpoolForm.seatsAvailable
+                  }
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {carpoolSubmitting ? "Adding..." : "Add Offer"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Carpool Driver Modal */}
+      {carpoolContactModal.open && carpoolContactModal.carpool && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() =>
+                setCarpoolContactModal({ open: false, carpool: null })
+              }
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              Contact{" "}
+              {carpoolContactModal.carpool.driverName ||
+                carpoolContactModal.carpool.driver}
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                {carpoolContactModal.carpool.phone && (
+                  <div>
+                    <span className="text-sm font-medium text-slate-700">
+                      Phone:
+                    </span>
+                    <a
+                      href={`tel:${carpoolContactModal.carpool.phone}`}
+                      className="block text-indigo-600 hover:text-indigo-700 mt-1"
+                    >
+                      {carpoolContactModal.carpool.phone}
+                    </a>
+                  </div>
+                )}
+                {carpoolContactModal.carpool.email && (
+                  <div>
+                    <span className="text-sm font-medium text-slate-700">
+                      Email:
+                    </span>
+                    <a
+                      href={`mailto:${carpoolContactModal.carpool.email}`}
+                      className="block text-indigo-600 hover:text-indigo-700 mt-1"
+                    >
+                      {carpoolContactModal.carpool.email}
+                    </a>
+                  </div>
+                )}
+                {!carpoolContactModal.carpool.phone &&
+                  !carpoolContactModal.carpool.email && (
+                    <p className="text-sm text-slate-600">
+                      No contact information available. Please contact the event
+                      organizer.
+                    </p>
+                  )}
+              </div>
+              <div className="flex gap-3">
+                {carpoolContactModal.carpool.phone && (
+                  <a
+                    href={`tel:${carpoolContactModal.carpool.phone}`}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-center flex items-center justify-center gap-2"
+                  >
+                    <Phone size={16} /> Call
+                  </a>
+                )}
+                {carpoolContactModal.carpool.email && (
+                  <a
+                    href={`mailto:${carpoolContactModal.carpool.email}`}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-center flex items-center justify-center gap-2"
+                  >
+                    <Mail size={16} /> Email
+                  </a>
+                )}
+                <button
+                  onClick={() =>
+                    setCarpoolContactModal({ open: false, carpool: null })
+                  }
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Carpool Signup Modal */}
+      {carpoolSignupModal.open && carpoolSignupModal.carpool && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() =>
+                setCarpoolSignupModal({ open: false, carpool: null })
+              }
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              Sign Up for Carpool
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Driver:{" "}
+              {carpoolSignupModal.carpool.driverName ||
+                carpoolSignupModal.carpool.driver}
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Your Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={carpoolSignupForm.passengerName}
+                  onChange={(e) =>
+                    setCarpoolSignupForm({
+                      ...carpoolSignupForm,
+                      passengerName: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Number of Seats <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={(() => {
+                    const seatsAvailable =
+                      carpoolSignupModal.carpool.seatsAvailable ||
+                      carpoolSignupModal.carpool.seats ||
+                      0;
+                    const seatsTaken =
+                      carpoolSignupModal.carpool.seatsTaken || 0;
+                    return seatsAvailable - seatsTaken;
+                  })()}
+                  value={carpoolSignupForm.seatsRequested}
+                  onChange={(e) =>
+                    setCarpoolSignupForm({
+                      ...carpoolSignupForm,
+                      seatsRequested: Number(e.target.value) || 1,
+                    })
+                  }
+                  className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  placeholder="1"
+                  required
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  {(() => {
+                    const seatsAvailable =
+                      carpoolSignupModal.carpool.seatsAvailable ||
+                      carpoolSignupModal.carpool.seats ||
+                      0;
+                    const seatsTaken =
+                      carpoolSignupModal.carpool.seatsTaken || 0;
+                    const remaining = seatsAvailable - seatsTaken;
+                    return `${remaining} seat${
+                      remaining !== 1 ? "s" : ""
+                    } available`;
+                  })()}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Phone (optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={carpoolSignupForm.passengerPhone}
+                    onChange={(e) =>
+                      setCarpoolSignupForm({
+                        ...carpoolSignupForm,
+                        passengerPhone: e.target.value,
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Email (optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={carpoolSignupForm.passengerEmail}
+                    onChange={(e) =>
+                      setCarpoolSignupForm({
+                        ...carpoolSignupForm,
+                        passengerEmail: e.target.value,
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() =>
+                    setCarpoolSignupModal({ open: false, carpool: null })
+                  }
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCarpoolSignup}
+                  disabled={
+                    carpoolSignupSubmitting ||
+                    !carpoolSignupForm.passengerName.trim() ||
+                    !carpoolSignupForm.seatsRequested
+                  }
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {carpoolSignupSubmitting ? "Signing Up..." : "Sign Up"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

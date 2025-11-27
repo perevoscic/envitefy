@@ -74,10 +74,37 @@ export function useEventCategories() {
     };
   }, [loadHistory]);
 
+  // Normalize category names - map sport-related categories to "Sport Events"
+  const normalizeCategory = (category: string | null | undefined): string => {
+    if (!category) return "General Events";
+    const catLower = category.toLowerCase();
+    // Map all sport-related categories to "Sport Events"
+    const sportKeywords = [
+      "gymnastics",
+      "football",
+      "soccer",
+      "cheerleading",
+      "dance",
+      "ballet",
+      "sport",
+      "athletic",
+      "game",
+      "match",
+      "practice",
+      "meet",
+      "tournament",
+      "competition"
+    ];
+    if (sportKeywords.some(keyword => catLower.includes(keyword))) {
+      return "Sport Events";
+    }
+    return category;
+  };
+
   // Group events by category
   const categories: CategoryData[] = CATEGORY_OPTIONS.map(cat => {
     const items = history.filter(h => {
-        const itemCat = h.category || "General Events";
+        const itemCat = normalizeCategory(h.category);
         // Simple normalization for robust matching
         return itemCat.toLowerCase() === cat.toLowerCase() || 
                (cat === "General Events" && !CATEGORY_OPTIONS.some(c => c.toLowerCase() === itemCat.toLowerCase() && c !== "General Events"));

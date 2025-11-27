@@ -7,8 +7,10 @@ import {
   deleteEventHistoryById,
   getUserIdByEmail,
   updateEventHistoryDataMerge,
+  updateEventHistoryData,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { normalizeAccessControlPayload } from "@/lib/event-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,26 +44,102 @@ export async function PATCH(
   if (existing.user_id && existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  // Support updating title or merging into data (e.g., category fix)
-  if (typeof body.title === "string" && body.title.trim().length > 0) {
-    const updated = await updateEventHistoryTitle(id, String(body.title).trim());
+  const titleInput =
+    typeof body.title === "string" ? body.title.trim() : undefined;
+  const hasTitleUpdate = Boolean(titleInput);
+  const hasDataUpdate = body && (body.category != null || body.data != null);
+
+  let updatedRow = existing;
+  let changed = false;
+
+  if (hasDataUpdate) {
+    const incomingData = body.data;
+    const incomingCategory = body.category;
+    const existingAccessControl =
+      (existing.data && (existing.data as any).accessControl) || null;
+    const processedData =
+      incomingData && typeof incomingData === "object"
+        ? { ...incomingData }
+        : incomingData;
+    if (processedData && typeof processedData === "object" && "accessControl" in processedData) {
+      processedData.accessControl = await normalizeAccessControlPayload(
+        processedData.accessControl,
+        existingAccessControl
+      );
+      if (!processedData.accessControl) {
+        delete processedData.accessControl;
+      }
+    }
+
+    // Check if this is a full data update (has themeId, theme, fontId, etc.)
+    // If so, use full replace instead of merge to ensure nested objects are properly updated
+    const isFullUpdate =
+      processedData &&
+      typeof processedData === "object" &&
+      (processedData.themeId != null ||
+        processedData.theme != null ||
+        processedData.fontId != null ||
+        processedData.fontSize != null ||
+        processedData.advancedSections != null);
+
+    if (isFullUpdate && processedData) {
+      // For full updates with theme/font, merge existing data with new data to preserve other fields
+      // But ensure theme and font fields are fully replaced
+      const existingData = existing.data || {};
+      const mergedData = {
+        ...existingData,
+        ...processedData,
+        // Explicitly ensure theme and font are replaced (not merged)
+        themeId: processedData.themeId ?? existingData.themeId,
+        theme: processedData.theme ?? existingData.theme,
+        fontId: processedData.fontId ?? existingData.fontId,
+        fontSize: processedData.fontSize ?? existingData.fontSize,
+        fontFamily: processedData.fontFamily ?? existingData.fontFamily,
+        fontSizeClass: processedData.fontSizeClass ?? existingData.fontSizeClass,
+      };
+
+      // If category is provided separately, include it
+      if (incomingCategory != null) {
+        mergedData.category = String(incomingCategory);
+      }
+      
+      console.log("[API] Full update with theme/font:", {
+        themeId: mergedData.themeId,
+        theme: mergedData.theme?.name,
+        fontId: mergedData.fontId,
+        fontSize: mergedData.fontSize,
+      });
+      
+      updatedRow = (await updateEventHistoryData(id, mergedData)) || updatedRow;
+    } else {
+      // For partial updates, use merge
+      const patch: any = {};
+      if (incomingCategory != null) patch.category = String(incomingCategory);
+      if (processedData && typeof processedData === "object") {
+        Object.assign(patch, processedData);
+      }
+      updatedRow =
+        (await updateEventHistoryDataMerge(id, patch)) || updatedRow;
+    }
+
+    changed = true;
+  }
+
+  // Support updating title (alone or together with data)
+  if (hasTitleUpdate) {
+    updatedRow =
+      (await updateEventHistoryTitle(id, String(titleInput))) || updatedRow;
+    changed = true;
+  }
+
+  if (changed) {
     // Invalidate cache for the owner
     if (existing.user_id) {
       invalidateUserHistory(existing.user_id);
     }
-    return NextResponse.json(updated);
+    return NextResponse.json(updatedRow);
   }
-  if (body && (body.category != null || body.data != null)) {
-    const patch: any = {};
-    if (body.category != null) patch.category = String(body.category);
-    if (body.data && typeof body.data === "object") Object.assign(patch, body.data);
-    const updated = await updateEventHistoryDataMerge(id, patch);
-    // Invalidate cache for the owner
-    if (existing.user_id) {
-      invalidateUserHistory(existing.user_id);
-    }
-    return NextResponse.json(updated);
-  }
+
   return NextResponse.json({ error: "No updatable fields" }, { status: 400 });
 }
 
@@ -90,4 +168,3 @@ export async function DELETE(
   }
   return NextResponse.json({ ok: true });
 }
-

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { createHash } from "crypto";
 import type { Metadata } from "next";
 import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
@@ -53,6 +54,12 @@ import WeddingTemplateView from "@/components/WeddingTemplateView";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
+import {
+  getEventAccessCookieName,
+  verifyEventAccessCookieValue,
+} from "@/lib/event-access";
+import AccessCodeGate from "@/components/AccessCodeGate";
+import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 
 export const dynamic = "force-dynamic";
 
@@ -92,28 +99,18 @@ export async function generateMetadata(props: {
   const data: any = row?.data || {};
   const title =
     (typeof data?.title === "string" && data.title) || row?.title || "Event";
-  
-  // Extract description for metadata
+
+  // Only expose a generic description publicly to avoid leaking private details
   const description =
-    typeof data?.description === "string" && data.description
-      ? data.description.slice(0, 200)
-      : "Create and share events with Envitefy. Turn flyers, invites, and schedules into shareable plans in seconds.";
-  
-  // Extract location for metadata
-  const location =
-    typeof data?.location === "string" && data.location
-      ? data.location
-      : undefined;
-  
+    "Sign in with the invited email or phone to view this event’s details securely.";
+
   // Generate OG image URL
   const img = await absoluteUrl(
     `/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`
   );
-  
+
   // Generate canonical URL
-  const url = await absoluteUrl(
-    `/event/${encodeURIComponent(awaitedParams.id)}`
-  );
+  const url = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}`);
 
   return {
     title: `${title} — Envitefy`,
@@ -132,10 +129,6 @@ export async function generateMetadata(props: {
         },
       ],
       type: "article",
-      ...(location && {
-        // Add location if available (some platforms support this)
-        locale: "en_US",
-      }),
     },
     twitter: {
       card: "summary_large_image",
@@ -203,6 +196,101 @@ const timeTokensEquivalent = (
   const normalize = (s: string) =>
     s.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
   return normalize(a) === normalize(b);
+};
+
+type SensitiveSectionFlags = {
+  roster: boolean;
+  meet: boolean;
+  practice: boolean;
+  logistics: boolean;
+  volunteers: boolean;
+};
+
+const computeSensitiveSectionFlags = (
+  advancedSections: any
+): SensitiveSectionFlags => {
+  const roster =
+    Array.isArray(advancedSections?.roster?.athletes) &&
+    advancedSections.roster.athletes.length > 0;
+  const meet = Boolean(
+    advancedSections?.meet?.session ||
+      advancedSections?.meet?.sessionNumber ||
+      advancedSections?.meet?.warmUpTime ||
+      advancedSections?.meet?.marchInTime ||
+      advancedSections?.meet?.startApparatus ||
+      (advancedSections?.meet?.rotationOrder?.length ?? 0) > 0 ||
+      advancedSections?.meet?.judgingNotes ||
+      advancedSections?.meet?.scoresLink
+  );
+  const practice =
+    Array.isArray(advancedSections?.practice?.blocks) &&
+    advancedSections.practice.blocks.length > 0;
+  const logistics = (() => {
+    const logisticsData = advancedSections?.logistics;
+    if (!logisticsData) return false;
+    return (
+      Boolean(logisticsData.travelMode) ||
+      Boolean(logisticsData.transport) ||
+      Boolean(logisticsData.hotel) ||
+      Boolean(logisticsData.hotelName) ||
+      Boolean(logisticsData.meals) ||
+      Boolean(logisticsData.mealPlan) ||
+      Boolean(logisticsData.callTime) ||
+      Boolean(logisticsData.pickupWindow) ||
+      Boolean(logisticsData.feeAmount) ||
+      Boolean(logisticsData.paymentLink) ||
+      Boolean(logisticsData.feeDueDate) ||
+      Boolean(logisticsData.hotelAddress) ||
+      Boolean(logisticsData.hotelCheckIn) ||
+      (logisticsData.forms?.length ?? 0) > 0 ||
+      (logisticsData.waiverLinks?.length ?? 0) > 0
+    );
+  })();
+  const volunteers = (() => {
+    const volunteersData = advancedSections?.volunteers;
+    if (!volunteersData) return false;
+    return (
+      (volunteersData?.volunteerSlots?.length ?? 0) > 0 ||
+      (volunteersData?.slots?.length ?? 0) > 0 ||
+      (volunteersData?.carpoolOffers?.length ?? 0) > 0 ||
+      (volunteersData?.carpools?.length ?? 0) > 0
+    );
+  })();
+
+  return { roster, meet, practice, logistics, volunteers };
+};
+
+const redactAdvancedSectionsForPublic = (advancedSections: any) => {
+  if (!advancedSections || typeof advancedSections !== "object") return undefined;
+  const clone: any = { ...advancedSections };
+  if ("roster" in clone) clone.roster = { locked: true };
+  if ("meet" in clone) clone.meet = { locked: true };
+  if ("practice" in clone) clone.practice = { locked: true };
+  if ("logistics" in clone) clone.logistics = { locked: true };
+  if ("volunteers" in clone) clone.volunteers = { locked: true };
+  return clone;
+};
+
+const sanitizeEventDataForPublic = (data: any) => {
+  if (!data || typeof data !== "object") return data;
+  const sanitized: any = { ...data };
+  if (data?.advancedSections) {
+    sanitized.advancedSections = redactAdvancedSectionsForPublic(
+      data.advancedSections
+    );
+  }
+  if (data?.customFields?.advancedSections) {
+    sanitized.customFields = {
+      ...(data.customFields || {}),
+      advancedSections: redactAdvancedSectionsForPublic(
+        data.customFields.advancedSections
+      ),
+    };
+  }
+  if ("accessControl" in sanitized) {
+    delete sanitized.accessControl;
+  }
+  return sanitized;
 };
 
 const buildFallbackRangeLabel = (
@@ -551,26 +639,112 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+  const rawThumbnailValue =
+    typeof (data as any)?.thumbnail === "string"
+      ? ((data as any).thumbnail as string)
+      : null;
+  const thumbnailIsInline =
+    typeof rawThumbnailValue === "string" &&
+    rawThumbnailValue.trim().startsWith("data:");
+  const rawAttachment =
+    data && typeof data.attachment === "object" ? data.attachment : null;
+  const attachmentDataUrl =
+    rawAttachment && typeof rawAttachment.dataUrl === "string"
+      ? (rawAttachment.dataUrl as string)
+      : null;
+  const attachmentIsInline =
+    typeof attachmentDataUrl === "string" &&
+    attachmentDataUrl.trim().startsWith("data:");
+  const thumbnailSignature =
+    thumbnailIsInline && rawThumbnailValue
+      ? createHash("sha1").update(rawThumbnailValue).digest("hex")
+      : null;
+  const attachmentSignature =
+    attachmentIsInline && attachmentDataUrl
+      ? createHash("sha1").update(attachmentDataUrl).digest("hex")
+      : null;
+  const buildMediaUrl = (variant?: "thumbnail" | "attachment") => {
+    const params = new URLSearchParams();
+    if (variant === "attachment") params.set("variant", "attachment");
+    if (variant === "thumbnail") params.set("variant", "thumbnail");
+    const sig =
+      variant === "attachment"
+        ? attachmentSignature
+        : thumbnailSignature || attachmentSignature;
+    if (sig) params.set("v", sig);
+    const qs = params.toString();
+    return `/api/events/${row.id}/thumbnail${qs ? `?${qs}` : ""}`;
+  };
+  if (thumbnailIsInline) {
+    (data as any).thumbnail = undefined;
+  }
+  if (attachmentIsInline && rawAttachment) {
+    data.attachment = {
+      ...rawAttachment,
+      dataUrl: undefined,
+    };
+  }
+  const accessControlRaw =
+    data && typeof data.accessControl === "object"
+      ? { ...data.accessControl }
+      : null;
+  const passcodeHash =
+    accessControlRaw && typeof accessControlRaw.passcodeHash === "string"
+      ? (accessControlRaw.passcodeHash as string)
+      : null;
+  const passcodeHint =
+    accessControlRaw && typeof accessControlRaw.passcodeHint === "string"
+      ? (accessControlRaw.passcodeHint as string)
+      : null;
+  const passcodeRequired =
+    Boolean(passcodeHash) &&
+    (accessControlRaw?.mode === "access-code" ||
+      accessControlRaw?.requirePasscode !== false);
+  if (data?.accessControl) {
+    data.accessControl = {
+      ...accessControlRaw,
+      passcodeHash: undefined,
+      passcodePlain: undefined,
+    };
+  }
+  const cookieStore = cookies();
+  const passcodeCookieName = passcodeRequired
+    ? getEventAccessCookieName(row.id)
+    : null;
+  const hasPasscodeCookie =
+    passcodeRequired && passcodeHash
+      ? verifyEventAccessCookieValue(
+          passcodeCookieName
+            ? cookieStore.get(passcodeCookieName)?.value
+            : undefined,
+          row.id,
+          passcodeHash
+        )
+      : false;
   const numberOfGuests =
     typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0
       ? data.numberOfGuests
       : 0;
   const attachmentInfo = (() => {
     const raw = data?.attachment;
-    if (raw && typeof raw === "object" && typeof raw.dataUrl === "string") {
-      return {
-        name:
-          typeof raw.name === "string" && raw.name.trim()
-            ? raw.name
-            : "Attachment",
-        type:
-          typeof raw.type === "string" && raw.type.trim()
-            ? raw.type
-            : "application/octet-stream",
-        dataUrl: raw.dataUrl as string,
-      };
-    }
-    return null;
+    if (!raw || typeof raw !== "object") return null;
+    const type =
+      typeof raw.type === "string" && raw.type.trim()
+        ? (raw.type as string)
+        : "application/octet-stream";
+    const name =
+      typeof raw.name === "string" && raw.name.trim()
+        ? (raw.name as string)
+        : "Attachment";
+    const previewUrl =
+      attachmentIsInline
+        ? buildMediaUrl("attachment")
+        : typeof raw.dataUrl === "string" && raw.dataUrl
+        ? (raw.dataUrl as string)
+        : thumbnailIsInline
+        ? buildMediaUrl("thumbnail")
+        : null;
+    return { name, type, dataUrl: previewUrl };
   })();
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
@@ -638,6 +812,15 @@ export default async function EventPage({
     (typeof data?.endISO === "string" && data.endISO) ||
     (typeof data?.end === "string" && data.end) ||
     null;
+  const formattedTimeAndDate = formatTimeAndDate(
+    startForDisplay,
+    endForDisplay,
+    {
+      timeZone:
+        (typeof data?.timezone === "string" && data.timezone) || undefined,
+      allDay: Boolean(data?.allDay),
+    }
+  );
   let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
     timeZone:
       (typeof data?.timezone === "string" && data.timezone) || undefined,
@@ -675,21 +858,17 @@ export default async function EventPage({
       }
     }
   }
-  const slugify = (t: string) =>
-    (t || "event")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  const slug = slugify(title);
-  const canonical = `/event/${slug}-${row.id}`;
+  const canonicalSegment = buildEventSlugSegment(row.id, title);
+  const canonical = buildEventPath(row.id, title);
   const shareUrl = await absoluteUrl(canonical);
 
   // Redirect to canonical slug-id URL if needed, preserving key query params
-  if (awaitedParams.id !== `${slug}-${row.id}` || autoAccept) {
-    const params = new URLSearchParams();
-    if (createdParam) params.set("created", "1");
-    const qs = params.toString();
-    const next = qs ? `${canonical}?${qs}` : canonical;
+  if (awaitedParams.id !== canonicalSegment || autoAccept) {
+    const next = buildEventPath(
+      row.id,
+      title,
+      createdParam ? { created: true } : undefined
+    );
     redirect(next);
   }
 
@@ -839,10 +1018,9 @@ export default async function EventPage({
         (eventTheme.headerLight as string));
 
   // Now finalize header style: prefer explicit header image (thumbnail) over flyer
-  const headerImageUrl: string | null =
-    typeof (data as any)?.thumbnail === "string"
-      ? ((data as any).thumbnail as string)
-      : null;
+  const headerImageUrl: string | null = thumbnailIsInline
+    ? buildMediaUrl("thumbnail")
+    : rawThumbnailValue;
   const headerUserStyle: CSSProperties = {
     backgroundImage: headerImageUrl
       ? `url(${headerImageUrl})`
@@ -895,7 +1073,7 @@ export default async function EventPage({
   })();
 
   // Compute a right padding to avoid text flowing under the thumbnail overlay
-  const detailsExtraPaddingRight = data?.thumbnail ? " pr-40 sm:pr-48" : "";
+  const detailsExtraPaddingRight = headerImageUrl ? " pr-40 sm:pr-48" : "";
 
   const calendarStartIso = normalizeIso(
     (data?.startISO as string | undefined) ||
@@ -939,7 +1117,73 @@ export default async function EventPage({
     ? "readonly"
     : "guest";
 
-  // Check if this is a birthday template event
+  const advancedSectionsForFlags =
+    (data?.advancedSections as any) ||
+    (data?.customFields?.advancedSections as any) ||
+    {};
+  const protectedSectionFlags = computeSensitiveSectionFlags(
+    advancedSectionsForFlags
+  );
+  const passcodeUnlocked = passcodeRequired && hasPasscodeCookie;
+  const viewerHasFullAccess = passcodeRequired
+    ? isOwner || recipientAccepted || passcodeUnlocked
+    : isOwner || recipientAccepted;
+  const shouldProtectSensitiveSections = !viewerHasFullAccess;
+  const clientSafeEventData = shouldProtectSensitiveSections
+    ? sanitizeEventDataForPublic(data)
+    : data;
+  const hasPrivateAccess = isOwner || recipientAccepted;
+  const gatingReason:
+    | "access-code"
+    | "unauthenticated"
+    | "unauthorized"
+    | "pending"
+    | null = passcodeRequired
+    ? viewerHasFullAccess
+      ? null
+      : "access-code"
+    : !sessionEmail
+    ? "unauthenticated"
+    : hasPrivateAccess
+    ? null
+    : recipientPending
+    ? "pending"
+    : "unauthorized";
+  const authCtaHref = `/api/auth/signin?callbackUrl=${encodeURIComponent(
+    shareUrl
+  )}`;
+
+  const heroDateLine = formattedTimeAndDate.date || whenLabel || null;
+  const heroTimeLine =
+    formattedTimeAndDate.time && (formattedTimeAndDate.date || !whenLabel)
+      ? formattedTimeAndDate.time
+      : null;
+  const locationForHero =
+    typeof data?.location === "string" ? (data.location as string) : "";
+  const {
+    street: heroLocationStreet,
+    cityStateZip: heroLocationCity,
+  } = splitAddress(locationForHero);
+  const heroLocationSegments: string[] = [];
+  const pushLocationSegment = (value?: string | null) => {
+    if (typeof value !== "string") return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const lower = trimmed.toLowerCase();
+    if (heroLocationSegments.some((segment) => segment.toLowerCase() === lower)) {
+      return;
+    }
+    heroLocationSegments.push(trimmed);
+  };
+  if (typeof data?.venue === "string") {
+    pushLocationSegment(data.venue as string);
+  }
+  pushLocationSegment(heroLocationStreet);
+  pushLocationSegment(heroLocationCity);
+  if (!heroLocationStreet && !heroLocationCity) {
+    pushLocationSegment(locationForHero);
+  }
+
   const templateId =
     typeof (data as any)?.templateId === "string"
       ? (data as any).templateId
@@ -953,7 +1197,10 @@ export default async function EventPage({
       ? (data as any).createdVia
       : null;
   const isBirthdayTemplate =
-    templateId && variationId && categoryNormalized === "birthdays";
+    templateId &&
+    variationId &&
+    categoryNormalized === "birthdays" &&
+    createdVia !== "simple-template";
   const isWeddingTemplate =
     templateId && variationId && categoryNormalized === "weddings";
   const isSimpleTemplate =
@@ -962,12 +1209,246 @@ export default async function EventPage({
     !isBirthdayTemplate &&
     !isWeddingTemplate;
 
+  if (gatingReason) {
+    const needsAccessCode = gatingReason === "access-code";
+    if (isSimpleTemplate) {
+      return (
+        <SimpleTemplateView
+          eventId={row.id}
+          eventData={clientSafeEventData}
+          eventTitle={title}
+          isOwner={isOwner}
+          isReadOnly={isReadOnly}
+          viewerKind={viewerKind}
+          shareUrl={shareUrl}
+          sessionEmail={sessionEmail}
+          protectSensitiveSections={shouldProtectSensitiveSections}
+          protectedSectionFlags={protectedSectionFlags}
+          lockedReason={gatingReason as any}
+          authCtaHref={authCtaHref}
+          accessCodeHint={passcodeHint}
+        />
+      );
+    }
+
+    return (
+      <main
+        className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]"
+        style={
+          {
+            ["--theme-hero-gradient"]: heroGradient,
+          } as CSSProperties
+        }
+      >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(){
+                var value = ${JSON.stringify(heroGradient)};
+                function apply(){
+                  try { document.documentElement.style.setProperty('--theme-hero-gradient', value); } catch {}
+                }
+                try { apply(); setTimeout(apply, 0); setTimeout(apply, 200); } catch {}
+              })();
+            `,
+          }}
+        />
+        <div
+          className="event-theme-scope space-y-6"
+          style={themeStyleVars as CSSProperties}
+        >
+          <section
+            className="event-theme-header relative overflow-visible rounded-2xl border shadow-lg px-1 py-6 sm:px-2 min-h-[220px] sm:min-h-[300px]"
+            style={headerUserStyle}
+          >
+            {headerImageUrl && <div style={headerOverlayStyle} />}
+            {profileImageUrl && (
+              <div
+                className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px]"
+                style={{ zIndex: 2 }}
+              >
+                <img
+                  src={profileImageUrl}
+                  alt="profile"
+                  className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl border-2 border-border object-cover shadow-md"
+                />
+              </div>
+            )}
+            <div style={headerContentStyle}>
+              <div
+                className={`absolute inset-0 flex h-full w-full px-1 sm:px-2 ${
+                  titleVAlign === "top"
+                    ? "items-start"
+                    : titleVAlign === "middle"
+                    ? "items-center"
+                    : "items-end"
+                } ${
+                  titleHAlign === "left"
+                    ? "justify-start"
+                    : titleHAlign === "center"
+                    ? "justify-center"
+                    : "justify-end"
+                }`}
+              >
+                <h1
+                  className={`${
+                    titleWeight === "bold"
+                      ? "font-bold"
+                      : titleWeight === "semibold"
+                      ? "font-semibold"
+                      : "font-normal"
+                  } ${
+                    titleHAlign === "center"
+                      ? "text-center"
+                      : titleHAlign === "right"
+                      ? "text-right"
+                      : "text-left"
+                  } ${
+                    titleColor
+                      ? ""
+                      : headerImageUrl
+                      ? "text-white drop-shadow-lg"
+                      : "text-foreground"
+                  }`}
+                  style={{
+                    color: titleColor || undefined,
+                    fontFamily:
+                      titleFont === "pacifico"
+                        ? "var(--font-pacifico)"
+                        : titleFont === "montserrat"
+                        ? "var(--font-montserrat)"
+                        : titleFont === "geist"
+                        ? "var(--font-geist-sans)"
+                        : titleFont === "mono"
+                        ? "var(--font-geist-mono)"
+                        : titleFont === "poppins"
+                        ? "var(--font-poppins)"
+                        : titleFont === "raleway"
+                        ? "var(--font-raleway)"
+                        : titleFont === "playfair"
+                        ? "var(--font-playfair)"
+                        : titleFont === "dancing"
+                        ? "var(--font-dancing)"
+                        : titleFont === "serif"
+                        ? 'Georgia, Cambria, "Times New Roman", Times, serif'
+                        : titleFont === "system"
+                        ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
+                        : undefined,
+                    fontSize: `${titleSize || 28}px`,
+                    transform:
+                      titleVAlign === "middle" ? "translateY(94px)" : undefined,
+                  }}
+                >
+                  {title}
+                </h1>
+              </div>
+            </div>
+            <div className="absolute top-4 left-4 z-40 text-xs font-semibold uppercase tracking-wide text-white/80">
+              <span className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 backdrop-blur">
+                Locked
+                <span className="hidden sm:inline text-white/70">
+                  {needsAccessCode ? "Access code required" : "Private invite required"}
+                </span>
+              </span>
+            </div>
+            {!needsAccessCode && (
+              <div className="absolute top-4 right-4 z-40">
+                <Link
+                  href={authCtaHref}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-lg backdrop-blur transition-colors hover:bg-white"
+                >
+                  Sign in / Sign up
+                </Link>
+              </div>
+            )}
+            {(heroDateLine || heroTimeLine || heroLocationSegments.length > 0) && (
+              <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 z-30">
+                <div className="grid gap-1 rounded-2xl bg-black/30 px-4 py-3 text-white backdrop-blur">
+                  {heroDateLine && (
+                    <p className="text-base font-semibold leading-tight">
+                      {heroDateLine}
+                    </p>
+                  )}
+                  {heroTimeLine && (
+                    <p className="text-sm font-medium">{heroTimeLine}</p>
+                  )}
+                  {heroLocationSegments.map((segment) => (
+                    <p key={segment} className="text-sm">
+                      {segment}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border px-5 sm:px-7 py-8 shadow-sm space-y-4 bg-white">
+            {needsAccessCode ? (
+              <>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-neutral-900">
+                    Enter the team access code
+                  </h2>
+                  <p className="text-neutral-700 leading-relaxed">
+                    This invite is protected so only families with the link and password can view it. Ask your coach for the access code and enter it below.
+                  </p>
+                  {passcodeHint && (
+                    <p className="text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                      Hint from the organizer: {passcodeHint}
+                    </p>
+                  )}
+                </div>
+                <AccessCodeGate eventId={row.id} hint={passcodeHint} />
+                <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                  <p className="font-semibold">How it works</p>
+                  <p>Open link -&gt; see lock screen -&gt; enter the shared code -&gt; full event unlocks.</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-neutral-900">
+                    Sign in to view this event
+                  </h2>
+                  <p className="text-neutral-700 leading-relaxed">
+                    For privacy, the roster, meet details, practice schedule, logistics, volunteers, carpool offers, and RSVP are hidden until you sign in with the email or phone number the organizer used to invite you.
+                  </p>
+                  {gatingReason === "pending" && (
+                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      We see an invitation is pending for your account. Accept it from your inbox, then refresh to continue.
+                    </p>
+                  )}
+                  {gatingReason === "unauthorized" && (
+                    <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      This event is limited to invited contacts. Ask the organizer to share it with your account to get access.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href={authCtaHref}
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors"
+                  >
+                    Sign in / Sign up
+                  </Link>
+                  <span className="text-sm text-neutral-600">
+                    Use the same email or phone number that received this invite.
+                  </span>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   // If it's a birthday template, render the template view
   if (isBirthdayTemplate) {
     return (
       <BirthdayTemplateView
         eventId={row.id}
-        eventData={data}
+        eventData={clientSafeEventData}
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
@@ -985,7 +1466,7 @@ export default async function EventPage({
     return (
       <WeddingTemplateView
         eventId={row.id}
-        eventData={data}
+        eventData={clientSafeEventData}
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
@@ -1003,13 +1484,15 @@ export default async function EventPage({
     return (
       <SimpleTemplateView
         eventId={row.id}
-        eventData={data}
+        eventData={clientSafeEventData}
         eventTitle={title}
         isOwner={isOwner}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
+        protectSensitiveSections={shouldProtectSensitiveSections}
+        protectedSectionFlags={protectedSectionFlags}
       />
     );
   }

@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getEventHistoryBySlugOrId, getUserIdByEmail } from "@/lib/db";
+import {
+  getEventHistoryBySlugOrId,
+  getUserIdByEmail,
+  isEventSharedWithUser,
+} from "@/lib/db";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
@@ -36,10 +40,11 @@ export default async function SignupPage({
     enabled: true,
   });
 
-  const viewerKind: "owner" | "guest" = (() => {
-    if (userId && row.user_id && userId === row.user_id) return "owner";
-    return "guest";
-  })();
+  const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  const recipientAccepted = userId
+    ? (await isEventSharedWithUser(row.id, userId)) === true
+    : false;
+  const viewerKind: "owner" | "guest" = isOwner ? "owner" : "guest";
 
   const header = signupForm.header || null;
   const combinedLocation = combineVenueAndLocation(
@@ -101,6 +106,51 @@ export default async function SignupPage({
       return startInput || null;
     }
   };
+
+  const authHref = `/api/auth/signin?callbackUrl=${encodeURIComponent(
+    `/smart-signup-form/${row.id}`
+  )}`;
+
+  if (!sessionEmail) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+        <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
+          <h1 className="text-3xl font-bold text-neutral-900 text-center">
+            Sign in to respond
+          </h1>
+          <p className="text-center text-neutral-700">
+            Only invitees can view and submit this sign-up form. Use the same
+            email or phone number the organizer used to invite you.
+          </p>
+          <div className="flex justify-center">
+            <a
+              href={authHref}
+              className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors"
+            >
+              Sign in / Sign up
+            </a>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!isOwner && !recipientAccepted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+        <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
+          <h1 className="text-3xl font-bold text-neutral-900 text-center">
+            Access limited to invitees
+          </h1>
+          <p className="text-center text-neutral-700">
+            This sign-up is restricted to contacts the organizer invited.
+            Please ask them to share access with your account before you
+            continue.
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={pageBgStyle}>

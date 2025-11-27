@@ -15,6 +15,7 @@ import {
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import EventCreateForm from "@/components/EventCreateForm";
+import { buildEventPath } from "@/utils/event-url";
 
 type Props = {
   open: boolean;
@@ -702,7 +703,10 @@ export default function EventCreateModal({
         }
       } catch {}
       if (id) {
-        router.push(`/event/${id}?created=1`);
+        const eventTitle =
+          (typeof (j as any)?.title === "string" && (j as any).title) ||
+          payload.title;
+        router.push(buildEventPath(id, eventTitle, { created: true }));
       }
       onClose();
     } catch (err: any) {

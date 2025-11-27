@@ -14,6 +14,7 @@ import {
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import { buildEventPath } from "@/utils/event-url";
 
 type Props = {
   defaultDate?: Date;
@@ -151,6 +152,9 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
+  const [accessCode, setAccessCode] = useState<string>("");
+  const [accessCodeHint, setAccessCodeHint] = useState<string>("");
+  const [showAccessCode, setShowAccessCode] = useState<boolean>(false);
   // Separate header image (independent from flyer/attachment)
   const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(null);
   const headerInputRef = useRef<HTMLInputElement | null>(null);
@@ -425,6 +429,17 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       return;
     }
 
+    const trimmedAccessCode = accessCode.trim();
+    const trimmedAccessCodeHint = accessCodeHint.trim();
+    if (trimmedAccessCode.length < 6) {
+      alert("Create an access code with at least 6 characters.");
+      return;
+    }
+    if (trimmedAccessCode.length > 64) {
+      alert("Access codes can be up to 64 characters long.");
+      return;
+    }
+
     const normalizedCategoryForSubmit = (category || "").toLowerCase();
     const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
       normalizedCategoryForSubmit
@@ -556,6 +571,13 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
           signupForm: undefined,
+          accessControl: {
+            mode: "access-code",
+            requirePasscode: true,
+            passcodeHint: trimmedAccessCodeHint || undefined,
+            passcodePlain: trimmedAccessCode,
+            lockCopyVersion: "v1",
+          },
         },
       };
 
@@ -636,6 +658,15 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
               ? (j as any).data
               : null;
           const mergedData = { ...payload.data, ...(serverData || {}) };
+          if (mergedData && typeof mergedData === "object" && mergedData.accessControl) {
+            const sanitizedAccessControl: Record<string, any> = {
+              ...mergedData.accessControl,
+            };
+            if ("passcodePlain" in sanitizedAccessControl) {
+              delete sanitizedAccessControl.passcodePlain;
+            }
+            mergedData.accessControl = sanitizedAccessControl;
+          }
           window.dispatchEvent(
             new CustomEvent("history:created", {
               detail: {
@@ -655,7 +686,10 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       } catch {}
 
       if (id) {
-        router.push(`/event/${id}?created=1`);
+        const eventTitle =
+          (typeof (j as any)?.title === "string" && (j as any).title) ||
+          payload.title;
+        router.push(buildEventPath(id, eventTitle, { created: true }));
       }
       if (onCancel) onCancel();
     } catch (err: any) {
@@ -904,6 +938,88 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           />
         </div>
       )}
+
+      <div className="space-y-4 rounded-2xl border border-border/60 bg-white/90 p-4 shadow-sm">
+        <div>
+          <p className="text-sm font-semibold text-foreground">
+            Best option: Private Link + Access Code (Password)
+          </p>
+          <p className="mt-1 text-sm text-foreground/70">
+            This keeps your invite unlisted. Only families with the link plus this
+            code can view it, no Envitefy account or email list required.
+          </p>
+        </div>
+        <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/80">
+          <li>Your event stays unlisted (not visible to anyone on Envitefy).</li>
+          <li>Share one link everywhere; guests enter the access code to unlock.</li>
+          <li>No parent email spreadsheet or manual permissions.</li>
+          <li>Parents do not need an Envitefy account.</li>
+        </ul>
+        <div className="rounded-xl border border-border/60 bg-surface/80 p-3 text-sm text-foreground/80 space-y-1">
+          <p className="font-semibold text-foreground/90">
+            Why teams love it
+          </p>
+          <p>- One message to the whole team in Remind, iMessage, WhatsApp, or TeamSnap.</p>
+          <p>- Zero admin overhead (no manual approvals).</p>
+          <p>- No "everyone with an Envitefy account can see it."</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+            What the parent sees
+          </p>
+          <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-foreground/80">
+            <li>They open the private link.</li>
+            <li>They see a lock screen.</li>
+            <li>
+              They enter the access code you set ("Cardinals2025", "BeamTeam!",
+              etc.).
+            </li>
+            <li>They instantly see the full event.</li>
+          </ol>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1" htmlFor="evt-access-code">
+            Access code
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="evt-access-code"
+              type={showAccessCode ? "text" : "password"}
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-md border border-border bg-background"
+              placeholder="Cardinals2025"
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              onClick={() => setShowAccessCode((prev) => !prev)}
+              className="px-3 py-2 text-sm rounded-md border border-border hover:bg-surface"
+            >
+              {showAccessCode ? "Hide" : "Show"}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-foreground/60">
+            Share this with your families (letters, numbers, or symbols, 6–64 characters).
+          </p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1" htmlFor="evt-access-hint">
+            Optional hint
+          </label>
+          <input
+            id="evt-access-hint"
+            type="text"
+            value={accessCodeHint}
+            onChange={(e) => setAccessCodeHint(e.target.value)}
+            className="w-full px-3 py-2 rounded-md border border-border bg-background"
+            placeholder="Team nickname, color, or gym name"
+          />
+          <p className="mt-1 text-xs text-foreground/60">
+            Display a gentle hint on the lock screen so parents know which code to try.
+          </p>
+        </div>
+      </div>
 
       {(connectedCalendars.google ||
         connectedCalendars.microsoft ||

@@ -26,6 +26,7 @@ import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 import styles from "./EventCreateWysiwyg.module.css";
 import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
+import { buildEventPath } from "@/utils/event-url";
 
 type ConnectedCalendars = {
   google: boolean;
@@ -830,7 +831,12 @@ export default function EventCreateWysiwyg({
 
       // autosave cleanup removed
 
-      if (id) router.push(`/event/${id}?created=1`);
+      if (id) {
+        const eventTitle =
+          (typeof (j as any)?.title === "string" && (j as any).title) ||
+          payload.title;
+        router.push(buildEventPath(id, eventTitle, { created: true }));
+      }
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
       alert(msg);

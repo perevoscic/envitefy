@@ -18,6 +18,7 @@ import {
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import { buildEventPath } from "@/utils/event-url";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 
 type Props = {
@@ -797,7 +798,10 @@ export default function GenderRevealCreate({
           }).catch(() => ({ ok: false }))
         );
       if (tasks.length) await Promise.allSettled(tasks);
-      if (id) router.push(`/event/${id}?created=${editEventId ? "0" : "1"}`);
+      if (id) {
+        const params = editEventId ? { updated: true } : { created: true };
+        router.push(buildEventPath(id, payload.title, params));
+      }
     } catch (err: any) {
       alert(String(err?.message || err || "Failed to create event"));
     } finally {

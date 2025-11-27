@@ -28,7 +28,6 @@ import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
-import { CandyDreamsLayout } from "@/components/templates/CandyDreamsLayout";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
 // Format event range display - simplified version
@@ -181,6 +180,55 @@ type Props = {
   sessionEmail: string | null;
 };
 
+// Basic luminance helpers to tune palette contrast (mirrors birthday customize page)
+const parseHexColor = (hex: string) => {
+  const clean = hex.replace("#", "");
+  if (clean.length === 3) {
+    const [r, g, b] = clean.split("").map((c) => parseInt(c + c, 16));
+    return { r, g, b };
+  }
+  const m = clean.match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return null;
+  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+};
+
+const getLuminance = (hex: string): number => {
+  const rgb = parseHexColor(hex);
+  if (!rgb) return 1;
+  const { r, g, b } = rgb;
+  const [rLinear, gLinear, bLinear] = [r, g, b].map((val) => {
+    const v = val / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+};
+
+const isPaletteDark = (palette: string[]): boolean => {
+  const colors = (palette || []).filter(Boolean).slice(0, 3);
+  if (!colors.length) return false;
+  const avg =
+    colors.reduce((acc, c) => acc + getLuminance(c), 0) / colors.length;
+  return avg < 0.5;
+};
+
+const getPreviewStyle = (palette: string[]) => {
+  const colors = (palette || []).filter(Boolean);
+  if (colors.length >= 3) {
+    return {
+      backgroundImage: `linear-gradient(to bottom right, ${colors[0]}, ${colors[1]}, ${colors[2]})`,
+    };
+  }
+  if (colors.length === 2) {
+    return {
+      backgroundImage: `linear-gradient(to bottom right, ${colors[0]}, ${colors[1]})`,
+    };
+  }
+  if (colors.length === 1) {
+    return { backgroundColor: colors[0] };
+  }
+  return {};
+};
+
 export default function BirthdayTemplateView({
   eventId,
   eventData,
@@ -221,19 +269,14 @@ export default function BirthdayTemplateView({
     allDay: Boolean(eventData?.allDay),
   });
 
-  const heroImageBasePath = template.preview?.birthdayName
-    ? "/templates/birthdays/"
-    : "/templates/wedding-placeholders/";
+  const heroImageBasePath = "/templates/birthdays/";
   const heroImageSrc =
     (eventData?.customHeroImage as string) ||
+    (eventData?.heroImage as string) ||
+    (Array.isArray(eventData?.gallery) && eventData.gallery[0]?.url) ||
     `${heroImageBasePath}${template.heroImageName || `${template.id}.webp`}`;
-  const birthdayOverlay =
-    "linear-gradient(180deg, rgba(18, 12, 36, 0.78) 0%, rgba(18, 12, 36, 0.55) 45%, rgba(18, 12, 36, 0.2) 100%)";
   const headerBackgroundStyle = {
-    backgroundImage: `${birthdayOverlay}, url(${heroImageSrc})`,
-    backgroundSize: "cover, cover",
-    backgroundPosition: "center, center",
-    backgroundRepeat: "no-repeat, no-repeat",
+    ...paletteStyle,
   };
 
   const venue = eventData?.venue || "";
@@ -306,7 +349,7 @@ export default function BirthdayTemplateView({
 
   const locationQuery = combineVenueAndLocation(
     venue || null,
-    location || null
+    [address, city, state].filter(Boolean).join(", ") || location || null
   );
   const latValue = parseCoordinateValue(eventData?.lat);
   const lngValue = parseCoordinateValue(eventData?.lng);
@@ -316,31 +359,48 @@ export default function BirthdayTemplateView({
       : undefined;
   const zoomValue = parseCoordinateValue(eventData?.zoom);
 
-  const hasDirectionSection = Boolean(location || venue);
-  const hasDescriptionSection = Boolean(description);
+  const hosts = Array.isArray(eventData?.hosts) ? eventData.hosts : [];
+  const partyDetails = eventData?.partyDetails || {};
+  const activities =
+    typeof partyDetails?.activities === "string"
+      ? partyDetails.activities
+      : "";
+  const partyTheme =
+    partyDetails?.theme || eventData?.theme?.themeLabel || null;
+
+  const hasHosts = hosts.length > 0;
+  const hasDirectionSection = Boolean(location || venue || address || city);
+  const hasDescriptionSection = Boolean(
+    description || partyDetails?.notes || activities
+  );
   const hasWishlistSection = registryLinks.length > 0;
-  const hasRsvpSection = hasRsvpContact && !isReadOnly;
+  const hasGallerySection =
+    Array.isArray(eventData?.gallery) && eventData.gallery.length > 0;
+  const hasRsvpSection = Boolean(eventData?.rsvpEnabled || hasRsvpContact);
 
   const navItems = useMemo(
     () =>
       [
-        { id: "home", label: "Home", enabled: true },
-        { id: "party-details", label: "Party Details", enabled: true },
-        { id: "direction", label: "Direction", enabled: hasDirectionSection },
-        { id: "description", label: "Description", enabled: hasDescriptionSection },
-        { id: "wishlist", label: "Wishlist", enabled: hasWishlistSection },
+        { id: "details", label: "Details", enabled: true },
+        { id: "hosts", label: "Hosts", enabled: hasHosts },
+        { id: "location", label: "Location", enabled: hasDirectionSection },
+        { id: "party", label: "Party Details", enabled: hasDescriptionSection },
+        { id: "gallery", label: "Gallery", enabled: hasGallerySection },
+        { id: "registry", label: "Registry", enabled: hasWishlistSection },
         { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
       ].filter((item) => item.enabled),
     [
       hasDescriptionSection,
       hasDirectionSection,
+      hasGallerySection,
+      hasHosts,
       hasRsvpSection,
       hasWishlistSection,
     ]
   );
 
   // Navigation active state tracking
-  const [activeSection, setActiveSection] = useState<string>("home");
+  const [activeSection, setActiveSection] = useState<string>("details");
 
   // Keep active section valid when nav items change
   useEffect(() => {
@@ -360,7 +420,6 @@ export default function BirthdayTemplateView({
       }
     };
 
-    // Update on mount
     updateActiveSection();
 
     // Update on hash change
@@ -420,9 +479,31 @@ export default function BirthdayTemplateView({
     };
   }, [navItems, templateId]);
 
+  const themePalette = Array.isArray(eventData?.themePalette)
+    ? (eventData.themePalette as string[])
+    : [];
+  const paletteStyle = getPreviewStyle(themePalette);
+  const isDarkPalette = isPaletteDark(themePalette);
+  const headingColor = isDarkPalette ? "#ffffff" : "#0f172a";
+  const accentColor = isDarkPalette ? "#e2e8f0" : "#475569";
+  const textShadowStyle = isDarkPalette
+    ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" }
+    : undefined;
+  const headingFontFamily =
+    (eventData?.theme?.fontFamily as string) ||
+    variation.titleFontFamily ||
+    "var(--font-playfair)";
+  const bodyFontFamily =
+    (eventData?.theme?.bodyFontFamily as string) ||
+    "var(--font-montserrat)";
+
   const viewContent = (
     <section className="mx-auto w-full max-w-7xl">
-      <article className={styles.templateCard}>
+      <article
+        className={styles.templateCard}
+        style={paletteStyle}
+        data-birthday-modern="true"
+      >
         <div className={styles.cardBody}>
           {/* Home section - the header */}
           <div id="home" className="scroll-mt-20">
@@ -435,21 +516,22 @@ export default function BirthdayTemplateView({
                 <p
                   className={styles.previewNames}
                   style={{
-                    color: variation.titleColor,
-                    fontFamily: variation.titleFontFamily,
+                    color: headingColor,
+                    fontFamily: headingFontFamily,
                     fontWeight:
                       variation.titleWeight === "bold"
                         ? 700
                         : variation.titleWeight === "semibold"
                         ? 600
                         : 400,
+                    ...(textShadowStyle || {}),
                   }}
                 >
                   {birthdayName}'s Birthday
                 </p>
                 <p
                   className={styles.previewMeta}
-                  style={{ color: variation.titleColor }}
+                  style={{ color: headingColor }}
                 >
                   {previewDateLabel}
                   {previewTime ? ` • ${previewTime}` : ""}
@@ -457,7 +539,7 @@ export default function BirthdayTemplateView({
                 {(city || state || venue || location) && (
                   <p
                     className={styles.previewMeta}
-                    style={{ color: variation.titleColor }}
+                    style={{ color: headingColor }}
                   >
                     {[city, state].filter(Boolean).join(", ") ||
                       venue ||
@@ -487,6 +569,7 @@ export default function BirthdayTemplateView({
                         style={{
                           fontWeight: isActive ? 600 : 400,
                           opacity: isActive ? 1 : 0.8,
+                          color: accentColor,
                         }}
                         onClick={(e) => {
                           e.preventDefault();
@@ -562,8 +645,8 @@ export default function BirthdayTemplateView({
                   <Image
                     src={heroImageSrc}
                     alt={`${template.name} preview`}
-                    width={640}
-                    height={360}
+                    width={1280}
+                    height={720}
                     className={styles.previewPhotoImage}
                     priority={false}
                   />
@@ -572,11 +655,17 @@ export default function BirthdayTemplateView({
             </div>
           </div>
 
-          {/* Party Details section */}
-          <div id="party-details" className="scroll-mt-20">
-            <div className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-stone-900 mb-4">
-                Event Details
+          {/* Details section */}
+          <div id="details-content" className="scroll-mt-20">
+            <div
+              className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+              style={{ fontFamily: bodyFontFamily }}
+            >
+              <h2
+                className="text-xl font-semibold mb-4"
+                style={{ color: headingColor, fontFamily: headingFontFamily }}
+              >
+                Details
               </h2>
               <div className="md:grid md:grid-cols-2 md:gap-6">
                 <div className="space-y-3">
@@ -585,85 +674,32 @@ export default function BirthdayTemplateView({
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         When
                       </p>
-                      <div className="space-y-1">
-                        {(() => {
-                          const timeLabel = (() => {
-                            if (Boolean(eventData?.allDay)) return null;
-                            if (!startISO) return null;
-                            try {
-                              const start = new Date(startISO);
-                              if (Number.isNaN(start.getTime())) return null;
-                              const end = endISO ? new Date(endISO) : null;
-                              const tz = eventData?.timezone || undefined;
-                              const timeFmt = new Intl.DateTimeFormat("en-US", {
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                                timeZone: tz,
-                              });
-                              if (end && !Number.isNaN(end.getTime())) {
-                                const sameDay =
-                                  start.getFullYear() === end.getFullYear() &&
-                                  start.getMonth() === end.getMonth() &&
-                                  start.getDate() === end.getDate();
-                                if (sameDay) {
-                                  return `${timeFmt.format(
-                                    start
-                                  )} – ${timeFmt.format(end)}`;
-                                }
-                              }
-                              return timeFmt.format(start);
-                            } catch {
-                              return null;
-                            }
-                          })();
-                          const dateLabel = formatDateLabel(startISO);
-                          return (
-                            <>
-                              <p className="text-base font-semibold text-stone-900">
-                                {dateLabel}
-                              </p>
-                              {timeLabel && (
-                                <p className="text-sm text-stone-600">
-                                  {timeLabel}
-                                </p>
-                              )}
-                            </>
-                          );
-                        })()}
+                      <p className="text-base font-semibold text-stone-900">
+                        {whenLabel}
+                      </p>
+                    </div>
+                  )}
+                  {(venue || location || address || city) && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        Location
+                      </p>
+                      <div className="space-y-1 text-stone-800">
+                        {venue && (
+                          <p className="text-base font-semibold">{venue}</p>
+                        )}
+                        {(address || city || state || location) && (
+                          <p className="text-sm text-stone-600">
+                            {[address, city, state]
+                              .filter(Boolean)
+                              .join(", ") || location}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
-
-                  {(venue || location) && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        Where
-                      </p>
-                      <LocationLink
-                        location={venue || location}
-                        query={locationQuery}
-                        className="text-base font-semibold text-stone-900"
-                      />
-                      {venue && location && (
-                        <p className="text-sm text-stone-600">{location}</p>
-                      )}
-                    </div>
-                  )}
                 </div>
-
                 <div className="space-y-3">
-                  {rsvp && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
-                        RSVP
-                      </p>
-                      <p className="text-base font-semibold text-stone-900">
-                        {rsvp}
-                      </p>
-                    </div>
-                  )}
-
                   {numberOfGuests > 0 && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
@@ -674,100 +710,211 @@ export default function BirthdayTemplateView({
                       </p>
                     </div>
                   )}
+                  {(partyDetails?.notes || description) && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
+                        About
+                      </p>
+                      <p className="text-sm leading-relaxed text-stone-700 whitespace-pre-wrap">
+                        {partyDetails?.notes || description}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Additional sections */}
-          <div className="space-y-6">
-            {description && (
-              <section
-                id="description"
-                className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+          {/* Hosts */}
+          {hasHosts && (
+            <div id="hosts" className="scroll-mt-20">
+              <div
+                className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+                style={{ fontFamily: bodyFontFamily }}
               >
-                <h2 className="text-xl font-semibold text-stone-900 mb-3">
-                  Description
+                <h2
+                  className="text-xl font-semibold mb-4"
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
+                >
+                  Hosts
                 </h2>
-                <p className="text-stone-700 whitespace-pre-line">
-                  {description}
-                </p>
-              </section>
-            )}
-
-            {registryLinks.length > 0 && (
-              <section
-                id="wishlist"
-                className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
-              >
-                <h2 className="text-xl font-semibold text-stone-900 mb-3">
-                  Wishlist & Registries
-                </h2>
-                <div className="space-y-3">
-                  {registryLinks.map((entry: any) => (
-                    <a
-                      key={entry.url}
-                      href={entry.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block rounded-lg border border-stone-100 bg-white/80 px-4 py-3 shadow-sm transition hover:border-stone-200"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {hosts.map((host, idx) => (
+                    <div
+                      key={host.id || idx}
+                      className="rounded-lg border border-stone-200 bg-white px-3 py-3"
                     >
-                      <p className="text-base font-semibold text-stone-900">
-                        {entry.label || entry.url}
+                      <p className="font-semibold text-stone-900">
+                        {host.name || "Host"}
                       </p>
-                      <p className="text-sm text-stone-500 truncate">
-                        {entry.url}
-                      </p>
-                    </a>
+                      {host.role && (
+                        <p className="text-sm text-stone-600">{host.role}</p>
+                      )}
+                    </div>
                   ))}
                 </div>
-              </section>
-            )}
+              </div>
+            </div>
+          )}
 
-            {hasRsvpContact && !isReadOnly && (
-              <section
-                id="rsvp"
-                className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+          {/* Location map */}
+          {hasDirectionSection && (
+            <div id="location" className="scroll-mt-20">
+              <div
+                className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+                style={{ fontFamily: bodyFontFamily }}
               >
-                <h2 className="text-xl font-semibold text-stone-900 mb-3">
-                  RSVP & Attendance
+                <h2
+                  className="text-xl font-semibold mb-4"
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
+                >
+                  Location
                 </h2>
-                <div className="space-y-4">
-                  <EventRsvpPrompt
-                    eventId={eventId}
-                    rsvpName={rsvpName}
-                    rsvpPhone={rsvpPhone}
-                    rsvpEmail={rsvpEmail}
-                    eventTitle={eventTitle}
-                    shareUrl={shareUrl}
-                  />
-                  {isOwner && (
-                    <EventRsvpDashboard
-                      eventId={eventId}
-                      initialNumberOfGuests={numberOfGuests}
-                    />
+                <div className="space-y-3">
+                  {locationQuery && (
+                    <div className="space-y-2">
+                      <LocationLink location={locationQuery} />
+                      {mapCoordinates && (
+                        <div className="h-60 overflow-hidden rounded-lg border border-stone-200">
+                          <EventMap
+                            latitude={mapCoordinates.latitude}
+                            longitude={mapCoordinates.longitude}
+                            zoom={zoomValue ?? undefined}
+                            label={venue || locationQuery}
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </section>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
 
-          {/* Map & actions */}
-          {(location || venue) && (
-            <section
-              className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
-              id="direction"
-            >
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">
-                Direction
-              </h2>
-              <EventMap
-                venue={venue}
-                location={location}
-                coordinates={mapCoordinates}
-                zoom={zoomValue ?? undefined}
-              />
-            </section>
+          {/* Party Details */}
+          {hasDescriptionSection && (
+            <div id="party" className="scroll-mt-20">
+              <div
+                className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+                style={{ fontFamily: bodyFontFamily }}
+              >
+                <h2
+                  className="text-xl font-semibold mb-3"
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
+                >
+                  Party Details
+                </h2>
+                {partyTheme && (
+                  <p className="text-sm font-semibold text-stone-700 mb-2">
+                    Theme: {partyTheme}
+                  </p>
+                )}
+                {activities && (
+                  <p className="text-sm text-stone-700 mb-2">
+                    Activities: {activities}
+                  </p>
+                )}
+                {(partyDetails?.notes || description) && (
+                  <p className="text-base leading-relaxed text-stone-800 whitespace-pre-wrap">
+                    {partyDetails?.notes || description}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Gallery */}
+          {hasGallerySection && (
+            <div id="gallery" className="scroll-mt-20">
+              <div
+                className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+                style={{ fontFamily: bodyFontFamily }}
+              >
+                <h2
+                  className="text-xl font-semibold mb-4"
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
+                >
+                  Gallery
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {(eventData.gallery || []).map((img: any, idx: number) => (
+                    <div
+                      key={img.id || idx}
+                      className="relative w-full pb-[62%] rounded-lg overflow-hidden border border-stone-200 bg-stone-100"
+                    >
+                      <Image
+                        src={img.url}
+                        alt={img.caption || "Gallery image"}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Registry */}
+          {hasWishlistSection && (
+            <div id="registry" className="scroll-mt-20">
+              <div
+                className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+                style={{ fontFamily: bodyFontFamily }}
+              >
+                <h2
+                  className="text-xl font-semibold mb-4"
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
+                >
+                  Registry
+                </h2>
+                <div className="space-y-2">
+                  {registryLinks.map((reg, idx) => (
+                    <div key={`${reg.url}-${idx}`}>
+                      <a
+                        href={reg.url}
+                        className="text-indigo-600 hover:text-indigo-800 font-medium"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {reg.label || "Registry link"}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* RSVP */}
+          {hasRsvpSection && (
+            <div id="rsvp" className="scroll-mt-20">
+              <div
+                className="mt-6 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
+                style={{ fontFamily: bodyFontFamily }}
+              >
+                <h2
+                  className="text-xl font-semibold mb-3"
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
+                >
+                  RSVP
+                </h2>
+                {eventData?.rsvpDeadline && (
+                  <p className="text-sm text-stone-700 mb-2">
+                    Please RSVP by {eventData.rsvpDeadline}
+                  </p>
+                )}
+                {hasRsvpContact ? (
+                  <p className="text-sm text-stone-700">
+                    Contact: {rsvpContactLabel}
+                  </p>
+                ) : (
+                  <p className="text-sm text-stone-700">
+                    RSVP details will be shared by the host.
+                  </p>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Calendar buttons */}
@@ -776,7 +923,10 @@ export default function BirthdayTemplateView({
               className="scroll-mt-20 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-sm"
               id="add-to-calendar"
             >
-              <h2 className="text-xl font-semibold text-stone-900 mb-4">
+              <h2
+                className="text-xl font-semibold mb-4"
+                style={{ color: headingColor, fontFamily: headingFontFamily }}
+              >
                 Add to Calendar
               </h2>
               <div className="flex flex-wrap gap-3">

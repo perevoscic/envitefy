@@ -29,7 +29,9 @@ import {
   type GenderRevealTemplateDefinition,
   genderRevealTemplateCatalog,
 } from "@/components/event-create/GenderRevealTemplateGallery";
+import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { buildEventPath } from "@/utils/event-url";
 
 function getTemplateById(id?: string | null): GenderRevealTemplateDefinition {
   if (!id) return genderRevealTemplateCatalog[0];
@@ -554,7 +556,8 @@ export default function GenderRevealTemplateCustomizePage() {
       }
 
       if (id) {
-        router.push(`/event/${id}${editEventId ? "?updated=1" : "?created=1"}`);
+        const params = editEventId ? { updated: true } : { created: true };
+        router.push(buildEventPath(id, payload.title, params));
       } else {
         throw new Error(
           editEventId ? "Failed to update event" : "Failed to create event"
@@ -668,18 +671,6 @@ export default function GenderRevealTemplateCustomizePage() {
           onChange={(v) => updateData("address", v)}
           placeholder="Street address (optional)"
         />
-        <div className="grid grid-cols-2 gap-4">
-          <InputGroup
-            label="City"
-            value={data.city}
-            onChange={(v) => updateData("city", v)}
-          />
-          <InputGroup
-            label="State"
-            value={data.state}
-            onChange={(v) => updateData("state", v)}
-          />
-        </div>
       </div>
     </EditorLayout>
   );
@@ -1455,7 +1446,13 @@ export default function GenderRevealTemplateCustomizePage() {
                               onClick={handleGoogleCalendar}
                               className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                             >
-                              <CalendarIcon size={16} />
+                              <Image
+                                src="/brands/google-white.svg"
+                                alt="Google"
+                                width={16}
+                                height={16}
+                                className="w-4 h-4"
+                              />
                               <span className="hidden sm:inline">
                                 Google Cal
                               </span>
@@ -1464,7 +1461,13 @@ export default function GenderRevealTemplateCustomizePage() {
                               onClick={handleAppleCalendar}
                               className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                             >
-                              <Apple size={16} />
+                              <Image
+                                src="/brands/apple-white.svg"
+                                alt="Apple"
+                                width={16}
+                                height={16}
+                                className="w-4 h-4"
+                              />
                               <span className="hidden sm:inline">
                                 Apple Cal
                               </span>
@@ -1473,7 +1476,13 @@ export default function GenderRevealTemplateCustomizePage() {
                               onClick={handleOutlookCalendar}
                               className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                             >
-                              <CalendarIcon size={16} />
+                              <Image
+                                src="/brands/microsoft-white.svg"
+                                alt="Microsoft"
+                                width={16}
+                                height={16}
+                                className="w-4 h-4"
+                              />
                               <span className="hidden sm:inline">Outlook</span>
                             </button>
                           </div>
@@ -1512,6 +1521,68 @@ export default function GenderRevealTemplateCustomizePage() {
                   </p>
                   <p className="text-xs opacity-50">Create yours now.</p>
                 </a>
+                <div className="flex items-center justify-center gap-4 mt-4">
+                  <a
+                    href="https://www.facebook.com/envitefy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="Facebook"
+                  >
+                    <Image
+                      src="/email/social-facebook.svg"
+                      alt="Facebook"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6"
+                    />
+                  </a>
+                  <a
+                    href="https://www.instagram.com/envitefy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="Instagram"
+                  >
+                    <Image
+                      src="/email/social-instagram.svg"
+                      alt="Instagram"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6"
+                    />
+                  </a>
+                  <a
+                    href="https://www.tiktok.com/@envitefy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="TikTok"
+                  >
+                    <Image
+                      src="/email/social-tiktok.svg"
+                      alt="TikTok"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6"
+                    />
+                  </a>
+                  <a
+                    href="https://www.youtube.com/@Envitefy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="YouTube"
+                  >
+                    <Image
+                      src="/email/social-youtube.svg"
+                      alt="YouTube"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6"
+                    />
+                  </a>
+                </div>
               </footer>
             </div>
           </div>
@@ -1532,7 +1603,7 @@ export default function GenderRevealTemplateCustomizePage() {
         }`}
         {...drawerTouchHandlers}
       >
-        <div
+        <ScrollBoundary
           className="flex-1 overflow-y-auto"
           style={{
             WebkitOverflowScrolling: "touch",
@@ -1564,22 +1635,34 @@ export default function GenderRevealTemplateCustomizePage() {
             {activeView === "rsvp" && renderRsvpEditor()}
             {activeView === "registry" && renderRegistryEditor()}
           </div>
-        </div>
+        </ScrollBoundary>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-          <button
-            onClick={handlePublish}
-            disabled={submitting}
-            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {submitting
-              ? editEventId
-                ? "Saving..."
-                : "Publishing..."
-              : editEventId
-              ? "Save"
-              : "Publish"}
-          </button>
+          <div className="flex gap-3">
+            {editEventId && (
+              <button
+                onClick={() => router.push(`/event/${editEventId}`)}
+                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              onClick={handlePublish}
+              disabled={submitting}
+              className={`${
+                editEventId ? "flex-1" : "w-full"
+              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {submitting
+                ? editEventId
+                  ? "Saving..."
+                  : "Publishing..."
+                : editEventId
+                ? "Save"
+                : "Publish"}
+            </button>
+          </div>
         </div>
       </div>
 

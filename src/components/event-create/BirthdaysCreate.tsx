@@ -13,6 +13,7 @@ import {
 } from "@/utils/registry-links";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import { buildEventPath } from "@/utils/event-url";
 
 type Props = {
   defaultDate?: Date;
@@ -996,7 +997,10 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         }
       } catch {}
 
-      if (id) router.push(`/event/${id}?created=${editEventId ? "0" : "1"}`);
+      if (id) {
+        const params = editEventId ? { updated: true } : { created: true };
+        router.push(buildEventPath(id, payload.title, params));
+      }
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
       alert(msg);

@@ -11,8 +11,10 @@ export async function GET(
     const awaitedParams = await (params as any);
     const row = await getEventHistoryBySlugOrId({ value: awaitedParams.id });
     const data: any = row?.data || {};
+    const variant = req.nextUrl.searchParams.get("variant");
+    const preferAttachment = variant === "attachment";
+    const preferThumbnail = variant === "thumbnail";
 
-    // Check for thumbnail first
     const hasThumbnail =
       typeof data?.thumbnail === "string" && data.thumbnail.length > 0;
     const hasAttachment =
@@ -23,7 +25,11 @@ export async function GET(
 
     let imageDataUrl: string | null = null;
 
-    if (hasThumbnail) {
+    if (preferAttachment && hasAttachment) {
+      imageDataUrl = data.attachment.dataUrl;
+    } else if (preferThumbnail && hasThumbnail) {
+      imageDataUrl = data.thumbnail;
+    } else if (hasThumbnail) {
       imageDataUrl = data.thumbnail;
     } else if (hasAttachment) {
       imageDataUrl = data.attachment.dataUrl;
@@ -33,7 +39,6 @@ export async function GET(
       return new Response("No thumbnail found", { status: 404 });
     }
 
-    // Extract base64 data from data URL
     const base64Match = imageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
     if (!base64Match) {
       return new Response("Invalid image format", { status: 400 });
@@ -42,7 +47,6 @@ export async function GET(
     const [, mimeType, base64Data] = base64Match;
     const imageBuffer = Buffer.from(base64Data, "base64");
 
-    // Determine content type
     const contentType =
       mimeType === "png"
         ? "image/png"
@@ -64,4 +68,3 @@ export async function GET(
     return new Response("Error loading thumbnail", { status: 500 });
   }
 }
-

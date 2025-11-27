@@ -42,7 +42,9 @@ import {
   ExternalLink,
   GripVertical,
 } from "lucide-react";
+import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { buildEventPath } from "@/utils/event-url";
 
 type FieldSpec = {
   key: string;
@@ -210,6 +212,11 @@ const FONT_SIZE_OPTIONS = [
   { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
 ];
 
+const baseInputClass =
+  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
+const baseTextareaClass =
+  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
+
 const InputGroup = ({
   label,
   value,
@@ -368,6 +375,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         })(),
       fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
+      passcodeRequired: false,
+      passcode: "",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -507,9 +516,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const headingSizeClass =
       selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
-    const locationParts = [data.venue, data.address, data.city, data.state]
-      .filter(Boolean)
-      .join(", ");
+    const locationParts = data.venue || "";
     const addressLine = data.address || "";
 
     const hasRoster = (advancedState?.roster?.athletes?.length ?? 0) > 0;
@@ -541,6 +548,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             enabled: hasAnnouncements,
           },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
+          { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
       [
         hasAnnouncements,
@@ -594,8 +602,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             title: json?.title,
             heroImage: existing.heroImage,
             themeId: existing.themeId,
+            theme: existing.theme,
             fontId: existing.fontId,
             fontSize: existing.fontSize,
+            fontFamily: existing.fontFamily,
+            fontSizeClass: existing.fontSizeClass,
             existing,
           });
 
@@ -612,6 +623,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }
 
           // Load all data fields, prioritizing existing values
+          const accessControl = existing.accessControl || {};
+          const hasPasscode = Boolean(
+            accessControl?.passcodeHash || accessControl?.requirePasscode
+          );
+
           setData((prev) => ({
             ...prev,
             title: json?.title || existing.title || prev.title,
@@ -628,8 +644,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ? existing.rsvpEnabled
                 : prev.rsvpEnabled,
             rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
-            fontId: existing.fontId || prev.fontId,
-            fontSize: existing.fontSize || prev.fontSize,
+            fontId:
+              existing.fontId != null
+                ? existing.fontId
+                : prev.fontId || GYM_FONTS[0]?.id || "inter",
+            fontSize:
+              existing.fontSize != null
+                ? existing.fontSize
+                : prev.fontSize || "medium",
+            passcodeRequired: hasPasscode,
+            passcode: "", // Never load plain passcode for security
             extra: {
               ...prev.extra,
               ...(existing.extra || {}),
@@ -648,11 +672,68 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           // Load theme - this is critical!
           if (existing.themeId) {
-            console.log("[Edit] Setting themeId:", existing.themeId);
-            setThemeId(existing.themeId);
+            // Validate themeId exists in config
+            const themeExists = config.themes.find(
+              (t) => t.id === existing.themeId
+            );
+            if (themeExists) {
+              console.log("[Edit] Setting themeId:", existing.themeId);
+              setThemeId(existing.themeId);
+            } else {
+              console.warn(
+                "[Edit] ThemeId not found in config, using default:",
+                existing.themeId
+              );
+              setThemeId(config.themes[0]?.id || "default-theme");
+            }
+          } else if (existing.theme?.id) {
+            const themeExists = config.themes.find(
+              (t) => t.id === existing.theme.id
+            );
+            if (themeExists) {
+              console.log(
+                "[Edit] Setting themeId from theme object:",
+                existing.theme.id
+              );
+              setThemeId(existing.theme.id);
+            } else {
+              console.warn(
+                "[Edit] Theme from object not found in config, using default"
+              );
+              setThemeId(config.themes[0]?.id || "default-theme");
+            }
           } else {
-            console.warn("[Edit] No themeId found in existing data");
+            console.warn(
+              "[Edit] No themeId found in existing data, using default"
+            );
+            setThemeId(config.themes[0]?.id || "default-theme");
           }
+
+          // Validate fontId and fontSize after state updates
+          setTimeout(() => {
+            setData((prev) => {
+              const fontExists = GYM_FONTS.find((f) => f.id === prev.fontId);
+              const sizeExists = FONT_SIZE_OPTIONS.find(
+                (o) => o.id === prev.fontSize
+              );
+              if (!fontExists || !sizeExists) {
+                console.warn("[Edit] Invalid fontId or fontSize, fixing:", {
+                  fontId: prev.fontId,
+                  fontSize: prev.fontSize,
+                  fontExists: !!fontExists,
+                  sizeExists: !!sizeExists,
+                });
+                return {
+                  ...prev,
+                  fontId: fontExists
+                    ? prev.fontId
+                    : GYM_FONTS[0]?.id || "inter",
+                  fontSize: sizeExists ? prev.fontSize : "medium",
+                };
+              }
+              return prev;
+            });
+          }, 100);
 
           setLoadingExisting(false);
         } catch (err) {
@@ -767,6 +848,35 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
           FONT_SIZE_OPTIONS[1];
 
+        // Ensure themeId is valid and find matching theme
+        const validThemeId =
+          themeId && config.themes.find((t) => t.id === themeId)
+            ? themeId
+            : config.themes[0]?.id || "default-theme";
+        const themeToSave =
+          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+
+        // Ensure fontId and fontSize are valid
+        const validFontId =
+          data.fontId && GYM_FONTS.find((f) => f.id === data.fontId)
+            ? data.fontId
+            : GYM_FONTS[0]?.id || "inter";
+        const validFontSize =
+          data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
+            ? data.fontSize
+            : "medium";
+
+        console.log("[Publish] Saving theme and font:", {
+          themeId: validThemeId,
+          theme: themeToSave?.name,
+          fontId: validFontId,
+          fontSize: validFontSize,
+          currentThemeId: themeId,
+          currentFontId: data.fontId,
+          currentFontSize: data.fontSize,
+          editEventId,
+        });
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
@@ -798,26 +908,77 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             advancedSections: advancedState,
             heroImage: heroToSave,
-            themeId,
-            theme: currentTheme,
-            fontId: data.fontId,
-            fontSize: data.fontSize,
+            themeId: validThemeId,
+            theme: themeToSave,
+            fontId: validFontId,
+            fontSize: validFontSize,
             fontFamily: currentSelectedFont?.css,
             fontSizeClass: currentSelectedSize?.className,
             time: data.time,
             date: data.date,
+            ...(data.passcodeRequired && data.passcode
+              ? {
+                  accessControl: {
+                    mode: "access-code",
+                    passcodePlain: data.passcode,
+                    requirePasscode: true,
+                  },
+                }
+              : data.passcodeRequired === false
+              ? {
+                  accessControl: {
+                    mode: "public",
+                    requirePasscode: false,
+                  },
+                }
+              : {}),
           },
         };
 
         if (editEventId) {
+          // When updating, send the full data object with theme and font
+          const updatePayload = {
+            title: payload.title,
+            data: payload.data,
+          };
+
+          console.log("[Publish] Sending update payload:", {
+            themeId: payload.data.themeId,
+            theme: payload.data.theme?.name,
+            fontId: payload.data.fontId,
+            fontSize: payload.data.fontSize,
+            hasTheme: !!payload.data.theme,
+            hasAdvancedSections: !!payload.data.advancedSections,
+          });
+
           const res = await fetch(`/api/history/${editEventId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ title: payload.title, data: payload.data }),
+            body: JSON.stringify(updatePayload),
           });
-          if (!res.ok) throw new Error("Failed to update event");
-          router.push(`/event/${editEventId}?updated=1`);
+
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error("[Publish] Update failed:", res.status, errorText);
+            throw new Error("Failed to update event");
+          }
+
+          const result = await res.json().catch(() => ({}));
+          console.log("[Publish] Update successful, response:", {
+            themeId: result?.data?.themeId,
+            theme: result?.data?.theme?.name,
+            fontId: result?.data?.fontId,
+            fontSize: result?.data?.fontSize,
+          });
+
+          // Force a hard refresh to ensure we get the latest data
+          router.push(
+            buildEventPath(editEventId, payload.title, {
+              updated: true,
+              t: Date.now(),
+            })
+          );
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -828,7 +989,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const json = await res.json().catch(() => ({}));
           const id = (json as any)?.id as string | undefined;
           if (!id) throw new Error("Failed to create event");
-          router.push(`/event/${id}?created=1`);
+          router.push(buildEventPath(id, payload.title, { created: true }));
         }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
@@ -851,6 +1012,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      data.passcodeRequired,
+      data.passcode,
       advancedState,
       locationParts,
       config.category,
@@ -886,9 +1049,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
       if (!start) start = new Date();
       const end = new Date(start.getTime() + 60 * 60 * 1000);
-      const location = [data.venue, data.city, data.state]
-        .filter(Boolean)
-        .join(", ");
+      const location = data.venue || "";
       const description = data.details || "";
       return { title, start, end, location, description };
     };
@@ -1043,6 +1204,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<CheckSquare size={18} />}
             onClick={() => setActiveView("rsvp")}
           />
+          <MenuCard
+            title="Passcode"
+            desc="Require access code to view event."
+            icon={<LinkIcon size={18} />}
+            onClick={() => setActiveView("passcode")}
+          />
           {config.advancedSections?.map((section) => (
             <MenuCard
               key={section.id}
@@ -1106,18 +1273,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => updateData("address", v)}
               placeholder="Street address (optional)"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                label="City"
-                value={data.city}
-                onChange={(v) => updateData("city", v)}
-              />
-              <InputGroup
-                label="State"
-                value={data.state}
-                onChange={(v) => updateData("state", v)}
-              />
-            </div>
           </div>
         </EditorLayout>
       ),
@@ -1353,6 +1508,54 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderPasscodeEditor = () => (
+      <EditorLayout
+        title="Passcode"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex-1">
+              <span className="font-medium text-slate-700 text-sm block mb-1">
+                Passcode Required
+              </span>
+              <p className="text-xs text-slate-600">
+                Only people with the link and access code can view this event.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input
+                type="checkbox"
+                checked={data.passcodeRequired}
+                onChange={(e) =>
+                  updateData("passcodeRequired", e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
+          {data.passcodeRequired && (
+            <InputGroup
+              label="Access Code"
+              type="text"
+              value={data.passcode}
+              onChange={(v) => updateData("passcode", v)}
+              placeholder="Cardinals2025"
+            />
+          )}
+
+          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+            <strong>How it works:</strong> Your event stays unlisted. Only
+            people with the link and access code can view it. Perfect for team
+            events - share the link and code in your team group chat.
           </div>
         </div>
       </EditorLayout>
@@ -1697,21 +1900,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         onClick={() => handleGoogleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/google-white.svg"
+                          alt="Google"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Google Cal</span>
                       </button>
                       <button
                         onClick={() => handleAppleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <Apple size={16} />
+                        <Image
+                          src="/brands/apple-white.svg"
+                          alt="Apple"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Apple Cal</span>
                       </button>
                       <button
                         onClick={() => handleOutlookCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/microsoft-white.svg"
+                          alt="Microsoft"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Outlook</span>
                       </button>
                     </div>
@@ -1734,6 +1955,68 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       Create yours now.
                     </p>
                   </a>
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <a
+                      href="https://www.facebook.com/envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Facebook"
+                    >
+                      <Image
+                        src="/email/social-facebook.svg"
+                        alt="Facebook"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.instagram.com/envitefy/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Instagram"
+                    >
+                      <Image
+                        src="/email/social-instagram.svg"
+                        alt="Instagram"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="TikTok"
+                    >
+                      <Image
+                        src="/email/social-tiktok.svg"
+                        alt="TikTok"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@Envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="YouTube"
+                    >
+                      <Image
+                        src="/email/social-youtube.svg"
+                        alt="YouTube"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                  </div>
                 </footer>
               </div>
             </div>
@@ -1753,7 +2036,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             mobileMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <div
+          <ScrollBoundary
             className="flex-1 overflow-y-auto"
             style={{
               WebkitOverflowScrolling: "touch",
@@ -1781,6 +2064,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
+              {activeView === "passcode" && renderPasscodeEditor()}
               {config.advancedSections?.map((section) =>
                 activeView === section.id ? (
                   <React.Fragment key={section.id}>
@@ -1789,22 +2073,34 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ) : null
               )}
             </div>
-          </div>
+          </ScrollBoundary>
 
           <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-            <button
-              onClick={handlePublish}
-              disabled={submitting}
-              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                ? "Save"
-                : "Publish"}
-            </button>
+            <div className="flex gap-3">
+              {editEventId && (
+                <button
+                  onClick={() => router.push(`/event/${editEventId}`)}
+                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handlePublish}
+                disabled={submitting}
+                className={`${
+                  editEventId ? "flex-1" : "w-full"
+                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                {submitting
+                  ? editEventId
+                    ? "Saving..."
+                    : "Publishing..."
+                  : editEventId
+                  ? "Save"
+                  : "Publish"}
+              </button>
+            </div>
           </div>
         </div>
 

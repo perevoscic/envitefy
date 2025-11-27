@@ -33,6 +33,7 @@ import * as chrono from "chrono-node";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
+import { buildEventPath } from "@/utils/event-url";
 
 type EventFields = {
   title: string;
@@ -618,6 +619,7 @@ export default function Dashboard() {
 
     // Save to Envitefy history first
     let eventId: string | undefined;
+    let savedTitle: string | undefined;
     try {
       const timezone =
         event.timezone ||
@@ -668,8 +670,11 @@ export default function Dashboard() {
         body: JSON.stringify(payload),
       });
 
-      const historyData = await historyRes.json().catch(() => ({}));
+      const historyData: any = await historyRes.json().catch(() => ({}));
       eventId = (historyData as any)?.id as string | undefined;
+      if (typeof historyData?.title === "string") {
+        savedTitle = historyData.title as string;
+      }
 
       // Emit event for sidebar refresh
       if (eventId && typeof window !== "undefined") {
@@ -716,8 +721,9 @@ export default function Dashboard() {
 
     // Close modal and navigate to event page
     if (eventId) {
+      const eventTitle = savedTitle || payload.title;
       resetForm();
-      window.location.href = `/event/${eventId}?created=1`;
+      router.push(buildEventPath(eventId, eventTitle, { created: true }));
     } else {
       resetForm();
     }
@@ -728,6 +734,7 @@ export default function Dashboard() {
     ocrCategory,
     setError,
     resetForm,
+    router,
   ]);
 
   const addOutlook = useCallback(async () => {
@@ -740,6 +747,7 @@ export default function Dashboard() {
 
     // Save to Envitefy history first
     let eventId: string | undefined;
+    let savedTitle: string | undefined;
     try {
       const timezone =
         event.timezone ||
@@ -790,8 +798,11 @@ export default function Dashboard() {
         body: JSON.stringify(payload),
       });
 
-      const historyData = await historyRes.json().catch(() => ({}));
+      const historyData: any = await historyRes.json().catch(() => ({}));
       eventId = (historyData as any)?.id as string | undefined;
+      if (typeof historyData?.title === "string") {
+        savedTitle = historyData.title as string;
+      }
 
       // Emit event for sidebar refresh
       if (eventId && typeof window !== "undefined") {
@@ -837,8 +848,9 @@ export default function Dashboard() {
 
     // Close modal and navigate to event page
     if (eventId) {
+      const eventTitle = savedTitle || payload.title;
       resetForm();
-      window.location.href = `/event/${eventId}?created=1`;
+      router.push(buildEventPath(eventId, eventTitle, { created: true }));
     } else {
       resetForm();
     }
@@ -849,6 +861,7 @@ export default function Dashboard() {
     ocrCategory,
     setError,
     resetForm,
+    router,
   ]);
 
   const saveToEnvitefy = useCallback(async () => {
@@ -911,8 +924,12 @@ export default function Dashboard() {
         body: JSON.stringify(payload),
       });
 
-      const historyData = await historyRes.json().catch(() => ({}));
+      const historyData: any = await historyRes.json().catch(() => ({}));
       const eventId = (historyData as any)?.id as string | undefined;
+      const savedTitle =
+        typeof historyData?.title === "string"
+          ? (historyData.title as string)
+          : undefined;
 
       // Emit event for sidebar refresh
       if (eventId && typeof window !== "undefined") {
@@ -932,7 +949,9 @@ export default function Dashboard() {
 
       // Navigate to event page if saved successfully
       if (eventId) {
-        window.location.href = `/event/${eventId}?created=1`;
+        const eventTitle = savedTitle || payload.title;
+        resetForm();
+        router.push(buildEventPath(eventId, eventTitle, { created: true }));
       } else {
         resetForm();
       }
@@ -947,6 +966,7 @@ export default function Dashboard() {
     resetForm,
     uploadedFile,
     ocrCategory,
+    router,
   ]);
 
   useEffect(() => {

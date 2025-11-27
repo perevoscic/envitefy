@@ -9,6 +9,7 @@ import SportEventsTemplate from "@/components/event-templates/SportEventsTemplat
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
+import { buildEventPath } from "@/utils/event-url";
 
 type Props = { defaultDate?: Date };
 
@@ -416,7 +417,9 @@ export default function SportEventsCreate({ defaultDate }: Props) {
           }).catch(() => ({ ok: false }))
         );
       if (tasks.length) await Promise.allSettled(tasks);
-      if (id) router.push(`/event/${id}?created=1`);
+      if (id) {
+        router.push(buildEventPath(id, payload.title, { created: true }));
+      }
     } catch (err: any) {
       alert(String(err?.message || err || "Failed to create event"));
     } finally {

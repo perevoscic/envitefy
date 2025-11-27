@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents, upsertSignupForm } from "@/lib/db";
 import { getCachedHistory, setCachedHistory, invalidateUserHistory } from "@/lib/history-cache";
 import { createHash } from "crypto";
+import { normalizeAccessControlPayload } from "@/lib/event-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -173,6 +174,12 @@ export async function POST(req: Request) {
     const rawTitle = (body.title as string) || "Event";
     const title = String(rawTitle).slice(0, 300);
     const data = body.data ?? {};
+    if (data && typeof data === "object" && "accessControl" in data) {
+      data.accessControl = await normalizeAccessControlPayload(
+        data.accessControl
+      );
+      if (!data.accessControl) delete data.accessControl;
+    }
     try {
       console.log(
         "[history] POST: inserting",
@@ -224,5 +231,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-

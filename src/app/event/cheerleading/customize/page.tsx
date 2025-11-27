@@ -35,8 +35,11 @@ import {
   Phone,
   Mail,
   Shirt,
+  Link as LinkIcon,
 } from "lucide-react";
+import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { buildEventPath } from "@/utils/event-url";
 import {
   config,
   eventsSection,
@@ -403,6 +406,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       fontId:
         (config as any)?.prefill?.fontId || CHEER_FONTS[0]?.id || "playfair",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
+      passcodeRequired: false,
+      passcode: "",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -569,6 +574,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           { id: "logistics", label: "Logistics", enabled: hasLogistics },
           { id: "gear", label: "Gear", enabled: hasGear },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
+          { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
       [
         hasEvents,
@@ -816,6 +822,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             fontSizeClass: currentSelectedSize?.className,
             time: data.time,
             date: data.date,
+            ...(data.passcodeRequired && data.passcode
+              ? {
+                  accessControl: {
+                    mode: "access-code",
+                    passcodePlain: data.passcode,
+                    requirePasscode: true,
+                  },
+                }
+              : data.passcodeRequired === false
+              ? {
+                  accessControl: {
+                    mode: "public",
+                    requirePasscode: false,
+                  },
+                }
+              : {}),
           },
         };
 
@@ -827,7 +849,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             body: JSON.stringify({ title: payload.title, data: payload.data }),
           });
           if (!res.ok) throw new Error("Failed to update event");
-          router.push(`/event/${editEventId}?updated=1`);
+          router.push(
+            buildEventPath(editEventId, payload.title, { updated: true })
+          );
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -838,7 +862,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const json = await res.json().catch(() => ({}));
           const id = (json as any)?.id as string | undefined;
           if (!id) throw new Error("Failed to create event");
-          router.push(`/event/${id}?created=1`);
+          router.push(buildEventPath(id, payload.title, { created: true }));
         }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
@@ -861,6 +885,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      data.passcodeRequired,
+      data.passcode,
       advancedState,
       locationParts,
       config.category,
@@ -1053,6 +1079,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<CheckSquare size={18} />}
             onClick={() => setActiveView("rsvp")}
           />
+          <MenuCard
+            title="Passcode"
+            desc="Require access code to view event."
+            icon={<LinkIcon size={18} />}
+            onClick={() => setActiveView("passcode")}
+          />
           {config.advancedSections?.map((section) => (
             <MenuCard
               key={section.id}
@@ -1113,20 +1145,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => updateData("address", v)}
               placeholder="Street address (optional)"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                key="city"
-                label="City"
-                value={data.city}
-                onChange={(v) => updateData("city", v)}
-              />
-              <InputGroup
-                key="state"
-                label="State"
-                value={data.state}
-                onChange={(v) => updateData("state", v)}
-              />
-            </div>
           </div>
         </EditorLayout>
       ),
@@ -1363,6 +1381,54 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderPasscodeEditor = () => (
+      <EditorLayout
+        title="Passcode"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex-1">
+              <span className="font-medium text-slate-700 text-sm block mb-1">
+                Passcode Required
+              </span>
+              <p className="text-xs text-slate-600">
+                Only people with the link and access code can view this event.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input
+                type="checkbox"
+                checked={data.passcodeRequired}
+                onChange={(e) =>
+                  updateData("passcodeRequired", e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
+          {data.passcodeRequired && (
+            <InputGroup
+              label="Access Code"
+              type="text"
+              value={data.passcode}
+              onChange={(v) => updateData("passcode", v)}
+              placeholder="Cardinals2025"
+            />
+          )}
+
+          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+            <strong>How it works:</strong> Your event stays unlisted. Only
+            people with the link and access code can view it. Perfect for team
+            events - share the link and code in your team group chat.
           </div>
         </div>
       </EditorLayout>
@@ -1744,92 +1810,167 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       Create yours now.
                     </p>
                   </a>
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <a
+                      href="https://www.facebook.com/envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Facebook"
+                    >
+                      <Image
+                        src="/email/social-facebook.svg"
+                        alt="Facebook"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.instagram.com/envitefy/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Instagram"
+                    >
+                      <Image
+                        src="/email/social-instagram.svg"
+                        alt="Instagram"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="TikTok"
+                    >
+                      <Image
+                        src="/email/social-tiktok.svg"
+                        alt="TikTok"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@Envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="YouTube"
+                    >
+                      <Image
+                        src="/email/social-youtube.svg"
+                        alt="YouTube"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                  </div>
                 </footer>
               </div>
             </div>
           </div>
+        </div>
 
-          {mobileMenuOpen && (
-            <div
-              className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
-              onClick={closeMobileMenu}
-              role="presentation"
-            ></div>
-          )}
-
+        {mobileMenuOpen && (
           <div
-            className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-              mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-            }`}
-            {...drawerTouchHandlers}
-          >
-            <div
-              className="flex-1 overflow-y-auto"
-              style={{
-                WebkitOverflowScrolling: "touch",
-                overscrollBehavior: "contain",
-              }}
-            >
-              <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-                <button
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-                >
-                  <ChevronLeft size={14} />
-                  Back to preview
-                </button>
-                <span className="text-sm font-semibold text-slate-700">
-                  Customize
-                </span>
-              </div>
+            className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
+            onClick={closeMobileMenu}
+            role="presentation"
+          ></div>
+        )}
 
-              <div className="p-6 pt-4 md:pt-6">
-                {activeView === "main" && renderMainMenu()}
-                {activeView === "headline" && renderHeadlineEditor}
-                {activeView === "images" && renderImagesEditor()}
-                {activeView === "design" && renderDesignEditor()}
-                {activeView === "details" && renderDetailsEditor()}
-                {activeView === "rsvp" && renderRsvpEditor()}
-                {config.advancedSections?.map((section) =>
-                  activeView === section.id ? (
-                    <React.Fragment key={section.id}>
-                      {renderAdvancedEditor(section)}
-                    </React.Fragment>
-                  ) : null
-                )}
-              </div>
+        <div
+          className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+          {...drawerTouchHandlers}
+        >
+          <ScrollBoundary
+            className="flex-1 overflow-y-auto"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+            }}
+          >
+            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+              <button
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+              >
+                <ChevronLeft size={14} />
+                Back to preview
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
+            </div>
+
+            <div className="p-6 pt-4 md:pt-6">
+              {activeView === "main" && renderMainMenu()}
+              {activeView === "headline" && renderHeadlineEditor}
+              {activeView === "images" && renderImagesEditor()}
+              {activeView === "design" && renderDesignEditor()}
+              {activeView === "details" && renderDetailsEditor()}
+              {activeView === "rsvp" && renderRsvpEditor()}
+              {activeView === "passcode" && renderPasscodeEditor()}
+              {config.advancedSections?.map((section) =>
+                activeView === section.id ? (
+                  <React.Fragment key={section.id}>
+                    {renderAdvancedEditor(section)}
+                  </React.Fragment>
+                ) : null
+              )}
             </div>
 
             <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-              <button
-                onClick={handlePublish}
-                disabled={submitting}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submitting
-                  ? editEventId
-                    ? "Saving..."
-                    : "Publishing..."
-                  : editEventId
-                  ? "Save"
-                  : "Publish"}
-              </button>
+              <div className="flex gap-3">
+                {editEventId && (
+                  <button
+                    onClick={() => router.push(`/event/${editEventId}`)}
+                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  onClick={handlePublish}
+                  disabled={submitting}
+                  className={`${
+                    editEventId ? "flex-1" : "w-full"
+                  } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+                >
+                  {submitting
+                    ? editEventId
+                      ? "Saving..."
+                      : "Publishing..."
+                    : editEventId
+                    ? "Save"
+                    : "Publish"}
+                </button>
+              </div>
             </div>
-          </div>
-
-          {!mobileMenuOpen && (
-            <div className="md:hidden fixed bottom-4 right-4 z-30">
-              <button
-                type="button"
-                onClick={openMobileMenu}
-                className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-3 text-sm font-semibold shadow-lg"
-              >
-                <Menu size={18} />
-                Edit
-              </button>
-            </div>
-          )}
+          </ScrollBoundary>
         </div>
+
+        {!mobileMenuOpen && (
+          <div className="md:hidden fixed bottom-4 right-4 z-30">
+            <button
+              type="button"
+              onClick={openMobileMenu}
+              className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-3 text-sm font-semibold shadow-lg"
+            >
+              <Menu size={18} />
+              Edit
+            </button>
+          </div>
+        )}
       </div>
     );
   };

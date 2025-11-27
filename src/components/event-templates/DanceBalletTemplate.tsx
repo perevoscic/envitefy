@@ -2,6 +2,7 @@
 "use client";
 
 import React, { memo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ClipboardList,
   Users,
@@ -13,6 +14,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { buildEventPath } from "@/utils/event-url";
 
 type DanceEvent = {
   id: string;
@@ -1826,7 +1828,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const json = await res.json().catch(() => ({}));
         const id = (json as any)?.id as string | undefined;
         if (!id) throw new Error("Failed to create event");
-        router.push(`/event/${id}?created=1`);
+        router.push(buildEventPath(id, payload.title, { created: true }));
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -2669,21 +2671,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         onClick={() => handleGoogleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/google-white.svg"
+                          alt="Google"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Google Cal</span>
                       </button>
                       <button
                         onClick={() => handleAppleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <Apple size={16} />
+                        <Image
+                          src="/brands/apple-white.svg"
+                          alt="Apple"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Apple Cal</span>
                       </button>
                       <button
                         onClick={() => handleOutlookCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/microsoft-white.svg"
+                          alt="Microsoft"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Outlook</span>
                       </button>
                     </div>
@@ -2706,6 +2726,68 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       Create yours now.
                     </p>
                   </a>
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <a
+                      href="https://www.facebook.com/envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Facebook"
+                    >
+                      <Image
+                        src="/email/social-facebook.svg"
+                        alt="Facebook"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.instagram.com/envitefy/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Instagram"
+                    >
+                      <Image
+                        src="/email/social-instagram.svg"
+                        alt="Instagram"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="TikTok"
+                    >
+                      <Image
+                        src="/email/social-tiktok.svg"
+                        alt="TikTok"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@Envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="YouTube"
+                    >
+                      <Image
+                        src="/email/social-youtube.svg"
+                        alt="YouTube"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                  </div>
                 </footer>
               </div>
             </div>

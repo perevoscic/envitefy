@@ -125,35 +125,48 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
-    const session = await getServerSession(authOptions as NextAuthOptions);
-    const sessionUser: Session["user"] | null = session?.user ?? null;
-    const sessionEmail = (sessionUser?.email as string | undefined) || null;
-    const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
+  const { id } = await context.params;
+  const session = await getServerSession(authOptions as NextAuthOptions);
+  const sessionUser: Session["user"] | null = session?.user ?? null;
+  const sessionEmail = (sessionUser?.email as string | undefined) || null;
+  const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
 
-    const body = (await req.json().catch(() => null)) as RequestPayload | null;
-    if (!body || typeof body.action !== "string") {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    }
+  if (!sessionEmail || !userId) {
+    return NextResponse.json(
+      {
+        error:
+          "Sign in with the email (or phone-linked account) the organizer invited to continue.",
+      },
+      { status: 401 }
+    );
+  }
+
+  const body = (await req.json().catch(() => null)) as RequestPayload | null;
+  if (!body || typeof body.action !== "string") {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
 
     const row = await getEventHistoryById(id);
     if (!row) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Check access: if authenticated, must be owner or shared recipient
-    // If unauthenticated, allow sign-ups for public forms (anyone with the link)
-    if (userId) {
-      const ownerId = row.user_id || null;
-      const isOwner = Boolean(ownerId && ownerId === userId);
-      let allowed = isOwner;
-      if (!allowed) {
-        const shared = await isEventSharedWithUser(id, userId);
-        allowed = shared === true;
-      }
-      if (!allowed) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
+    // Check access: must be owner or accepted shared recipient
+    const ownerId = row.user_id || null;
+    const isOwner = Boolean(ownerId && ownerId === userId);
+    let allowed = isOwner;
+    if (!allowed) {
+      const shared = await isEventSharedWithUser(id, userId);
+      allowed = shared === true;
+    }
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Access is limited to invited contacts. Ask the organizer to share this event with your account.",
+        },
+        { status: 403 }
+      );
     }
 
     const existingData = (row.data ?? null) as Record<string, unknown> | null;

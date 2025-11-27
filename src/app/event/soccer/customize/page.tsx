@@ -27,8 +27,11 @@ import {
   Apple,
   Upload,
   MapPin,
+  Link as LinkIcon,
 } from "lucide-react";
+import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { buildEventPath } from "@/utils/event-url";
 
 type FieldSpec = {
   key: string;
@@ -356,6 +359,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       fontId:
         (config as any)?.prefill?.fontId || SOCCER_FONTS[0]?.id || "anton",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
+      passcodeRequired: false,
+      passcode: "",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
@@ -383,6 +388,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
+    const [loadingExisting, setLoadingExisting] = useState(false);
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -429,6 +435,108 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         return { ...prev, [id]: next };
       });
     }, []);
+
+    // Load existing event data when editing
+    useEffect(() => {
+      const loadExisting = async () => {
+        if (!editEventId) return;
+        setLoadingExisting(true);
+        try {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            console.error("[Edit] Failed to load event:", res.status);
+            setLoadingExisting(false);
+            return;
+          }
+          const json = await res.json();
+          const existing = json?.data || {};
+
+          const startIso =
+            existing.start || existing.startISO || existing.startIso;
+          let loadedDate: string | undefined;
+          let loadedTime: string | undefined;
+          if (startIso) {
+            const d = new Date(startIso);
+            if (!Number.isNaN(d.getTime())) {
+              loadedDate = d.toISOString().split("T")[0];
+              loadedTime = d.toISOString().slice(11, 16);
+            }
+          }
+
+          const accessControl = existing.accessControl || {};
+          const hasPasscode = Boolean(
+            accessControl?.passcodeHash || accessControl?.requirePasscode
+          );
+
+          setData((prev) => ({
+            ...prev,
+            title: json?.title || existing.title || prev.title,
+            date: existing.date || loadedDate || prev.date,
+            time: existing.time || loadedTime || prev.time,
+            city: existing.city || prev.city,
+            state: existing.state || prev.state,
+            venue: existing.venue || existing.location || prev.venue,
+            details: existing.details || existing.description || prev.details,
+            hero: existing.heroImage || existing.hero || prev.hero,
+            rsvpEnabled:
+              typeof existing.rsvpEnabled === "boolean"
+                ? existing.rsvpEnabled
+                : prev.rsvpEnabled,
+            rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
+            fontId:
+              existing.fontId &&
+              SOCCER_FONTS.find((f) => f.id === existing.fontId)
+                ? existing.fontId
+                : prev.fontId,
+            fontSize:
+              existing.fontSize &&
+              FONT_SIZE_OPTIONS.find((o) => o.id === existing.fontSize)
+                ? existing.fontSize
+                : prev.fontSize,
+            passcodeRequired: hasPasscode,
+            passcode: "", // Never load plain passcode for security
+            extra: {
+              ...prev.extra,
+              ...(existing.extra || {}),
+              ...(existing.customFields || {}),
+            },
+          }));
+
+          const incomingAdvanced =
+            existing.advancedSections ||
+            existing.customFields?.advancedSections ||
+            existing.advanced ||
+            {};
+          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
+            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
+          }
+
+          if (
+            existing.themeId &&
+            config.themes.find((t) => t.id === existing.themeId)
+          ) {
+            setThemeId(existing.themeId);
+          } else if (
+            existing.theme?.id &&
+            config.themes.find((t) => t.id === existing.theme.id)
+          ) {
+            setThemeId(existing.theme.id);
+          } else {
+            setThemeId(config.themes[0]?.id ?? "default-theme");
+          }
+
+          setLoadingExisting(false);
+        } catch (err) {
+          console.error("[Edit] Error loading event:", err);
+          setLoadingExisting(false);
+          alert("Failed to load event data. Please refresh the page.");
+        }
+      };
+      loadExisting();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editEventId]);
 
     // Expand themes when Design view is opened
     useEffect(() => {
@@ -551,6 +659,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         [
           { id: "details", label: "Details", enabled: true },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
+          { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
       [data.rsvpEnabled]
     );
@@ -638,11 +747,58 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
+        // Convert blob URLs to data URLs for saving so edits persist
+        let heroToSave = config.defaultHero;
+        if (data.hero) {
+          if (/^blob:/i.test(data.hero)) {
+            try {
+              const response = await fetch(data.hero);
+              const blob = await response.blob();
+              const reader = new FileReader();
+              heroToSave = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                  const result = reader.result as string;
+                  resolve(result || config.defaultHero);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } catch (err) {
+              console.error("Failed to convert blob URL:", err);
+              heroToSave = config.defaultHero;
+            }
+          } else if (/^data:/i.test(data.hero)) {
+            heroToSave = data.hero;
+          } else {
+            heroToSave = data.hero;
+          }
+        }
+
+        const validThemeId =
+          themeId && config.themes.find((t) => t.id === themeId)
+            ? themeId
+            : config.themes[0]?.id || "default-theme";
+        const themeToSave =
+          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+        const validFontId =
+          data.fontId && SOCCER_FONTS.find((f) => f.id === data.fontId)
+            ? data.fontId
+            : SOCCER_FONTS[0]?.id || "anton";
+        const validFontSize =
+          data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
+            ? data.fontSize
+            : "medium";
+        const currentSelectedFont =
+          SOCCER_FONTS.find((f) => f.id === validFontId) || SOCCER_FONTS[0];
+        const currentSelectedSize =
+          FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) ||
+          FONT_SIZE_OPTIONS[1];
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
             category: config.category,
-            createdVia: "template",
+            createdVia: "simple-template",
             createdManually: true,
             startISO,
             endISO,
@@ -652,25 +808,75 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
             numberOfGuests: 0,
             templateId: config.slug,
+            templateConfig: {
+              displayName: config.displayName,
+              categoryLabel: config.categoryLabel || config.displayName,
+              detailFields: config.detailFields,
+              rsvpCopy: config.rsvpCopy,
+            },
             customFields: {
               ...data.extra,
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
-            heroImage: data.hero || config.defaultHero,
+            heroImage: heroToSave,
+            themeId: validThemeId,
+            theme: themeToSave,
+            fontId: validFontId,
+            fontSize: validFontSize,
+            fontFamily: currentSelectedFont?.css,
+            fontSizeClass: currentSelectedSize?.className,
+            time: data.time,
+            date: data.date,
+            ...(data.passcodeRequired && data.passcode
+              ? {
+                  accessControl: {
+                    mode: "access-code",
+                    passcodePlain: data.passcode,
+                    requirePasscode: true,
+                  },
+                }
+              : data.passcodeRequired === false
+              ? {
+                  accessControl: {
+                    mode: "public",
+                    requirePasscode: false,
+                  },
+                }
+              : {}),
           },
         };
 
-        const res = await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json().catch(() => ({}));
-        const id = (json as any)?.id as string | undefined;
-        if (!id) throw new Error("Failed to create event");
-        router.push(`/event/${id}?created=1`);
+        if (editEventId) {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: payload.title, data: payload.data }),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            console.error("[Edit] Update failed:", res.status, txt);
+            throw new Error("Failed to update event");
+          }
+          router.push(
+            buildEventPath(editEventId, payload.title, {
+              updated: true,
+              t: Date.now(),
+            })
+          );
+        } else {
+          const res = await fetch("/api/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json().catch(() => ({}));
+          const id = (json as any)?.id as string | undefined;
+          if (!id) throw new Error("Failed to create event");
+          router.push(buildEventPath(id, payload.title, { created: true }));
+        }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -687,13 +893,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
+      data.passcodeRequired,
+      data.passcode,
       advancedState,
       locationParts,
       config.category,
       config.displayName,
       config.slug,
       config.defaultHero,
+      config.detailFields,
+      config.rsvpCopy,
       router,
+      themeId,
     ]);
 
     const rsvpCopy = {
@@ -873,6 +1084,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<CheckSquare size={18} />}
             onClick={() => setActiveView("rsvp")}
           />
+          <MenuCard
+            title="Passcode"
+            desc="Require access code to view event."
+            icon={<LinkIcon size={18} />}
+            onClick={() => setActiveView("passcode")}
+          />
           {config.advancedSections?.map((section) => (
             <MenuCard
               key={section.id}
@@ -926,20 +1143,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => updateData("venue", v)}
               placeholder="Venue name (optional)"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                key="city"
-                label="City"
-                value={data.city}
-                onChange={(v) => updateData("city", v)}
-              />
-              <InputGroup
-                key="state"
-                label="State"
-                value={data.state}
-                onChange={(v) => updateData("state", v)}
-              />
-            </div>
           </div>
         </EditorLayout>
       ),
@@ -1181,6 +1384,54 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderPasscodeEditor = () => (
+      <EditorLayout
+        title="Passcode"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex-1">
+              <span className="font-medium text-slate-700 text-sm block mb-1">
+                Passcode Required
+              </span>
+              <p className="text-xs text-slate-600">
+                Only people with the link and access code can view this event.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input
+                type="checkbox"
+                checked={data.passcodeRequired}
+                onChange={(e) =>
+                  updateData("passcodeRequired", e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
+          {data.passcodeRequired && (
+            <InputGroup
+              label="Access Code"
+              type="text"
+              value={data.passcode}
+              onChange={(v) => updateData("passcode", v)}
+              placeholder="Cardinals2025"
+            />
+          )}
+
+          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+            <strong>How it works:</strong> Your event stays unlisted. Only
+            people with the link and access code can view it. Perfect for team
+            events - share the link and code in your team group chat.
           </div>
         </div>
       </EditorLayout>
@@ -1525,21 +1776,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         onClick={() => handleGoogleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/google-white.svg"
+                          alt="Google"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Google Cal</span>
                       </button>
                       <button
                         onClick={() => handleAppleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <Apple size={16} />
+                        <Image
+                          src="/brands/apple-white.svg"
+                          alt="Apple"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Apple Cal</span>
                       </button>
                       <button
                         onClick={() => handleOutlookCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/microsoft-white.svg"
+                          alt="Microsoft"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Outlook</span>
                       </button>
                     </div>
@@ -1562,6 +1831,68 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       Create yours now.
                     </p>
                   </a>
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <a
+                      href="https://www.facebook.com/envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Facebook"
+                    >
+                      <Image
+                        src="/email/social-facebook.svg"
+                        alt="Facebook"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.instagram.com/envitefy/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Instagram"
+                    >
+                      <Image
+                        src="/email/social-instagram.svg"
+                        alt="Instagram"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="TikTok"
+                    >
+                      <Image
+                        src="/email/social-tiktok.svg"
+                        alt="TikTok"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@Envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="YouTube"
+                    >
+                      <Image
+                        src="/email/social-youtube.svg"
+                        alt="YouTube"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                  </div>
                 </footer>
               </div>
             </div>
@@ -1582,7 +1913,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }`}
           {...drawerTouchHandlers}
         >
-          <div
+          <ScrollBoundary
             className="flex-1 overflow-y-auto"
             style={{
               WebkitOverflowScrolling: "touch",
@@ -1609,6 +1940,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
+              {activeView === "passcode" && renderPasscodeEditor()}
               {config.advancedSections?.map((section) =>
                 activeView === section.id ? (
                   <React.Fragment key={section.id}>
@@ -1617,23 +1949,35 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ) : null
               )}
             </div>
-          </div>
 
-          <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-            <button
-              onClick={handlePublish}
-              disabled={submitting}
-              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                ? "Save"
-                : "Publish"}
-            </button>
-          </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+              <div className="flex gap-3">
+                {editEventId && (
+                  <button
+                    onClick={() => router.push(`/event/${editEventId}`)}
+                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  onClick={handlePublish}
+                  disabled={submitting}
+                  className={`${
+                    editEventId ? "flex-1" : "w-full"
+                  } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+                >
+                  {submitting
+                    ? editEventId
+                      ? "Saving..."
+                      : "Publishing..."
+                    : editEventId
+                    ? "Save"
+                    : "Publish"}
+                </button>
+              </div>
+            </div>
+          </ScrollBoundary>
         </div>
 
         {!mobileMenuOpen && (

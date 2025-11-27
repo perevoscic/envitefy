@@ -152,12 +152,14 @@ export function getColorByCategory(category?: string | null): EventColor {
   return getEventColor(category || "");
 }
 
-// Category icon mapping
+// Category icon mapping - matches icons from TEMPLATE_LINKS in navigation-config.tsx
 export function getCategoryIcon(category: string): string {
   const lower = category.toLowerCase();
+  // Life Milestones & Celebrations
   if (lower.includes("birthday")) return "🎂";
   if (lower.includes("wedding")) return "💍";
   if (lower.includes("baby") || lower.includes("gender")) return "🍼";
+  // Appointments & General Events
   if (
     lower.includes("doctor") ||
     lower.includes("dental") ||
@@ -166,13 +168,17 @@ export function getCategoryIcon(category: string): string {
   )
     return "🩺";
   if (lower.includes("appointment")) return "📅";
-  if (
-    lower.includes("running") || 
-    lower.includes("run") ||
-    lower.includes("jog")
-  )
-    return "🏃";
-  if (lower.includes("sport") || lower.includes("game")) return "⚽";
+  if (lower.includes("general")) return "📅";
+  if (lower.includes("special")) return "✨";
+  if (lower.includes("workshop") || lower.includes("class")) return "🧠";
+  // Sports Season '25-'26
+  if (lower.includes("football") && !lower.includes("soccer")) return "🏈";
+  if (lower.includes("gymnastics")) return "🤸";
+  if (lower.includes("cheerleading")) return "📣";
+  if (lower.includes("dance") || lower.includes("ballet")) return "🩰";
+  if (lower.includes("soccer") || (lower.includes("football") && lower.includes("soccer"))) return "⚽";
+  if (lower.includes("sport") || lower.includes("game")) return "🏅";
+  // Other categories
   if (lower.includes("meeting")) return "💼";
   if (lower.includes("vacation") || lower.includes("travel")) return "✈️";
   if (lower.includes("concert") || lower.includes("music")) return "🎵";
@@ -189,5 +195,11 @@ export function getCategoryIcon(category: string): string {
   if (lower.includes("anniversary")) return "💐";
   if (lower.includes("party")) return "🎉";
   if (lower.includes("car")) return "🚗";
+  if (
+    lower.includes("running") || 
+    lower.includes("run") ||
+    lower.includes("jog")
+  )
+    return "🏃";
   return "📌"; // Default icon
 }

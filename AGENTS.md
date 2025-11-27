@@ -49,6 +49,15 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Input (JSON)**: `{ eventId: string, recipientUserId?: string }`.
 - **Output**: `{ ok: true, revoked: number }`.
 
+### RSVP Attendance — POST `/api/rsvp/attendance`
+
+- **Purpose**: Update an athlete's attendance status from the RSVP form and sync the Team Roster.
+- **Auth**: NextAuth session required; caller must be the event owner or an accepted share recipient.
+- **Input (JSON)**: `{ eventId: string, status: "going"|"notgoing"|"not_going"|"maybe"|"late"|"pending", athleteId?: string, athleteName?: string }`.
+- **Behavior**: Looks up the event's `advancedSections.roster.athletes`, matches by `athleteId` (preferred) or case-insensitive `athleteName`, sets `status`, and stamps `attendanceUpdatedAt`/`attendanceUpdatedByUserId`. Returns the updated event data.
+- **Output**: `{ ok: true, athlete, updatedEvent }` or `{ error }`.
+- **Env**: None.
+
 ### Admin Users Search — GET `/api/admin/users/search`
 
 - **Purpose**: Admin-only, on-demand user lookup without loading all users by default.
@@ -272,6 +281,14 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Input (JSON)**: `{ events: NormalizedEvent[] }`.
 - **Output**: `{ ok: true, results: Array<{ index, id?, webLink?, error? }> }`.
 
+### Event Access Unlock — POST `/api/events/[id]/unlock`
+
+- **Purpose**: Validate a private access code and grant a signed cookie so the invite unlocks without signing in.
+- **Auth**: None; possession of the access code is the gate.
+- **Input (JSON)**: `{ code: string }`.
+- **Behavior**: Verifies the submitted code against the event's hashed `accessControl.passcodeHash`. Successful requests set an HTTP-only `event_access_<eventId>` cookie (30-day TTL) and return `{ ok: true }`. Incorrect codes return HTTP 401 with `{ error }`.
+- **Env**: Optional `EVENT_ACCESS_SECRET`; defaults to `NEXTAUTH_SECRET` when unset.
+
 ### Google OAuth Agents — GET `/api/google/auth`, GET `/api/google/callback`
 
 - **Purpose**: Start OAuth and capture a Google refresh token.
@@ -388,6 +405,8 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - POST: created `HistoryRow` `{ status: 201 }`.
   - PATCH: updated `HistoryRow`.
   - DELETE: `{ ok: true }`.
+- **Notes**:
+  - PATCH now supports combined title + data updates in one request and preserves full template state (themes, fonts, advanced sections) when present. When `data` contains `themeId|theme|fontId|fontSize|advancedSections`, the route performs a full replace/merge that overwrites previous theme/font fields instead of a shallow merge, ensuring edited gymnastics/sports templates retain the saved theme color and typography. Cache for the owner’s history list is invalidated after successful update.
 
 ### History Signup — POST `/api/history/[id]/signup`
 

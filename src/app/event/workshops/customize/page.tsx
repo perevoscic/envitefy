@@ -20,7 +20,9 @@ import {
   Apple,
   Upload,
 } from "lucide-react";
+import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { buildEventPath } from "@/utils/event-url";
 
 type FieldSpec = {
   key: string;
@@ -436,7 +438,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const json = await res.json().catch(() => ({}));
         const id = (json as any)?.id as string | undefined;
         if (!id) throw new Error("Failed to create event");
-        router.push(`/event/${id}?created=1`);
+        router.push(buildEventPath(id, payload.title, { created: true }));
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -693,20 +695,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => updateData("venue", v)}
               placeholder="Venue name (optional)"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                key="city"
-                label="City"
-                value={data.city}
-                onChange={(v) => updateData("city", v)}
-              />
-              <InputGroup
-                key="state"
-                label="State"
-                value={data.state}
-                onChange={(v) => updateData("state", v)}
-              />
-            </div>
           </div>
         </EditorLayout>
       ),
@@ -1209,21 +1197,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         onClick={() => handleGoogleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/google-white.svg"
+                          alt="Google"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Google Cal</span>
                       </button>
                       <button
                         onClick={() => handleAppleCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <Apple size={16} />
+                        <Image
+                          src="/brands/apple-white.svg"
+                          alt="Apple"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Apple Cal</span>
                       </button>
                       <button
                         onClick={() => handleOutlookCalendar()}
                         className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <CalendarIcon size={16} />
+                        <Image
+                          src="/brands/microsoft-white.svg"
+                          alt="Microsoft"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4"
+                        />
                         <span className="hidden sm:inline">Outlook</span>
                       </button>
                     </div>
@@ -1246,6 +1252,68 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       Create yours now.
                     </p>
                   </a>
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <a
+                      href="https://www.facebook.com/envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Facebook"
+                    >
+                      <Image
+                        src="/email/social-facebook.svg"
+                        alt="Facebook"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.instagram.com/envitefy/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="Instagram"
+                    >
+                      <Image
+                        src="/email/social-instagram.svg"
+                        alt="Instagram"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="TikTok"
+                    >
+                      <Image
+                        src="/email/social-tiktok.svg"
+                        alt="TikTok"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@Envitefy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      aria-label="YouTube"
+                    >
+                      <Image
+                        src="/email/social-youtube.svg"
+                        alt="YouTube"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                    </a>
+                  </div>
                 </footer>
               </div>
             </div>
@@ -1260,54 +1328,65 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           ></div>
         )}
 
-        <div
-          className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-          {...drawerTouchHandlers}
+      <div
+        className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        {...drawerTouchHandlers}
+      >
+        <ScrollBoundary
+          className="flex-1 overflow-y-auto"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
         >
-          <div
-            className="flex-1 overflow-y-auto"
-            style={{
-              WebkitOverflowScrolling: "touch",
-              overscrollBehavior: "contain",
-            }}
-          >
-            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-              <button
-                onClick={closeMobileMenu}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
-            </div>
-
-            <div className="p-6 pt-4 md:pt-6">
-              {activeView === "main" && renderMainMenu()}
-              {activeView === "headline" && renderHeadlineEditor}
-              {activeView === "images" && renderImagesEditor()}
-              {activeView === "design" && renderDesignEditor()}
-              {activeView === "details" && renderDetailsEditor()}
-              {activeView === "rsvp" && renderRsvpEditor()}
-              {config.advancedSections?.map((section) =>
-                activeView === section.id ? (
-                  <React.Fragment key={section.id}>
-                    {renderAdvancedEditor(section)}
-                  </React.Fragment>
-                ) : null
-              )}
-            </div>
+          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+            <button
+              onClick={closeMobileMenu}
+              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+            >
+              <ChevronLeft size={14} />
+              Back to preview
+            </button>
+            <span className="text-sm font-semibold text-slate-700">
+              Customize
+            </span>
           </div>
 
-          <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+          <div className="p-6 pt-4 md:pt-6">
+            {activeView === "main" && renderMainMenu()}
+            {activeView === "headline" && renderHeadlineEditor}
+            {activeView === "images" && renderImagesEditor()}
+            {activeView === "design" && renderDesignEditor()}
+            {activeView === "details" && renderDetailsEditor()}
+            {activeView === "rsvp" && renderRsvpEditor()}
+            {config.advancedSections?.map((section) =>
+              activeView === section.id ? (
+                <React.Fragment key={section.id}>
+                  {renderAdvancedEditor(section)}
+                </React.Fragment>
+              ) : null
+            )}
+          </div>
+        </ScrollBoundary>
+
+        <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+          <div className="flex gap-3">
+            {editEventId && (
+              <button
+                onClick={() => router.push(`/event/${editEventId}`)}
+                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+              >
+                Cancel
+              </button>
+            )}
             <button
               onClick={handlePublish}
               disabled={submitting}
-              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              className={`${
+                editEventId ? "flex-1" : "w-full"
+              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               {submitting
                 ? editEventId
@@ -1319,6 +1398,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </button>
           </div>
         </div>
+      </div>
 
         {!mobileMenuOpen && (
           <div className="md:hidden fixed bottom-4 right-4 z-30">
