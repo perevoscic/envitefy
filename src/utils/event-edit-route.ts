@@ -1,3 +1,50 @@
+import { buildEventPath } from "./event-url";
+
+/**
+ * Builds the edit link URL. For weddings, uses the event page URL format;
+ * for other event types, goes directly to customize.
+ */
+export const buildEditLink = (
+  eventId: string,
+  eventData: any,
+  eventTitle: string
+): string => {
+  try {
+    const normalizedCategory = String(eventData?.category || "")
+      .toLowerCase()
+      .trim();
+    const title = String(eventTitle || "").toLowerCase();
+    const templateId =
+      typeof (eventData as any)?.templateId === "string"
+        ? ((eventData as any).templateId as string)
+        : null;
+    const variationId =
+      typeof (eventData as any)?.variationId === "string"
+        ? ((eventData as any).variationId as string)
+        : null;
+
+    // Weddings - use event page URL format
+    // Check category (case-insensitive) or if templateId is "wedding" or title contains "wedding"
+    const isWedding =
+      normalizedCategory.includes("wedding") ||
+      title.includes("wedding") ||
+      templateId === "wedding";
+
+    if (isWedding) {
+      return buildEventPath(eventId, eventTitle, {
+        edit: eventId,
+        templateId: templateId || undefined,
+        variationId: variationId || undefined,
+      });
+    }
+
+    // For other event types, use resolveEditHref
+    return resolveEditHref(eventId, eventData, eventTitle);
+  } catch {
+    return resolveEditHref(eventId, eventData, eventTitle);
+  }
+};
+
 export const resolveEditHref = (
   eventId: string,
   eventData: any,

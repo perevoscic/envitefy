@@ -33,7 +33,7 @@ import {
   getRegistryBrandByUrl,
   normalizeRegistryLinks,
 } from "@/utils/registry-links";
-import { resolveEditHref } from "@/utils/event-edit-route";
+import { resolveEditHref, buildEditLink } from "@/utils/event-edit-route";
 import type { CSSProperties } from "react";
 import type { ImageColors } from "@/utils/image-colors";
 import { decorateAmazonUrl } from "@/utils/affiliates";
@@ -103,7 +103,9 @@ export async function generateMetadata(props: {
   );
 
   // Generate canonical URL
-  const url = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}`);
+  const url = await absoluteUrl(
+    `/event/${encodeURIComponent(awaitedParams.id)}`
+  );
 
   return {
     title: `${title} — Envitefy`,
@@ -537,6 +539,16 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+
+  // Handle edit redirect - if edit param is present and user is owner, redirect to customize
+  const editParam = String(
+    ((awaitedSearchParams as any)?.edit ?? "") as string
+  ).trim();
+  if (editParam && isOwner) {
+    const editUrl = resolveEditHref(row.id, data, title);
+    redirect(editUrl);
+  }
+
   const rawThumbnailValue =
     typeof (data as any)?.thumbnail === "string"
       ? ((data as any).thumbnail as string)
@@ -608,14 +620,13 @@ export default async function EventPage({
       typeof raw.name === "string" && raw.name.trim()
         ? (raw.name as string)
         : "Attachment";
-    const previewUrl =
-      attachmentIsInline
-        ? buildMediaUrl("attachment")
-        : typeof raw.dataUrl === "string" && raw.dataUrl
-        ? (raw.dataUrl as string)
-        : thumbnailIsInline
-        ? buildMediaUrl("thumbnail")
-        : null;
+    const previewUrl = attachmentIsInline
+      ? buildMediaUrl("attachment")
+      : typeof raw.dataUrl === "string" && raw.dataUrl
+      ? (raw.dataUrl as string)
+      : thumbnailIsInline
+      ? buildMediaUrl("thumbnail")
+      : null;
     return { name, type, dataUrl: previewUrl };
   })();
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
@@ -998,17 +1009,17 @@ export default async function EventPage({
       : null;
   const locationForHero =
     typeof data?.location === "string" ? (data.location as string) : "";
-  const {
-    street: heroLocationStreet,
-    cityStateZip: heroLocationCity,
-  } = splitAddress(locationForHero);
+  const { street: heroLocationStreet, cityStateZip: heroLocationCity } =
+    splitAddress(locationForHero);
   const heroLocationSegments: string[] = [];
   const pushLocationSegment = (value?: string | null) => {
     if (typeof value !== "string") return;
     const trimmed = value.trim();
     if (!trimmed) return;
     const lower = trimmed.toLowerCase();
-    if (heroLocationSegments.some((segment) => segment.toLowerCase() === lower)) {
+    if (
+      heroLocationSegments.some((segment) => segment.toLowerCase() === lower)
+    ) {
       return;
     }
     heroLocationSegments.push(trimmed);
@@ -1219,7 +1230,7 @@ export default async function EventPage({
               {!isReadOnly && isOwner && (
                 <>
                   <Link
-                    href={resolveEditHref(row.id, data, title)}
+                    href={buildEditLink(row.id, data, title)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
                     title="Edit event"
                   >
@@ -1464,7 +1475,7 @@ export default async function EventPage({
                 Attachment
               </p>
               <a
-                href={attachmentInfo?.dataUrl}
+                href={attachmentInfo?.dataUrl ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 download={attachmentInfo?.name}

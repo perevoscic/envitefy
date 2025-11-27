@@ -18,7 +18,7 @@ import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
-import { resolveEditHref } from "@/utils/event-edit-route";
+import { buildEditLink } from "@/utils/event-edit-route";
 import { Plane, Navigation, Bus } from "lucide-react";
 
 // Import constants from the customize page
@@ -883,9 +883,10 @@ export default function WeddingTemplateView({
     fontSize: "medium",
     themeId: "blush_peony_arch",
   };
+  // Prioritize theme.themeId from saved data over variationId prop
+  const themeId = theme.themeId || variationId || "blush_peony_arch";
   const currentTheme =
-    DESIGN_THEMES.find((t) => t.id === (variationId || theme.themeId)) ||
-    DESIGN_THEMES[0];
+    DESIGN_THEMES.find((t) => t.id === themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[theme.font as keyof typeof FONTS] || FONTS.playfair;
   const currentSize =
     FONT_SIZES[theme.fontSize as keyof typeof FONT_SIZES] || FONT_SIZES.medium;
@@ -978,7 +979,11 @@ export default function WeddingTemplateView({
     () =>
       [
         { id: "home", label: "Home", enabled: true },
-        { id: "schedule", label: "Schedule", enabled: sortedSchedule.length > 0 },
+        {
+          id: "schedule",
+          label: "Schedule",
+          enabled: sortedSchedule.length > 0,
+        },
         { id: "our-story", label: "Our Story", enabled: Boolean(story) },
         {
           id: "wedding-party",
@@ -1034,8 +1039,11 @@ export default function WeddingTemplateView({
             >
               <div className="flex-1">
                 <h1
-                  className={`${currentSize.h1} mb-2 ${currentFont.title} leading-tight`}
-                  style={titleColor}
+                  className={`${currentSize.h1} mb-2 leading-tight`}
+                  style={{
+                    ...titleColor,
+                    fontFamily: currentFont.preview,
+                  }}
                 >
                   {partner1} & {partner2}
                 </h1>
@@ -1073,7 +1081,7 @@ export default function WeddingTemplateView({
               {isOwner && !isReadOnly && (
                 <div className="flex items-center gap-2 ml-4">
                   <Link
-                    href={resolveEditHref(eventId, eventData, eventTitle)}
+                    href={buildEditLink(eventId, eventData, eventTitle)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
                     title="Edit event"
                   >
