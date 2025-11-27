@@ -25,7 +25,6 @@ import {
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
@@ -54,11 +53,6 @@ import WeddingTemplateView from "@/components/WeddingTemplateView";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
-import {
-  getEventAccessCookieName,
-  verifyEventAccessCookieValue,
-} from "@/lib/event-access";
-import AccessCodeGate from "@/components/AccessCodeGate";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 
 export const dynamic = "force-dynamic";
@@ -101,8 +95,7 @@ export async function generateMetadata(props: {
     (typeof data?.title === "string" && data.title) || row?.title || "Event";
 
   // Only expose a generic description publicly to avoid leaking private details
-  const description =
-    "Sign in with the invited email or phone to view this event’s details securely.";
+  const description = "View the event details, schedule, and RSVP right here.";
 
   // Generate OG image URL
   const img = await absoluteUrl(
@@ -196,101 +189,6 @@ const timeTokensEquivalent = (
   const normalize = (s: string) =>
     s.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
   return normalize(a) === normalize(b);
-};
-
-type SensitiveSectionFlags = {
-  roster: boolean;
-  meet: boolean;
-  practice: boolean;
-  logistics: boolean;
-  volunteers: boolean;
-};
-
-const computeSensitiveSectionFlags = (
-  advancedSections: any
-): SensitiveSectionFlags => {
-  const roster =
-    Array.isArray(advancedSections?.roster?.athletes) &&
-    advancedSections.roster.athletes.length > 0;
-  const meet = Boolean(
-    advancedSections?.meet?.session ||
-      advancedSections?.meet?.sessionNumber ||
-      advancedSections?.meet?.warmUpTime ||
-      advancedSections?.meet?.marchInTime ||
-      advancedSections?.meet?.startApparatus ||
-      (advancedSections?.meet?.rotationOrder?.length ?? 0) > 0 ||
-      advancedSections?.meet?.judgingNotes ||
-      advancedSections?.meet?.scoresLink
-  );
-  const practice =
-    Array.isArray(advancedSections?.practice?.blocks) &&
-    advancedSections.practice.blocks.length > 0;
-  const logistics = (() => {
-    const logisticsData = advancedSections?.logistics;
-    if (!logisticsData) return false;
-    return (
-      Boolean(logisticsData.travelMode) ||
-      Boolean(logisticsData.transport) ||
-      Boolean(logisticsData.hotel) ||
-      Boolean(logisticsData.hotelName) ||
-      Boolean(logisticsData.meals) ||
-      Boolean(logisticsData.mealPlan) ||
-      Boolean(logisticsData.callTime) ||
-      Boolean(logisticsData.pickupWindow) ||
-      Boolean(logisticsData.feeAmount) ||
-      Boolean(logisticsData.paymentLink) ||
-      Boolean(logisticsData.feeDueDate) ||
-      Boolean(logisticsData.hotelAddress) ||
-      Boolean(logisticsData.hotelCheckIn) ||
-      (logisticsData.forms?.length ?? 0) > 0 ||
-      (logisticsData.waiverLinks?.length ?? 0) > 0
-    );
-  })();
-  const volunteers = (() => {
-    const volunteersData = advancedSections?.volunteers;
-    if (!volunteersData) return false;
-    return (
-      (volunteersData?.volunteerSlots?.length ?? 0) > 0 ||
-      (volunteersData?.slots?.length ?? 0) > 0 ||
-      (volunteersData?.carpoolOffers?.length ?? 0) > 0 ||
-      (volunteersData?.carpools?.length ?? 0) > 0
-    );
-  })();
-
-  return { roster, meet, practice, logistics, volunteers };
-};
-
-const redactAdvancedSectionsForPublic = (advancedSections: any) => {
-  if (!advancedSections || typeof advancedSections !== "object") return undefined;
-  const clone: any = { ...advancedSections };
-  if ("roster" in clone) clone.roster = { locked: true };
-  if ("meet" in clone) clone.meet = { locked: true };
-  if ("practice" in clone) clone.practice = { locked: true };
-  if ("logistics" in clone) clone.logistics = { locked: true };
-  if ("volunteers" in clone) clone.volunteers = { locked: true };
-  return clone;
-};
-
-const sanitizeEventDataForPublic = (data: any) => {
-  if (!data || typeof data !== "object") return data;
-  const sanitized: any = { ...data };
-  if (data?.advancedSections) {
-    sanitized.advancedSections = redactAdvancedSectionsForPublic(
-      data.advancedSections
-    );
-  }
-  if (data?.customFields?.advancedSections) {
-    sanitized.customFields = {
-      ...(data.customFields || {}),
-      advancedSections: redactAdvancedSectionsForPublic(
-        data.customFields.advancedSections
-      ),
-    };
-  }
-  if ("accessControl" in sanitized) {
-    delete sanitized.accessControl;
-  }
-  return sanitized;
 };
 
 const buildFallbackRangeLabel = (
@@ -688,18 +586,6 @@ export default async function EventPage({
     data && typeof data.accessControl === "object"
       ? { ...data.accessControl }
       : null;
-  const passcodeHash =
-    accessControlRaw && typeof accessControlRaw.passcodeHash === "string"
-      ? (accessControlRaw.passcodeHash as string)
-      : null;
-  const passcodeHint =
-    accessControlRaw && typeof accessControlRaw.passcodeHint === "string"
-      ? (accessControlRaw.passcodeHint as string)
-      : null;
-  const passcodeRequired =
-    Boolean(passcodeHash) &&
-    (accessControlRaw?.mode === "access-code" ||
-      accessControlRaw?.requirePasscode !== false);
   if (data?.accessControl) {
     data.accessControl = {
       ...accessControlRaw,
@@ -707,20 +593,6 @@ export default async function EventPage({
       passcodePlain: undefined,
     };
   }
-  const cookieStore = cookies();
-  const passcodeCookieName = passcodeRequired
-    ? getEventAccessCookieName(row.id)
-    : null;
-  const hasPasscodeCookie =
-    passcodeRequired && passcodeHash
-      ? verifyEventAccessCookieValue(
-          passcodeCookieName
-            ? cookieStore.get(passcodeCookieName)?.value
-            : undefined,
-          row.id,
-          passcodeHash
-        )
-      : false;
   const numberOfGuests =
     typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0
       ? data.numberOfGuests
@@ -1117,41 +989,7 @@ export default async function EventPage({
     ? "readonly"
     : "guest";
 
-  const advancedSectionsForFlags =
-    (data?.advancedSections as any) ||
-    (data?.customFields?.advancedSections as any) ||
-    {};
-  const protectedSectionFlags = computeSensitiveSectionFlags(
-    advancedSectionsForFlags
-  );
-  const passcodeUnlocked = passcodeRequired && hasPasscodeCookie;
-  const viewerHasFullAccess = passcodeRequired
-    ? isOwner || recipientAccepted || passcodeUnlocked
-    : isOwner || recipientAccepted;
-  const shouldProtectSensitiveSections = !viewerHasFullAccess;
-  const clientSafeEventData = shouldProtectSensitiveSections
-    ? sanitizeEventDataForPublic(data)
-    : data;
-  const hasPrivateAccess = isOwner || recipientAccepted;
-  const gatingReason:
-    | "access-code"
-    | "unauthenticated"
-    | "unauthorized"
-    | "pending"
-    | null = passcodeRequired
-    ? viewerHasFullAccess
-      ? null
-      : "access-code"
-    : !sessionEmail
-    ? "unauthenticated"
-    : hasPrivateAccess
-    ? null
-    : recipientPending
-    ? "pending"
-    : "unauthorized";
-  const authCtaHref = `/api/auth/signin?callbackUrl=${encodeURIComponent(
-    shareUrl
-  )}`;
+  const clientSafeEventData = data;
 
   const heroDateLine = formattedTimeAndDate.date || whenLabel || null;
   const heroTimeLine =
@@ -1209,240 +1047,6 @@ export default async function EventPage({
     !isBirthdayTemplate &&
     !isWeddingTemplate;
 
-  if (gatingReason) {
-    const needsAccessCode = gatingReason === "access-code";
-    if (isSimpleTemplate) {
-      return (
-        <SimpleTemplateView
-          eventId={row.id}
-          eventData={clientSafeEventData}
-          eventTitle={title}
-          isOwner={isOwner}
-          isReadOnly={isReadOnly}
-          viewerKind={viewerKind}
-          shareUrl={shareUrl}
-          sessionEmail={sessionEmail}
-          protectSensitiveSections={shouldProtectSensitiveSections}
-          protectedSectionFlags={protectedSectionFlags}
-          lockedReason={gatingReason as any}
-          authCtaHref={authCtaHref}
-          accessCodeHint={passcodeHint}
-        />
-      );
-    }
-
-    return (
-      <main
-        className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]"
-        style={
-          {
-            ["--theme-hero-gradient"]: heroGradient,
-          } as CSSProperties
-        }
-      >
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(){
-                var value = ${JSON.stringify(heroGradient)};
-                function apply(){
-                  try { document.documentElement.style.setProperty('--theme-hero-gradient', value); } catch {}
-                }
-                try { apply(); setTimeout(apply, 0); setTimeout(apply, 200); } catch {}
-              })();
-            `,
-          }}
-        />
-        <div
-          className="event-theme-scope space-y-6"
-          style={themeStyleVars as CSSProperties}
-        >
-          <section
-            className="event-theme-header relative overflow-visible rounded-2xl border shadow-lg px-1 py-6 sm:px-2 min-h-[220px] sm:min-h-[300px]"
-            style={headerUserStyle}
-          >
-            {headerImageUrl && <div style={headerOverlayStyle} />}
-            {profileImageUrl && (
-              <div
-                className="absolute left-4 bottom-[-12px] sm:left-6 sm:bottom-[-16px]"
-                style={{ zIndex: 2 }}
-              >
-                <img
-                  src={profileImageUrl}
-                  alt="profile"
-                  className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl border-2 border-border object-cover shadow-md"
-                />
-              </div>
-            )}
-            <div style={headerContentStyle}>
-              <div
-                className={`absolute inset-0 flex h-full w-full px-1 sm:px-2 ${
-                  titleVAlign === "top"
-                    ? "items-start"
-                    : titleVAlign === "middle"
-                    ? "items-center"
-                    : "items-end"
-                } ${
-                  titleHAlign === "left"
-                    ? "justify-start"
-                    : titleHAlign === "center"
-                    ? "justify-center"
-                    : "justify-end"
-                }`}
-              >
-                <h1
-                  className={`${
-                    titleWeight === "bold"
-                      ? "font-bold"
-                      : titleWeight === "semibold"
-                      ? "font-semibold"
-                      : "font-normal"
-                  } ${
-                    titleHAlign === "center"
-                      ? "text-center"
-                      : titleHAlign === "right"
-                      ? "text-right"
-                      : "text-left"
-                  } ${
-                    titleColor
-                      ? ""
-                      : headerImageUrl
-                      ? "text-white drop-shadow-lg"
-                      : "text-foreground"
-                  }`}
-                  style={{
-                    color: titleColor || undefined,
-                    fontFamily:
-                      titleFont === "pacifico"
-                        ? "var(--font-pacifico)"
-                        : titleFont === "montserrat"
-                        ? "var(--font-montserrat)"
-                        : titleFont === "geist"
-                        ? "var(--font-geist-sans)"
-                        : titleFont === "mono"
-                        ? "var(--font-geist-mono)"
-                        : titleFont === "poppins"
-                        ? "var(--font-poppins)"
-                        : titleFont === "raleway"
-                        ? "var(--font-raleway)"
-                        : titleFont === "playfair"
-                        ? "var(--font-playfair)"
-                        : titleFont === "dancing"
-                        ? "var(--font-dancing)"
-                        : titleFont === "serif"
-                        ? 'Georgia, Cambria, "Times New Roman", Times, serif'
-                        : titleFont === "system"
-                        ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
-                        : undefined,
-                    fontSize: `${titleSize || 28}px`,
-                    transform:
-                      titleVAlign === "middle" ? "translateY(94px)" : undefined,
-                  }}
-                >
-                  {title}
-                </h1>
-              </div>
-            </div>
-            <div className="absolute top-4 left-4 z-40 text-xs font-semibold uppercase tracking-wide text-white/80">
-              <span className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 backdrop-blur">
-                Locked
-                <span className="hidden sm:inline text-white/70">
-                  {needsAccessCode ? "Access code required" : "Private invite required"}
-                </span>
-              </span>
-            </div>
-            {!needsAccessCode && (
-              <div className="absolute top-4 right-4 z-40">
-                <Link
-                  href={authCtaHref}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-lg backdrop-blur transition-colors hover:bg-white"
-                >
-                  Sign in / Sign up
-                </Link>
-              </div>
-            )}
-            {(heroDateLine || heroTimeLine || heroLocationSegments.length > 0) && (
-              <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 z-30">
-                <div className="grid gap-1 rounded-2xl bg-black/30 px-4 py-3 text-white backdrop-blur">
-                  {heroDateLine && (
-                    <p className="text-base font-semibold leading-tight">
-                      {heroDateLine}
-                    </p>
-                  )}
-                  {heroTimeLine && (
-                    <p className="text-sm font-medium">{heroTimeLine}</p>
-                  )}
-                  {heroLocationSegments.map((segment) => (
-                    <p key={segment} className="text-sm">
-                      {segment}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="rounded-2xl border px-5 sm:px-7 py-8 shadow-sm space-y-4 bg-white">
-            {needsAccessCode ? (
-              <>
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold text-neutral-900">
-                    Enter the team access code
-                  </h2>
-                  <p className="text-neutral-700 leading-relaxed">
-                    This invite is protected so only families with the link and password can view it. Ask your coach for the access code and enter it below.
-                  </p>
-                  {passcodeHint && (
-                    <p className="text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
-                      Hint from the organizer: {passcodeHint}
-                    </p>
-                  )}
-                </div>
-                <AccessCodeGate eventId={row.id} hint={passcodeHint} />
-                <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                  <p className="font-semibold">How it works</p>
-                  <p>Open link -&gt; see lock screen -&gt; enter the shared code -&gt; full event unlocks.</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold text-neutral-900">
-                    Sign in to view this event
-                  </h2>
-                  <p className="text-neutral-700 leading-relaxed">
-                    For privacy, the roster, meet details, practice schedule, logistics, volunteers, carpool offers, and RSVP are hidden until you sign in with the email or phone number the organizer used to invite you.
-                  </p>
-                  {gatingReason === "pending" && (
-                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      We see an invitation is pending for your account. Accept it from your inbox, then refresh to continue.
-                    </p>
-                  )}
-                  {gatingReason === "unauthorized" && (
-                    <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                      This event is limited to invited contacts. Ask the organizer to share it with your account to get access.
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Link
-                    href={authCtaHref}
-                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors"
-                  >
-                    Sign in / Sign up
-                  </Link>
-                  <span className="text-sm text-neutral-600">
-                    Use the same email or phone number that received this invite.
-                  </span>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      </main>
-    );
-  }
-
   // If it's a birthday template, render the template view
   if (isBirthdayTemplate) {
     return (
@@ -1491,8 +1095,6 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
-        protectSensitiveSections={shouldProtectSensitiveSections}
-        protectedSectionFlags={protectedSectionFlags}
       />
     );
   }

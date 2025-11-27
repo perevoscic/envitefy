@@ -30,7 +30,6 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventActions from "@/components/EventActions";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
-import AccessCodeGate from "@/components/AccessCodeGate";
 
 type ThemeSpec = {
   id: string;
@@ -59,9 +58,6 @@ type SimpleTemplateViewProps = {
     logistics?: boolean;
     volunteers?: boolean;
   };
-  lockedReason?: "access-code" | "unauthenticated" | "unauthorized" | "pending" | null;
-  authCtaHref?: string | null;
-  accessCodeHint?: string | null;
 };
 
 export default function SimpleTemplateView({
@@ -75,9 +71,6 @@ export default function SimpleTemplateView({
   sessionEmail,
   protectSensitiveSections: protectSensitiveSectionsProp = false,
   protectedSectionFlags: protectedSectionFlagsProp = {},
-  lockedReason = null,
-  authCtaHref = null,
-  accessCodeHint = null,
 }: SimpleTemplateViewProps) {
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState("yes");
@@ -126,11 +119,18 @@ export default function SimpleTemplateView({
 
   const protectSensitiveSections = Boolean(protectSensitiveSectionsProp);
   const protectedSectionFlags = protectedSectionFlagsProp || {};
-  const isLocked = Boolean(lockedReason);
-  const isAccessCodeLock = lockedReason === "access-code";
+  const isLocked = false;
 
   // Use state data if available, fallback to prop
   const currentData = eventDataState || eventData;
+  const normalizedCategory = (() => {
+    const raw = currentData?.category;
+    if (typeof raw === "string") {
+      return raw.trim().toLowerCase();
+    }
+    return "";
+  })();
+  const showRsvpSignInRequired = normalizedCategory === "gymnastics";
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -1985,26 +1985,6 @@ export default function SimpleTemplateView({
                   </div>
                 </div>
               )}
-              {isLocked && authCtaHref && (
-                <div className="absolute top-3 right-3 z-40">
-                  <Link
-                    href={authCtaHref}
-                    className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-lg backdrop-blur transition-colors hover:bg-white"
-                  >
-                    Sign in / Sign up
-                  </Link>
-                </div>
-              )}
-              {isLocked && (
-                <div className="absolute top-3 left-3 z-40 text-xs font-semibold uppercase tracking-wide text-white/80">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 backdrop-blur">
-                    Locked
-                    <span className="hidden sm:inline text-white/70">
-                      Private invite required
-                    </span>
-                  </span>
-                </div>
-              )}
               <div className="pr-32">
                 <h1
                   className={`${headingSizeClass} mb-2 leading-tight ${textClass}`}
@@ -2082,59 +2062,6 @@ export default function SimpleTemplateView({
               )}
             </div>
 
-            {isLocked ? (
-              <section className="bg-white text-neutral-900 px-6 md:px-10 py-10 border-t border-white/10">
-                <div className="max-w-2xl mx-auto space-y-4">
-                  <h2 className="text-2xl font-semibold text-neutral-900">
-                    {isAccessCodeLock ? "Enter the team access code" : "Sign in to view this event"}
-                  </h2>
-                  <p className="text-neutral-700 leading-relaxed">
-                    {isAccessCodeLock
-                      ? "This invite is protected so only families with the link and password can view it. Ask your coach for the access code and enter it below."
-                      : "For privacy, the roster, meet details, practice schedule, logistics, volunteers, carpool offers, and RSVP are hidden until you sign in with the email or phone number the organizer used to invite you."}
-                  </p>
-                  {!isAccessCodeLock && lockedReason === "pending" && (
-                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      We see an invitation is pending for your account. Accept it from your inbox, then refresh to continue.
-                    </p>
-                  )}
-                  {!isAccessCodeLock && lockedReason === "unauthorized" && (
-                    <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                      This event is limited to invited contacts. Ask the organizer to share it with your account to get access.
-                    </p>
-                  )}
-                  {isAccessCodeLock ? (
-                    <>
-                      {accessCodeHint && (
-                        <p className="text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
-                          Hint from the organizer: {accessCodeHint}
-                        </p>
-                      )}
-                      <AccessCodeGate eventId={eventId} hint={accessCodeHint} />
-                      <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                        <p className="font-semibold">How it works</p>
-                        <p>Open link -&gt; see lock screen -&gt; enter the shared code -&gt; the full event unlocks.</p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                      {authCtaHref && (
-                        <Link
-                          href={authCtaHref}
-                          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors"
-                        >
-                          Sign in / Sign up
-                        </Link>
-                      )}
-                      <span className="text-sm text-neutral-600">
-                        Use the same email or phone number that received this invite.
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </section>
-            ) : (
-              <React.Fragment>
             {/* Details Section */}
             <section
               id="details"
@@ -2321,7 +2248,7 @@ export default function SimpleTemplateView({
                           </label>
                         </div>
                       </div>
-                      {!isSignedIn && (
+                      {showRsvpSignInRequired && !isSignedIn && (
                         <div className="text-sm text-center text-red-100 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                           Sign in to confirm attendance and view roster details.
                         </div>
@@ -2491,8 +2418,6 @@ export default function SimpleTemplateView({
                 </a>
               </div>
             </footer>
-              </React.Fragment>
-            )}
           </div>
         </div>
       </div>
