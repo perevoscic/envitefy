@@ -297,6 +297,7 @@ const resolveInstallGuide = (win: Window): InstallGuide => {
 
 const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
 const DEBUG_STORE_KEY = "__snapInstallDebugLog";
+const INSTALLED_FLAG_KEY = "snapmydate:pwa-installed";
 
 if (typeof window !== "undefined") {
   const w = window as SnapWindow;
@@ -371,6 +372,39 @@ export default function PwaInstallButton({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
+  const [installedState, setInstalledState] = useState(false);
+
+  const markInstalled = useCallback(
+    (reason: string, meta?: Record<string, unknown>) => {
+      setInstalledState(true);
+      setCanInstall(false);
+      setShowIosTip(false);
+      setMaybeInstallable(false);
+      setExpanded(false);
+      setHideUi(true);
+      try {
+        localStorage.setItem(INSTALLED_FLAG_KEY, "1");
+      } catch {
+        // ignore
+      }
+      pushDebug(reason, meta);
+      return true;
+    },
+    [pushDebug]
+  );
+
+  // Check early if we have previously persisted an install event
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem(INSTALLED_FLAG_KEY);
+      if (stored === "1") {
+        markInstalled("persisted install flag found");
+      }
+    } catch {
+      // ignore
+    }
+  }, [markInstalled]);
 
   // Helper to check if app is installed (synchronous check)
   const checkIsInstalled = useCallback(() => {
@@ -419,12 +453,9 @@ export default function PwaInstallButton({
     const checkInstalled = () => {
       const standalone = checkIsInstalled();
       if (standalone) {
-        setCanInstall(false);
-        setHideUi(true);
-        pushDebug("display-mode standalone detected; hiding CTA", {
+        return markInstalled("display-mode standalone detected; hiding CTA", {
           referrer: document.referrer || "",
         });
-        return true;
       }
       return false;
     };
@@ -467,7 +498,9 @@ export default function PwaInstallButton({
             clearInterval(intervalId);
             intervalId = null;
           }
+          return;
         }
+        void maybeCheckRelated();
       }, 2000); // Check every 2 seconds
     };
 
@@ -478,16 +511,13 @@ export default function PwaInstallButton({
         if (anyNav.getInstalledRelatedApps) {
           const related = await anyNav.getInstalledRelatedApps();
           if (Array.isArray(related) && related.length > 0) {
-            setCanInstall(false);
-            setHideUi(true);
-            pushDebug("checked installed related apps; hiding CTA", {
-              count: Array.isArray(related) ? related.length : null,
-            });
             if (intervalId) {
               clearInterval(intervalId);
               intervalId = null;
             }
-            return true;
+            return markInstalled("checked installed related apps; hiding CTA", {
+              count: Array.isArray(related) ? related.length : null,
+            });
           }
           pushDebug("checked installed related apps", {
             count: Array.isArray(related) ? related.length : null,
@@ -534,7 +564,7 @@ export default function PwaInstallButton({
         (mqlMinimalUi as any)?.removeListener?.(onChange);
       }
     };
-  }, []);
+  }, [checkIsInstalled, markInstalled, pushDebug]);
 
   // Nudge the FAB above the reCAPTCHA badge when present
   useEffect(() => {
@@ -685,17 +715,12 @@ export default function PwaInstallButton({
 
   useEffect(() => {
     const onInstalled = () => {
-      setCanInstall(false);
-      setShowIosTip(false);
-      setMaybeInstallable(false);
-      setExpanded(false);
-      setHideUi(true);
+      markInstalled("appinstalled event observed");
       deferredPromptRef.current = null;
-      pushDebug("appinstalled event observed");
     };
     window.addEventListener("appinstalled", onInstalled);
     return () => window.removeEventListener("appinstalled", onInstalled);
-  }, []);
+  }, [markInstalled]);
 
   // Observe hero visibility
   useEffect(() => {
@@ -795,7 +820,7 @@ export default function PwaInstallButton({
 
   // Additional safety check: hide if running in standalone mode
   // This check runs synchronously on every render to ensure we never show when installed
-  const isInstalled = checkIsInstalled();
+  const isInstalled = installedState || checkIsInstalled();
   if (isInstalled) return null;
 
   if (hideUi) return null;
