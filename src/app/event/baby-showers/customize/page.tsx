@@ -118,6 +118,54 @@ const DESIGN_THEMES = [
     accent: "text-[#3b82f6]",
     previewColor: "bg-[#dbeafe]",
   },
+  {
+    id: "sunrise_sorbet",
+    name: "Sunrise Sorbet",
+    category: "Gradient",
+    bg: "",
+    bgStyle: {
+      backgroundImage:
+        "linear-gradient(135deg, #ffe0c8 0%, #ffb3c0 40%, #ff9fe1 80%)",
+    },
+    text: "text-slate-900",
+    accent: "text-[#d14b8f]",
+    previewColor: "",
+    previewStyle: {
+      backgroundImage: "linear-gradient(135deg, #ffe8d8, #ffc7d9, #ffb5ef)",
+    },
+  },
+  {
+    id: "minty_aurora",
+    name: "Minty Aurora",
+    category: "Gradient",
+    bg: "",
+    bgStyle: {
+      backgroundImage:
+        "linear-gradient(145deg, #b7f8d0 0%, #9fe9ff 50%, #d4c6ff 100%)",
+    },
+    text: "text-slate-900",
+    accent: "text-[#0f766e]",
+    previewColor: "",
+    previewStyle: {
+      backgroundImage: "linear-gradient(145deg, #c7fce0, #b7f0ff, #e5dbff)",
+    },
+  },
+  {
+    id: "golden_hour",
+    name: "Golden Hour",
+    category: "Warm Glow",
+    bg: "",
+    bgStyle: {
+      backgroundImage:
+        "linear-gradient(135deg, #fff3d6 0%, #ffd59f 55%, #f7b267 100%)",
+    },
+    text: "text-[#5c2c00]",
+    accent: "text-[#d97706]",
+    previewColor: "",
+    previewStyle: {
+      backgroundImage: "linear-gradient(135deg, #fff7e5, #ffe1b8, #f8c089)",
+    },
+  },
 ];
 
 const INITIAL_DATA = {
@@ -472,9 +520,13 @@ export default function BabyShowerTemplateCustomizePage() {
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+  const headingFontStyle = {
+    fontFamily: currentFont.preview || "var(--font-playfair)",
+  };
 
   // Detect dark background for title color
   const isDarkBackground = useMemo(() => {
+    if (typeof currentTheme?.isDark === "boolean") return currentTheme.isDark;
     const bg = currentTheme?.bg?.toLowerCase() ?? "";
     const darkTokens = [
       "black",
@@ -673,14 +725,7 @@ export default function BabyShowerTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [
-    submitting,
-    data,
-    template.id,
-    editEventId,
-    router,
-    heroImageSrc,
-  ]);
+  }, [submitting, data, template.id, editEventId, router, heroImageSrc]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -903,8 +948,10 @@ export default function BabyShowerTemplateCustomizePage() {
               <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
                 <div
                   className={`w-3 h-3 rounded-full border shadow-sm ${
-                    currentTheme.previewColor.split(" ")[0]
+                    (currentTheme.previewColor || "").split(" ")[0] ||
+                    "bg-slate-200"
                   }`}
+                  style={currentTheme.previewStyle}
                 ></div>
                 {currentTheme.name || "Select a theme"}
               </div>
@@ -940,7 +987,10 @@ export default function BabyShowerTemplateCustomizePage() {
                 }`}
               >
                 <div
-                  className={`h-12 w-full rounded-md mb-3 ${theme.previewColor} border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden`}
+                  className={`h-12 w-full rounded-md mb-3 ${
+                    theme.previewColor || ""
+                  } border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden`}
+                  style={theme.previewStyle}
                 ></div>
                 <span className="text-sm font-medium text-slate-700 block truncate">
                   {theme.name}
@@ -957,26 +1007,25 @@ export default function BabyShowerTemplateCustomizePage() {
           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
             Typography
           </label>
-          <div className="relative">
-            <select
-              value={data.theme.font}
-              onChange={(e) => updateTheme("font", e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-lg appearance-none text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-            >
-              {Object.entries(FONTS).map(([key, font]) => (
-                <option
-                  key={key}
-                  value={key}
+          <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+            {Object.entries(FONTS).map(([key, font]) => (
+              <button
+                key={key}
+                onClick={() => updateTheme("font", key)}
+                className={`border rounded-lg p-3 text-left transition-colors ${
+                  data.theme.font === key
+                    ? "border-indigo-600 bg-indigo-50"
+                    : "border-slate-200 hover:border-indigo-300"
+                }`}
+              >
+                <div
+                  className="text-base font-semibold"
                   style={{ fontFamily: font.preview }}
                 >
                   {font.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-3 top-3.5 text-slate-400 pointer-events-none"
-              size={16}
-            />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1308,6 +1357,7 @@ export default function BabyShowerTemplateCustomizePage() {
             } ${
               currentFont.preview
             } transition-colors duration-500 relative z-0`}
+            style={currentTheme.bgStyle}
           >
             <div className="relative z-10">
               <div
@@ -1317,7 +1367,8 @@ export default function BabyShowerTemplateCustomizePage() {
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
                     style={{
-                      fontFamily: currentFont.preview,
+                      fontFamily:
+                        currentFont.preview || "var(--font-playfair)",
                       ...(titleColor || {}),
                     }}
                   >
@@ -1369,7 +1420,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="text-center py-12 border-t border-white/10">
                   <h2
                     className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={titleColor}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     Hosted By
                   </h2>
@@ -1392,7 +1443,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="text-center py-12 border-t border-white/10">
                   <h2
                     className={`text-2xl mb-4 ${currentTheme.accent}`}
-                    style={titleColor}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     Location
                   </h2>
@@ -1410,7 +1461,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
-                    style={titleColor}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     About Baby
                   </h2>
@@ -1426,7 +1477,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
                   <h2
                     className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
-                    style={titleColor}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     About {data.momName}
                   </h2>
@@ -1442,7 +1493,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="py-12 border-t border-white/10">
                   <h2
                     className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
-                    style={titleColor}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     Photo Gallery
                   </h2>
@@ -1469,7 +1520,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="text-center py-12 border-t border-white/10">
                   <h2
                     className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={titleColor}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     Registry
                   </h2>
@@ -1495,6 +1546,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 <section className="max-w-3xl mx-auto text-center px-4 md:px-0">
                   <h2
                     className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
+                    style={{ ...titleColor, ...headingFontStyle }}
                   >
                     RSVP
                   </h2>

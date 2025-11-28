@@ -16,6 +16,16 @@ declare global {
   var __pgPool: Pool | undefined;
 }
 
+function isTransientPgError(err: unknown): boolean {
+  const anyErr = err as any;
+  const code = anyErr?.code as string | undefined;
+  const message = String(anyErr?.message || "");
+  return (
+    (code && ["ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code)) ||
+    /timeout|terminat|refused|getaddrinfo|not known/i.test(message)
+  );
+}
+
 function getPool(): Pool {
   if (!global.__pgPool) {
     const databaseUrl = process.env.DATABASE_URL as string | undefined;
@@ -192,10 +202,19 @@ export async function setUserAdminByEmail(email: string, isAdmin: boolean): Prom
 }
 
 export async function getIsAdminByEmail(email: string): Promise<boolean> {
-  await ensureUsersHasAdminAndMetricsColumns();
-  const lower = email.toLowerCase();
-  const res = await query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [lower]);
-  return Boolean(res.rows[0]?.is_admin);
+  try {
+    await ensureUsersHasAdminAndMetricsColumns();
+    const lower = email.toLowerCase();
+    const res = await query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [lower]);
+    return Boolean(res.rows[0]?.is_admin);
+  } catch (err) {
+    if (isTransientPgError(err)) {
+      console.warn("[db] getIsAdminByEmail: database unavailable, defaulting isAdmin=false", (err as any)?.message || err);
+      return false;
+    }
+    console.error("[db] getIsAdminByEmail failed, defaulting isAdmin=false", err);
+    return false;
+  }
 }
 
 export type AdminOverviewStats = {
@@ -1731,4 +1750,3 @@ export async function upsertSignupForm(eventId: string, form: any): Promise<Sign
     throw err;
   }
 }
-

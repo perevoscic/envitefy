@@ -544,7 +544,30 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
           }
 
-          if (existing.themeId) setThemeId(existing.themeId);
+          if (existing.themeId) {
+            const themeExists = config.themes.find(
+              (t) => t.id === existing.themeId
+            );
+            setThemeId(themeExists ? existing.themeId : config.themes[0]?.id);
+          }
+
+          // Validate font + size after state settles
+          setTimeout(() => {
+            setData((prev) => {
+              const fontExists = FOOTBALL_FONTS.find(
+                (f) => f.id === prev.fontId
+              );
+              const sizeExists = FONT_SIZE_OPTIONS.find(
+                (o) => o.id === prev.fontSize
+              );
+              if (fontExists && sizeExists) return prev;
+              return {
+                ...prev,
+                fontId: fontExists ? prev.fontId : FOOTBALL_FONTS[0]?.id,
+                fontSize: sizeExists ? prev.fontSize : "medium",
+              };
+            });
+          }, 100);
         } catch {
           // ignore to keep edit usable
         }
@@ -794,6 +817,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
+    const rsvpCopy = {
+      menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
+      menuDesc: config.rsvpCopy?.menuDesc || "RSVP settings.",
+      editorTitle: config.rsvpCopy?.editorTitle || "RSVP",
+      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
+      deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
+      helperText:
+        config.rsvpCopy?.helperText ||
+        "The RSVP card in the preview updates with these settings.",
+    };
+
     const handlePublish = useCallback(async () => {
       if (submitting) return;
       setSubmitting(true);
@@ -808,10 +842,56 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
-        const heroToSave =
-          data.hero && !/^blob:|^data:/i.test(data.hero)
-            ? data.hero
-            : config.defaultHero;
+        // Convert blob hero to data URL so saved preview matches editor
+        const heroToSave = await (async () => {
+          if (!data.hero) return config.defaultHero;
+          if (/^data:/i.test(data.hero)) return data.hero;
+          if (/^blob:/i.test(data.hero)) {
+            try {
+              const response = await fetch(data.hero);
+              const blob = await response.blob();
+              const reader = new FileReader();
+              return await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => resolve((reader.result as string) || config.defaultHero);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } catch {
+              return config.defaultHero;
+            }
+          }
+          return data.hero;
+        })();
+
+        const validThemeId =
+          themeId && config.themes.find((t) => t.id === themeId)
+            ? themeId
+            : config.themes[0]?.id;
+        const themeToSave =
+          config.themes.find((t) => t.id === validThemeId) ||
+          config.themes[0];
+        const currentSelectedFont =
+          FOOTBALL_FONTS.find((f) => f.id === data.fontId) ||
+          FOOTBALL_FONTS[0];
+        const currentSelectedSize =
+          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
+          FONT_SIZE_OPTIONS[1];
+        const validFontId = currentSelectedFont?.id || data.fontId;
+        const validFontSize = currentSelectedSize?.id || data.fontSize;
+        const addressToSave =
+          data.extra?.stadiumAddress ||
+          data.extra?.address ||
+          locationParts ||
+          undefined;
+
+        const templateConfigForSave = {
+          slug: config.slug,
+          displayName: config.displayName,
+          category: config.category,
+          detailFields: config.detailFields,
+          rsvpCopy,
+          fontHref: FOOTBALL_GOOGLE_FONTS_URL,
+        };
 
         const payload: any = {
           title: data.title || config.displayName,
@@ -834,9 +914,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             rsvpDeadline: data.rsvpDeadline || undefined,
             numberOfGuests: 0,
             templateId: config.slug,
-            themeId,
-            fontId: data.fontId,
-            fontSize: data.fontSize,
+            templateConfig: templateConfigForSave,
+            themeId: validThemeId,
+            theme: themeToSave,
+            fontId: validFontId,
+            fontSize: validFontSize,
+            fontFamily: currentSelectedFont?.css,
+            fontSizeClass: currentSelectedSize?.className,
+            fontHref: FOOTBALL_GOOGLE_FONTS_URL,
             customFields: {
               ...data.extra,
               advancedSections: advancedState,
@@ -844,6 +929,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             advancedSections: advancedState,
             heroImage: heroToSave,
             extra: data.extra,
+            address: addressToSave,
             ...(data.passcodeRequired && data.passcode
               ? {
                   accessControl: {
@@ -915,20 +1001,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.displayName,
       config.slug,
       config.defaultHero,
+      rsvpCopy,
       editEventId,
       router,
     ]);
-
-    const rsvpCopy = {
-      menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
-      menuDesc: config.rsvpCopy?.menuDesc || "RSVP settings.",
-      editorTitle: config.rsvpCopy?.editorTitle || "RSVP",
-      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
-      deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
-      helperText:
-        config.rsvpCopy?.helperText ||
-        "The RSVP card in the preview updates with these settings.",
-    };
 
     const buildEventDetails = () => {
       const title = data.title || config.displayName;

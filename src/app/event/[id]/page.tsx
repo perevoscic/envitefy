@@ -54,6 +54,7 @@ import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
+import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
 
 export const dynamic = "force-dynamic";
 
@@ -744,6 +745,7 @@ export default async function EventPage({
   const canonicalSegment = buildEventSlugSegment(row.id, title);
   const canonical = buildEventPath(row.id, title);
   const shareUrl = await absoluteUrl(canonical);
+  const editHref = buildEditLink(row.id, data, title);
 
   // Redirect to canonical slug-id URL if needed, preserving key query params
   if (awaitedParams.id !== canonicalSegment || autoAccept) {
@@ -814,6 +816,11 @@ export default async function EventPage({
     (data as any).headerBgColor
       ? ((data as any).headerBgColor as string)
       : null;
+  const templateBackgroundCss: string | null =
+    typeof (data as any)?.templateBackgroundCss === "string" &&
+    (data as any).templateBackgroundCss
+      ? ((data as any).templateBackgroundCss as string)
+      : null;
   const profileImageUrl: string | null =
     typeof (data as any)?.profileImage === "object" &&
     typeof (data as any)?.profileImage?.dataUrl === "string"
@@ -845,7 +852,17 @@ export default async function EventPage({
 
   // Use image colors if available, otherwise fall back to category theme
   const cardBackgroundImage =
-    imageColors?.headerLight || headerBgCss || eventTheme.headerLight;
+    imageColors?.headerLight ||
+    headerBgCss ||
+    templateBackgroundCss ||
+    eventTheme.headerLight;
+
+  const headerGradientCss =
+    headerBgCss ||
+    templateBackgroundCss ||
+    (headerBgColor
+      ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
+      : null);
 
   const themeStyleVars = (
     imageColors
@@ -861,14 +878,10 @@ export default async function EventPage({
           "--event-text-light": imageColors.textLight,
           "--event-text-dark": imageColors.textDark,
         }
-      : headerBgCss || headerBgColor
+      : headerGradientCss
       ? {
-          "--event-header-gradient-light":
-            headerBgCss ||
-            `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`,
-          "--event-header-gradient-dark":
-            headerBgCss ||
-            `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`,
+          "--event-header-gradient-light": headerGradientCss,
+          "--event-header-gradient-dark": headerGradientCss,
           "--event-card-bg-light": eventTheme.cardLight,
           "--event-card-bg-dark": eventTheme.cardDark,
           "--event-border-light": eventTheme.borderLight,
@@ -894,11 +907,9 @@ export default async function EventPage({
 
   // Mirror editor page background (hero) gradient
   const heroGradient: string =
-    (headerBgCss as string | null) ||
-    (headerBgColor
-      ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
-      : (imageColors?.headerLight as string | undefined) ||
-        (eventTheme.headerLight as string));
+    headerGradientCss ||
+    (imageColors?.headerLight as string | undefined) ||
+    (eventTheme.headerLight as string);
 
   // Now finalize header style: prefer explicit header image (thumbnail) over flyer
   const headerImageUrl: string | null = thumbnailIsInline
@@ -909,6 +920,7 @@ export default async function EventPage({
       ? `url(${headerImageUrl})`
       : headerUserStyleSeed.backgroundImage ||
         headerBgCss ||
+        templateBackgroundCss ||
         (headerBgColor
           ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
           : imageColors
@@ -1090,6 +1102,23 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
+      />
+    );
+  }
+
+  const isBabyShowerTemplate =
+    categoryNormalized === "baby showers" && templateId && createdVia === "template";
+
+  if (isBabyShowerTemplate) {
+    return (
+      <BabyShowerTemplateView
+        eventId={row.id}
+        eventTitle={title}
+        eventData={clientSafeEventData}
+        shareUrl={shareUrl}
+        isOwner={isOwner}
+        isReadOnly={isReadOnly}
+        editHref={editHref}
       />
     );
   }

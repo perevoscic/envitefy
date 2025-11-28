@@ -114,6 +114,101 @@ const DESIGN_THEMES = [
     accent: "text-[#e11d48]",
     previewColor: "bg-[#ffe4e6]",
   },
+  {
+    id: "ocean_breeze",
+    name: "Ocean Breeze",
+    category: "Fresh",
+    bg: "bg-gradient-to-br from-cyan-50 to-blue-50",
+    text: "text-slate-900",
+    accent: "text-cyan-600",
+    previewColor: "bg-gradient-to-br from-cyan-100 to-blue-100",
+  },
+  {
+    id: "sunset_glow",
+    name: "Sunset Glow",
+    category: "Warm",
+    bg: "bg-gradient-to-br from-orange-50 to-pink-50",
+    text: "text-slate-900",
+    accent: "text-orange-600",
+    previewColor: "bg-gradient-to-br from-orange-100 to-pink-100",
+  },
+  {
+    id: "sage_mist",
+    name: "Sage Mist",
+    category: "Botanical",
+    bg: "bg-[#f0fdf4]",
+    text: "text-[#1e293b]",
+    accent: "text-[#3f6212]",
+    previewColor: "bg-[#dcfce7]",
+  },
+  {
+    id: "rose_quartz",
+    name: "Rose Quartz",
+    category: "Elegant",
+    bg: "bg-[#fdf2f8]",
+    text: "text-[#831843]",
+    accent: "text-[#ec4899]",
+    previewColor: "bg-[#fce7f3]",
+  },
+  {
+    id: "sky_blue",
+    name: "Sky Blue",
+    category: "Classic",
+    bg: "bg-[#eff6ff]",
+    text: "text-[#1e3a8a]",
+    accent: "text-[#3b82f6]",
+    previewColor: "bg-[#dbeafe]",
+  },
+  {
+    id: "peach_cream",
+    name: "Peach Cream",
+    category: "Soft",
+    bg: "bg-[#fff7ed]",
+    text: "text-[#7c2d12]",
+    accent: "text-[#f97316]",
+    previewColor: "bg-[#ffedd5]",
+  },
+  {
+    id: "purple_haze",
+    name: "Purple Haze",
+    category: "Dreamy",
+    bg: "bg-gradient-to-br from-purple-50 to-indigo-50",
+    text: "text-[#4c1d95]",
+    accent: "text-[#8b5cf6]",
+    previewColor: "bg-gradient-to-br from-purple-100 to-indigo-100",
+  },
+  {
+    id: "cotton_candy_sky",
+    name: "Cotton Candy Sky",
+    category: "Gradient",
+    bg: "",
+    bgStyle: {
+      backgroundImage:
+        "linear-gradient(135deg, #ffd6e8 0%, #c7e4ff 50%, #e3ffe8 100%)",
+    },
+    text: "text-slate-900",
+    accent: "text-[#ec4899]",
+    previewColor: "",
+    previewStyle: {
+      backgroundImage: "linear-gradient(135deg, #ffe5f2, #d8edff, #e9fff0)",
+    },
+  },
+  {
+    id: "citrus_confetti",
+    name: "Citrus Confetti",
+    category: "Bright",
+    bg: "",
+    bgStyle: {
+      backgroundImage:
+        "linear-gradient(135deg, #fff3c4 0%, #ffd89b 40%, #ff9a9e 100%)",
+    },
+    text: "text-[#3f2a14]",
+    accent: "text-[#f97316]",
+    previewColor: "",
+    previewStyle: {
+      backgroundImage: "linear-gradient(135deg, #fff7d7, #ffe3b8, #ffb3b3)",
+    },
+  },
 ];
 
 const INITIAL_DATA = {
@@ -454,6 +549,7 @@ export default function GenderRevealTemplateCustomizePage() {
 
   // Detect dark background for title color
   const isDarkBackground = useMemo(() => {
+    if (typeof currentTheme?.isDark === "boolean") return currentTheme.isDark;
     const bg = currentTheme?.bg?.toLowerCase() ?? "";
     const darkTokens = [
       "black",
@@ -786,8 +882,10 @@ export default function GenderRevealTemplateCustomizePage() {
               <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
                 <div
                   className={`w-3 h-3 rounded-full border shadow-sm ${
-                    currentTheme.previewColor.split(" ")[0]
+                    (currentTheme.previewColor || "").split(" ")[0] ||
+                    "bg-slate-200"
                   }`}
+                  style={currentTheme.previewStyle}
                 ></div>
                 {currentTheme.name || "Select a theme"}
               </div>
@@ -823,7 +921,10 @@ export default function GenderRevealTemplateCustomizePage() {
                 }`}
               >
                 <div
-                  className={`h-12 w-full rounded-md mb-3 ${theme.previewColor} border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden`}
+                  className={`h-12 w-full rounded-md mb-3 ${
+                    theme.previewColor || ""
+                  } border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden`}
+                  style={theme.previewStyle}
                 ></div>
                 <span className="text-sm font-medium text-slate-700 block truncate">
                   {theme.name}
@@ -840,26 +941,25 @@ export default function GenderRevealTemplateCustomizePage() {
           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
             Typography
           </label>
-          <div className="relative">
-            <select
-              value={data.theme.font}
-              onChange={(e) => updateTheme("font", e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-lg appearance-none text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-            >
-              {Object.entries(FONTS).map(([key, font]) => (
-                <option
-                  key={key}
-                  value={key}
+          <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+            {Object.entries(FONTS).map(([key, font]) => (
+              <button
+                key={key}
+                onClick={() => updateTheme("font", key)}
+                className={`border rounded-lg p-3 text-left transition-colors ${
+                  data.theme.font === key
+                    ? "border-indigo-600 bg-indigo-50"
+                    : "border-slate-200 hover:border-indigo-300"
+                }`}
+              >
+                <div
+                  className="text-base font-semibold"
                   style={{ fontFamily: font.preview }}
                 >
                   {font.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-3 top-3.5 text-slate-400 pointer-events-none"
-              size={16}
-            />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1153,6 +1253,7 @@ export default function GenderRevealTemplateCustomizePage() {
             } ${
               currentFont.preview
             } transition-colors duration-500 relative z-0`}
+            style={currentTheme.bgStyle}
           >
             <div className="relative z-10">
               <div

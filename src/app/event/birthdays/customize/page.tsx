@@ -240,6 +240,111 @@ const PROFESSIONAL_THEMES = [
     ],
   },
   {
+    id: "sunset_sherbet_glow",
+    themeName: "Sunset Sherbet Glow",
+    description: "Warm sunset gradient with floating balloons across the top.",
+    headerIllustrationPrompt:
+      "Glowing sunset sky with orange, pink, and violet clouds plus soft bokeh lights for a dreamy celebration.",
+    cornerAccentPrompt: "tiny gold sparkles and confetti dust",
+    backgroundPrompt: "orange-to-pink watercolor sunset gradient",
+    typography: {
+      headingFont: "Playfair Display",
+      bodyFont: "Montserrat",
+      accentFont: "Dancing Script",
+    },
+    recommendedColorPalette: [
+      "#ff8a3d",
+      "#ff5f6d",
+      "#c850c0",
+      "#f9d976",
+      "#fff3e0",
+    ],
+  },
+  {
+    id: "aurora_dream",
+    themeName: "Aurora Dream",
+    description: "Cool aurora gradients with soft shimmer for a night-sky vibe.",
+    headerIllustrationPrompt:
+      "Northern-lights ribbon waves in teal, cyan, and magenta over a calm night sky with subtle stars.",
+    cornerAccentPrompt: "faint star clusters with teal glow",
+    backgroundPrompt: "mint and lavender watercolor gradient",
+    typography: {
+      headingFont: "Cormorant",
+      bodyFont: "Lora",
+      accentFont: "Great Vibes",
+    },
+    recommendedColorPalette: [
+      "#0fd3c3",
+      "#6a7cff",
+      "#b066ff",
+      "#0a1c3f",
+      "#e5f5ff",
+    ],
+  },
+  {
+    id: "midnight_neon",
+    themeName: "Midnight Neon",
+    description: "Dark indigo base with neon gradients and glow lines.",
+    headerIllustrationPrompt:
+      "Dark indigo-to-black gradient with neon magenta and cyan light trails and tiny star sparks.",
+    cornerAccentPrompt: "neon cyan and magenta corner strokes",
+    backgroundPrompt: "black backdrop with glowing neon gradients",
+    typography: {
+      headingFont: "Montserrat",
+      bodyFont: "Montserrat",
+      accentFont: "Sofia",
+    },
+    recommendedColorPalette: [
+      "#0b1224",
+      "#121c40",
+      "#08d9d6",
+      "#ff2e63",
+      "#fefefe",
+    ],
+  },
+  {
+    id: "citrus_splash",
+    themeName: "Citrus Splash",
+    description: "Fresh lime, lemon, and tangerine gradients for upbeat parties.",
+    headerIllustrationPrompt:
+      "Citrus slices and leaves with juicy watercolor splashes in lime, lemon, and orange hues.",
+    cornerAccentPrompt: "tiny citrus slice confetti in lime and orange",
+    backgroundPrompt: "aqua watercolor gradient with ripple texture",
+    typography: {
+      headingFont: "Raleway",
+      bodyFont: "Montserrat",
+      accentFont: "Satisfy",
+    },
+    recommendedColorPalette: [
+      "#d7f75b",
+      "#f8d94e",
+      "#ffb347",
+      "#0fb28a",
+      "#ffffff",
+    ],
+  },
+  {
+    id: "cotton_candy_fields",
+    themeName: "Cotton Candy Fields",
+    description: "Pastel rainbow gradient with soft grain and airy sparkles.",
+    headerIllustrationPrompt:
+      "Pastel pink and baby blue clouds with light gold sparkles drifting across a soft sky.",
+    cornerAccentPrompt: "hazy pastel color mist in both corners",
+    backgroundPrompt: "soft pastel rainbow gradient with grain texture",
+    typography: {
+      headingFont: "Playfair Display",
+      bodyFont: "Poppins",
+      accentFont: "Tangerine",
+    },
+    recommendedColorPalette: [
+      "#ffd3ec",
+      "#c5e1ff",
+      "#c7ffd8",
+      "#ffe9b3",
+      "#ffffff",
+    ],
+  },
+  {
     id: "dinosaur_adventure_watercolor",
     themeName: "Dinosaur Adventure",
     description:

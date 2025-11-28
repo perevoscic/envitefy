@@ -407,6 +407,12 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - DELETE: `{ ok: true }`.
 - **Notes**:
   - PATCH now supports combined title + data updates in one request and preserves full template state (themes, fonts, advanced sections) when present. When `data` contains `themeId|theme|fontId|fontSize|advancedSections`, the route performs a full replace/merge that overwrites previous theme/font fields instead of a shallow merge, ensuring edited gymnastics/sports templates retain the saved theme color and typography. Cache for the owner’s history list is invalidated after successful update.
+  - Custom builders (e.g., baby showers) now persist their selected `templateBackgroundCss`/`header*` fields alongside `titleStyle` when publishing so the public view can rehydrate the same hero gradient, card background, and section layout that was shown in the editor.
+  - Gymnastics template publish flow posts `themeId`, full `theme` object, `fontId`, `fontFamily`, and `fontSizeClass` plus all advanced sections (`roster`, `meet`, `practice`, `logistics`, `gear`, `volunteers`, `announcements`) into `event_history.data`. Editing uses `/api/history/[id]` to reload those fields so the preview and the saved event stay visually identical (section headings inherit the chosen font; background/accents come from the saved theme palette).
+  - Football-season template workflow (customize → publish → view/edit):
+    - Customize: user picks theme, font, size, hero, headline, date/time, venue, city/state, stadium address, details, RSVP/attendance copy, and fills advanced sections (games, practice, roster, logistics, gear, volunteers). Google Fonts sheet (`fontHref`) is injected for the selected font.
+    - Publish/Patch: payload saves `themeId` + full `theme`, `fontId`, `fontFamily`, `fontSizeClass`, `fontHref`, `templateConfig` (detail field labels + attendance copy), hero image (blob-safe conversion for blobs), `advancedSections`, `customFields` (detail grid + advancedSections), `extra`, `address/location` lines, and RSVP settings into `event_history.data`.
+    - View/Edit: SimpleTemplateView loads `fontHref` to reapply the exact heading face, uses saved `theme`/palette for gradients, restores headline size/family, and renders location/address + detail grid from `templateConfig`/`customFields`. Editing an existing football event revalidates theme/font/size and keeps all published fields intact.
 
 ### History Signup — POST `/api/history/[id]/signup`
 

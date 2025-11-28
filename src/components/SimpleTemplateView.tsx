@@ -234,7 +234,11 @@ export default function SimpleTemplateView({
   const venue = currentData?.venue || "";
   const city = currentData?.city || "";
   const state = currentData?.state || "";
-  const address = currentData?.address || "";
+  const address =
+    currentData?.address ||
+    customFields?.stadiumAddress ||
+    customFields?.address ||
+    "";
   const time = currentData?.time || "";
   const date = currentData?.date || "";
 
@@ -267,10 +271,16 @@ export default function SimpleTemplateView({
     }
   };
 
-  // Build location string for header (compact) - exclude city and state
-  const headerLocation = [venue].filter(Boolean).join(", ");
-  // Full location with address - exclude city and state
-  const fullLocation = [venue, address].filter(Boolean).join(", ");
+  // Build location string for header (compact but keeps city/state when present)
+  const headerLocation =
+    currentData?.location ||
+    [venue, city, state].filter(Boolean).join(", ") ||
+    address ||
+    "";
+  // Full location for calendar exports / map links
+  const fullLocation =
+    currentData?.location ||
+    [venue, address, city, state].filter(Boolean).join(", ");
 
   // Theme classes
   const isDarkBackground = (() => {
@@ -362,6 +372,35 @@ export default function SimpleTemplateView({
     ...(titleColor || {}),
     fontFamily: headingFontFamily,
   };
+
+  const fontHref =
+    currentData?.fontHref ||
+    currentData?.templateConfig?.fontHref ||
+    currentData?.theme?.fontHref ||
+    null;
+
+  useEffect(() => {
+    if (!fontHref) return;
+    let link = document.querySelector<HTMLLinkElement>(
+      `link[rel="stylesheet"][data-template-font="${fontHref}"]`
+    );
+    let added = false;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = fontHref;
+      link.setAttribute("data-template-font", fontHref);
+      document.head.appendChild(link);
+      added = true;
+    } else if (link.href !== fontHref) {
+      link.href = fontHref;
+    }
+    return () => {
+      if (added && link?.parentElement) {
+        link.parentElement.removeChild(link);
+      }
+    };
+  }, [fontHref]);
 
   // Calendar handlers
   const toGoogleDate = (d: Date) =>
