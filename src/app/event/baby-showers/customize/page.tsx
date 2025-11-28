@@ -521,6 +521,60 @@ export default function BabyShowerTemplateCustomizePage() {
       const location =
         data.city && data.state ? `${data.city}, ${data.state}` : undefined;
 
+      // Resolve design selections
+      const selectedTheme =
+        DESIGN_THEMES.find((c) => c.id === data.theme.themeId) ||
+        DESIGN_THEMES[0];
+      const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
+      const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+
+      // Persist hero image (convert blob URLs to data URLs)
+      const heroImageToSave = await (async () => {
+        if (!data.images.hero) return heroImageSrc;
+        if (/^data:/i.test(data.images.hero)) return data.images.hero;
+        if (data.images.hero.startsWith("blob:")) {
+          try {
+            const response = await fetch(data.images.hero);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            return await new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => resolve((reader.result as string) || "");
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (err) {
+            console.error("Failed to convert blob URL", err);
+            return heroImageSrc;
+          }
+        }
+        return data.images.hero;
+      })();
+
+      const registryLinks = data.registries
+        .filter((r) => r.url.trim())
+        .map((r) => ({
+          label: r.label.trim() || "Registry",
+          url: r.url.trim(),
+        }));
+
+      const registryText = registryLinks
+        .map((r) => `${r.label}: ${r.url}`)
+        .join(" • ");
+      const hostsText = data.hosts
+        .map((h) => (h.role ? `${h.name} (${h.role})` : h.name))
+        .join(" • ");
+
+      const detailFields = [
+        { key: "location", label: "Location" },
+        { key: "expectingDate", label: "Expected Arrival" },
+        { key: "gender", label: "Baby's Gender" },
+        { key: "hosts", label: "Hosted By" },
+        { key: "registries", label: "Registries" },
+        { key: "aboutBaby", label: "About Baby" },
+        { key: "aboutMom", label: "About Parent" },
+        { key: "rsvpDeadline", label: "RSVP By" },
+      ];
+
       const payload: any = {
         title: `${data.babyName}'s Baby Shower`,
         data: {
@@ -530,25 +584,54 @@ export default function BabyShowerTemplateCustomizePage() {
           startISO,
           endISO,
           location,
+          address: data.address || undefined,
+          city: data.city || undefined,
+          state: data.state || undefined,
           description: data.babyDetails.notes || undefined,
           rsvp: data.rsvp.isEnabled
             ? data.rsvp.deadline || undefined
             : undefined,
+          rsvpEnabled: data.rsvp.isEnabled,
+          rsvpDeadline: data.rsvp.deadline || undefined,
           numberOfGuests: 0,
           templateId: template.id,
-          // Customization data
+          templateConfig: {
+            displayName: `${data.babyName}'s Baby Shower`,
+            categoryLabel: "Baby Shower",
+            detailFields,
+            rsvpCopy: {
+              editorTitle: "RSVP",
+              toggleLabel: "Enable RSVP",
+              deadlineLabel: "RSVP Deadline",
+            },
+          },
+          customFields: {
+            location: data.address || location,
+            expectingDate: data.babyDetails.expectingDate,
+            gender: data.babyDetails.gender,
+            hosts: hostsText,
+            registries: registryText,
+            aboutBaby: data.babyDetails.notes,
+            aboutMom: data.momDetails.notes,
+            rsvpDeadline: data.rsvp.deadline,
+          },
           babyName: data.babyName,
           momName: data.momName,
           babyDetails: data.babyDetails,
           hosts: data.hosts,
-          theme: data.theme,
-          registries: data.registries
-            .filter((r) => r.url.trim())
-            .map((r) => ({
-              label: r.label.trim() || "Registry",
-              url: r.url.trim(),
-            })),
-          customHeroImage: data.images.hero || undefined,
+          themeId: selectedTheme.id,
+          theme: {
+            ...selectedTheme,
+            fontFamily: selectedFont.preview,
+            fontSizeH1: selectedSize.h1,
+            fontSizeH2: selectedSize.h2,
+          },
+          fontId: data.theme.font,
+          fontSize: data.theme.fontSize,
+          fontFamily: selectedFont.preview,
+          fontSizeClass: selectedSize.h1,
+          registries: registryLinks,
+          heroImage: heroImageToSave,
         },
       };
 
@@ -590,7 +673,14 @@ export default function BabyShowerTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, template.id, editEventId, router]);
+  }, [
+    submitting,
+    data,
+    template.id,
+    editEventId,
+    router,
+    heroImageSrc,
+  ]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
