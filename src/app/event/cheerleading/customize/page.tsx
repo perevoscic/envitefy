@@ -254,6 +254,7 @@ const InputGroup = ({
   placeholder,
   type = "text",
   readOnly = false,
+  required = false,
 }: {
   label: string;
   value: string;
@@ -261,6 +262,7 @@ const InputGroup = ({
   placeholder?: string;
   type?: string;
   readOnly?: boolean;
+  required?: boolean;
 }) => {
   const [localValue, setLocalValue] = useState(value);
 
@@ -288,6 +290,7 @@ const InputGroup = ({
           onBlur={handleBlur}
           placeholder={placeholder}
           readOnly={readOnly}
+          required={required}
         />
       ) : (
         <input
@@ -298,6 +301,7 @@ const InputGroup = ({
           onBlur={handleBlur}
           placeholder={placeholder}
           readOnly={readOnly}
+          required={required}
         />
       )}
     </div>
@@ -430,7 +434,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
-    const [loadingExisting, setLoadingExisting] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(
+      Boolean(editEventId)
+    );
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
@@ -605,6 +611,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [navItems]);
 
+    useEffect(() => {
+      if (activeView === "design") {
+        setThemesExpanded(true);
+      }
+    }, [activeView]);
+
     // Load existing event data when editing
     useEffect(() => {
       const loadExisting = async () => {
@@ -741,6 +753,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (submitting) return;
       setSubmitting(true);
       try {
+        if (!data.address?.trim()) {
+          alert("Please enter an address before publishing.");
+          setSubmitting(false);
+          return;
+        }
         let startISO: string | null = null;
         let endISO: string | null = null;
         if (data.date) {
@@ -1136,14 +1153,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               label="Venue"
               value={data.venue}
               onChange={(v) => updateData("venue", v)}
-              placeholder="Venue name (optional)"
+              placeholder="Venue name"
             />
             <InputGroup
               key="address"
               label="Address"
               value={data.address}
               onChange={(v) => updateData("address", v)}
-              placeholder="Street address (optional)"
+              placeholder="Street address"
+              required
             />
           </div>
         </EditorLayout>
@@ -1232,7 +1250,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             )}
           </button>
           {themesExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[1000px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-1">
               {config.themes.map((theme) => (
                 <ThemeSwatch
                   key={theme.id}
@@ -1474,11 +1492,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
+    if (loadingExisting) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+          <div className="text-center px-4 py-6 bg-white shadow rounded-lg border border-slate-200">
+            <p className="text-sm font-medium text-slate-700">
+              Loading your saved cheerleading event…
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-y-auto font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

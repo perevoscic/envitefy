@@ -951,7 +951,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
@@ -1328,77 +1328,77 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           ></div>
         )}
 
-      <div
-        className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        {...drawerTouchHandlers}
-      >
-        <ScrollBoundary
-          className="flex-1 overflow-y-auto"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
+        <div
+          className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+          {...drawerTouchHandlers}
         >
-          <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-            <button
-              onClick={closeMobileMenu}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-            >
-              <ChevronLeft size={14} />
-              Back to preview
-            </button>
-            <span className="text-sm font-semibold text-slate-700">
-              Customize
-            </span>
-          </div>
-
-          <div className="p-6 pt-4 md:pt-6">
-            {activeView === "main" && renderMainMenu()}
-            {activeView === "headline" && renderHeadlineEditor}
-            {activeView === "images" && renderImagesEditor()}
-            {activeView === "design" && renderDesignEditor()}
-            {activeView === "details" && renderDetailsEditor()}
-            {activeView === "rsvp" && renderRsvpEditor()}
-            {config.advancedSections?.map((section) =>
-              activeView === section.id ? (
-                <React.Fragment key={section.id}>
-                  {renderAdvancedEditor(section)}
-                </React.Fragment>
-              ) : null
-            )}
-          </div>
-        </ScrollBoundary>
-
-        <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-          <div className="flex gap-3">
-            {editEventId && (
+          <ScrollBoundary
+            className="flex-1 overflow-y-auto"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+            }}
+          >
+            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
-                onClick={() => router.push(`/event/${editEventId}`)}
-                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
               >
-                Cancel
+                <ChevronLeft size={14} />
+                Back to preview
               </button>
-            )}
-            <button
-              onClick={handlePublish}
-              disabled={submitting}
-              className={`${
-                editEventId ? "flex-1" : "w-full"
-              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                ? "Save"
-                : "Publish"}
-            </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
+            </div>
+
+            <div className="p-6 pt-4 md:pt-6">
+              {activeView === "main" && renderMainMenu()}
+              {activeView === "headline" && renderHeadlineEditor}
+              {activeView === "images" && renderImagesEditor()}
+              {activeView === "design" && renderDesignEditor()}
+              {activeView === "details" && renderDetailsEditor()}
+              {activeView === "rsvp" && renderRsvpEditor()}
+              {config.advancedSections?.map((section) =>
+                activeView === section.id ? (
+                  <React.Fragment key={section.id}>
+                    {renderAdvancedEditor(section)}
+                  </React.Fragment>
+                ) : null
+              )}
+            </div>
+          </ScrollBoundary>
+
+          <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+            <div className="flex gap-3">
+              {editEventId && (
+                <button
+                  onClick={() => router.push(`/event/${editEventId}`)}
+                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handlePublish}
+                disabled={submitting}
+                className={`${
+                  editEventId ? "flex-1" : "w-full"
+                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                {submitting
+                  ? editEventId
+                    ? "Saving..."
+                    : "Publishing..."
+                  : editEventId
+                  ? "Save"
+                  : "Publish"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
         {!mobileMenuOpen && (
           <div className="md:hidden fixed bottom-4 right-4 z-30">

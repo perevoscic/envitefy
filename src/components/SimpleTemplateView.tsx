@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   Share2,
@@ -188,6 +188,15 @@ export default function SimpleTemplateView({
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
+  const [gearChecklist, setGearChecklist] = useState<Record<string, boolean>>(
+    {}
+  );
+  const toggleGearChecklistItem = useCallback((itemId: string) => {
+    setGearChecklist((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
+  }, []);
 
   const protectSensitiveSections = Boolean(protectSensitiveSectionsProp);
   const protectedSectionFlags = protectedSectionFlagsProp || {};
@@ -202,6 +211,10 @@ export default function SimpleTemplateView({
     }
     return "";
   })();
+  const isSoccerTemplate =
+    normalizedCategory === "sport_soccer" ||
+    normalizedCategory === "soccer" ||
+    currentData?.templateId === "soccer";
   const showRsvpSignInRequired = normalizedCategory === "gymnastics";
 
   // Default theme fallback
@@ -313,6 +326,31 @@ export default function SimpleTemplateView({
     "";
   const time = currentData?.time || "";
   const date = currentData?.date || "";
+  const opponentName =
+    customFields?.opponent ||
+    currentData?.extra?.opponent ||
+    advancedSections?.events?.events?.[0]?.opponent ||
+    "";
+  const uniformColors =
+    customFields?.kit ||
+    currentData?.extra?.kit ||
+    advancedSections?.gear?.gear?.uniform ||
+    advancedSections?.gear?.uniform ||
+    "";
+  const travelDetails =
+    customFields?.travelPlan ||
+    currentData?.extra?.travelPlan ||
+    advancedSections?.logistics?.transport ||
+    "";
+  const meetingPoint =
+    customFields?.meetingPoint ||
+    currentData?.extra?.meetingPoint ||
+    "";
+  const weatherSummary =
+    customFields?.weatherPlan ||
+    currentData?.extra?.weatherPlan ||
+    advancedSections?.logistics?.weatherPolicy ||
+    "";
 
   // Format date
   const formatDate = (d: string) => {
@@ -652,7 +690,20 @@ export default function SimpleTemplateView({
       (logistics.waiverLinks?.length ?? 0) > 0
     );
   })();
-  const hasGear = (advancedSections?.gear?.items?.length ?? 0) > 0;
+  const gearSection = advancedSections?.gear;
+  const gearItemsCount = Array.isArray(gearSection?.items)
+    ? gearSection.items.length
+    : Array.isArray(gearSection)
+    ? gearSection.length
+    : 0;
+  const hasGearInfo =
+    Boolean(gearSection?.gear) ||
+    Boolean(gearSection?.uniform) ||
+    Boolean(gearSection?.hairMakeup) ||
+    Boolean(gearSection?.shoes) ||
+    Boolean(gearSection?.props) ||
+    Boolean(gearSection?.checklist);
+  const hasGear = gearItemsCount > 0 || hasGearInfo;
   const hasVolunteers =
     protectSensitiveSections && protectedSectionFlags?.volunteers !== undefined
       ? Boolean(protectedSectionFlags.volunteers)
@@ -664,16 +715,32 @@ export default function SimpleTemplateView({
     (advancedSections?.announcements?.items?.length ?? 0) > 0 ||
     (advancedSections?.announcements?.announcements?.length ?? 0) > 0;
   const hasRsvpSection = rsvpEnabled;
+  const hasEvents =
+    Array.isArray(advancedSections?.events?.events) &&
+    advancedSections.events.events.length > 0;
+  const hasLineup =
+    Array.isArray(advancedSections?.lineup?.formation) &&
+    advancedSections.lineup.formation.length > 0;
+  const hasSnacks =
+    Array.isArray(advancedSections?.snacks?.slots) &&
+    advancedSections.snacks.slots.length > 0;
 
   const navItems = useMemo(
     () =>
       [
         { id: "details", label: "Details", enabled: true },
+        {
+          id: "events",
+          label: isSoccerTemplate ? "Matches" : "Events",
+          enabled: hasEvents,
+        },
+        { id: "lineup", label: "Lineup", enabled: hasLineup },
         { id: "roster", label: "Roster", enabled: hasRoster },
         { id: "meet", label: "Meet", enabled: hasMeet },
         { id: "practice", label: "Practice", enabled: hasPractice },
         { id: "logistics", label: "Logistics", enabled: hasLogistics },
         { id: "gear", label: "Gear", enabled: hasGear },
+        { id: "snacks", label: "Snacks", enabled: hasSnacks },
         { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
         {
           id: "announcements",
@@ -684,13 +751,17 @@ export default function SimpleTemplateView({
       ].filter((item) => item.enabled),
     [
       hasAnnouncements,
+      hasEvents,
       hasGear,
       hasLogistics,
+      hasLineup,
       hasMeet,
       hasPractice,
       hasRoster,
       hasRsvpSection,
+      hasSnacks,
       hasVolunteers,
+      isSoccerTemplate,
     ]
   );
 
@@ -752,6 +823,10 @@ export default function SimpleTemplateView({
     };
   }, [navItems]);
 
+  useEffect(() => {
+    setGearChecklist({});
+  }, [eventId]);
+
   const wrapProtected = (node: React.ReactNode) => {
     if (isSignedIn) return node;
     const loginHref =
@@ -777,6 +852,166 @@ export default function SimpleTemplateView({
   };
 
   // Render roster section
+  const renderEventsSection = () => {
+    const events = advancedSections?.events?.events;
+    if (!events?.length) return null;
+    const formatDate = (value?: string) => {
+      if (!value) return "";
+      try {
+        return new Date(value).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      } catch {
+        return value;
+      }
+    };
+    const formatTime = (value?: string) => {
+      if (!value) return "";
+      try {
+        const [h, m] = value.split(":");
+        const hour = parseInt(h, 10);
+        const minute = m || "00";
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minute} ${ampm}`;
+      } catch {
+        return value;
+      }
+    };
+    return wrapProtected(
+      <section
+        id="events"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
+        <h2
+          className={`text-2xl mb-6 ${accentClass}`}
+          style={headingStyle}
+        >
+          Events & Competitions
+        </h2>
+        <div
+          className={
+            isSoccerTemplate
+              ? "grid grid-cols-1 md:grid-cols-2 gap-4"
+              : "space-y-4"
+          }
+        >
+          {events.map((event: any) => {
+            const heading = `${event.name || "Event"} ${
+              event.type ? `(${event.type})` : ""
+            }`;
+            const opponent =
+              event.opponent && event.opponent !== event.name
+                ? `vs ${event.opponent}`
+                : "";
+            const homeAway = event.homeAway === "away" ? "AWAY" : "HOME";
+            const location = [event.venue, event.address]
+              .filter(Boolean)
+              .join(", ");
+            const timeParts = [
+              formatDate(event.date),
+              formatTime(event.time),
+            ].filter(Boolean);
+            return (
+              <div
+                key={event.id || heading + location}
+                className="bg-white/5 border border-white/10 rounded-lg p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold tracking-wide text-slate-200">
+                    {homeAway}
+                  </span>
+                  {event.type && (
+                    <span className="text-xs uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/10">
+                      {event.type}
+                    </span>
+                  )}
+                </div>
+                <div className="font-semibold text-lg" style={bodyShadow}>
+                  {heading}
+                </div>
+                {opponent && (
+                  <div className="text-sm opacity-90" style={bodyShadow}>
+                    {opponent}
+                  </div>
+                )}
+                {timeParts.length > 0 && (
+                  <div className="text-sm opacity-70 mt-1" style={bodyShadow}>
+                    {timeParts.join(" • ")}
+                  </div>
+                )}
+                {location && (
+                  <div className="text-sm opacity-70 mt-1" style={bodyShadow}>
+                    {location}
+                  </div>
+                )}
+                {event.callTime && (
+                  <div className="text-xs uppercase tracking-wide opacity-70 mt-3">
+                    Call time: {formatTime(event.callTime)}
+                  </div>
+                )}
+                {(event.warmupTime || event.onMatTime) && (
+                  <div className="text-xs uppercase tracking-wide opacity-70">
+                    Warm-up: {formatTime(event.warmupTime)}{" "}
+                    {event.onMatTime && `• On mat: ${formatTime(event.onMatTime)}`}
+                  </div>
+                )}
+                {event.notes && (
+                  <p className="text-sm opacity-70 mt-2">{event.notes}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  };
+
+  const renderHeaderWidget = () => {
+    const hasWidgetContent =
+      opponentName || uniformColors || weatherSummary || travelDetails;
+    if (!hasWidgetContent) return null;
+    return (
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div className="bg-white/10 border border-white/20 rounded-2xl p-4 shadow-lg">
+          <p className="text-xs uppercase tracking-wide opacity-70">Matchup</p>
+          <div className="text-lg font-semibold" style={bodyShadow}>
+            {opponentName ? `vs ${opponentName}` : "Match details"}
+          </div>
+          {meetingPoint && (
+            <p className="opacity-70 mt-2">
+              Meeting point: {meetingPoint}
+            </p>
+          )}
+        </div>
+        <div className="bg-white/10 border border-white/20 rounded-2xl p-4 shadow-lg">
+          <p className="text-xs uppercase tracking-wide opacity-70">
+            Uniform & Arrival
+          </p>
+          <div className="text-lg font-semibold" style={bodyShadow}>
+            {uniformColors || "Confirm kit"}
+          </div>
+          {travelDetails && (
+            <p className="opacity-70 mt-2">{travelDetails}</p>
+          )}
+        </div>
+        <div className="bg-white/10 border border-white/20 rounded-2xl p-4 shadow-lg">
+          <p className="text-xs uppercase tracking-wide opacity-70">Weather</p>
+          <div className="text-lg font-semibold" style={bodyShadow}>
+            {weatherSummary || "Check forecast"}
+          </div>
+          {time && (
+            <p className="opacity-70 mt-2">
+              Kick at {formatTime(time)}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderRosterSection = () => {
     if (protectSensitiveSections) {
       if (!hasRoster) return null;
@@ -853,7 +1088,9 @@ export default function SimpleTemplateView({
           {rosterAthletes.map((athlete) => (
             <div
               key={athlete.id}
-              className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3"
+              className={`bg-white/5 border border-white/10 rounded-lg space-y-3 ${
+                isSoccerTemplate ? "p-3" : "p-4"
+              }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex gap-3">
@@ -1164,6 +1401,98 @@ export default function SimpleTemplateView({
     );
   };
 
+  const renderLineupSection = () => {
+    const formation = advancedSections?.lineup?.formation;
+    if (!isSoccerTemplate || !formation?.length) return null;
+    const lines = Array.from(
+      new Set(
+        formation.map((slot: any) => Number(slot.line) || 1)
+      )
+    ).sort((a, b) => a - b);
+    return (
+      <section
+        id="lineup"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
+        <h2
+          className={`text-2xl mb-6 ${accentClass}`}
+          style={headingStyle}
+        >
+          Lineup & Formation
+        </h2>
+        {uniformColors && (
+          <div className="mb-4 text-center">
+            <span className="inline-flex items-center px-4 py-1 rounded-full bg-white/10 border border-white/25 text-xs uppercase tracking-wide">
+              Kit: {uniformColors}
+            </span>
+          </div>
+        )}
+        <div className="relative bg-gradient-to-b from-emerald-900 to-emerald-600 border border-emerald-950 rounded-[32px] p-6 text-white overflow-hidden shadow-xl">
+          <div className="absolute inset-4 border-2 border-white/20 rounded-[28px] pointer-events-none" />
+          <div className="absolute left-1/2 top-6 bottom-28 w-px bg-white/25 pointer-events-none" />
+          <div className="absolute inset-x-10 top-1/3 h-px bg-white/15 pointer-events-none" />
+          <div className="absolute inset-x-10 top-1/2 h-px bg-white/15 pointer-events-none" />
+          <div className="absolute inset-x-14 top-2/3 h-px bg-white/15 pointer-events-none" />
+          <div className="absolute inset-x-10 bottom-6 h-24 border-2 border-white/25 rounded-b-[90px] pointer-events-none" />
+          <div className="absolute inset-x-[120px] bottom-6 h-12 border border-white/30 rounded-b-full pointer-events-none" />
+          <div className="absolute left-1/2 bottom-16 w-20 h-20 -translate-x-1/2 border border-white/30 rounded-full pointer-events-none" />
+          <div className="relative space-y-6">
+            {lines.map((line) => {
+              const rowSlots = formation
+                .filter((slot: any) => (Number(slot.line) || 1) === line)
+                .sort(
+                  (a: any, b: any) =>
+                    (Number(a.spot) || 2) - (Number(b.spot) || 2)
+                );
+              return (
+                <div
+                  key={`line-${line}`}
+                  className="flex flex-wrap items-center justify-center gap-4"
+                >
+                  {rowSlots.map((slot: any) => {
+                    const slotNumber =
+                      slot.number ||
+                      slot.jerseyNumber ||
+                      slot.jersey ||
+                      slot.playerNumber ||
+                      "?";
+                    return (
+                      <div
+                        key={slot.id || `${line}-${slot.label}`}
+                        className="min-w-[130px] rounded-2xl bg-white/15 border border-white/35 px-4 py-4 text-center shadow-md backdrop-blur-sm flex flex-col items-center gap-1"
+                      >
+                        <div className="flex items-center justify-center mb-1">
+                          <div className="relative w-14 h-16">
+                            <div className="absolute inset-0 rounded-t-[18px] rounded-b-[40%] border border-white/70 bg-gradient-to-b from-white/95 to-white/60 text-emerald-900 flex flex-col items-center justify-center shadow-lg">
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800">
+                                {slot.label || "--"}
+                              </span>
+                              <span className="text-lg font-black">
+                                #{slotNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="font-semibold text-base">
+                          {slot.player || "Open slot"}
+                        </div>
+                        {uniformColors && (
+                          <div className="text-[11px] opacity-70">
+                            {uniformColors}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  };
+
   // Render logistics section
   const renderLogisticsSection = () => {
     const logistics = advancedSections?.logistics;
@@ -1457,22 +1786,21 @@ export default function SimpleTemplateView({
   // Render gear section
   const renderGearSection = () => {
     const gear = advancedSections?.gear;
-    if (!gear?.items?.length) return null;
-
-    // Track checked items in local state for interactive checklist
-    const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-
-    const toggleItem = (itemId: string) => {
-      setCheckedItems((prev) => {
-        const next = new Set(prev);
-        if (next.has(itemId)) {
-          next.delete(itemId);
-        } else {
-          next.add(itemId);
-        }
-        return next;
-      });
-    };
+    const gearItems = Array.isArray(gear?.items)
+      ? gear.items
+      : Array.isArray(gear)
+      ? gear
+      : [];
+    const gearInfo =
+      gear?.gear ||
+      (gear?.uniform ||
+      gear?.hairMakeup ||
+      gear?.shoes ||
+      gear?.props ||
+      gear?.checklist
+        ? gear
+        : null);
+    if (!gearItems.length && !gearInfo) return null;
 
     return (
       <section
@@ -1485,11 +1813,56 @@ export default function SimpleTemplateView({
         >
           Gear & Uniform Checklist
         </h2>
+        {gearInfo && (
+          <div className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4 space-y-2">
+            {gearInfo.uniform && (
+              <p className={`text-sm ${textClass}`}>
+                <strong>Uniform:</strong> {gearInfo.uniform}
+              </p>
+            )}
+            {gearInfo.hairMakeup && (
+              <p className={`text-sm ${textClass}`}>
+                <strong>Hair / Makeup:</strong> {gearInfo.hairMakeup}
+              </p>
+            )}
+            {gearInfo.shoes && (
+              <p className={`text-sm ${textClass}`}>
+                <strong>Shoes / Accessories:</strong> {gearInfo.shoes}
+              </p>
+            )}
+            {gearInfo.props && (
+              <p className={`text-sm ${textClass}`}>
+                <strong>Props:</strong> {gearInfo.props}
+              </p>
+            )}
+            {gearInfo.musicLink && (
+              <p className={`text-sm ${textClass}`}>
+                <strong>Music:</strong>{" "}
+                <a
+                  href={gearInfo.musicLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  {gearInfo.musicLink}
+                </a>
+              </p>
+            )}
+            {gearInfo.checklist && (
+              <p className={`text-sm ${textClass}`}>
+                <strong>Checklist:</strong> {gearInfo.checklist}
+              </p>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {gear.items.map((item: any, idx: number) => {
-            const itemId = item.id || item.name || String(idx);
-            const itemName = item.name || item;
-            const isChecked = checkedItems.has(itemId);
+          {gearItems.map((item: any, idx: number) => {
+            const normalized =
+              typeof item === "string" ? { id: `gear-${idx}`, name: item } : item;
+            const itemId =
+              normalized?.id || normalized?.name || `gear-${idx}`;
+            const itemName = normalized?.name || String(itemId);
+            const isChecked = Boolean(gearChecklist[itemId]);
             return (
               <label
                 key={idx}
@@ -1500,7 +1873,7 @@ export default function SimpleTemplateView({
                 <input
                   type="checkbox"
                   checked={isChecked}
-                  onChange={() => toggleItem(itemId)}
+                  onChange={() => toggleGearChecklistItem(itemId)}
                   className="w-5 h-5 rounded border-white/30 bg-white/10 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-transparent cursor-pointer"
                 />
                 <span
@@ -1515,7 +1888,7 @@ export default function SimpleTemplateView({
             );
           })}
         </div>
-        {gear.notes && (
+        {gear?.notes && (
           <p
             className={`text-sm opacity-70 mt-4 ${textClass}`}
             style={bodyShadow}
@@ -1523,6 +1896,90 @@ export default function SimpleTemplateView({
             {gear.notes}
           </p>
         )}
+      </section>
+    );
+  };
+
+  const renderSnacksSection = () => {
+    const snacks = advancedSections?.snacks;
+    const slots = Array.isArray(snacks?.slots) ? snacks.slots : [];
+    if (!slots.length) return null;
+    return (
+      <section
+        id="snacks"
+        className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+      >
+        <h2
+          className={`text-2xl mb-6 ${accentClass}`}
+          style={headingStyle}
+        >
+          Snacks & Hydration
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {slots.map((slot: any, idx: number) => {
+            const slotId = slot.id || `snack-${idx}`;
+            const filled = Boolean(slot.family);
+            return (
+              <div
+                key={slotId}
+                className={`rounded-xl border p-4 transition-colors ${
+                  filled
+                    ? "bg-white/10 border-white/20"
+                    : "bg-white/5 border-dashed border-white/30"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <div
+                      className={`text-sm uppercase tracking-wide opacity-80 ${textClass}`}
+                      style={bodyShadow}
+                    >
+                      {slot.role || "Snack duty"}
+                    </div>
+                    {slot.notes && (
+                      <p
+                        className={`text-xs opacity-70 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        {slot.notes}
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      filled ? "bg-white/20" : "bg-white/5"
+                    }`}
+                  >
+                    {filled ? "Assigned" : "Open"}
+                  </div>
+                </div>
+                {filled ? (
+                  <p className={`text-sm ${textClass}`} style={bodyShadow}>
+                    {slot.family}
+                    {slot.contact ? ` · ${slot.contact}` : ""}
+                  </p>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <p className="opacity-70">Open slot – sign up below.</p>
+                    <button
+                      className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-xs font-semibold hover:bg-white/20 transition-colors"
+                      onClick={() => {
+                        setVolunteerSignupForm({ name: "", email: "", phone: "" });
+                        setVolunteerSignupModal({
+                          open: true,
+                          slotId,
+                          slotRole: slot.role || "Snacks & Hydration",
+                        });
+                      }}
+                    >
+                      Claim
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </section>
     );
   };
@@ -1862,7 +2319,13 @@ export default function SimpleTemplateView({
             </button>
           </div>
           {carpools.length > 0 ? (
-            <div className="space-y-3">
+        <div
+          className={
+            isSoccerTemplate
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+              : "space-y-3"
+          }
+        >
               {carpools
                 .filter((cp: any) => cp.driverName || cp.driver)
                 .map((carpool: any, idx: number) => {
@@ -2194,6 +2657,7 @@ export default function SimpleTemplateView({
                     })}
                   </div>
                 )}
+                {renderHeaderWidget()}
               </div>
             </div>
 
@@ -2280,11 +2744,14 @@ export default function SimpleTemplateView({
             </section>
 
             {/* Advanced Sections */}
+            {renderEventsSection()}
+            {renderLineupSection()}
             {renderRosterSection()}
             {renderMeetSection()}
             {renderPracticeSection()}
             {renderLogisticsSection()}
             {renderGearSection()}
+            {renderSnacksSection()}
             {renderVolunteersSection()}
             {renderAnnouncementsSection()}
 

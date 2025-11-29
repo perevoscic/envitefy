@@ -325,19 +325,6 @@ const InputGroup = ({
   type?: string;
   readOnly?: boolean;
 }) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  // Sync local state when value prop changes (from external updates)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    if (localValue !== value) {
-      onChange(localValue);
-    }
-  };
-
   return (
     <div className="space-y-2">
       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -346,9 +333,8 @@ const InputGroup = ({
       {type === "textarea" ? (
         <textarea
           className={baseTextareaClass}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
         />
@@ -356,9 +342,8 @@ const InputGroup = ({
         <input
           type={type}
           className={baseInputClass}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
         />
@@ -591,9 +576,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing.customFields?.advancedSections ||
             existing.advanced ||
             {};
-          const normalizedAdvanced = normalizeAdvancedSectionsForStorage(
-            incomingAdvanced
-          );
+          const normalizedAdvanced =
+            normalizeAdvancedSectionsForStorage(incomingAdvanced);
           if (normalizedAdvanced && Object.keys(normalizedAdvanced).length) {
             setAdvancedState((prev) => ({
               ...prev,
@@ -601,11 +585,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             }));
           }
 
-          if (existing.themeId) {
+          const incomingThemeId =
+            existing.themeId ||
+            existing.theme?.id ||
+            existing.theme?.slug ||
+            existing.templateConfig?.themeId;
+
+          if (incomingThemeId) {
             const themeExists = config.themes.find(
-              (t) => t.id === existing.themeId
+              (t) => t.id === incomingThemeId
             );
-            setThemeId(themeExists ? existing.themeId : config.themes[0]?.id);
+            setThemeId(themeExists ? incomingThemeId : config.themes[0]?.id);
           }
 
           // Validate font + size after state settles
@@ -872,7 +862,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const updateExtra = useCallback((key: string, value: string) => {
       setData((prev) => {
         const next = cloneState(prev || {});
-        const extra = next.extra && typeof next.extra === "object" ? next.extra : {};
+        const extra =
+          next.extra && typeof next.extra === "object" ? next.extra : {};
         next.extra = { ...extra, [key]: value };
         return next;
       });
@@ -913,7 +904,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               const blob = await response.blob();
               const reader = new FileReader();
               return await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => resolve((reader.result as string) || config.defaultHero);
+                reader.onloadend = () =>
+                  resolve((reader.result as string) || config.defaultHero);
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
               });
@@ -929,11 +921,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             ? themeId
             : config.themes[0]?.id;
         const themeToSave =
-          config.themes.find((t) => t.id === validThemeId) ||
-          config.themes[0];
+          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
         const currentSelectedFont =
-          FOOTBALL_FONTS.find((f) => f.id === data.fontId) ||
-          FOOTBALL_FONTS[0];
+          FOOTBALL_FONTS.find((f) => f.id === data.fontId) || FOOTBALL_FONTS[0];
         const currentSelectedSize =
           FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
           FONT_SIZE_OPTIONS[1];
@@ -950,6 +940,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           displayName: config.displayName,
           category: config.category,
           detailFields: config.detailFields,
+          advancedSectionIds: config.advancedSections?.map((s) => s.id) || [],
           rsvpCopy,
           fontHref: FOOTBALL_GOOGLE_FONTS_URL,
         };
@@ -1654,7 +1645,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-y-auto font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

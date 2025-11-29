@@ -229,7 +229,7 @@ export function MyEventsDropdown({
     return (
       <div
         ref={myEventsRef}
-        className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-max max-w-[90vw] z-50 transition-all duration-200 origin-top ${
+        className={`absolute top-full left-1/2 -translate-x-1/2 w-max max-w-[90vw] z-50 transition-all duration-200 origin-top ${
           isOpen
             ? "opacity-100 visible scale-100"
             : "opacity-0 invisible scale-95"
@@ -860,7 +860,7 @@ export default function TopNav() {
           }`}
           suppressHydrationWarning
         >
-          <div className="flex flex-shrink-0 items-center -ml-10 md:-ml-6">
+          <div className="flex flex-shrink-0 items-center gap-4 -ml-10 md:-ml-6">
             <Link
               href="/"
               className="inline-flex items-center text-[#7f8cff] opacity-100"
@@ -874,50 +874,80 @@ export default function TopNav() {
                 priority
               />
             </Link>
-          </div>
-          <nav className="flex items-center gap-3 text-sm font-semibold text-[#564d7a]">
-            {NAV_LINKS.map((link) => {
-              const active = link.match(pathname || "");
-              if (link.label === "New Event") {
+            <nav className="flex items-center gap-3 text-sm font-semibold text-[#564d7a]">
+              {/* Home Link */}
+              {NAV_LINKS.filter((link) => link.label === "Home").map((link) => {
+                const active = link.match(pathname || "");
                 return (
-                  <div key={link.href} className="relative group">
-                    <button
-                      className={`rounded-full px-4 py-1.5 transition flex items-center gap-1 ${
-                        active
-                          ? "bg-[#ece9ff] text-[#281f52] shadow-sm"
-                          : "hover:bg-white/70"
-                      }`}
-                    >
-                      {link.label}
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="opacity-50 group-hover:opacity-100 transition-opacity"
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`rounded-full px-4 py-1.5 transition ${
+                      active
+                        ? "bg-[#ece9ff] text-[#281f52] shadow-sm"
+                        : "hover:bg-white/70"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+
+              {/* New Event Dropdown - aligned under Home */}
+              {NAV_LINKS.filter((link) => link.label === "New Event").map(
+                (link) => {
+                  const active = link.match(pathname || "");
+                  return (
+                    <div key={link.href} className="relative group">
+                      <button
+                        className={`rounded-full px-4 py-1.5 transition flex items-center gap-1 ${
+                          active
+                            ? "bg-[#ece9ff] text-[#281f52] shadow-sm"
+                            : "hover:bg-white/70"
+                        }`}
                       >
-                        <path
-                          d="M2.5 4.5L6 8L9.5 4.5"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <div
-                      style={{ top: `${createMenuTop}px` }}
-                      className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex justify-center"
-                      suppressHydrationWarning
-                    >
-                      <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
-                        {isHydrated && <CreateEventMenu />}
+                        {link.label}
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="opacity-50 group-hover:opacity-100 transition-opacity"
+                        >
+                          <path
+                            d="M2.5 4.5L6 8L9.5 4.5"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                      <span
+                        aria-hidden
+                        className="absolute left-0 right-0 top-full h-3"
+                      />
+                      <div
+                        style={{ top: `${createMenuTop}px` }}
+                        className="absolute left-0 mt-0 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+                        suppressHydrationWarning
+                      >
+                        <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
+                          {isHydrated && <CreateEventMenu />}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              }
+                  );
+                }
+              )}
+            </nav>
+          </div>
+          <nav className="flex items-center gap-3 text-sm font-semibold text-[#564d7a]">
+            {NAV_LINKS.filter(
+              (link) => link.label !== "Home" && link.label !== "New Event"
+            ).map((link) => {
+              const active = link.match(pathname || "");
               return (
                 <Link
                   key={link.href}
@@ -938,8 +968,11 @@ export default function TopNav() {
               className="relative group"
               ref={myEventsRef}
               onMouseEnter={() => setMyEventsOpen(true)}
-              onMouseLeave={() => setMyEventsOpen(false)}
             >
+              <span
+                aria-hidden
+                className="absolute left-0 right-0 top-full h-3"
+              />
               <button
                 className="rounded-full px-4 py-1.5 transition hover:bg-white/70 flex items-center gap-1"
                 onClick={() => setMyEventsOpen((prev) => !prev)}

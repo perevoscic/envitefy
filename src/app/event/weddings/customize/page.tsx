@@ -2635,7 +2635,7 @@ const App = () => {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#F8F5FF] flex justify-center md:justify-end md:pr-25"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#F8F5FF] flex justify-center md:justify-end md:pr-50"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",

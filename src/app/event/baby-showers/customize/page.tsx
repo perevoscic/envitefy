@@ -1344,7 +1344,7 @@ export default function BabyShowerTemplateCustomizePage() {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
@@ -1367,8 +1367,7 @@ export default function BabyShowerTemplateCustomizePage() {
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
                     style={{
-                      fontFamily:
-                        currentFont.preview || "var(--font-playfair)",
+                      fontFamily: currentFont.preview || "var(--font-playfair)",
                       ...(titleColor || {}),
                     }}
                   >

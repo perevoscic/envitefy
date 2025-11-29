@@ -86,9 +86,33 @@ export async function POST(
       volunteers: updatedVolunteers,
     };
 
+    if (advancedSections?.snacks?.slots?.length) {
+      const snackSlots = advancedSections.snacks.slots.map((snack: any) => {
+        if (snack.id !== body.slotId) return snack;
+        return {
+          ...snack,
+          family: body.name.trim(),
+          contact:
+            body.phone?.trim() ||
+            body.email?.trim() ||
+            snack.contact ||
+            "",
+          filled: true,
+        };
+      });
+      updatedAdvancedSections.snacks = {
+        ...advancedSections.snacks,
+        slots: snackSlots,
+      };
+    }
+
     const updatedData = {
       ...existingData,
       advancedSections: updatedAdvancedSections,
+      customFields: {
+        ...(existingData.customFields || {}),
+        advancedSections: updatedAdvancedSections,
+      },
     };
 
     // Save to database
