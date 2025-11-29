@@ -240,6 +240,113 @@ const PROFESSIONAL_THEMES = [
     ],
   },
   {
+    id: "sunset_sherbet_glow",
+    themeName: "Sunset Sherbet Glow",
+    description: "Warm sunset gradient with floating balloons across the top.",
+    headerIllustrationPrompt:
+      "Glowing sunset sky with orange, pink, and violet clouds plus soft bokeh lights for a dreamy celebration.",
+    cornerAccentPrompt: "tiny gold sparkles and confetti dust",
+    backgroundPrompt: "orange-to-pink watercolor sunset gradient",
+    typography: {
+      headingFont: "Playfair Display",
+      bodyFont: "Montserrat",
+      accentFont: "Dancing Script",
+    },
+    recommendedColorPalette: [
+      "#ff8a3d",
+      "#ff5f6d",
+      "#c850c0",
+      "#f9d976",
+      "#fff3e0",
+    ],
+  },
+  {
+    id: "aurora_dream",
+    themeName: "Aurora Dream",
+    description:
+      "Cool aurora gradients with soft shimmer for a night-sky vibe.",
+    headerIllustrationPrompt:
+      "Northern-lights ribbon waves in teal, cyan, and magenta over a calm night sky with subtle stars.",
+    cornerAccentPrompt: "faint star clusters with teal glow",
+    backgroundPrompt: "mint and lavender watercolor gradient",
+    typography: {
+      headingFont: "Cormorant",
+      bodyFont: "Lora",
+      accentFont: "Great Vibes",
+    },
+    recommendedColorPalette: [
+      "#0fd3c3",
+      "#6a7cff",
+      "#b066ff",
+      "#0a1c3f",
+      "#e5f5ff",
+    ],
+  },
+  {
+    id: "midnight_neon",
+    themeName: "Midnight Neon",
+    description: "Dark indigo base with neon gradients and glow lines.",
+    headerIllustrationPrompt:
+      "Dark indigo-to-black gradient with neon magenta and cyan light trails and tiny star sparks.",
+    cornerAccentPrompt: "neon cyan and magenta corner strokes",
+    backgroundPrompt: "black backdrop with glowing neon gradients",
+    typography: {
+      headingFont: "Montserrat",
+      bodyFont: "Montserrat",
+      accentFont: "Sofia",
+    },
+    recommendedColorPalette: [
+      "#0b1224",
+      "#121c40",
+      "#08d9d6",
+      "#ff2e63",
+      "#fefefe",
+    ],
+  },
+  {
+    id: "citrus_splash",
+    themeName: "Citrus Splash",
+    description:
+      "Fresh lime, lemon, and tangerine gradients for upbeat parties.",
+    headerIllustrationPrompt:
+      "Citrus slices and leaves with juicy watercolor splashes in lime, lemon, and orange hues.",
+    cornerAccentPrompt: "tiny citrus slice confetti in lime and orange",
+    backgroundPrompt: "aqua watercolor gradient with ripple texture",
+    typography: {
+      headingFont: "Raleway",
+      bodyFont: "Montserrat",
+      accentFont: "Satisfy",
+    },
+    recommendedColorPalette: [
+      "#d7f75b",
+      "#f8d94e",
+      "#ffb347",
+      "#0fb28a",
+      "#ffffff",
+    ],
+  },
+  {
+    id: "cotton_candy_fields",
+    themeName: "Cotton Candy Fields",
+    description: "Pastel rainbow gradient with soft grain and airy sparkles.",
+    headerIllustrationPrompt:
+      "Pastel pink and baby blue clouds with light gold sparkles drifting across a soft sky.",
+    cornerAccentPrompt: "hazy pastel color mist in both corners",
+    backgroundPrompt: "soft pastel rainbow gradient with grain texture",
+    typography: {
+      headingFont: "Playfair Display",
+      bodyFont: "Poppins",
+      accentFont: "Tangerine",
+    },
+    recommendedColorPalette: [
+      "#ffd3ec",
+      "#c5e1ff",
+      "#c7ffd8",
+      "#ffe9b3",
+      "#ffffff",
+    ],
+  },
+  {
     id: "dinosaur_adventure_watercolor",
     themeName: "Dinosaur Adventure",
     description:
@@ -766,51 +873,49 @@ type SimpleTemplateThemeSnapshot = {
   preview: string;
 };
 
-const PROFESSIONAL_THEME_CLASSES: Record<
-  string,
-  SimpleTemplateThemeSnapshot
-> = {
-  construction_zone_party: {
-    id: "construction_zone_party",
-    name: "Construction Zone",
-    bg: "bg-gradient-to-br from-yellow-200 via-amber-200 to-amber-400",
-    text: "text-slate-900",
-    accent: "text-amber-900",
-    preview: "bg-amber-300",
-  },
-  rainbow_confetti_splash: {
-    id: "rainbow_confetti_splash",
-    name: "Rainbow Confetti",
-    bg: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
-    text: "text-slate-900",
-    accent: "text-pink-600",
-    preview: "bg-pink-200",
-  },
-  sparkle_starburst: {
-    id: "sparkle_starburst",
-    name: "Sparkle Starburst",
-    bg: "bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-200",
-    text: "text-slate-900",
-    accent: "text-amber-700",
-    preview: "bg-amber-200",
-  },
-  balloon_bouquet_arch: {
-    id: "balloon_bouquet_arch",
-    name: "Balloon Bouquet",
-    bg: "bg-gradient-to-br from-sky-100 via-blue-100 to-indigo-100",
-    text: "text-slate-900",
-    accent: "text-blue-700",
-    preview: "bg-sky-200",
-  },
-  default: {
-    id: "default",
-    name: "Default",
-    bg: "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700",
-    text: "text-white",
-    accent: "text-white",
-    preview: "bg-slate-800",
-  },
-};
+const PROFESSIONAL_THEME_CLASSES: Record<string, SimpleTemplateThemeSnapshot> =
+  {
+    construction_zone_party: {
+      id: "construction_zone_party",
+      name: "Construction Zone",
+      bg: "bg-gradient-to-br from-yellow-200 via-amber-200 to-amber-400",
+      text: "text-slate-900",
+      accent: "text-amber-900",
+      preview: "bg-amber-300",
+    },
+    rainbow_confetti_splash: {
+      id: "rainbow_confetti_splash",
+      name: "Rainbow Confetti",
+      bg: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
+      text: "text-slate-900",
+      accent: "text-pink-600",
+      preview: "bg-pink-200",
+    },
+    sparkle_starburst: {
+      id: "sparkle_starburst",
+      name: "Sparkle Starburst",
+      bg: "bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-200",
+      text: "text-slate-900",
+      accent: "text-amber-700",
+      preview: "bg-amber-200",
+    },
+    balloon_bouquet_arch: {
+      id: "balloon_bouquet_arch",
+      name: "Balloon Bouquet",
+      bg: "bg-gradient-to-br from-sky-100 via-blue-100 to-indigo-100",
+      text: "text-slate-900",
+      accent: "text-blue-700",
+      preview: "bg-sky-200",
+    },
+    default: {
+      id: "default",
+      name: "Default",
+      bg: "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700",
+      text: "text-white",
+      accent: "text-white",
+      preview: "bg-slate-800",
+    },
+  };
 
 const INITIAL_DATA = {
   childName: "Emma",
@@ -1042,7 +1147,8 @@ export default function BirthdayTemplateCustomizePage() {
     string | undefined
   >(
     variationIdParam ||
-      birthdayTemplateCatalog.find((t) => t.id === (templateId || ""))?.variations?.[0]?.id ||
+      birthdayTemplateCatalog.find((t) => t.id === (templateId || ""))
+        ?.variations?.[0]?.id ||
       birthdayTemplateCatalog[0]?.variations?.[0]?.id
   );
   const [loadingExisting, setLoadingExisting] = useState(false);
@@ -1206,25 +1312,25 @@ export default function BirthdayTemplateCustomizePage() {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
-const updateTheme = (field, value) => {
-  if (field === "professionalThemeId") {
-    const match =
-      PROFESSIONAL_THEMES.find((t) => t.id === value) ||
-      PROFESSIONAL_THEMES[0];
-    // Keep variation in lockstep with the chosen theme so saves reflect the same palette
-    setActiveVariationId(value);
+  const updateTheme = (field, value) => {
+    if (field === "professionalThemeId") {
+      const match =
+        PROFESSIONAL_THEMES.find((t) => t.id === value) ||
+        PROFESSIONAL_THEMES[0];
+      // Keep variation in lockstep with the chosen theme so saves reflect the same palette
+      setActiveVariationId(value);
+      setData((prev) => ({
+        ...prev,
+        theme: { ...prev.theme, [field]: value },
+        themePalette: match?.recommendedColorPalette || prev.themePalette,
+      }));
+      return;
+    }
     setData((prev) => ({
       ...prev,
       theme: { ...prev.theme, [field]: value },
-      themePalette: match?.recommendedColorPalette || prev.themePalette,
     }));
-    return;
-  }
-  setData((prev) => ({
-    ...prev,
-    theme: { ...prev.theme, [field]: value },
-  }));
-};
+  };
 
   const updatePartyDetails = (field, value) => {
     setData((prev) => ({
@@ -1293,9 +1399,9 @@ const updateTheme = (field, value) => {
         const previewUrl = URL.createObjectURL(file);
         return {
           file,
-          id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(
-            2
-          )}`,
+          id: `${file.name}-${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}`,
           previewUrl,
         };
       });
@@ -1312,7 +1418,8 @@ const updateTheme = (field, value) => {
         setData((prev) => ({
           ...prev,
           gallery: prev.gallery.map((item) => {
-            if (item.id !== entry.id || item.url !== entry.previewUrl) return item;
+            if (item.id !== entry.id || item.url !== entry.previewUrl)
+              return item;
             if (entry.previewUrl.startsWith("blob:")) {
               URL.revokeObjectURL(entry.previewUrl);
             }
@@ -1508,8 +1615,7 @@ const updateTheme = (field, value) => {
         ...prev.theme,
         professionalThemeId: activeVariationId,
       },
-      themePalette:
-        matchedTheme.recommendedColorPalette || prev.themePalette,
+      themePalette: matchedTheme.recommendedColorPalette || prev.themePalette,
     }));
   }, [activeVariationId]);
 
@@ -1589,7 +1695,8 @@ const updateTheme = (field, value) => {
           })() ||
           null;
         const existingThemeKey =
-          (existing.theme && (existing.theme.id || existing.theme.professionalThemeId)) ||
+          (existing.theme &&
+            (existing.theme.id || existing.theme.professionalThemeId)) ||
           existing.variationId ||
           variationIdParam ||
           null;
@@ -1600,13 +1707,9 @@ const updateTheme = (field, value) => {
           null;
 
         const resolvedFont =
-          existing.theme?.font ||
-          existing.fontId ||
-          prev.theme.font;
+          existing.theme?.font || existing.fontId || prev.theme.font;
         const resolvedFontSize =
-          existing.theme?.fontSize ||
-          existing.fontSize ||
-          prev.theme.fontSize;
+          existing.theme?.fontSize || existing.fontSize || prev.theme.fontSize;
 
         setData((prev) => ({
           ...prev,
@@ -1615,10 +1718,7 @@ const updateTheme = (field, value) => {
             existing.childName ||
             existing.name ||
             prev.childName,
-          age:
-            typeof existing.age === "number"
-              ? existing.age
-              : prev.age,
+          age: typeof existing.age === "number" ? existing.age : prev.age,
           date: existing.date || loadedDate || prev.date,
           time: existing.time || loadedTime || prev.time,
           city: existing.city || prev.city,
@@ -1629,14 +1729,17 @@ const updateTheme = (field, value) => {
           hosts: existing.hosts || prev.hosts,
           images: {
             ...prev.images,
-            hero: existing.customHeroImage || existing.heroImage || prev.images.hero,
+            hero:
+              existing.customHeroImage ||
+              existing.heroImage ||
+              prev.images.hero,
             headlineBg: existing.images?.headlineBg || prev.images.headlineBg,
           },
           theme: {
             ...prev.theme,
             ...(existing.theme || {}),
             ...(existingThemeClasses &&
-              (!existing.theme?.bg || !existing.theme?.text)
+            (!existing.theme?.bg || !existing.theme?.text)
               ? {
                   ...existingThemeClasses,
                   id: existingThemeClasses.id,
@@ -1738,8 +1841,7 @@ const updateTheme = (field, value) => {
         currentProfessionalTheme.recommendedColorPalette || [];
       const currentFont = FONTS[data.theme.font] || FONTS.playfair;
       const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
-      const templateIdForSave =
-        template?.id || activeTemplateId || "party-pop";
+      const templateIdForSave = template?.id || activeTemplateId || "party-pop";
       const variationIdForSave =
         data.theme?.professionalThemeId ||
         activeVariationId ||
@@ -2476,7 +2578,7 @@ const updateTheme = (field, value) => {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
@@ -3421,38 +3523,38 @@ const updateTheme = (field, value) => {
         </ScrollBoundary>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
-            <div className="flex gap-3">
-              {editEventId && (
-                <button
-                  onClick={() => router.push(`/event/${editEventId}`)}
-                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
-              )}
+          <div className="flex gap-3">
+            {editEventId && (
               <button
-                onClick={handlePublish}
-                disabled={submitting || uploadingAssets}
-                className={`${
-                  editEventId ? "flex-1" : "w-full"
-                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+                onClick={() => router.push(`/event/${editEventId}`)}
+                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
               >
-                {submitting
-                  ? editEventId
-                    ? "Saving..."
-                    : "Publishing..."
-                  : editEventId
-                  ? "Save"
-                  : "Publish"}
+                Cancel
               </button>
-            </div>
-            {uploadingAssets && (
-              <p className="mt-2 text-xs text-slate-500">
-                Uploading one or more images—publish will finish once the upload
-                completes.
-              </p>
             )}
+            <button
+              onClick={handlePublish}
+              disabled={submitting || uploadingAssets}
+              className={`${
+                editEventId ? "flex-1" : "w-full"
+              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {submitting
+                ? editEventId
+                  ? "Saving..."
+                  : "Publishing..."
+                : editEventId
+                ? "Save"
+                : "Publish"}
+            </button>
           </div>
+          {uploadingAssets && (
+            <p className="mt-2 text-xs text-slate-500">
+              Uploading one or more images—publish will finish once the upload
+              completes.
+            </p>
+          )}
+        </div>
       </div>
 
       {!mobileMenuOpen && (

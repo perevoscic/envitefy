@@ -704,6 +704,7 @@ export default function BabyShowersCreate({
           headerBgCss: headerBgCss || undefined,
           templateId: templateIdState || undefined,
           templateVariationId: templateVariationState || undefined,
+          templateBackgroundCss: templateBackgroundCss || undefined,
           thumbnail:
             attachmentPreviewUrl && attachment?.type.startsWith("image/")
               ? attachmentPreviewUrl

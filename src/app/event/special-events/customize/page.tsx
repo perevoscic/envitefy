@@ -1723,7 +1723,7 @@ export default function SpecialEventsCustomizePage() {
     <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",

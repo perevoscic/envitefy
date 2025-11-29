@@ -1748,7 +1748,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
     const [themesExpanded, setThemesExpanded] = useState(
-      config.themesExpandedByDefault ?? false
+      config.themesExpandedByDefault ?? true
     );
     const [loadingExisting, setLoadingExisting] = useState(false);
     const {
@@ -2093,6 +2093,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
       return () => observer.disconnect();
     }, [navItems]);
+
+    useEffect(() => {
+      if (activeView === "design") {
+        setThemesExpanded(true);
+      }
+    }, [activeView]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -2606,7 +2612,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             )}
           </button>
           {themesExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[1000px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-1">
               {config.themes.map((theme) => (
                 <ThemeSwatch
                   key={theme.id}
@@ -2858,7 +2864,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

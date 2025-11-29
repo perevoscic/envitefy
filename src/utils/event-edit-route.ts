@@ -87,14 +87,12 @@ export const resolveEditHref = (
       (title.includes("baby") && title.includes("shower")) ||
       title.includes("bridal shower")
     ) {
-      if (templateId && variationId) {
-        return `/event/baby-showers/customize?templateId=${encodeURIComponent(
-          templateId
-        )}&variationId=${encodeURIComponent(
-          variationId
-        )}&edit=${encodeURIComponent(eventId)}`;
-      }
-      return `/event/baby-showers?edit=${encodeURIComponent(eventId)}`;
+      const params = new URLSearchParams();
+      if (templateId) params.set("templateId", templateId);
+      if (variationId) params.set("variationId", variationId);
+      params.set("edit", eventId);
+      const qs = params.toString();
+      return `/event/baby-showers/customize${qs ? `?${qs}` : ""}`;
     }
 
     // Weddings

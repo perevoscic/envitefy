@@ -264,10 +264,51 @@ const FONT_SIZE_OPTIONS = [
   { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
 ];
 
+const generateRosterPlayerId = () =>
+  `player-${Math.random().toString(36).slice(2, 9)}`;
+
+const normalizeRosterSection = (section: any) => {
+  if (!section || typeof section !== "object") return section;
+  const normalizedPlayers = Array.isArray(section.players)
+    ? section.players.map((player: any) => {
+        if (player && player.id) return player;
+        return {
+          ...(player || {}),
+          id:
+            player?.playerId ||
+            player?.athleteId ||
+            player?.name ||
+            generateRosterPlayerId(),
+        };
+      })
+    : section.players;
+  return { ...section, players: normalizedPlayers };
+};
+
+const normalizeAdvancedSectionsForStorage = (sections: any) => {
+  if (!sections || typeof sections !== "object") return sections;
+  return {
+    ...sections,
+    roster: normalizeRosterSection(sections.roster),
+  };
+};
+
 const baseInputClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
+
+const cloneState = <T,>(value: T): T => {
+  const sc = (globalThis as any).structuredClone;
+  if (typeof sc === "function") {
+    return sc(value);
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return value;
+  }
+};
 
 const InputGroup = ({
   label,
@@ -284,19 +325,6 @@ const InputGroup = ({
   type?: string;
   readOnly?: boolean;
 }) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  // Sync local state when value prop changes (from external updates)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    if (localValue !== value) {
-      onChange(localValue);
-    }
-  };
-
   return (
     <div className="space-y-2">
       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -305,9 +333,8 @@ const InputGroup = ({
       {type === "textarea" ? (
         <textarea
           className={baseTextareaClass}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
         />
@@ -315,9 +342,8 @@ const InputGroup = ({
         <input
           type={type}
           className={baseInputClass}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
         />
@@ -454,6 +480,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
+    const [initializingEdit, setInitializingEdit] = useState(
+      Boolean(editEventId)
+    );
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -464,7 +493,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
     const updateData = useCallback((field: string, value: any) => {
-      setData((prev) => ({ ...prev, [field]: value }));
+      setData((prev) => {
+        const next = cloneState(prev || {});
+        next[field] = value;
+        return next;
+      });
     }, []);
 
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
@@ -485,7 +518,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     // Load existing event data when editing
     useEffect(() => {
       const loadExisting = async () => {
-        if (!editEventId) return;
+        if (!editEventId) {
+          setInitializingEdit(false);
+          return;
+        }
         try {
           const res = await fetch(`/api/history/${editEventId}`);
           if (!res.ok) return;
@@ -540,13 +576,49 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing.customFields?.advancedSections ||
             existing.advanced ||
             {};
-          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
-            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
+          const normalizedAdvanced =
+            normalizeAdvancedSectionsForStorage(incomingAdvanced);
+          if (normalizedAdvanced && Object.keys(normalizedAdvanced).length) {
+            setAdvancedState((prev) => ({
+              ...prev,
+              ...normalizedAdvanced,
+            }));
           }
 
-          if (existing.themeId) setThemeId(existing.themeId);
+          const incomingThemeId =
+            existing.themeId ||
+            existing.theme?.id ||
+            existing.theme?.slug ||
+            existing.templateConfig?.themeId;
+
+          if (incomingThemeId) {
+            const themeExists = config.themes.find(
+              (t) => t.id === incomingThemeId
+            );
+            setThemeId(themeExists ? incomingThemeId : config.themes[0]?.id);
+          }
+
+          // Validate font + size after state settles
+          setTimeout(() => {
+            setData((prev) => {
+              const fontExists = FOOTBALL_FONTS.find(
+                (f) => f.id === prev.fontId
+              );
+              const sizeExists = FONT_SIZE_OPTIONS.find(
+                (o) => o.id === prev.fontSize
+              );
+              if (fontExists && sizeExists) return prev;
+              return {
+                ...prev,
+                fontId: fontExists ? prev.fontId : FOOTBALL_FONTS[0]?.id,
+                fontSize: sizeExists ? prev.fontSize : "medium",
+              };
+            });
+          }, 100);
         } catch {
           // ignore to keep edit usable
+        } finally {
+          setInitializingEdit(false);
         }
       };
       loadExisting();
@@ -788,11 +860,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const updateExtra = useCallback((key: string, value: string) => {
-      setData((prev) => ({
-        ...prev,
-        extra: { ...prev.extra, [key]: value },
-      }));
+      setData((prev) => {
+        const next = cloneState(prev || {});
+        const extra =
+          next.extra && typeof next.extra === "object" ? next.extra : {};
+        next.extra = { ...extra, [key]: value };
+        return next;
+      });
     }, []);
+
+    const rsvpCopy = {
+      menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
+      menuDesc: config.rsvpCopy?.menuDesc || "RSVP settings.",
+      editorTitle: config.rsvpCopy?.editorTitle || "RSVP",
+      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
+      deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
+      helperText:
+        config.rsvpCopy?.helperText ||
+        "The RSVP card in the preview updates with these settings.",
+    };
 
     const handlePublish = useCallback(async () => {
       if (submitting) return;
@@ -808,10 +894,59 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
-        const heroToSave =
-          data.hero && !/^blob:|^data:/i.test(data.hero)
-            ? data.hero
-            : config.defaultHero;
+        // Convert blob hero to data URL so saved preview matches editor
+        const heroToSave = await (async () => {
+          if (!data.hero) return config.defaultHero;
+          if (/^data:/i.test(data.hero)) return data.hero;
+          if (/^blob:/i.test(data.hero)) {
+            try {
+              const response = await fetch(data.hero);
+              const blob = await response.blob();
+              const reader = new FileReader();
+              return await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () =>
+                  resolve((reader.result as string) || config.defaultHero);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } catch {
+              return config.defaultHero;
+            }
+          }
+          return data.hero;
+        })();
+
+        const validThemeId =
+          themeId && config.themes.find((t) => t.id === themeId)
+            ? themeId
+            : config.themes[0]?.id;
+        const themeToSave =
+          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+        const currentSelectedFont =
+          FOOTBALL_FONTS.find((f) => f.id === data.fontId) || FOOTBALL_FONTS[0];
+        const currentSelectedSize =
+          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
+          FONT_SIZE_OPTIONS[1];
+        const validFontId = currentSelectedFont?.id || data.fontId;
+        const validFontSize = currentSelectedSize?.id || data.fontSize;
+        const addressToSave =
+          data.extra?.stadiumAddress ||
+          data.extra?.address ||
+          locationParts ||
+          undefined;
+
+        const templateConfigForSave = {
+          slug: config.slug,
+          displayName: config.displayName,
+          category: config.category,
+          detailFields: config.detailFields,
+          advancedSectionIds: config.advancedSections?.map((s) => s.id) || [],
+          rsvpCopy,
+          fontHref: FOOTBALL_GOOGLE_FONTS_URL,
+        };
+
+        const advancedSectionsToSave =
+          normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
 
         const payload: any = {
           title: data.title || config.displayName,
@@ -834,16 +969,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             rsvpDeadline: data.rsvpDeadline || undefined,
             numberOfGuests: 0,
             templateId: config.slug,
-            themeId,
-            fontId: data.fontId,
-            fontSize: data.fontSize,
+            templateConfig: templateConfigForSave,
+            themeId: validThemeId,
+            theme: themeToSave,
+            fontId: validFontId,
+            fontSize: validFontSize,
+            fontFamily: currentSelectedFont?.css,
+            fontSizeClass: currentSelectedSize?.className,
+            fontHref: FOOTBALL_GOOGLE_FONTS_URL,
             customFields: {
               ...data.extra,
-              advancedSections: advancedState,
+              advancedSections: advancedSectionsToSave,
             },
-            advancedSections: advancedState,
+            advancedSections: advancedSectionsToSave,
             heroImage: heroToSave,
             extra: data.extra,
+            address: addressToSave,
             ...(data.passcodeRequired && data.passcode
               ? {
                   accessControl: {
@@ -915,20 +1056,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.displayName,
       config.slug,
       config.defaultHero,
+      rsvpCopy,
       editEventId,
       router,
     ]);
-
-    const rsvpCopy = {
-      menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
-      menuDesc: config.rsvpCopy?.menuDesc || "RSVP settings.",
-      editorTitle: config.rsvpCopy?.editorTitle || "RSVP",
-      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
-      deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
-      helperText:
-        config.rsvpCopy?.helperText ||
-        "The RSVP card in the preview updates with these settings.",
-    };
 
     const buildEventDetails = () => {
       const title = data.title || config.displayName;
@@ -1495,11 +1626,26 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
+    if (initializingEdit) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+          <div className="text-center px-4 py-6 bg-white shadow rounded-lg border border-slate-200">
+            <p className="text-sm font-medium text-slate-700">
+              Loading your custom event…
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Please wait while we restore your saved details.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-y-auto font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

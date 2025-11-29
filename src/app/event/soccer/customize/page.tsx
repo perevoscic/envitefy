@@ -346,6 +346,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       city: config.prefill?.city || "Chicago",
       state: config.prefill?.state || "IL",
       venue: config.prefill?.venue || "",
+      address: config.prefill?.address || "",
       details: config.prefill?.details || "Tell guests what to expect.",
       hero: config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
@@ -386,9 +387,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
     const [themesExpanded, setThemesExpanded] = useState(
-      config.themesExpandedByDefault ?? false
+      config.themesExpandedByDefault ?? true
     );
-    const [loadingExisting, setLoadingExisting] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(
+      Boolean(editEventId)
+    );
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -436,10 +439,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, []);
 
+    useEffect(() => {
+      if (activeView === "design") {
+        setThemesExpanded(true);
+      }
+    }, [activeView]);
+
     // Load existing event data when editing
     useEffect(() => {
       const loadExisting = async () => {
-        if (!editEventId) return;
+        if (!editEventId) {
+          setLoadingExisting(false);
+          return;
+        }
         setLoadingExisting(true);
         try {
           const res = await fetch(`/api/history/${editEventId}`, {
@@ -478,6 +490,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             city: existing.city || prev.city,
             state: existing.state || prev.state,
             venue: existing.venue || existing.location || prev.venue,
+            address: existing.address || prev.address,
             details: existing.details || existing.description || prev.details,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
@@ -526,12 +539,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           } else {
             setThemeId(config.themes[0]?.id ?? "default-theme");
           }
-
-          setLoadingExisting(false);
         } catch (err) {
           console.error("[Edit] Error loading event:", err);
-          setLoadingExisting(false);
           alert("Failed to load event data. Please refresh the page.");
+        } finally {
+          setLoadingExisting(false);
         }
       };
       loadExisting();
@@ -649,10 +661,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const headingSizeClass =
       selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
-    const locationParts = [data.venue, data.city, data.state]
+    const locationParts = [data.venue, data.address, data.city, data.state]
       .filter(Boolean)
       .join(", ");
-    const addressLine = "";
+    const addressLine = data.address;
 
     const navItems = useMemo(
       () =>
@@ -735,6 +747,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handlePublish = useCallback(async () => {
       if (submitting) return;
+      if (!data.address?.trim()) {
+        alert("Street address is required for this match page.");
+        return;
+      }
       setSubmitting(true);
       try {
         let startISO: string | null = null;
@@ -794,6 +810,59 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) ||
           FONT_SIZE_OPTIONS[1];
 
+        const advancedSectionsToSave =
+          typeof structuredClone === "function"
+            ? structuredClone(advancedState || {})
+            : JSON.parse(JSON.stringify(advancedState || {}));
+
+        const snackSlots =
+          Array.isArray(advancedSectionsToSave?.snacks?.slots) &&
+          advancedSectionsToSave?.snacks?.slots.length
+            ? advancedSectionsToSave.snacks.slots
+            : [];
+        if (snackSlots.length) {
+          const volunteers =
+            typeof advancedSectionsToSave.volunteers === "object" &&
+            advancedSectionsToSave.volunteers
+              ? advancedSectionsToSave.volunteers
+              : {};
+          const existingSlots =
+            Array.isArray(volunteers.volunteerSlots) &&
+            volunteers.volunteerSlots.length
+              ? volunteers.volunteerSlots
+              : Array.isArray(volunteers.slots) && volunteers.slots.length
+              ? volunteers.slots
+              : [];
+          const preservedSlots = existingSlots.filter(
+            (slot: any) => slot?.type !== "snack"
+          );
+          const snackVolunteerSlots = snackSlots.map(
+            (slot: any, idx: number) => {
+              const slotId =
+                slot.id ||
+                `snack-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+              if (!slot.id) {
+                slot.id = slotId;
+              }
+              return {
+                id: slotId,
+                role: slot.role || "Snacks & Hydration",
+                name: slot.family || "",
+                filled: Boolean(slot.filled && slot.family),
+                notes: slot.notes || "",
+                contact: slot.contact || "",
+                type: "snack",
+              };
+            }
+          );
+          const mergedSlots = [...preservedSlots, ...snackVolunteerSlots];
+          advancedSectionsToSave.volunteers = {
+            ...volunteers,
+            volunteerSlots: mergedSlots,
+            slots: mergedSlots,
+          };
+        }
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
@@ -803,6 +872,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             startISO,
             endISO,
             location: locationParts || undefined,
+            address: data.address || undefined,
+            city: data.city || undefined,
+            state: data.state || undefined,
             venue: data.venue || undefined,
             description: data.details || undefined,
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
@@ -816,9 +888,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             customFields: {
               ...data.extra,
-              advancedSections: advancedState,
+              advancedSections: advancedSectionsToSave,
             },
-            advancedSections: advancedState,
+            advancedSections: advancedSectionsToSave,
             heroImage: heroToSave,
             themeId: validThemeId,
             theme: themeToSave,
@@ -884,12 +956,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [
       submitting,
+      data.address,
+      data.city,
+      data.state,
       data.date,
       data.time,
       data.title,
       data.details,
       data.venue,
       data.hero,
+      data.fontId,
+      data.fontSize,
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
@@ -1143,6 +1220,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => updateData("venue", v)}
               placeholder="Venue name (optional)"
             />
+            <InputGroup
+              key="address"
+              label="Address"
+              value={data.address}
+              onChange={(v) => updateData("address", v)}
+              placeholder="Street address"
+            />
           </div>
         </EditorLayout>
       ),
@@ -1229,7 +1313,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             )}
           </button>
           {themesExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[1000px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-1">
               {config.themes.map((theme) => (
                 <ThemeSwatch
                   key={theme.id}
@@ -1477,11 +1561,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
+    if (loadingExisting) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+          <div className="px-4 py-6 bg-white shadow rounded-lg border border-slate-200 text-sm font-medium text-slate-700">
+            Loading your saved soccer match…
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-25"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

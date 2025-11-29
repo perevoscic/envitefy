@@ -116,13 +116,17 @@ async authorize(credentials) {
       async jwt({ token, user, account }) {
         try {
           const email = (user?.email as string) || (token?.email as string) || null;
-          if (email) {
-            const isAdmin = await getIsAdminByEmail(email);
-            (token as any).isAdmin = !!isAdmin;
-          }
-
           const tokenAny = token as any;
           tokenAny.providers = tokenAny.providers || {};
+
+          if (email && tokenAny.isAdmin === undefined) {
+            try {
+              tokenAny.isAdmin = await getIsAdminByEmail(email);
+            } catch (err) {
+              console.error("[auth] isAdmin lookup failed; defaulting to false", err);
+              tokenAny.isAdmin = false;
+            }
+          }
 
           if (account?.provider) {
             // OAuth sign-in: store provider tokens from the OAuth account
