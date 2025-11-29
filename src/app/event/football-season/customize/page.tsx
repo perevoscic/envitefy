@@ -264,10 +264,51 @@ const FONT_SIZE_OPTIONS = [
   { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
 ];
 
+const generateRosterPlayerId = () =>
+  `player-${Math.random().toString(36).slice(2, 9)}`;
+
+const normalizeRosterSection = (section: any) => {
+  if (!section || typeof section !== "object") return section;
+  const normalizedPlayers = Array.isArray(section.players)
+    ? section.players.map((player: any) => {
+        if (player && player.id) return player;
+        return {
+          ...(player || {}),
+          id:
+            player?.playerId ||
+            player?.athleteId ||
+            player?.name ||
+            generateRosterPlayerId(),
+        };
+      })
+    : section.players;
+  return { ...section, players: normalizedPlayers };
+};
+
+const normalizeAdvancedSectionsForStorage = (sections: any) => {
+  if (!sections || typeof sections !== "object") return sections;
+  return {
+    ...sections,
+    roster: normalizeRosterSection(sections.roster),
+  };
+};
+
 const baseInputClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
+
+const cloneState = <T,>(value: T): T => {
+  const sc = (globalThis as any).structuredClone;
+  if (typeof sc === "function") {
+    return sc(value);
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return value;
+  }
+};
 
 const InputGroup = ({
   label,
@@ -454,6 +495,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
+    const [initializingEdit, setInitializingEdit] = useState(
+      Boolean(editEventId)
+    );
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -464,7 +508,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
     const updateData = useCallback((field: string, value: any) => {
-      setData((prev) => ({ ...prev, [field]: value }));
+      setData((prev) => {
+        const next = cloneState(prev || {});
+        next[field] = value;
+        return next;
+      });
     }, []);
 
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
@@ -485,7 +533,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     // Load existing event data when editing
     useEffect(() => {
       const loadExisting = async () => {
-        if (!editEventId) return;
+        if (!editEventId) {
+          setInitializingEdit(false);
+          return;
+        }
         try {
           const res = await fetch(`/api/history/${editEventId}`);
           if (!res.ok) return;
@@ -540,8 +591,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing.customFields?.advancedSections ||
             existing.advanced ||
             {};
-          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
-            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
+          const normalizedAdvanced = normalizeAdvancedSectionsForStorage(
+            incomingAdvanced
+          );
+          if (normalizedAdvanced && Object.keys(normalizedAdvanced).length) {
+            setAdvancedState((prev) => ({
+              ...prev,
+              ...normalizedAdvanced,
+            }));
           }
 
           if (existing.themeId) {
@@ -570,6 +627,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }, 100);
         } catch {
           // ignore to keep edit usable
+        } finally {
+          setInitializingEdit(false);
         }
       };
       loadExisting();
@@ -811,10 +870,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const updateExtra = useCallback((key: string, value: string) => {
-      setData((prev) => ({
-        ...prev,
-        extra: { ...prev.extra, [key]: value },
-      }));
+      setData((prev) => {
+        const next = cloneState(prev || {});
+        const extra = next.extra && typeof next.extra === "object" ? next.extra : {};
+        next.extra = { ...extra, [key]: value };
+        return next;
+      });
     }, []);
 
     const rsvpCopy = {
@@ -893,6 +954,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           fontHref: FOOTBALL_GOOGLE_FONTS_URL,
         };
 
+        const advancedSectionsToSave =
+          normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
+
         const payload: any = {
           title: data.title || config.displayName,
           data: {
@@ -924,9 +988,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             fontHref: FOOTBALL_GOOGLE_FONTS_URL,
             customFields: {
               ...data.extra,
-              advancedSections: advancedState,
+              advancedSections: advancedSectionsToSave,
             },
-            advancedSections: advancedState,
+            advancedSections: advancedSectionsToSave,
             heroImage: heroToSave,
             extra: data.extra,
             address: addressToSave,
@@ -1570,6 +1634,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         )}
       </div>
     );
+
+    if (initializingEdit) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+          <div className="text-center px-4 py-6 bg-white shadow rounded-lg border border-slate-200">
+            <p className="text-sm font-medium text-slate-700">
+              Loading your custom event…
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Please wait while we restore your saved details.
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-y-auto font-sans text-slate-900">

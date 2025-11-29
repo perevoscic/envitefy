@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Users,
   Trophy,
@@ -554,6 +554,70 @@ const rosterSection = {
       }));
     };
 
+    const RosterTextField = ({
+      label,
+      field,
+      playerId,
+      value,
+      placeholder,
+      type = "text",
+      textarea = false,
+    }: {
+      label: string;
+      field: keyof Player;
+      playerId: string;
+      value: string;
+      placeholder?: string;
+      type?: string;
+      textarea?: boolean;
+    }) => {
+      const [localValue, setLocalValue] = useState(value);
+
+      useEffect(() => {
+        setLocalValue(value);
+      }, [value]);
+
+      const commit = () => {
+        if (localValue !== value) {
+          updatePlayer(playerId, field, localValue);
+        }
+      };
+
+      if (textarea) {
+        return (
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              {label}
+            </label>
+            <textarea
+              className={textareaClass}
+              placeholder={placeholder}
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onBlur={commit}
+              rows={2}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <div>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            {label}
+          </label>
+          <input
+            type={type}
+            className={inputClass}
+            placeholder={placeholder}
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={commit}
+          />
+        </div>
+      );
+    };
+
     return (
       <div className="space-y-6">
         <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
@@ -591,26 +655,24 @@ const rosterSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Player Name *
                 </label>
-                <input
-                  className={inputClass}
-                  placeholder="John Smith"
+                <RosterTextField
+                  label="Player Name *"
+                  field="name"
+                  playerId={player.id}
                   value={player.name}
-                  onChange={(e) =>
-                    updatePlayer(player.id, "name", e.target.value)
-                  }
+                  placeholder="John Smith"
                 />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Jersey #
                 </label>
-                <input
-                  className={inputClass}
-                  placeholder="12"
+                <RosterTextField
+                  label="Jersey #"
+                  field="jerseyNumber"
+                  playerId={player.id}
                   value={player.jerseyNumber}
-                  onChange={(e) =>
-                    updatePlayer(player.id, "jerseyNumber", e.target.value)
-                  }
+                  placeholder="12"
                 />
               </div>
             </div>
@@ -684,32 +746,29 @@ const rosterSection = {
                 Parent/Guardian Contact
               </label>
               <div className="grid grid-cols-1 gap-3">
-                <input
-                  className={inputClass}
-                  placeholder="Parent Name"
+                <RosterTextField
+                  label="Parent Name"
+                  field="parentName"
+                  playerId={player.id}
                   value={player.parentName}
-                  onChange={(e) =>
-                    updatePlayer(player.id, "parentName", e.target.value)
-                  }
+                  placeholder="Parent Name"
                 />
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    className={inputClass}
+                  <RosterTextField
+                    label="Phone"
+                    field="parentPhone"
+                    playerId={player.id}
+                    value={player.parentPhone}
                     placeholder="Phone"
                     type="tel"
-                    value={player.parentPhone}
-                    onChange={(e) =>
-                      updatePlayer(player.id, "parentPhone", e.target.value)
-                    }
                   />
-                  <input
-                    className={inputClass}
+                  <RosterTextField
+                    label="Email"
+                    field="parentEmail"
+                    playerId={player.id}
+                    value={player.parentEmail}
                     placeholder="Email"
                     type="email"
-                    value={player.parentEmail}
-                    onChange={(e) =>
-                      updatePlayer(player.id, "parentEmail", e.target.value)
-                    }
                   />
                 </div>
               </div>
@@ -719,14 +778,13 @@ const rosterSection = {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Medical Notes (optional)
               </label>
-              <textarea
-                className={textareaClass}
-                placeholder="Allergies, injuries, restrictions..."
+              <RosterTextField
+                label="Medical Notes (optional)"
+                field="medicalNotes"
+                playerId={player.id}
                 value={player.medicalNotes}
-                onChange={(e) =>
-                  updatePlayer(player.id, "medicalNotes", e.target.value)
-                }
-                rows={2}
+                placeholder="Allergies, injuries, restrictions..."
+                textarea
               />
             </div>
           </div>

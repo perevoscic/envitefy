@@ -60,6 +60,78 @@ type SimpleTemplateViewProps = {
   };
 };
 
+type NormalizedRosterAthlete = {
+  id: string;
+  name: string;
+  level?: string;
+  status: string;
+  primaryEvents: string[];
+  events: string[];
+  jerseyNumber?: string;
+  position?: string;
+  grade?: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentEmail?: string;
+  medicalNotes?: string;
+};
+
+const normalizeRosterStatus = (value?: string) =>
+  (value || "").toString().trim().toLowerCase();
+
+const normalizeRosterAthletes = (roster: any): NormalizedRosterAthlete[] => {
+  if (!roster || typeof roster !== "object") return [];
+  const entries = Array.isArray(roster.athletes)
+    ? roster.athletes
+    : Array.isArray(roster.players)
+    ? roster.players
+    : [];
+  return entries
+    .map((entry: any, idx: number) => {
+      if (!entry || typeof entry !== "object") return null;
+      const id =
+        entry.id ||
+        entry.playerId ||
+        entry.athleteId ||
+        entry.name ||
+        entry.jerseyNumber ||
+        `player-${idx + 1}`;
+      const position =
+        entry.position ||
+        entry.primaryPosition ||
+        (Array.isArray(entry.events) && entry.events[0]) ||
+        (Array.isArray(entry.primaryEvents) && entry.primaryEvents[0]);
+      const primaryEvents =
+        Array.isArray(entry.primaryEvents) && entry.primaryEvents.length
+          ? entry.primaryEvents
+          : position
+          ? [position]
+          : [];
+      const events =
+        Array.isArray(entry.events) && entry.events.length
+          ? entry.events
+          : primaryEvents;
+      return {
+        id: id.toString(),
+        name: entry.name || entry.athleteName || `Player ${idx + 1}`,
+        level: entry.level || entry.grade || position || undefined,
+        status: normalizeRosterStatus(
+          entry.status || entry.playerStatus || entry.attendanceStatus || "active"
+        ),
+        primaryEvents,
+        events,
+        jerseyNumber: entry.jerseyNumber,
+        position,
+        grade: entry.grade,
+        parentName: entry.parentName,
+        parentPhone: entry.parentPhone,
+        parentEmail: entry.parentEmail,
+        medicalNotes: entry.medicalNotes,
+      };
+    })
+    .filter(Boolean) as NormalizedRosterAthlete[];
+};
+
 export default function SimpleTemplateView({
   eventId,
   eventData,
@@ -525,9 +597,10 @@ export default function SimpleTemplateView({
     window.location.href = absoluteIcs;
   };
 
-  const rosterAthletes = Array.isArray(advancedSections?.roster?.athletes)
-    ? advancedSections.roster.athletes
-    : [];
+  const rosterAthletes = useMemo<NormalizedRosterAthlete[]>(
+    () => normalizeRosterAthletes(advancedSections?.roster),
+    [advancedSections?.roster]
+  );
 
   // Section presence flags and navigation items
   const hasRoster =
@@ -705,7 +778,6 @@ export default function SimpleTemplateView({
 
   // Render roster section
   const renderRosterSection = () => {
-    const roster = advancedSections?.roster;
     if (protectSensitiveSections) {
       if (!hasRoster) return null;
       return wrapProtected(
@@ -726,29 +798,45 @@ export default function SimpleTemplateView({
         </section>
       );
     }
-    if (!roster?.athletes?.length) return null;
+    if (!rosterAthletes.length) return null;
+
+    const statusSummaries: string[] = [];
+    const confirmedCount = rosterAthletes.filter((a) =>
+      ["going", "yes"].includes(a.status)
+    ).length;
+    const activeCount = rosterAthletes.filter(
+      (a) => a.status === "active"
+    ).length;
+    const injuredCount = rosterAthletes.filter((a) =>
+      ["injured", "ineligible"].includes(a.status)
+    ).length;
+    const pendingCount = rosterAthletes.filter((a) =>
+      ["pending", "maybe"].includes(a.status)
+    ).length;
+    const notGoingCount = rosterAthletes.filter((a) =>
+      ["notgoing", "not_going", "no"].includes(a.status)
+    ).length;
+    if (confirmedCount) statusSummaries.push(`${confirmedCount} confirmed`);
+    if (activeCount) statusSummaries.push(`${activeCount} active`);
+    if (injuredCount) statusSummaries.push(`${injuredCount} injured`);
+    if (pendingCount) statusSummaries.push(`${pendingCount} pending`);
+    if (notGoingCount) statusSummaries.push(`${notGoingCount} not going`);
 
     const statusIcon = (status: string) => {
-      switch (status) {
-        case "going":
-          return <Check size={16} className="text-green-400" />;
-        case "notgoing":
-        case "not_going":
-          return <X size={16} className="text-red-400" />;
-        case "maybe":
-          return <HelpCircle size={16} className="text-yellow-400" />;
-        default:
-          return <HelpCircle size={16} className="text-gray-400" />;
+      if (["going", "yes", "active"].includes(status)) {
+        return <Check size={16} className="text-emerald-400" />;
       }
+      if (["notgoing", "not_going", "no"].includes(status)) {
+        return <X size={16} className="text-red-400" />;
+      }
+      if (["injured", "ineligible"].includes(status)) {
+        return <AlertCircle size={16} className="text-yellow-400" />;
+      }
+      if (["pending", "maybe"].includes(status)) {
+        return <Clock size={16} className="text-slate-400" />;
+      }
+      return <HelpCircle size={16} className="text-slate-400" />;
     };
-
-    const confirmed = roster.athletes.filter(
-      (a: any) => a.status === "going"
-    ).length;
-    const pending = roster.athletes.filter((a: any) => {
-      const s = (a.status || "").toLowerCase();
-      return s !== "going" && s !== "notgoing" && s !== "not_going";
-    }).length;
 
     return wrapProtected(
       <section
@@ -762,38 +850,69 @@ export default function SimpleTemplateView({
           Team Roster
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {roster.athletes.map((athlete: any, idx: number) => (
+          {rosterAthletes.map((athlete) => (
             <div
-              key={idx}
-              className="bg-white/5 border border-white/10 rounded-lg p-4 flex items-center justify-between"
+              key={athlete.id}
+              className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3"
             >
-              <div>
-                <div
-                  className={`font-semibold ${textClass}`}
-                  style={bodyShadow}
-                >
-                  {athlete.name}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex gap-3">
+                  {athlete.jerseyNumber && (
+                    <span className="text-2xl font-bold opacity-60">
+                      #{athlete.jerseyNumber}
+                    </span>
+                  )}
+                  <div>
+                    <div
+                      className={`font-semibold ${textClass}`}
+                      style={bodyShadow}
+                    >
+                      {athlete.name}
+                    </div>
+                    <div
+                      className={`text-sm opacity-70 ${textClass}`}
+                      style={bodyShadow}
+                    >
+                      {athlete.position ||
+                        athlete.primaryEvents?.[0] ||
+                        "Position TBD"}{" "}
+                      {athlete.level ? `• ${athlete.level}` : ""}
+                    </div>
+                  </div>
                 </div>
-                <div
-                  className={`text-sm opacity-70 ${textClass}`}
-                  style={bodyShadow}
-                >
-                  Level {athlete.level} •{" "}
-                  {athlete.events?.join(", ") || "All events"}
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10">
+                  {statusIcon(athlete.status)}
                 </div>
               </div>
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10">
-                {statusIcon(athlete.status)}
-              </div>
+              {(athlete.parentName ||
+                athlete.parentPhone ||
+                athlete.parentEmail) && (
+                <p className="text-xs opacity-70">
+                  {athlete.parentName && <>Parent: {athlete.parentName}</>}
+                  {athlete.parentPhone && <> • {athlete.parentPhone}</>}
+                  {athlete.parentEmail && <> • {athlete.parentEmail}</>}
+                </p>
+              )}
+              {athlete.medicalNotes && (
+                <p className="text-xs opacity-70">
+                  {athlete.medicalNotes}
+                </p>
+              )}
             </div>
           ))}
         </div>
-        <div
-          className={`mt-4 text-sm opacity-70 ${textClass}`}
-          style={bodyShadow}
-        >
-          {confirmed} confirmed • {pending} pending
-        </div>
+        {statusSummaries.length > 0 && (
+          <div
+            className="mt-4 flex flex-wrap gap-3 text-sm opacity-70"
+            style={bodyShadow}
+          >
+            {statusSummaries.map((summary) => (
+              <span key={summary} className={textClass}>
+                {summary}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
     );
   };
@@ -2132,7 +2251,9 @@ export default function SimpleTemplateView({
               {detailFields.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {detailFields.map((field: any) => {
-                    const val = customFields[field.key];
+                    const val =
+                      customFields[field.key] ??
+                      currentData?.extra?.[field.key];
                     if (!val) return null;
                     return (
                       <div
@@ -2207,30 +2328,38 @@ export default function SimpleTemplateView({
                           <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
                             Select Athlete (updates roster)
                           </label>
-                          <select
-                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                            value={selectedAthleteId}
-                            onChange={(e) =>
-                              setSelectedAthleteId(
-                                e.target.value === "__other"
-                                  ? ""
-                                  : e.target.value
-                              )
-                            }
-                          >
-                            <option value="">Choose athlete</option>
-                            {rosterAthletes.map((ath: any) => (
-                              <option key={ath.id} value={ath.id}>
-                                {ath.name}{" "}
-                                {ath.level ? `• ${ath.level}` : ""}{" "}
-                                {ath.primaryEvents?.length
-                                  ? `• ${ath.primaryEvents.join(", ")}`
-                                  : ""}
-                              </option>
-                            ))}
-                            <option value="__other">Not listed / other</option>
-                          </select>
-                        </div>
+                        <select
+                          className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                          value={selectedAthleteId}
+                          onChange={(e) =>
+                            setSelectedAthleteId(
+                              e.target.value === "__other"
+                                ? ""
+                                : e.target.value
+                            )
+                          }
+                        >
+                          <option value="">Choose athlete</option>
+                            {rosterAthletes.map((athlete) => {
+                              const labelParts = [
+                                athlete.name,
+                                athlete.jerseyNumber
+                                  ? `#${athlete.jerseyNumber}`
+                                  : null,
+                                athlete.position ||
+                                  athlete.primaryEvents?.[0] ||
+                                  null,
+                                athlete.level,
+                              ].filter(Boolean);
+                              return (
+                                <option key={athlete.id} value={athlete.id}>
+                                  {labelParts.join(" • ")}
+                                </option>
+                              );
+                            })}
+                          <option value="__other">Not listed / other</option>
+                        </select>
+                      </div>
                       )}
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">

@@ -1,7 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import React, { useMemo, useRef, useState, useCallback } from "react";
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -4240,19 +4246,40 @@ const InputGroup = ({
   onChange,
   type = "text",
   placeholder = "",
-}) => (
-  <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-      {label}
-    </label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
-    />
-  </div>
-);
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  type?: string;
+  placeholder?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+        {label}
+      </label>
+      <input
+        type={type}
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
+      />
+    </div>
+  );
+};
 
 export default App;
