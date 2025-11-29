@@ -1,0 +1,21 @@
+{
+  "id": "midnight-elegance",
+  "name": "Midnight Elegance",
+  "category": "luxury",
+  "family": "luxury",
+  "thumbnail": "/templates/weddings/midnight-elegance/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#0D0F2C",
+      "secondary": "#C7A26B",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/midnight-elegance/hero.png"
+    }
+  }
+}
