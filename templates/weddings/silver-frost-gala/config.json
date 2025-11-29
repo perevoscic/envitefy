@@ -1,0 +1,22 @@
+{
+  "id": "silver-frost-gala",
+  "name": "Silver Frost Gala",
+  "category": "modern",
+  "family": "modern",
+  "layout": "silver-gradient-hero",
+  "thumbnail": "/templates/weddings/silver-frost-gala/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#D9DCE4",
+      "secondary": "#F5F7FB",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/desert-lumiere-hero.jpeg"
+    }
+  }
+}

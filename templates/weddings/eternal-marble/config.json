@@ -1,0 +1,22 @@
+{
+  "id": "eternal-marble",
+  "name": "Eternal Marble",
+  "category": "classic",
+  "family": "classic",
+  "layout": "marble-slab-hero",
+  "thumbnail": "/templates/weddings/eternal-marble/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#F5F5F5",
+      "secondary": "#B8C2CC",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/starlight-ballroom-hero.jpeg"
+    }
+  }
+}

@@ -5,9 +5,9 @@ import type { Session } from "next-auth";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LeftSidebar from "./left-sidebar";
-import TopNav from "@/components/navigation/TopNav";
 import { MenuProvider } from "@/contexts/MenuContext";
 import ConditionalFooter from "@/components/ConditionalFooter";
+import { MainContentWrapper } from "@/components/MainContentWrapper";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { Suspense, type CSSProperties } from "react";
@@ -236,9 +236,7 @@ export default async function RootLayout({
           })}
         </Script>
       </head>
-      <body
-        className={`${fontVarsClass} antialiased`}
-      >
+      <body className={`${fontVarsClass} antialiased`}>
         <Script id="pwa-bridge" strategy="beforeInteractive">{`
           (function(){
             try {
@@ -273,31 +271,12 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <Providers session={session}>
             <MenuProvider>
-              {isAuthenticated ? (
-                <>
-                  <LeftSidebar />
-                  <TopNav />
-                </>
-              ) : null}
+              {isAuthenticated ? <LeftSidebar /> : null}
             </MenuProvider>
-            <div
-              className={`min-h-[100dvh] text-foreground flex flex-col ${
-              isAuthenticated
-                ? "bg-[#F8F5FF]"
-                : "bg-[#F8F5FF] landing-dark-gradient"
-            }`}
-            style={{
-              minHeight: "100dvh",
-              paddingTop: isAuthenticated
-                ? "calc(var(--top-nav-height, 4.5rem) + max(0px, env(safe-area-inset-top)))"
-                : "max(0px, env(safe-area-inset-top))",
-              paddingBottom: "max(0px, env(safe-area-inset-bottom))",
-            }}
-            data-static-illustration="true"
-          >
-            <div className="flex-1 min-w-0">{children}</div>
-            <ConditionalFooter serverSession={session} />
-          </div>
+            <MainContentWrapper isAuthenticated={isAuthenticated}>
+              <div className="flex-1 min-w-0">{children}</div>
+              <ConditionalFooter serverSession={session} />
+            </MainContentWrapper>
           </Providers>
         </Suspense>
       </body>

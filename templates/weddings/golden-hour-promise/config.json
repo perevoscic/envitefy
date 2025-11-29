@@ -1,0 +1,22 @@
+{
+  "id": "golden-hour-promise",
+  "name": "Golden Hour Promise",
+  "category": "modern",
+  "family": "modern",
+  "layout": "two-column",
+  "thumbnail": "/templates/weddings/golden-hour-promise/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#C58A45",
+      "secondary": "#FFF8EC",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Merriweather",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "champagne-velvet",
+  "name": "Champagne Velvet",
+  "category": "luxury",
+  "family": "luxury",
+  "layout": "full-width-luxury",
+  "thumbnail": "/templates/weddings/champagne-velvet/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#F4E7D3",
+      "secondary": "#B08D57",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Libre Baskerville",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/gilded-twilight-hero.jpeg"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "blush-linen-romance",
+  "name": "Blush Linen Romance",
+  "category": "minimal",
+  "family": "minimal",
+  "layout": "soft-pastel-hero",
+  "thumbnail": "/templates/weddings/blush-linen-romance/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#EEC8C8",
+      "secondary": "#6B6463",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Quicksand",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/garden-atelier-hero.jpeg"
+    }
+  }
+}

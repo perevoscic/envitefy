@@ -1,0 +1,22 @@
+{
+  "id": "pearl-tide-horizon",
+  "name": "Pearl Tide Horizon",
+  "category": "modern",
+  "family": "modern",
+  "layout": "centered-minimal-hero",
+  "thumbnail": "/templates/weddings/pearl-tide-horizon/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#7DA0C3",
+      "secondary": "#EEF3FA",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/orchid-reverie-hero.jpeg"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "velvet-midnight-lily",
+  "name": "Velvet Midnight Lily",
+  "category": "luxury",
+  "family": "luxury",
+  "layout": "deep-overlay-hero",
+  "thumbnail": "/templates/weddings/velvet-midnight-lily/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#0D0F2C",
+      "secondary": "#C7A26B",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/silken-alpine-hero.jpeg"
+    }
+  }
+}

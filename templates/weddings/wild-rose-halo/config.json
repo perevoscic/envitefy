@@ -1,0 +1,22 @@
+{
+  "id": "wild-rose-halo",
+  "name": "Wild Rose Halo",
+  "category": "floral",
+  "family": "floral",
+  "layout": "floral-frame",
+  "thumbnail": "/templates/weddings/wild-rose-halo/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#5A2A32",
+      "secondary": "#EFD8E1",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Cormorant Garamond",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.jpeg"
+    }
+  }
+}

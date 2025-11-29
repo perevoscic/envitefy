@@ -1,0 +1,22 @@
+{
+  "id": "emerald-garden-vignette",
+  "name": "Emerald Garden Vignette",
+  "category": "floral",
+  "family": "botanical",
+  "layout": "botanical-borders",
+  "thumbnail": "/templates/weddings/emerald-garden-vignette/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#063F2B",
+      "secondary": "#DDEFE4",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Cinzel",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/palais-moderne-hero.jpeg"
+    }
+  }
+}
