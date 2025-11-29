@@ -1,6 +1,6 @@
 import WeddingCustomizeClient from "./WeddingCustomizeClient";
 import loadWeddingTemplate from "@/lib/templates/loadWeddingTemplate";
-import prisma from "@/lib/prisma";
+import getPrismaClient from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
 export default async function WeddingCustomizePage({
@@ -8,7 +8,7 @@ export default async function WeddingCustomizePage({
 }: {
   params: { id: string };
 }) {
-  const prismaClient = prisma as any;
+  const prismaClient = getPrismaClient();
   const event = await prismaClient.event.findUnique({
     where: { id: params.id },
   });

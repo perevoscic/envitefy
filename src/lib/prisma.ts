@@ -1,7 +1,28 @@
 import { PrismaClient } from "@prisma/client";
 
-// Allow using models that may not be captured in the generated typings yet.
-const prisma = (global as any).prisma || new PrismaClient();
-(global as any).prisma = prisma;
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  var __envitefyPrismaClient: PrismaClient | undefined;
+}
 
-export default prisma as any;
+const createPrismaClient = () => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL must be defined in order to initialize the Prisma client."
+    );
+  }
+
+  return new PrismaClient();
+};
+
+export function getPrismaClient() {
+  if (globalThis.__envitefyPrismaClient) {
+    return globalThis.__envitefyPrismaClient;
+  }
+
+  const client = createPrismaClient();
+  globalThis.__envitefyPrismaClient = client;
+  return client;
+}
+
+export default getPrismaClient;
