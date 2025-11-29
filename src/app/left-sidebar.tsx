@@ -31,6 +31,33 @@ import {
   NAV_LINKS,
   useUnifiedMenu,
 } from "@/components/navigation/TopNav";
+import { CREATE_EVENT_SECTIONS } from "@/config/navigation-config";
+import {
+  Baby,
+  Cake,
+  CalendarDays,
+  Camera,
+  Dumbbell,
+  FileEdit,
+  Footprints,
+  GraduationCap,
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Settings,
+  Menu,
+  Music,
+  PartyPopper,
+  Plus,
+  Sparkles,
+  Stethoscope,
+  Trophy,
+  Upload,
+  User,
+  LogOut,
+  X,
+} from "lucide-react";
 import { useEventCategories } from "@/hooks/useEventCategories";
 
 declare global {
@@ -213,6 +240,33 @@ const CATEGORY_FALLBACK_COLORS = [
   "amber",
 ];
 
+const CREATE_SECTION_COLORS = [
+  "bg-blue-100 text-blue-600",
+  "bg-pink-100 text-pink-600",
+  "bg-orange-100 text-orange-600",
+  "bg-purple-100 text-purple-600",
+];
+
+const ICON_LOOKUP: Record<string, any> = {
+  "Snap Event": Camera,
+  "Upload Event": Upload,
+  "Smart sign-up forms": FileEdit,
+  Birthdays: Cake,
+  Weddings: Heart,
+  "Baby Showers": Baby,
+  "Gender Reveal": PartyPopper,
+  "Football Season": Trophy,
+  "Gymnastics Schedule": Dumbbell,
+  Cheerleading: Sparkles,
+  "Dance / Ballet": Footprints,
+  Soccer: Trophy,
+  "Sport Events": Trophy,
+  "Doctor Appointments": Stethoscope,
+  "Workshops / Classes": GraduationCap,
+  "General Events": CalendarDays,
+  "Special Events": Music,
+};
+
 // TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
 const SIDEBAR_GRADIENT =
@@ -230,6 +284,7 @@ const SIDEBAR_SECONDARY_PILL_CLASS =
 const SIDEBAR_BADGE_CLASS =
   "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner";
 const SIDEBAR_WIDTH_REM = "20rem";
+const SIDEBAR_COLLAPSED_REM = "4.5rem";
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
@@ -255,7 +310,6 @@ export default function LeftSidebar() {
     }
   })();
   const [myEventsOpen, setMyEventsOpen] = useState(false);
-  const [recentAddedOpen, setRecentAddedOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [adminOpenFloating, setAdminOpenFloating] = useState(false);
@@ -330,13 +384,59 @@ export default function LeftSidebar() {
   const [itemMenuScope, setItemMenuScope] = useState<string | null>(null);
 
   const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
-  const isOpen = !isCollapsed;
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
+  const isOpen = isDesktop ? true : !isCollapsed;
+  const isCompact = isDesktop && isCollapsed;
+  const sidebarWidth = isDesktop
+    ? isCollapsed
+      ? SIDEBAR_COLLAPSED_REM
+      : SIDEBAR_WIDTH_REM
+    : SIDEBAR_WIDTH_REM;
+  const sidebarTransform = isDesktop
+    ? "translateX(0)"
+    : isOpen
+    ? "translateX(0)"
+    : "translateX(-100%)";
+  const pointerClass = isDesktop
+    ? "pointer-events-auto"
+    : isOpen
+    ? "pointer-events-auto"
+    : "pointer-events-none";
+  const overflowClass = isCompact
+    ? "overflow-hidden"
+    : isDesktop || isOpen
+    ? "overflow-visible"
+    : "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const update = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsDesktop(event.matches);
+    };
+    update(mql);
+    const handler = (event: MediaQueryListEvent) => update(event);
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", handler);
+    } else if (typeof mql.addListener === "function") {
+      mql.addListener(handler);
+    }
+    return () => {
+      if (typeof mql.removeEventListener === "function") {
+        mql.removeEventListener("change", handler);
+      } else if (typeof mql.removeListener === "function") {
+        mql.removeListener(handler);
+      }
+    };
+  }, []);
   useEffect(() => {
     if (!isOpen) {
       setMenuOpen(false);
@@ -634,6 +734,61 @@ export default function LeftSidebar() {
       triggerCreateEvent();
     }
   };
+
+  const launchSnapFromMenu = (mode: "camera" | "upload") => {
+    const win = window as any;
+    const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
+    collapseSidebarOnTouch();
+    setCreateEventOpen(false);
+    try {
+      if (typeof fn === "function") {
+        fn();
+        return;
+      }
+    } catch {}
+    triggerCreateEvent();
+  };
+
+  const templateHrefMap = useMemo(() => {
+    const map = new Map<string, string>();
+    TEMPLATE_LINKS.forEach((t) => map.set(t.label, t.href));
+    return map;
+  }, []);
+
+  const handleCreateModalSelect = (label: string, fallbackHref?: string) => {
+    if (label === "Snap Event") {
+      launchSnapFromMenu("camera");
+      return;
+    }
+    if (label === "Upload Event") {
+      launchSnapFromMenu("upload");
+      return;
+    }
+    if (label === "Smart sign-up forms") {
+      collapseSidebarOnTouch();
+      setCreateEventOpen(false);
+      router.push("/smart-signup-form");
+      return;
+    }
+    const href = templateHrefMap.get(label) || fallbackHref;
+    if (href) {
+      collapseSidebarOnTouch();
+      setCreateEventOpen(false);
+      router.push(href);
+      return;
+    }
+    setCreateEventOpen(false);
+    triggerCreateEvent();
+  };
+
+  const createModalSections = CREATE_EVENT_SECTIONS.filter(
+    (section) => section.title.toLowerCase() !== "quick access"
+  ).map((section, idx) => ({
+    title: section.title,
+    items: section.items,
+    color: CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length],
+  }));
+
   const profileMenuItemClass =
     "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
   const isDark = theme === "dark";
@@ -724,6 +879,30 @@ export default function LeftSidebar() {
       return acc;
     }, 0);
   }, [history, profileEmail, session]);
+  const compactNavItems = useMemo(
+    () => [
+      { icon: Camera, label: "Snap", action: "snap" },
+      { icon: Upload, label: "Upload", action: "upload" },
+      { icon: Home, label: "Home", href: "/" },
+      { icon: Plus, label: "Create Event", action: "create" },
+      {
+        icon: FileEdit,
+        label: "Smart sign-up",
+        href: "/smart-signup-form",
+        badge: smartSignupCount,
+      },
+      { icon: CalendarDays, label: "Calendar", href: "/calendar" },
+      {
+        icon: Trophy,
+        label: "My Events",
+        href: "/history",
+        badge: createdEventsCount,
+      },
+      { icon: User, label: "Profile", href: "/profile" },
+      { icon: Settings, label: "Settings", href: "/settings" },
+    ],
+    [createdEventsCount, smartSignupCount]
+  );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
     {}
@@ -1828,6 +2007,17 @@ export default function LeftSidebar() {
 
   return (
     <>
+      {!isOpen && (
+        <button
+          ref={openButtonRef}
+          type="button"
+          className="fixed top-3 left-3 z-[6500] lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#4a4170] shadow-md border border-white/70"
+          onClick={() => setIsCollapsed(false)}
+          aria-label="Open navigation"
+        >
+          <Menu size={20} />
+        </button>
+      )}
       {/* Backdrop overlay */}
       <div
         className={`fixed inset-0 z-[5999] bg-black/20 backdrop-blur-sm transition-opacity duration-200 lg:hidden ${
@@ -1841,89 +2031,177 @@ export default function LeftSidebar() {
       <aside
         ref={asideRef}
         className={`fixed left-0 top-0 h-full z-[6000] border border-white/60 dark:border-white/10 backdrop-blur-2xl flex flex-col rounded-tr-[2.75rem] rounded-br-[2.75rem] shadow-[0_35px_90px_rgba(72,44,116,0.28)] ${
-          isOpen ? "overflow-visible" : "overflow-hidden"
-        } transition-[transform,opacity] duration-200 ease-out will-change-transform ${
-          isOpen ? "pointer-events-auto" : "pointer-events-none"
-        } lg:hidden`}
+          overflowClass
+        } transition-[transform,opacity,width] duration-200 ease-out will-change-transform ${
+          pointerClass
+        } lg:flex`}
         style={{
-          width: SIDEBAR_WIDTH_REM,
-          transform: isOpen ? "translateX(0)" : "translateX(-100%)",
-          opacity: isOpen ? 1 : 0,
+          width: sidebarWidth,
+          transform: sidebarTransform,
+          opacity: isDesktop ? 1 : isOpen ? 1 : 0,
           backgroundImage: SIDEBAR_GRADIENT,
           backgroundColor: "rgba(255, 255, 255, 0.78)",
           boxShadow: "0 30px 90px rgba(84, 56, 125, 0.35)",
         }}
         aria-label="Sidebar"
       >
-        {/* Header with close button */}
-        <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
-          {/* Hero-esque intro */}
-          <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
+        {isCompact && (
+          <div className="flex h-full flex-col items-center gap-4 py-6 px-2">
             <button
               type="button"
-              aria-label="Close menu"
-              onClick={() => setIsCollapsed(true)}
-              className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
+              aria-label="Expand navigation"
+              onClick={() => setIsCollapsed(false)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#7f8cff] shadow-md border border-white/70 hover:bg-white transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <ChevronRight size={18} />
             </button>
-            <div className="flex flex-col items-center gap-3 text-center">
-              <Link
-                href="/"
-                onClick={collapseSidebarOnTouch}
-                className="flex h-12 w-12 items-center justify-center]"
+            <Image
+              src="/E.png"
+              alt="Envitefy"
+              width={36}
+              height={36}
+              className="opacity-90 drop-shadow"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setIsCollapsed(false);
+                setCreateEventOpen(true);
+              }}
+              className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[0_12px_30px_rgba(109,87,184,0.25)] hover:scale-105 transition"
+              title="Create event"
+            >
+              <Plus size={18} />
+            </button>
+            <div className="flex-1 flex flex-col items-center gap-3">
+              {compactNavItems.map((item) => {
+                const Icon = item.icon;
+                const badgeCount = item.badge || 0;
+                return (
+                  <button
+                    key={item.href || item.label}
+                    type="button"
+                    onClick={() => {
+                      setIsCollapsed(false);
+                      if (item.action === "snap") return launchSnapFromMenu("camera");
+                      if (item.action === "upload") return launchSnapFromMenu("upload");
+                      if (item.action === "create") {
+                        setCreateEventOpen(true);
+                        return;
+                      }
+                      if (item.href) {
+                        try {
+                          router.push(item.href);
+                        } catch {}
+                      }
+                    }}
+                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/85 text-[#4a4170] shadow-[0_12px_30px_rgba(109,87,184,0.15)] hover:bg-white hover:-translate-y-0.5 transition"
+                    title={item.label}
+                  >
+                    <Icon size={18} />
+                    {badgeCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
+                        {badgeCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-red-500 shadow-md hover:bg-white transition"
+              title="Log out"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        )}
+
+        <div
+          className={`${
+            isCompact
+              ? "opacity-0 pointer-events-none select-none"
+              : "flex flex-col h-full"
+          } transition-opacity duration-150`}
+          aria-hidden={isCompact}
+        >
+          {/* Header with close button */}
+          <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
+            {/* Hero-esque intro */}
+            <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
+              <button
+                type="button"
+                aria-label={isCollapsed ? "Expand navigation" : "Collapse navigation"}
+                onClick={() => setIsCollapsed((prev) => !prev)}
+                className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
               >
-                <Image
-                  src="/E.png"
-                  alt="Envitefy"
-                  width={64}
-                  height={64}
-                  className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
-                />
-              </Link>
-              <div className="text-xs md:text-sm font-semibold tracking-widest text-[#7f8cff]">
-                CREATE | SHARE | ENJOY
+                {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              </button>
+              <div className="flex flex-col items-center gap-3 text-center">
+                <Link
+                  href="/"
+                  onClick={collapseSidebarOnTouch}
+                  className="flex h-12 w-12 items-center justify-center]"
+                >
+                  <Image
+                    src="/E.png"
+                    alt="Envitefy"
+                    width={64}
+                    height={64}
+                    className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
+                  />
+                </Link>
+                <div className="text-xs md:text-sm font-semibold tracking-widest text-[#7f8cff]">
+                  CREATE | SHARE | ENJOY
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        {/* Middle: Event history */}
-        <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
-          <div className="px-4 pt-0 pb-5 space-y-4">
+          {/* Middle: Event history */}
+          <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
+            <div className="px-4 pt-0 pb-5 space-y-4">
             {/* Separator line */}
             <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
             <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    launchSnapFromMenu("camera");
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                    <Camera size={18} />
+                  </span>
+                  <span>Snap</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    launchSnapFromMenu("upload");
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                    <Upload size={18} />
+                  </span>
+                  <span>Upload</span>
+                </button>
+              </div>
+
               <Link
                 href="/"
                 onClick={collapseSidebarOnTouch}
                 className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm md:text-base font-semibold text-[#2f1d47]`}
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5efff] to-white text-[#7a5ec0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                  <svg
-                    viewBox="0 0 1920 1920"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M960.16 0 28 932.16l79 78.777 853.16-853.16 853.16 853.16 78.889-78.777L960.16 0Zm613.693 1027.34v781.078h-334.86v-557.913h-557.8v557.912H346.445V1027.34H234.751V1920h1450.684v-892.66h-111.582Zm-446.33 334.748v446.441H792.775v-446.441h334.748ZM960.127 692.604c61.593 0 111.582 49.989 111.582 111.582 0 61.594-49.989 111.583-111.582 111.583-61.594 0-111.583-49.99-111.583-111.583 0-61.593 49.99-111.582 111.583-111.582Zm223.165 111.582c0-123.075-100.09-223.165-223.165-223.165-123.076 0-223.165 100.09-223.165 223.165 0 123.076 100.09 223.165 223.165 223.165 123.075 0 223.165-100.09 223.165-223.165"
-                    ></path>
-                  </svg>
+                  <Home size={18} />
                 </span>
                 <span>Home</span>
               </Link>
@@ -1940,28 +2218,13 @@ export default function LeftSidebar() {
                       event.preventDefault();
                       setCreateEventOpen(!createEventOpen);
                     }}
-                    className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <svg
-                        viewBox="0 0 32 32"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="currentColor"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M18 31h2v-2a1.0006 1.0006 0 0 1 1-1h6a1.0006 1.0006 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
-                        <path d="M24 25a4 4 0 1 1 4-4 4.0039 4.0039 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0027 2.0027 0 0 0-2-2Z" />
-                        <path d="M2 31h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2v-2a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
-                        <path d="M8 25a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2 2.0023 2.0023 0 0 0-2-2Z" />
-                        <path d="M18 16h2v-2a1.0009 1.0009 0 0 1 1-1h6a1.0009 1.0009 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H21a3.0033 3.0033 0 0 0-3 3Z" />
-                        <path d="M24 10a4 4 0 1 1 4-4 4.0042 4.0042 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.0023 2.0023 0 0 0 24 4Z" />
-                        <path d="M2 16h2v-2a1.0013 1.0013 0 0 1 1-1h6a1.0013 1.0013 0 0 1 1 1v2h2V14a3.0033 3.0033 0 0 0-3-3H5a3.0033 3.0033 0 0 0-3 3Z" />
-                        <path d="M8 10a4 4 0 1 1 4-4 4.0045 4.0045 0 0 1-4 4Zm0-6a2 2 0 1 0 2 2A2.002 2.002 0 0 0 8 4Z" />
-                      </svg>
-                    </span>
-                    <span>Create Event</span>
-                  </button>
+                  className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    <Plus size={18} />
+                  </span>
+                  <span>Create Event</span>
+                </button>
                   <div className="ml-auto flex items-center gap-2">
                     <span className={SIDEBAR_BADGE_CLASS}>
                       {createdEventsCount}
@@ -1993,28 +2256,6 @@ export default function LeftSidebar() {
                     </button>
                   </div>
                 </div>
-                {createEventOpen && (
-                  <div
-                    className="mt-3 flex flex-col gap-1 pl-2"
-                    suppressHydrationWarning
-                  >
-                    {isHydrated &&
-                      TEMPLATE_LINKS.map((item) => (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          onClick={() => {
-                            setCreateEventOpen(false);
-                            collapseSidebarOnTouch();
-                          }}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm md:text-base font-medium text-[#2f1d47]"
-                        >
-                          <span className="text-lg">{item.icon}</span>
-                          <span suppressHydrationWarning>{item.label}</span>
-                        </Link>
-                      ))}
-                  </div>
-                )}
               </div>
 
               <div
@@ -2036,23 +2277,7 @@ export default function LeftSidebar() {
                   title="Smart sign-up"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6faff] to-white text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <rect x="3" y="3" width="7" height="7" rx="1" />
-                      <rect x="14" y="3" width="7" height="7" rx="1" />
-                      <rect x="3" y="14" width="7" height="7" rx="1" />
-                      <path d="M17 16v3" />
-                      <path d="M15.5 17.5h3" />
-                    </svg>
+                    <FileEdit size={18} />
                   </span>
                   <span>Smart sign-up</span>
                 </button>
@@ -2311,22 +2536,7 @@ export default function LeftSidebar() {
                   className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
+                    <CalendarDays size={18} />
                   </span>
                   <span className="flex items-center gap-2">
                     <span>Calendar</span>
@@ -2772,9 +2982,7 @@ export default function LeftSidebar() {
                     className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
                   >
                     <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <span className="text-xs font-semibold uppercase tracking-[0.5em]">
-                        ME
-                      </span>
+                      <Trophy size={18} />
                     </span>
                     <span>My Events</span>
                   </button>
@@ -3211,171 +3419,6 @@ export default function LeftSidebar() {
           </div>
         </div>
 
-        {/* Recent Added Section */}
-        <div
-          className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 mt-3 ${
-            recentAddedOpen ? "ring-2 ring-[#d9ccff]" : ""
-          }`}
-        >
-          <div className="flex items-center gap-3 w-full">
-            <button
-              type="button"
-              onClick={() => setRecentAddedOpen((v) => !v)}
-              className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                <span className="text-xs font-semibold uppercase tracking-[0.3em]">
-                  RA
-                </span>
-              </span>
-              <span>Recent Added</span>
-            </button>
-            <div className="ml-auto flex items-center gap-2">
-              <span className={SIDEBAR_BADGE_CLASS}>
-                {
-                  history.filter((h) => {
-                    if (!h.created_at) return false;
-                    const created = new Date(h.created_at);
-                    const now = new Date();
-                    const daysDiff =
-                      (now.getTime() - created.getTime()) /
-                      (1000 * 60 * 60 * 24);
-                    return daysDiff <= 7; // Last 7 days
-                  }).length
-                }
-              </span>
-              <button
-                type="button"
-                onClick={() => setRecentAddedOpen((v) => !v)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                aria-label="Toggle Recent Added"
-              >
-                <span
-                  className={`text-lg leading-none transition-transform ${
-                    recentAddedOpen ? "rotate-180" : ""
-                  }`}
-                  aria-hidden="true"
-                >
-                  ▾
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div
-            className={`pl-2 mt-3 border-l-2 border-border/40 ml-2 ${
-              recentAddedOpen ? "" : "hidden"
-            }`}
-          >
-            {(() => {
-              const recentItems = sortHistoryRows(
-                history.filter((h) => {
-                  if (!h.created_at) return false;
-                  const created = new Date(h.created_at);
-                  const now = new Date();
-                  const daysDiff =
-                    (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-                  return daysDiff <= 7; // Last 7 days
-                })
-              );
-              if (recentItems.length === 0)
-                return (
-                  <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                    No recent events
-                  </div>
-                );
-              return (
-                <div className="space-y-1">
-                  {recentItems.map((h) => {
-                    const dataObj: any = (h as any)?.data || {};
-                    const prettyHref = dataObj?.signupForm
-                      ? `/smart-signup-form/${h.id}`
-                      : `/event/${h.id}`;
-                    const explicitCat = (h as any)?.data?.category as
-                      | string
-                      | null;
-                    const effectiveCategory = (() => {
-                      const explicit = normalizeCategoryLabel(explicitCat);
-                      if (explicit) return explicit;
-                      try {
-                        const text = [
-                          String((h as any)?.title || ""),
-                          String((h as any)?.data?.description || ""),
-                          String((h as any)?.data?.rsvp || ""),
-                          String((h as any)?.data?.location || ""),
-                        ]
-                          .filter(Boolean)
-                          .join(" ");
-                        const guessed = guessCategoryFromText(text);
-                        return normalizeCategoryLabel(guessed);
-                      } catch {
-                        return null;
-                      }
-                    })();
-                    const rowAndBadge = (() => {
-                      if (!effectiveCategory)
-                        return {
-                          row: "",
-                          badge:
-                            "bg-surface/70 text-foreground/70 border-border/70",
-                        };
-                      const color =
-                        categoryColors[effectiveCategory] ||
-                        defaultCategoryColor(effectiveCategory);
-                      const ccls = colorClasses(color);
-                      return {
-                        row: ccls.tint,
-                        badge: ccls.badge,
-                      };
-                    })();
-                    return (
-                      <div
-                        key={h.id}
-                        data-history-item={h.id}
-                        className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
-                      >
-                        <Link
-                          href={prettyHref}
-                          onClick={() => {
-                            try {
-                              const isTouch =
-                                typeof window !== "undefined" &&
-                                typeof window.matchMedia === "function" &&
-                                window.matchMedia(
-                                  "(hover: none), (pointer: coarse)"
-                                ).matches;
-                              if (isTouch) setIsCollapsed(true);
-                            } catch {}
-                          }}
-                          className="block pr-8"
-                          title={h.title}
-                        >
-                          <div className="truncate flex items-center gap-2">
-                            <span className="truncate">
-                              {h.title || "Untitled event"}
-                            </span>
-                          </div>
-                          <div className="text-xs text-foreground/60">
-                            {(() => {
-                              const start =
-                                (h as any)?.data?.start ||
-                                (h as any)?.data?.event?.start;
-                              const dateStr = start || h.created_at;
-                              return dateStr
-                                ? new Date(dateStr).toLocaleDateString()
-                                : "";
-                            })()}
-                          </div>
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-
         {/* Bottom: User button with dropdown */}
         <div className="border-t border-border py-2 px-3">
           <div className="relative z-[900]">
@@ -3737,7 +3780,103 @@ export default function LeftSidebar() {
             )}
           </div>
         </div>
+        </div>
       </aside>
+
+      {createEventOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[11500] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setCreateEventOpen(false)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] md:h-auto overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Create New Event</h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Choose a category to get started quickly
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCreateEventOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Close create event menu"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {createModalSections.map((cat, idx) => (
+                    <div key={`${cat.title}-${idx}`} className="space-y-4">
+                      <div className="flex items-center space-x-2 mb-4">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-bold ${cat.color.replace("text-", "bg-opacity-20 ")}`}
+                        >
+                          {cat.items.length}
+                        </span>
+                        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wider">
+                          {cat.title}
+                        </h3>
+                      </div>
+                      <div className="space-y-2">
+                        {cat.items.map((item) => {
+                          const Icon = ICON_LOOKUP[item.label] || Sparkles;
+                          return (
+                            <button
+                              key={item.label}
+                              className="w-full flex items-center space-x-3 p-3 bg-white hover:bg-indigo-50 border border-transparent hover:border-indigo-100 rounded-xl transition-all duration-200 group text-left shadow-sm hover:shadow-md"
+                              onClick={() =>
+                                handleCreateModalSelect(
+                                  item.label,
+                                  (item as any).href
+                                )
+                              }
+                            >
+                              <div
+                                className={`p-2 rounded-lg ${cat.color} group-hover:scale-110 transition-transform`}
+                              >
+                                <Icon size={18} />
+                              </div>
+                              <span className="text-gray-700 font-medium text-sm group-hover:text-indigo-700">
+                                {item.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-100 bg-white flex justify-end">
+                <button
+                  onClick={() => {
+                    setCreateEventOpen(false);
+                    collapseSidebarOnTouch();
+                    try {
+                      router.push("/templates");
+                    } catch (err) {
+                      console.debug("[sidebar] templates nav failed", err);
+                      triggerCreateEvent();
+                    }
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-900 font-medium px-4"
+                >
+                  View All Templates
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
       {colorMenuFor &&
         colorMenuPos &&
         createPortal(

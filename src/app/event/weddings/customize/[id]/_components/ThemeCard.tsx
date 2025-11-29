@@ -7,11 +7,33 @@ export default function ThemeCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const primary = theme.primaryColor || "#f8fafc";
+  const secondary = theme.secondaryColor || "#1f2937";
+
+  const luminance = (hex: string) => {
+    const normalized = hex.replace("#", "");
+    if (normalized.length !== 6) return 0;
+    const r = parseInt(normalized.slice(0, 2), 16) / 255;
+    const g = parseInt(normalized.slice(2, 4), 16) / 255;
+    const b = parseInt(normalized.slice(4, 6), 16) / 255;
+    const channel = (c: number) =>
+      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  };
+
+  const textColor = (() => {
+    const lum = luminance(secondary.replace("#", "").length === 6 ? secondary : "#1f2937");
+    return lum > 0.7 ? "#111827" : secondary;
+  })();
+
   return (
     <button
       onClick={onSelect}
       className={`border rounded-md overflow-hidden transition 
-        ${selected ? "border-blue-500 ring-2 ring-blue-300" : "border-gray-200"}`}
+        ${selected ? "border-[var(--accent-color)] ring-2 ring-[var(--accent-color)]/40" : "border-gray-200"}`}
+      style={{
+        ["--accent-color" as string]: textColor,
+      }}
     >
       <img
         src={theme.thumbnail}
@@ -19,8 +41,12 @@ export default function ThemeCard({
         className="w-full h-20 object-cover"
       />
       <div className="p-2 text-left">
-        <div className="text-sm font-medium">{theme.name}</div>
-        <div className="text-xs uppercase text-gray-500">{theme.category}</div>
+        <div className="text-sm font-medium" style={{ color: textColor }}>
+          {theme.name}
+        </div>
+        <div className="text-xs uppercase" style={{ color: "#6b7280" }}>
+          {theme.category}
+        </div>
       </div>
     </button>
   );

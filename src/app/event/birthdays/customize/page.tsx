@@ -2001,8 +2001,8 @@ export default function BirthdayTemplateCustomizePage() {
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
-    <div className="space-y-4 animate-fade-in pb-8">
-      <div className="mb-6">
+    <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
+      <div className="mb-6 w-full max-w-sm text-center">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
           Add your details
         </h2>
@@ -2011,7 +2011,7 @@ export default function BirthdayTemplateCustomizePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
         <MenuCard
           title="Headline"
           icon={<Type size={18} />}
@@ -2578,7 +2578,7 @@ export default function BirthdayTemplateCustomizePage() {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",

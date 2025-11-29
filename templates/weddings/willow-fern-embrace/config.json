@@ -1,0 +1,22 @@
+{
+  "id": "willow-fern-embrace",
+  "name": "Willow Fern Embrace",
+  "category": "botanical",
+  "family": "botanical",
+  "layout": "botanical-arch-border",
+  "thumbnail": "/templates/weddings/willow-fern-embrace/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#1F4D3A",
+      "secondary": "#DDE9DF",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg"
+    }
+  }
+}

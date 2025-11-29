@@ -1,0 +1,22 @@
+{
+  "id": "lavender-mist-cascade",
+  "name": "Lavender Mist Cascade",
+  "category": "floral",
+  "family": "botanical",
+  "layout": "cascading-floral-top",
+  "thumbnail": "/templates/weddings/lavender-mist-cascade/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#D9D3F2",
+      "secondary": "#F7F5FF",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/celestial-atelier-hero.jpeg"
+    }
+  }
+}

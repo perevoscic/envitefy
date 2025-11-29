@@ -1,0 +1,22 @@
+{
+  "id": "coral-sands-keepsake",
+  "name": "Coral Sands Keepsake",
+  "category": "modern",
+  "family": "modern",
+  "layout": "airy-horizontal-hero",
+  "thumbnail": "/templates/weddings/coral-sands-keepsake/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#F2B8A2",
+      "secondary": "#FFF2EA",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/evergreen-ballroom-hero.jpeg"
+    }
+  }
+}

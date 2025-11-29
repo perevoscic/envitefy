@@ -1,0 +1,22 @@
+{
+  "id": "opaline-crest",
+  "name": "Opaline Crest",
+  "category": "classic",
+  "family": "classic",
+  "layout": "crest-centered-ribbon",
+  "thumbnail": "/templates/weddings/opaline-crest/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#F5F0EA",
+      "secondary": "#5E5B52",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/horizon-chateau-hero.jpeg"
+    }
+  }
+}

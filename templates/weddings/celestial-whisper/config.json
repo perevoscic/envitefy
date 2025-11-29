@@ -1,0 +1,22 @@
+{
+  "id": "celestial-whisper",
+  "name": "Celestial Whisper",
+  "category": "modern",
+  "family": "modern",
+  "layout": "starry-hero",
+  "thumbnail": "/templates/weddings/celestial-whisper/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#1A1F38",
+      "secondary": "#DCE6FF",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "DM Serif Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.jpeg"
+    }
+  }
+}

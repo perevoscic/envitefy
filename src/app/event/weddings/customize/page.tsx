@@ -41,6 +41,28 @@ import {
 import ScrollBoundary from "@/components/ScrollBoundary";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import WeddingRenderer from "@/components/weddings/WeddingRenderer";
+import midnightElegance from "../../../../../templates/weddings/midnight-elegance/config.json";
+import wildRoseHalo from "../../../../../templates/weddings/wild-rose-halo/config.json";
+import goldenHourPromise from "../../../../../templates/weddings/golden-hour-promise/config.json";
+import ivoryLaceCrest from "../../../../../templates/weddings/ivory-lace-crest/config.json";
+import emeraldGardenVignette from "../../../../../templates/weddings/emerald-garden-vignette/config.json";
+import blushLinenRomance from "../../../../../templates/weddings/blush-linen-romance/config.json";
+import sapphireMoonlitArch from "../../../../../templates/weddings/sapphire-moonlit-arch/config.json";
+import rusticOakStorybook from "../../../../../templates/weddings/rustic-oak-storybook/config.json";
+import champagneVelvet from "../../../../../templates/weddings/champagne-velvet/config.json";
+import celestialWhisper from "../../../../../templates/weddings/celestial-whisper/config.json";
+import pearlTideHorizon from "../../../../../templates/weddings/pearl-tide-horizon/config.json";
+import crimsonOrchard from "../../../../../templates/weddings/crimson-orchard/config.json";
+import opalineCrest from "../../../../../templates/weddings/opaline-crest/config.json";
+import velvetMidnightLily from "../../../../../templates/weddings/velvet-midnight-lily/config.json";
+import lavenderMistCascade from "../../../../../templates/weddings/lavender-mist-cascade/config.json";
+import coralSandsKeepsake from "../../../../../templates/weddings/coral-sands-keepsake/config.json";
+import eternalMarble from "../../../../../templates/weddings/eternal-marble/config.json";
+import willowFernEmbrace from "../../../../../templates/weddings/willow-fern-embrace/config.json";
+import silverFrostGala from "../../../../../templates/weddings/silver-frost-gala/config.json";
+import autumnEmberWaltz from "../../../../../templates/weddings/autumn-ember-waltz/config.json";
+import DesignThemes from "./_components/DesignThemes";
 
 const NAV_ITEMS = [
   "Home",
@@ -79,6 +101,29 @@ const NAV_EDIT_TARGETS: Record<(typeof NAV_ITEMS)[number], string> = {
 };
 
 // --- Constants & Data ---
+
+const TEMPLATE_CONFIGS: Record<string, any> = {
+  "midnight-elegance": midnightElegance,
+  "wild-rose-halo": wildRoseHalo,
+  "golden-hour-promise": goldenHourPromise,
+  "ivory-lace-crest": ivoryLaceCrest,
+  "emerald-garden-vignette": emeraldGardenVignette,
+  "blush-linen-romance": blushLinenRomance,
+  "sapphire-moonlit-arch": sapphireMoonlitArch,
+  "rustic-oak-storybook": rusticOakStorybook,
+  "champagne-velvet": champagneVelvet,
+  "celestial-whisper": celestialWhisper,
+  "pearl-tide-horizon": pearlTideHorizon,
+  "crimson-orchard": crimsonOrchard,
+  "opaline-crest": opalineCrest,
+  "velvet-midnight-lily": velvetMidnightLily,
+  "lavender-mist-cascade": lavenderMistCascade,
+  "coral-sands-keepsake": coralSandsKeepsake,
+  "eternal-marble": eternalMarble,
+  "willow-fern-embrace": willowFernEmbrace,
+  "silver-frost-gala": silverFrostGala,
+  "autumn-ember-waltz": autumnEmberWaltz,
+};
 
 const FONTS = {
   playfair: {
@@ -738,6 +783,17 @@ const DESIGN_THEMES = [
     accent: "text-[#cebaa0]",
     previewColor: "bg-[#f7f4f0]",
   },
+  {
+    id: "midnight-elegance",
+    name: "Midnight Elegance",
+    category: "Luxury",
+    graphicType: "geometric",
+    bg: "bg-[#0d0f2c]",
+    text: "text-white",
+    accent: "text-[#c7a26b]",
+    previewColor: "bg-[#0d0f2c]",
+    swatchColor: "#0d0f2c",
+  },
 ];
 
 const INITIAL_DATA = {
@@ -1233,6 +1289,7 @@ const App = () => {
     description: "",
     category: "Activity",
   });
+  const [activeDesignView, setActiveDesignView] = useState("themes");
   const [travelSubView, setTravelSubView] = useState("main");
   const [tempHotel, setTempHotel] = useState({
     name: "",
@@ -1245,6 +1302,69 @@ const App = () => {
     code: "",
     distance: "",
   });
+
+  const selectedTemplate = useMemo(() => {
+    const fromMap =
+      TEMPLATE_CONFIGS[data.theme.themeId] ||
+      TEMPLATE_CONFIGS["midnight-elegance"] ||
+      midnightElegance;
+    const chosenFont = FONTS[data.theme.font];
+    const appliedFonts = {
+      headline:
+        chosenFont?.name ||
+        fromMap?.theme?.fonts?.headline ||
+        "Playfair Display",
+      body: chosenFont?.name || fromMap?.theme?.fonts?.body || "Inter",
+    };
+    return {
+      ...fromMap,
+      theme: {
+        ...fromMap.theme,
+        fonts: appliedFonts,
+      },
+    };
+  }, [data.theme.themeId, data.theme.font]);
+
+  const previewEvent = useMemo(() => {
+    const location = [data.city, data.state].filter(Boolean).join(", ");
+    return {
+      headlineTitle:
+        `${data.partner1 || ""}${
+          data.partner2 ? ` & ${data.partner2}` : ""
+        }`.trim() || "Your Names",
+      date: data.date || "",
+      location,
+      story: data.story || "",
+      schedule: Array.isArray(data.schedule)
+        ? data.schedule.map((item) => ({
+            title: item.title,
+            time: item.time || item.date || "",
+            location: item.location || "",
+          }))
+        : [],
+      party: Array.isArray(data.weddingParty)
+        ? data.weddingParty.map((p) => ({ name: p.name, role: p.role }))
+        : [],
+      travel: data.travel?.directions || "",
+      thingsToDo: Array.isArray(data.thingsToDo)
+        ? data.thingsToDo
+            .map((t) => t.title || t.description || "")
+            .filter(Boolean)
+            .join(" • ")
+        : "",
+      photos: Array.isArray(data.gallery)
+        ? data.gallery.map((g) => g.url || g.src || g.preview || "")
+        : [],
+      rsvpEnabled: Boolean((data as any).rsvp?.enabled),
+      rsvpLink: (data as any).rsvp?.link || "",
+      registry: Array.isArray((data as any).registry)
+        ? (data as any).registry.map((r: any) => ({
+            label: r.label || "Registry",
+            url: r.url || "#",
+          }))
+        : [],
+    };
+  }, [data]);
 
   const parseTimeValue = (value?: string | null) => {
     if (!value) return Number.MAX_SAFE_INTEGER;
@@ -1279,19 +1399,35 @@ const App = () => {
     }));
   };
 
-  const selectTheme = (themeId: string) => {
-    const previewTop = previewRef.current?.scrollTop ?? null;
-    const designTop = designGridRef.current?.scrollTop ?? null;
-    updateTheme("themeId", themeId);
-    requestAnimationFrame(() => {
-      if (previewTop !== null && previewRef.current) {
-        previewRef.current.scrollTo({ top: previewTop });
+  const selectTheme = useCallback(
+    async (themeId: string) => {
+      const previewTop = previewRef.current?.scrollTop ?? null;
+      const designTop = designGridRef.current?.scrollTop ?? null;
+      updateTheme("themeId", themeId);
+
+      if (editEventId) {
+        try {
+          await fetch(`/api/events/${editEventId}/update-theme`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ templateId: themeId }),
+          });
+        } catch (err) {
+          console.error("Failed to save theme selection", err);
+        }
       }
-      if (designTop !== null && designGridRef.current) {
-        designGridRef.current.scrollTo({ top: designTop });
-      }
-    });
-  };
+
+      requestAnimationFrame(() => {
+        if (previewTop !== null && previewRef.current) {
+          previewRef.current.scrollTo({ top: previewTop });
+        }
+        if (designTop !== null && designGridRef.current) {
+          designGridRef.current.scrollTo({ top: designTop });
+        }
+      });
+    },
+    [editEventId]
+  );
 
   const updateTravel = (field, value) => {
     setData((prev) => ({
@@ -1632,8 +1768,8 @@ const App = () => {
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
-    <div className="space-y-4 animate-fade-in pb-8">
-      <div className="mb-6">
+    <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
+      <div className="mb-6 w-full max-w-sm text-center">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
           Add your details
         </h2>
@@ -1642,7 +1778,7 @@ const App = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
         <MenuCard
           title="Headline"
           icon={<Type size={18} />}
@@ -1711,7 +1847,7 @@ const App = () => {
         />
       </div>
 
-      <div className="mt-8 pt-6 border-t border-slate-200">
+      <div className="mt-8 pt-6 border-t border-slate-200 w-full max-w-sm">
         <div className="flex gap-3">
           {editEventId && (
             <button
@@ -1870,125 +2006,91 @@ const App = () => {
 
   const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
-      <div className="space-y-8">
-        <div className="border-b border-slate-100 pb-6">
+      <div className="space-y-6">
+        <div className="flex gap-2 border-b border-slate-200">
           <button
-            onClick={() => setDesignOpen(!designOpen)}
-            className="flex items-center justify-between w-full text-left group"
-          >
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block cursor-pointer mb-1">
-                Professional Themes
-              </label>
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                <div
-                  className={`w-3 h-3 rounded-full border shadow-sm ${
-                    currentTheme.previewColor.split(" ")[0]
-                  }`}
-                ></div>
-                {currentTheme.name || "Select a theme"}
-              </div>
-            </div>
-            <div
-              className={`p-2 rounded-full bg-slate-50 text-slate-500 group-hover:bg-slate-100 transition-all ${
-                designOpen ? "rotate-180 text-indigo-600 bg-indigo-50" : ""
-              }`}
-            >
-              <ChevronDown size={16} />
-            </div>
-          </button>
-
-          <div
-            ref={designGridRef}
-            className={`grid grid-cols-2 gap-3 mt-4 overflow-y-auto transition-all duration-300 ease-in-out ${
-              designOpen
-                ? "max-h-[600px] opacity-100"
-                : "max-h-0 opacity-0 hidden"
+            onClick={() => setActiveDesignView("themes")}
+            className={`px-3 py-2 text-sm rounded-t-md ${
+              activeDesignView === "themes"
+                ? "bg-white border border-slate-200 border-b-white font-medium"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            {DESIGN_THEMES.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  selectTheme(theme.id);
-                }}
-                className={`relative overflow-hidden p-3 border rounded-lg text-left transition-all group ${
-                  data.theme.themeId === theme.id
-                    ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-                    : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
-                }`}
-              >
-                <div
-                  className={`h-12 w-full rounded-md mb-3 ${theme.previewColor} border border-black/5 shadow-inner flex items-center justify-center relative overflow-hidden text-current`}
-                >
-                  <div
-                    className={`${theme.accent} w-full h-full absolute inset-0`}
+            Themes
+          </button>
+          <button
+            onClick={() => setActiveDesignView("style")}
+            className={`px-3 py-2 text-sm rounded-t-md ${
+              activeDesignView === "style"
+                ? "bg-white border border-slate-200 border-b-white font-medium"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Typography
+          </button>
+        </div>
+
+        {activeDesignView === "themes" && (
+          <div className="border border-slate-100 rounded-xl shadow-sm">
+            <DesignThemes
+              selectedTemplateId={data.theme.themeId}
+              onSelect={(id) => selectTheme(id)}
+            />
+          </div>
+        )}
+
+        {activeDesignView === "style" && (
+          <div className="space-y-8">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Typography
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                {Object.entries(FONTS).map(([key, font]) => (
+                  <button
+                    key={key}
+                    onClick={() => updateTheme("font", key)}
+                    className={`border rounded-lg p-3 text-left transition-colors ${
+                      data.theme.font === key
+                        ? "border-indigo-600 bg-indigo-50"
+                        : "border-slate-200 hover:border-indigo-300"
+                    }`}
                   >
-                    <ThemeGraphics themeId={theme.id} isThumbnail={true} />
-                  </div>
-                </div>
+                    <div
+                      className="text-base font-semibold"
+                      style={{ fontFamily: font.preview }}
+                    >
+                      {font.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                <span className="text-sm font-medium text-slate-700 block truncate">
-                  {theme.name}
-                </span>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide">
-                  {theme.category}
-                </span>
-              </button>
-            ))}
+            <div>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+                Text Size
+              </label>
+              <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+                {["small", "medium", "large"].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => updateTheme("fontSize", size)}
+                    className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                      data.theme.fontSize === size
+                        ? "bg-white text-indigo-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Typography
-            </label>
-          </div>
-          <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
-            {Object.entries(FONTS).map(([key, font]) => (
-              <button
-                key={key}
-                onClick={() => updateTheme("font", key)}
-                className={`border rounded-lg p-3 text-left transition-colors ${
-                  data.theme.font === key
-                    ? "border-indigo-600 bg-indigo-50"
-                    : "border-slate-200 hover:border-indigo-300"
-                }`}
-              >
-                <div
-                  className="text-base font-semibold"
-                  style={{ fontFamily: font.preview }}
-                >
-                  {font.name}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-            Text Size
-          </label>
-          <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
-            {["small", "medium", "large"].map((size) => (
-              <button
-                key={size}
-                onClick={() => updateTheme("fontSize", size)}
-                className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
-                  data.theme.fontSize === size
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </EditorLayout>
   );
@@ -2635,17 +2737,21 @@ const App = () => {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#F8F5FF] flex justify-center md:justify-end md:pr-50"
+        className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
         }}
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
+          <div className="mb-6 shadow-2xl md:rounded-xl overflow-hidden">
+            <WeddingRenderer template={selectedTemplate} event={previewEvent} />
+          </div>
           <div
             className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
               currentTheme.bg || "bg-white"
             } ${currentFont.body} transition-colors duration-500 relative z-0`}
+            style={{ display: "none" }}
           >
             <ThemeGraphics themeId={data.theme.themeId} />
 

@@ -1,0 +1,22 @@
+{
+  "id": "autumn-ember-waltz",
+  "name": "Autumn Ember Waltz",
+  "category": "rustic",
+  "family": "rustic",
+  "layout": "warm-leaf-header",
+  "thumbnail": "/templates/weddings/autumn-ember-waltz/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#7A3B1D",
+      "secondary": "#F1D8C2",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg"
+    }
+  }
+}

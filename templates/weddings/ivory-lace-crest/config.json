@@ -1,0 +1,22 @@
+{
+  "id": "ivory-lace-crest",
+  "name": "Ivory Lace Crest",
+  "category": "classic",
+  "family": "classic",
+  "layout": "crest-header",
+  "thumbnail": "/templates/weddings/ivory-lace-crest/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#F7F4EF",
+      "secondary": "#6A645A",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/carriage-house-hero.jpeg"
+    }
+  }
+}

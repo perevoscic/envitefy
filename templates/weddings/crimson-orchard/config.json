@@ -1,0 +1,22 @@
+{
+  "id": "crimson-orchard",
+  "name": "Crimson Orchard",
+  "category": "floral",
+  "family": "floral",
+  "layout": "split-texture-banner",
+  "thumbnail": "/templates/weddings/crimson-orchard/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#5A1F2A",
+      "secondary": "#F6E3E6",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/marble-whisper-hero.jpeg"
+    }
+  }
+}

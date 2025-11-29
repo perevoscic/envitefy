@@ -1,0 +1,22 @@
+{
+  "id": "sapphire-moonlit-arch",
+  "name": "Sapphire Moonlit Arch",
+  "category": "luxury",
+  "family": "luxury",
+  "layout": "arched-hero",
+  "thumbnail": "/templates/weddings/sapphire-moonlit-arch/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#0A1A3F",
+      "secondary": "#C1CFFF",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Cormorant",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.jpeg"
+    }
+  }
+}

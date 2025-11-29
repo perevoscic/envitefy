@@ -1119,8 +1119,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const renderMainMenu = () => (
-      <div className="space-y-4 animate-fade-in pb-8">
-        <div className="mb-2">
+      <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
+        <div className="mb-2 w-full max-w-sm text-center">
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
             Add your details
           </h2>
@@ -1130,7 +1130,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
           <MenuCard
             title="Headline"
             desc="Title, date, location."
@@ -1575,7 +1575,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
-          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center md:justify-end md:pr-50"
+          className="flex-1 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

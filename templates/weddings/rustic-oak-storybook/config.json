@@ -1,0 +1,22 @@
+{
+  "id": "rustic-oak-storybook",
+  "name": "Rustic Oak Storybook",
+  "category": "rustic",
+  "family": "rustic",
+  "layout": "parchment-hero",
+  "thumbnail": "/templates/weddings/rustic-oak-storybook/thumb.png",
+  "theme": {
+    "colors": {
+      "primary": "#5B402B",
+      "secondary": "#F3E4D1",
+      "background": "transparent"
+    },
+    "fonts": {
+      "headline": "Crimson Text",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/tidal-opulence-hero.jpeg"
+    }
+  }
+}
