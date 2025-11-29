@@ -10,7 +10,7 @@ import { MenuProvider } from "@/contexts/MenuContext";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
-import type { CSSProperties } from "react";
+import { Suspense, type CSSProperties } from "react";
 
 // Minimal font footprint: rely on system stacks set in globals.css (.font-vars).
 const fontVarsClass = "font-vars";
@@ -270,17 +270,18 @@ export default async function RootLayout({
           gtag('js', new Date());
           gtag('config', 'G-3X25SZMRFY');
         `}</Script>
-        <Providers session={session}>
-          <MenuProvider>
-            {isAuthenticated ? (
-              <>
-                <LeftSidebar />
-                <TopNav />
-              </>
-            ) : null}
-          </MenuProvider>
-          <div
-            className={`min-h-[100dvh] text-foreground flex flex-col ${
+        <Suspense fallback={null}>
+          <Providers session={session}>
+            <MenuProvider>
+              {isAuthenticated ? (
+                <>
+                  <LeftSidebar />
+                  <TopNav />
+                </>
+              ) : null}
+            </MenuProvider>
+            <div
+              className={`min-h-[100dvh] text-foreground flex flex-col ${
               isAuthenticated
                 ? "bg-[#F8F5FF]"
                 : "bg-[#F8F5FF] landing-dark-gradient"
@@ -297,7 +298,8 @@ export default async function RootLayout({
             <div className="flex-1 min-w-0">{children}</div>
             <ConditionalFooter serverSession={session} />
           </div>
-        </Providers>
+          </Providers>
+        </Suspense>
       </body>
     </html>
   );
