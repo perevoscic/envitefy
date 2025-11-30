@@ -215,6 +215,13 @@ const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Family: "emerald",
   Healthcare: "green",
   Gymnastics: "violet",
+  "Football Season": "green",
+  Cheerleading: "amber",
+  "Dance / Ballet": "slate",
+  "Workshop / Class": "teal",
+  "Gender Reveal": "fuchsia",
+  "General Event": "orange",
+  Soccer: "cyan",
 };
 
 const CATEGORY_FALLBACK_COLORS = [
@@ -256,13 +263,17 @@ const ICON_LOOKUP: Record<string, any> = {
   "Baby Showers": Baby,
   "Gender Reveal": PartyPopper,
   "Football Season": Trophy,
+  "Sport Football Season": Trophy,
+  "General Event": CalendarDays,
   "Gymnastics Schedule": Dumbbell,
+  Gymnastics: Dumbbell,
   Cheerleading: Sparkles,
   "Dance / Ballet": Footprints,
   Soccer: Trophy,
   "Sport Events": Trophy,
   "Doctor Appointments": Stethoscope,
   "Workshops / Classes": GraduationCap,
+  "Workshop / Class": GraduationCap,
   "General Events": CalendarDays,
   "Special Events": Music,
 };
@@ -928,13 +939,47 @@ export default function LeftSidebar() {
     return CATEGORY_FALLBACK_COLORS[hash % CATEGORY_FALLBACK_COLORS.length];
   };
 
+  const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
+    "sport_football_season": "Football Season",
+    "sport football season": "Football Season",
+    "football season": "Football Season",
+    "sport_gymnastics_schedule": "Gymnastics",
+    "sport_gymnastics": "Gymnastics",
+    "gymnastics schedule": "Gymnastics",
+    "sport_cheerleading": "Cheerleading",
+    "sport cheerleading": "Cheerleading",
+    "sport_dance_ballet": "Dance / Ballet",
+    "sport dance ballet": "Dance / Ballet",
+    "sport_soccer": "Soccer",
+    "sport soccer": "Soccer",
+    "sport_event": "Sport Event",
+    "sport events": "Sport Events",
+    "general_event": "General Event",
+    "workshop_class": "Workshop / Class",
+    "gender_reveal": "Gender Reveal",
+    "dr_appointment": "Doctor Appointments",
+    "doctor_appointment": "Doctor Appointments",
+    "special_event": "Special Events",
+  };
+
+  const titleCase = (phrase: string) =>
+    phrase
+      .split(" ")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
   // Normalize freeform/variant labels to our canonical sidebar categories
   const normalizeCategoryLabel = (
     raw: string | null | undefined
   ): string | null => {
     const s = String(raw || "").trim();
     if (!s) return null;
-    const l = s.toLowerCase();
+    const deslugged = s.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+    const l = deslugged.toLowerCase();
+
+    const override = CATEGORY_LABEL_OVERRIDES[l];
+    if (override) return override;
     // Weddings
     if (/^wedding(s)?$/.test(l)) return "Weddings";
     // Birthdays
@@ -943,6 +988,8 @@ export default function LeftSidebar() {
     // Baby Showers
     if (/^baby\s*shower(s)?$/.test(l) || /\bbaby[-\s]?shower(s)?\b/.test(l))
       return "Baby Showers";
+    // Gender Reveal
+    if (/gender\s*reveal/.test(l)) return "Gender Reveal";
     // Doctor Appointments (medical)
     if (
       /^(doctor|dr|medical|dental)\s*appointment(s)?$/.test(l) ||
@@ -952,14 +999,21 @@ export default function LeftSidebar() {
     // Generic appointments
     if (/^appointment(s)?$/.test(l)) return "Appointments";
     // Gymnastics
-    if (/gymnastic(s)?/i.test(l) || /sport_gymnastics/i.test(l))
-      return "Gymnastics";
+    if (/gymnastic(s)?/.test(l)) return "Gymnastics";
+    // Football Season
+    if (/football\s+season/.test(l)) return "Football Season";
+    // Cheer / Dance / Soccer variants
+    if (/cheerleading|cheer leader|cheer\b/.test(l)) return "Cheerleading";
+    if (/dance|ballet/.test(l)) return "Dance / Ballet";
+    if (/soccer/.test(l)) return "Soccer";
     // Sports/Games
     if (
       /^sport(s)?\s*event(s)?$/.test(l) ||
       /\b(sport|game|tournament|match)\b/.test(l)
     )
       return "Sport Events";
+    // Workshops / Classes
+    if (/workshop|class/.test(l)) return "Workshop / Class";
     // Play Days
     if (/^play\s*day(s)?$/.test(l) || /playdate(s)?/.test(l))
       return "Play Days";
@@ -967,8 +1021,8 @@ export default function LeftSidebar() {
     if (/car\s*pool|carpool/.test(l)) return "Car Pool";
     // General
     if (/^general(\s*events?)?$/.test(l)) return "General Events";
-    // Fallback: title case
-    return s[0].toUpperCase() + s.slice(1);
+    // Fallback: title case the deslugged string (covers new categories)
+    return titleCase(deslugged);
   };
 
   // Basic keyword-based category guesser when OCR did not set one
@@ -2004,6 +2058,8 @@ export default function LeftSidebar() {
   };
 
   if (status !== "authenticated") return null;
+  // Avoid SSR/client mismatch by rendering sidebar only after hydration
+  if (!isHydrated) return null;
 
   return (
     <>

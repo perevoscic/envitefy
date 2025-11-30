@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build --turbo",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.js",
     "favicon": "node scripts/generate-favicon.js",
