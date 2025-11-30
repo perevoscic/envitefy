@@ -16,7 +16,10 @@
       "body": "Inter"
     },
     "decorations": {
-      "heroImage": "/templates/wedding-placeholders/tidal-opulence-hero.jpeg"
+      "heroImage": "/templates/wedding-placeholders/tidal-opulence-hero.jpeg",
+      "paperTop": "/templates/weddings/rustic-oak-storybook/assets/paper-top.png",
+      "paperBottom": "/templates/weddings/rustic-oak-storybook/assets/paper-bottom.png",
+      "paperSides": "/templates/weddings/rustic-oak-storybook/assets/paper-sides.png"
     }
   }
 }

@@ -30,7 +30,7 @@ import {
   Users,
   Trash2,
 } from "lucide-react";
-import ScrollBoundary from "@/components/ScrollBoundary";
+import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 
@@ -2304,13 +2304,7 @@ export default function SpecialEventsCustomizePage() {
         }`}
         {...drawerTouchHandlers}
       >
-        <ScrollBoundary
-          className="flex-1 overflow-y-auto"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
-        >
+        <ScrollHandoffContainer className="flex-1">
           {mobileMenuOpen && (
             <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
@@ -2334,7 +2328,7 @@ export default function SpecialEventsCustomizePage() {
             {activeView === "sponsors" && renderSponsorsEditor()}
             {activeView === "rsvp" && renderRsvpEditor()}
           </div>
-        </ScrollBoundary>
+        </ScrollHandoffContainer>
       </div>
 
       {!mobileMenuOpen && (

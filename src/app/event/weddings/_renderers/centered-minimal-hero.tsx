@@ -1,48 +1,67 @@
+import React from "react";
+import {
+  ContentSections,
+  Footer,
+  ensureContrast,
+  pickTextColor,
+  type EventData,
+  type ThemeConfig,
+} from "./content-sections";
+
 export default function CenteredMinimalHero({
   theme,
   event,
 }: {
-  theme: any;
-  event: any;
+  theme: ThemeConfig;
+  event: EventData;
 }) {
+  const overlayText = pickTextColor(theme.colors.primary);
+  const accent = ensureContrast(theme.colors.secondary, theme.colors.primary);
 
   return (
     <div
-      className="w-full min-h-screen"
+      className="w-full min-h-screen flex flex-col"
       style={{ fontFamily: theme.fonts.body }}
     >
       <section
-        className="h-[360px] flex items-center justify-center text-center relative"
+        className="relative h-[360px] flex items-center justify-center overflow-hidden"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {theme.decorations.heroImage && (
+        {theme.decorations?.heroImage && (
           <img
             src={theme.decorations.heroImage}
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
+            className="absolute inset-0 w-full h-full object-cover opacity-60"
             alt=""
           />
         )}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-transparent" />
 
-        <div className="relative text-white">
-          <h1
-            className="text-4xl font-semibold"
-            style={{ fontFamily: theme.fonts.headline }}
+        <div className="relative max-w-xl mx-auto px-8 py-6 rounded-3xl bg-black/35 backdrop-blur-sm border border-white/20 text-center">
+          <p
+            className="text-[10px] tracking-[0.35em] uppercase mb-3"
+            style={{ color: accent }}
           >
-            {event.headlineTitle}
+            The Wedding Of
+          </p>
+          <h1
+            className="text-4xl md:text-5xl font-semibold leading-tight"
+            style={{ fontFamily: theme.fonts.headline, color: overlayText }}
+          >
+            {event.headlineTitle || "Your Names"}
           </h1>
-          <p className="opacity-80 mt-2">{event.date}</p>
-          <p className="opacity-70">{event.location}</p>
+          <div className="mt-4 text-xs md:text-sm space-y-1 text-white/80">
+            {event.date && <p>{event.date}</p>}
+            {event.location && (
+              <p className="uppercase tracking-[0.25em] text-[10px] md:text-xs">
+                {event.location}
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
-      <main className="max-w-3xl mx-auto p-6 space-y-12 text-slate-700">
-        {event.story && (
-          <section>
-            <h2 className="text-xl font-semibold">Our Story</h2>
-            <p>{event.story}</p>
-          </section>
-        )}
-      </main>
+      <ContentSections theme={theme} event={event} />
+      <Footer theme={theme} event={event} />
     </div>
   );
 }

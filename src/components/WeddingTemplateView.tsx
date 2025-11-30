@@ -20,6 +20,7 @@ import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
 import { Plane, Navigation, Bus } from "lucide-react";
+import weddingTemplates from "../../templates/weddings/index.json";
 
 // Import constants from the customize page
 // We'll need to extract these to a shared file later, but for now we'll duplicate them
@@ -891,6 +892,16 @@ export default function WeddingTemplateView({
   const currentSize =
     FONT_SIZES[theme.fontSize as keyof typeof FONT_SIZES] || FONT_SIZES.medium;
 
+  const templateMeta = useMemo(() => {
+    if (!templateId) return null;
+    return (weddingTemplates as any[]).find((t) => t.id === templateId) || null;
+  }, [templateId]);
+
+  const heroImageSrc =
+    (weddingData as any)?.customHeroImage ||
+    (templateMeta as any)?.heroImage ||
+    "/templates/wedding-placeholders/ivory-ink-hero.jpeg";
+
   // Detect dark background for title color
   const isDarkBackground = useMemo(() => {
     const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -1121,10 +1132,7 @@ export default function WeddingTemplateView({
 
             <div id="home" className="relative h-[400px] md:h-[500px] w-full">
               <img
-                src={
-                  weddingData.customHeroImage ||
-                  "/templates/wedding-placeholders/ivory-ink-hero.jpeg"
-                }
+                src={heroImageSrc}
                 alt="Couple"
                 className="w-full h-full object-cover opacity-90"
               />

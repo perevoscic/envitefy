@@ -38,7 +38,7 @@ import {
   Share2,
   Apple,
 } from "lucide-react";
-import ScrollBoundary from "@/components/ScrollBoundary";
+import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
@@ -98,6 +98,32 @@ const NAV_EDIT_TARGETS: Record<(typeof NAV_ITEMS)[number], string> = {
   Travel: "travel",
   RSVP: "rsvp",
   Registry: "registry",
+};
+
+const NAV_VISIBILITY_CHECKS: Record<
+  (typeof NAV_ITEMS)[number],
+  (data: any) => boolean
+> = {
+  Home: () => true,
+  Schedule: (data) => Array.isArray(data.schedule) && data.schedule.length > 0,
+  "Our Story": (data) => Boolean(data.story),
+  "Wedding Party": (data) =>
+    Array.isArray(data.weddingParty) && data.weddingParty.length > 0,
+  Photos: (data) => Array.isArray(data.gallery) && data.gallery.length > 0,
+  "Things To Do": (data) =>
+    Array.isArray(data.thingsToDo) && data.thingsToDo.length > 0,
+  Travel: (data) => {
+    const travel = data.travel || {};
+    return (
+      (Array.isArray(travel.hotels) && travel.hotels.length > 0) ||
+      (Array.isArray(travel.airports) && travel.airports.length > 0) ||
+      Boolean(travel.directions) ||
+      Boolean(travel.shuttle)
+    );
+  },
+  RSVP: (data) => Boolean(data.rsvp?.isEnabled),
+  Registry: (data) =>
+    Array.isArray((data as any).registry) && (data as any).registry.length > 0,
 };
 
 // --- Constants & Data ---
@@ -815,8 +841,8 @@ const INITIAL_DATA = {
     themeId: "blush_peony_arch",
   },
   images: {
-    hero: null,
-    headlineBg: null,
+    hero: "/templates/wedding-placeholders/midnight-bloom-hero.jpeg",
+    headlineBg: "/templates/wedding-placeholders/ivory-ink-hero.jpeg",
   },
   travel: {
     hotels: [
@@ -884,7 +910,37 @@ const INITIAL_DATA = {
     isEnabled: true,
     deadline: "2028-08-22",
   },
-  gallery: [],
+  gallery: [
+    {
+      id: 1,
+      url: "/templates/wedding-placeholders/coastal-pearl-hero.jpeg",
+    },
+    {
+      id: 2,
+      url: "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg",
+    },
+    {
+      id: 3,
+      url: "/templates/wedding-placeholders/garden-atelier-hero.jpeg",
+    },
+  ],
+  registry: [
+    {
+      id: 1,
+      label: "Zola – Ava & Mason",
+      url: "https://www.zola.com/",
+    },
+    {
+      id: 2,
+      label: "Crate & Barrel Registry",
+      url: "https://www.crateandbarrel.com/",
+    },
+    {
+      id: 3,
+      label: "Honeyfund (Honeymoon)",
+      url: "https://www.honeyfund.com/",
+    },
+  ],
 };
 // --- Graphical Components (Smart Renderer) ---
 
@@ -1325,6 +1381,10 @@ const App = () => {
     };
   }, [data.theme.themeId, data.theme.font]);
 
+  const fallbackHeroImage =
+    (selectedTemplate as any)?.theme?.decorations?.heroImage ||
+    "/templates/wedding-placeholders/ivory-ink-hero.jpeg";
+
   const previewEvent = useMemo(() => {
     const location = [data.city, data.state].filter(Boolean).join(", ");
     return {
@@ -1355,7 +1415,7 @@ const App = () => {
       photos: Array.isArray(data.gallery)
         ? data.gallery.map((g) => g.url || g.src || g.preview || "")
         : [],
-      rsvpEnabled: Boolean((data as any).rsvp?.enabled),
+      rsvpEnabled: Boolean((data as any).rsvp?.isEnabled),
       rsvpLink: (data as any).rsvp?.link || "",
       registry: Array.isArray((data as any).registry)
         ? (data as any).registry.map((r: any) => ({
@@ -2047,7 +2107,7 @@ const App = () => {
                   Typography
                 </label>
               </div>
-              <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
                 {Object.entries(FONTS).map(([key, font]) => (
                   <button
                     key={key}
@@ -2800,15 +2860,20 @@ const App = () => {
                 </div>
               </div>
 
-              <nav
-                className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent}`}
-              >
-                {NAV_ITEMS.map((item) => (
-                  <span
-                    key={item}
-                    className="cursor-pointer hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
-                    onClick={() => {
-                      const editTarget = NAV_EDIT_TARGETS[item];
+              {(() => {
+                const items = NAV_ITEMS.filter((item) =>
+                  NAV_VISIBILITY_CHECKS[item](data)
+                );
+                return (
+                  <nav
+                    className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent}`}
+                  >
+                    {items.map((item) => (
+                      <span
+                        key={item}
+                        className="cursor-pointer hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
+                        onClick={() => {
+                          const editTarget = NAV_EDIT_TARGETS[item];
                       if (editTarget) setActiveView(editTarget);
                       const anchor = NAV_SCROLL_TARGETS[item];
                       if (anchor && typeof document !== "undefined") {
@@ -2816,23 +2881,22 @@ const App = () => {
                           behavior: "smooth",
                           block: "start",
                         });
-                      }
-                    }}
-                  >
-                    {item}
-                  </span>
-                ))}
-              </nav>
+                          }
+                        }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </nav>
+                );
+              })()}
 
               <div
                 id="wedding-home"
-                className="relative h-[400px] md:h-[500px] w-full group cursor-default"
+                className="relative h-[460px] md:h-[620px] w-full group cursor-default"
               >
                 <img
-                  src={
-                    data.images.hero ||
-                    "/templates/wedding-placeholders/ivory-ink-hero.jpeg"
-                  }
+                  src={data.images.hero || fallbackHeroImage}
                   alt="Couple"
                   className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-700"
                 />
@@ -2851,7 +2915,7 @@ const App = () => {
               <div className={`p-8 md:p-16 space-y-24 ${currentTheme.text}`}>
                 <section
                   id="wedding-schedule"
-                  className="max-w-4xl mx-auto"
+                  className="w-full"
                   onClick={() => setActiveView("schedule")}
                 >
                   <h2
@@ -2860,7 +2924,7 @@ const App = () => {
                   >
                     Schedule of Events
                   </h2>
-                  <div className="relative space-y-8 md:space-y-12 max-w-4xl mx-auto">
+                  <div className="relative space-y-8 md:space-y-12 max-w-5xl mx-auto">
                     <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/30 pointer-events-none hidden md:block"></div>
                     {sortedSchedule.map((event, index) => {
                       const isLeft = index % 2 === 0;
@@ -3252,7 +3316,7 @@ const App = () => {
 
                 <section
                   id="wedding-rsvp"
-                  className="max-w-3xl mx-auto text-center px-3"
+                  className="w-full text-center px-3"
                   onClick={() => setActiveView("rsvp")}
                 >
                   <h2
@@ -3549,13 +3613,7 @@ const App = () => {
         }`}
         {...drawerTouchHandlers}
       >
-        <ScrollBoundary
-          className="flex-1 overflow-y-auto"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
-        >
+        <ScrollHandoffContainer className="flex-1">
           {mobileMenuOpen && (
             <div className="sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
@@ -3584,7 +3642,7 @@ const App = () => {
             {activeView === "rsvp" && renderRsvpEditor()}
             {activeView === "registry" && renderRegistryEditor()}
           </div>
-        </ScrollBoundary>
+        </ScrollHandoffContainer>
       </div>
 
       {!mobileMenuOpen && (

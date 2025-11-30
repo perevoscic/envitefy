@@ -10,6 +10,7 @@ export default function ThemeCard({
   const primary = theme.primaryColor || "#f8fafc";
   const secondary = theme.secondaryColor || "#1f2937";
   const headlineFont = theme.headlineFont || "serif";
+  const heroImage = typeof theme.heroImage === "string" ? theme.heroImage : null;
 
   const luminance = (hex: string) => {
     const normalized = hex.replace("#", "");
@@ -39,11 +40,22 @@ export default function ThemeCard({
     >
       <div
         className="w-full h-20 flex items-center justify-center text-center"
-        style={{
-          backgroundColor: primary,
-          color: textColor,
-          fontFamily: headlineFont,
-        }}
+        style={
+          heroImage
+            ? {
+                backgroundImage:
+                  "linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55)), " + `url(${heroImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                color: "#f8fafc",
+                fontFamily: headlineFont,
+              }
+            : {
+                backgroundColor: primary,
+                color: textColor,
+                fontFamily: headlineFont,
+              }
+        }
       >
         <span className="text-sm font-semibold leading-tight px-2">{theme.name}</span>
       </div>

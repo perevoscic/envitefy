@@ -29,7 +29,7 @@ import {
   type BabyShowerTemplateDefinition,
   babyShowerTemplateCatalog,
 } from "@/components/event-create/BabyShowersTemplateGallery";
-import ScrollBoundary from "@/components/ScrollBoundary";
+import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 
@@ -1825,13 +1825,7 @@ export default function BabyShowerTemplateCustomizePage() {
         }`}
         {...drawerTouchHandlers}
       >
-        <ScrollBoundary
-          className="flex-1 overflow-y-auto"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
-        >
+        <ScrollHandoffContainer className="flex-1">
           {mobileMenuOpen && (
             <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
@@ -1858,7 +1852,7 @@ export default function BabyShowerTemplateCustomizePage() {
             {activeView === "rsvp" && renderRsvpEditor()}
             {activeView === "registry" && renderRegistryEditor()}
           </div>
-        </ScrollBoundary>
+        </ScrollHandoffContainer>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
           <div className="flex gap-3">

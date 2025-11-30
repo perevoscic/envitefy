@@ -16,7 +16,10 @@
       "body": "Inter"
     },
     "decorations": {
-      "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg"
+      "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg",
+      "leavesTop": "/templates/weddings/autumn-ember-waltz/assets/leaves-top.png",
+      "leavesBottom": "/templates/weddings/autumn-ember-waltz/assets/leaves-bottom.png",
+      "leavesCorners": "/templates/weddings/autumn-ember-waltz/assets/leaves-corners.png"
     }
   }
 }

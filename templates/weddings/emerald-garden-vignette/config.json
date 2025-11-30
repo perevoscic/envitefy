@@ -16,7 +16,10 @@
       "body": "Inter"
     },
     "decorations": {
-      "heroImage": "/templates/wedding-placeholders/palais-moderne-hero.jpeg"
+      "heroImage": "/templates/wedding-placeholders/palais-moderne-hero.jpeg",
+      "archTop": "/templates/weddings/emerald-garden-vignette/assets/arch-top.png",
+      "archSideLeft": "/templates/weddings/emerald-garden-vignette/assets/arch-side-left.png",
+      "archSideRight": "/templates/weddings/emerald-garden-vignette/assets/arch-side-right.png"
     }
   }
 }

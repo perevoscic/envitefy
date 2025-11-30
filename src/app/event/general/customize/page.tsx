@@ -28,7 +28,7 @@ import {
   Upload,
   Link as LinkIcon,
 } from "lucide-react";
-import ScrollBoundary from "@/components/ScrollBoundary";
+import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 
@@ -1423,13 +1423,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }`}
           {...drawerTouchHandlers}
         >
-          <ScrollBoundary
-            className="flex-1 overflow-y-auto"
-            style={{
-              WebkitOverflowScrolling: "touch",
-              overscrollBehavior: "contain",
-            }}
-          >
+          <ScrollHandoffContainer className="flex-1">
             <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
                 onClick={closeMobileMenu}
@@ -1459,7 +1453,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ) : null
               )}
             </div>
-          </ScrollBoundary>
+          </ScrollHandoffContainer>
 
           <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
             <div className="flex gap-3">

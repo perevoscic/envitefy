@@ -16,7 +16,10 @@
       "body": "Inter"
     },
     "decorations": {
-      "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg"
+      "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg",
+      "fernTop": "/templates/weddings/willow-fern-embrace/assets/fern-top.png",
+      "fernBottom": "/templates/weddings/willow-fern-embrace/assets/fern-bottom.png",
+      "fernCorners": "/templates/weddings/willow-fern-embrace/assets/fern-corners.png"
     }
   }
 }

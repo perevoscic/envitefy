@@ -16,7 +16,11 @@
       "body": "Inter"
     },
     "decorations": {
-      "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.jpeg"
+      "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.jpeg",
+      "cornerTopLeft": "/templates/weddings/wild-rose-halo/assets/corner-top-left.png",
+      "cornerTopRight": "/templates/weddings/wild-rose-halo/assets/corner-top-right.png",
+      "cornerBottomLeft": "/templates/weddings/wild-rose-halo/assets/corner-bottom-left.png",
+      "cornerBottomRight": "/templates/weddings/wild-rose-halo/assets/corner-bottom-right.png"
     }
   }
 }

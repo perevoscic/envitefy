@@ -728,22 +728,29 @@ export default function LeftSidebar() {
       router.push("/event/new");
     } catch {}
   };
+
+  const openSnapFromSidebar = (mode: "camera" | "upload") => {
+    try {
+      router.push(`/?action=${mode}`);
+      return;
+    } catch {}
+    triggerCreateEvent();
+  };
   const handleSnapShortcutClick = (
     event: ReactMouseEvent<HTMLElement>,
     mode: "camera" | "upload"
   ) => {
     const win = window as any;
     const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
-    if (typeof fn === "function") {
-      event.preventDefault();
-      collapseSidebarOnTouch();
-      try {
+    event.preventDefault();
+    collapseSidebarOnTouch();
+    try {
+      if (typeof fn === "function") {
         fn();
-      } catch {}
-    } else {
-      collapseSidebarOnTouch();
-      triggerCreateEvent();
-    }
+        return;
+      }
+    } catch {}
+    openSnapFromSidebar(mode);
   };
 
   const launchSnapFromMenu = (mode: "camera" | "upload") => {
@@ -757,7 +764,7 @@ export default function LeftSidebar() {
         return;
       }
     } catch {}
-    triggerCreateEvent();
+    openSnapFromSidebar(mode);
   };
 
   const templateHrefMap = useMemo(() => {
