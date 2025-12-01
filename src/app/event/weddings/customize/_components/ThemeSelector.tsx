@@ -11,7 +11,7 @@ export default function ThemeSelector({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="p-3 space-y-4">
+    <div className="p-3 grid grid-cols-2 gap-3">
       {themes.map((theme) => (
         <ThemeCard
           key={theme.id}

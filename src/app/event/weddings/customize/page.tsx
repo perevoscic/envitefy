@@ -1936,8 +1936,8 @@ const App = () => {
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
-    <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
-      <div className="mb-6 w-full max-w-sm text-center">
+    <div className="h-full flex flex-col animate-fade-in">
+      <div className="mb-6 w-full max-w-sm text-center flex-shrink-0">
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
           Add your details
         </h2>
@@ -1946,76 +1946,78 @@ const App = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-        <MenuCard
-          title="Headline"
-          icon={<Type size={18} />}
-          desc="Names, date, location."
-          onClick={() => setActiveView("headline")}
-        />
-        <MenuCard
-          title="Design"
-          icon={<Palette size={18} />}
-          desc="Theme, fonts, colors."
-          onClick={() => setActiveView("design")}
-        />
-        <MenuCard
-          title="Images"
-          icon={<ImageIcon size={18} />}
-          desc="Hero & background photos."
-          onClick={() => setActiveView("images")}
-        />
-        <MenuCard
-          title="Schedule"
-          icon={<CalendarIcon size={18} />}
-          desc="Events, times, and locations."
-          onClick={() => setActiveView("schedule")}
-        />
-        <MenuCard
-          title="Our Story"
-          icon={<Heart size={18} />}
-          desc="How you met."
-          onClick={() => setActiveView("story")}
-        />
-        <MenuCard
-          title="Wedding Party"
-          icon={<Users size={18} />}
-          desc="VIPs and roles."
-          onClick={() => setActiveView("party")}
-        />
-        <MenuCard
-          title="Travel"
-          icon={<MapPin size={18} />}
-          desc="Hotels, shuttles & airports."
-          onClick={() => setActiveView("travel")}
-        />
-        <MenuCard
-          title="Things To Do"
-          icon={<Coffee size={18} />}
-          desc="Local recommendations."
-          onClick={() => setActiveView("thingsToDo")}
-        />
-        <MenuCard
-          title="Photos"
-          icon={<ImageIcon size={18} />}
-          desc="Photo gallery."
-          onClick={() => setActiveView("photos")}
-        />
-        <MenuCard
-          title="RSVP"
-          icon={<CheckSquare size={18} />}
-          desc="RSVP settings."
-          onClick={() => setActiveView("rsvp")}
-        />
-        <MenuCard
-          title="Registry"
-          icon={<Gift size={18} />}
-          desc="Gift registries."
-          onClick={() => setActiveView("registry")}
-        />
+      <div className="flex-1 overflow-y-auto w-full max-w-sm min-h-0">
+        <div className="grid grid-cols-1 gap-3 pb-4">
+          <MenuCard
+            title="Headline"
+            icon={<Type size={18} />}
+            desc="Names, date, location."
+            onClick={() => setActiveView("headline")}
+          />
+          <MenuCard
+            title="Design"
+            icon={<Palette size={18} />}
+            desc="Theme, fonts, colors."
+            onClick={() => setActiveView("design")}
+          />
+          <MenuCard
+            title="Images"
+            icon={<ImageIcon size={18} />}
+            desc="Hero & background photos."
+            onClick={() => setActiveView("images")}
+          />
+          <MenuCard
+            title="Schedule"
+            icon={<CalendarIcon size={18} />}
+            desc="Events, times, and locations."
+            onClick={() => setActiveView("schedule")}
+          />
+          <MenuCard
+            title="Our Story"
+            icon={<Heart size={18} />}
+            desc="How you met."
+            onClick={() => setActiveView("story")}
+          />
+          <MenuCard
+            title="Wedding Party"
+            icon={<Users size={18} />}
+            desc="VIPs and roles."
+            onClick={() => setActiveView("party")}
+          />
+          <MenuCard
+            title="Travel"
+            icon={<MapPin size={18} />}
+            desc="Hotels, shuttles & airports."
+            onClick={() => setActiveView("travel")}
+          />
+          <MenuCard
+            title="Things To Do"
+            icon={<Coffee size={18} />}
+            desc="Local recommendations."
+            onClick={() => setActiveView("thingsToDo")}
+          />
+          <MenuCard
+            title="Photos"
+            icon={<ImageIcon size={18} />}
+            desc="Photo gallery."
+            onClick={() => setActiveView("photos")}
+          />
+          <MenuCard
+            title="RSVP"
+            icon={<CheckSquare size={18} />}
+            desc="RSVP settings."
+            onClick={() => setActiveView("rsvp")}
+          />
+          <MenuCard
+            title="Registry"
+            icon={<Gift size={18} />}
+            desc="Gift registries."
+            onClick={() => setActiveView("registry")}
+          />
+        </div>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-slate-200 w-full max-w-sm">
+      <div className="pt-6 border-t border-slate-200 w-full max-w-sm flex-shrink-0">
         <div className="flex gap-3">
           {editEventId && (
             <button
@@ -3736,7 +3738,7 @@ const App = () => {
               </span>
             </div>
           )}
-          <div className="p-6 pt-4 md:pt-6">
+          <div className={`p-6 pt-4 md:pt-6 ${activeView === "main" ? "h-full flex flex-col" : ""}`}>
             {activeView === "main" && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
             {activeView === "images" && renderImagesEditor()}
