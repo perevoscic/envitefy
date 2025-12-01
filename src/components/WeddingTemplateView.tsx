@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
+import Image from "next/image";
+import { Share2 } from "lucide-react";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
@@ -56,6 +58,20 @@ const TEMPLATE_CONFIGS: Record<string, any> = {
   "library-wedding": libraryWedding,
   "garden-wedding": gardenWedding,
 };
+
+const getLuminance = (hex: string): number => {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return 0;
+  const r = parseInt(normalized.slice(0, 2), 16) / 255;
+  const g = parseInt(normalized.slice(2, 4), 16) / 255;
+  const b = parseInt(normalized.slice(4, 6), 16) / 255;
+  const channel = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+};
+
+const pickTextColor = (bg: string) =>
+  getLuminance(bg) > 0.6 ? "#1f2937" : "#F9FAFB";
 
 // Font definitions (matching customize page)
 const FONTS = {
