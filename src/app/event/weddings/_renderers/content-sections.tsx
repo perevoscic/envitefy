@@ -55,7 +55,7 @@ export type EventData = {
   gallery?: Array<{ url?: string; src?: string; preview?: string }>;
 };
 
-const getLuminance = (hex: string): number => {
+export const getLuminance = (hex: string): number => {
   const normalized = hex.replace("#", "");
   if (normalized.length !== 6) return 0;
   const r = parseInt(normalized.slice(0, 2), 16) / 255;
