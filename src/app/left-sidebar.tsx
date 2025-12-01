@@ -283,12 +283,14 @@ type DraftsSectionProps = {
   drafts: { id: string; title: string; created_at?: string; data?: any }[];
   draftsCount: number;
   collapseSidebarOnTouch: () => void;
+  onDeleteDraft: (id: string, title?: string) => void;
 };
 
 function DraftsSection({
   drafts,
   draftsCount,
   collapseSidebarOnTouch,
+  onDeleteDraft,
 }: DraftsSectionProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -390,14 +392,44 @@ function DraftsSection({
                   collapseSidebarOnTouch();
                   router.push(href);
                 }}
-                className="w-full text-left px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 hover:bg-surface/70"
+                className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 hover:bg-surface/70"
               >
-                <div className="truncate">{getDraftLabel(row)}</div>
-                {formattedDate && (
-                  <div className="text-[10px] text-foreground/50">
-                    {formattedDate}
-                  </div>
-                )}
+                <div className="flex-1 min-w-0">
+                  <div className="truncate">{getDraftLabel(row)}</div>
+                  {formattedDate && (
+                    <div className="text-[10px] text-foreground/50">
+                      {formattedDate}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Delete draft"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDeleteDraft(row.id, row.title);
+                  }}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground/60 hover:bg-red-50 hover:text-red-500"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                    <path d="M9 6V4h6v2" />
+                  </svg>
+                </button>
               </button>
             );
           })}
@@ -2426,6 +2458,7 @@ export default function LeftSidebar() {
                 drafts={drafts}
                 draftsCount={draftsCount}
                 collapseSidebarOnTouch={collapseSidebarOnTouch}
+                onDeleteDraft={deleteHistoryItem}
               />
 
               <div
