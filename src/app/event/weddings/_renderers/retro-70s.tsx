@@ -6,7 +6,9 @@ type Props = { theme: ThemeConfig; event: EventData };
 
 const getNames = (event: EventData) =>
   event.headlineTitle ||
-  [event.couple?.partner1, event.couple?.partner2].filter(Boolean).join(" & ") ||
+  [event.couple?.partner1, event.couple?.partner2]
+    .filter(Boolean)
+    .join(" & ") ||
   "Jessica & Mike";
 
 const getDate = (event: EventData) =>
@@ -33,8 +35,7 @@ export default function Retro70s({ theme, event }: Props) {
     {
       title: "Where",
       icon: <MapPin size={32} />,
-      primary:
-        event.venue?.name || "The Palm Springs Ace",
+      primary: event.venue?.name || "The Palm Springs Ace",
       detail: event.venue?.address || "701 E Palm Canyon Dr, Palm Springs, CA",
       bg: "#6A994E",
       text: "#FEFAE0",
@@ -73,7 +74,12 @@ export default function Retro70s({ theme, event }: Props) {
 
       <nav className="fixed top-4 left-0 w-full z-50 flex justify-center px-4">
         <div className="bg-[#FEFAE0]/90 backdrop-blur-md border-2 border-[#386641] rounded-full px-6 py-3 flex gap-4 md:gap-8 shadow-[4px_4px_0px_0px_#386641]">
-          {["The Scoop", "The Digs", "RSVP"].map((item) => (
+          {[
+            ...(event.story ? ["Story"] : []),
+            "The Scoop",
+            "The Digs",
+            "RSVP",
+          ].map((item) => (
             <a
               key={item}
               href={`#${item.toLowerCase().replace(" ", "-")}`}
@@ -119,13 +125,19 @@ export default function Retro70s({ theme, event }: Props) {
       <div className="bg-[#386641] text-[#FEFAE0] py-4 overflow-hidden border-y-4 border-[#BC4749] rotate-[-1deg] scale-105 z-20 relative">
         <div className="animate-[marquee_20s_linear_infinite] whitespace-nowrap font-black text-2xl uppercase flex gap-8">
           {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i}>Peace • Love • Tacos • Dancing • Good Vibes Only •</span>
+            <span key={i}>
+              Peace • Love • Tacos • Dancing • Good Vibes Only •
+            </span>
           ))}
         </div>
       </div>
 
       <section id="the-scoop" className="py-24 px-4 max-w-6xl mx-auto relative">
-        <div id="the-digs" className="absolute -top-16 left-0" aria-hidden="true" />
+        <div
+          id="the-digs"
+          className="absolute -top-16 left-0"
+          aria-hidden="true"
+        />
         <h2 className="text-5xl md:text-7xl font-black text-center text-[#BC4749] mb-16 uppercase drop-shadow-[3px_3px_0px_#E9C46A]">
           The Lowdown
         </h2>
@@ -150,6 +162,26 @@ export default function Retro70s({ theme, event }: Props) {
         </div>
       </section>
 
+      {/* Story Section */}
+      {event.story && (
+        <section id="story" className="py-24 px-4 max-w-4xl mx-auto">
+          <div className="bg-[#F2E8CF] rounded-3xl p-8 md:p-16 border-4 border-[#BC4749] shadow-[8px_8px_0px_0px_#386641] rotate-[-1deg] hover:rotate-0 transition-transform">
+            <h2
+              className="text-4xl md:text-6xl font-black uppercase text-[#BC4749] mb-8 text-center drop-shadow-[3px_3px_0px_#E9C46A]"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Our Groovy Story
+            </h2>
+            <p
+              className="text-lg md:text-xl leading-relaxed text-[#386641] text-center max-w-2xl mx-auto"
+              style={{ fontFamily: theme.fonts.body }}
+            >
+              {event.story}
+            </p>
+          </div>
+        </section>
+      )}
+
       <section className="py-12 overflow-x-hidden">
         <div className="flex justify-center gap-4 rotate-2 md:scale-110">
           {gallery.map((src, i) => (
@@ -158,7 +190,11 @@ export default function Retro70s({ theme, event }: Props) {
               className="bg-white p-4 pb-12 shadow-lg border border-gray-200 transform hover:scale-105 transition-transform duration-300 first:rotate-[-4deg] last:rotate-[4deg]"
             >
               <div className="w-48 h-48 md:w-64 md:h-64 bg-gray-200 overflow-hidden grayscale contrast-125 hover:grayscale-0 transition-all">
-                <img src={src} alt="Gallery" className="w-full h-full object-cover" />
+                <img
+                  src={src}
+                  alt="Gallery"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           ))}
@@ -172,12 +208,16 @@ export default function Retro70s({ theme, event }: Props) {
             <h2 className="text-4xl md:text-6xl font-black uppercase text-[#386641]">
               Can You Dig It?
             </h2>
-            <p className="font-bold text-[#BC4749] mt-4">RSVP BY SEPTEMBER 1ST</p>
+            <p className="font-bold text-[#BC4749] mt-4">
+              RSVP BY SEPTEMBER 1ST
+            </p>
           </div>
 
           <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
             <div>
-              <label className="font-black text-[#386641] uppercase ml-4">Your Name</label>
+              <label className="font-black text-[#386641] uppercase ml-4">
+                Your Name
+              </label>
               <input
                 type="text"
                 className="w-full bg-white border-4 border-[#386641] rounded-full px-6 py-4 font-bold text-[#BC4749] focus:outline-none focus:shadow-[4px_4px_0px_0px_#BC4749] transition-shadow"
@@ -205,7 +245,9 @@ export default function Retro70s({ theme, event }: Props) {
 
       <footer className="bg-[#386641] text-[#FEFAE0] py-12 text-center font-black uppercase">
         <p className="text-2xl mb-2">Catch you on the flip side</p>
-        <p className="text-sm opacity-70">© {new Date().getFullYear()} {names}</p>
+        <p className="text-sm opacity-70">
+          © {new Date().getFullYear()} {names}
+        </p>
       </footer>
 
       <style>{`

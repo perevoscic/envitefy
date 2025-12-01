@@ -1515,7 +1515,9 @@ const App = () => {
       gallery: Array.isArray(data.gallery)
         ? data.gallery.map((g) => ({ url: g.url || g.src || g.preview || "" }))
         : [],
-      rsvpEnabled: Boolean((data as any).rsvp?.isEnabled),
+      rsvpEnabled: Boolean(
+        (data as any).rsvp?.isEnabled !== false && (data as any).rsvp
+      ),
       rsvpLink: (data as any).rsvp?.link || "",
       rsvp: {
         url: (data as any).rsvp?.link || "#rsvp",

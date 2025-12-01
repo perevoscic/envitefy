@@ -1021,8 +1021,7 @@ export default function WeddingTemplateView({
       thingsToDo,
       gallery,
       rsvpEnabled: Boolean(
-        weddingData.rsvp?.isEnabled !== false &&
-          (weddingData.rsvp || eventData?.rsvp !== undefined)
+        weddingData.rsvp?.isEnabled !== false && weddingData.rsvp
       ),
       rsvpLink: weddingData.rsvp?.link || "",
       rsvp: {

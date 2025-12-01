@@ -76,11 +76,11 @@ export default function CinematicWedding({ theme, event }: Props) {
 
   return (
     <div
-      className="bg-black text-white font-sans min-h-screen selection:bg-white selection:text-black"
+      className="bg-black text-white font-sans min-h-screen selection:bg-white selection:text-black relative"
       style={{ fontFamily: theme.fonts.body }}
     >
       {/* Sticky Nav */}
-      <nav className="fixed top-0 w-full z-50 px-8 py-6 flex justify-between items-center mix-blend-difference">
+      <nav className="sticky top-0 w-full z-50 px-8 py-6 flex justify-between items-center mix-blend-difference bg-transparent">
         <div className="text-xs font-bold tracking-[0.3em] uppercase">
           The Premiere
         </div>

@@ -6,14 +6,13 @@ type Props = { theme: ThemeConfig; event: EventData };
 
 const getNames = (event: EventData) =>
   event.headlineTitle ||
-  [event.couple?.partner1, event.couple?.partner2].filter(Boolean).join(" & ") ||
+  [event.couple?.partner1, event.couple?.partner2]
+    .filter(Boolean)
+    .join(" & ") ||
   "Kai & Thomas";
 
 const getDateLabel = (event: EventData) =>
-  event.date ||
-  event.when ||
-  event.schedule?.[0]?.date ||
-  "December 10, 2025";
+  event.date || event.when || event.schedule?.[0]?.date || "December 10, 2025";
 
 const getLocation = (event: EventData) =>
   event.location || event.venue?.name || "New York City";
@@ -33,34 +32,65 @@ export default function ModernEditorial({ theme, event }: Props) {
         desc: item.description || item.details || "",
       }))
     : [
-        { time: "16:00", title: "Ceremony", desc: "Short, sweet, and legally binding." },
-        { time: "17:30", title: "Aperitivo", desc: "Cocktails and tiny food on trays." },
-        { time: "19:00", title: "Dinner & Disco", desc: "Family style feast then DJ." },
+        {
+          time: "16:00",
+          title: "Ceremony",
+          desc: "Short, sweet, and legally binding.",
+        },
+        {
+          time: "17:30",
+          title: "Aperitivo",
+          desc: "Cocktails and tiny food on trays.",
+        },
+        {
+          time: "19:00",
+          title: "Dinner & Disco",
+          desc: "Family style feast then DJ.",
+        },
       ];
 
   const venueLine =
-    event.venue?.address ||
-    "215 Chrystie St, New York, NY 10002";
+    event.venue?.address || "215 Chrystie St, New York, NY 10002";
 
   const rsvpUrl = event.rsvp?.url || "#rsvp";
 
   return (
     <div
-      className="font-sans text-black bg-white selection:bg-lime-300 selection:text-black"
+      className="font-sans text-black bg-white selection:bg-lime-300 selection:text-black relative"
       style={{ fontFamily: theme.fonts.body }}
     >
-      <div className="fixed top-0 left-0 w-full z-50 mix-blend-difference text-white px-4 py-4 md:px-8 flex justify-between items-center">
+      <div className="sticky top-0 left-0 w-full z-50 mix-blend-difference text-white px-4 py-4 md:px-8 flex justify-between items-center bg-transparent">
         <span className="font-bold text-lg tracking-tight">
-          {names.split("&").map((s) => s.trim()[0]).join(" & ")}
+          {names
+            .split("&")
+            .map((s) => s.trim()[0])
+            .join(" & ")}
         </span>
         <div className="hidden md:flex gap-8 text-sm font-medium">
-          <a href="#schedule" className="hover:underline decoration-2 underline-offset-4">
+          {event.story && (
+            <a
+              href="#story"
+              className="hover:underline decoration-2 underline-offset-4"
+            >
+              STORY
+            </a>
+          )}
+          <a
+            href="#schedule"
+            className="hover:underline decoration-2 underline-offset-4"
+          >
             SCHEDULE
           </a>
-          <a href="#location" className="hover:underline decoration-2 underline-offset-4">
+          <a
+            href="#location"
+            className="hover:underline decoration-2 underline-offset-4"
+          >
             LOCATION
           </a>
-          <a href="#rsvp" className="hover:underline decoration-2 underline-offset-4">
+          <a
+            href="#rsvp"
+            className="hover:underline decoration-2 underline-offset-4"
+          >
             RSVP
           </a>
         </div>
@@ -119,9 +149,39 @@ export default function ModernEditorial({ theme, event }: Props) {
         </div>
       </div>
 
-      <section id="schedule" className="grid grid-cols-1 md:grid-cols-12 gap-0 border-b-2 border-black">
+      {/* Story Section */}
+      {event.story && (
+        <section
+          id="story"
+          className="grid grid-cols-1 md:grid-cols-2 border-b-2 border-black"
+        >
+          <div className="p-8 md:p-16 flex flex-col justify-center bg-white">
+            <h2
+              className="text-4xl md:text-6xl font-black uppercase mb-8 leading-none"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Our
+              <br />
+              Story
+            </h2>
+          </div>
+          <div className="p-8 md:p-16 bg-neutral-50 border-l-2 border-black">
+            <p className="text-lg md:text-xl leading-relaxed font-light max-w-2xl">
+              {event.story}
+            </p>
+          </div>
+        </section>
+      )}
+
+      <section
+        id="schedule"
+        className="grid grid-cols-1 md:grid-cols-12 gap-0 border-b-2 border-black"
+      >
         <div className="md:col-span-4 p-8 md:p-16 border-r-2 border-black bg-neutral-50 flex flex-col justify-between">
-          <h2 className="text-5xl font-black uppercase mb-8" style={{ fontFamily: theme.fonts.headline }}>
+          <h2
+            className="text-5xl font-black uppercase mb-8"
+            style={{ fontFamily: theme.fonts.headline }}
+          >
             The
             <br />
             Plan
@@ -154,7 +214,10 @@ export default function ModernEditorial({ theme, event }: Props) {
         </div>
       </section>
 
-      <section id="location" className="grid grid-cols-1 md:grid-cols-2 border-b-2 border-black">
+      <section
+        id="location"
+        className="grid grid-cols-1 md:grid-cols-2 border-b-2 border-black"
+      >
         <div className="order-2 md:order-1 p-8 md:p-16 flex flex-col justify-center bg-lime-300">
           <MapPin className="w-12 h-12 mb-6" />
           <h2
@@ -163,9 +226,7 @@ export default function ModernEditorial({ theme, event }: Props) {
           >
             {event.venue?.name || "Public Hotels"}
           </h2>
-          <p className="font-mono text-lg mb-8">
-            {venueLine}
-          </p>
+          <p className="font-mono text-lg mb-8">{venueLine}</p>
           <a
             href={event.locationUrl || "#"}
             className="inline-block bg-black text-white font-bold py-4 px-8 w-max hover:bg-white hover:text-black transition-colors border-2 border-black"
@@ -215,7 +276,9 @@ export default function ModernEditorial({ theme, event }: Props) {
         </div>
 
         <div className="mt-24 pt-8 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center font-mono text-xs text-neutral-500">
-          <p>© {new Date().getFullYear()} {names}</p>
+          <p>
+            © {new Date().getFullYear()} {names}
+          </p>
           <p>DESIGNED IN NYC</p>
         </div>
       </section>

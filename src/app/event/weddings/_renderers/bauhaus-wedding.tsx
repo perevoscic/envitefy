@@ -53,10 +53,11 @@ export default function BauhausWedding({ theme, event }: Props) {
   const coupleInitials = buildNames(event);
   const dateFormatted = buildDate(event);
   const location = buildLocation(event);
+  const rsvpUrl = event.rsvp?.url || "#rsvp";
 
   return (
     <div
-      className="min-h-screen bg-[#F0F0F0] font-sans p-4 flex items-center justify-center"
+      className="min-h-screen bg-[#F0F0F0] font-sans p-4 flex flex-col items-center justify-center gap-8"
       style={{ fontFamily: theme.fonts.body }}
     >
       <div className="w-full max-w-2xl bg-[#EAEAEA] aspect-[3/4] md:aspect-square relative overflow-hidden shadow-2xl">
@@ -98,6 +99,44 @@ export default function BauhausWedding({ theme, event }: Props) {
           </h1>
         </div>
       </div>
+
+      {/* Story Section */}
+      {event.story && (
+        <div className="w-full max-w-2xl bg-white p-8 md:p-12 border-4 border-black">
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-6 uppercase tracking-wider text-center"
+            style={{ fontFamily: theme.fonts.headline }}
+          >
+            Our Story
+          </h2>
+          <p
+            className="text-base md:text-lg leading-relaxed text-center max-w-2xl mx-auto"
+            style={{ fontFamily: theme.fonts.body }}
+          >
+            {event.story}
+          </p>
+        </div>
+      )}
+
+      {/* RSVP Section */}
+      {event.rsvpEnabled && (
+        <div className="w-full max-w-2xl bg-white p-8 border-4 border-black">
+          <div className="text-center">
+            <h2
+              className="text-3xl font-bold mb-4 uppercase tracking-wider"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              RSVP
+            </h2>
+            <a
+              href={rsvpUrl}
+              className="inline-block bg-[#D93025] text-white px-12 py-4 font-bold uppercase tracking-wider hover:bg-[#1A73E8] transition-colors"
+            >
+              RESPOND
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

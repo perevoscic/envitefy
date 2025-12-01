@@ -78,11 +78,12 @@ export default function NewspaperWedding({ theme, event }: Props) {
               )}
             </div>
             <p className="text-justify leading-snug text-sm md:text-base">
-              <span className="text-4xl float-left mr-2 font-bold">I</span>n a
-              stunning turn of events, {coupleNames} have announced their
-              intention to wed this coming {weddingDate}. Sources close to the
-              couple say the ceremony will be delightful and full of cake.
-              Citizens are advised to save the date immediately.
+              <span className="text-4xl float-left mr-2 font-bold">
+                {event.story ? event.story[0] : "I"}
+              </span>
+              {event.story
+                ? event.story.slice(1)
+                : `n a stunning turn of events, ${coupleNames} have announced their intention to wed this coming ${weddingDate}. Sources close to the couple say the ceremony will be delightful and full of cake. Citizens are advised to save the date immediately.`}
             </p>
           </div>
           <div className="md:col-span-4 border-l border-black pl-8 flex flex-col gap-8">

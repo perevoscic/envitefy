@@ -217,7 +217,7 @@ export default function IndustrialWedding({ theme, event }: Props) {
       style={{ fontFamily: theme.fonts.body }}
     >
       {/* Sidebar Nav */}
-      <aside className="w-full md:w-64 md:h-screen md:fixed top-0 left-0 border-r border-[#404040] p-8 flex flex-col justify-between bg-[#1a1a1a] z-50">
+      <aside className="w-full md:w-64 md:h-screen md:sticky top-0 left-0 border-r border-[#404040] p-8 flex flex-col justify-between bg-[#1a1a1a] z-50 self-start">
         <div>
           <h1
             className="text-4xl font-bold uppercase leading-none mb-1"
