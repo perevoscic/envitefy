@@ -1691,7 +1691,7 @@ export async function markPasswordResetUsed(id: string): Promise<void> {
 }
 
 function isTableMissingError(err: unknown): boolean {
-  return Boolean((err as any)?.code === '42P01');
+  return Boolean((err as any)?.code === "42P01");
 }
 
 // Smart sign-up forms (normalized storage)
@@ -1749,4 +1749,236 @@ export async function upsertSignupForm(eventId: string, form: any): Promise<Sign
     if (isTableMissingError(err)) return null;
     throw err;
   }
+}
+
+// Registry items (wedding gift registry without PA-API)
+export type RegistryItemRow = {
+  id: string;
+  event_id: string;
+  title: string;
+  affiliate_url: string;
+  image_url: string;
+  price: string | null;
+  quantity: number;
+  claimed: number;
+  category: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+};
+
+export type RegistryClaimRow = {
+  id: string;
+  item_id: string;
+  guest_name: string | null;
+  quantity: number;
+  message: string | null;
+  created_at: string;
+};
+
+async function ensureRegistryTables(): Promise<void> {
+  // Keep tables minimal and loosely coupled (event_id is a string so it can
+  // reference either event_history.id or a dedicated events table id).
+  await query(`
+    create table if not exists registry_items (
+      id uuid primary key default gen_random_uuid(),
+      event_id text not null,
+      title text not null,
+      affiliate_url text not null,
+      image_url text not null,
+      price text,
+      quantity integer not null default 1,
+      claimed integer not null default 0,
+      category text,
+      notes text,
+      created_at timestamptz(6) default now(),
+      updated_at timestamptz(6) default now()
+    );
+  `);
+  await query(`
+    create table if not exists registry_claims (
+      id uuid primary key default gen_random_uuid(),
+      item_id uuid not null,
+      guest_name text,
+      quantity integer not null default 1,
+      message text,
+      created_at timestamptz(6) default now()
+    );
+  `);
+  await query(`
+    create index if not exists idx_registry_items_event_id
+      on registry_items(event_id);
+  `);
+  await query(`
+    create index if not exists idx_registry_claims_item_id
+      on registry_claims(item_id);
+  `);
+}
+
+export async function listRegistryItemsByEventId(
+  eventId: string
+): Promise<RegistryItemRow[]> {
+  if (!eventId) return [];
+  try {
+    await ensureRegistryTables();
+    const res = await query<RegistryItemRow>(
+      `select
+         id,
+         event_id,
+         title,
+         affiliate_url,
+         image_url,
+         price,
+         quantity,
+         claimed,
+         category,
+         notes,
+         created_at,
+         updated_at
+       from registry_items
+       where event_id = $1
+       order by created_at asc, id asc`,
+      [eventId]
+    );
+    return res.rows || [];
+  } catch (err) {
+    if (isTableMissingError(err)) return [];
+    throw err;
+  }
+}
+
+export async function upsertRegistryItem(params: {
+  id?: string | null;
+  eventId: string;
+  title: string;
+  affiliateUrl: string;
+  imageUrl: string;
+  price?: string | null;
+  quantity?: number | null;
+  category?: string | null;
+  notes?: string | null;
+}): Promise<RegistryItemRow> {
+  const {
+    id,
+    eventId,
+    title,
+    affiliateUrl,
+    imageUrl,
+    price,
+    quantity,
+    category,
+    notes,
+  } = params;
+  if (!eventId || !title || !affiliateUrl || !imageUrl) {
+    throw new Error("Missing required registry fields");
+  }
+  const qty = Math.max(1, Number.isFinite(quantity as any) ? Number(quantity) || 1 : 1);
+
+  await ensureRegistryTables();
+
+  if (id) {
+    const res = await query<RegistryItemRow>(
+      `update registry_items
+       set title = $2,
+           affiliate_url = $3,
+           image_url = $4,
+           price = $5,
+           quantity = $6,
+           category = $7,
+           notes = $8,
+           updated_at = now()
+       where id = $1::uuid
+       returning id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at`,
+      [
+        id,
+        title,
+        affiliateUrl,
+        imageUrl,
+        price ?? null,
+        qty,
+        (category ?? "").trim() || null,
+        (notes ?? "").trim() || null,
+      ]
+    );
+    if (!res.rows[0]) {
+      throw new Error("Registry item not found");
+    }
+    return res.rows[0];
+  }
+
+  const res = await query<RegistryItemRow>(
+    `insert into registry_items (
+       event_id,
+       title,
+       affiliate_url,
+       image_url,
+       price,
+       quantity,
+       category,
+       notes
+     )
+     values ($1, $2, $3, $4, $5, $6, $7, $8)
+     returning id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at`,
+    [
+      eventId,
+      title,
+      affiliateUrl,
+      imageUrl,
+      price ?? null,
+      qty,
+      (category ?? "").trim() || null,
+      (notes ?? "").trim() || null,
+    ]
+  );
+  if (!res.rows[0]) {
+    throw new Error("Failed to create registry item");
+  }
+  return res.rows[0];
+}
+
+export async function claimRegistryItem(params: {
+  itemId: string;
+  guestName?: string | null;
+  quantity?: number | null;
+  message?: string | null;
+}): Promise<{ item: RegistryItemRow | null; claim: RegistryClaimRow | null }> {
+  const qtyRaw = params.quantity ?? 1;
+  const qty = Math.max(
+    1,
+    Math.min(50, Number.isFinite(qtyRaw as any) ? Number(qtyRaw) || 1 : 1)
+  );
+
+  await ensureRegistryTables();
+
+  // Atomic increment with guard to avoid over-claiming.
+  const updated = await query<RegistryItemRow>(
+    `update registry_items
+     set claimed = claimed + $2,
+         updated_at = now()
+     where id = $1::uuid
+       and claimed + $2 <= quantity
+     returning id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at`,
+    [params.itemId, qty]
+  );
+  const item = updated.rows[0] || null;
+  if (!item) {
+    return { item: null, claim: null };
+  }
+
+  const claimRes = await query<RegistryClaimRow>(
+    `insert into registry_claims (item_id, guest_name, quantity, message)
+     values ($1::uuid, $2, $3, $4)
+     returning id, item_id, guest_name, quantity, message, created_at`,
+    [
+      params.itemId,
+      (params.guestName ?? "").trim() || null,
+      qty,
+      (params.message ?? "").trim() || null,
+    ]
+  );
+
+  return {
+    item,
+    claim: claimRes.rows[0] || null,
+  };
 }

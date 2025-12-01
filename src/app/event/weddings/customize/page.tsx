@@ -1429,6 +1429,8 @@ const App = () => {
   const search = useSearchParams();
   const router = useRouter();
   const editEventId = search?.get("edit") ?? undefined;
+  const templateIdParam = search?.get("templateId") ?? undefined;
+  const variationIdParam = search?.get("variationId") ?? undefined;
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
@@ -1468,6 +1470,142 @@ const App = () => {
     code: "",
     distance: "",
   });
+  const [creatingDraft, setCreatingDraft] = useState(false);
+
+  // When no editEventId is present, create a draft event_history row
+  // so the builder always has an id to attach nested data (registry, etc.).
+  useEffect(() => {
+    if (editEventId || creatingDraft) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setCreatingDraft(true);
+        const draftThemeId = templateIdParam || INITIAL_DATA.theme.themeId;
+        const res = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: "Wedding",
+            data: {
+              category: "Weddings",
+              createdVia: "template",
+              createdManually: true,
+              status: "draft",
+              templateId: "wedding",
+              variationId: draftThemeId,
+              theme: { ...INITIAL_DATA.theme, themeId: draftThemeId },
+            },
+          }),
+        });
+        if (!res.ok) {
+          return;
+        }
+        const row = await res.json().catch(() => null);
+        const id = (row as any)?.id as string | undefined;
+        if (!id || cancelled) return;
+
+        const params = new URLSearchParams(search?.toString() || "");
+        params.set("edit", id);
+        // templateId/variationId are baked into the draft; keep URL clean
+        params.delete("templateId");
+        params.delete("variationId");
+        const qs = params.toString();
+        router.replace(`/event/weddings/customize${qs ? `?${qs}` : ""}`);
+      } catch {
+        // If draft creation fails, fall back to old behavior (create on publish)
+      } finally {
+        if (!cancelled) {
+          setCreatingDraft(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventId, creatingDraft, templateIdParam, variationIdParam, search, router]);
+
+  // When an editEventId is present, hydrate the builder from the
+  // corresponding event_history row so drafts and published weddings
+  // reopen with their saved content.
+  useEffect(() => {
+    if (!editEventId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const row = await res.json().catch(() => null);
+        if (!row || cancelled) return;
+        const payload = (row as any).data || {};
+
+        setData((prev) => ({
+          ...prev,
+          partner1: payload.partner1 ?? prev.partner1,
+          partner2: payload.partner2 ?? prev.partner2,
+          date: payload.date ?? prev.date,
+          time: payload.time ?? prev.time,
+          city: payload.city ?? prev.city,
+          state: payload.state ?? prev.state,
+          story: payload.story ?? prev.story,
+          weddingParty:
+            (Array.isArray(payload.weddingParty)
+              ? payload.weddingParty
+              : Array.isArray(payload.party)
+              ? payload.party
+              : prev.weddingParty) || prev.weddingParty,
+          schedule: Array.isArray(payload.schedule)
+            ? payload.schedule
+            : prev.schedule,
+          travel: {
+            ...prev.travel,
+            ...(payload.travel || {}),
+          },
+          thingsToDo: Array.isArray(payload.thingsToDo)
+            ? payload.thingsToDo
+            : prev.thingsToDo,
+          hosts: payload.hosts ?? prev.hosts,
+          images: {
+            ...prev.images,
+            hero:
+              payload.customHeroImage ??
+              payload.images?.hero ??
+              prev.images?.hero,
+            headlineBg:
+              payload.headlineBg ??
+              payload.images?.headlineBg ??
+              prev.images?.headlineBg,
+          },
+          gallery: Array.isArray(payload.gallery)
+            ? payload.gallery
+            : prev.gallery,
+          registry: Array.isArray(payload.registry)
+            ? payload.registry
+            : Array.isArray(payload.registries)
+            ? payload.registries
+            : prev.registry,
+          theme: {
+            ...prev.theme,
+            ...(payload.theme || {}),
+          },
+        }));
+      } catch {
+        // If hydration fails, keep using INITIAL_DATA defaults
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventId]);
 
   const selectedTemplate = useMemo(() => {
     const fromMap =
@@ -1874,6 +2012,7 @@ const App = () => {
           category: "Weddings",
           createdVia: "template",
           createdManually: true,
+          status: "published",
           startISO,
           endISO,
           location,

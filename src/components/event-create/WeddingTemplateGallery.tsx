@@ -16,6 +16,7 @@ import {
   type TemplateFontTokenId,
   type TemplatePaletteTokenId,
 } from "./templateDesignTokens";
+import weddingThemes from "../../../templates/weddings/index.json" assert { type: "json" };
 
 const baseMenu = [
   "Home",
@@ -106,19 +107,6 @@ const EXTRA_COLOR_STORIES: StoryConfig[] = [
     tagline: "Lavender twilight hush",
   },
 ];
-
-const ALLOWED_TEMPLATE_IDS = new Set<string>([
-  "ethereal-classic",
-  "modern-editorial",
-  "rustic-boho",
-  "cinematic-wedding",
-  "celestial-wedding",
-  "gilded-wedding",
-  "museum-wedding",
-  "ethereal-wedding",
-  "noir-luxury",
-  "retro-70s",
-]);
 
 const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "ivory-ink": "font-alex-brush",
@@ -1741,20 +1729,38 @@ const baseWeddingTemplateCatalog: WeddingTemplateDefinition[] = [
   },
 ];
 
-export const weddingTemplateCatalog: WeddingTemplateDefinition[] =
-  baseWeddingTemplateCatalog
-    .filter((template) => ALLOWED_TEMPLATE_IDS.has(template.id))
-    .map((template) => ({
-      ...template,
-      variations: [
-        ...template.variations,
-        ...buildStories(
-          template.id,
-          TEMPLATE_FONT_ASSIGNMENTS[template.id],
-          EXTRA_COLOR_STORIES
-        ),
-      ],
-    }));
+export const weddingTemplateCatalog: WeddingTemplateDefinition[] = (
+  weddingThemes as any[]
+).map((theme) => {
+  const id: string = String(theme.id || "").trim();
+  const name: string = String(theme.name || id || "Wedding template");
+  const rawThumbnail: string = String((theme as any).thumbnail || "").trim();
+  const thumbnail =
+    rawThumbnail && rawThumbnail.startsWith("/templates/weddings/")
+      ? ""
+      : rawThumbnail;
+  const heroImage: string = String((theme as any).heroImage || "").trim();
+  const heroImageName = heroImage || thumbnail || `${id}.webp`;
+  const fontId: TemplateFontTokenId =
+    TEMPLATE_FONT_ASSIGNMENTS[id] ?? ("serif-regal-center" as TemplateFontTokenId);
+
+  const template: WeddingTemplateDefinition = {
+    id,
+    name,
+    description: name,
+    heroImageName,
+    heroMood: String(theme.family || theme.category || "Wedding"),
+    menu: [...baseMenu],
+    preview: {
+      coupleName: "Ava & Mason",
+      dateLabel: "September 23, 2028",
+      location: "New York, NY",
+    },
+    variations: buildStories(id, fontId, EXTRA_COLOR_STORIES),
+  };
+
+  return template;
+});
 
 type Props = {
   appliedTemplateId: string | null;
@@ -1860,8 +1866,9 @@ export default function WeddingTemplateGallery({
           templates={weddingTemplateCatalog}
           appliedTemplateId={appliedTemplateId}
           appliedVariationId={appliedVariationId}
-          onApplyTemplate={onApplyTemplate}
           previewHeroImageUrl={customHeroImage}
+          useTemplateThumbnailOnly
+          onApplyTemplate={onApplyTemplate}
         />
       </div>
     </div>

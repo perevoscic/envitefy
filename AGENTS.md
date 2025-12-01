@@ -385,6 +385,41 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Liveness probe.
 - **Output**: `{ status: "ok" }`.
 
+### Registry Add — POST `/api/registry/add`
+
+- **Purpose**: Create or update a wedding registry item for a given event (used by the couple in the wedding customize UI; no PA-API).
+- **Auth**: NextAuth session required (caller must be signed in; current implementation does not yet enforce event ownership on the server).
+- **Input (JSON)**: `{ id?: string, eventId: string, title: string, affiliateUrl: string, imageUrl: string, price?: string, quantity?: number, category?: string, notes?: string }`.
+- **Behavior**: Upserts into `registry_items` keyed by UUID `id` (when omitted, a new item is created). `affiliateUrl` is normalized with `decorateAmazonUrl` using the `"wedding"` category and `viewer="guest"` so Amazon links inherit the configured affiliate tag. Quantity defaults to 1 and is clamped to at least 1.
+- **Output**: The stored registry item row: `{ id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at }`.
+- **Env**: Uses the same Amazon affiliate envs as other flows (`NEXT_PUBLIC_AFFILIATE_AMAZON_*`, `NEXT_PUBLIC_AFFILIATE_AMAZON_TAG`) via `decorateAmazonUrl`. Requires `DATABASE_URL` for Postgres.
+
+### Registry List — GET `/api/registry/list`
+
+- **Purpose**: Load all registry items for a specific event so couples (and guest pages) can render the registry.
+- **Auth**: None (public read; possession of the event link is the gate, consistent with public event pages).
+- **Query params**: `eventId` (string, required; matches the `event_id` stored in `registry_items`).
+- **Output**: JSON array of items: `Array<{ id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at }>` ordered by `created_at asc, id asc`.
+- **Env**: `DATABASE_URL` (Postgres).
+
+### Registry Claim — POST `/api/registry/claim`
+
+- **Purpose**: Allow guests to mark gifts as purchased/claimed so other guests see remaining quantities.
+- **Auth**: None (public action tied to the registry item link; no account required).
+- **Input (JSON)**: `{ itemId: string, guestName?: string, quantity?: number, message?: string }`.
+- **Behavior**: Atomically increments `claimed` on `registry_items` using a `claimed + quantity <= quantity` guard to prevent over-claiming; if the guard fails (all gifts already claimed), returns HTTP 409. On success, inserts a row into `registry_claims` with the guest name, quantity, and optional message.
+- **Output**: On success: `{ ok: true, item, claim }` where `item` is the updated item row and `claim` is `{ id, item_id, guest_name, quantity, message, created_at }`. On conflict or error, returns `{ error }`.
+- **Env**: `DATABASE_URL` (Postgres).
+
+### Registry Autofill — POST `/api/registry/autofill`
+
+- **Purpose**: Given an Amazon product URL (or SiteStripe link), infer basic metadata so the registry form can be auto-fillled.
+- **Auth**: None.
+- **Input (JSON)**: `{ url: string }`.
+- **Behavior**: Extracts ASIN from the URL when present, builds a best-guess image URL using the Amazon CDN, then attempts a single HTML fetch to read `<meta property="og:title">`, `<title>`, `<meta property="og:image">`, and the first currency-formatted price (e.g., `$349.00`). Fetch failures are tolerated and fall back to an ASIN-only image when possible.
+- **Output**: `{ asin: string|null, title: string|null, imageUrl: string|null, price: string|null }`.
+- **Env**: None specific beyond general egress; uses a lightweight browser-like `User-Agent` for the HTML fetch.
+
 ---
 
 ### History — GET/POST `/api/history`, GET/PATCH/DELETE `/api/history/[id]`

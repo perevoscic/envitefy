@@ -133,6 +133,7 @@ export type TemplateGalleryProps = {
   appliedVariationId: string | null;
   previewHeroImageUrl?: string | null;
   forceBirthdayHero?: boolean;
+   useTemplateThumbnailOnly?: boolean;
   onApplyTemplate: (
     template: TemplateGalleryTemplate,
     variation: ResolvedTemplateVariation
@@ -168,6 +169,7 @@ export default function TemplateGallery({
   appliedVariationId,
   previewHeroImageUrl,
   forceBirthdayHero = false,
+  useTemplateThumbnailOnly = false,
   onApplyTemplate,
 }: TemplateGalleryProps) {
   return (
@@ -190,7 +192,10 @@ export default function TemplateGallery({
           : "/templates/wedding-placeholders/";
         const heroImageFile = template.heroImageName || `${template.id}.webp`;
         const heroImageSrc =
-          previewHeroImageUrl ?? `${heroImageBasePath}${heroImageFile}`;
+          previewHeroImageUrl ??
+          (heroImageFile.startsWith("/") || heroImageFile.startsWith("http")
+            ? heroImageFile
+            : `${heroImageBasePath}${heroImageFile}`);
         const birthdayOverlay =
           "linear-gradient(180deg, rgba(18, 12, 36, 0.78) 0%, rgba(18, 12, 36, 0.55) 45%, rgba(18, 12, 36, 0.2) 100%)";
         const headerBackgroundStyle = isBirthdayTemplate
@@ -210,51 +215,7 @@ export default function TemplateGallery({
           >
             <div className={styles.cardBody}>
               <div className={styles.previewFrame}>
-                <div
-                  className={styles.previewHeader}
-                  style={headerBackgroundStyle}
-                  data-birthday={isBirthdayTemplate ? "true" : undefined}
-                >
-                  <p
-                    className={styles.previewNames}
-                    style={{
-                      color: previewTextColor,
-                      fontFamily: previewFontFamily,
-                      fontWeight:
-                        activeVariation.titleWeight === "bold"
-                          ? 700
-                          : activeVariation.titleWeight === "semibold"
-                          ? 600
-                          : 400,
-                    }}
-                  >
-                    {(previewInfo as any).birthdayName
-                      ? `${(previewInfo as any).birthdayName}'s Birthday`
-                      : previewInfo.coupleName || "Event"}
-                  </p>
-                  <p
-                    className={styles.previewMeta}
-                    style={{ color: previewTextColor }}
-                  >
-                    {previewInfo.dateLabel}
-                    {previewInfo.timeLabel ? ` • ${previewInfo.timeLabel}` : ""}
-                  </p>
-                  <div
-                    className={styles.previewNav}
-                    style={{ color: previewTextColor }}
-                  >
-                    {template.menu.slice(0, 7).map((item) => (
-                      <span
-                        key={item}
-                        className={styles.previewNavItem}
-                        style={{ color: previewTextColor }}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className={styles.previewPhoto}>
+                {useTemplateThumbnailOnly ? (
                   <Image
                     src={heroImageSrc}
                     alt={
@@ -268,7 +229,71 @@ export default function TemplateGallery({
                     priority={false}
                     unoptimized={Boolean(previewHeroImageUrl)}
                   />
-                </div>
+                ) : (
+                  <>
+                    <div
+                      className={styles.previewHeader}
+                      style={headerBackgroundStyle}
+                      data-birthday={isBirthdayTemplate ? "true" : undefined}
+                    >
+                      <p
+                        className={styles.previewNames}
+                        style={{
+                          color: previewTextColor,
+                          fontFamily: previewFontFamily,
+                          fontWeight:
+                            activeVariation.titleWeight === "bold"
+                              ? 700
+                              : activeVariation.titleWeight === "semibold"
+                              ? 600
+                              : 400,
+                        }}
+                      >
+                        {(previewInfo as any).birthdayName
+                          ? `${(previewInfo as any).birthdayName}'s Birthday`
+                          : previewInfo.coupleName || "Event"}
+                      </p>
+                      <p
+                        className={styles.previewMeta}
+                        style={{ color: previewTextColor }}
+                      >
+                        {previewInfo.dateLabel}
+                        {previewInfo.timeLabel
+                          ? ` • ${previewInfo.timeLabel}`
+                          : ""}
+                      </p>
+                      <div
+                        className={styles.previewNav}
+                        style={{ color: previewTextColor }}
+                      >
+                        {template.menu.slice(0, 7).map((item) => (
+                          <span
+                            key={item}
+                            className={styles.previewNavItem}
+                            style={{ color: previewTextColor }}
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.previewPhoto}>
+                      <Image
+                        src={heroImageSrc}
+                        alt={
+                          previewHeroImageUrl
+                            ? `Uploaded preview for ${template.name}`
+                            : `${template.name} placeholder`
+                        }
+                        width={640}
+                        height={360}
+                        className={styles.previewPhotoImage}
+                        priority={false}
+                        unoptimized={Boolean(previewHeroImageUrl)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div className={styles.cardHeader}>
                 <div>

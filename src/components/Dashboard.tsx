@@ -1233,332 +1233,336 @@ function SnapEventModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:py-10 md:px-8">
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-lg transition-opacity"
-        onClick={onClose}
-      />
-      <div
-        className="relative z-10 flex w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[85vh] flex-col gap-6 overflow-hidden rounded-2xl border-2 border-white/20 bg-gradient-to-br from-surface via-surface to-surface-alt/50 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] p-8"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          boxShadow:
-            "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset",
-        }}
-      >
-        <div className="flex items-start justify-between gap-4 shrink-0 pb-4 border-b-2 border-border/30 bg-gradient-to-r from-transparent via-white/5 to-transparent">
-          <div className="flex-1 pt-1">
-            <h2 className="text-2xl font-bold text-foreground mb-1.5 tracking-tight">
-              Review Event Details
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Make any tweaks before sending it to your calendar.
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="Close event editor"
-            className="rounded-xl border-2 border-border/40 bg-white/50 hover:bg-white/80 backdrop-blur-sm transition-all p-2.5 text-foreground/80 hover:text-foreground hover:border-border hover:scale-105 shrink-0 shadow-sm"
-            onClick={onClose}
-          >
-            <CloseIcon className="h-4 w-4" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[70] overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-3 sm:p-5 md:px-8">
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-[#2f1d47]/80 via-[#1a1025]/75 to-[#0f0a15]/85 backdrop-blur-xl"
+          onClick={onClose}
+        />
 
-        <div className="flex flex-col gap-6 overflow-y-auto pr-2 min-h-0 flex-1 scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent">
-          <div className="space-y-2.5">
-            <label
-              htmlFor="snap-event-title"
-              className="text-sm font-semibold text-foreground block"
-            >
-              Title
-            </label>
-            <input
-              id="snap-event-title"
-              className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
-              value={event.title}
-              onChange={(e) =>
-                updateEvent((current) => ({
-                  ...current,
-                  title: e.target.value,
-                }))
-              }
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2.5">
-              <label
-                htmlFor="snap-event-start"
-                className="text-sm font-semibold text-foreground block"
+        <div
+          className="relative z-10 w-full max-w-3xl h-[90dvh] max-h-[90dvh] rounded-[32px] border border-white/60 bg-gradient-to-bl from-[#F9F2FF] via-white to-[#FFEAF4] shadow-[0_25px_60px_rgba(101,67,145,0.25)] backdrop-blur-2xl overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex h-full flex-col">
+            <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-[#E8DFFF]/60 bg-gradient-to-r from-white/95 via-[#F9F2FF]/90 to-white/85 backdrop-blur-xl px-5 py-4 sm:px-7">
+              <div className="flex-1 pt-1">
+                <h2
+                  className="text-lg sm:text-2xl font-semibold text-foreground mb-1 tracking-tight"
+                  style={{ fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif' }}
+                >
+                  Review Event Details
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Tweak anything before you save or send to a calendar.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close event editor"
+                className="rounded-2xl border border-border/40 bg-white/85 hover:bg-white shadow-sm hover:shadow-md transition-all p-2.5 text-foreground/80 hover:text-foreground hover:scale-105"
+                onClick={onClose}
               >
-                Start
-              </label>
-              <input
-                id="snap-event-start"
-                className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
-                value={event.start || ""}
-                onChange={(e) => {
-                  const value = e.target.value || null;
-                  updateEvent((current) => ({ ...current, start: value }));
-                }}
-              />
+                <CloseIcon className="h-4 w-4" />
+              </button>
             </div>
-            <div className="space-y-2.5">
-              <label
-                htmlFor="snap-event-end"
-                className="text-sm font-semibold text-foreground block"
-              >
-                End (optional)
-              </label>
-              <input
-                id="snap-event-end"
-                className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
-                value={event.end || ""}
-                onChange={(e) => {
-                  const value = e.target.value || null;
-                  updateEvent((current) => ({ ...current, end: value }));
-                }}
-              />
-            </div>
-          </div>
 
-          <div className="space-y-2.5">
-            <label
-              htmlFor="snap-event-location"
-              className="text-sm font-semibold text-foreground block"
-            >
-              Location
-            </label>
-            <input
-              id="snap-event-location"
-              className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
-              value={event.location}
-              onChange={(e) =>
-                updateEvent((current) => ({
-                  ...current,
-                  location: e.target.value,
-                }))
-              }
-            />
-          </div>
+            <div className="flex-1 px-5 py-6 sm:px-7 sm:py-7 space-y-6">
+              <div className="space-y-2.5">
+                <label
+                  htmlFor="snap-event-title"
+                  className="text-sm font-semibold text-foreground block"
+                >
+                  Title
+                </label>
+                <input
+                  id="snap-event-title"
+                  className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                  value={event.title}
+                  onChange={(e) =>
+                    updateEvent((current) => ({
+                      ...current,
+                      title: e.target.value,
+                    }))
+                  }
+                />
+              </div>
 
-          {/* Number of guests field removed - not needed for scanned events */}
+              <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
+                <div className="space-y-2.5">
+                  <label
+                    htmlFor="snap-event-start"
+                    className="text-sm font-semibold text-foreground block"
+                  >
+                    Start
+                  </label>
+                  <input
+                    id="snap-event-start"
+                    className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                    value={event.start || ""}
+                    onChange={(e) => {
+                      const value = e.target.value || null;
+                      updateEvent((current) => ({ ...current, start: value }));
+                    }}
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <label
+                    htmlFor="snap-event-end"
+                    className="text-sm font-semibold text-foreground block"
+                  >
+                    End (optional)
+                  </label>
+                  <input
+                    id="snap-event-end"
+                    className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                    value={event.end || ""}
+                    onChange={(e) => {
+                      const value = e.target.value || null;
+                      updateEvent((current) => ({ ...current, end: value }));
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-2.5">
-            <label
-              htmlFor="snap-event-description"
-              className="text-sm font-semibold text-foreground block"
-            >
-              Description
-            </label>
-            <textarea
-              id="snap-event-description"
-              className="w-full rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80 resize-none"
-              rows={4}
-              value={event.description}
-              onChange={(e) =>
-                updateEvent((current) => ({
-                  ...current,
-                  description: e.target.value,
-                }))
-              }
-            />
-          </div>
+              <div className="space-y-2.5">
+                <label
+                  htmlFor="snap-event-location"
+                  className="text-sm font-semibold text-foreground block"
+                >
+                  Location
+                </label>
+                <input
+                  id="snap-event-location"
+                  className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                  value={event.location}
+                  onChange={(e) =>
+                    updateEvent((current) => ({
+                      ...current,
+                      location: e.target.value,
+                    }))
+                  }
+                />
+              </div>
 
-          <div className="space-y-2.5">
-            <label
-              htmlFor="snap-event-rsvp"
-              className="text-sm font-semibold text-foreground block"
-            >
-              RSVP (Phone or Email)
-            </label>
-            <input
-              id="snap-event-rsvp"
-              type="text"
-              className="w-1/3 rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80 placeholder:text-muted-foreground/50"
-              placeholder="e.g., RSVP: Taya 850-555-8888 or contact@example.com"
-              value={event.rsvp || ""}
-              onChange={(e) =>
-                updateEvent((current) => ({
-                  ...current,
-                  rsvp: e.target.value || null,
-                }))
-              }
-            />
-            <p className="text-xs text-muted-foreground/70 mt-1.5 pl-1">
-              Phone number or email for RSVP. If detected from scan, it will be
-              filled automatically.
-            </p>
-          </div>
+              <div className="space-y-2.5">
+                <label
+                  htmlFor="snap-event-description"
+                  className="text-sm font-semibold text-foreground block"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="snap-event-description"
+                  className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white resize-none"
+                  rows={4}
+                  value={event.description}
+                  onChange={(e) =>
+                    updateEvent((current) => ({
+                      ...current,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </div>
 
-          <div className="space-y-3">
-            <span className="text-sm font-semibold text-foreground block">
-              Reminders
-            </span>
-            <div className="space-y-3">
-              {(event.reminders || []).map((reminder, idx) => {
-                const dayOptions = [1, 2, 3, 7, 14, 30];
-                const currentDays = Math.max(
-                  1,
-                  Math.round((reminder.minutes || 0) / 1440) || 1
-                );
-                return (
-                  <div key={idx} className="flex items-center gap-3">
-                    <select
-                      className="w-1/3 rounded-xl border-2 border-border/50 bg-white/60 backdrop-blur-sm text-foreground px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white/80"
-                      value={currentDays}
-                      onChange={(e) => {
-                        const days = Math.max(1, Number(e.target.value) || 1);
-                        updateEvent((current) => {
-                          const next = [...(current.reminders || [])];
-                          next[idx] = { minutes: days * 1440 };
-                          return { ...current, reminders: next };
-                        });
-                      }}
-                    >
-                      {dayOptions.map((d) => (
-                        <option key={d} value={d}>
-                          {d} day{d === 1 ? "" : "s"} before
-                        </option>
-                      ))}
-                    </select>
+              <div className="space-y-2.5">
+                <label
+                  htmlFor="snap-event-rsvp"
+                  className="text-sm font-semibold text-foreground block"
+                >
+                  RSVP (Phone or Email)
+                </label>
+                <input
+                  id="snap-event-rsvp"
+                  type="text"
+                  inputMode="tel"
+                  maxLength={64}
+                  style={{ minWidth: "14ch" }}
+                  className="w-full rounded-xl border border-border/60 bg-white/80 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                  placeholder="e.g., RSVP: Taya 850-555-8888 or contact@example.com"
+                  value={event.rsvp || ""}
+                  onChange={(e) =>
+                    updateEvent((current) => ({
+                      ...current,
+                      rsvp: e.target.value || null,
+                    }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground/70 mt-1.5 pl-1">
+                  Phone number or email for RSVP. Detected info is pre-filled.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <span className="text-sm font-semibold text-foreground block">
+                  Reminders
+                </span>
+                <div className="space-y-3">
+                  {(event.reminders || []).map((reminder, idx) => {
+                    const dayOptions = [1, 2, 3, 7, 14, 30];
+                    const currentDays = Math.max(
+                      1,
+                      Math.round((reminder.minutes || 0) / 1440) || 1
+                    );
+                    return (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <select
+                          className="w-full sm:w-[240px] rounded-xl border border-border/60 bg-white/80 backdrop-blur-sm text-foreground px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                          value={currentDays}
+                          onChange={(e) => {
+                            const days = Math.max(1, Number(e.target.value) || 1);
+                            updateEvent((current) => {
+                              const next = [...(current.reminders || [])];
+                              next[idx] = { minutes: days * 1440 };
+                              return { ...current, reminders: next };
+                            });
+                          }}
+                        >
+                          {dayOptions.map((d) => (
+                            <option key={d} value={d}>
+                              {d} day{d === 1 ? "" : "s"} before
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          aria-label="Delete reminder"
+                          className="self-start sm:self-auto rounded-xl border border-red-200/70 bg-red-50/80 hover:bg-red-100 px-3.5 py-2.5 text-sm text-red-700 hover:text-red-800 transition-all hover:border-red-300 hover:scale-105 shadow-sm"
+                          onClick={() =>
+                            updateEvent((current) => ({
+                              ...current,
+                              reminders: (current.reminders || []).filter(
+                                (_, i) => i !== idx
+                              ),
+                            }))
+                          }
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            className="h-4 w-4"
+                          >
+                            <path
+                              d="M6 7h12M9 7l1-2h4l1 2m-9 0l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6m4-6v6"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <div>
                     <button
                       type="button"
-                      aria-label="Delete reminder"
-                      className="rounded-xl border-2 border-red-200/60 bg-red-50/60 hover:bg-red-100/80 px-3.5 py-2.5 text-sm text-red-700 hover:text-red-800 transition-all hover:border-red-300 hover:scale-105 shadow-sm"
+                      className="rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/15 px-4 py-2.5 text-sm text-primary font-semibold transition-all hover:border-primary/60 hover:scale-105 shadow-sm"
                       onClick={() =>
-                        updateEvent((current) => ({
-                          ...current,
-                          reminders: (current.reminders || []).filter(
-                            (_, i) => i !== idx
-                          ),
-                        }))
+                        updateEvent((current) => {
+                          const base = Array.isArray(current.reminders)
+                            ? [...current.reminders]
+                            : [];
+                          return {
+                            ...current,
+                            reminders: [...base, { minutes: 1440 }],
+                          };
+                        })
                       }
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        className="h-4 w-4"
-                      >
-                        <path
-                          d="M6 7h12M9 7l1-2h4l1 2m-9 0l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6m4-6v6"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      + Add reminder
                     </button>
                   </div>
-                );
-              })}
-              <div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6 border-t border-border/40 bg-white/70 backdrop-blur-md">
+              <div className="flex flex-wrap items-center gap-3">
+                {connectedCalendars.google ? (
+                  <button
+                    type="button"
+                    className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
+                    onClick={addGoogle}
+                  >
+                    <span>Add to</span>
+                    <CalendarIconGoogle className="h-5 w-5 text-white" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
+                    onClick={connectGoogle}
+                  >
+                    <span>Connect to</span>
+                    <CalendarIconGoogle className="h-5 w-5 text-white" />
+                  </button>
+                )}
+                {connectedCalendars.microsoft ? (
+                  <button
+                    type="button"
+                    className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                    onClick={addOutlook}
+                  >
+                    <span>Add to</span>
+                    <Image
+                      src="/brands/microsoft-white.svg"
+                      alt="Microsoft"
+                      width={20}
+                      height={20}
+                    />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                    onClick={connectOutlook}
+                  >
+                    <span>Connect to</span>
+                    <Image
+                      src="/brands/microsoft-white.svg"
+                      alt="Microsoft"
+                      width={20}
+                      height={20}
+                    />
+                  </button>
+                )}
+                {isAppleDevice && (
+                  <button
+                    type="button"
+                    className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                    onClick={addAppleCalendar || dlIcs}
+                  >
+                    <span>Add to</span>
+                    <Image
+                      src="/brands/apple-white.svg"
+                      alt="Apple"
+                      width={20}
+                      height={20}
+                    />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  className="rounded-xl border-2 border-primary/40 bg-primary/10 hover:bg-primary/20 px-4 py-2.5 text-sm text-primary font-semibold transition-all hover:border-primary/60 hover:scale-105 shadow-sm"
-                  onClick={() =>
-                    updateEvent((current) => {
-                      const base = Array.isArray(current.reminders)
-                        ? [...current.reminders]
-                        : [];
-                      return {
-                        ...current,
-                        reminders: [...base, { minutes: 1440 }],
-                      };
-                    })
-                  }
+                  disabled={!event?.start}
+                  className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                  onClick={saveToEnvitefy}
                 >
-                  + Add reminder
+                  <span>Save to Envitefy</span>
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-border/50 bg-white/70 hover:bg-white/85 backdrop-blur-sm px-5 py-3 text-sm text-foreground font-semibold transition-all hover:border-border hover:scale-105 active:scale-100 shadow-sm"
+                  onClick={onClose}
+                >
+                  Cancel
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-5 shrink-0 border-t-2 border-border/30 bg-gradient-to-r from-transparent via-white/5 to-transparent">
-          <div className="flex flex-wrap items-center gap-3">
-            {connectedCalendars.google ? (
-              <button
-                type="button"
-                className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
-                onClick={addGoogle}
-              >
-                <span>Add to</span>
-                <CalendarIconGoogle className="h-5 w-5 text-white" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
-                onClick={connectGoogle}
-              >
-                <span>Connect to</span>
-                <CalendarIconGoogle className="h-5 w-5 text-white" />
-              </button>
-            )}
-            {connectedCalendars.microsoft ? (
-              <button
-                type="button"
-                className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
-                onClick={addOutlook}
-              >
-                <span>Add to</span>
-                <Image
-                  src="/brands/microsoft-white.svg"
-                  alt="Microsoft"
-                  width={20}
-                  height={20}
-                />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
-                onClick={connectOutlook}
-              >
-                <span>Connect to</span>
-                <Image
-                  src="/brands/microsoft-white.svg"
-                  alt="Microsoft"
-                  width={20}
-                  height={20}
-                />
-              </button>
-            )}
-            {isAppleDevice && (
-              <button
-                type="button"
-                className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
-                onClick={addAppleCalendar || dlIcs}
-              >
-                <span>Add to</span>
-                <Image
-                  src="/brands/apple-white.svg"
-                  alt="Apple"
-                  width={20}
-                  height={20}
-                />
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              disabled={!event?.start}
-              className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
-              onClick={saveToEnvitefy}
-            >
-              <span>Save to Envitefy</span>
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border-2 border-border/50 bg-white/60 hover:bg-white/80 backdrop-blur-sm px-5 py-3 text-sm text-foreground font-semibold transition-all hover:border-border hover:scale-105 active:scale-100 shadow-sm"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       </div>

@@ -166,7 +166,10 @@ export default function CelestialWedding({ theme, event }: Props) {
     event.story ||
     "Like two stars orbiting in the vast expanse, we found our gravity in one another. Join us under the dome of the Hayden Planetarium as we celebrate a love that is infinite and expanding.";
   const scheduleEvents = getScheduleEvents(event.schedule);
-  const rsvpUrl = event.rsvp?.url || "#rsvp";
+  const rsvpUrl =
+    typeof event.rsvp?.url === "string" && event.rsvp.url.trim().length > 0
+      ? event.rsvp.url
+      : "#rsvp";
 
   return (
     <div

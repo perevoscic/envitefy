@@ -31,6 +31,7 @@ import {
   NAV_LINKS,
   useUnifiedMenu,
 } from "@/components/navigation/TopNav";
+import { resolveEditHref } from "@/utils/event-edit-route";
 import { CREATE_EVENT_SECTIONS } from "@/config/navigation-config";
 import {
   Baby,
@@ -277,6 +278,134 @@ const ICON_LOOKUP: Record<string, any> = {
   "General Events": CalendarDays,
   "Special Events": Music,
 };
+
+type DraftsSectionProps = {
+  drafts: { id: string; title: string; created_at?: string; data?: any }[];
+  draftsCount: number;
+  collapseSidebarOnTouch: () => void;
+};
+
+function DraftsSection({
+  drafts,
+  draftsCount,
+  collapseSidebarOnTouch,
+}: DraftsSectionProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  if (draftsCount === 0) {
+    return null;
+  }
+
+   const getDraftLabel = (row: {
+     id: string;
+     title: string;
+     created_at?: string;
+     data?: any;
+   }): string => {
+     const data: any = row.data || {};
+     const category = String(data.category || "").trim().toLowerCase();
+     const templateId: string =
+       (data.templateId as string | undefined) ||
+       (data.theme?.themeId as string | undefined) ||
+       "";
+
+     if (category.includes("wedding")) {
+       const templateNameMap: Record<string, string> = {
+         "ethereal-classic": "Ethereal Classic",
+         "modern-editorial": "Modern Editorial",
+         "rustic-boho": "Rustic Boho",
+         "cinematic-wedding": "Cinematic",
+         "celestial-wedding": "Celestial",
+         "gilded-wedding": "Gilded",
+         "museum-wedding": "Museum",
+         "ethereal-wedding": "Ethereal",
+         "noir-luxury": "Noir Luxury",
+         "retro-70s": "Retro 70s",
+       };
+       const templateName =
+         templateNameMap[templateId] || "Wedding";
+       const names =
+         (data.partner1 && data.partner2
+           ? `${data.partner1} & ${data.partner2}`
+           : data.partner1 || data.partner2) || "";
+       if (names) {
+         return `${templateName} — ${names}`;
+       }
+       return `${templateName} (draft)`;
+     }
+
+     return (row.title || "Event") + " (draft)";
+   };
+
+  return (
+    <div className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3`}>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          setOpen((prev) => !prev);
+        }}
+        className="flex items-center justify-between gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+            <FileEdit size={18} />
+          </span>
+          <span>Drafts</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={SIDEBAR_BADGE_CLASS}>{draftsCount}</span>
+          <span
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition-transform ${
+              open ? "rotate-90" : ""
+            }`}
+            aria-hidden="true"
+          >
+            <ChevronRight size={14} />
+          </span>
+        </div>
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1">
+          {drafts.map((row) => {
+            const href = resolveEditHref(
+              row.id,
+              row.data,
+              row.title || "Event"
+            );
+            const dateStr =
+              (row.data && (row.data.startISO || row.data.start)) ||
+              row.created_at ||
+              null;
+            const formattedDate = dateStr
+              ? new Date(dateStr).toLocaleDateString()
+              : "";
+            return (
+              <button
+                key={row.id}
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  collapseSidebarOnTouch();
+                  router.push(href);
+                }}
+                className="w-full text-left px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 hover:bg-surface/70"
+              >
+                <div className="truncate">{getDraftLabel(row)}</div>
+                {formattedDate && (
+                  <div className="text-[10px] text-foreground/50">
+                    {formattedDate}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
@@ -824,6 +953,23 @@ export default function LeftSidebar() {
   const [history, setHistory] = useState<
     { id: string; title: string; created_at?: string; data?: any }[]
   >([]);
+  const drafts = useMemo(() => {
+    const byId = new Map<
+      string,
+      { id: string; title: string; created_at?: string; data?: any }
+    >();
+    for (const row of history) {
+      if (!row || typeof row !== "object") continue;
+      const data: any = row.data || {};
+      const status = String(data.status || "").toLowerCase();
+      if (status !== "draft" || data.shared) continue;
+      if (!byId.has(row.id)) {
+        byId.set(row.id, row);
+      }
+    }
+    return Array.from(byId.values());
+  }, [history]);
+  const draftsCount = drafts.length;
   const createdEventsCount = useMemo(() => {
     return history.reduce((acc, row) => {
       if (!row || typeof row !== "object") return acc;
@@ -1592,7 +1738,7 @@ export default function LeftSidebar() {
     if (status !== "authenticated") return;
     (async () => {
       try {
-        const res = await fetch("/api/history?view=summary&limit=40", {
+        const res = await fetch("/api/history?view=full&limit=40", {
           cache: "no-cache",
           credentials: "include",
         });
@@ -1675,7 +1821,7 @@ export default function LeftSidebar() {
             try {
               // Add cache-busting query param to force fresh fetch (slim view)
               const res = await fetch(
-                `/api/history?view=summary&limit=40&t=${Date.now()}`,
+                `/api/history?view=full&limit=40&t=${Date.now()}`,
                 {
                   cache: "no-cache",
                   credentials: "include",
@@ -2118,13 +2264,19 @@ export default function LeftSidebar() {
             >
               <ChevronRight size={18} />
             </button>
-            <Image
-              src="/E.png"
-              alt="Envitefy"
-              width={36}
-              height={36}
-              className="opacity-90 drop-shadow"
-            />
+            <Link
+              href="/"
+              onClick={collapseSidebarOnTouch}
+              className="flex items-center justify-center cursor-pointer hover:opacity-100 transition-opacity"
+            >
+              <Image
+                src="/E.png"
+                alt="Envitefy"
+                width={36}
+                height={36}
+                className="opacity-90 drop-shadow"
+              />
+            </Link>
             <button
               type="button"
               onClick={() => {
@@ -2268,6 +2420,13 @@ export default function LeftSidebar() {
                 </span>
                 <span>Home</span>
               </Link>
+
+              {/* Drafts dropdown (above My events) */}
+              <DraftsSection
+                drafts={drafts}
+                draftsCount={draftsCount}
+                collapseSidebarOnTouch={collapseSidebarOnTouch}
+              />
 
               <div
                 className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 ${
