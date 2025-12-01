@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Play, MapPin, Calendar, Clock, ArrowDown } from "lucide-react";
+import { Play, MapPin, Calendar, Clock, ArrowDown, Users, Plane, Coffee, Gift } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -205,6 +205,36 @@ export default function CinematicWedding({ theme, event }: Props) {
         </div>
       </section>
 
+      {/* Full Schedule List */}
+      {event.schedule && event.schedule.length > 0 && (
+        <section className="py-24 px-8 md:px-24 max-w-7xl mx-auto border-y border-neutral-800">
+          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-500 mb-16 text-center">
+            Full Schedule
+          </h2>
+          <div className="space-y-4 max-w-3xl mx-auto">
+            {event.schedule.map((item, idx) => (
+              <div key={idx} className="border-l-4 border-white/20 pl-6 py-4 hover:border-white/40 transition-colors">
+                <h3 className="text-xl font-bold uppercase tracking-widest mb-2">{item.title}</h3>
+                <div className="flex flex-wrap gap-6 text-gray-400 text-sm">
+                  {item.time && (
+                    <span className="flex items-center gap-2">
+                      <Clock size={16} />
+                      {item.time}
+                    </span>
+                  )}
+                  {item.location && (
+                    <span className="flex items-center gap-2">
+                      <MapPin size={16} />
+                      {item.location}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Wedding Party / Cast */}
       {event.party && event.party.length > 0 && (
         <section id="cast" className="py-24 px-8 md:px-24 max-w-7xl mx-auto">
@@ -218,6 +248,61 @@ export default function CinematicWedding({ theme, event }: Props) {
                 <p className="text-gray-400 text-sm uppercase tracking-widest">{member.role}</p>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Travel */}
+      {event.travel && (
+        <section className="py-24 px-8 md:px-24 max-w-7xl mx-auto border-y border-neutral-800">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center gap-4 mb-8">
+              <Plane className="w-8 h-8 text-white" />
+              <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-500">
+                Travel & Accommodations
+              </h2>
+            </div>
+            <p className="text-gray-400 leading-relaxed text-lg whitespace-pre-wrap">{event.travel}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Things To Do */}
+      {event.thingsToDo && (
+        <section className="py-24 px-8 md:px-24 max-w-7xl mx-auto border-y border-neutral-800">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center gap-4 mb-8">
+              <Coffee className="w-8 h-8 text-white" />
+              <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-500">
+                Local Recommendations
+              </h2>
+            </div>
+            <p className="text-gray-400 leading-relaxed text-lg">{event.thingsToDo}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Registry */}
+      {event.registry && event.registry.length > 0 && (
+        <section className="py-24 px-8 md:px-24 max-w-7xl mx-auto border-y border-neutral-800">
+          <div className="max-w-3xl mx-auto text-center">
+            <Gift className="w-12 h-12 mx-auto mb-8 text-white" />
+            <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-500 mb-8">
+              Registry
+            </h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              {event.registry.map((reg, idx) => (
+                <a
+                  key={idx}
+                  href={reg.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border border-neutral-800 px-8 py-3 text-white hover:bg-white hover:text-black transition-colors uppercase tracking-widest text-sm font-bold"
+                >
+                  {reg.label || "Registry"}
+                </a>
+              ))}
+            </div>
           </div>
         </section>
       )}

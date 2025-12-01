@@ -1,5 +1,5 @@
 import React from "react";
-import { Moon, Star, Sun, Cloud } from "lucide-react";
+import { Moon, Star, Sun, Cloud, Users, MapPin, Coffee, Gift, Clock } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -225,6 +225,124 @@ export default function CelestialWedding({ theme, event }: Props) {
             })}
           </div>
         </section>
+
+        {/* Full Schedule List */}
+        {event.schedule && event.schedule.length > 0 && (
+          <section className="py-20 border-y border-[#E2D8C0]/10">
+            <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-12 text-center">
+              Complete Schedule
+            </h2>
+            <div className="space-y-6 max-w-2xl mx-auto">
+              {event.schedule.map((item, idx) => (
+                <div key={idx} className="border-l-2 border-[#D4AF37]/30 pl-6 py-4 hover:border-[#D4AF37]/60 transition-colors">
+                  <h3 className="text-xl italic mb-2 text-[#E2D8C0]">{item.title}</h3>
+                  <div className="flex flex-wrap gap-6 text-sm opacity-70">
+                    {item.time && (
+                      <span className="flex items-center gap-2">
+                        <Clock size={16} className="text-[#D4AF37]" />
+                        {item.time}
+                      </span>
+                    )}
+                    {item.location && (
+                      <span className="flex items-center gap-2">
+                        <Star size={16} className="text-[#D4AF37]" />
+                        {item.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Wedding Party */}
+        {event.party && event.party.length > 0 && (
+          <section className="py-20 border-y border-[#E2D8C0]/10">
+            <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-12 text-center">
+              The Constellation
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {event.party.map((member, idx) => (
+                <div key={idx} className="bg-[#0F152E] p-6 rounded-lg border border-[#D4AF37]/20 text-center">
+                  <Users className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
+                  <h3 className="text-lg italic mb-1 text-[#E2D8C0]">{member.name}</h3>
+                  <p className="text-sm uppercase tracking-widest opacity-60 text-[#D4AF37]">{member.role}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Gallery */}
+        {event.gallery && event.gallery.length > 0 && (
+          <section className="py-20 border-y border-[#E2D8C0]/10">
+            <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-12 text-center">
+              Moments in Time
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {event.gallery.slice(0, 6).map((img, idx) => {
+                const imageUrl = img.url || img.src || img.preview || img;
+                return (
+                  <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-[#D4AF37]/20">
+                    <img src={imageUrl} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" alt="" />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Travel */}
+        {event.travel && (
+          <section className="py-20 border-y border-[#E2D8C0]/10">
+            <div className="max-w-2xl mx-auto text-center">
+              <MapPin className="w-10 h-10 mx-auto mb-6 text-[#D4AF37]" />
+              <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-8">
+                Travel & Stay
+              </h2>
+              <p className="text-lg leading-relaxed opacity-70 whitespace-pre-wrap">{event.travel}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Things To Do */}
+        {event.thingsToDo && (
+          <section className="py-20 border-y border-[#E2D8C0]/10">
+            <div className="max-w-2xl mx-auto text-center">
+              <Coffee className="w-10 h-10 mx-auto mb-6 text-[#D4AF37]" />
+              <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-8">
+                Things To Do
+              </h2>
+              <p className="text-lg leading-relaxed opacity-70">{event.thingsToDo}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Registry */}
+        {event.registry && event.registry.length > 0 && (
+          <section className="py-20 border-y border-[#E2D8C0]/10">
+            <div className="max-w-2xl mx-auto text-center">
+              <Gift className="w-10 h-10 mx-auto mb-6 text-[#D4AF37]" />
+              <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-8">
+                Registry
+              </h2>
+              <div className="flex flex-wrap justify-center gap-4">
+                {event.registry.map((reg, idx) => (
+                  <a
+                    key={idx}
+                    href={reg.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border border-[#D4AF37]/40 px-6 py-3 text-[#E2D8C0] hover:bg-[#D4AF37] hover:text-[#0B1026] transition-colors uppercase tracking-widest text-sm"
+                  >
+                    {reg.label || "Registry"}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* RSVP */}
         {event.rsvpEnabled && (

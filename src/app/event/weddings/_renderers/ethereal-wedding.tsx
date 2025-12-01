@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ChevronDown, Heart } from "lucide-react";
+import { ChevronDown, Heart, Clock, Users, MapPin, Coffee, Gift } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -228,6 +228,152 @@ export default function EtherealWedding({ theme, event }: Props) {
           </div>
         </div>
       </section>
+
+      {/* Full Schedule List */}
+      {event.schedule && event.schedule.length > 0 && (
+        <section className="py-32 bg-white">
+          <div className="max-w-4xl mx-auto px-6">
+            <h2
+              className="text-4xl italic mb-12 text-center text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Complete Schedule
+            </h2>
+            <div className="space-y-6">
+              {event.schedule.map((item, idx) => (
+                <div key={idx} className="border-l-2 border-rose-200 pl-6 py-4">
+                  <h3 className="text-2xl italic mb-2 text-slate-800" style={{ fontFamily: theme.fonts.headline }}>
+                    {item.title}
+                  </h3>
+                  <div className="flex flex-wrap gap-6 text-slate-500">
+                    {item.time && (
+                      <span className="flex items-center gap-2">
+                        <Clock size={18} className="text-rose-300" />
+                        {item.time}
+                      </span>
+                    )}
+                    {item.location && (
+                      <span className="flex items-center gap-2">
+                        <MapPin size={18} className="text-rose-300" />
+                        {item.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Wedding Party */}
+      {event.party && event.party.length > 0 && (
+        <section className="py-32 bg-stone-50">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <h2
+              className="text-4xl italic mb-12 text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Wedding Party
+            </h2>
+            <div className="grid md:grid-cols-2 gap-8">
+              {event.party.map((member, idx) => (
+                <div key={idx} className="text-center">
+                  <Users className="w-8 h-8 mx-auto mb-3 text-rose-300" />
+                  <h3 className="text-xl italic mb-1 text-slate-800" style={{ fontFamily: theme.fonts.headline }}>
+                    {member.name}
+                  </h3>
+                  <p className="text-sm text-slate-500 italic">{member.role}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Gallery */}
+      {event.gallery && event.gallery.length > 0 && (
+        <section className="py-32 bg-white">
+          <div className="max-w-5xl mx-auto px-6">
+            <h2
+              className="text-4xl italic mb-12 text-center text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Gallery
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {event.gallery.slice(0, 6).map((img, idx) => {
+                const imageUrl = img.url || img.src || img.preview || img;
+                return (
+                  <div key={idx} className="aspect-square rounded-lg overflow-hidden shadow-lg">
+                    <img src={imageUrl} className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" alt="" />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Travel */}
+      {event.travel && (
+        <section className="py-32 bg-stone-50">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <MapPin className="w-10 h-10 mx-auto mb-6 text-rose-300" />
+            <h2
+              className="text-4xl italic mb-8 text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Travel & Stay
+            </h2>
+            <p className="text-lg leading-relaxed text-slate-500 whitespace-pre-wrap">{event.travel}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Things To Do */}
+      {event.thingsToDo && (
+        <section className="py-32 bg-white">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <Coffee className="w-10 h-10 mx-auto mb-6 text-rose-300" />
+            <h2
+              className="text-4xl italic mb-8 text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Things To Do
+            </h2>
+            <p className="text-lg leading-relaxed text-slate-500">{event.thingsToDo}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Registry */}
+      {event.registry && event.registry.length > 0 && (
+        <section className="py-32 bg-stone-50">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <Gift className="w-10 h-10 mx-auto mb-6 text-rose-300" />
+            <h2
+              className="text-4xl italic mb-8 text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Registry
+            </h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              {event.registry.map((reg, idx) => (
+                <a
+                  key={idx}
+                  href={reg.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border border-slate-300 px-8 py-3 text-slate-800 hover:bg-rose-400 hover:text-white transition-colors uppercase tracking-[0.2em] text-xs"
+                >
+                  {reg.label || "Registry"}
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* RSVP */}
       {event.rsvpEnabled && (

@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock, Users, MapPin, Coffee, Gift } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -201,6 +201,93 @@ export default function MuseumWedding({ theme, event }: Props) {
             </div>
           </div>
         </section>
+
+        {/* Full Schedule List */}
+        {event.schedule && event.schedule.length > 0 && (
+          <section className="border-b border-black p-6 md:p-12">
+            <span className="font-mono text-xs border border-black px-2 py-1 rounded-full">
+              FULL SCHEDULE
+            </span>
+            <ul className="mt-12 space-y-6">
+              {event.schedule.map((item, idx) => (
+                <li key={idx} className="flex justify-between items-end border-b border-gray-200 pb-3">
+                  <div>
+                    <span className="text-2xl font-bold block mb-1">{item.title}</span>
+                    {item.location && (
+                      <span className="text-sm text-gray-600">{item.location}</span>
+                    )}
+                  </div>
+                  {item.time && <span className="font-mono">{item.time}</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Wedding Party */}
+        {event.party && event.party.length > 0 && (
+          <section className="border-b border-black p-6 md:p-12">
+            <span className="font-mono text-xs border border-black px-2 py-1 rounded-full">
+              WEDDING PARTY
+            </span>
+            <div className="grid md:grid-cols-2 gap-6 mt-12">
+              {event.party.map((member, idx) => (
+                <div key={idx} className="border-b border-gray-200 pb-4">
+                  <span className="text-xl font-bold block">{member.name}</span>
+                  <span className="text-sm text-gray-600 font-mono">{member.role}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Travel */}
+        {event.travel && (
+          <section className="border-b border-black p-6 md:p-12">
+            <span className="font-mono text-xs border border-black px-2 py-1 rounded-full">
+              TRAVEL
+            </span>
+            <div className="mt-12 max-w-2xl">
+              <MapPin className="w-8 h-8 mb-4" />
+              <p className="text-lg leading-relaxed whitespace-pre-wrap">{event.travel}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Things To Do */}
+        {event.thingsToDo && (
+          <section className="border-b border-black p-6 md:p-12">
+            <span className="font-mono text-xs border border-black px-2 py-1 rounded-full">
+              THINGS TO DO
+            </span>
+            <div className="mt-12 max-w-2xl">
+              <Coffee className="w-8 h-8 mb-4" />
+              <p className="text-lg leading-relaxed">{event.thingsToDo}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Registry */}
+        {event.registry && event.registry.length > 0 && (
+          <section className="border-b border-black p-6 md:p-12 bg-black text-white">
+            <span className="font-mono text-xs border border-white px-2 py-1 rounded-full">
+              REGISTRY
+            </span>
+            <div className="mt-12 flex flex-wrap gap-4">
+              {event.registry.map((reg, idx) => (
+                <a
+                  key={idx}
+                  href={reg.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white text-black px-8 py-3 font-bold text-sm hover:bg-gray-200 transition-colors"
+                >
+                  {reg.label || "REGISTRY"}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Footer RSVP */}
         {event.rsvpEnabled && (

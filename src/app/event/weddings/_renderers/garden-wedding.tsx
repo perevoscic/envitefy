@@ -1,5 +1,5 @@
 import React from "react";
-import { Cloud, Flower, Heart, ArrowDown } from "lucide-react";
+import { Cloud, Flower, Heart, ArrowDown, Clock, Users, MapPin, Coffee, Gift } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -210,6 +210,44 @@ export default function GardenWedding({ theme, event }: Props) {
         </div>
       </section>
 
+      {/* Full Schedule List */}
+      {event.schedule && event.schedule.length > 0 && (
+        <section className="py-20 px-4 max-w-4xl mx-auto relative z-10">
+          <h2
+            className="text-5xl mb-12 text-center font-thin text-slate-800"
+            style={{ fontFamily: theme.fonts.headline }}
+          >
+            Schedule of Events
+          </h2>
+          <div className="space-y-6">
+            {event.schedule.map((item, idx) => (
+              <div
+                key={idx}
+                className="bg-white/60 backdrop-blur-sm p-8 rounded-[2rem] border-l-4 border-green-400 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <h3 className="text-2xl font-light text-slate-800 mb-2" style={{ fontFamily: theme.fonts.headline }}>
+                  {item.title}
+                </h3>
+                <div className="flex flex-wrap gap-4 text-slate-600">
+                  {item.time && (
+                    <span className="flex items-center gap-2">
+                      <Clock size={18} className="text-pink-400" />
+                      {item.time}
+                    </span>
+                  )}
+                  {item.location && (
+                    <span className="flex items-center gap-2">
+                      <Flower size={18} className="text-green-400" />
+                      {item.location}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Image Parallax Strip */}
       {galleryImages.length > 0 && (
         <section className="py-24 overflow-hidden relative z-10">
@@ -236,6 +274,98 @@ export default function GardenWedding({ theme, event }: Props) {
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* Wedding Party */}
+      {event.party && event.party.length > 0 && (
+        <section className="py-20 px-4 max-w-4xl mx-auto relative z-10">
+          <h2
+            className="text-5xl mb-12 text-center font-thin text-slate-800"
+            style={{ fontFamily: theme.fonts.headline }}
+          >
+            Wedding Party
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            {event.party.map((member, idx) => (
+              <div
+                key={idx}
+                className="bg-white/60 backdrop-blur-sm p-6 rounded-[2rem] text-center shadow-sm hover:shadow-md transition-shadow"
+              >
+                <Users className="w-8 h-8 mx-auto mb-3 text-pink-400" />
+                <h3 className="text-xl font-light text-slate-800 mb-1">{member.name}</h3>
+                <p className="text-sm text-green-600 italic">{member.role}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Travel */}
+      {event.travel && (
+        <section className="py-20 px-4 max-w-4xl mx-auto relative z-10">
+          <div className="bg-white/60 backdrop-blur-sm p-12 rounded-[3rem] shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <MapPin className="w-8 h-8 text-green-500" />
+              <h2
+                className="text-4xl font-thin text-slate-800"
+                style={{ fontFamily: theme.fonts.headline }}
+              >
+                Travel & Stay
+              </h2>
+            </div>
+            <p className="text-lg leading-relaxed text-slate-700 font-light whitespace-pre-wrap">
+              {event.travel}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* Things To Do */}
+      {event.thingsToDo && (
+        <section className="py-20 px-4 max-w-4xl mx-auto relative z-10">
+          <div className="bg-white/60 backdrop-blur-sm p-12 rounded-[3rem] shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <Coffee className="w-8 h-8 text-pink-400" />
+              <h2
+                className="text-4xl font-thin text-slate-800"
+                style={{ fontFamily: theme.fonts.headline }}
+              >
+                Things To Do
+              </h2>
+            </div>
+            <p className="text-lg leading-relaxed text-slate-700 font-light whitespace-pre-wrap">
+              {event.thingsToDo}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* Registry */}
+      {event.registry && event.registry.length > 0 && (
+        <section className="py-20 px-4 max-w-4xl mx-auto relative z-10">
+          <div className="bg-white/60 backdrop-blur-sm p-12 rounded-[3rem] shadow-sm text-center">
+            <Gift className="w-12 h-12 mx-auto mb-6 text-pink-400" />
+            <h2
+              className="text-4xl mb-8 font-thin text-slate-800"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Registry
+            </h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              {event.registry.map((reg, idx) => (
+                <a
+                  key={idx}
+                  href={reg.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition-colors font-light"
+                >
+                  {reg.label || "Registry"}
+                </a>
+              ))}
+            </div>
           </div>
         </section>
       )}
