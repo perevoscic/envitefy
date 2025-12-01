@@ -99,12 +99,12 @@ export default function EtherealWedding({ theme, event }: Props) {
     (event as any)?.customHeroImage ||
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
-    "https://images.unsplash.com/photo-1519225421980-715cb0202128?q=80&w=2000&auto=format&fit=crop";
+    "/templates/wedding-placeholders/champagne-skyline-hero.jpeg";
   const parallaxImage =
     event.gallery?.[1]?.url ||
     event.gallery?.[1] ||
     event.photos?.[1] ||
-    "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2000&auto=format&fit=crop";
+    "/templates/wedding-placeholders/midnight-bloom-hero.jpeg";
   const story =
     event.story ||
     '"Whatever our souls are made of, his and mine are the same."';
@@ -115,7 +115,7 @@ export default function EtherealWedding({ theme, event }: Props) {
     event.gallery?.[2]?.preview ||
     (typeof event.gallery?.[2] === "string" ? event.gallery[2] : undefined) ||
     event.photos?.[2] ||
-    "https://images.unsplash.com/photo-1522673607200-1645062cd495?q=80&w=800&auto=format&fit=crop";
+    "/templates/wedding-placeholders/marble-whisper-hero.jpeg";
   const rsvpUrl = event.rsvp?.url || "#rsvp";
   const rsvpDeadline = event.rsvp?.deadline
     ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {

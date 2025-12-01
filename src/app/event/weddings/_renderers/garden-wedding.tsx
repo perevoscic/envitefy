@@ -158,7 +158,7 @@ export default function GardenWedding({ theme, event }: Props) {
     (event as any)?.customHeroImage ||
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
-    "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=2000&auto=format&fit=crop";
+    "/templates/wedding-placeholders/garden-atelier-hero.jpeg";
   const quote = event.story || '"Love is the flower you\'ve got to let grow."';
   const scheduleDetails = getScheduleDetails(event.schedule);
   const galleryImages =
@@ -301,9 +301,9 @@ export default function GardenWedding({ theme, event }: Props) {
             {galleryImages.slice(0, 3).map((img, i) => {
               const imageUrl = getImageUrl(img);
               const fallbackImages = [
-                "https://images.unsplash.com/photo-1490750967868-58cb75069ed6?q=80&w=600",
-                "https://images.unsplash.com/photo-1522673607200-1645062cd495?q=80&w=600",
-                "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600",
+                "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg",
+                "/templates/wedding-placeholders/orchid-reverie-hero.jpeg",
+                "/templates/wedding-placeholders/tidal-opulence-hero.jpeg",
               ];
               return (
                 <div

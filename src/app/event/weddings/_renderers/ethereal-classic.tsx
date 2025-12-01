@@ -27,12 +27,9 @@ const buildDateLine = (event: EventData) =>
   "September 14, 2025 • Florence, Italy";
 
 const buildLocation = (event: EventData) =>
-  event.location || event.venue?.name || event.travel?.hotels?.[0]?.name;
+  event.location || event.venue?.name || event.schedule?.[0]?.location;
 
-export default function EtherealClassic({
-  theme,
-  event,
-}: Props): JSX.Element {
+export default function EtherealClassic({ theme, event }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [rsvpOpen, setRsvpOpen] = useState(false);
@@ -65,7 +62,9 @@ export default function EtherealClassic({
     >
       <nav
         className={`fixed w-full z-50 transition-all duration-500 ${
-          scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-6"
+          scrolled
+            ? "bg-white/90 backdrop-blur-md shadow-sm py-4"
+            : "bg-transparent py-6"
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
@@ -97,7 +96,10 @@ export default function EtherealClassic({
               RSVP
             </button>
           </div>
-          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <button
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
             {isMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
@@ -128,7 +130,11 @@ export default function EtherealClassic({
       <header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
         <div
           className="absolute inset-0 bg-cover bg-center bg-fixed"
-          style={{ backgroundImage: `url(${theme.decorations.heroImage})` }}
+          style={{
+            backgroundImage: theme.decorations?.heroImage
+              ? `url(${theme.decorations.heroImage})`
+              : undefined,
+          }}
         >
           <div className="absolute inset-0 bg-black/30" />
         </div>
@@ -157,16 +163,19 @@ export default function EtherealClassic({
 
       <section id="story" className="py-24 px-6 max-w-4xl mx-auto text-center">
         <Heart className="mx-auto text-rose-300 w-8 h-8 mb-8" />
-        <h2 className="text-4xl mb-12 italic" style={{ fontFamily: theme.fonts.headline }}>
+        <h2
+          className="text-4xl mb-12 italic"
+          style={{ fontFamily: theme.fonts.headline }}
+        >
           Our Story
         </h2>
         <p className="text-lg leading-relaxed text-slate-600">{story}</p>
         {event.gallery?.length ? (
           <div className="grid md:grid-cols-3 gap-8 pt-12">
-            {event.gallery.slice(0, 3).map((src, i) => (
+            {event.gallery.slice(0, 3).map((item, i) => (
               <div key={i} className="aspect-[3/4] overflow-hidden group">
                 <img
-                  src={src.url || src}
+                  src={item.url || item.src || item.preview || ""}
                   alt=""
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
@@ -203,14 +212,19 @@ export default function EtherealClassic({
               <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-400">
                 <Clock />
               </div>
-              <h3 className="text-xl uppercase tracking-widest mb-4">Timeline</h3>
+              <h3 className="text-xl uppercase tracking-widest mb-4">
+                Timeline
+              </h3>
               <ul className="space-y-4 text-slate-600">
-                {(schedule.length ? schedule : [
-                  { time: "4:00 PM", title: "Ceremony" },
-                  { time: "5:00 PM", title: "Cocktail Hour" },
-                  { time: "6:30 PM", title: "Dinner & Dancing" },
-                  { time: "11:00 PM", title: "Send Off" },
-                ]).map((item, idx) => (
+                {(schedule.length
+                  ? schedule
+                  : [
+                      { time: "4:00 PM", title: "Ceremony" },
+                      { time: "5:00 PM", title: "Cocktail Hour" },
+                      { time: "6:30 PM", title: "Dinner & Dancing" },
+                      { time: "11:00 PM", title: "Send Off" },
+                    ]
+                ).map((item, idx) => (
                   <li key={idx}>
                     <strong className="text-slate-800">{item.time}</strong> —{" "}
                     {item.title}
@@ -223,12 +237,16 @@ export default function EtherealClassic({
               <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-400">
                 <MapPin />
               </div>
-              <h3 className="text-xl uppercase tracking-widest mb-4">Location</h3>
+              <h3 className="text-xl uppercase tracking-widest mb-4">
+                Location
+              </h3>
               <p className="text-slate-600 mb-2">
                 {locationLine || "Venue To Be Announced"}
               </p>
               {event.venue?.address && (
-                <p className="text-slate-500 italic mb-6">{event.venue.address}</p>
+                <p className="text-slate-500 italic mb-6">
+                  {event.venue.address}
+                </p>
               )}
               {event.locationUrl && (
                 <a
@@ -257,17 +275,18 @@ export default function EtherealClassic({
               "Your presence at our wedding is the greatest gift of all. If you wish to bless us with a gift, we have registered below."}
           </p>
           <div className="flex justify-center gap-6 flex-wrap">
-            {(registry.length ? registry : ["Zola", "Crate & Barrel", "Target"]).map(
-              (store, idx) => (
-                <a
-                  key={idx}
-                  href={typeof store === "string" ? "#" : store.url}
-                  className="bg-white px-6 py-3 shadow-sm hover:shadow-md transition-shadow text-sm tracking-widest uppercase"
-                >
-                  {typeof store === "string" ? store : store.name}
-                </a>
-              )
-            )}
+            {(registry.length
+              ? registry
+              : ["Zola", "Crate & Barrel", "Target"]
+            ).map((store, idx) => (
+              <a
+                key={idx}
+                href={typeof store === "string" ? "#" : store.url}
+                className="bg-white px-6 py-3 shadow-sm hover:shadow-md transition-shadow text-sm tracking-widest uppercase"
+              >
+                {typeof store === "string" ? store : store.label || "Registry"}
+              </a>
+            ))}
           </div>
         </div>
       </section>
@@ -334,11 +353,19 @@ export default function EtherealClassic({
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="attending" className="accent-rose-400" />
+                    <input
+                      type="radio"
+                      name="attending"
+                      className="accent-rose-400"
+                    />
                     <span className="text-sm">Joyfully Accept</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="attending" className="accent-rose-400" />
+                    <input
+                      type="radio"
+                      name="attending"
+                      className="accent-rose-400"
+                    />
                     <span className="text-sm">Regretfully Decline</span>
                   </label>
                 </div>

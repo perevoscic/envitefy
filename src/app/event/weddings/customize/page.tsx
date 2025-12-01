@@ -61,6 +61,7 @@ import winterWedding from "../../../../../templates/weddings/winter-wedding/conf
 import industrialWedding from "../../../../../templates/weddings/industrial-wedding/config.json" assert { type: "json" };
 import libraryWedding from "../../../../../templates/weddings/library-wedding/config.json" assert { type: "json" };
 import gardenWedding from "../../../../../templates/weddings/garden-wedding/config.json" assert { type: "json" };
+import skylineWedding from "../../../../../templates/weddings/skyline-wedding/config.json" assert { type: "json" };
 import DesignThemes from "./_components/DesignThemes";
 
 const NAV_ITEMS = [
@@ -147,6 +148,7 @@ const TEMPLATE_CONFIGS: Record<string, any> = {
   "industrial-wedding": industrialWedding,
   "library-wedding": libraryWedding,
   "garden-wedding": gardenWedding,
+  "skyline-wedding": skylineWedding,
 };
 
 const FONTS = {
@@ -916,6 +918,17 @@ const DESIGN_THEMES = [
     accent: "text-pink-500",
     previewColor: "bg-white",
     swatchColor: "#ec4899",
+  },
+  {
+    id: "skyline-wedding",
+    name: "Skyline Wedding",
+    category: "Modern",
+    graphicType: "city",
+    bg: "bg-slate-900",
+    text: "text-slate-100",
+    accent: "text-orange-400",
+    previewColor: "bg-slate-900",
+    swatchColor: "#f97316",
   },
 ];
 

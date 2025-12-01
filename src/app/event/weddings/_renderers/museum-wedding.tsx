@@ -91,7 +91,7 @@ export default function MuseumWedding({ theme, event }: Props) {
     (event as any)?.customHeroImage ||
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
-    "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=2000&auto=format&fit=crop";
+    "/templates/wedding-placeholders/palais-moderne-hero.jpeg";
   const story =
     event.story ||
     "An immersive celebration of love, art, and open bars. Curated by " +

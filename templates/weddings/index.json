@@ -226,5 +226,17 @@
     "secondaryColor": "#ec4899",
     "headlineFont": "Playfair Display",
     "heroImage": "/templates/wedding-placeholders/garden-atelier-hero.jpeg"
+  },
+  {
+    "id": "skyline-wedding",
+    "name": "Skyline Wedding",
+    "category": "modern",
+    "family": "city",
+    "layout": "skyline-wedding",
+    "thumbnail": "/templates/weddings/skyline-wedding/thumb.jpeg",
+    "primaryColor": "#020617",
+    "secondaryColor": "#f97316",
+    "headlineFont": "Playfair Display",
+    "heroImage": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000&auto=format&fit=crop"
   }
 ]

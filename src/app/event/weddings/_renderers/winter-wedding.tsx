@@ -175,7 +175,7 @@ export default function WinterWedding({ theme, event }: Props) {
     (event as any)?.customHeroImage ||
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
-    "https://images.unsplash.com/photo-1518182170546-0766ce6fec93?q=80&w=2000&auto=format&fit=crop";
+    "/templates/wedding-placeholders/winter-chalet-hero.jpeg";
   const story =
     event.story ||
     "We met during a blizzard in Chicago. The trains were stopped, the cabs were scarce, and we both ducked into the same jazz bar to escape the wind. Three years later, on top of a mountain in Vail, we decided to brave every storm together. We invite you to join us where we love being most: surrounded by snow, fire, and family.";
@@ -183,7 +183,7 @@ export default function WinterWedding({ theme, event }: Props) {
   const storyImage =
     getImageUrl(event.gallery?.[1]) ||
     (typeof event.photos?.[1] === "string" ? event.photos[1] : undefined) ||
-    "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=800&auto=format&fit=crop";
+    "/templates/wedding-placeholders/evergreen-ballroom-hero.jpeg";
   const travelInfo = event.travel || "";
   const registry = event.registry || [];
   const rsvpUrl = event.rsvp?.url || "#rsvp";

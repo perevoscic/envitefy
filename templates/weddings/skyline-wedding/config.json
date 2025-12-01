@@ -1,0 +1,24 @@
+{
+  "id": "skyline-wedding",
+  "name": "Skyline Wedding",
+  "category": "modern",
+  "family": "city",
+  "layout": "skyline-wedding",
+  "thumbnail": "/templates/weddings/skyline-wedding/thumb.jpeg",
+  "theme": {
+    "colors": {
+      "primary": "#020617",
+      "secondary": "#f97316",
+      "background": "#020617"
+    },
+    "fonts": {
+      "headline": "Playfair Display",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000&auto=format&fit=crop"
+    }
+  }
+}
+
+

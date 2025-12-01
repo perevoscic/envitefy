@@ -223,7 +223,7 @@ export default function GildedWedding({ theme, event }: Props) {
     (event as any)?.customHeroImage ||
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
-    "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=1600&auto=format&fit=crop";
+    "/templates/wedding-placeholders/gilded-twilight-hero.jpeg";
   const scheduleDetails = getScheduleDetails(event.schedule);
   const rsvpUrl = event.rsvp?.url || "#rsvp";
 

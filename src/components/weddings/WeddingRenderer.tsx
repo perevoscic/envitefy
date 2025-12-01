@@ -28,6 +28,7 @@ import WinterWedding from "@/app/event/weddings/_renderers/winter-wedding";
 import IndustrialWedding from "@/app/event/weddings/_renderers/industrial-wedding";
 import LibraryWedding from "@/app/event/weddings/_renderers/library-wedding";
 import GardenWedding from "@/app/event/weddings/_renderers/garden-wedding";
+import SkylineWedding from "@/app/event/weddings/_renderers/skyline-wedding";
 import {
   ContentSections,
   Footer,
@@ -144,6 +145,8 @@ function renderLayout(layout: string, theme: ThemeConfig, event: EventData) {
       return <LibraryWedding theme={theme} event={event} />;
     case "garden-wedding":
       return <GardenWedding theme={theme} event={event} />;
+    case "skyline-wedding":
+      return <SkylineWedding theme={theme} event={event} />;
     default:
       return <SplitHeroLayout theme={theme} event={event} />;
   }
@@ -162,9 +165,9 @@ function SplitHeroLayout({
         className="relative w-full h-[380px] flex items-end justify-center overflow-hidden"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {theme.decorations.heroImage && (
+        {theme.decorations?.heroImage && (
           <img
-            src={theme.decorations.heroImage}
+            src={theme.decorations?.heroImage}
             alt=""
             className="absolute inset-0 w-full h-full object-cover opacity-60"
           />
@@ -271,9 +274,9 @@ function TwoColumnLayout({
             )}
           </div>
           <div className="h-56 rounded-xl overflow-hidden">
-            {theme.decorations.heroImage && (
+            {theme.decorations?.heroImage && (
               <img
-                src={theme.decorations.heroImage}
+                src={theme.decorations?.heroImage}
                 alt=""
                 className="w-full h-full object-cover"
               />
@@ -440,9 +443,9 @@ function ArchedHeroLayout({
       >
         <div className="max-w-3xl w-full flex flex-col items-center">
           <div className="w-full max-w-xl h-64 rounded-[2.5rem] overflow-hidden mb-6 border border-white/20">
-            {theme.decorations.heroImage && (
+            {theme.decorations?.heroImage && (
               <img
-                src={theme.decorations.heroImage}
+                src={theme.decorations?.heroImage}
                 alt=""
                 className="w-full h-full object-cover"
               />
@@ -531,9 +534,9 @@ function FullWidthLuxuryLayout({
         className="relative w-full h-[340px] flex items-center justify-center overflow-hidden"
         style={{ backgroundColor: theme.colors.secondary }}
       >
-        {theme.decorations.heroImage && (
+        {theme.decorations?.heroImage && (
           <img
-            src={theme.decorations.heroImage}
+            src={theme.decorations?.heroImage}
             alt=""
             className="absolute inset-0 w-full h-full object-cover opacity-70"
           />
@@ -580,9 +583,9 @@ function StarryHeroLayout({
         className="relative w-full h-[360px] flex items-center justify-center overflow-hidden"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {theme.decorations.heroImage && (
+        {theme.decorations?.heroImage && (
           <img
-            src={theme.decorations.heroImage}
+            src={theme.decorations?.heroImage}
             alt=""
             className="absolute inset-0 w-full h-full object-cover opacity-60"
           />
