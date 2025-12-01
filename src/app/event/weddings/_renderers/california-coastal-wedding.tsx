@@ -14,7 +14,8 @@ const buildNames = (event: EventData) => {
     if (match) {
       return (
         <>
-          {match[1]} & <br /> <span className="text-[#D4A373] italic font-serif">{match[2]}</span>
+          {match[1]} & <br />{" "}
+          <span className="text-[#D4A373] italic font-serif">{match[2]}</span>
         </>
       );
     }
@@ -26,7 +27,8 @@ const buildNames = (event: EventData) => {
     if (names.length === 2) {
       return (
         <>
-          {names[0]} & <br /> <span className="text-[#D4A373] italic font-serif">{names[1]}</span>
+          {names[0]} & <br />{" "}
+          <span className="text-[#D4A373] italic font-serif">{names[1]}</span>
         </>
       );
     }
@@ -34,7 +36,8 @@ const buildNames = (event: EventData) => {
   }
   return (
     <>
-      Maya & <br /> <span className="text-[#D4A373] italic font-serif">Kieran</span>
+      Maya & <br />{" "}
+      <span className="text-[#D4A373] italic font-serif">Kieran</span>
     </>
   );
 };
@@ -59,7 +62,9 @@ const getLocationParts = (location?: string) => {
   return parts[0] || "Big Sur";
 };
 
-const getScheduleItems = (schedule?: Array<{ title: string; time?: string }>) => {
+const getScheduleItems = (
+  schedule?: Array<{ title: string; time?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       { time: "4:00 PM", title: "Arrival", icon: Map },
@@ -116,12 +121,16 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
   const scheduleItems = getScheduleItems(event.schedule);
   const vibeImage =
     event.gallery?.[1]?.url ||
-    event.gallery?.[1] ||
+    event.gallery?.[1]?.src ||
+    event.gallery?.[1]?.preview ||
+    (typeof event.gallery?.[1] === "string" ? event.gallery[1] : undefined) ||
     event.photos?.[1] ||
     "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1200&auto=format&fit=crop";
   const locationImage =
     event.gallery?.[2]?.url ||
-    event.gallery?.[2] ||
+    event.gallery?.[2]?.src ||
+    event.gallery?.[2]?.preview ||
+    (typeof event.gallery?.[2] === "string" ? event.gallery[2] : undefined) ||
     event.photos?.[2] ||
     "https://images.unsplash.com/photo-1548566935-7737b3f7d432?q=80&w=1200&auto=format&fit=crop";
   const travelInfo = event.travel || "";
@@ -141,7 +150,10 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
           <a href="#vibe" className="hover:text-[#D4A373] transition-colors">
             The Vibe
           </a>
-          <a href="#location" className="hover:text-[#D4A373] transition-colors">
+          <a
+            href="#location"
+            className="hover:text-[#D4A373] transition-colors"
+          >
             Location
           </a>
           <a href="#rsvp" className="hover:text-[#D4A373] transition-colors">
@@ -176,7 +188,8 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
             {names}
           </h1>
           <p className="text-lg md:text-xl font-light opacity-90 max-w-lg leading-relaxed">
-            {story || "Celebrate with us where the mountains meet the sea. Golden hour ceremony followed by dinner under the stars."}
+            {story ||
+              "Celebrate with us where the mountains meet the sea. Golden hour ceremony followed by dinner under the stars."}
           </p>
         </div>
 
@@ -199,10 +212,14 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
             <p className="text-lg leading-loose text-[#6B705C]">{story}</p>
             <div className="grid grid-cols-2 gap-4 pt-4">
               <div className="bg-[#E3D5CA] h-32 rounded-lg flex items-center justify-center">
-                <span className="text-[#9A8C98] font-bold uppercase text-xs tracking-widest">Sand</span>
+                <span className="text-[#9A8C98] font-bold uppercase text-xs tracking-widest">
+                  Sand
+                </span>
               </div>
               <div className="bg-[#6B705C] h-32 rounded-lg flex items-center justify-center">
-                <span className="text-[#F5F2EB] font-bold uppercase text-xs tracking-widest">Sage</span>
+                <span className="text-[#F5F2EB] font-bold uppercase text-xs tracking-widest">
+                  Sage
+                </span>
               </div>
             </div>
           </div>
@@ -329,4 +346,3 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
     </div>
   );
 }
-

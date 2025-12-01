@@ -85,7 +85,9 @@ const getLocationParts = (location?: string) => {
   return location;
 };
 
-const getScheduleItems = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleItems = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       {
@@ -167,7 +169,9 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
   const scheduleItems = getScheduleItems(event.schedule);
   const travelImage =
     event.gallery?.[1]?.url ||
-    event.gallery?.[1] ||
+    event.gallery?.[1]?.src ||
+    event.gallery?.[1]?.preview ||
+    (typeof event.gallery?.[1] === "string" ? event.gallery[1] : undefined) ||
     event.photos?.[1] ||
     "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?q=80&w=1600&auto=format&fit=crop";
   const travelInfo = event.travel || "";
@@ -242,7 +246,9 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
         >
           La Dolce Vita
         </h2>
-        <p className="text-xl leading-relaxed text-blue-800/60 font-light">{story}</p>
+        <p className="text-xl leading-relaxed text-blue-800/60 font-light">
+          {story}
+        </p>
       </section>
 
       {/* Itinerary Grid */}
@@ -349,4 +355,3 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
     </div>
   );
 }
-

@@ -1,5 +1,15 @@
 import React from "react";
-import { Cloud, Flower, Heart, ArrowDown, Clock, Users, MapPin, Coffee, Gift } from "lucide-react";
+import {
+  Cloud,
+  Flower,
+  Heart,
+  ArrowDown,
+  Clock,
+  Users,
+  MapPin,
+  Coffee,
+  Gift,
+} from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -14,7 +24,9 @@ const buildNames = (event: EventData) => {
     if (match) {
       return (
         <>
-          {match[1]} <span className="not-italic text-4xl text-green-700/50">&</span> {match[2]}
+          {match[1]}{" "}
+          <span className="not-italic text-4xl text-green-700/50">&</span>{" "}
+          {match[2]}
         </>
       );
     }
@@ -26,7 +38,9 @@ const buildNames = (event: EventData) => {
     if (names.length === 2) {
       return (
         <>
-          {names[0]} <span className="not-italic text-4xl text-green-700/50">&</span> {names[1]}
+          {names[0]}{" "}
+          <span className="not-italic text-4xl text-green-700/50">&</span>{" "}
+          {names[1]}
         </>
       );
     }
@@ -34,7 +48,8 @@ const buildNames = (event: EventData) => {
   }
   return (
     <>
-      Flora <span className="not-italic text-4xl text-green-700/50">&</span> Henry
+      Flora <span className="not-italic text-4xl text-green-700/50">&</span>{" "}
+      Henry
     </>
   );
 };
@@ -94,22 +109,28 @@ const getLocationParts = (location?: string, venue?: { name?: string }) => {
   return venueName;
 };
 
-const getScheduleDetails = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleDetails = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   const ceremony = schedule?.find((s) =>
     s.title?.toLowerCase().includes("ceremony")
   ) || {
     title: "Ceremony",
     time: "3:00 PM",
     location: "East Lawn",
-    description: "Please join us at 3:00 PM on the East Lawn. We recommend comfortable shoes for the grass. Parasols will be provided.",
+    description:
+      "Please join us at 3:00 PM on the East Lawn. We recommend comfortable shoes for the grass. Parasols will be provided.",
   };
-  const reception = schedule?.find((s) =>
-    s.title?.toLowerCase().includes("reception") || s.title?.toLowerCase().includes("dinner")
+  const reception = schedule?.find(
+    (s) =>
+      s.title?.toLowerCase().includes("reception") ||
+      s.title?.toLowerCase().includes("dinner")
   ) || {
     title: "Reception",
     time: "5:00 PM",
     location: "Main Conservatory",
-    description: "Dinner to follow in the Main Conservatory. Surrounded by orchids and starlight. Cocktails begin at 5:00 PM.",
+    description:
+      "Dinner to follow in the Main Conservatory. Surrounded by orchids and starlight. Cocktails begin at 5:00 PM.",
   };
 
   return { ceremony, reception };
@@ -125,11 +146,10 @@ export default function GardenWedding({ theme, event }: Props) {
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
     "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=2000&auto=format&fit=crop";
-  const quote =
-    event.story ||
-    '"Love is the flower you\'ve got to let grow."';
+  const quote = event.story || '"Love is the flower you\'ve got to let grow."';
   const scheduleDetails = getScheduleDetails(event.schedule);
-  const galleryImages = event.gallery?.slice(0, 3) || event.photos?.slice(0, 3) || [];
+  const galleryImages =
+    event.gallery?.slice(0, 3) || event.photos?.slice(0, 3) || [];
   const rsvpUrl = event.rsvp?.url || "#rsvp";
 
   return (
@@ -153,7 +173,9 @@ export default function GardenWedding({ theme, event }: Props) {
         </div>
 
         <div className="relative z-10 text-center bg-white/70 backdrop-blur-md p-12 md:p-20 rounded-[3rem] shadow-xl border border-white max-w-3xl">
-          <p className="text-sm uppercase tracking-[0.4em] text-pink-500 mb-6 font-bold">{season}</p>
+          <p className="text-sm uppercase tracking-[0.4em] text-pink-500 mb-6 font-bold">
+            {season}
+          </p>
           <h1
             className="text-6xl md:text-8xl font-thin text-slate-800 mb-6 italic tracking-tight"
             style={{ fontFamily: theme.fonts.headline }}
@@ -192,7 +214,11 @@ export default function GardenWedding({ theme, event }: Props) {
             </h3>
             <p className="leading-loose text-lg text-green-900/70 font-light">
               {scheduleDetails.ceremony.description ||
-                `Please join us at ${scheduleDetails.ceremony.time || "3:00 PM"} on the ${scheduleDetails.ceremony.location || "East Lawn"}. We recommend comfortable shoes for the grass. Parasols will be provided.`}
+                `Please join us at ${
+                  scheduleDetails.ceremony.time || "3:00 PM"
+                } on the ${
+                  scheduleDetails.ceremony.location || "East Lawn"
+                }. We recommend comfortable shoes for the grass. Parasols will be provided.`}
             </p>
           </div>
           <div className="bg-pink-50/80 backdrop-blur-sm p-12 rounded-[3rem] hover:bg-pink-100/50 transition-colors shadow-sm">
@@ -204,7 +230,11 @@ export default function GardenWedding({ theme, event }: Props) {
             </h3>
             <p className="leading-loose text-lg text-pink-900/70 font-light">
               {scheduleDetails.reception.description ||
-                `Dinner to follow in the ${scheduleDetails.reception.location || "Main Conservatory"}. Surrounded by orchids and starlight. Cocktails begin at ${scheduleDetails.reception.time || "5:00 PM"}.`}
+                `Dinner to follow in the ${
+                  scheduleDetails.reception.location || "Main Conservatory"
+                }. Surrounded by orchids and starlight. Cocktails begin at ${
+                  scheduleDetails.reception.time || "5:00 PM"
+                }.`}
             </p>
           </div>
         </div>
@@ -225,7 +255,10 @@ export default function GardenWedding({ theme, event }: Props) {
                 key={idx}
                 className="bg-white/60 backdrop-blur-sm p-8 rounded-[2rem] border-l-4 border-green-400 shadow-sm hover:shadow-md transition-shadow"
               >
-                <h3 className="text-2xl font-light text-slate-800 mb-2" style={{ fontFamily: theme.fonts.headline }}>
+                <h3
+                  className="text-2xl font-light text-slate-800 mb-2"
+                  style={{ fontFamily: theme.fonts.headline }}
+                >
                   {item.title}
                 </h3>
                 <div className="flex flex-wrap gap-4 text-slate-600">
@@ -294,7 +327,9 @@ export default function GardenWedding({ theme, event }: Props) {
                 className="bg-white/60 backdrop-blur-sm p-6 rounded-[2rem] text-center shadow-sm hover:shadow-md transition-shadow"
               >
                 <Users className="w-8 h-8 mx-auto mb-3 text-pink-400" />
-                <h3 className="text-xl font-light text-slate-800 mb-1">{member.name}</h3>
+                <h3 className="text-xl font-light text-slate-800 mb-1">
+                  {member.name}
+                </h3>
                 <p className="text-sm text-green-600 italic">{member.role}</p>
               </div>
             ))}
@@ -402,4 +437,3 @@ export default function GardenWedding({ theme, event }: Props) {
     </div>
   );
 }
-

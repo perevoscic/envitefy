@@ -39,13 +39,19 @@ const formatDate = (dateStr?: string) => {
   }
 };
 
-const getLocationParts = (location?: string, venue?: { name?: string; address?: string }) => {
+const getLocationParts = (
+  location?: string,
+  venue?: { name?: string; address?: string }
+) => {
   const venueName = venue?.name || location || "The Broad";
-  const address = venue?.address || location || "221 S Grand Ave, Los Angeles, CA 90012";
+  const address =
+    venue?.address || location || "221 S Grand Ave, Los Angeles, CA 90012";
   return { venueName, address };
 };
 
-const getScheduleItems = (schedule?: Array<{ title: string; time?: string }>) => {
+const getScheduleItems = (
+  schedule?: Array<{ title: string; time?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       { title: "Ceremony", time: "16:00" },
@@ -84,7 +90,8 @@ export default function MuseumWedding({ theme, event }: Props) {
       (event.headlineTitle || "Maya & David") +
       ".";
   const scheduleItems = getScheduleItems(event.schedule);
-  const galleryImages = event.gallery?.slice(1, 3) || event.photos?.slice(1, 3) || [];
+  const galleryImages =
+    event.gallery?.slice(1, 3) || event.photos?.slice(1, 3) || [];
   const rsvpUrl = event.rsvp?.url || "#rsvp";
 
   return (
@@ -118,7 +125,8 @@ export default function MuseumWedding({ theme, event }: Props) {
               className="text-[12vw] leading-[0.8] font-bold tracking-tighter uppercase mb-8 mix-blend-multiply"
               style={{ fontFamily: theme.fonts.headline }}
             >
-              The<br />
+              The
+              <br />
               Union
             </h1>
             <div className="flex flex-col md:flex-row justify-between items-end border-t border-black pt-4">
@@ -210,11 +218,18 @@ export default function MuseumWedding({ theme, event }: Props) {
             </span>
             <ul className="mt-12 space-y-6">
               {event.schedule.map((item, idx) => (
-                <li key={idx} className="flex justify-between items-end border-b border-gray-200 pb-3">
+                <li
+                  key={idx}
+                  className="flex justify-between items-end border-b border-gray-200 pb-3"
+                >
                   <div>
-                    <span className="text-2xl font-bold block mb-1">{item.title}</span>
+                    <span className="text-2xl font-bold block mb-1">
+                      {item.title}
+                    </span>
                     {item.location && (
-                      <span className="text-sm text-gray-600">{item.location}</span>
+                      <span className="text-sm text-gray-600">
+                        {item.location}
+                      </span>
                     )}
                   </div>
                   {item.time && <span className="font-mono">{item.time}</span>}
@@ -234,7 +249,9 @@ export default function MuseumWedding({ theme, event }: Props) {
               {event.party.map((member, idx) => (
                 <div key={idx} className="border-b border-gray-200 pb-4">
                   <span className="text-xl font-bold block">{member.name}</span>
-                  <span className="text-sm text-gray-600 font-mono">{member.role}</span>
+                  <span className="text-sm text-gray-600 font-mono">
+                    {member.role}
+                  </span>
                 </div>
               ))}
             </div>
@@ -249,7 +266,9 @@ export default function MuseumWedding({ theme, event }: Props) {
             </span>
             <div className="mt-12 max-w-2xl">
               <MapPin className="w-8 h-8 mb-4" />
-              <p className="text-lg leading-relaxed whitespace-pre-wrap">{event.travel}</p>
+              <p className="text-lg leading-relaxed whitespace-pre-wrap">
+                {event.travel}
+              </p>
             </div>
           </section>
         )}

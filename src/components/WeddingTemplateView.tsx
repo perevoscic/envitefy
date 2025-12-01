@@ -3,27 +3,61 @@
 import React, { useMemo } from "react";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
-import LocationLink from "@/components/LocationLink";
-import EventMap from "@/components/EventMap";
-import EventRsvpDashboard from "@/components/EventRsvpDashboard";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
-import {
-  CalendarIconApple,
-  CalendarIconGoogle,
-  CalendarIconOutlook,
-} from "@/components/CalendarIcons";
-import { combineVenueAndLocation } from "@/lib/mappers";
-import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
-import { findFirstEmail } from "@/utils/contact";
-import { extractFirstPhoneNumber } from "@/utils/phone";
-import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
-import { Plane, Navigation, Bus } from "lucide-react";
-import weddingTemplates from "../../templates/weddings/index.json" assert { type: "json" };
+import { findFirstEmail } from "@/utils/contact";
+import { extractFirstPhoneNumber } from "@/utils/phone";
+import WeddingRenderer from "@/components/weddings/WeddingRenderer";
+import type {
+  EventData,
+  ThemeConfig,
+} from "@/app/event/weddings/_renderers/content-sections";
 
-// Import constants from the customize page
-// We'll need to extract these to a shared file later, but for now we'll duplicate them
+// Import all template configs
+import etherealClassic from "../../templates/weddings/ethereal-classic/config.json" assert { type: "json" };
+import modernEditorial from "../../templates/weddings/modern-editorial/config.json" assert { type: "json" };
+import rusticBoho from "../../templates/weddings/rustic-boho/config.json" assert { type: "json" };
+import cinematicWedding from "../../templates/weddings/cinematic-wedding/config.json" assert { type: "json" };
+import celestialWedding from "../../templates/weddings/celestial-wedding/config.json" assert { type: "json" };
+import gildedWedding from "../../templates/weddings/gilded-wedding/config.json" assert { type: "json" };
+import museumWedding from "../../templates/weddings/museum-wedding/config.json" assert { type: "json" };
+import etherealWedding from "../../templates/weddings/ethereal-wedding/config.json" assert { type: "json" };
+import noirLuxury from "../../templates/weddings/noir-luxury/config.json" assert { type: "json" };
+import retro70s from "../../templates/weddings/retro-70s/config.json" assert { type: "json" };
+import newspaperWedding from "../../templates/weddings/newspaper-wedding/config.json" assert { type: "json" };
+import bauhausWedding from "../../templates/weddings/bauhaus-wedding/config.json" assert { type: "json" };
+import europeCoastalWedding from "../../templates/weddings/europe-coastal-wedding/config.json" assert { type: "json" };
+import floridaCoastalWedding from "../../templates/weddings/florida-coastal-wedding/config.json" assert { type: "json" };
+import californiaCoastalWedding from "../../templates/weddings/california-coastal-wedding/config.json" assert { type: "json" };
+import winterWedding from "../../templates/weddings/winter-wedding/config.json" assert { type: "json" };
+import industrialWedding from "../../templates/weddings/industrial-wedding/config.json" assert { type: "json" };
+import libraryWedding from "../../templates/weddings/library-wedding/config.json" assert { type: "json" };
+import gardenWedding from "../../templates/weddings/garden-wedding/config.json" assert { type: "json" };
+
+const TEMPLATE_CONFIGS: Record<string, any> = {
+  "ethereal-classic": etherealClassic,
+  "modern-editorial": modernEditorial,
+  "rustic-boho": rusticBoho,
+  "cinematic-wedding": cinematicWedding,
+  "celestial-wedding": celestialWedding,
+  "gilded-wedding": gildedWedding,
+  "museum-wedding": museumWedding,
+  "ethereal-wedding": etherealWedding,
+  "noir-luxury": noirLuxury,
+  "retro-70s": retro70s,
+  "newspaper-wedding": newspaperWedding,
+  "bauhaus-wedding": bauhausWedding,
+  "europe-coastal-wedding": europeCoastalWedding,
+  "florida-coastal-wedding": floridaCoastalWedding,
+  "california-coastal-wedding": californiaCoastalWedding,
+  "winter-wedding": winterWedding,
+  "industrial-wedding": industrialWedding,
+  "library-wedding": libraryWedding,
+  "garden-wedding": gardenWedding,
+};
+
+// Font definitions (matching customize page)
 const FONTS = {
   playfair: {
     name: "Playfair Display",
@@ -882,692 +916,168 @@ export default function WeddingTemplateView({
   const theme = weddingData.theme || {
     font: "playfair",
     fontSize: "medium",
-    themeId: "blush_peony_arch",
+    themeId: "garden-wedding",
   };
   // Prioritize theme.themeId from saved data over variationId prop
-  const themeId = theme.themeId || variationId || "blush_peony_arch";
-  const currentTheme =
-    DESIGN_THEMES.find((t) => t.id === themeId) || DESIGN_THEMES[0];
-  const currentFont = FONTS[theme.font as keyof typeof FONTS] || FONTS.playfair;
-  const currentSize =
-    FONT_SIZES[theme.fontSize as keyof typeof FONT_SIZES] || FONT_SIZES.medium;
+  const themeId = theme.themeId || variationId || "garden-wedding";
 
-  const templateMeta = useMemo(() => {
-    if (!templateId) return null;
-    return (weddingTemplates as any[]).find((t) => t.id === templateId) || null;
-  }, [templateId]);
+  // Build the template config with saved fonts
+  const selectedTemplate = useMemo(() => {
+    const fromMap =
+      TEMPLATE_CONFIGS[themeId] ||
+      TEMPLATE_CONFIGS["garden-wedding"] ||
+      gardenWedding;
+    const chosenFont = FONTS[theme.font as keyof typeof FONTS];
+    const appliedFonts = {
+      headline:
+        chosenFont?.name ||
+        fromMap?.theme?.fonts?.headline ||
+        "Playfair Display",
+      body: chosenFont?.name || fromMap?.theme?.fonts?.body || "Inter",
+    };
+    return {
+      ...fromMap,
+      theme: {
+        ...fromMap.theme,
+        fonts: appliedFonts,
+      },
+    };
+  }, [themeId, theme.font]);
 
-  const heroImageSrc =
-    (weddingData as any)?.customHeroImage ||
-    (templateMeta as any)?.heroImage ||
-    "/templates/wedding-placeholders/ivory-ink-hero.jpeg";
+  // Transform event data to match EventData format (same as preview)
+  const event: EventData = useMemo(() => {
+    const location =
+      weddingData.city && weddingData.state
+        ? `${weddingData.city}, ${weddingData.state}`
+        : weddingData.location || "";
 
-  // Detect dark background for title color
-  const isDarkBackground = useMemo(() => {
-    const bg = currentTheme?.bg?.toLowerCase() ?? "";
-    const darkTokens = [
-      "black",
-      "slate-9",
-      "stone-9",
-      "neutral-9",
-      "gray-9",
-      "grey-9",
-      "indigo-9",
-      "purple-9",
-      "violet-9",
-      "emerald-9",
-      "teal-9",
-      "blue-9",
-      "navy",
-      "midnight",
-    ];
-    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
-    const hasDarkHex =
-      /#0[0-9a-f]{5,}/i.test(bg) ||
-      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
-      /#2[0-3][0-9a-f]{4}/i.test(bg);
-    return hasDarkToken || hasDarkHex;
-  }, [currentTheme]);
+    // Transform schedule
+    const schedule = Array.isArray(weddingData.schedule)
+      ? weddingData.schedule.map((item: any) => ({
+          title: item.title || "",
+          time: item.time || item.date || "",
+          location: item.location || "",
+        }))
+      : [];
 
-  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
+    // Transform party
+    const party = Array.isArray(weddingData.party)
+      ? weddingData.party.map((p: any) => ({
+          name: p.name || "",
+          role: p.role || "",
+        }))
+      : Array.isArray(weddingData.weddingParty)
+      ? weddingData.weddingParty.map((p: any) => ({
+          name: p.name || "",
+          role: p.role || "",
+        }))
+      : [];
 
-  const partner1 = weddingData.partner1 || "";
-  const partner2 = weddingData.partner2 || "";
-  const date = weddingData.date;
-  const time = weddingData.time;
-  const city = weddingData.city || "";
-  const state = weddingData.state || "";
-  const story = weddingData.story || weddingData.story?.text || "";
-  const schedule = Array.isArray(weddingData.schedule)
-    ? weddingData.schedule
-    : [];
-  const weddingParty = Array.isArray(weddingData.party)
-    ? weddingData.party
-    : Array.isArray(weddingData.weddingParty)
-    ? weddingData.weddingParty
-    : [];
-  const gallery = Array.isArray(weddingData.gallery) ? weddingData.gallery : [];
-  const thingsToDo = Array.isArray(weddingData.thingsToDo)
-    ? weddingData.thingsToDo
-    : [];
-  const travel = weddingData.travel || {};
-  const registries = Array.isArray(weddingData.registries)
-    ? weddingData.registries
-    : [];
+    // Transform travel (directions string)
+    const travel = weddingData.travel?.directions || "";
 
-  const parseTimeValue = (value?: string | null) => {
-    if (!value) return Number.MAX_SAFE_INTEGER;
-    const match = value
-      .trim()
-      .toLowerCase()
-      .match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
-    if (!match) return Number.MAX_SAFE_INTEGER;
-    let hours = parseInt(match[1] || "0", 10);
-    const minutes = parseInt(match[2] || "0", 10);
-    const meridiem = match[3];
-    if (meridiem === "pm" && hours < 12) hours += 12;
-    if (meridiem === "am" && hours === 12) hours = 0;
-    return hours * 60 + minutes;
-  };
+    // Transform thingsToDo (join array items)
+    const thingsToDo = Array.isArray(weddingData.thingsToDo)
+      ? weddingData.thingsToDo
+          .map((t: any) => t.title || t.description || "")
+          .filter(Boolean)
+          .join(" • ")
+      : "";
 
-  const sortedSchedule = useMemo(() => {
-    return [...schedule].sort(
-      (a, b) => parseTimeValue(a?.time) - parseTimeValue(b?.time)
-    );
-  }, [schedule]);
+    // Transform gallery
+    const gallery = Array.isArray(weddingData.gallery)
+      ? weddingData.gallery.map((g: any) => ({
+          url: g.url || g.src || g.preview || "",
+        }))
+      : [];
+
+    // Transform registry
+    const registry = Array.isArray(weddingData.registries)
+      ? weddingData.registries
+          .filter((r: any) => r?.url?.trim())
+          .map((r: any) => ({
+            label: r.label?.trim() || "Registry",
+            url: r.url?.trim(),
+          }))
+      : [];
+
+    return {
+      headlineTitle:
+        `${weddingData.partner1 || ""}${
+          weddingData.partner2 ? ` & ${weddingData.partner2}` : ""
+        }`.trim() || "Your Names",
+      couple: {
+        partner1: weddingData.partner1 || "",
+        partner2: weddingData.partner2 || "",
+      },
+      date: weddingData.date || "",
+      location,
+      story:
+        weddingData.story ||
+        (typeof weddingData.story === "object" ? weddingData.story?.text : ""),
+      schedule,
+      party,
+      travel,
+      thingsToDo,
+      gallery,
+      rsvpEnabled: Boolean(
+        weddingData.rsvp?.isEnabled !== false &&
+          (weddingData.rsvp || eventData?.rsvp !== undefined)
+      ),
+      rsvpLink: weddingData.rsvp?.link || "",
+      rsvp: {
+        url: weddingData.rsvp?.link || "#rsvp",
+        deadline: weddingData.rsvp?.deadline || undefined,
+      },
+      registry,
+      customHeroImage: weddingData.customHeroImage || undefined,
+      venue: {
+        name: location,
+        address: weddingData.address || undefined,
+      },
+    };
+  }, [weddingData, eventData]);
 
   const startISO = weddingData.startISO || null;
   const endISO = weddingData.endISO || null;
-  const location = city && state ? `${city}, ${state}` : undefined;
-  const address = weddingData.address || "";
-  const hasTravelSection =
-    (travel.hotels?.length ?? 0) > 0 ||
-    (travel.airports?.length ?? 0) > 0 ||
-    Boolean(travel.directions) ||
-    Boolean(travel.shuttle);
-
-  const navigationItems = useMemo(
-    () =>
-      [
-        { id: "home", label: "Home", enabled: true },
-        {
-          id: "schedule",
-          label: "Schedule",
-          enabled: sortedSchedule.length > 0,
-        },
-        { id: "our-story", label: "Our Story", enabled: Boolean(story) },
-        {
-          id: "wedding-party",
-          label: "Wedding Party",
-          enabled: weddingParty.length > 0,
-        },
-        { id: "photos", label: "Photos", enabled: gallery.length > 0 },
-        {
-          id: "things-to-do",
-          label: "Things To Do",
-          enabled: thingsToDo.length > 0,
-        },
-        { id: "travel", label: "Travel", enabled: hasTravelSection },
-        { id: "location", label: "Location", enabled: Boolean(location) },
-        { id: "rsvp", label: "RSVP", enabled: true },
-        { id: "registry", label: "Registry", enabled: registries.length > 0 },
-      ].filter((item) => item.enabled),
-    [
-      gallery.length,
-      hasTravelSection,
-      location,
-      registries.length,
-      sortedSchedule.length,
-      story,
-      thingsToDo.length,
-      weddingParty.length,
-    ]
-  );
 
   return (
     <div className="min-h-screen bg-[#F8F5FF]">
       <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
-        <div
-          className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
-            currentTheme.bg || "bg-white"
-          } ${currentFont.body} transition-colors duration-500 relative z-0`}
-        >
-          <ThemeGraphics themeId={currentTheme.id} />
-
-          {weddingData.headlineBg && (
-            <div
-              className="absolute inset-0 opacity-30 pointer-events-none z-0 bg-repeat"
-              style={{
-                backgroundImage: `url(${weddingData.headlineBg})`,
-                backgroundSize: "300px",
-              }}
-            ></div>
-          )}
-
-          <div className="relative z-10">
-            <div
-              className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
+        {/* Edit/Delete buttons overlay */}
+        {isOwner && !isReadOnly && (
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+            <Link
+              href={buildEditLink(eventId, eventData, eventTitle)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-white/90 backdrop-blur-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-white transition-colors rounded-lg shadow-md"
+              title="Edit event"
             >
-              <div className="flex-1">
-                <h1
-                  className={`${currentSize.h1} mb-2 leading-tight`}
-                  style={{
-                    ...titleColor,
-                    fontFamily: currentFont.preview,
-                  }}
-                >
-                  {partner1} & {partner2}
-                </h1>
-                <div
-                  className={`flex items-center gap-4 ${currentSize.body} font-medium opacity-90 ${currentFont.body} tracking-wide`}
-                >
-                  {date && (
-                    <>
-                      <span>
-                        {new Date(date).toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                      <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
-                    </>
-                  )}
-                  {time && <span>{time}</span>}
-                  {location && (
-                    <>
-                      <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
-                      <span>{location}</span>
-                    </>
-                  )}
-                </div>
-                {address && (
-                  <div
-                    className={`${currentSize.body} font-medium opacity-80 ${currentFont.body} mt-1`}
-                  >
-                    {address}
-                  </div>
-                )}
-              </div>
-              {isOwner && !isReadOnly && (
-                <div className="flex items-center gap-2 ml-4">
-                  <Link
-                    href={buildEditLink(eventId, eventData, eventTitle)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
-                    title="Edit event"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    <span className="hidden sm:inline">Edit</span>
-                  </Link>
-                  <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
-                </div>
-              )}
-            </div>
-
-            <nav
-              className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent} ${currentFont.title}`}
-            >
-              {navigationItems.map((item) => (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  className="hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-
-            <div id="home" className="relative h-[400px] md:h-[500px] w-full">
-              <img
-                src={heroImageSrc}
-                alt="Couple"
-                className="w-full h-full object-cover opacity-90"
-              />
-              <div
-                className={`absolute bottom-0 left-0 w-full h-32 ${
-                  currentTheme.text.includes("slate-900") ||
-                  currentTheme.text.includes("black")
-                    ? "bg-gradient-to-t from-white/90 to-transparent"
-                    : currentTheme.id === "navy_rose_gold_frame"
-                    ? "bg-gradient-to-t from-[#0f172a]/90 to-transparent"
-                    : "bg-gradient-to-t from-black/70 to-transparent"
-                }`}
-              ></div>
-            </div>
-
-            <div className={`p-8 md:p-16 space-y-24 ${currentTheme.text}`}>
-              {sortedSchedule.length > 0 && (
-                <section id="schedule" className="max-w-4xl mx-auto">
-                  <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Schedule of Events
-                  </h2>
-                  <div className="relative space-y-8 md:space-y-12 max-w-4xl mx-auto">
-                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-current/30 pointer-events-none hidden md:block"></div>
-                    {sortedSchedule.map((event: any, index: number) => {
-                      const isLeft = index % 2 === 0;
-                      return (
-                        <div
-                          key={event.id ?? index}
-                          className="relative flex flex-col md:flex-row items-center gap-4 md:gap-6 min-h-[80px]"
-                        >
-                          {/* Timeline Circle - Absolutely positioned at center */}
-                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex-shrink-0">
-                            <div className="w-3 h-3 rounded-full bg-current border-2 border-white shadow-lg"></div>
-                          </div>
-
-                          {/* Event Content */}
-                          <div
-                            className={`flex-1 flex flex-col w-full md:w-auto ${
-                              isLeft
-                                ? "text-center md:text-right md:items-end md:pr-8"
-                                : "text-center md:text-left md:items-start md:pl-8 md:order-3"
-                            }`}
-                          >
-                            <div className="w-full max-w-md mx-auto md:mx-0">
-                              <h3
-                                className={`text-2xl md:text-3xl font-bold mb-2 ${currentFont.title}`}
-                              >
-                                {event.title}
-                              </h3>
-                              {event.location && (
-                                <p className="opacity-70 text-base mb-2 font-medium">
-                                  {event.location}
-                                </p>
-                              )}
-                              {event.description && (
-                                <p className="opacity-80 leading-relaxed text-base">
-                                  {event.description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Time Bubble */}
-                          <div
-                            className={`flex-1 flex w-full md:w-auto ${
-                              isLeft
-                                ? "justify-center md:justify-start md:pl-8 md:order-3"
-                                : "justify-center md:justify-end md:pr-8"
-                            }`}
-                          >
-                            {event.time && (
-                              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-current/30 bg-white/90 backdrop-blur-sm shadow-sm">
-                                {event.time}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {sortedSchedule.length > 0 && story && (
-                <DecorativeDivider themeId={currentTheme.id} />
-              )}
-
-              {story && (
-                <section
-                  id="our-story"
-                  className="max-w-2xl mx-auto text-center"
-                >
-                  <h2
-                    className={`${currentSize.h2} mb-8 ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Our Story
-                  </h2>
-                  <p
-                    className={`${currentSize.body} leading-relaxed opacity-90 ${currentFont.body} whitespace-pre-wrap`}
-                  >
-                    {story}
-                  </p>
-                </section>
-              )}
-
-              {story && weddingParty.length > 0 && (
-                <DecorativeDivider themeId={currentTheme.id} />
-              )}
-
-              {weddingParty.length > 0 && (
-                <section id="wedding-party" className="max-w-4xl mx-auto">
-                  <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Wedding Party
-                  </h2>
-                  <div className="grid md:grid-cols-2 gap-12">
-                    <div className="text-center space-y-6">
-                      <h3 className="uppercase tracking-widest text-sm font-bold opacity-70 mb-6 pb-2 border-b border-white/20 inline-block px-4">
-                        {partner1}'s Side
-                      </h3>
-                      {weddingParty
-                        .filter((m: any) => m.side === "partner1")
-                        .map((member: any) => (
-                          <div key={member.id} className="group">
-                            <div
-                              className={`font-semibold ${currentSize.body} mb-1 ${currentFont.body}`}
-                            >
-                              {member.name}
-                            </div>
-                            <div
-                              className={`text-sm uppercase tracking-wider opacity-60 ${currentTheme.accent}`}
-                            >
-                              {member.role}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-
-                    <div className="text-center space-y-6">
-                      <h3 className="uppercase tracking-widest text-sm font-bold opacity-70 mb-6 pb-2 border-b border-white/20 inline-block px-4">
-                        {partner2}'s Side
-                      </h3>
-                      {weddingParty
-                        .filter((m: any) => m.side === "partner2")
-                        .map((member: any) => (
-                          <div key={member.id} className="group">
-                            <div
-                              className={`font-semibold ${currentSize.body} mb-1 ${currentFont.body}`}
-                            >
-                              {member.name}
-                            </div>
-                            <div
-                              className={`text-sm uppercase tracking-wider opacity-60 ${currentTheme.accent}`}
-                            >
-                              {member.role}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {weddingParty.length > 0 && gallery.length > 0 && (
-                <DecorativeDivider themeId={currentTheme.id} />
-              )}
-
-              {gallery.length > 0 && (
-                <section id="photos" className="max-w-4xl mx-auto">
-                  <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Photos
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {gallery.map((img: any) => (
-                      <div
-                        key={img.id}
-                        className="relative aspect-square rounded-lg overflow-hidden border border-white/10"
-                      >
-                        <img
-                          src={img.url}
-                          alt="Wedding gallery"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {gallery.length > 0 && thingsToDo.length > 0 && (
-                <DecorativeDivider themeId={currentTheme.id} />
-              )}
-
-              {thingsToDo.length > 0 && (
-                <section id="things-to-do" className="max-w-4xl mx-auto">
-                  <h2
-                    className={`${currentSize.h2} mb-12 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Things To Do
-                  </h2>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {thingsToDo.map((item: any) => (
-                      <div
-                        key={item.id}
-                        className="bg-white/5 p-6 rounded-lg border border-white/10 hover:bg-white/10 transition-colors text-left"
-                      >
-                        <div
-                          className={`text-xs font-bold uppercase tracking-wider mb-2 opacity-70 ${currentTheme.accent}`}
-                        >
-                          {item.category}
-                        </div>
-                        <h3 className={`text-xl font-semibold mb-2`}>
-                          {item.title}
-                        </h3>
-                        <p className="opacity-80 leading-relaxed">
-                          {item.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {thingsToDo.length > 0 &&
-                (travel.hotels?.length > 0 ||
-                  travel.airports?.length > 0 ||
-                  travel.directions ||
-                  travel.shuttle) && (
-                  <DecorativeDivider themeId={currentTheme.id} />
-                )}
-
-              {(travel.hotels?.length > 0 ||
-                travel.airports?.length > 0 ||
-                travel.directions ||
-                travel.shuttle) && (
-                <section id="travel" className="max-w-3xl mx-auto">
-                  <h2
-                    className={`${currentSize.h2} mb-10 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Travel & Stay
-                  </h2>
-                  {travel.hotels?.length > 0 && (
-                    <div className="mb-12">
-                      <h3 className="text-center uppercase tracking-widest text-sm font-bold opacity-70 mb-6">
-                        Where to Stay
-                      </h3>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        {travel.hotels.map((hotel: any) => (
-                          <div
-                            key={hotel.id}
-                            className="bg-white/5 p-6 rounded-lg border border-white/10 hover:border-white/30 transition-colors text-left"
-                          >
-                            <h4
-                              className={`text-xl font-semibold mb-2 ${currentTheme.text}`}
-                            >
-                              {hotel.name}
-                            </h4>
-                            <p className="text-sm opacity-70 mb-4">
-                              {hotel.address}
-                            </p>
-                            {hotel.deadline && (
-                              <div className="inline-block bg-white/10 text-xs px-2 py-1 rounded mb-4">
-                                Book by{" "}
-                                {new Date(hotel.deadline).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid md:grid-cols-2 gap-8">
-                    {travel.airports?.length > 0 && (
-                      <div className="text-left">
-                        <h3 className="uppercase tracking-widest text-sm font-bold opacity-70 mb-4 pb-2 border-b border-white/20">
-                          Flying In
-                        </h3>
-                        <ul className="space-y-4">
-                          {travel.airports.map((airport: any) => (
-                            <li
-                              key={airport.id}
-                              className="flex items-start gap-3"
-                            >
-                              <Plane
-                                size={20}
-                                className={`mt-1 opacity-80 ${currentTheme.accent}`}
-                              />
-                              <div>
-                                <div className="font-bold">
-                                  {airport.code}{" "}
-                                  <span className="font-normal opacity-70">
-                                    - {airport.name}
-                                  </span>
-                                </div>
-                                <div className="text-sm opacity-60">
-                                  {airport.distance}
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {travel.directions && (
-                      <div className="text-left">
-                        <h3 className="uppercase tracking-widest text-sm font-bold opacity-70 mb-4 pb-2 border-b border-white/20">
-                          Getting There
-                        </h3>
-                        <div className="flex items-start gap-3">
-                          <Navigation
-                            size={20}
-                            className={`mt-1 opacity-80 ${currentTheme.accent}`}
-                          />
-                          <p className="text-sm leading-relaxed opacity-80 whitespace-pre-wrap">
-                            {travel.directions}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {travel.shuttle && (
-                      <div className="text-left col-span-2 border-t border-white/10 pt-6 mt-6">
-                        <h3 className="uppercase tracking-widest text-sm font-bold opacity-70 mb-4 pb-2 border-b border-white/20 flex items-center gap-2">
-                          <Bus size={16} /> Shuttle Service
-                        </h3>
-                        <p className="text-sm leading-relaxed opacity-80 whitespace-pre-wrap">
-                          {travel.shuttle}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
-
-              {(travel.hotels?.length > 0 ||
-                travel.airports?.length > 0 ||
-                travel.directions ||
-                travel.shuttle) &&
-                location && <DecorativeDivider themeId={currentTheme.id} />}
-
-              {location && (
-                <section id="location" className="max-w-4xl mx-auto">
-                  <h2
-                    className={`${currentSize.h2} mb-8 text-center ${currentFont.title} ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Location
-                  </h2>
-                  <div className="space-y-4">
-                    <LocationLink location={location} />
-                    <EventMap location={location} />
-                  </div>
-                </section>
-              )}
-
-              {location && <DecorativeDivider themeId={currentTheme.id} />}
-
-              <section id="rsvp" className="max-w-xl mx-auto text-center">
-                <h2
-                  className={`${currentSize.h2} mb-6 ${currentFont.title} ${currentTheme.accent}`}
-                  style={titleColor}
-                >
-                  RSVP
-                </h2>
-                {eventData?.rsvp !== undefined ? (
-                  <EventRsvpPrompt
-                    eventId={eventId}
-                    rsvpName={findFirstEmail(eventData) || null}
-                    rsvpPhone={extractFirstPhoneNumber(eventData) || null}
-                    rsvpEmail={findFirstEmail(eventData) || null}
-                    eventTitle={eventTitle}
-                    shareUrl={shareUrl}
-                  />
-                ) : (
-                  <div className="p-8 border-2 border-dashed border-white/20 rounded-xl bg-white/5">
-                    <p className="italic opacity-50">
-                      RSVP is currently closed.
-                    </p>
-                  </div>
-                )}
-              </section>
-
-              {registries.length > 0 && (
-                <section
-                  id="registry"
-                  className="text-center py-5 border-t border-white/10 mb-5"
-                >
-                  <h2
-                    className={`text-2xl mb-4 ${currentFont.title} opacity-80`}
-                  >
-                    Registry
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-4">
-                    {registries.map((registry: any, idx: number) => (
-                      <a
-                        key={idx}
-                        href={registry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block px-8 py-3 bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-colors"
-                      >
-                        <span className="uppercase tracking-widest text-sm font-semibold opacity-80">
-                          {registry.label || "Registry"}
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <p className="text-sm opacity-60">
-                  Powered by{" "}
-                  <span className="font-semibold opacity-80">Envitefy</span>.
-                  Create. Share. Enjoy
-                </p>
-              </footer>
-            </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span className="hidden sm:inline">Edit</span>
+            </Link>
+            <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
           </div>
+        )}
+
+        {/* Render the template using WeddingRenderer (same as preview) */}
+        <div className="shadow-2xl md:rounded-xl overflow-hidden">
+          <WeddingRenderer template={selectedTemplate} event={event} />
         </div>
       </div>
 
+      {/* Event Actions for owner */}
       {isOwner && (
         <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6">
           <EventActions
@@ -1577,9 +1087,9 @@ export default function WeddingTemplateView({
               title: eventTitle,
               start: startISO || undefined,
               end: endISO || undefined,
-              location: location || "",
+              location: event.location || "",
               venue: null,
-              description: story || "",
+              description: event.story || "",
               timezone: null,
               rsvp: weddingData.rsvp || null,
             }}

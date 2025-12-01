@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { ChevronDown, Heart, Clock, Users, MapPin, Coffee, Gift } from "lucide-react";
+import {
+  ChevronDown,
+  Heart,
+  Clock,
+  Users,
+  MapPin,
+  Coffee,
+  Gift,
+} from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -61,7 +69,9 @@ const formatDate = (dateStr?: string) => {
   }
 };
 
-const getScheduleDetails = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleDetails = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   const ceremony = schedule?.find((s) =>
     s.title?.toLowerCase().includes("ceremony")
   ) || { title: "Ceremony", time: "4:00 PM", location: "Villa Medicea" };
@@ -101,7 +111,9 @@ export default function EtherealWedding({ theme, event }: Props) {
   const scheduleDetails = getScheduleDetails(event.schedule);
   const detailImage =
     event.gallery?.[2]?.url ||
-    event.gallery?.[2] ||
+    event.gallery?.[2]?.src ||
+    event.gallery?.[2]?.preview ||
+    (typeof event.gallery?.[2] === "string" ? event.gallery[2] : undefined) ||
     event.photos?.[2] ||
     "https://images.unsplash.com/photo-1522673607200-1645062cd495?q=80&w=800&auto=format&fit=crop";
   const rsvpUrl = event.rsvp?.url || "#rsvp";
@@ -120,16 +132,23 @@ export default function EtherealWedding({ theme, event }: Props) {
       {/* Nav */}
       <nav
         className={`fixed w-full z-50 transition-all duration-500 ${
-          scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-8"
+          scrolled
+            ? "bg-white/90 backdrop-blur-md shadow-sm py-4"
+            : "bg-transparent py-8"
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-          <div className="text-2xl tracking-widest uppercase italic">{initials}</div>
+          <div className="text-2xl tracking-widest uppercase italic">
+            {initials}
+          </div>
           <div className="hidden md:flex space-x-12 text-xs tracking-[0.2em] uppercase font-medium">
             <a href="#story" className="hover:text-rose-400 transition-colors">
               Story
             </a>
-            <a href="#details" className="hover:text-rose-400 transition-colors">
+            <a
+              href="#details"
+              className="hover:text-rose-400 transition-colors"
+            >
               Details
             </a>
             <a href="#rsvp" className="hover:text-rose-400 transition-colors">
@@ -151,7 +170,9 @@ export default function EtherealWedding({ theme, event }: Props) {
         </div>
 
         <div className="relative z-10 text-center px-4 animate-fade-in-up">
-          <p className="text-sm tracking-[0.4em] uppercase mb-6 text-slate-800">The Wedding Of</p>
+          <p className="text-sm tracking-[0.4em] uppercase mb-6 text-slate-800">
+            The Wedding Of
+          </p>
           <h1
             className="text-7xl md:text-9xl mb-8 font-light italic text-slate-900"
             style={{ fontFamily: theme.fonts.headline }}
@@ -174,7 +195,9 @@ export default function EtherealWedding({ theme, event }: Props) {
         <p className="text-3xl md:text-4xl leading-relaxed font-light text-slate-600 italic">
           {story}
         </p>
-        <p className="mt-6 text-sm uppercase tracking-widest text-slate-400">— Emily Brontë</p>
+        <p className="mt-6 text-sm uppercase tracking-widest text-slate-400">
+          — Emily Brontë
+        </p>
       </section>
 
       {/* Parallax Divider */}
@@ -200,8 +223,10 @@ export default function EtherealWedding({ theme, event }: Props) {
               </h2>
               <p className="text-slate-500 leading-loose">
                 Join us at {scheduleDetails.ceremony.time || "4:00 PM"} in{" "}
-                {scheduleDetails.ceremony.location || "the garden of Villa Medicea"}. The ceremony
-                will be held outdoors, followed by aperitivo on the terrace.
+                {scheduleDetails.ceremony.location ||
+                  "the garden of Villa Medicea"}
+                . The ceremony will be held outdoors, followed by aperitivo on
+                the terrace.
               </p>
             </div>
             <div>
@@ -212,9 +237,10 @@ export default function EtherealWedding({ theme, event }: Props) {
                 The Reception
               </h2>
               <p className="text-slate-500 leading-loose">
-                Dinner and dancing will commence at {scheduleDetails.reception.time || "6:30 PM"} in{" "}
-                {scheduleDetails.reception.location || "the Grand Hall"}. Please bring your dancing
-                shoes and appetite.
+                Dinner and dancing will commence at{" "}
+                {scheduleDetails.reception.time || "6:30 PM"} in{" "}
+                {scheduleDetails.reception.location || "the Grand Hall"}. Please
+                bring your dancing shoes and appetite.
               </p>
             </div>
           </div>
@@ -242,7 +268,10 @@ export default function EtherealWedding({ theme, event }: Props) {
             <div className="space-y-6">
               {event.schedule.map((item, idx) => (
                 <div key={idx} className="border-l-2 border-rose-200 pl-6 py-4">
-                  <h3 className="text-2xl italic mb-2 text-slate-800" style={{ fontFamily: theme.fonts.headline }}>
+                  <h3
+                    className="text-2xl italic mb-2 text-slate-800"
+                    style={{ fontFamily: theme.fonts.headline }}
+                  >
                     {item.title}
                   </h3>
                   <div className="flex flex-wrap gap-6 text-slate-500">
@@ -280,7 +309,10 @@ export default function EtherealWedding({ theme, event }: Props) {
               {event.party.map((member, idx) => (
                 <div key={idx} className="text-center">
                   <Users className="w-8 h-8 mx-auto mb-3 text-rose-300" />
-                  <h3 className="text-xl italic mb-1 text-slate-800" style={{ fontFamily: theme.fonts.headline }}>
+                  <h3
+                    className="text-xl italic mb-1 text-slate-800"
+                    style={{ fontFamily: theme.fonts.headline }}
+                  >
                     {member.name}
                   </h3>
                   <p className="text-sm text-slate-500 italic">{member.role}</p>
@@ -303,10 +335,22 @@ export default function EtherealWedding({ theme, event }: Props) {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {event.gallery.slice(0, 6).map((img, idx) => {
-                const imageUrl = img.url || img.src || img.preview || img;
+                const imageUrl =
+                  img.url ||
+                  img.src ||
+                  img.preview ||
+                  (typeof img === "string" ? img : undefined) ||
+                  "";
                 return (
-                  <div key={idx} className="aspect-square rounded-lg overflow-hidden shadow-lg">
-                    <img src={imageUrl} className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" alt="" />
+                  <div
+                    key={idx}
+                    className="aspect-square rounded-lg overflow-hidden shadow-lg"
+                  >
+                    <img
+                      src={imageUrl}
+                      className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                      alt=""
+                    />
                   </div>
                 );
               })}
@@ -326,7 +370,9 @@ export default function EtherealWedding({ theme, event }: Props) {
             >
               Travel & Stay
             </h2>
-            <p className="text-lg leading-relaxed text-slate-500 whitespace-pre-wrap">{event.travel}</p>
+            <p className="text-lg leading-relaxed text-slate-500 whitespace-pre-wrap">
+              {event.travel}
+            </p>
           </div>
         </section>
       )}
@@ -342,7 +388,9 @@ export default function EtherealWedding({ theme, event }: Props) {
             >
               Things To Do
             </h2>
-            <p className="text-lg leading-relaxed text-slate-500">{event.thingsToDo}</p>
+            <p className="text-lg leading-relaxed text-slate-500">
+              {event.thingsToDo}
+            </p>
           </div>
         </section>
       )}
@@ -385,7 +433,9 @@ export default function EtherealWedding({ theme, event }: Props) {
             >
               R.S.V.P.
             </h2>
-            <p className="mb-12 text-slate-500">Kindly respond by {rsvpDeadline}</p>
+            <p className="mb-12 text-slate-500">
+              Kindly respond by {rsvpDeadline}
+            </p>
 
             <div className="space-y-6">
               <a

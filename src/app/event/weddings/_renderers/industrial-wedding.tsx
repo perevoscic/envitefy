@@ -32,7 +32,10 @@ const buildNames = (event: EventData) => {
       return (
         <>
           Concrete <br />
-          <span className="text-transparent stroke-white" style={{ WebkitTextStroke: "2px #cd7f32" }}>
+          <span
+            className="text-transparent stroke-white"
+            style={{ WebkitTextStroke: "2px #cd7f32" }}
+          >
             &
           </span>{" "}
           Copper
@@ -46,7 +49,10 @@ const buildNames = (event: EventData) => {
     return (
       <>
         Concrete <br />
-        <span className="text-transparent stroke-white" style={{ WebkitTextStroke: "2px #cd7f32" }}>
+        <span
+          className="text-transparent stroke-white"
+          style={{ WebkitTextStroke: "2px #cd7f32" }}
+        >
           &
         </span>{" "}
         Copper
@@ -56,7 +62,10 @@ const buildNames = (event: EventData) => {
   return (
     <>
       Concrete <br />
-      <span className="text-transparent stroke-white" style={{ WebkitTextStroke: "2px #cd7f32" }}>
+      <span
+        className="text-transparent stroke-white"
+        style={{ WebkitTextStroke: "2px #cd7f32" }}
+      >
         &
       </span>{" "}
       Copper
@@ -111,15 +120,21 @@ const formatDateLong = (dateStr?: string) => {
 };
 
 const getLocationParts = (location?: string) => {
-  if (!location) return { city: "BROOKLYN, NY", coords: "40.6782° N, 73.9442° W" };
+  if (!location)
+    return { city: "BROOKLYN, NY", coords: "40.6782° N, 73.9442° W" };
   const parts = location.split(",").map((p) => p.trim());
   return {
-    city: parts.length >= 2 ? `${parts[0].toUpperCase()}, ${parts[1].toUpperCase()}` : location.toUpperCase(),
+    city:
+      parts.length >= 2
+        ? `${parts[0].toUpperCase()}, ${parts[1].toUpperCase()}`
+        : location.toUpperCase(),
     coords: "40.6782° N, 73.9442° W", // Default, could be enhanced with geocoding
   };
 };
 
-const getScheduleItems = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleItems = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       { time: "18:00", title: "Arrival", desc: "Valet Parking Available" },
@@ -142,7 +157,11 @@ const getScheduleItems = (schedule?: Array<{ title: string; time?: string; locat
     }
 
     const defaultTitles = ["Arrival", "Vows", "Party"];
-    const defaultDescs = ["Valet Parking Available", "Short & Sweet", "Until they kick us out"];
+    const defaultDescs = [
+      "Valet Parking Available",
+      "Short & Sweet",
+      "Until they kick us out",
+    ];
 
     return {
       time: time24,
@@ -152,7 +171,10 @@ const getScheduleItems = (schedule?: Array<{ title: string; time?: string; locat
   });
 };
 
-const buildMarqueeText = (event: EventData, schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const buildMarqueeText = (
+  event: EventData,
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   const dateLong = formatDateLong(event.date);
   const venue = event.venue?.name || event.location || "The Foundry";
   const location = event.location || "Long Island City";
@@ -161,8 +183,12 @@ const buildMarqueeText = (event: EventData, schedule?: Array<{ title: string; ti
     dateLong,
     venue,
     location,
-    items.length > 0 ? `${items[0].title} at ${items[0].time || "6"}` : "Cocktails at 6",
-    items.length > 1 ? `${items[1].title} at ${items[1].time || "8"}` : "Dinner at 8",
+    items.length > 0
+      ? `${items[0].title} at ${items[0].time || "6"}`
+      : "Cocktails at 6",
+    items.length > 1
+      ? `${items[1].title} at ${items[1].time || "8"}`
+      : "Dinner at 8",
     "Dancing til late",
   ];
   return parts.join(" • ") + " • ";
@@ -199,7 +225,9 @@ export default function IndustrialWedding({ theme, event }: Props) {
           >
             {initials}
           </h1>
-          <p className="text-xs text-[#808080]">EST. {new Date().getFullYear()}</p>
+          <p className="text-xs text-[#808080]">
+            EST. {new Date().getFullYear()}
+          </p>
         </div>
 
         <nav className="flex flex-col gap-4 mt-8 md:mt-0">
@@ -247,11 +275,16 @@ export default function IndustrialWedding({ theme, event }: Props) {
 
         {/* Marquee */}
         <div className="border-b border-[#404040] py-4 overflow-hidden whitespace-nowrap bg-[#cd7f32] text-[#1a1a1a]">
-          <p className="animate-marquee inline-block text-xl font-bold uppercase">{marqueeText}</p>
+          <p className="animate-marquee inline-block text-xl font-bold uppercase">
+            {marqueeText}
+          </p>
         </div>
 
         {/* Manifesto */}
-        <section id="manifesto" className="grid md:grid-cols-2 border-b border-[#404040]">
+        <section
+          id="manifesto"
+          className="grid md:grid-cols-2 border-b border-[#404040]"
+        >
           <div className="p-12 md:p-24 border-b md:border-b-0 md:border-r border-[#404040]">
             <h3 className="text-xl uppercase mb-8 text-[#cd7f32] flex items-center gap-2">
               <CornerDownRight size={16} /> 01. The Plan
@@ -263,21 +296,29 @@ export default function IndustrialWedding({ theme, event }: Props) {
               <CornerDownRight size={16} /> 02. The Vibe
             </h3>
             <p className="text-lg leading-relaxed text-[#a0a0a0]">
-              Industrial Formal. Wear what makes you feel cool. Sneakers allowed, dancing required.
+              Industrial Formal. Wear what makes you feel cool. Sneakers
+              allowed, dancing required.
             </p>
           </div>
         </section>
 
         {/* Logistics Grid */}
-        <section id="logistics" className="grid grid-cols-1 md:grid-cols-3 border-b border-[#404040] h-auto md:h-96">
+        <section
+          id="logistics"
+          className="grid grid-cols-1 md:grid-cols-3 border-b border-[#404040] h-auto md:h-96"
+        >
           {scheduleItems.map((item, idx) => (
             <div
               key={idx}
               className="p-8 border-b md:border-b-0 md:border-r border-[#404040] last:border-r-0 hover:bg-[#202020] transition-colors flex flex-col justify-between"
             >
-              <span className="text-4xl font-bold text-[#303030]">{item.time}</span>
+              <span className="text-4xl font-bold text-[#303030]">
+                {item.time}
+              </span>
               <div>
-                <h4 className="text-xl font-bold uppercase text-[#e0e0e0]">{item.title}</h4>
+                <h4 className="text-xl font-bold uppercase text-[#e0e0e0]">
+                  {item.title}
+                </h4>
                 <p className="text-sm text-[#808080] mt-2">{item.desc}</p>
               </div>
             </div>
@@ -286,7 +327,10 @@ export default function IndustrialWedding({ theme, event }: Props) {
 
         {/* Registry */}
         {event.registry && event.registry.length > 0 && (
-          <section id="registry" className="p-12 md:p-24 border-b border-[#404040]">
+          <section
+            id="registry"
+            className="p-12 md:p-24 border-b border-[#404040]"
+          >
             <h2
               className="text-6xl md:text-8xl font-bold uppercase text-[#303030] mb-8"
               style={{ fontFamily: theme.fonts.headline }}
@@ -300,7 +344,9 @@ export default function IndustrialWedding({ theme, event }: Props) {
                   href={reg.url}
                   className="block bg-transparent border border-[#404040] p-4 hover:border-[#cd7f32] transition-colors flex items-center justify-between group"
                 >
-                  <span className="text-xl font-bold uppercase">{reg.label || "Registry"}</span>
+                  <span className="text-xl font-bold uppercase">
+                    {reg.label || "Registry"}
+                  </span>
                   <ArrowRight className="text-[#808080] group-hover:text-[#cd7f32] transition-colors" />
                 </a>
               ))}
@@ -341,4 +387,3 @@ export default function IndustrialWedding({ theme, event }: Props) {
     </div>
   );
 }
-

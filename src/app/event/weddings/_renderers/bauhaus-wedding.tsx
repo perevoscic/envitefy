@@ -20,8 +20,8 @@ const buildNames = (event: EventData) => {
   }
   const { partner1, partner2 } = event.couple || {};
   if (partner1 || partner2) {
-    const names = [partner1, partner2].filter(Boolean);
-    if (names.length === 2) {
+    const names = [partner1, partner2].filter(Boolean) as string[];
+    if (names.length === 2 && names[0] && names[1]) {
       return `${names[0][0]}&${names[1][0]}`.toUpperCase();
     }
     return names.join(" & ") || "K&M";
@@ -101,4 +101,3 @@ export default function BauhausWedding({ theme, event }: Props) {
     </div>
   );
 }
-

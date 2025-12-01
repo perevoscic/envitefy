@@ -149,7 +149,13 @@ function renderLayout(layout: string, theme: ThemeConfig, event: EventData) {
   }
 }
 
-function SplitHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function SplitHeroLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -172,7 +178,9 @@ function SplitHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
             {event.headlineTitle || "Your Names"}
           </h1>
           {event.date && (
-            <p className="mt-2 text-sm tracking-wide opacity-90">{event.date}</p>
+            <p className="mt-2 text-sm tracking-wide opacity-90">
+              {event.date}
+            </p>
           )}
           {event.location && (
             <p className="text-xs mt-1 opacity-80 uppercase tracking-[0.25em]">
@@ -187,7 +195,13 @@ function SplitHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
   );
 }
 
-function FloralFrameLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function FloralFrameLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -203,7 +217,9 @@ function FloralFrameLayout({ theme, event }: { theme: ThemeConfig; event: EventD
             >
               {event.headlineTitle || "Your Names"}
             </h1>
-            {event.date && <p className="mt-2 text-sm text-slate-500">{event.date}</p>}
+            {event.date && (
+              <p className="mt-2 text-sm text-slate-500">{event.date}</p>
+            )}
             {event.location && (
               <p className="text-xs mt-1 uppercase tracking-[0.25em] text-slate-400">
                 {event.location}
@@ -213,17 +229,30 @@ function FloralFrameLayout({ theme, event }: { theme: ThemeConfig; event: EventD
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function TwoColumnLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function TwoColumnLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
-      <section className="w-full bg-white" style={{ backgroundColor: theme.colors.secondary }}>
+      <section
+        className="w-full bg-white"
+        style={{ backgroundColor: theme.colors.secondary }}
+      >
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 px-6 py-10 items-center">
           <div>
             <h1
@@ -232,7 +261,9 @@ function TwoColumnLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
             >
               {event.headlineTitle || "Your Names"}
             </h1>
-            {event.date && <p className="mt-2 text-sm text-slate-600">{event.date}</p>}
+            {event.date && (
+              <p className="mt-2 text-sm text-slate-600">{event.date}</p>
+            )}
             {event.location && (
               <p className="mt-1 text-xs uppercase tracking-[0.25em] text-slate-500">
                 {event.location}
@@ -251,14 +282,24 @@ function TwoColumnLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function CrestHeaderLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function CrestHeaderLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -266,14 +307,18 @@ function CrestHeaderLayout({ theme, event }: { theme: ThemeConfig; event: EventD
         style={{ backgroundColor: theme.colors.secondary }}
       >
         <div className="max-w-xl w-full bg-white/90 rounded-full border px-10 py-6 text-center shadow-sm">
-          <div className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">Wedding of</div>
+          <div className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">
+            Wedding of
+          </div>
           <h1
             className="text-3xl md:text-4xl font-semibold text-slate-800"
             style={{ fontFamily: theme.fonts.headline }}
           >
             {event.headlineTitle || "Your Names"}
           </h1>
-          {event.date && <p className="mt-2 text-sm text-slate-600">{event.date}</p>}
+          {event.date && (
+            <p className="mt-2 text-sm text-slate-600">{event.date}</p>
+          )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
               {event.location}
@@ -282,14 +327,24 @@ function CrestHeaderLayout({ theme, event }: { theme: ThemeConfig; event: EventD
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function BotanicalBordersLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function BotanicalBordersLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -305,7 +360,9 @@ function BotanicalBordersLayout({ theme, event }: { theme: ThemeConfig; event: E
             {event.headlineTitle || "Your Names"}
           </h1>
           {event.date && (
-            <p className="mt-2 text-sm text-slate-600 text-center">{event.date}</p>
+            <p className="mt-2 text-sm text-slate-600 text-center">
+              {event.date}
+            </p>
           )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.25em] text-slate-500 text-center">
@@ -315,17 +372,30 @@ function BotanicalBordersLayout({ theme, event }: { theme: ThemeConfig; event: E
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function SoftPastelHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function SoftPastelHeroLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
-      <section className="w-full py-12" style={{ backgroundColor: theme.colors.secondary }}>
+      <section
+        className="w-full py-12"
+        style={{ backgroundColor: theme.colors.secondary }}
+      >
         <div className="max-w-3xl mx-auto text-center">
           <h1
             className="text-4xl font-semibold text-slate-800"
@@ -333,7 +403,9 @@ function SoftPastelHeroLayout({ theme, event }: { theme: ThemeConfig; event: Eve
           >
             {event.headlineTitle || "Your Names"}
           </h1>
-          {event.date && <p className="mt-2 text-sm text-slate-600">{event.date}</p>}
+          {event.date && (
+            <p className="mt-2 text-sm text-slate-600">{event.date}</p>
+          )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.25em] text-slate-500">
               {event.location}
@@ -342,14 +414,24 @@ function SoftPastelHeroLayout({ theme, event }: { theme: ThemeConfig; event: Eve
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function ArchedHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function ArchedHeroLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -372,7 +454,9 @@ function ArchedHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDa
           >
             {event.headlineTitle || "Your Names"}
           </h1>
-          {event.date && <p className="mt-2 text-sm text-white/80">{event.date}</p>}
+          {event.date && (
+            <p className="mt-2 text-sm text-white/80">{event.date}</p>
+          )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white/70">
               {event.location}
@@ -381,14 +465,24 @@ function ArchedHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDa
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function ParchmentHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function ParchmentHeroLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -402,7 +496,9 @@ function ParchmentHeroLayout({ theme, event }: { theme: ThemeConfig; event: Even
           >
             {event.headlineTitle || "Your Names"}
           </h1>
-          {event.date && <p className="mt-2 text-sm text-[#6b4e33]">{event.date}</p>}
+          {event.date && (
+            <p className="mt-2 text-sm text-[#6b4e33]">{event.date}</p>
+          )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#7a5b3a]">
               {event.location}
@@ -411,14 +507,24 @@ function ParchmentHeroLayout({ theme, event }: { theme: ThemeConfig; event: Even
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>
   );
 }
 
-function FullWidthLuxuryLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function FullWidthLuxuryLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -440,7 +546,9 @@ function FullWidthLuxuryLayout({ theme, event }: { theme: ThemeConfig; event: Ev
           >
             {event.headlineTitle || "Your Names"}
           </h1>
-          {event.date && <p className="mt-2 text-sm text-slate-800">{event.date}</p>}
+          {event.date && (
+            <p className="mt-2 text-sm text-slate-800">{event.date}</p>
+          )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.25em] text-slate-700">
               {event.location}
@@ -448,7 +556,10 @@ function FullWidthLuxuryLayout({ theme, event }: { theme: ThemeConfig; event: Ev
           )}
         </div>
       </section>
-      <div style={{ backgroundColor: theme.colors.primary }} className="text-slate-900">
+      <div
+        style={{ backgroundColor: theme.colors.primary }}
+        className="text-slate-900"
+      >
         <ContentSections theme={theme} event={event} />
         <Footer theme={theme} event={event} />
       </div>
@@ -456,7 +567,13 @@ function FullWidthLuxuryLayout({ theme, event }: { theme: ThemeConfig; event: Ev
   );
 }
 
-function StarryHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function StarryHeroLayout({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <>
       <section
@@ -478,7 +595,9 @@ function StarryHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDa
           >
             {event.headlineTitle || "Your Names"}
           </h1>
-          {event.date && <p className="mt-2 text-sm text-slate-200">{event.date}</p>}
+          {event.date && (
+            <p className="mt-2 text-sm text-slate-200">{event.date}</p>
+          )}
           {event.location && (
             <p className="mt-1 text-xs uppercase tracking-[0.25em] text-slate-300">
               {event.location}
@@ -487,7 +606,11 @@ function StarryHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDa
         </div>
       </section>
       <div style={{ backgroundColor: theme.colors.primary }}>
-        <ContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+        <ContentSections
+          theme={theme}
+          event={event}
+          backgroundColor={theme.colors.primary}
+        />
         <Footer theme={theme} event={event} />
       </div>
     </>

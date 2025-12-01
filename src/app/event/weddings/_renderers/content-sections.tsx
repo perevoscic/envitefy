@@ -48,8 +48,9 @@ export type EventData = {
   registryNote?: string;
   rsvp?: {
     url?: string;
+    deadline?: string;
   };
-  gallery?: Array<{ url?: string }>;
+  gallery?: Array<{ url?: string; src?: string; preview?: string }>;
 };
 
 const getLuminance = (hex: string): number => {

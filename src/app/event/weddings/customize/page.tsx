@@ -2124,52 +2124,6 @@ const App = () => {
             )}
           </div>
         </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Headline Background
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.images.headlineBg ? (
-              <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                <img
-                  src={data.images.headlineBg}
-                  alt="Headline Bg"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() =>
-                    setData((prev) => ({
-                      ...prev,
-                      images: { ...prev.images, headlineBg: null },
-                    }))
-                  }
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <ImageIcon size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header texture
-                </p>
-                <p className="text-xs text-slate-400">
-                  Optional pattern behind names
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => handleImageUpload("headlineBg", e)}
-                />
-              </>
-            )}
-          </div>
-        </div>
       </div>
     </EditorLayout>
   );
@@ -2984,13 +2938,13 @@ const App = () => {
                         className="cursor-pointer hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
                         onClick={() => {
                           const editTarget = NAV_EDIT_TARGETS[item];
-                      if (editTarget) setActiveView(editTarget);
-                      const anchor = NAV_SCROLL_TARGETS[item];
-                      if (anchor && typeof document !== "undefined") {
-                        document.getElementById(anchor)?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
+                          if (editTarget) setActiveView(editTarget);
+                          const anchor = NAV_SCROLL_TARGETS[item];
+                          if (anchor && typeof document !== "undefined") {
+                            document.getElementById(anchor)?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
                           }
                         }}
                       >
@@ -3738,7 +3692,11 @@ const App = () => {
               </span>
             </div>
           )}
-          <div className={`p-6 pt-4 md:pt-6 ${activeView === "main" ? "h-full flex flex-col" : ""}`}>
+          <div
+            className={`p-6 pt-4 md:pt-6 ${
+              activeView === "main" ? "h-full flex flex-col" : ""
+            }`}
+          >
             {activeView === "main" && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
             {activeView === "images" && renderImagesEditor()}

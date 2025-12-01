@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Snowflake, Thermometer, Calendar, MapPin, Wine, Heart, ChevronDown } from "lucide-react";
+import {
+  Snowflake,
+  Thermometer,
+  Calendar,
+  MapPin,
+  Wine,
+  Heart,
+  ChevronDown,
+} from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -31,7 +39,8 @@ const buildNames = (event: EventData) => {
     if (match) {
       return (
         <>
-          Winter <span className="italic font-serif text-[#B7410E]">&</span> Warmth
+          Winter <span className="italic font-serif text-[#B7410E]">&</span>{" "}
+          Warmth
         </>
       );
     }
@@ -41,7 +50,8 @@ const buildNames = (event: EventData) => {
   if (partner1 || partner2) {
     return (
       <>
-        Winter <span className="italic font-serif text-[#B7410E]">&</span> Warmth
+        Winter <span className="italic font-serif text-[#B7410E]">&</span>{" "}
+        Warmth
       </>
     );
   }
@@ -81,7 +91,9 @@ const getLocationParts = (location?: string) => {
   return location;
 };
 
-const getScheduleItems = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleItems = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       {
@@ -184,17 +196,22 @@ export default function WinterWedding({ theme, event }: Props) {
       <div
         className="fixed inset-0 opacity-20 pointer-events-none z-0"
         style={{
-          backgroundImage: 'url("https://www.transparenttextures.com/patterns/black-linen.png")',
+          backgroundImage:
+            'url("https://www.transparenttextures.com/patterns/black-linen.png")',
         }}
       ></div>
 
       {/* Nav */}
       <nav
         className={`fixed w-full z-50 transition-all duration-500 px-6 py-4 flex justify-between items-center ${
-          scrolled ? "bg-[#1A2F25]/90 backdrop-blur-md shadow-lg" : "bg-transparent"
+          scrolled
+            ? "bg-[#1A2F25]/90 backdrop-blur-md shadow-lg"
+            : "bg-transparent"
         }`}
       >
-        <div className="text-xl font-bold tracking-widest uppercase">{initials}</div>
+        <div className="text-xl font-bold tracking-widest uppercase">
+          {initials}
+        </div>
         <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest text-gray-300">
           <a href="#story" className="hover:text-white transition-colors">
             Our Story
@@ -226,7 +243,10 @@ export default function WinterWedding({ theme, event }: Props) {
         </div>
 
         <div className="relative z-10 text-center border-y border-white/20 py-16 px-12 backdrop-blur-md bg-[#1A2F25]/40 max-w-4xl shadow-2xl">
-          <Snowflake className="w-10 h-10 mx-auto mb-8 text-white animate-spin-slow" strokeWidth={1} />
+          <Snowflake
+            className="w-10 h-10 mx-auto mb-8 text-white animate-spin-slow"
+            strokeWidth={1}
+          />
           <h1
             className="text-5xl md:text-8xl font-light mb-6 tracking-wide text-white drop-shadow-lg leading-tight"
             style={{ fontFamily: theme.fonts.headline }}
@@ -243,7 +263,10 @@ export default function WinterWedding({ theme, event }: Props) {
       </header>
 
       {/* Our Story */}
-      <section id="story" className="py-24 px-8 max-w-6xl mx-auto relative z-10">
+      <section
+        id="story"
+        className="py-24 px-8 max-w-6xl mx-auto relative z-10"
+      >
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className="relative group">
             <div className="absolute inset-0 border border-white/20 translate-x-4 translate-y-4 transition-transform group-hover:translate-x-2 group-hover:translate-y-2"></div>
@@ -261,13 +284,18 @@ export default function WinterWedding({ theme, event }: Props) {
             >
               A Cold Night, A Warm Fire
             </h2>
-            <p className="text-lg leading-relaxed font-light opacity-80 mb-6">{story}</p>
+            <p className="text-lg leading-relaxed font-light opacity-80 mb-6">
+              {story}
+            </p>
           </div>
         </div>
       </section>
 
       {/* The Weekend Cards */}
-      <section id="weekend" className="py-20 px-4 relative z-10 bg-[#0F1C15]/50 border-y border-white/5">
+      <section
+        id="weekend"
+        className="py-20 px-4 relative z-10 bg-[#0F1C15]/50 border-y border-white/5"
+      >
         <div className="max-w-6xl mx-auto">
           <h2 className="text-center text-xs font-bold tracking-[0.4em] uppercase mb-16 text-[#B7410E]">
             Itinerary
@@ -308,7 +336,11 @@ export default function WinterWedding({ theme, event }: Props) {
               <p className="text-gray-300 font-light leading-relaxed mb-6">
                 {typeof travelInfo === "string"
                   ? travelInfo
-                  : `We have secured a block of rooms at ${event.venue?.name || "The Little Nell"}. Please mention the '${event.headlineTitle || "Evans-Thompson"}' wedding for the preferred rate.`}
+                  : `We have secured a block of rooms at ${
+                      event.venue?.name || "The Little Nell"
+                    }. Please mention the '${
+                      event.headlineTitle || "Evans-Thompson"
+                    }' wedding for the preferred rate.`}
               </p>
               {event.locationUrl && (
                 <a
@@ -330,8 +362,9 @@ export default function WinterWedding({ theme, event }: Props) {
                 Registry
               </h3>
               <p className="text-gray-300 font-light leading-relaxed mb-6">
-                Your presence is present enough. However, if you wish to celebrate with a gift, we are
-                registered at {registry[0]?.label || "Zola"}.
+                Your presence is present enough. However, if you wish to
+                celebrate with a gift, we are registered at{" "}
+                {registry[0]?.label || "Zola"}.
               </p>
               {registry[0]?.url && (
                 <a
@@ -348,7 +381,10 @@ export default function WinterWedding({ theme, event }: Props) {
 
       {/* RSVP */}
       {event.rsvpEnabled && (
-        <section id="rsvp" className="py-32 bg-[#B7410E] text-[#0F1C15] px-6 text-center relative z-10">
+        <section
+          id="rsvp"
+          className="py-32 bg-[#B7410E] text-[#0F1C15] px-6 text-center relative z-10"
+        >
           <div className="max-w-xl mx-auto">
             <h2
               className="text-5xl font-light mb-4"
@@ -385,4 +421,3 @@ export default function WinterWedding({ theme, event }: Props) {
     </div>
   );
 }
-

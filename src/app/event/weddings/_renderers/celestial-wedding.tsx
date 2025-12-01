@@ -1,5 +1,15 @@
 import React from "react";
-import { Moon, Star, Sun, Cloud, Users, MapPin, Coffee, Gift, Clock } from "lucide-react";
+import {
+  Moon,
+  Star,
+  Sun,
+  Cloud,
+  Users,
+  MapPin,
+  Coffee,
+  Gift,
+  Clock,
+} from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -14,7 +24,9 @@ const buildNames = (event: EventData) => {
     if (match) {
       return (
         <>
-          {match[1]} <span className="text-[#D4AF37] text-4xl align-middle mx-4">&</span> {match[2]}
+          {match[1]}{" "}
+          <span className="text-[#D4AF37] text-4xl align-middle mx-4">&</span>{" "}
+          {match[2]}
         </>
       );
     }
@@ -26,7 +38,9 @@ const buildNames = (event: EventData) => {
     if (names.length === 2) {
       return (
         <>
-          {names[0]} <span className="text-[#D4AF37] text-4xl align-middle mx-4">&</span> {names[1]}
+          {names[0]}{" "}
+          <span className="text-[#D4AF37] text-4xl align-middle mx-4">&</span>{" "}
+          {names[1]}
         </>
       );
     }
@@ -34,19 +48,49 @@ const buildNames = (event: EventData) => {
   }
   return (
     <>
-      Luna <span className="text-[#D4AF37] text-4xl align-middle mx-4">&</span> Sol
+      Luna <span className="text-[#D4AF37] text-4xl align-middle mx-4">&</span>{" "}
+      Sol
     </>
   );
 };
 
 const formatDate = (dateStr?: string) => {
-  if (!dateStr) return { month: "Oct", day: "14th", year: "2025", weekday: "Sunday" };
+  if (!dateStr)
+    return { month: "Oct", day: "14th", year: "2025", weekday: "Sunday" };
   try {
     const d = new Date(dateStr);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const weekdays = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     const day = d.getDate();
-    const suffix = day === 1 || day === 21 || day === 31 ? "st" : day === 2 || day === 22 ? "nd" : day === 3 || day === 23 ? "rd" : "th";
+    const suffix =
+      day === 1 || day === 21 || day === 31
+        ? "st"
+        : day === 2 || day === 22
+        ? "nd"
+        : day === 3 || day === 23
+        ? "rd"
+        : "th";
     return {
       month: months[d.getMonth()],
       day: `${day}${suffix}`,
@@ -67,7 +111,9 @@ const getLocationParts = (location?: string) => {
   return { city: location, venue: "Planetarium" };
 };
 
-const getScheduleEvents = (schedule?: Array<{ title: string; time?: string }>) => {
+const getScheduleEvents = (
+  schedule?: Array<{ title: string; time?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       { time: "5:30 PM", label: "Arrival", icon: Sun },
@@ -158,7 +204,9 @@ export default function CelestialWedding({ theme, event }: Props) {
             <Star size={24} fill="#D4AF37" />
           </div>
 
-          <p className="uppercase tracking-[0.4em] text-xs text-[#D4AF37] mb-8">Written in the Stars</p>
+          <p className="uppercase tracking-[0.4em] text-xs text-[#D4AF37] mb-8">
+            Written in the Stars
+          </p>
 
           <h1
             className="text-6xl md:text-8xl font-light mb-6 leading-tight"
@@ -173,15 +221,21 @@ export default function CelestialWedding({ theme, event }: Props) {
 
           <div className="grid grid-cols-3 gap-12 text-xs uppercase tracking-[0.2em] border-t border-[#E2D8C0]/20 pt-12">
             <div>
-              <span className="block text-[#D4AF37] text-lg mb-2">{dateInfo.month}</span>
+              <span className="block text-[#D4AF37] text-lg mb-2">
+                {dateInfo.month}
+              </span>
               {dateInfo.day}
             </div>
             <div>
-              <span className="block text-[#D4AF37] text-lg mb-2">{dateInfo.year}</span>
+              <span className="block text-[#D4AF37] text-lg mb-2">
+                {dateInfo.year}
+              </span>
               {dateInfo.weekday}
             </div>
             <div>
-              <span className="block text-[#D4AF37] text-lg mb-2">{locationParts.city}</span>
+              <span className="block text-[#D4AF37] text-lg mb-2">
+                {locationParts.city}
+              </span>
               {locationParts.venue}
             </div>
           </div>
@@ -196,7 +250,9 @@ export default function CelestialWedding({ theme, event }: Props) {
           >
             The Alignment
           </h2>
-          <p className="text-lg leading-relaxed opacity-70 max-w-2xl mx-auto">{story}</p>
+          <p className="text-lg leading-relaxed opacity-70 max-w-2xl mx-auto">
+            {story}
+          </p>
         </section>
 
         {/* Timeline */}
@@ -209,12 +265,17 @@ export default function CelestialWedding({ theme, event }: Props) {
             {scheduleEvents.map((eventItem, i) => {
               const IconComponent = eventItem.icon;
               return (
-                <div key={i} className="flex flex-col items-center relative group">
+                <div
+                  key={i}
+                  className="flex flex-col items-center relative group"
+                >
                   <div className="w-16 h-16 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] mb-4 group-hover:border-[#D4AF37] group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all bg-[#0F152E]">
                     <IconComponent size={20} strokeWidth={1} />
                   </div>
                   <span className="text-xl italic mb-1">{eventItem.time}</span>
-                  <span className="text-xs uppercase tracking-widest opacity-60">{eventItem.label}</span>
+                  <span className="text-xs uppercase tracking-widest opacity-60">
+                    {eventItem.label}
+                  </span>
 
                   {/* Connector Line */}
                   {i < scheduleEvents.length - 1 && (
@@ -234,8 +295,13 @@ export default function CelestialWedding({ theme, event }: Props) {
             </h2>
             <div className="space-y-6 max-w-2xl mx-auto">
               {event.schedule.map((item, idx) => (
-                <div key={idx} className="border-l-2 border-[#D4AF37]/30 pl-6 py-4 hover:border-[#D4AF37]/60 transition-colors">
-                  <h3 className="text-xl italic mb-2 text-[#E2D8C0]">{item.title}</h3>
+                <div
+                  key={idx}
+                  className="border-l-2 border-[#D4AF37]/30 pl-6 py-4 hover:border-[#D4AF37]/60 transition-colors"
+                >
+                  <h3 className="text-xl italic mb-2 text-[#E2D8C0]">
+                    {item.title}
+                  </h3>
                   <div className="flex flex-wrap gap-6 text-sm opacity-70">
                     {item.time && (
                       <span className="flex items-center gap-2">
@@ -264,10 +330,17 @@ export default function CelestialWedding({ theme, event }: Props) {
             </h2>
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {event.party.map((member, idx) => (
-                <div key={idx} className="bg-[#0F152E] p-6 rounded-lg border border-[#D4AF37]/20 text-center">
+                <div
+                  key={idx}
+                  className="bg-[#0F152E] p-6 rounded-lg border border-[#D4AF37]/20 text-center"
+                >
                   <Users className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                  <h3 className="text-lg italic mb-1 text-[#E2D8C0]">{member.name}</h3>
-                  <p className="text-sm uppercase tracking-widest opacity-60 text-[#D4AF37]">{member.role}</p>
+                  <h3 className="text-lg italic mb-1 text-[#E2D8C0]">
+                    {member.name}
+                  </h3>
+                  <p className="text-sm uppercase tracking-widest opacity-60 text-[#D4AF37]">
+                    {member.role}
+                  </p>
                 </div>
               ))}
             </div>
@@ -282,10 +355,22 @@ export default function CelestialWedding({ theme, event }: Props) {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
               {event.gallery.slice(0, 6).map((img, idx) => {
-                const imageUrl = img.url || img.src || img.preview || img;
+                const imageUrl =
+                  img.url ||
+                  img.src ||
+                  img.preview ||
+                  (typeof img === "string" ? img : undefined) ||
+                  "";
                 return (
-                  <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-[#D4AF37]/20">
-                    <img src={imageUrl} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" alt="" />
+                  <div
+                    key={idx}
+                    className="aspect-square rounded-lg overflow-hidden border border-[#D4AF37]/20"
+                  >
+                    <img
+                      src={imageUrl}
+                      className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                      alt=""
+                    />
                   </div>
                 );
               })}
@@ -301,7 +386,9 @@ export default function CelestialWedding({ theme, event }: Props) {
               <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-8">
                 Travel & Stay
               </h2>
-              <p className="text-lg leading-relaxed opacity-70 whitespace-pre-wrap">{event.travel}</p>
+              <p className="text-lg leading-relaxed opacity-70 whitespace-pre-wrap">
+                {event.travel}
+              </p>
             </div>
           </section>
         )}
@@ -314,7 +401,9 @@ export default function CelestialWedding({ theme, event }: Props) {
               <h2 className="text-xs font-bold tracking-[0.4em] uppercase text-[#D4AF37] mb-8">
                 Things To Do
               </h2>
-              <p className="text-lg leading-relaxed opacity-70">{event.thingsToDo}</p>
+              <p className="text-lg leading-relaxed opacity-70">
+                {event.thingsToDo}
+              </p>
             </div>
           </section>
         )}

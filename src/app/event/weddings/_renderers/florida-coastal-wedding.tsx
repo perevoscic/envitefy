@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Palmtree, Sun, Citrus, GlassWater, Umbrella, MapPin } from "lucide-react";
+import {
+  Palmtree,
+  Sun,
+  Citrus,
+  GlassWater,
+  Umbrella,
+  MapPin,
+} from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -14,7 +21,8 @@ const buildNames = (event: EventData) => {
     if (match) {
       return (
         <>
-          {match[1]} <br /> <span className="text-emerald-500 text-5xl">&</span> {match[2]}
+          {match[1]} <br /> <span className="text-emerald-500 text-5xl">&</span>{" "}
+          {match[2]}
         </>
       );
     }
@@ -26,7 +34,8 @@ const buildNames = (event: EventData) => {
     if (names.length === 2) {
       return (
         <>
-          {names[0]} <br /> <span className="text-emerald-500 text-5xl">&</span> {names[1]}
+          {names[0]} <br /> <span className="text-emerald-500 text-5xl">&</span>{" "}
+          {names[1]}
         </>
       );
     }
@@ -34,7 +43,8 @@ const buildNames = (event: EventData) => {
   }
   return (
     <>
-      Julianne <br /> <span className="text-emerald-500 text-5xl">&</span> Patrick
+      Julianne <br /> <span className="text-emerald-500 text-5xl">&</span>{" "}
+      Patrick
     </>
   );
 };
@@ -77,7 +87,9 @@ const getLocationParts = (location?: string) => {
   return location || "Palm Beach, Florida";
 };
 
-const getScheduleItems = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleItems = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   if (!schedule || schedule.length === 0) {
     return [
       {
@@ -123,14 +135,39 @@ const getScheduleItems = (schedule?: Array<{ title: string; time?: string; locat
     farewell: Umbrella,
   };
 
-  const colorMap: Record<string, { border: string; bg: string; icon: string }> = {
-    welcome: { border: "border-pink-400", bg: "bg-pink-100", icon: "text-pink-500" },
-    party: { border: "border-pink-400", bg: "bg-pink-100", icon: "text-pink-500" },
-    ceremony: { border: "border-emerald-500", bg: "bg-emerald-100", icon: "text-emerald-600" },
-    reception: { border: "border-yellow-400", bg: "bg-yellow-100", icon: "text-yellow-500" },
-    brunch: { border: "border-yellow-400", bg: "bg-yellow-100", icon: "text-yellow-500" },
-    farewell: { border: "border-yellow-400", bg: "bg-yellow-100", icon: "text-yellow-500" },
-  };
+  const colorMap: Record<string, { border: string; bg: string; icon: string }> =
+    {
+      welcome: {
+        border: "border-pink-400",
+        bg: "bg-pink-100",
+        icon: "text-pink-500",
+      },
+      party: {
+        border: "border-pink-400",
+        bg: "bg-pink-100",
+        icon: "text-pink-500",
+      },
+      ceremony: {
+        border: "border-emerald-500",
+        bg: "bg-emerald-100",
+        icon: "text-emerald-600",
+      },
+      reception: {
+        border: "border-yellow-400",
+        bg: "bg-yellow-100",
+        icon: "text-yellow-500",
+      },
+      brunch: {
+        border: "border-yellow-400",
+        bg: "bg-yellow-100",
+        icon: "text-yellow-500",
+      },
+      farewell: {
+        border: "border-yellow-400",
+        bg: "bg-yellow-100",
+        icon: "text-yellow-500",
+      },
+    };
 
   return schedule.slice(0, 3).map((item, idx) => {
     const titleLower = item.title?.toLowerCase() || "";
@@ -181,7 +218,9 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
   const scheduleItems = getScheduleItems(event.schedule);
   const hotelImage =
     event.gallery?.[1]?.url ||
-    event.gallery?.[1] ||
+    event.gallery?.[1]?.src ||
+    event.gallery?.[1]?.preview ||
+    (typeof event.gallery?.[1] === "string" ? event.gallery[1] : undefined) ||
     event.photos?.[1] ||
     "https://images.unsplash.com/photo-1574236170880-640fb3c633a4?q=80&w=1600&auto=format&fit=crop";
   const travelInfo = event.travel || "";
@@ -276,7 +315,9 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
         >
           Sunshine & Champagne
         </h2>
-        <p className="text-xl leading-relaxed text-emerald-800/70 font-medium">{story}</p>
+        <p className="text-xl leading-relaxed text-emerald-800/70 font-medium">
+          {story}
+        </p>
         <div className="mt-12 flex justify-center gap-4">
           <span className="px-4 py-1 bg-pink-100 text-pink-600 rounded-full text-xs font-bold uppercase">
             Black Tie Optional
@@ -288,7 +329,10 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
       </section>
 
       {/* Events Grid */}
-      <section id="events" className="py-20 bg-pink-50 px-4 relative overflow-hidden">
+      <section
+        id="events"
+        className="py-20 bg-pink-50 px-4 relative overflow-hidden"
+      >
         {/* Decoration */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-200 rounded-full blur-[100px] opacity-50 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-200 rounded-full blur-[100px] opacity-50 pointer-events-none"></div>
@@ -306,7 +350,9 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
               return (
                 <div
                   key={idx}
-                  className={`bg-white p-8 rounded-t-[3rem] border-b-8 ${item.borderColor} shadow-lg hover:-translate-y-2 transition-transform ${
+                  className={`bg-white p-8 rounded-t-[3rem] border-b-8 ${
+                    item.borderColor
+                  } shadow-lg hover:-translate-y-2 transition-transform ${
                     item.featured ? "md:-mt-8" : ""
                   }`}
                 >
@@ -315,8 +361,12 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
                   >
                     <IconComponent size={32} />
                   </div>
-                  <h3 className="text-2xl text-emerald-900 font-bold mb-2">{item.title}</h3>
-                  <p className={`${item.iconColor} font-bold uppercase text-xs tracking-widest mb-4`}>
+                  <h3 className="text-2xl text-emerald-900 font-bold mb-2">
+                    {item.title}
+                  </h3>
+                  <p
+                    className={`${item.iconColor} font-bold uppercase text-xs tracking-widest mb-4`}
+                  >
                     {item.day} • {item.time}
                   </p>
                   <p className="text-emerald-700/80">{item.location}</p>
@@ -357,7 +407,8 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
             <div
               className="absolute inset-0 opacity-10"
               style={{
-                backgroundImage: "radial-gradient(circle, white 2px, transparent 2px)",
+                backgroundImage:
+                  "radial-gradient(circle, white 2px, transparent 2px)",
                 backgroundSize: "20px 20px",
               }}
             ></div>
@@ -409,4 +460,3 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
     </div>
   );
 }
-

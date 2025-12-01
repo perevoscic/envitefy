@@ -77,13 +77,23 @@ const getLocationParts = (location?: string, venue?: { name?: string }) => {
   return venueName;
 };
 
-const getScheduleDetails = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleDetails = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   const ceremony = schedule?.find((s) =>
     s.title?.toLowerCase().includes("ceremony")
-  ) || { title: "Ceremony", time: "4:00 PM", location: "Bates Hall Reading Room" };
+  ) || {
+    title: "Ceremony",
+    time: "4:00 PM",
+    location: "Bates Hall Reading Room",
+  };
   const reception = schedule?.find((s) =>
     s.title?.toLowerCase().includes("reception")
-  ) || { title: "Reception", time: "6:00 PM", location: "The Courtyard Tea Room" };
+  ) || {
+    title: "Reception",
+    time: "6:00 PM",
+    location: "The Courtyard Tea Room",
+  };
 
   return { ceremony, reception };
 };
@@ -118,7 +128,8 @@ export default function LibraryWedding({ theme, event }: Props) {
       <div
         className="fixed inset-0 opacity-10 pointer-events-none"
         style={{
-          backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper.png")',
+          backgroundImage:
+            'url("https://www.transparenttextures.com/patterns/paper.png")',
         }}
       ></div>
 
@@ -162,11 +173,17 @@ export default function LibraryWedding({ theme, event }: Props) {
           >
             Chapter I
           </h2>
-          <span className="italic opacity-60">In which two scholars find common ground</span>
+          <span className="italic opacity-60">
+            In which two scholars find common ground
+          </span>
         </div>
         <p className="text-lg leading-loose mb-8 drop-cap">
-          <span className="float-left text-6xl pr-2 pt-2 font-bold text-[#D4C5B0]">I</span>
-          {story.startsWith("I") || story.startsWith("It") ? story.substring(story.indexOf(" ") + 1) : story}
+          <span className="float-left text-6xl pr-2 pt-2 font-bold text-[#D4C5B0]">
+            I
+          </span>
+          {story.startsWith("I") || story.startsWith("It")
+            ? story.substring(story.indexOf(" ") + 1)
+            : story}
         </p>
       </section>
 
@@ -186,16 +203,24 @@ export default function LibraryWedding({ theme, event }: Props) {
           <div className="grid md:grid-cols-2 gap-16">
             <div className="text-center md:text-right border-r-0 md:border-r border-[#2B211E]/20 pr-0 md:pr-8">
               <BookOpen className="w-8 h-8 mx-auto md:ml-auto md:mr-0 mb-4 text-[#5D2E2E]" />
-              <h3 className="font-bold uppercase tracking-widest mb-2">The Ceremony</h3>
-              <p className="text-lg mb-1">{scheduleDetails.ceremony.time || "4:00 PM"}</p>
+              <h3 className="font-bold uppercase tracking-widest mb-2">
+                The Ceremony
+              </h3>
+              <p className="text-lg mb-1">
+                {scheduleDetails.ceremony.time || "4:00 PM"}
+              </p>
               <p className="italic text-sm opacity-80">
                 {scheduleDetails.ceremony.location || "Bates Hall Reading Room"}
               </p>
             </div>
             <div className="text-center md:text-left pl-0 md:pl-8">
               <Bookmark className="w-8 h-8 mx-auto md:mr-auto md:ml-0 mb-4 text-[#5D2E2E]" />
-              <h3 className="font-bold uppercase tracking-widest mb-2">The Reception</h3>
-              <p className="text-lg mb-1">{scheduleDetails.reception.time || "6:00 PM"}</p>
+              <h3 className="font-bold uppercase tracking-widest mb-2">
+                The Reception
+              </h3>
+              <p className="text-lg mb-1">
+                {scheduleDetails.reception.time || "6:00 PM"}
+              </p>
               <p className="italic text-sm opacity-80">
                 {scheduleDetails.reception.location || "The Courtyard Tea Room"}
               </p>
@@ -203,8 +228,9 @@ export default function LibraryWedding({ theme, event }: Props) {
           </div>
 
           <div className="mt-16 text-center text-sm italic opacity-80 leading-relaxed max-w-lg mx-auto">
-            "I cannot fix on the hour, or the spot, or the look or the words, which laid the
-            foundation. I was in the middle before I knew that I had begun." — Jane Austen
+            "I cannot fix on the hour, or the spot, or the look or the words,
+            which laid the foundation. I was in the middle before I knew that I
+            had begun." — Jane Austen
           </div>
         </div>
       </section>
@@ -219,7 +245,9 @@ export default function LibraryWedding({ theme, event }: Props) {
             >
               Epilogue
             </h2>
-            <p className="mb-8 opacity-70">Kindly add your name to our guest ledger by {rsvpDeadline}.</p>
+            <p className="mb-8 opacity-70">
+              Kindly add your name to our guest ledger by {rsvpDeadline}.
+            </p>
 
             <a
               href={rsvpUrl}
@@ -236,4 +264,3 @@ export default function LibraryWedding({ theme, event }: Props) {
     </div>
   );
 }
-

@@ -156,7 +156,19 @@ const formatDate = (dateStr?: string) => {
       yearText += yearWords[hundreds] + " Hundred ";
     }
     if (tens >= 2) {
-      yearText += ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"][tens] + " ";
+      yearText +=
+        [
+          "",
+          "",
+          "Twenty",
+          "Thirty",
+          "Forty",
+          "Fifty",
+          "Sixty",
+          "Seventy",
+          "Eighty",
+          "Ninety",
+        ][tens] + " ";
     }
     if (tens === 1) {
       yearText += yearWords[10 + ones] + " ";
@@ -181,7 +193,9 @@ const formatDate = (dateStr?: string) => {
   }
 };
 
-const getScheduleDetails = (schedule?: Array<{ title: string; time?: string; location?: string }>) => {
+const getScheduleDetails = (
+  schedule?: Array<{ title: string; time?: string; location?: string }>
+) => {
   const ceremony = schedule?.find((s) =>
     s.title?.toLowerCase().includes("ceremony")
   ) || { title: "Ceremony", time: "5:00 PM", location: "The Grand Ballroom" };
@@ -195,7 +209,8 @@ const getScheduleDetails = (schedule?: Array<{ title: string; time?: string; loc
 export default function GildedWedding({ theme, event }: Props) {
   const names = buildNames(event);
   const dateInfo = formatDate(event.date);
-  const location = event.location || event.venue?.name || "The Plaza Hotel • New York";
+  const location =
+    event.location || event.venue?.name || "The Plaza Hotel • New York";
   const heroImage =
     (event as any)?.customHeroImage ||
     event.gallery?.[0]?.url ||
@@ -268,7 +283,9 @@ export default function GildedWedding({ theme, event }: Props) {
             {dateInfo.dayName}, {dateInfo.day} of {dateInfo.month}
           </p>
           <p className="text-sm italic text-[#8C7B75]">{dateInfo.year}</p>
-          <p className="text-sm uppercase tracking-[0.2em] text-[#2C2420] mt-8">{location}</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-[#2C2420] mt-8">
+            {location}
+          </p>
         </header>
 
         {/* Info Section */}
@@ -289,25 +306,30 @@ export default function GildedWedding({ theme, event }: Props) {
                 <h3 className="uppercase tracking-[0.2em] text-[#D4AF37] text-xs mb-4 border-b border-[#D4AF37]/20 pb-2">
                   The Ceremony
                 </h3>
-                <p className="text-2xl mb-2">{scheduleDetails.ceremony.time || "5:00 PM"}</p>
+                <p className="text-2xl mb-2">
+                  {scheduleDetails.ceremony.time || "5:00 PM"}
+                </p>
                 <p className="text-[#8C7B75] italic">
                   {scheduleDetails.ceremony.location || "The Grand Ballroom"}
                 </p>
                 <p className="text-[#8C7B75] text-sm mt-4 leading-relaxed">
-                  Please arrive thirty minutes prior to the start of the ceremony. Black Tie attire
-                  is strictly required.
+                  Please arrive thirty minutes prior to the start of the
+                  ceremony. Black Tie attire is strictly required.
                 </p>
               </div>
               <div id="reception">
                 <h3 className="uppercase tracking-[0.2em] text-[#D4AF37] text-xs mb-4 border-b border-[#D4AF37]/20 pb-2">
                   The Reception
                 </h3>
-                <p className="text-2xl mb-2">{scheduleDetails.reception.time || "7:00 PM"}</p>
+                <p className="text-2xl mb-2">
+                  {scheduleDetails.reception.time || "7:00 PM"}
+                </p>
                 <p className="text-[#8C7B75] italic">
                   {scheduleDetails.reception.location || "The Terrace Room"}
                 </p>
                 <p className="text-[#8C7B75] text-sm mt-4 leading-relaxed">
-                  Cocktails, dinner, and dancing to follow immediately after the ceremony.
+                  Cocktails, dinner, and dancing to follow immediately after the
+                  ceremony.
                 </p>
               </div>
             </div>
@@ -326,8 +348,13 @@ export default function GildedWedding({ theme, event }: Props) {
               </h2>
               <div className="space-y-6 text-left">
                 {event.schedule.map((item, idx) => (
-                  <div key={idx} className="border-l-2 border-[#D4AF37]/30 pl-6 py-4">
-                    <h3 className="text-xl text-[#2C2420] mb-2 font-normal">{item.title}</h3>
+                  <div
+                    key={idx}
+                    className="border-l-2 border-[#D4AF37]/30 pl-6 py-4"
+                  >
+                    <h3 className="text-xl text-[#2C2420] mb-2 font-normal">
+                      {item.title}
+                    </h3>
                     <div className="flex flex-wrap gap-6 text-[#8C7B75] text-sm">
                       {item.time && (
                         <span className="flex items-center gap-2">
@@ -359,7 +386,9 @@ export default function GildedWedding({ theme, event }: Props) {
               >
                 Our Story
               </h2>
-              <p className="text-[#8C7B75] leading-relaxed text-lg italic">{event.story}</p>
+              <p className="text-[#8C7B75] leading-relaxed text-lg italic">
+                {event.story}
+              </p>
             </div>
           </section>
         )}
@@ -378,8 +407,12 @@ export default function GildedWedding({ theme, event }: Props) {
                 {event.party.map((member, idx) => (
                   <div key={idx} className="text-center">
                     <Users className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                    <h3 className="text-lg text-[#2C2420] mb-1 font-normal">{member.name}</h3>
-                    <p className="text-sm text-[#8C7B75] italic">{member.role}</p>
+                    <h3 className="text-lg text-[#2C2420] mb-1 font-normal">
+                      {member.name}
+                    </h3>
+                    <p className="text-sm text-[#8C7B75] italic">
+                      {member.role}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -401,8 +434,15 @@ export default function GildedWedding({ theme, event }: Props) {
                 {event.gallery.slice(0, 6).map((img, idx) => {
                   const imageUrl = img.url || img.src || img.preview || img;
                   return (
-                    <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-[#D4AF37]/20">
-                      <img src={imageUrl} className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" alt="" />
+                    <div
+                      key={idx}
+                      className="aspect-square rounded-lg overflow-hidden border border-[#D4AF37]/20"
+                    >
+                      <img
+                        src={imageUrl}
+                        className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                        alt=""
+                      />
                     </div>
                   );
                 })}
@@ -425,7 +465,9 @@ export default function GildedWedding({ theme, event }: Props) {
                 Accommodations
               </h2>
               {typeof event.travel === "string" && event.travel && (
-                <p className="text-[#8C7B75] leading-relaxed whitespace-pre-wrap">{event.travel}</p>
+                <p className="text-[#8C7B75] leading-relaxed whitespace-pre-wrap">
+                  {event.travel}
+                </p>
               )}
             </div>
           </section>
@@ -442,7 +484,9 @@ export default function GildedWedding({ theme, event }: Props) {
               >
                 Things To Do
               </h2>
-              <p className="text-[#8C7B75] leading-relaxed text-lg">{event.thingsToDo}</p>
+              <p className="text-[#8C7B75] leading-relaxed text-lg">
+                {event.thingsToDo}
+              </p>
             </div>
           </section>
         )}
