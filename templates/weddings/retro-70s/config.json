@@ -1,0 +1,22 @@
+{
+  "id": "retro-70s",
+  "name": "Retro 70s Wedding",
+  "category": "retro",
+  "family": "retro",
+  "layout": "retro-70s",
+  "thumbnail": "/templates/weddings/retro-70s/thumb.jpeg",
+  "theme": {
+    "colors": {
+      "primary": "#FEFAE0",
+      "secondary": "#BC4749",
+      "background": "#FEFAE0"
+    },
+    "fonts": {
+      "headline": "Montserrat",
+      "body": "Inter"
+    },
+    "decorations": {
+      "heroImage": "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg"
+    }
+  }
+}

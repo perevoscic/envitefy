@@ -1,0 +1,13 @@
+{
+  "id": "celestial-wedding",
+  "name": "Celestial Wedding",
+  "category": "destination",
+  "family": "modern",
+  "layout": "celestial-wedding",
+  "thumbnail": "/templates/weddings/celestial-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#0B1026", "secondary": "#D4AF37", "background": "transparent" },
+    "fonts": { "headline": "Playfair Display", "body": "Playfair Display" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/celestial-atelier-hero.jpeg" }
+  }
+}

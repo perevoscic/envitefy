@@ -42,26 +42,25 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
-import midnightElegance from "../../../../../templates/weddings/midnight-elegance/config.json";
-import wildRoseHalo from "../../../../../templates/weddings/wild-rose-halo/config.json";
-import goldenHourPromise from "../../../../../templates/weddings/golden-hour-promise/config.json";
-import ivoryLaceCrest from "../../../../../templates/weddings/ivory-lace-crest/config.json";
-import emeraldGardenVignette from "../../../../../templates/weddings/emerald-garden-vignette/config.json";
-import blushLinenRomance from "../../../../../templates/weddings/blush-linen-romance/config.json";
-import sapphireMoonlitArch from "../../../../../templates/weddings/sapphire-moonlit-arch/config.json";
-import rusticOakStorybook from "../../../../../templates/weddings/rustic-oak-storybook/config.json";
-import champagneVelvet from "../../../../../templates/weddings/champagne-velvet/config.json";
-import celestialWhisper from "../../../../../templates/weddings/celestial-whisper/config.json";
-import pearlTideHorizon from "../../../../../templates/weddings/pearl-tide-horizon/config.json";
-import crimsonOrchard from "../../../../../templates/weddings/crimson-orchard/config.json";
-import opalineCrest from "../../../../../templates/weddings/opaline-crest/config.json";
-import velvetMidnightLily from "../../../../../templates/weddings/velvet-midnight-lily/config.json";
-import lavenderMistCascade from "../../../../../templates/weddings/lavender-mist-cascade/config.json";
-import coralSandsKeepsake from "../../../../../templates/weddings/coral-sands-keepsake/config.json";
-import eternalMarble from "../../../../../templates/weddings/eternal-marble/config.json";
-import willowFernEmbrace from "../../../../../templates/weddings/willow-fern-embrace/config.json";
-import silverFrostGala from "../../../../../templates/weddings/silver-frost-gala/config.json";
-import autumnEmberWaltz from "../../../../../templates/weddings/autumn-ember-waltz/config.json";
+import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" assert { type: "json" };
+import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" assert { type: "json" };
+import rusticBoho from "../../../../../templates/weddings/rustic-boho/config.json" assert { type: "json" };
+import cinematicWedding from "../../../../../templates/weddings/cinematic-wedding/config.json" assert { type: "json" };
+import celestialWedding from "../../../../../templates/weddings/celestial-wedding/config.json" assert { type: "json" };
+import gildedWedding from "../../../../../templates/weddings/gilded-wedding/config.json" assert { type: "json" };
+import museumWedding from "../../../../../templates/weddings/museum-wedding/config.json" assert { type: "json" };
+import etherealWedding from "../../../../../templates/weddings/ethereal-wedding/config.json" assert { type: "json" };
+import noirLuxury from "../../../../../templates/weddings/noir-luxury/config.json" assert { type: "json" };
+import retro70s from "../../../../../templates/weddings/retro-70s/config.json" assert { type: "json" };
+import newspaperWedding from "../../../../../templates/weddings/newspaper-wedding/config.json" assert { type: "json" };
+import bauhausWedding from "../../../../../templates/weddings/bauhaus-wedding/config.json" assert { type: "json" };
+import europeCoastalWedding from "../../../../../templates/weddings/europe-coastal-wedding/config.json" assert { type: "json" };
+import floridaCoastalWedding from "../../../../../templates/weddings/florida-coastal-wedding/config.json" assert { type: "json" };
+import californiaCoastalWedding from "../../../../../templates/weddings/california-coastal-wedding/config.json" assert { type: "json" };
+import winterWedding from "../../../../../templates/weddings/winter-wedding/config.json" assert { type: "json" };
+import industrialWedding from "../../../../../templates/weddings/industrial-wedding/config.json" assert { type: "json" };
+import libraryWedding from "../../../../../templates/weddings/library-wedding/config.json" assert { type: "json" };
+import gardenWedding from "../../../../../templates/weddings/garden-wedding/config.json" assert { type: "json" };
 import DesignThemes from "./_components/DesignThemes";
 
 const NAV_ITEMS = [
@@ -129,26 +128,25 @@ const NAV_VISIBILITY_CHECKS: Record<
 // --- Constants & Data ---
 
 const TEMPLATE_CONFIGS: Record<string, any> = {
-  "midnight-elegance": midnightElegance,
-  "wild-rose-halo": wildRoseHalo,
-  "golden-hour-promise": goldenHourPromise,
-  "ivory-lace-crest": ivoryLaceCrest,
-  "emerald-garden-vignette": emeraldGardenVignette,
-  "blush-linen-romance": blushLinenRomance,
-  "sapphire-moonlit-arch": sapphireMoonlitArch,
-  "rustic-oak-storybook": rusticOakStorybook,
-  "champagne-velvet": champagneVelvet,
-  "celestial-whisper": celestialWhisper,
-  "pearl-tide-horizon": pearlTideHorizon,
-  "crimson-orchard": crimsonOrchard,
-  "opaline-crest": opalineCrest,
-  "velvet-midnight-lily": velvetMidnightLily,
-  "lavender-mist-cascade": lavenderMistCascade,
-  "coral-sands-keepsake": coralSandsKeepsake,
-  "eternal-marble": eternalMarble,
-  "willow-fern-embrace": willowFernEmbrace,
-  "silver-frost-gala": silverFrostGala,
-  "autumn-ember-waltz": autumnEmberWaltz,
+  "ethereal-classic": etherealClassic,
+  "modern-editorial": modernEditorial,
+  "rustic-boho": rusticBoho,
+  "cinematic-wedding": cinematicWedding,
+  "celestial-wedding": celestialWedding,
+  "gilded-wedding": gildedWedding,
+  "museum-wedding": museumWedding,
+  "ethereal-wedding": etherealWedding,
+  "noir-luxury": noirLuxury,
+  "retro-70s": retro70s,
+  "newspaper-wedding": newspaperWedding,
+  "bauhaus-wedding": bauhausWedding,
+  "europe-coastal-wedding": europeCoastalWedding,
+  "florida-coastal-wedding": floridaCoastalWedding,
+  "california-coastal-wedding": californiaCoastalWedding,
+  "winter-wedding": winterWedding,
+  "industrial-wedding": industrialWedding,
+  "library-wedding": libraryWedding,
+  "garden-wedding": gardenWedding,
 };
 
 const FONTS = {
@@ -820,6 +818,105 @@ const DESIGN_THEMES = [
     previewColor: "bg-[#0d0f2c]",
     swatchColor: "#0d0f2c",
   },
+  {
+    id: "newspaper-wedding",
+    name: "Newspaper Wedding",
+    category: "Vintage",
+    graphicType: "editorial",
+    bg: "bg-[#f4f4f4]",
+    text: "text-black",
+    accent: "text-[#000000]",
+    previewColor: "bg-[#f4f4f4]",
+    swatchColor: "#f4f4f4",
+  },
+  {
+    id: "bauhaus-wedding",
+    name: "Bauhaus Wedding",
+    category: "Modern",
+    graphicType: "geometric",
+    bg: "bg-[#F0F0F0]",
+    text: "text-black",
+    accent: "text-[#000000]",
+    previewColor: "bg-[#F0F0F0]",
+    swatchColor: "#F0F0F0",
+  },
+  {
+    id: "europe-coastal-wedding",
+    name: "Europe Coastal Wedding",
+    category: "Destination",
+    graphicType: "waves",
+    bg: "bg-white",
+    text: "text-[#004B8D]",
+    accent: "text-[#F4D03F]",
+    previewColor: "bg-white",
+    swatchColor: "#004B8D",
+  },
+  {
+    id: "florida-coastal-wedding",
+    name: "Florida Coastal Wedding",
+    category: "Destination",
+    graphicType: "waves",
+    bg: "bg-white",
+    text: "text-emerald-900",
+    accent: "text-pink-500",
+    previewColor: "bg-white",
+    swatchColor: "#065f46",
+  },
+  {
+    id: "california-coastal-wedding",
+    name: "California Coastal Wedding",
+    category: "Destination",
+    graphicType: "waves",
+    bg: "bg-[#F5F2EB]",
+    text: "text-[#4A4A4A]",
+    accent: "text-[#D4A373]",
+    previewColor: "bg-[#F5F2EB]",
+    swatchColor: "#D4A373",
+  },
+  {
+    id: "winter-wedding",
+    name: "Winter Wedding",
+    category: "Seasonal",
+    graphicType: "snowflakes",
+    bg: "bg-[#1A2F25]",
+    text: "text-[#E8ECEB]",
+    accent: "text-[#B7410E]",
+    previewColor: "bg-[#1A2F25]",
+    swatchColor: "#B7410E",
+  },
+  {
+    id: "industrial-wedding",
+    name: "Industrial Wedding",
+    category: "Modern",
+    graphicType: "geometric",
+    bg: "bg-[#1a1a1a]",
+    text: "text-[#e0e0e0]",
+    accent: "text-[#cd7f32]",
+    previewColor: "bg-[#1a1a1a]",
+    swatchColor: "#cd7f32",
+  },
+  {
+    id: "library-wedding",
+    name: "Library Wedding",
+    category: "Vintage",
+    graphicType: "editorial",
+    bg: "bg-[#2B211E]",
+    text: "text-[#D4C5B0]",
+    accent: "text-[#5D2E2E]",
+    previewColor: "bg-[#2B211E]",
+    swatchColor: "#5D2E2E",
+  },
+  {
+    id: "garden-wedding",
+    name: "Garden Wedding",
+    category: "Romantic",
+    graphicType: "organic-shapes",
+    bg: "bg-white",
+    text: "text-slate-600",
+    accent: "text-pink-500",
+    previewColor: "bg-white",
+    swatchColor: "#ec4899",
+  },
 ];
 
 const INITIAL_DATA = {
@@ -1362,8 +1459,8 @@ const App = () => {
   const selectedTemplate = useMemo(() => {
     const fromMap =
       TEMPLATE_CONFIGS[data.theme.themeId] ||
-      TEMPLATE_CONFIGS["midnight-elegance"] ||
-      midnightElegance;
+      TEMPLATE_CONFIGS["ethereal-classic"] ||
+      etherealClassic;
     const chosenFont = FONTS[data.theme.font];
     const appliedFonts = {
       headline:
@@ -1415,14 +1512,25 @@ const App = () => {
       photos: Array.isArray(data.gallery)
         ? data.gallery.map((g) => g.url || g.src || g.preview || "")
         : [],
+      gallery: Array.isArray(data.gallery)
+        ? data.gallery.map((g) => ({ url: g.url || g.src || g.preview || "" }))
+        : [],
       rsvpEnabled: Boolean((data as any).rsvp?.isEnabled),
       rsvpLink: (data as any).rsvp?.link || "",
+      rsvp: {
+        url: (data as any).rsvp?.link || "#rsvp",
+        deadline: (data as any).rsvp?.deadline || undefined,
+      },
       registry: Array.isArray((data as any).registry)
         ? (data as any).registry.map((r: any) => ({
             label: r.label || "Registry",
             url: r.url || "#",
           }))
         : [],
+      customHeroImage: data.images?.hero || undefined,
+      venue: {
+        name: location,
+      },
     };
   }, [data]);
 

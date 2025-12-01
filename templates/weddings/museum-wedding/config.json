@@ -1,0 +1,13 @@
+{
+  "id": "museum-wedding",
+  "name": "Museum Wedding",
+  "category": "modern",
+  "family": "modern",
+  "layout": "museum-wedding",
+  "thumbnail": "/templates/weddings/museum-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#FFFFFF", "secondary": "#000000", "background": "transparent" },
+    "fonts": { "headline": "Geist Sans", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/palais-moderne-hero.jpeg" }
+  }
+}

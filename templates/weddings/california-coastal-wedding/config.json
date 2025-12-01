@@ -1,0 +1,14 @@
+{
+  "id": "california-coastal-wedding",
+  "name": "California Coastal Wedding",
+  "category": "destination",
+  "family": "coastal",
+  "layout": "california-coastal-wedding",
+  "thumbnail": "/templates/weddings/california-coastal-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#F5F2EB", "secondary": "#D4A373", "background": "#F5F2EB" },
+    "fonts": { "headline": "Inter", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg" }
+  }
+}
+

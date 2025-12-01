@@ -1,0 +1,14 @@
+{
+  "id": "europe-coastal-wedding",
+  "name": "Europe Coastal Wedding",
+  "category": "destination",
+  "family": "coastal",
+  "layout": "europe-coastal-wedding",
+  "thumbnail": "/templates/weddings/europe-coastal-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#004B8D", "secondary": "#F4D03F", "background": "white" },
+    "fonts": { "headline": "Playfair Display", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg" }
+  }
+}
+

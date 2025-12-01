@@ -1,0 +1,14 @@
+{
+  "id": "newspaper-wedding",
+  "name": "Newspaper Wedding",
+  "category": "vintage",
+  "family": "editorial",
+  "layout": "newspaper-wedding",
+  "thumbnail": "/templates/weddings/newspaper-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#f4f4f4", "secondary": "#000000", "background": "#ffffff" },
+    "fonts": { "headline": "Playfair Display", "body": "Georgia" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.jpeg" }
+  }
+}
+

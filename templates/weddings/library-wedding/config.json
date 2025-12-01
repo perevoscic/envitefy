@@ -1,0 +1,14 @@
+{
+  "id": "library-wedding",
+  "name": "Library Wedding",
+  "category": "vintage",
+  "family": "editorial",
+  "layout": "library-wedding",
+  "thumbnail": "/templates/weddings/library-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#2B211E", "secondary": "#5D2E2E", "background": "#2B211E" },
+    "fonts": { "headline": "Playfair Display", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/library-wedding-hero.jpeg" }
+  }
+}
+

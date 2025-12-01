@@ -1,0 +1,13 @@
+{
+  "id": "ethereal-wedding",
+  "name": "Ethereal Wedding",
+  "category": "classic",
+  "family": "classic",
+  "layout": "ethereal-wedding",
+  "thumbnail": "/templates/weddings/ethereal-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#FFFFFF", "secondary": "#F3E8E2", "background": "transparent" },
+    "fonts": { "headline": "Playfair Display", "body": "Playfair Display" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/champagne-skyline-hero.jpeg" }
+  }
+}

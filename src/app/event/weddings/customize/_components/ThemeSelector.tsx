@@ -1,6 +1,6 @@
 "use client";
 
-import themes from "../../../../../../templates/weddings/index.json";
+import themes from "../../../../../../templates/weddings/index.json" assert { type: "json" };
 import ThemeCard from "./ThemeCard";
 
 export default function ThemeSelector({
@@ -11,7 +11,7 @@ export default function ThemeSelector({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="p-3 grid grid-cols-2 gap-3">
+    <div className="p-3 space-y-4">
       {themes.map((theme) => (
         <ThemeCard
           key={theme.id}

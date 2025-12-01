@@ -1,0 +1,13 @@
+{
+  "id": "gilded-wedding",
+  "name": "Gilded Wedding",
+  "category": "luxury",
+  "family": "classic",
+  "layout": "gilded-wedding",
+  "thumbnail": "/templates/weddings/gilded-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#FDFBF7", "secondary": "#D4AF37", "background": "transparent" },
+    "fonts": { "headline": "Playfair Display", "body": "Playfair Display" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/gilded-twilight-hero.jpeg" }
+  }
+}

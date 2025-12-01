@@ -9,6 +9,25 @@ import MarbleSlabHero from "@/app/event/weddings/_renderers/marble-slab-hero";
 import BotanicalArchBorder from "@/app/event/weddings/_renderers/botanical-arch-border";
 import SilverGradientHero from "@/app/event/weddings/_renderers/silver-gradient-hero";
 import WarmLeafHeader from "@/app/event/weddings/_renderers/warm-leaf-header";
+import EtherealClassic from "@/app/event/weddings/_renderers/ethereal-classic";
+import ModernEditorial from "@/app/event/weddings/_renderers/modern-editorial";
+import RusticBoho from "@/app/event/weddings/_renderers/rustic-boho";
+import NoirLuxury from "@/app/event/weddings/_renderers/noir-luxury";
+import CinematicWedding from "@/app/event/weddings/_renderers/cinematic-wedding";
+import CelestialWedding from "@/app/event/weddings/_renderers/celestial-wedding";
+import GildedWedding from "@/app/event/weddings/_renderers/gilded-wedding";
+import MuseumWedding from "@/app/event/weddings/_renderers/museum-wedding";
+import EtherealWedding from "@/app/event/weddings/_renderers/ethereal-wedding";
+import Retro70s from "@/app/event/weddings/_renderers/retro-70s";
+import NewspaperWedding from "@/app/event/weddings/_renderers/newspaper-wedding";
+import BauhausWedding from "@/app/event/weddings/_renderers/bauhaus-wedding";
+import EuropeCoastalWedding from "@/app/event/weddings/_renderers/europe-coastal-wedding";
+import FloridaCoastalWedding from "@/app/event/weddings/_renderers/florida-coastal-wedding";
+import CaliforniaCoastalWedding from "@/app/event/weddings/_renderers/california-coastal-wedding";
+import WinterWedding from "@/app/event/weddings/_renderers/winter-wedding";
+import IndustrialWedding from "@/app/event/weddings/_renderers/industrial-wedding";
+import LibraryWedding from "@/app/event/weddings/_renderers/library-wedding";
+import GardenWedding from "@/app/event/weddings/_renderers/garden-wedding";
 import {
   ContentSections,
   Footer,
@@ -87,6 +106,44 @@ function renderLayout(layout: string, theme: ThemeConfig, event: EventData) {
       return <SilverGradientHero theme={theme} event={event} />;
     case "warm-leaf-header":
       return <WarmLeafHeader theme={theme} event={event} />;
+    case "ethereal-classic":
+      return <EtherealClassic theme={theme} event={event} />;
+    case "modern-editorial":
+      return <ModernEditorial theme={theme} event={event} />;
+    case "rustic-boho":
+      return <RusticBoho theme={theme} event={event} />;
+    case "noir-luxury":
+      return <NoirLuxury theme={theme} event={event} />;
+    case "cinematic-wedding":
+      return <CinematicWedding theme={theme} event={event} />;
+    case "celestial-wedding":
+      return <CelestialWedding theme={theme} event={event} />;
+    case "gilded-wedding":
+      return <GildedWedding theme={theme} event={event} />;
+    case "museum-wedding":
+      return <MuseumWedding theme={theme} event={event} />;
+    case "ethereal-wedding":
+      return <EtherealWedding theme={theme} event={event} />;
+    case "retro-70s":
+      return <Retro70s theme={theme} event={event} />;
+    case "newspaper-wedding":
+      return <NewspaperWedding theme={theme} event={event} />;
+    case "bauhaus-wedding":
+      return <BauhausWedding theme={theme} event={event} />;
+    case "europe-coastal-wedding":
+      return <EuropeCoastalWedding theme={theme} event={event} />;
+    case "florida-coastal-wedding":
+      return <FloridaCoastalWedding theme={theme} event={event} />;
+    case "california-coastal-wedding":
+      return <CaliforniaCoastalWedding theme={theme} event={event} />;
+    case "winter-wedding":
+      return <WinterWedding theme={theme} event={event} />;
+    case "industrial-wedding":
+      return <IndustrialWedding theme={theme} event={event} />;
+    case "library-wedding":
+      return <LibraryWedding theme={theme} event={event} />;
+    case "garden-wedding":
+      return <GardenWedding theme={theme} event={event} />;
     default:
       return <SplitHeroLayout theme={theme} event={event} />;
   }

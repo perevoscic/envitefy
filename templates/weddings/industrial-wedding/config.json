@@ -1,0 +1,14 @@
+{
+  "id": "industrial-wedding",
+  "name": "Industrial Wedding",
+  "category": "modern",
+  "family": "industrial",
+  "layout": "industrial-wedding",
+  "thumbnail": "/templates/weddings/industrial-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#1a1a1a", "secondary": "#cd7f32", "background": "#1a1a1a" },
+    "fonts": { "headline": "Inter", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/industrial-wedding-hero.jpeg" }
+  }
+}
+

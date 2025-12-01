@@ -1,0 +1,14 @@
+{
+  "id": "garden-wedding",
+  "name": "Garden Wedding",
+  "category": "romantic",
+  "family": "garden",
+  "layout": "garden-wedding",
+  "thumbnail": "/templates/weddings/garden-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#ffffff", "secondary": "#ec4899", "background": "white" },
+    "fonts": { "headline": "Playfair Display", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/garden-wedding-hero.jpeg" }
+  }
+}
+

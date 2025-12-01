@@ -1,0 +1,14 @@
+{
+  "id": "florida-coastal-wedding",
+  "name": "Florida Coastal Wedding",
+  "category": "destination",
+  "family": "coastal",
+  "layout": "florida-coastal-wedding",
+  "thumbnail": "/templates/weddings/florida-coastal-wedding/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#065f46", "secondary": "#ec4899", "background": "white" },
+    "fonts": { "headline": "Georgia", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg" }
+  }
+}
+

@@ -18,17 +18,38 @@ export type ThemeConfig = {
 
 export type EventData = {
   headlineTitle?: string;
+  couple?: {
+    partner1?: string;
+    partner2?: string;
+    story?: string;
+  };
   date?: string;
   location?: string;
   story?: string;
-  schedule?: { title: string; time: string; location: string }[];
+  schedule?: Array<{
+    title: string;
+    time?: string;
+    date?: string;
+    location: string;
+  }>;
   party?: { name: string; role: string }[];
   travel?: string;
   thingsToDo?: string;
   photos?: string[];
   rsvpEnabled?: boolean;
   rsvpLink?: string;
-  registry?: { label: string; url: string }[];
+  registry?: { label?: string; url: string }[];
+  venue?: {
+    name?: string;
+    address?: string;
+  };
+  when?: string;
+  locationUrl?: string;
+  registryNote?: string;
+  rsvp?: {
+    url?: string;
+  };
+  gallery?: Array<{ url?: string }>;
 };
 
 const getLuminance = (hex: string): number => {
@@ -77,7 +98,10 @@ export function ContentSections({
           >
             Our Story
           </h2>
-          <p className="leading-relaxed" style={{ color: baseText, opacity: 0.85 }}>
+          <p
+            className="leading-relaxed"
+            style={{ color: baseText, opacity: 0.85 }}
+          >
             {event.story}
           </p>
         </section>
@@ -135,7 +159,10 @@ export function ContentSections({
           >
             Travel
           </h2>
-          <p className="leading-relaxed" style={{ color: baseText, opacity: 0.85 }}>
+          <p
+            className="leading-relaxed"
+            style={{ color: baseText, opacity: 0.85 }}
+          >
             {event.travel}
           </p>
         </section>
@@ -149,7 +176,10 @@ export function ContentSections({
           >
             Things To Do
           </h2>
-          <p className="leading-relaxed" style={{ color: baseText, opacity: 0.85 }}>
+          <p
+            className="leading-relaxed"
+            style={{ color: baseText, opacity: 0.85 }}
+          >
             {event.thingsToDo}
           </p>
         </section>
@@ -187,7 +217,11 @@ export function ContentSections({
           <ul className="space-y-2">
             {event.registry.map((r, idx) => (
               <li key={idx}>
-                <a href={r.url} className="text-sm underline" style={{ color: accent }}>
+                <a
+                  href={r.url}
+                  className="text-sm underline"
+                  style={{ color: accent }}
+                >
                   {r.label}
                 </a>
               </li>
@@ -214,7 +248,13 @@ export function ContentSections({
   );
 }
 
-export function Footer({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+export function Footer({
+  theme,
+  event,
+}: {
+  theme: ThemeConfig;
+  event: EventData;
+}) {
   return (
     <footer
       className="py-6 text-center text-xs opacity-70 mt-auto"
@@ -224,4 +264,3 @@ export function Footer({ theme, event }: { theme: ThemeConfig; event: EventData 
     </footer>
   );
 }
-

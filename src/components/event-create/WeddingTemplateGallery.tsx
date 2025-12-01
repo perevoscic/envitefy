@@ -107,6 +107,19 @@ const EXTRA_COLOR_STORIES: StoryConfig[] = [
   },
 ];
 
+const ALLOWED_TEMPLATE_IDS = new Set<string>([
+  "ethereal-classic",
+  "modern-editorial",
+  "rustic-boho",
+  "cinematic-wedding",
+  "celestial-wedding",
+  "gilded-wedding",
+  "museum-wedding",
+  "ethereal-wedding",
+  "noir-luxury",
+  "retro-70s",
+]);
+
 const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "ivory-ink": "font-alex-brush",
   "garden-atelier": "font-allura",
@@ -131,6 +144,16 @@ const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "orchid-reverie": "font-satisfy",
   "golden-jubilee": "font-mr-de-haviland",
   "carriage-house": "font-parisienne",
+  "ethereal-classic": "serif-regal-center",
+  "modern-editorial": "font-geist-sans",
+  "rustic-boho": "font-kaushan-script",
+  "cinematic-wedding": "geist-bold-center",
+  "celestial-wedding": "serif-regal-center",
+  "gilded-wedding": "serif-regal-center",
+  "museum-wedding": "geist-bold-center",
+  "ethereal-wedding": "serif-regal-center",
+  "noir-luxury": "serif-regal-center",
+  "retro-70s": "poppins-center",
 };
 
 const baseWeddingTemplateCatalog: WeddingTemplateDefinition[] = [
@@ -1490,21 +1513,248 @@ const baseWeddingTemplateCatalog: WeddingTemplateDefinition[] = [
       location: "Savannah, GA",
     },
   },
+  {
+    id: "ethereal-classic",
+    name: "Ethereal Classic Wedding",
+    description: "Light, classic crest styling with soft neutrals and serif headlines.",
+    heroImageName: "champagne-skyline-hero.jpeg",
+    heroMood: "Chateau Crest",
+    menu: [...baseMenu],
+    variations: buildStories(
+      "ethereal-classic",
+      TEMPLATE_FONT_ASSIGNMENTS["ethereal-classic"],
+      [
+        { key: "soft-ivory", paletteId: "opal-sand", label: "Soft Ivory", tagline: "Ivory & charcoal" },
+        { key: "heirloom-gold", paletteId: "golden-ivy", label: "Heirloom Gold", tagline: "Gilded accent" },
+        { key: "midnight-ink", paletteId: "midnight-noir", label: "Midnight Ink", tagline: "Evening formality" },
+      ]
+    ),
+    preview: {
+      coupleName: "Sophia & James",
+      dateLabel: "September 14, 2025",
+      location: "Florence, IT",
+    },
+  },
+  {
+    id: "modern-editorial",
+    name: "Modern Editorial Wedding",
+    description: "High-contrast typography, oversized headlines, and gallery pacing.",
+    heroImageName: "ivory-ink-hero.jpeg",
+    heroMood: "Editorial Noir",
+    menu: [...baseMenu],
+    variations: buildStories(
+      "modern-editorial",
+      TEMPLATE_FONT_ASSIGNMENTS["modern-editorial"],
+      [
+        { key: "lime-highlight", paletteId: "golden-ivy", label: "Lime Highlight", tagline: "Neon accent" },
+        { key: "ink-marble", paletteId: "opal-sand", label: "Ink Marble", tagline: "Monochrome calm" },
+        { key: "midnight-column", paletteId: "midnight-noir", label: "Midnight Column", tagline: "Black tie" },
+      ]
+    ),
+    preview: {
+      coupleName: "Avery & Cam",
+      dateLabel: "June 7, 2026",
+      location: "New York, NY",
+    },
+  },
+  {
+    id: "rustic-boho",
+    name: "Rustic Boho Wedding",
+    description: "Warm neutrals, parchment textures, and boho script flourishes.",
+    heroImageName: "sunset-vineyard-hero.jpeg",
+    heroMood: "Boho Vineyard",
+    menu: [...baseMenu, "Things To Do"],
+    variations: buildStories(
+      "rustic-boho",
+      TEMPLATE_FONT_ASSIGNMENTS["rustic-boho"],
+      [
+        { key: "sandstone", paletteId: "opal-sand", label: "Sandstone", tagline: "Earthy calm" },
+        { key: "terracotta", paletteId: "sunset-coral", label: "Terracotta", tagline: "Sunset clay" },
+        { key: "forest", paletteId: "garden-emerald", label: "Forest", tagline: "Evergreen" },
+      ]
+    ),
+    preview: {
+      coupleName: "Katherine & William",
+      dateLabel: "June 5, 2025",
+      location: "Sedona, AZ",
+    },
+  },
+  {
+    id: "cinematic-wedding",
+    name: "Cinematic Wedding",
+    description: "After-dark marquee styling with bold type and filmic gradients.",
+    heroImageName: "velvet-noir-hero.jpeg",
+    heroMood: "Premiere Night",
+    menu: [...baseMenu, "Afterparty"],
+    variations: buildStories(
+      "cinematic-wedding",
+      TEMPLATE_FONT_ASSIGNMENTS["cinematic-wedding"],
+      [
+        { key: "noir-premiere", paletteId: "midnight-noir", label: "Noir Premiere", tagline: "Projector glow" },
+        { key: "spotlight-gold", paletteId: "golden-ivy", label: "Spotlight Gold", tagline: "Gilded curtain" },
+        { key: "opal-screen", paletteId: "opal-sand", label: "Opal Screen", tagline: "Marble backlot" },
+      ]
+    ),
+    preview: {
+      coupleName: "James & Sofia",
+      dateLabel: "December 14, 2025",
+      location: "New York, NY",
+      timeLabel: "5:00 PM",
+    },
+  },
+  {
+    id: "celestial-wedding",
+    name: "Celestial Wedding",
+    description: "Star-strewn styling with aurora glows and planetarium ambience.",
+    heroImageName: "celestial-atelier-hero.jpeg",
+    heroMood: "Night Sky",
+    menu: [...baseMenu, "Afterparty"],
+    variations: buildStories(
+      "celestial-wedding",
+      TEMPLATE_FONT_ASSIGNMENTS["celestial-wedding"],
+      [
+        { key: "aurora-gold", paletteId: "golden-ivy", label: "Aurora Gold", tagline: "Gilded starlight" },
+        { key: "midnight-constellation", paletteId: "midnight-noir", label: "Midnight Constellation", tagline: "Indigo cosmos" },
+        { key: "lunar-mist", paletteId: "moonlit-lavender", label: "Lunar Mist", tagline: "Soft moon haze" },
+      ]
+    ),
+    preview: {
+      coupleName: "Luna & Sol",
+      dateLabel: "October 14, 2025",
+      location: "New York, NY",
+      timeLabel: "6:00 PM",
+    },
+  },
+  {
+    id: "gilded-wedding",
+    name: "Gilded Wedding",
+    description: "Gold-foiled borders, ballroom formality, and luxe neutral palette.",
+    heroImageName: "gilded-twilight-hero.jpeg",
+    heroMood: "Gilded Ballroom",
+    menu: [...baseMenu, "Accommodations"],
+    variations: buildStories(
+      "gilded-wedding",
+      TEMPLATE_FONT_ASSIGNMENTS["gilded-wedding"],
+      [
+        { key: "champagne-crest", paletteId: "blush-champagne", label: "Champagne Crest", tagline: "Rose-gold highlight" },
+        { key: "noir-gilt", paletteId: "midnight-noir", label: "Noir Gilt", tagline: "Black-tie gold" },
+        { key: "opal-foil", paletteId: "opal-sand", label: "Opal Foil", tagline: "Ivory metallic edge" },
+      ]
+    ),
+    preview: {
+      coupleName: "Katherine & William",
+      dateLabel: "June 5, 2025",
+      location: "New York, NY",
+      timeLabel: "5:00 PM",
+    },
+  },
+  {
+    id: "museum-wedding",
+    name: "Museum Wedding",
+    description: "Gallery-inspired typography, black/white contrast, and exhibition layout.",
+    heroImageName: "palais-moderne-hero.jpeg",
+    heroMood: "Modern Museum",
+    menu: [...baseMenu, "Things To Do"],
+    variations: buildStories(
+      "museum-wedding",
+      TEMPLATE_FONT_ASSIGNMENTS["museum-wedding"],
+      [
+        { key: "gallery-noir", paletteId: "midnight-noir", label: "Gallery Noir", tagline: "High contrast" },
+        { key: "marble-atrium", paletteId: "opal-sand", label: "Marble Atrium", tagline: "Ivory stone" },
+        { key: "aurora-ink", paletteId: "moonlit-lavender", label: "Aurora Ink", tagline: "Muted dusk" },
+      ]
+    ),
+    preview: {
+      coupleName: "Maya & David",
+      dateLabel: "September 21, 2025",
+      location: "Los Angeles, CA",
+      timeLabel: "4:00 PM",
+    },
+  },
+  {
+    id: "ethereal-wedding",
+    name: "Ethereal Wedding",
+    description: "Light-filled romance with airy serifs, soft blush tints, and floating dividers.",
+    heroImageName: "champagne-skyline-hero.jpeg",
+    heroMood: "Cloudlight",
+    menu: [...baseMenu],
+    variations: buildStories(
+      "ethereal-wedding",
+      TEMPLATE_FONT_ASSIGNMENTS["ethereal-wedding"],
+      [
+        { key: "blush-sky", paletteId: "blush-champagne", label: "Blush Sky", tagline: "Rosé veil" },
+        { key: "opal-cloud", paletteId: "opal-sand", label: "Opal Cloud", tagline: "Ivory hush" },
+        { key: "lavender-haze", paletteId: "moonlit-lavender", label: "Lavender Haze", tagline: "Dusk whisper" },
+      ]
+    ),
+    preview: {
+      coupleName: "Sarah & James",
+      dateLabel: "September 14, 2025",
+      location: "Florence, Italy",
+      timeLabel: "4:00 PM",
+    },
+  },
+  {
+    id: "noir-luxury",
+    name: "Noir Luxury Wedding",
+    description: "Black-tie glamour with gilt accents, double borders, and velvet textures.",
+    heroImageName: "velvet-noir-hero.jpeg",
+    heroMood: "Noir Ballroom",
+    menu: [...baseMenu, "Afterparty"],
+    variations: buildStories(
+      "noir-luxury",
+      TEMPLATE_FONT_ASSIGNMENTS["noir-luxury"],
+      [
+        { key: "gilt-noir", paletteId: "midnight-noir", label: "Gilt Noir", tagline: "Obsidian & gold" },
+        { key: "champagne-velvet", paletteId: "opal-sand", label: "Champagne Velvet", tagline: "Ivory shimmer" },
+        { key: "aurum-smoke", paletteId: "golden-ivy", label: "Aurum Smoke", tagline: "Gilded haze" },
+      ]
+    ),
+    preview: {
+      coupleName: "Alexander & Elizabeth",
+      dateLabel: "December 14, 2025",
+      location: "New York City",
+      timeLabel: "6:00 PM",
+    },
+  },
+  {
+    id: "retro-70s",
+    name: "Retro 70s Wedding",
+    description: "Playful disco-cowgirl vibes with punchy palettes, rounded frames, and marquee copy.",
+    heroImageName: "sunset-vineyard-hero.jpeg",
+    heroMood: "Palm Springs Groove",
+    menu: [...baseMenu, "Travel"],
+    variations: buildStories(
+      "retro-70s",
+      TEMPLATE_FONT_ASSIGNMENTS["retro-70s"],
+      [
+        { key: "groovy-sunset", paletteId: "sunset-coral", label: "Groovy Sunset", tagline: "Tangerine glow" },
+        { key: "sage-disco", paletteId: "garden-emerald", label: "Sage Disco", tagline: "Palm frond cool" },
+        { key: "golden-hour", paletteId: "golden-ivy", label: "Golden Hour", tagline: "Honeyed shimmer" },
+      ]
+    ),
+    preview: {
+      coupleName: "Jessica & Mike",
+      dateLabel: "October 12, 2025",
+      location: "Palm Springs, CA",
+    },
+  },
 ];
 
-export const weddingTemplateCatalog: WeddingTemplateDefinition[] = baseWeddingTemplateCatalog.map(
-  (template) => ({
-    ...template,
-    variations: [
-      ...template.variations,
-      ...buildStories(
-        template.id,
-        TEMPLATE_FONT_ASSIGNMENTS[template.id],
-        EXTRA_COLOR_STORIES
-      ),
-    ],
-  })
-);
+export const weddingTemplateCatalog: WeddingTemplateDefinition[] =
+  baseWeddingTemplateCatalog
+    .filter((template) => ALLOWED_TEMPLATE_IDS.has(template.id))
+    .map((template) => ({
+      ...template,
+      variations: [
+        ...template.variations,
+        ...buildStories(
+          template.id,
+          TEMPLATE_FONT_ASSIGNMENTS[template.id],
+          EXTRA_COLOR_STORIES
+        ),
+      ],
+    }));
 
 type Props = {
   appliedTemplateId: string | null;

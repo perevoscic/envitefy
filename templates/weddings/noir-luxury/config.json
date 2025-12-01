@@ -1,0 +1,13 @@
+{
+  "id": "noir-luxury",
+  "name": "Noir Luxury Wedding",
+  "category": "luxury",
+  "family": "luxury",
+  "layout": "noir-luxury",
+  "thumbnail": "/templates/weddings/noir-luxury/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#0A0A0A", "secondary": "#D4AF37", "background": "transparent" },
+    "fonts": { "headline": "Playfair Display", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.jpeg" }
+  }
+}

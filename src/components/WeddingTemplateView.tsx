@@ -20,7 +20,7 @@ import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
 import { Plane, Navigation, Bus } from "lucide-react";
-import weddingTemplates from "../../templates/weddings/index.json";
+import weddingTemplates from "../../templates/weddings/index.json" assert { type: "json" };
 
 // Import constants from the customize page
 // We'll need to extract these to a shared file later, but for now we'll duplicate them

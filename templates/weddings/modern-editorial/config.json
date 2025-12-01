@@ -1,0 +1,13 @@
+{
+  "id": "modern-editorial",
+  "name": "Modern Editorial",
+  "category": "modern",
+  "family": "modern",
+  "layout": "modern-editorial",
+  "thumbnail": "/templates/weddings/modern-editorial/thumb.jpeg",
+  "theme": {
+    "colors": { "primary": "#000000", "secondary": "#A3E635", "background": "transparent" },
+    "fonts": { "headline": "Geist Sans", "body": "Inter" },
+    "decorations": { "heroImage": "/templates/wedding-placeholders/ivory-ink-hero.jpeg" }
+  }
+}
