@@ -8,7 +8,7 @@
   "theme": {
     "colors": { "primary": "#1a1a1a", "secondary": "#cd7f32", "background": "#1a1a1a" },
     "fonts": { "headline": "Inter", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/industrial-wedding-hero.jpeg" }
+    "decorations": { "heroImage": "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2000&auto=format&fit=crop" }
   }
 }
 

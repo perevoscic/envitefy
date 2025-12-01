@@ -110,7 +110,12 @@ const getLocationParts = (location?: string, venue?: { name?: string }) => {
 };
 
 const getScheduleDetails = (
-  schedule?: Array<{ title: string; time?: string; location?: string }>
+  schedule?: Array<{
+    title: string;
+    time?: string;
+    location?: string;
+    description?: string;
+  }>
 ) => {
   const ceremony = schedule?.find((s) =>
     s.title?.toLowerCase().includes("ceremony")
@@ -134,6 +139,14 @@ const getScheduleDetails = (
   };
 
   return { ceremony, reception };
+};
+
+const getImageUrl = (
+  item: string | { url?: string; src?: string; preview?: string } | undefined
+): string | undefined => {
+  if (!item) return undefined;
+  if (typeof item === "string") return item;
+  return item.url || item.src || item.preview;
 };
 
 export default function GardenWedding({ theme, event }: Props) {
@@ -286,7 +299,7 @@ export default function GardenWedding({ theme, event }: Props) {
         <section className="py-24 overflow-hidden relative z-10">
           <div className="flex justify-center gap-8 md:gap-16 opacity-90">
             {galleryImages.slice(0, 3).map((img, i) => {
-              const imageUrl = img.url || img.src || img.preview || img;
+              const imageUrl = getImageUrl(img);
               const fallbackImages = [
                 "https://images.unsplash.com/photo-1490750967868-58cb75069ed6?q=80&w=600",
                 "https://images.unsplash.com/photo-1522673607200-1645062cd495?q=80&w=600",

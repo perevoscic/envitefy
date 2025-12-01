@@ -206,6 +206,14 @@ const getScheduleDetails = (
   return { ceremony, reception };
 };
 
+const getImageUrl = (
+  item: string | { url?: string; src?: string; preview?: string } | undefined
+): string | undefined => {
+  if (!item) return undefined;
+  if (typeof item === "string") return item;
+  return item.url || item.src || item.preview;
+};
+
 export default function GildedWedding({ theme, event }: Props) {
   const names = buildNames(event);
   const dateInfo = formatDate(event.date);
@@ -432,7 +440,7 @@ export default function GildedWedding({ theme, event }: Props) {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {event.gallery.slice(0, 6).map((img, idx) => {
-                  const imageUrl = img.url || img.src || img.preview || img;
+                  const imageUrl = getImageUrl(img);
                   return (
                     <div
                       key={idx}

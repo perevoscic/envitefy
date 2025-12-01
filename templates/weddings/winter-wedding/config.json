@@ -8,7 +8,7 @@
   "theme": {
     "colors": { "primary": "#1A2F25", "secondary": "#B7410E", "background": "#1A2F25" },
     "fonts": { "headline": "Playfair Display", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/winter-wedding-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.jpeg" }
   }
 }
 

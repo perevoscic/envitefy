@@ -74,6 +74,14 @@ const getLocationCity = (location?: string) => {
   return location.toUpperCase();
 };
 
+const getImageUrl = (
+  item: string | { url?: string; src?: string; preview?: string } | undefined
+): string | undefined => {
+  if (!item) return undefined;
+  if (typeof item === "string") return item;
+  return item.url || item.src || item.preview;
+};
+
 export default function MuseumWedding({ theme, event }: Props) {
   const initials = buildInitials(event);
   const dateFormatted = formatDate(event.date);
@@ -168,8 +176,7 @@ export default function MuseumWedding({ theme, event }: Props) {
           <div className="h-full min-h-[50vh] relative overflow-hidden group">
             <img
               src={
-                galleryImages[0]?.url ||
-                galleryImages[0] ||
+                getImageUrl(galleryImages[0]) ||
                 "https://images.unsplash.com/photo-1544211181-7027582b137d?q=80&w=1600&auto=format&fit=crop"
               }
               className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
@@ -182,8 +189,7 @@ export default function MuseumWedding({ theme, event }: Props) {
           <div className="h-full min-h-[50vh] relative overflow-hidden group order-2 md:order-1">
             <img
               src={
-                galleryImages[1]?.url ||
-                galleryImages[1] ||
+                getImageUrl(galleryImages[1]) ||
                 "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=1600&auto=format&fit=crop"
               }
               className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"

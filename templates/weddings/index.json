@@ -189,7 +189,7 @@
     "primaryColor": "#1A2F25",
     "secondaryColor": "#B7410E",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/winter-wedding-hero.jpeg"
+    "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.jpeg"
   },
   {
     "id": "industrial-wedding",
@@ -201,7 +201,7 @@
     "primaryColor": "#1a1a1a",
     "secondaryColor": "#cd7f32",
     "headlineFont": "Inter",
-    "heroImage": "/templates/wedding-placeholders/industrial-wedding-hero.jpeg"
+    "heroImage": "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2000&auto=format&fit=crop"
   },
   {
     "id": "library-wedding",
@@ -213,7 +213,7 @@
     "primaryColor": "#2B211E",
     "secondaryColor": "#5D2E2E",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/library-wedding-hero.jpeg"
+    "heroImage": "/templates/wedding-placeholders/ivory-ink-hero.jpeg"
   },
   {
     "id": "garden-wedding",
@@ -225,6 +225,6 @@
     "primaryColor": "#ffffff",
     "secondaryColor": "#ec4899",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/garden-wedding-hero.jpeg"
+    "heroImage": "/templates/wedding-placeholders/garden-atelier-hero.jpeg"
   }
 ]
