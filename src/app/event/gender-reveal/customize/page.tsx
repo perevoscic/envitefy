@@ -884,8 +884,11 @@ export default function GenderRevealTemplateCustomizePage() {
           },
         },
       };
-      
-      console.log("[Gender Reveal Publish] Payload data keys:", Object.keys(payload.data));
+
+      console.log(
+        "[Gender Reveal Publish] Payload data keys:",
+        Object.keys(payload.data)
+      );
       console.log("[Gender Reveal Publish] Image saved in payload:", {
         hasCustomHeroImage: !!payload.data.customHeroImage,
         hasHeroImage: !!payload.data.heroImage,
