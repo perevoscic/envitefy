@@ -20,7 +20,6 @@ import RegistryPanel from "./RegistryPanel";
 type WeddingCustomizeClientProps = {
   event: any;
   template: any;
-  editingId?: string;
 };
 
 const MENU_ITEMS = [
@@ -37,11 +36,9 @@ const MENU_ITEMS = [
   { key: "registry", title: "Registry", icon: <Gift size={18} />, desc: "Gift registries." },
 ];
 
-export default function WeddingCustomizeClient({ event, template, editingId }: WeddingCustomizeClientProps) {
+export default function WeddingCustomizeClient({ event, template }: WeddingCustomizeClientProps) {
   const [activeView, setActiveView] = useState<string>("main");
   const [activeDesignView, setActiveDesignView] = useState<string>("themes");
-
-  const registryEventId = useMemo(() => editingId || String(event?.id || ""), [editingId, event?.id]);
 
   const eventPreview = useMemo(
     () => ({
@@ -137,7 +134,7 @@ export default function WeddingCustomizeClient({ event, template, editingId }: W
         {activeView === "thingsToDo" && renderPlaceholder("Things To Do")}
         {activeView === "photos" && renderPlaceholder("Photos")}
         {activeView === "rsvp" && renderPlaceholder("RSVP")}
-        {activeView === "registry" && registryEventId && (
+        {activeView === "registry" && event?.id && (
           <div className="space-y-4">
             <button
               onClick={() => setActiveView("main")}
@@ -145,7 +142,7 @@ export default function WeddingCustomizeClient({ event, template, editingId }: W
             >
               ← Back
             </button>
-            <RegistryPanel eventId={registryEventId} />
+            <RegistryPanel eventId={String(event.id)} />
           </div>
         )}
       </div>
