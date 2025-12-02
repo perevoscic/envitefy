@@ -248,7 +248,6 @@ export type AdminOverviewStats = {
 
 export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
   await ensureUsersHasAdminAndMetricsColumns();
-  await ensureEventHistoryTable();
   const [users, events, shares, paid, ff, scans, categories] = await Promise.all([
     query<{ n: string }>(`select count(*)::text as n from users`),
     query<{ n: string }>(`select count(*)::text as n from event_history`),
@@ -1262,70 +1261,27 @@ export type EventHistoryRow = {
   user_id?: string | null;
   title: string;
   data: any;
-  type?: string | null;
-  status?: string | null;
-  slug?: string | null;
   created_at?: string;
-  updated_at?: string | null;
 };
-
-export async function ensureEventHistoryTable(): Promise<void> {
-  // Keep schema lightweight; existing installs may already have this table with fewer columns.
-  await query(`
-    create table if not exists event_history (
-      id uuid primary key default gen_random_uuid(),
-      user_id text,
-      type text,
-      status text,
-      title text not null default '',
-      slug text,
-      data jsonb default '{}'::jsonb,
-      created_at timestamptz(6) default now(),
-      updated_at timestamptz(6) default now()
-    );
-  `);
-  await query(`alter table event_history add column if not exists type text`);
-  await query(`alter table event_history add column if not exists status text`);
-  await query(`alter table event_history add column if not exists slug text`);
-  await query(`alter table event_history add column if not exists updated_at timestamptz(6) default now()`);
-  await query(`alter table event_history add column if not exists data jsonb`);
-  await query(`alter table event_history alter column data set default '{}'::jsonb`);
-  await query(`alter table event_history alter column title set default ''`);
-  await query(`create index if not exists idx_event_history_user_type_status on event_history(user_id, type, status)`);
-  await query(`create index if not exists idx_event_history_slug on event_history(slug)`);
-}
 
 export async function insertEventHistory(params: {
   userId?: string | null;
   title: string;
   data: any;
-  type?: string | null;
-  status?: string | null;
-  slug?: string | null;
 }): Promise<EventHistoryRow> {
-  await ensureEventHistoryTable();
   const id = randomUUID();
   const res = await query<EventHistoryRow>(
-    `insert into event_history (id, user_id, title, data, type, status, slug, created_at, updated_at)
-     values ($1, $2, $3, $4, $5, $6, $7, coalesce(now(), now()), coalesce(now(), now()))
-     returning id, user_id, title, data, type, status, slug, created_at, updated_at`,
-    [
-      id,
-      params.userId || null,
-      params.title,
-      JSON.stringify(params.data),
-      params.type || null,
-      params.status || null,
-      params.slug || null,
-    ]
+    `insert into event_history (id, user_id, title, data, created_at)
+     values ($1, $2, $3, $4, coalesce(now(), now()))
+     returning id, user_id, title, data, created_at`,
+    [id, params.userId || null, params.title, JSON.stringify(params.data)]
   );
   return res.rows[0];
 }
 
 export async function getEventHistoryById(id: string): Promise<EventHistoryRow | null> {
-  await ensureEventHistoryTable();
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, type, status, slug, created_at, updated_at
+    `select id, user_id, title, data, created_at
      from event_history
      where id = $1
      limit 1`,
@@ -1335,12 +1291,11 @@ export async function getEventHistoryById(id: string): Promise<EventHistoryRow |
 }
 
 export async function updateEventHistoryTitle(id: string, title: string): Promise<EventHistoryRow | null> {
-  await ensureEventHistoryTable();
   const res = await query<EventHistoryRow>(
     `update event_history
-     set title = $2, updated_at = now()
+     set title = $2
      where id = $1
-     returning id, user_id, title, data, type, status, slug, created_at, updated_at`,
+     returning id, user_id, title, data, created_at`,
     [id, title]
   );
   return res.rows[0] || null;
@@ -1350,14 +1305,13 @@ export async function updateEventHistoryDataMerge(
   id: string,
   patch: any
 ): Promise<EventHistoryRow | null> {
-  await ensureEventHistoryTable();
   // Merge provided patch object into existing JSONB data. Later keys override.
   // jsonb concatenation '||' merges objects shallowly; sufficient for category updates.
   const res = await query<EventHistoryRow>(
     `update event_history
-     set data = coalesce(data, '{}'::jsonb) || $2::jsonb, updated_at = now()
+     set data = coalesce(data, '{}'::jsonb) || $2::jsonb
      where id = $1
-     returning id, user_id, title, data, type, status, slug, created_at, updated_at`,
+     returning id, user_id, title, data, created_at`,
     [id, JSON.stringify(patch ?? {})]
   );
   return res.rows[0] || null;
@@ -1367,19 +1321,17 @@ export async function updateEventHistoryData(
   id: string,
   data: any
 ): Promise<EventHistoryRow | null> {
-  await ensureEventHistoryTable();
   const res = await query<EventHistoryRow>(
     `update event_history
-     set data = $2::jsonb, updated_at = now()
+     set data = $2::jsonb
      where id = $1
-     returning id, user_id, title, data, type, status, slug, created_at, updated_at`,
+     returning id, user_id, title, data, created_at`,
     [id, JSON.stringify(data ?? {})]
   );
   return res.rows[0] || null;
 }
 
 export async function deleteEventHistoryById(id: string): Promise<void> {
-  await ensureEventHistoryTable();
   await query(`delete from event_history where id = $1`, [id]);
 }
 
@@ -1392,9 +1344,8 @@ function slugifyTitleForQuery(title: string): string {
 
 export async function getEventHistoryByUserAndSlug(userId: string, slug: string): Promise<EventHistoryRow | null> {
   // Fetch a handful of recent events and match by slug server-side to avoid DB funcs
-  await ensureEventHistoryTable();
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, type, status, slug, created_at, updated_at
+    `select id, user_id, title, data, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -1418,7 +1369,6 @@ export async function getEventHistoryBySlugOrId(params: {
   value: string;
   userId?: string | null;
 }): Promise<EventHistoryRow | null> {
-  await ensureEventHistoryTable();
   const raw = (params.value || "").trim();
   if (!raw) return null;
 
@@ -1441,7 +1391,7 @@ export async function getEventHistoryBySlugOrId(params: {
   }
   // Fallback: try a broader search across recent events for any user (limited)
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, type, status, slug, created_at, updated_at
+    `select id, user_id, title, data, created_at
      from event_history
      order by created_at desc
      limit 500`
@@ -1455,9 +1405,8 @@ export async function getEventHistoryBySlugOrId(params: {
 }
 
 export async function listEventHistoryByUser(userId: string, limit: number = 50): Promise<EventHistoryRow[]> {
-  await ensureEventHistoryTable();
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, type, status, slug, created_at, updated_at
+    `select id, user_id, title, data, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -1468,54 +1417,14 @@ export async function listEventHistoryByUser(userId: string, limit: number = 50)
 }
 
 export async function listRecentEventHistory(limit: number = 20): Promise<EventHistoryRow[]> {
-  await ensureEventHistoryTable();
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, type, status, slug, created_at, updated_at
+    `select id, user_id, title, data, created_at
      from event_history
      order by created_at desc nulls last, id desc
      limit $1`,
     [Math.max(1, Math.min(200, limit))]
   );
   return res.rows || [];
-}
-
-export async function getOrCreateWeddingDraftForUser(userId: string): Promise<EventHistoryRow> {
-  if (!userId) throw new Error("userId is required");
-  await ensureEventHistoryTable();
-
-  const existing = await query<EventHistoryRow>(
-    `select id, user_id, title, data, type, status, slug, created_at, updated_at
-     from event_history
-     where user_id = $1
-       and coalesce(type, 'wedding') = 'wedding'
-       and coalesce(status, 'draft') = 'draft'
-     order by updated_at desc nulls last, created_at desc nulls last, id desc
-     limit 1`,
-    [userId]
-  );
-
-  const row = existing.rows[0];
-  if (row) {
-    if (row.type && row.status) return row;
-    const updated = await query<EventHistoryRow>(
-      `update event_history
-       set type = coalesce(type, 'wedding'),
-           status = coalesce(status, 'draft'),
-           updated_at = now()
-       where id = $1
-       returning id, user_id, title, data, type, status, slug, created_at, updated_at`,
-      [row.id]
-    );
-    return updated.rows[0] || row;
-  }
-
-  return insertEventHistory({
-    userId,
-    title: "Wedding",
-    data: { category: "wedding" },
-    type: "wedding",
-    status: "draft",
-  });
 }
 
 // Shared events
