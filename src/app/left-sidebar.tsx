@@ -31,6 +31,7 @@ import {
   NAV_LINKS,
   useUnifiedMenu,
 } from "@/components/navigation/TopNav";
+import { resolveEditHref } from "@/utils/event-edit-route";
 import { CREATE_EVENT_SECTIONS } from "@/config/navigation-config";
 import {
   Baby,
@@ -277,6 +278,166 @@ const ICON_LOOKUP: Record<string, any> = {
   "General Events": CalendarDays,
   "Special Events": Music,
 };
+
+type DraftsSectionProps = {
+  drafts: { id: string; title: string; created_at?: string; data?: any }[];
+  draftsCount: number;
+  collapseSidebarOnTouch: () => void;
+  onDeleteDraft: (id: string, title?: string) => void;
+};
+
+function DraftsSection({
+  drafts,
+  draftsCount,
+  collapseSidebarOnTouch,
+  onDeleteDraft,
+}: DraftsSectionProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  if (draftsCount === 0) {
+    return null;
+  }
+
+  const getDraftLabel = (row: {
+    id: string;
+    title: string;
+    created_at?: string;
+    data?: any;
+  }): string => {
+    const data: any = row.data || {};
+    const category = String(data.category || "")
+      .trim()
+      .toLowerCase();
+    const templateId: string =
+      (data.templateId as string | undefined) ||
+      (data.theme?.themeId as string | undefined) ||
+      "";
+
+    if (category.includes("wedding")) {
+      const templateNameMap: Record<string, string> = {
+        "ethereal-classic": "Ethereal Classic",
+        "modern-editorial": "Modern Editorial",
+        "rustic-boho": "Rustic Boho",
+        "cinematic-wedding": "Cinematic",
+        "celestial-wedding": "Celestial",
+        "gilded-wedding": "Gilded",
+        "museum-wedding": "Museum",
+        "ethereal-wedding": "Ethereal",
+        "noir-luxury": "Noir Luxury",
+        "retro-70s": "Retro 70s",
+      };
+      const templateName = templateNameMap[templateId] || "Wedding";
+      const names =
+        (data.partner1 && data.partner2
+          ? `${data.partner1} & ${data.partner2}`
+          : data.partner1 || data.partner2) || "";
+      if (names) {
+        return `${templateName} — ${names}`;
+      }
+      return `${templateName} (draft)`;
+    }
+
+    return (row.title || "Event") + " (draft)";
+  };
+
+  return (
+    <div className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3`}>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          setOpen((prev) => !prev);
+        }}
+        className="flex items-center justify-between gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+            <FileEdit size={18} />
+          </span>
+          <span>Drafts</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={SIDEBAR_BADGE_CLASS}>{draftsCount}</span>
+          <span
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition-transform ${
+              open ? "rotate-90" : ""
+            }`}
+            aria-hidden="true"
+          >
+            <ChevronRight size={14} />
+          </span>
+        </div>
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1">
+          {drafts.map((row) => {
+            const href = resolveEditHref(
+              row.id,
+              row.data,
+              row.title || "Event"
+            );
+            const dateStr =
+              (row.data && (row.data.startISO || row.data.start)) ||
+              row.created_at ||
+              null;
+            const formattedDate = dateStr
+              ? new Date(dateStr).toLocaleDateString()
+              : "";
+            return (
+              <div
+                key={row.id}
+                onClick={(event) => {
+                  event.preventDefault();
+                  collapseSidebarOnTouch();
+                  router.push(href);
+                }}
+                className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 hover:bg-surface/70 cursor-pointer"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="truncate">{getDraftLabel(row)}</div>
+                  {formattedDate && (
+                    <div className="text-[10px] text-foreground/50">
+                      {formattedDate}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Delete draft"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDeleteDraft(row.id, row.title);
+                  }}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground/60 hover:bg-red-50 hover:text-red-500"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                    <path d="M9 6V4h6v2" />
+                  </svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
@@ -824,6 +985,23 @@ export default function LeftSidebar() {
   const [history, setHistory] = useState<
     { id: string; title: string; created_at?: string; data?: any }[]
   >([]);
+  const drafts = useMemo(() => {
+    const byId = new Map<
+      string,
+      { id: string; title: string; created_at?: string; data?: any }
+    >();
+    for (const row of history) {
+      if (!row || typeof row !== "object") continue;
+      const data: any = row.data || {};
+      const status = String(data.status || "").toLowerCase();
+      if (status !== "draft" || data.shared) continue;
+      if (!byId.has(row.id)) {
+        byId.set(row.id, row);
+      }
+    }
+    return Array.from(byId.values());
+  }, [history]);
+  const draftsCount = drafts.length;
   const createdEventsCount = useMemo(() => {
     return history.reduce((acc, row) => {
       if (!row || typeof row !== "object") return acc;
@@ -947,26 +1125,26 @@ export default function LeftSidebar() {
   };
 
   const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
-    "sport_football_season": "Football Season",
+    sport_football_season: "Football Season",
     "sport football season": "Football Season",
     "football season": "Football Season",
-    "sport_gymnastics_schedule": "Gymnastics",
-    "sport_gymnastics": "Gymnastics",
+    sport_gymnastics_schedule: "Gymnastics",
+    sport_gymnastics: "Gymnastics",
     "gymnastics schedule": "Gymnastics",
-    "sport_cheerleading": "Cheerleading",
+    sport_cheerleading: "Cheerleading",
     "sport cheerleading": "Cheerleading",
-    "sport_dance_ballet": "Dance / Ballet",
+    sport_dance_ballet: "Dance / Ballet",
     "sport dance ballet": "Dance / Ballet",
-    "sport_soccer": "Soccer",
+    sport_soccer: "Soccer",
     "sport soccer": "Soccer",
-    "sport_event": "Sport Event",
+    sport_event: "Sport Event",
     "sport events": "Sport Events",
-    "general_event": "General Event",
-    "workshop_class": "Workshop / Class",
-    "gender_reveal": "Gender Reveal",
-    "dr_appointment": "Doctor Appointments",
-    "doctor_appointment": "Doctor Appointments",
-    "special_event": "Special Events",
+    general_event: "General Event",
+    workshop_class: "Workshop / Class",
+    gender_reveal: "Gender Reveal",
+    dr_appointment: "Doctor Appointments",
+    doctor_appointment: "Doctor Appointments",
+    special_event: "Special Events",
   };
 
   const titleCase = (phrase: string) =>
@@ -1592,7 +1770,7 @@ export default function LeftSidebar() {
     if (status !== "authenticated") return;
     (async () => {
       try {
-        const res = await fetch("/api/history?view=summary&limit=40", {
+        const res = await fetch("/api/history?view=full&limit=40", {
           cache: "no-cache",
           credentials: "include",
         });
@@ -1675,7 +1853,7 @@ export default function LeftSidebar() {
             try {
               // Add cache-busting query param to force fresh fetch (slim view)
               const res = await fetch(
-                `/api/history?view=summary&limit=40&t=${Date.now()}`,
+                `/api/history?view=full&limit=40&t=${Date.now()}`,
                 {
                   cache: "no-cache",
                   credentials: "include",
@@ -2093,11 +2271,7 @@ export default function LeftSidebar() {
       />
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 h-full z-[6000] border border-white/60 dark:border-white/10 backdrop-blur-2xl flex flex-col rounded-tr-[2.75rem] rounded-br-[2.75rem] shadow-[0_35px_90px_rgba(72,44,116,0.28)] ${
-          overflowClass
-        } transition-[transform,opacity,width] duration-200 ease-out will-change-transform ${
-          pointerClass
-        } lg:flex`}
+        className={`fixed left-0 top-0 h-full z-[6000] border border-white/60 dark:border-white/10 backdrop-blur-2xl flex flex-col rounded-tr-[2.75rem] rounded-br-[2.75rem] shadow-[0_35px_90px_rgba(72,44,116,0.28)] ${overflowClass} transition-[transform,opacity,width] duration-200 ease-out will-change-transform ${pointerClass} lg:flex`}
         style={{
           width: sidebarWidth,
           transform: sidebarTransform,
@@ -2118,13 +2292,19 @@ export default function LeftSidebar() {
             >
               <ChevronRight size={18} />
             </button>
-            <Image
-              src="/E.png"
-              alt="Envitefy"
-              width={36}
-              height={36}
-              className="opacity-90 drop-shadow"
-            />
+            <Link
+              href="/"
+              onClick={collapseSidebarOnTouch}
+              className="flex items-center justify-center cursor-pointer hover:opacity-100 transition-opacity"
+            >
+              <Image
+                src="/E.png"
+                alt="Envitefy"
+                width={36}
+                height={36}
+                className="opacity-90 drop-shadow"
+              />
+            </Link>
             <button
               type="button"
               onClick={() => {
@@ -2146,8 +2326,10 @@ export default function LeftSidebar() {
                     type="button"
                     onClick={() => {
                       setIsCollapsed(false);
-                      if (item.action === "snap") return launchSnapFromMenu("camera");
-                      if (item.action === "upload") return launchSnapFromMenu("upload");
+                      if (item.action === "snap")
+                        return launchSnapFromMenu("camera");
+                      if (item.action === "upload")
+                        return launchSnapFromMenu("upload");
                       if (item.action === "create") {
                         setCreateEventOpen(true);
                         return;
@@ -2196,11 +2378,17 @@ export default function LeftSidebar() {
             <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
               <button
                 type="button"
-                aria-label={isCollapsed ? "Expand navigation" : "Collapse navigation"}
-                onClick={() => setIsCollapsed((prev) => !prev)}
+                aria-label={
+                  isCollapsed ? "Expand navigation" : "Collapse navigation"
+                }
+                onClick={() => setIsCollapsed(!isCollapsed)}
                 className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
               >
-                {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                {isCollapsed ? (
+                  <ChevronRight size={16} />
+                ) : (
+                  <ChevronLeft size={16} />
+                )}
               </button>
               <div className="flex flex-col items-center gap-3 text-center">
                 <Link
@@ -2225,81 +2413,147 @@ export default function LeftSidebar() {
           {/* Middle: Event history */}
           <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
             <div className="px-4 pt-0 pb-5 space-y-4">
-            {/* Separator line */}
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    launchSnapFromMenu("camera");
-                  }}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                    <Camera size={18} />
-                  </span>
-                  <span>Snap</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    launchSnapFromMenu("upload");
-                  }}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                    <Upload size={18} />
-                  </span>
-                  <span>Upload</span>
-                </button>
-              </div>
-
-              <Link
-                href="/"
-                onClick={collapseSidebarOnTouch}
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm md:text-base font-semibold text-[#2f1d47]`}
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5efff] to-white text-[#7a5ec0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                  <Home size={18} />
-                </span>
-                <span>Home</span>
-              </Link>
-
-              <div
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 ${
-                  createEventOpen ? "ring-2 ring-[#d9ccff]" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3 w-full">
+              {/* Separator line */}
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={(event) => {
                       event.preventDefault();
-                      setCreateEventOpen(!createEventOpen);
+                      launchSnapFromMenu("camera");
                     }}
-                  className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                    <Plus size={18} />
-                  </span>
-                  <span>Create Event</span>
-                </button>
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className={SIDEBAR_BADGE_CLASS}>
-                      {createdEventsCount}
+                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                      <Camera size={18} />
                     </span>
+                    <span>Snap</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      launchSnapFromMenu("upload");
+                    }}
+                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                      <Upload size={18} />
+                    </span>
+                    <span>Upload</span>
+                  </button>
+                </div>
+
+                <Link
+                  href="/"
+                  onClick={collapseSidebarOnTouch}
+                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm md:text-base font-semibold text-[#2f1d47]`}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5efff] to-white text-[#7a5ec0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    <Home size={18} />
+                  </span>
+                  <span>Home</span>
+                </Link>
+
+                {/* Drafts dropdown (above My events) */}
+                <DraftsSection
+                  drafts={drafts}
+                  draftsCount={draftsCount}
+                  collapseSidebarOnTouch={collapseSidebarOnTouch}
+                  onDeleteDraft={deleteHistoryItem}
+                />
+
+                <div
+                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 ${
+                    createEventOpen ? "ring-2 ring-[#d9ccff]" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3 w-full">
                     <button
                       type="button"
                       onClick={(event) => {
                         event.preventDefault();
                         setCreateEventOpen(!createEventOpen);
                       }}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                      aria-label="Toggle create menu"
+                      className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <Plus size={18} />
+                      </span>
+                      <span>Create Event</span>
+                    </button>
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className={SIDEBAR_BADGE_CLASS}>
+                        {createdEventsCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setCreateEventOpen(!createEventOpen);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                        aria-label="Toggle create menu"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`h-4 w-4 transition-transform ${
+                            createEventOpen ? "rotate-180" : ""
+                          }`}
+                          aria-hidden="true"
+                        >
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 ${
+                    activeCategory === "Smart sign-up"
+                      ? "ring-2 ring-[#d9ccff]"
+                      : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveCategory((prev) =>
+                        prev === "Smart sign-up" ? null : "Smart sign-up"
+                      );
+                    }}
+                    className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
+                    aria-pressed={activeCategory === "Smart sign-up"}
+                    title="Smart sign-up"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6faff] to-white text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                      <FileEdit size={18} />
+                    </span>
+                    <span>Smart sign-up</span>
+                  </button>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className={SIDEBAR_BADGE_CLASS}>
+                      {smartSignupCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        try {
+                          (window as any).__openSmartSignup?.();
+                        } catch {}
+                      }}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                      aria-label="Open Smart sign-up"
                     >
                       <svg
                         viewBox="0 0 24 24"
@@ -2309,662 +2563,595 @@ export default function LeftSidebar() {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`h-4 w-4 transition-transform ${
-                          createEventOpen ? "rotate-180" : ""
-                        }`}
+                        className="h-4 w-4"
                         aria-hidden="true"
                       >
-                        <path d="M6 9l6 6 6-6" />
+                        <path d="M12 5v14M5 12h14" />
                       </svg>
                     </button>
                   </div>
                 </div>
-              </div>
-
-              <div
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 ${
-                  activeCategory === "Smart sign-up"
-                    ? "ring-2 ring-[#d9ccff]"
-                    : ""
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveCategory((prev) =>
-                      prev === "Smart sign-up" ? null : "Smart sign-up"
-                    );
-                  }}
-                  className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                  aria-pressed={activeCategory === "Smart sign-up"}
-                  title="Smart sign-up"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6faff] to-white text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                    <FileEdit size={18} />
-                  </span>
-                  <span>Smart sign-up</span>
-                </button>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className={SIDEBAR_BADGE_CLASS}>
-                    {smartSignupCount}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      try {
-                        (window as any).__openSmartSignup?.();
-                      } catch {}
-                    }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                    aria-label="Open Smart sign-up"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              {activeCategory === "Smart sign-up" && (
-                <div className="mt-1 mb-2">
-                  {(() => {
-                    const myEmail = (profileEmail ||
-                      profileEmailRef.current ||
-                      "") as string;
-                    const myUserId =
-                      ((session as any)?.user?.id as string | undefined) ||
-                      null;
-                    const items = sortHistoryRows(
-                      history.filter((h) => {
-                        const data: any = (h as any)?.data;
-                        const form = data?.signupForm;
-                        if (!form || typeof form !== "object") return false;
-                        if (!data?.shared) return true;
-                        const responses: any[] = Array.isArray(form.responses)
-                          ? form.responses
-                          : [];
-                        const hasMyActiveResponse = responses.some((r) => {
-                          if (!r || typeof r !== "object") return false;
-                          if (
-                            String(r.status || "").toLowerCase() === "cancelled"
-                          )
-                            return false;
-                          const emailMatches =
-                            myEmail &&
-                            typeof r.email === "string" &&
-                            r.email.toLowerCase() === myEmail;
-                          const userIdMatches =
-                            myUserId &&
-                            typeof r.userId === "string" &&
-                            r.userId === myUserId;
-                          return Boolean(emailMatches || userIdMatches);
-                        });
-                        return hasMyActiveResponse;
-                      }) as any
-                    );
-                    if (items.length === 0)
-                      return (
-                        <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                          No forms
-                        </div>
-                      );
-                    return (
-                      <div className="space-y-1">
-                        {items.map((h: any) => {
-                          const slug = (h.title || "")
-                            .toLowerCase()
-                            .replace(/[^a-z0-9]+/g, "-")
-                            .replace(/^-+|-+$/g, "");
-                          const prettyHref = `/smart-signup-form/${h.id}`;
-                          // Item-specific gradient row style (falls back to Smart sign-up default)
-                          const signupRowClass = `${signupItemGradientRowClass(
-                            h.id
-                          )} ${sharedTextClass}`;
-                          return (
-                            <div
-                              key={h.id}
-                              data-history-item={h.id}
-                              className={`relative px-2 py-2 rounded-md text-sm ${signupRowClass}`}
-                            >
-                              <Link
-                                href={prettyHref}
-                                onClick={() => {
-                                  try {
-                                    const isTouch =
-                                      typeof window !== "undefined" &&
-                                      typeof window.matchMedia === "function" &&
-                                      window.matchMedia(
-                                        "(hover: none), (pointer: coarse)"
-                                      ).matches;
-                                    if (isTouch) setIsCollapsed(true);
-                                  } catch {}
-                                }}
-                                className="block pr-8"
-                                title={h.title}
-                              >
-                                <div className="truncate flex items-center gap-2">
-                                  <span className="truncate">
-                                    {h.title || "Untitled form"}
-                                  </span>
-                                </div>
-                                <div className="text-xs md:text-sm text-foreground/60">
-                                  {(() => {
-                                    const start =
-                                      (h as any)?.data?.start ||
-                                      (h as any)?.data?.event?.start;
-                                    const dateStr = start || h.created_at;
-                                    return dateStr
-                                      ? new Date(dateStr).toLocaleDateString()
-                                      : "";
-                                  })()}
-                                </div>
-                              </Link>
-                              <button
-                                type="button"
-                                aria-label={`Edit form color`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // Ensure Smart sign-up stays expanded when opening the color menu
-                                  try {
-                                    setActiveCategory("Smart sign-up");
-                                  } catch {}
-                                  try {
-                                    const rect = (
-                                      e.currentTarget as HTMLElement
-                                    ).getBoundingClientRect();
-                                    const menuWidth = 220;
-                                    const viewportPadding = 8;
-                                    const idealLeft =
-                                      rect.left +
-                                      rect.width / 2 -
-                                      menuWidth / 2;
-                                    const clampedLeft = Math.max(
-                                      viewportPadding,
-                                      Math.min(
-                                        idealLeft,
-                                        window.innerWidth -
-                                          menuWidth -
-                                          viewportPadding
-                                      )
-                                    );
-                                    setColorMenuPos({
-                                      left: Math.round(clampedLeft),
-                                      top: Math.round(rect.bottom + 12),
-                                    });
-                                  } catch {
-                                    setColorMenuPos(null);
-                                  }
-                                  setColorMenuFor(`signup-item:${h.id}`);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    (e.currentTarget as HTMLElement).click();
-                                  }
-                                }}
-                                className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${signupItemGradientSwatchClass(
-                                  h.id
-                                )} border-0`}
-                                title="Edit color"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Item options"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // Keep Smart sign-up expanded while the item menu is open
-                                  try {
-                                    setActiveCategory("Smart sign-up");
-                                  } catch {}
-                                  const target =
-                                    e.currentTarget as HTMLElement | null;
-                                  if (itemMenuId === h.id) {
-                                    setItemMenuId(null);
-                                    setItemMenuOpensUpward(false);
-                                    setItemMenuPos(null);
-                                    setItemMenuCategoryOpenFor(null);
-                                    return;
-                                  }
-                                  if (target) {
-                                    const rect = target.getBoundingClientRect();
-                                    const viewportHeight = window.innerHeight;
-                                    const menuHeight = 200;
-                                    const spaceBelow =
-                                      viewportHeight - rect.top;
-                                    const shouldOpenUpward =
-                                      spaceBelow < menuHeight + 50;
-                                    setItemMenuOpensUpward(shouldOpenUpward);
-                                    setItemMenuPos({
-                                      left: Math.round(rect.right + 8),
-                                      top: shouldOpenUpward
-                                        ? Math.round(rect.top - 10)
-                                        : Math.round(
-                                            rect.top + rect.height / 2
-                                          ),
-                                    });
-                                  }
-                                  setItemMenuCategoryOpenFor(null);
-                                  setItemMenuId(h.id);
-                                }}
-                                className="absolute top-1.5 right-1.5 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                >
-                                  <circle cx="5" cy="12" r="1.5" />
-                                  <circle cx="12" cy="12" r="1.5" />
-                                  <circle cx="19" cy="12" r="1.5" />
-                                </svg>
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              <div
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
-              >
-                <Link
-                  href="/calendar"
-                  onClick={() => {
-                    try {
-                      const isTouch =
-                        typeof window !== "undefined" &&
-                        typeof window.matchMedia === "function" &&
-                        window.matchMedia("(hover: none), (pointer: coarse)")
-                          .matches;
-                      if (isTouch) setIsCollapsed(true);
-                    } catch {}
-                  }}
-                  className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                    <CalendarDays size={18} />
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span>Calendar</span>
-                  </span>
-                </Link>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className={SIDEBAR_BADGE_CLASS}>{history.length}</span>
-                  <button
-                    type="button"
-                    title="New event"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        (window as any).__openCreateEvent?.();
-                      } catch {}
-                    }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                    aria-label="New event"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="miter"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <rect x="2" y="4" width="20" height="18" rx="0"></rect>
-                      <line x1="7" y1="2" x2="7" y2="6"></line>
-                      <line x1="17" y1="2" x2="17" y2="6"></line>
-                      <line x1="8" y1="13" x2="16" y2="13"></line>
-                      <line x1="12" y1="9" x2="12" y2="17"></line>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {(() => {
-                const sharedCount = 0; // Shared events disabled
-                if (sharedCount === 0) return null;
-                return (
-                  <div className="">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveCategory((prev) =>
-                          prev === "Shared events" ? null : "Shared events"
-                        );
-                      }}
-                      className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
-                        activeCategory === "Shared events"
-                          ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
-                          : ""
-                      } hover:bg-surface/70`}
-                      aria-pressed={activeCategory === "Shared events"}
-                      title="Shared events"
-                    >
-                      <span className="truncate inline-flex items-center gap-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                          aria-label="Shared events"
-                        >
-                          <title>Shared events</title>
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                        <span>Shared Events</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2">
-                        {sharedCount > 0 && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                            {sharedCount}
-                          </span>
-                        )}
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Edit Shared events color`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            try {
-                              const rect = (
-                                e.currentTarget as HTMLElement
-                              ).getBoundingClientRect();
-                              const menuWidth = 220;
-                              const viewportPadding = 8;
-                              const idealLeft =
-                                rect.left + rect.width / 2 - menuWidth / 2;
-                              const clampedLeft = Math.max(
-                                viewportPadding,
-                                Math.min(
-                                  idealLeft,
-                                  window.innerWidth -
-                                    menuWidth -
-                                    viewportPadding
-                                )
-                              );
-                              setColorMenuPos({
-                                left: Math.round(clampedLeft),
-                                top: Math.round(rect.bottom + 12),
-                              });
-                            } catch {
-                              setColorMenuPos(null);
-                            }
-                            setColorMenuFor("Shared events");
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              (e.currentTarget as HTMLElement).click();
-                            }
-                          }}
-                          className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${sharedGradientSwatchClass()} border-0`}
-                          title="Edit color"
-                        />
-                      </span>
-                    </button>
-                    {activeCategory === "Shared events" && (
-                      <div className="mt-1 mb-2">
-                        {(() => {
-                          const items = sortHistoryRows(
-                            history.filter((h) =>
-                              Boolean(
-                                (h as any)?.data?.shared ||
-                                  (h as any)?.data?.sharedOut ||
-                                  (h as any)?.data?.category === "Shared events"
-                              )
+                {activeCategory === "Smart sign-up" && (
+                  <div className="mt-1 mb-2">
+                    {(() => {
+                      const myEmail = (profileEmail ||
+                        profileEmailRef.current ||
+                        "") as string;
+                      const myUserId =
+                        ((session as any)?.user?.id as string | undefined) ||
+                        null;
+                      const items = sortHistoryRows(
+                        history.filter((h) => {
+                          const data: any = (h as any)?.data;
+                          const form = data?.signupForm;
+                          if (!form || typeof form !== "object") return false;
+                          if (!data?.shared) return true;
+                          const responses: any[] = Array.isArray(form.responses)
+                            ? form.responses
+                            : [];
+                          const hasMyActiveResponse = responses.some((r) => {
+                            if (!r || typeof r !== "object") return false;
+                            if (
+                              String(r.status || "").toLowerCase() ===
+                              "cancelled"
                             )
-                          );
-                          if (items.length === 0)
+                              return false;
+                            const emailMatches =
+                              myEmail &&
+                              typeof r.email === "string" &&
+                              r.email.toLowerCase() === myEmail;
+                            const userIdMatches =
+                              myUserId &&
+                              typeof r.userId === "string" &&
+                              r.userId === myUserId;
+                            return Boolean(emailMatches || userIdMatches);
+                          });
+                          return hasMyActiveResponse;
+                        }) as any
+                      );
+                      if (items.length === 0)
+                        return (
+                          <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
+                            No forms
+                          </div>
+                        );
+                      return (
+                        <div className="space-y-1">
+                          {items.map((h: any) => {
+                            const slug = (h.title || "")
+                              .toLowerCase()
+                              .replace(/[^a-z0-9]+/g, "-")
+                              .replace(/^-+|-+$/g, "");
+                            const prettyHref = `/smart-signup-form/${h.id}`;
+                            // Item-specific gradient row style (falls back to Smart sign-up default)
+                            const signupRowClass = `${signupItemGradientRowClass(
+                              h.id
+                            )} ${sharedTextClass}`;
                             return (
-                              <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                                No events
+                              <div
+                                key={h.id}
+                                data-history-item={h.id}
+                                className={`relative px-2 py-2 rounded-md text-sm ${signupRowClass}`}
+                              >
+                                <Link
+                                  href={prettyHref}
+                                  onClick={() => {
+                                    try {
+                                      const isTouch =
+                                        typeof window !== "undefined" &&
+                                        typeof window.matchMedia ===
+                                          "function" &&
+                                        window.matchMedia(
+                                          "(hover: none), (pointer: coarse)"
+                                        ).matches;
+                                      if (isTouch) setIsCollapsed(true);
+                                    } catch {}
+                                  }}
+                                  className="block pr-8"
+                                  title={h.title}
+                                >
+                                  <div className="truncate flex items-center gap-2">
+                                    <span className="truncate">
+                                      {h.title || "Untitled form"}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs md:text-sm text-foreground/60">
+                                    {(() => {
+                                      const start =
+                                        (h as any)?.data?.start ||
+                                        (h as any)?.data?.event?.start;
+                                      const dateStr = start || h.created_at;
+                                      return dateStr
+                                        ? new Date(dateStr).toLocaleDateString()
+                                        : "";
+                                    })()}
+                                  </div>
+                                </Link>
+                                <button
+                                  type="button"
+                                  aria-label={`Edit form color`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Ensure Smart sign-up stays expanded when opening the color menu
+                                    try {
+                                      setActiveCategory("Smart sign-up");
+                                    } catch {}
+                                    try {
+                                      const rect = (
+                                        e.currentTarget as HTMLElement
+                                      ).getBoundingClientRect();
+                                      const menuWidth = 220;
+                                      const viewportPadding = 8;
+                                      const idealLeft =
+                                        rect.left +
+                                        rect.width / 2 -
+                                        menuWidth / 2;
+                                      const clampedLeft = Math.max(
+                                        viewportPadding,
+                                        Math.min(
+                                          idealLeft,
+                                          window.innerWidth -
+                                            menuWidth -
+                                            viewportPadding
+                                        )
+                                      );
+                                      setColorMenuPos({
+                                        left: Math.round(clampedLeft),
+                                        top: Math.round(rect.bottom + 12),
+                                      });
+                                    } catch {
+                                      setColorMenuPos(null);
+                                    }
+                                    setColorMenuFor(`signup-item:${h.id}`);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      (e.currentTarget as HTMLElement).click();
+                                    }
+                                  }}
+                                  className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${signupItemGradientSwatchClass(
+                                    h.id
+                                  )} border-0`}
+                                  title="Edit color"
+                                />
+                                <button
+                                  type="button"
+                                  aria-label="Item options"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Keep Smart sign-up expanded while the item menu is open
+                                    try {
+                                      setActiveCategory("Smart sign-up");
+                                    } catch {}
+                                    const target =
+                                      e.currentTarget as HTMLElement | null;
+                                    if (itemMenuId === h.id) {
+                                      setItemMenuId(null);
+                                      setItemMenuOpensUpward(false);
+                                      setItemMenuPos(null);
+                                      setItemMenuCategoryOpenFor(null);
+                                      return;
+                                    }
+                                    if (target) {
+                                      const rect =
+                                        target.getBoundingClientRect();
+                                      const viewportHeight = window.innerHeight;
+                                      const menuHeight = 200;
+                                      const spaceBelow =
+                                        viewportHeight - rect.top;
+                                      const shouldOpenUpward =
+                                        spaceBelow < menuHeight + 50;
+                                      setItemMenuOpensUpward(shouldOpenUpward);
+                                      setItemMenuPos({
+                                        left: Math.round(rect.right + 8),
+                                        top: shouldOpenUpward
+                                          ? Math.round(rect.top - 10)
+                                          : Math.round(
+                                              rect.top + rect.height / 2
+                                            ),
+                                      });
+                                    }
+                                    setItemMenuCategoryOpenFor(null);
+                                    setItemMenuId(h.id);
+                                  }}
+                                  className="absolute top-1.5 right-1.5 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  >
+                                    <circle cx="5" cy="12" r="1.5" />
+                                    <circle cx="12" cy="12" r="1.5" />
+                                    <circle cx="19" cy="12" r="1.5" />
+                                  </svg>
+                                </button>
                               </div>
                             );
-                          return (
-                            <div className="space-y-1">
-                              {items.map((h) => {
-                                const slug = (h.title || "")
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9]+/g, "-")
-                                  .replace(/^-+|-+$/g, "");
-                                const prettyHref = `/smart-signup-form/${h.id}`;
-                                const explicitCat = (h as any)?.data
-                                  ?.category as string | null;
-                                const effectiveCategory = (() => {
-                                  const explicit =
-                                    normalizeCategoryLabel(explicitCat);
-                                  if (explicit) return explicit;
-                                  try {
-                                    const text = [
-                                      String((h as any)?.title || ""),
-                                      String(
-                                        (h as any)?.data?.description || ""
-                                      ),
-                                      String((h as any)?.data?.rsvp || ""),
-                                      String((h as any)?.data?.location || ""),
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ");
-                                    const guessed = guessCategoryFromText(text);
-                                    return normalizeCategoryLabel(guessed);
-                                  } catch {
-                                    return null;
-                                  }
-                                })();
-                                const isShared = Boolean(
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                <div
+                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
+                >
+                  <Link
+                    href="/calendar"
+                    onClick={() => {
+                      try {
+                        const isTouch =
+                          typeof window !== "undefined" &&
+                          typeof window.matchMedia === "function" &&
+                          window.matchMedia("(hover: none), (pointer: coarse)")
+                            .matches;
+                        if (isTouch) setIsCollapsed(true);
+                      } catch {}
+                    }}
+                    className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                      <CalendarDays size={18} />
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span>Calendar</span>
+                    </span>
+                  </Link>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className={SIDEBAR_BADGE_CLASS}>
+                      {history.length}
+                    </span>
+                    <button
+                      type="button"
+                      title="New event"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                          (window as any).__openCreateEvent?.();
+                        } catch {}
+                      }}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                      aria-label="New event"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="miter"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <rect x="2" y="4" width="20" height="18" rx="0"></rect>
+                        <line x1="7" y1="2" x2="7" y2="6"></line>
+                        <line x1="17" y1="2" x2="17" y2="6"></line>
+                        <line x1="8" y1="13" x2="16" y2="13"></line>
+                        <line x1="12" y1="9" x2="12" y2="17"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {(() => {
+                  const sharedCount = 0; // Shared events disabled
+                  if (sharedCount === 0) return null;
+                  return (
+                    <div className="">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveCategory((prev) =>
+                            prev === "Shared events" ? null : "Shared events"
+                          );
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
+                          activeCategory === "Shared events"
+                            ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
+                            : ""
+                        } hover:bg-surface/70`}
+                        aria-pressed={activeCategory === "Shared events"}
+                        title="Shared events"
+                      >
+                        <span className="truncate inline-flex items-center gap-2">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                            aria-label="Shared events"
+                          >
+                            <title>Shared events</title>
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                          </svg>
+                          <span>Shared Events</span>
+                        </span>
+                        <span className="inline-flex items-center gap-2">
+                          {sharedCount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                              {sharedCount}
+                            </span>
+                          )}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Edit Shared events color`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                const rect = (
+                                  e.currentTarget as HTMLElement
+                                ).getBoundingClientRect();
+                                const menuWidth = 220;
+                                const viewportPadding = 8;
+                                const idealLeft =
+                                  rect.left + rect.width / 2 - menuWidth / 2;
+                                const clampedLeft = Math.max(
+                                  viewportPadding,
+                                  Math.min(
+                                    idealLeft,
+                                    window.innerWidth -
+                                      menuWidth -
+                                      viewportPadding
+                                  )
+                                );
+                                setColorMenuPos({
+                                  left: Math.round(clampedLeft),
+                                  top: Math.round(rect.bottom + 12),
+                                });
+                              } catch {
+                                setColorMenuPos(null);
+                              }
+                              setColorMenuFor("Shared events");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                (e.currentTarget as HTMLElement).click();
+                              }
+                            }}
+                            className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${sharedGradientSwatchClass()} border-0`}
+                            title="Edit color"
+                          />
+                        </span>
+                      </button>
+                      {activeCategory === "Shared events" && (
+                        <div className="mt-1 mb-2">
+                          {(() => {
+                            const items = sortHistoryRows(
+                              history.filter((h) =>
+                                Boolean(
                                   (h as any)?.data?.shared ||
                                     (h as any)?.data?.sharedOut ||
                                     (h as any)?.data?.category ===
                                       "Shared events"
-                                );
-                                const rowAndBadge = (() => {
-                                  if (isShared) {
-                                    return {
-                                      row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                      badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
-                                    };
-                                  }
-                                  if (!effectiveCategory)
-                                    return {
-                                      row: "",
-                                      badge:
-                                        "bg-surface/70 text-foreground/70 border-border/70",
-                                    };
-                                  const color =
-                                    categoryColors[effectiveCategory] ||
-                                    defaultCategoryColor(effectiveCategory);
-                                  const ccls = colorClasses(color);
-                                  const row = ccls.tint;
-                                  return { row, badge: ccls.badge };
-                                })();
-                                return (
-                                  <div
-                                    key={h.id}
-                                    data-history-item={h.id}
-                                    className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
-                                  >
-                                    <Link
-                                      href={prettyHref}
-                                      onClick={() => {
-                                        try {
-                                          const isTouch =
-                                            typeof window !== "undefined" &&
-                                            typeof window.matchMedia ===
-                                              "function" &&
-                                            window.matchMedia(
-                                              "(hover: none), (pointer: coarse)"
-                                            ).matches;
-                                          if (isTouch) setIsCollapsed(true);
-                                        } catch {}
-                                      }}
-                                      className="block pr-8"
-                                      title={h.title}
+                                )
+                              )
+                            );
+                            if (items.length === 0)
+                              return (
+                                <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
+                                  No events
+                                </div>
+                              );
+                            return (
+                              <div className="space-y-1">
+                                {items.map((h) => {
+                                  const slug = (h.title || "")
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]+/g, "-")
+                                    .replace(/^-+|-+$/g, "");
+                                  const prettyHref = `/smart-signup-form/${h.id}`;
+                                  const explicitCat = (h as any)?.data
+                                    ?.category as string | null;
+                                  const effectiveCategory = (() => {
+                                    const explicit =
+                                      normalizeCategoryLabel(explicitCat);
+                                    if (explicit) return explicit;
+                                    try {
+                                      const text = [
+                                        String((h as any)?.title || ""),
+                                        String(
+                                          (h as any)?.data?.description || ""
+                                        ),
+                                        String((h as any)?.data?.rsvp || ""),
+                                        String(
+                                          (h as any)?.data?.location || ""
+                                        ),
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" ");
+                                      const guessed =
+                                        guessCategoryFromText(text);
+                                      return normalizeCategoryLabel(guessed);
+                                    } catch {
+                                      return null;
+                                    }
+                                  })();
+                                  const isShared = Boolean(
+                                    (h as any)?.data?.shared ||
+                                      (h as any)?.data?.sharedOut ||
+                                      (h as any)?.data?.category ===
+                                        "Shared events"
+                                  );
+                                  const rowAndBadge = (() => {
+                                    if (isShared) {
+                                      return {
+                                        row: `${sharedGradientRowClass()} ${sharedTextClass}`,
+                                        badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
+                                      };
+                                    }
+                                    if (!effectiveCategory)
+                                      return {
+                                        row: "",
+                                        badge:
+                                          "bg-surface/70 text-foreground/70 border-border/70",
+                                      };
+                                    const color =
+                                      categoryColors[effectiveCategory] ||
+                                      defaultCategoryColor(effectiveCategory);
+                                    const ccls = colorClasses(color);
+                                    const row = ccls.tint;
+                                    return { row, badge: ccls.badge };
+                                  })();
+                                  return (
+                                    <div
+                                      key={h.id}
+                                      data-history-item={h.id}
+                                      className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
                                     >
-                                      <div className="truncate flex items-center gap-2">
-                                        <span className="truncate">
-                                          {h.title || "Untitled event"}
-                                        </span>
-                                      </div>
-                                      <div
-                                        className={`text-xs ${
-                                          isShared
-                                            ? sharedMutedTextClass
-                                            : "text-foreground/60"
-                                        }`}
+                                      <Link
+                                        href={prettyHref}
+                                        onClick={() => {
+                                          try {
+                                            const isTouch =
+                                              typeof window !== "undefined" &&
+                                              typeof window.matchMedia ===
+                                                "function" &&
+                                              window.matchMedia(
+                                                "(hover: none), (pointer: coarse)"
+                                              ).matches;
+                                            if (isTouch) setIsCollapsed(true);
+                                          } catch {}
+                                        }}
+                                        className="block pr-8"
+                                        title={h.title}
                                       >
-                                        {(() => {
-                                          const start =
-                                            (h as any)?.data?.start ||
-                                            (h as any)?.data?.event?.start;
-                                          const dateStr = start || h.created_at;
-                                          return dateStr
-                                            ? new Date(
-                                                dateStr
-                                              ).toLocaleDateString()
-                                            : "";
-                                        })()}
-                                      </div>
-                                    </Link>
-                                    {Boolean(
-                                      (h as any)?.data &&
-                                        (((h as any).data.shared as any) ||
-                                          ((h as any).data.sharedOut as any))
-                                    ) && (
-                                      <svg
-                                        viewBox="0 0 25.274 25.274"
-                                        fill="currentColor"
-                                        className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
-                                        aria-hidden="true"
-                                        aria-label="Shared event"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <title>Shared event</title>
-                                        <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
-                                      </svg>
-                                    )}
-                                    <button
-                                      type="button"
-                                      aria-label="Item options"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        // Keep Smart sign-up expanded while the item menu is open
-                                        try {
-                                          setActiveCategory("Smart sign-up");
-                                        } catch {}
-                                        const target =
-                                          e.currentTarget as HTMLElement | null;
-                                        if (itemMenuId === h.id) {
-                                          setItemMenuId(null);
-                                          setItemMenuOpensUpward(false);
-                                          setItemMenuPos(null);
-                                          setItemMenuCategoryOpenFor(null);
-                                          return;
-                                        }
-                                        if (target) {
-                                          const rect =
-                                            target.getBoundingClientRect();
-                                          const viewportHeight =
-                                            window.innerHeight;
-                                          const menuHeight = 200;
-                                          const spaceBelow =
-                                            viewportHeight - rect.top;
-                                          const shouldOpenUpward =
-                                            spaceBelow < menuHeight + 50;
-                                          setItemMenuOpensUpward(
-                                            shouldOpenUpward
-                                          );
-                                          setItemMenuPos({
-                                            left: Math.round(rect.right + 8),
-                                            top: shouldOpenUpward
-                                              ? Math.round(rect.top - 10)
-                                              : Math.round(
-                                                  rect.top + rect.height / 2
-                                                ),
-                                          });
-                                        }
-                                        setItemMenuCategoryOpenFor(null);
-                                        setItemMenuId(h.id);
-                                      }}
-                                      className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                        className="h-4 w-4"
-                                        aria-hidden="true"
-                                      >
-                                        <circle cx="5" cy="12" r="1.5" />
-                                        <circle cx="12" cy="12" r="1.5" />
-                                        <circle cx="19" cy="12" r="1.5" />
-                                      </svg>
-                                    </button>
-                                    {itemMenuId === h.id &&
-                                      itemMenuPos &&
-                                      createPortal(
+                                        <div className="truncate flex items-center gap-2">
+                                          <span className="truncate">
+                                            {h.title || "Untitled event"}
+                                          </span>
+                                        </div>
                                         <div
-                                          data-popover="item-menu"
-                                          onClick={(e) => e.stopPropagation()}
-                                          style={{
-                                            position: "fixed",
-                                            left: itemMenuPos.left,
-                                            top: itemMenuPos.top,
-                                            transform: itemMenuOpensUpward
-                                              ? "translateY(-100%)"
-                                              : "translateY(-10%)",
-                                          }}
-                                          className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
+                                          className={`text-xs ${
+                                            isShared
+                                              ? sharedMutedTextClass
+                                              : "text-foreground/60"
+                                          }`}
                                         >
-                                          <button
-                                            type="button"
-                                            onClick={async (e) => {
-                                              e.preventDefault();
-                                              e.stopPropagation();
-                                              setItemMenuId(null);
-                                              setItemMenuOpensUpward(false);
-                                              setItemMenuPos(null);
-                                              await shareHistoryItem(
-                                                prettyHref
-                                              );
+                                          {(() => {
+                                            const start =
+                                              (h as any)?.data?.start ||
+                                              (h as any)?.data?.event?.start;
+                                            const dateStr =
+                                              start || h.created_at;
+                                            return dateStr
+                                              ? new Date(
+                                                  dateStr
+                                                ).toLocaleDateString()
+                                              : "";
+                                          })()}
+                                        </div>
+                                      </Link>
+                                      {Boolean(
+                                        (h as any)?.data &&
+                                          (((h as any).data.shared as any) ||
+                                            ((h as any).data.sharedOut as any))
+                                      ) && (
+                                        <svg
+                                          viewBox="0 0 25.274 25.274"
+                                          fill="currentColor"
+                                          className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
+                                          aria-hidden="true"
+                                          aria-label="Shared event"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                          <title>Shared event</title>
+                                          <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
+                                        </svg>
+                                      )}
+                                      <button
+                                        type="button"
+                                        aria-label="Item options"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          // Keep Smart sign-up expanded while the item menu is open
+                                          try {
+                                            setActiveCategory("Smart sign-up");
+                                          } catch {}
+                                          const target =
+                                            e.currentTarget as HTMLElement | null;
+                                          if (itemMenuId === h.id) {
+                                            setItemMenuId(null);
+                                            setItemMenuOpensUpward(false);
+                                            setItemMenuPos(null);
+                                            setItemMenuCategoryOpenFor(null);
+                                            return;
+                                          }
+                                          if (target) {
+                                            const rect =
+                                              target.getBoundingClientRect();
+                                            const viewportHeight =
+                                              window.innerHeight;
+                                            const menuHeight = 200;
+                                            const spaceBelow =
+                                              viewportHeight - rect.top;
+                                            const shouldOpenUpward =
+                                              spaceBelow < menuHeight + 50;
+                                            setItemMenuOpensUpward(
+                                              shouldOpenUpward
+                                            );
+                                            setItemMenuPos({
+                                              left: Math.round(rect.right + 8),
+                                              top: shouldOpenUpward
+                                                ? Math.round(rect.top - 10)
+                                                : Math.round(
+                                                    rect.top + rect.height / 2
+                                                  ),
+                                            });
+                                          }
+                                          setItemMenuCategoryOpenFor(null);
+                                          setItemMenuId(h.id);
+                                        }}
+                                        className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 24 24"
+                                          fill="currentColor"
+                                          className="h-4 w-4"
+                                          aria-hidden="true"
+                                        >
+                                          <circle cx="5" cy="12" r="1.5" />
+                                          <circle cx="12" cy="12" r="1.5" />
+                                          <circle cx="19" cy="12" r="1.5" />
+                                        </svg>
+                                      </button>
+                                      {itemMenuId === h.id &&
+                                        itemMenuPos &&
+                                        createPortal(
+                                          <div
+                                            data-popover="item-menu"
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{
+                                              position: "fixed",
+                                              left: itemMenuPos.left,
+                                              top: itemMenuPos.top,
+                                              transform: itemMenuOpensUpward
+                                                ? "translateY(-100%)"
+                                                : "translateY(-10%)",
                                             }}
-                                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                            className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
                                           >
-                                            <span className="text-sm md:text-base">
-                                              Share
-                                            </span>
-                                          </button>
-                                          {!hideRenameAndChange && (
                                             <button
                                               type="button"
                                               onClick={async (e) => {
@@ -2973,155 +3160,138 @@ export default function LeftSidebar() {
                                                 setItemMenuId(null);
                                                 setItemMenuOpensUpward(false);
                                                 setItemMenuPos(null);
-                                                await renameHistoryItem(
-                                                  h.id,
-                                                  h.title
+                                                await shareHistoryItem(
+                                                  prettyHref
                                                 );
                                               }}
                                               className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                                             >
                                               <span className="text-sm md:text-base">
-                                                Rename
+                                                Share
                                               </span>
                                             </button>
-                                          )}
-                                          <button
-                                            type="button"
-                                            onClick={async (e) => {
-                                              e.preventDefault();
-                                              e.stopPropagation();
-                                              setItemMenuId(null);
-                                              setItemMenuOpensUpward(false);
-                                              setItemMenuPos(null);
-                                              await deleteHistoryItem(h.id);
-                                            }}
-                                            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                          >
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              className="h-4 w-4"
-                                              aria-hidden="true"
+                                            {!hideRenameAndChange && (
+                                              <button
+                                                type="button"
+                                                onClick={async (e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  setItemMenuId(null);
+                                                  setItemMenuOpensUpward(false);
+                                                  setItemMenuPos(null);
+                                                  await renameHistoryItem(
+                                                    h.id,
+                                                    h.title
+                                                  );
+                                                }}
+                                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                              >
+                                                <span className="text-sm md:text-base">
+                                                  Rename
+                                                </span>
+                                              </button>
+                                            )}
+                                            <button
+                                              type="button"
+                                              onClick={async (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setItemMenuId(null);
+                                                setItemMenuOpensUpward(false);
+                                                setItemMenuPos(null);
+                                                await deleteHistoryItem(h.id);
+                                              }}
+                                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
                                             >
-                                              <polyline points="3 6 5 6 21 6" />
-                                              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                                              <path d="M10 11v6" />
-                                              <path d="M14 11v6" />
-                                              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-                                            </svg>
-                                            <span className="text-sm md:text-base">
-                                              Delete
-                                            </span>
-                                          </button>
-                                        </div>,
-                                        document.body
-                                      )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-              {/* My Events Section */}
-              <div
-                className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 mt-3 ${
-                  myEventsOpen ? "ring-2 ring-[#d9ccff]" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <button
-                    type="button"
-                    onClick={() => setMyEventsOpen((v) => !v)}
-                    className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <Trophy size={18} />
-                    </span>
-                    <span>My Events</span>
-                  </button>
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className={SIDEBAR_BADGE_CLASS}>
-                      {history.length}
-                    </span>
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="h-4 w-4"
+                                                aria-hidden="true"
+                                              >
+                                                <polyline points="3 6 5 6 21 6" />
+                                                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                                                <path d="M10 11v6" />
+                                                <path d="M14 11v6" />
+                                                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                                              </svg>
+                                              <span className="text-sm md:text-base">
+                                                Delete
+                                              </span>
+                                            </button>
+                                          </div>,
+                                          document.body
+                                        )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {/* My Events Section */}
+                <div
+                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 mt-3 ${
+                    myEventsOpen ? "ring-2 ring-[#d9ccff]" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3 w-full">
                     <button
                       type="button"
                       onClick={() => setMyEventsOpen((v) => !v)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                      aria-label="Toggle My Events"
+                      className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
                     >
-                      <span
-                        className={`text-lg leading-none transition-transform ${
-                          myEventsOpen ? "rotate-180" : ""
-                        }`}
-                        aria-hidden="true"
-                      >
-                        ▾
+                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <Trophy size={18} />
                       </span>
+                      <span>My Events</span>
                     </button>
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className={SIDEBAR_BADGE_CLASS}>
+                        {history.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMyEventsOpen((v) => !v)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                        aria-label="Toggle My Events"
+                      >
+                        <span
+                          className={`text-lg leading-none transition-transform ${
+                            myEventsOpen ? "rotate-180" : ""
+                          }`}
+                          aria-hidden="true"
+                        >
+                          ▾
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div
-                  className={`pl-2 mt-3 border-l-2 border-border/40 ml-2 ${
-                    myEventsOpen ? "" : "hidden"
-                  }`}
-                >
-                  {(() => {
-                    const categories = Array.from(
-                      new Set(
-                        history
-                          .map((h) => {
-                            try {
-                              const explicit = normalizeCategoryLabel(
-                                (h as any)?.data?.category as string | null
-                              );
-                              if (explicit) return explicit;
-                              const text = [
-                                String((h as any)?.title || ""),
-                                String((h as any)?.data?.description || ""),
-                                String((h as any)?.data?.rsvp || ""),
-                                String((h as any)?.data?.location || ""),
-                              ]
-                                .filter(Boolean)
-                                .join(" ");
-                              const guessed = guessCategoryFromText(text);
-                              return normalizeCategoryLabel(guessed);
-                            } catch {
-                              return null;
-                            }
-                          })
-                          .filter((c): c is string => Boolean(c))
-                      )
-                    ).filter((c) => c.trim().toLowerCase() !== "shared events"); // Shared events section renders above with gradient treatment
-                    // Sort categories A → Z for consistent display
-                    const sortedCategories = [...categories].sort((a, b) =>
-                      a.localeCompare(b)
-                    );
-                    if (categories.length === 0) return null;
-                    const buttonClass = (_c: string) => {
-                      return `hover:bg-surface/70`;
-                    };
-                    return (
-                      <div ref={categoriesRef} className="mt-2 space-y-1">
-                        {sortedCategories.map((c) => {
-                          // Gather items under this category once to reuse below
-                          const categoryItems = (() => {
-                            try {
-                              return history.filter((h) => {
+                  <div
+                    className={`pl-2 mt-3 border-l-2 border-border/40 ml-2 ${
+                      myEventsOpen ? "" : "hidden"
+                    }`}
+                  >
+                    {(() => {
+                      const categories = Array.from(
+                        new Set(
+                          history
+                            .map((h) => {
+                              try {
                                 const explicit = normalizeCategoryLabel(
                                   (h as any)?.data?.category as string | null
                                 );
-                                if (explicit) return explicit === c;
+                                if (explicit) return explicit;
                                 const text = [
                                   String((h as any)?.title || ""),
                                   String((h as any)?.data?.description || ""),
@@ -3130,476 +3300,474 @@ export default function LeftSidebar() {
                                 ]
                                   .filter(Boolean)
                                   .join(" ");
-                                const guessed = normalizeCategoryLabel(
-                                  guessCategoryFromText(text)
-                                );
-                                return guessed === c;
-                              });
-                            } catch {
-                              return [] as typeof history;
-                            }
-                          })();
-                          const totalCount = categoryItems.length;
-                          const categoryAdIndex =
-                            categoryAdPositions.get(c) ?? null;
-                          return (
-                            <div key={c} className="">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveCategory((prev) =>
-                                    prev === c ? null : c
+                                const guessed = guessCategoryFromText(text);
+                                return normalizeCategoryLabel(guessed);
+                              } catch {
+                                return null;
+                              }
+                            })
+                            .filter((c): c is string => Boolean(c))
+                        )
+                      ).filter(
+                        (c) => c.trim().toLowerCase() !== "shared events"
+                      ); // Shared events section renders above with gradient treatment
+                      // Sort categories A → Z for consistent display
+                      const sortedCategories = [...categories].sort((a, b) =>
+                        a.localeCompare(b)
+                      );
+                      if (categories.length === 0) return null;
+                      const buttonClass = (_c: string) => {
+                        return `hover:bg-surface/70`;
+                      };
+                      return (
+                        <div ref={categoriesRef} className="mt-2 space-y-1">
+                          {sortedCategories.map((c) => {
+                            // Gather items under this category once to reuse below
+                            const categoryItems = (() => {
+                              try {
+                                return history.filter((h) => {
+                                  const explicit = normalizeCategoryLabel(
+                                    (h as any)?.data?.category as string | null
                                   );
-                                }}
-                                className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
-                                  activeCategory === c
-                                    ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
-                                    : ""
-                                } ${buttonClass(c)}`}
-                                aria-pressed={activeCategory === c}
-                                title={c}
-                              >
-                                <span className="truncate">{c}</span>
-                                {(() => {
-                                  const color =
-                                    categoryColors[c] ||
-                                    defaultCategoryColor(c);
-                                  const ccls = colorClasses(color);
-                                  return (
-                                    <span className="inline-flex items-center gap-2">
-                                      {totalCount > 0 && (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                                          {totalCount}
-                                        </span>
-                                      )}
-                                      <span
-                                        role="button"
-                                        tabIndex={0}
-                                        aria-label={`Edit ${c} color`}
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          try {
-                                            const rect = (
-                                              e.currentTarget as HTMLElement
-                                            ).getBoundingClientRect();
-                                            const menuWidth = 220;
-                                            const viewportPadding = 8;
-                                            const idealLeft =
-                                              rect.left +
-                                              rect.width / 2 -
-                                              menuWidth / 2;
-                                            const clampedLeft = Math.max(
-                                              viewportPadding,
-                                              Math.min(
-                                                idealLeft,
-                                                window.innerWidth -
-                                                  menuWidth -
-                                                  viewportPadding
-                                              )
-                                            );
-                                            setColorMenuPos({
-                                              left: Math.round(clampedLeft),
-                                              top: Math.round(rect.bottom + 12),
-                                            });
-                                          } catch {
-                                            setColorMenuPos(null);
-                                          }
-                                          setColorMenuFor(c);
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (
-                                            e.key === "Enter" ||
-                                            e.key === " "
-                                          ) {
+                                  if (explicit) return explicit === c;
+                                  const text = [
+                                    String((h as any)?.title || ""),
+                                    String((h as any)?.data?.description || ""),
+                                    String((h as any)?.data?.rsvp || ""),
+                                    String((h as any)?.data?.location || ""),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ");
+                                  const guessed = normalizeCategoryLabel(
+                                    guessCategoryFromText(text)
+                                  );
+                                  return guessed === c;
+                                });
+                              } catch {
+                                return [] as typeof history;
+                              }
+                            })();
+                            const totalCount = categoryItems.length;
+                            const categoryAdIndex =
+                              categoryAdPositions.get(c) ?? null;
+                            return (
+                              <div key={c} className="">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveCategory((prev) =>
+                                      prev === c ? null : c
+                                    );
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
+                                    activeCategory === c
+                                      ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
+                                      : ""
+                                  } ${buttonClass(c)}`}
+                                  aria-pressed={activeCategory === c}
+                                  title={c}
+                                >
+                                  <span className="truncate">{c}</span>
+                                  {(() => {
+                                    const color =
+                                      categoryColors[c] ||
+                                      defaultCategoryColor(c);
+                                    const ccls = colorClasses(color);
+                                    return (
+                                      <span className="inline-flex items-center gap-2">
+                                        {totalCount > 0 && (
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
+                                            {totalCount}
+                                          </span>
+                                        )}
+                                        <span
+                                          role="button"
+                                          tabIndex={0}
+                                          aria-label={`Edit ${c} color`}
+                                          onClick={(e) => {
                                             e.preventDefault();
-                                            (
-                                              e.currentTarget as HTMLElement
-                                            ).click();
-                                          }
-                                        }}
-                                        className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
-                                        title="Edit color"
-                                      />
-                                    </span>
-                                  );
-                                })()}
-                              </button>
-                              {activeCategory === c ? (
-                                <div className="mt-1 mb-2">
-                                  {categoryItems.length === 0 ? (
-                                    <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                                      No events
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-1">
-                                      {categoryItems.map((h, index) => {
-                                        const slug = (h.title || "")
-                                          .toLowerCase()
-                                          .replace(/[^a-z0-9]+/g, "-")
-                                          .replace(/^-+|-+$/g, "");
-                                        const dataObj: any =
-                                          (h as any)?.data || {};
-                                        const prettyHref = dataObj?.signupForm
-                                          ? `/smart-signup-form/${h.id}`
-                                          : `/event/${slug}-${h.id}`;
-                                        const explicitCat = (h as any)?.data
-                                          ?.category as string | null;
-                                        const effectiveCategory = (() => {
-                                          const explicit =
-                                            normalizeCategoryLabel(explicitCat);
-                                          if (explicit) return explicit;
-                                          try {
-                                            const text = [
-                                              String((h as any)?.title || ""),
-                                              String(
-                                                (h as any)?.data?.description ||
-                                                  ""
-                                              ),
-                                              String(
-                                                (h as any)?.data?.rsvp || ""
-                                              ),
-                                              String(
-                                                (h as any)?.data?.location || ""
-                                              ),
-                                            ]
-                                              .filter(Boolean)
-                                              .join(" ");
-                                            const guessed =
-                                              guessCategoryFromText(text);
-                                            return normalizeCategoryLabel(
-                                              guessed
-                                            );
-                                          } catch {
-                                            return null;
-                                          }
-                                        })();
-                                        const isShared = Boolean(
-                                          (h as any)?.data?.shared ||
-                                            (h as any)?.data?.sharedOut ||
-                                            (h as any)?.data?.category ===
-                                              "Shared events"
-                                        );
-                                        const rowAndBadge = (() => {
-                                          if (isShared) {
-                                            return {
-                                              row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                              badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
-                                            };
-                                          }
-                                          if (!effectiveCategory)
-                                            return {
-                                              row: "",
-                                              badge:
-                                                "bg-surface/70 text-foreground/70 border-border/70",
-                                            };
-                                          const color =
-                                            categoryColors[effectiveCategory] ||
-                                            defaultCategoryColor(
-                                              effectiveCategory
-                                            );
-                                          const ccls = colorClasses(color);
-                                          const row = ccls.tint;
-                                          return { row, badge: ccls.badge };
-                                        })();
-                                        return (
-                                          <Fragment key={h.id}>
-                                            <div
-                                              data-history-item={h.id}
-                                              className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
-                                            >
-                                              <Link
-                                                href={prettyHref}
-                                                onClick={() => {
-                                                  try {
-                                                    const isTouch =
-                                                      typeof window !==
-                                                        "undefined" &&
-                                                      typeof window.matchMedia ===
-                                                        "function" &&
-                                                      window.matchMedia(
-                                                        "(hover: none), (pointer: coarse)"
-                                                      ).matches;
-                                                    if (isTouch)
-                                                      setIsCollapsed(true);
-                                                  } catch {}
-                                                }}
-                                                className="block pr-8"
-                                                title={h.title}
+                                            e.stopPropagation();
+                                            try {
+                                              const rect = (
+                                                e.currentTarget as HTMLElement
+                                              ).getBoundingClientRect();
+                                              const menuWidth = 220;
+                                              const viewportPadding = 8;
+                                              const idealLeft =
+                                                rect.left +
+                                                rect.width / 2 -
+                                                menuWidth / 2;
+                                              const clampedLeft = Math.max(
+                                                viewportPadding,
+                                                Math.min(
+                                                  idealLeft,
+                                                  window.innerWidth -
+                                                    menuWidth -
+                                                    viewportPadding
+                                                )
+                                              );
+                                              setColorMenuPos({
+                                                left: Math.round(clampedLeft),
+                                                top: Math.round(
+                                                  rect.bottom + 12
+                                                ),
+                                              });
+                                            } catch {
+                                              setColorMenuPos(null);
+                                            }
+                                            setColorMenuFor(c);
+                                          }}
+                                          onKeyDown={(e) => {
+                                            if (
+                                              e.key === "Enter" ||
+                                              e.key === " "
+                                            ) {
+                                              e.preventDefault();
+                                              (
+                                                e.currentTarget as HTMLElement
+                                              ).click();
+                                            }
+                                          }}
+                                          className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
+                                          title="Edit color"
+                                        />
+                                      </span>
+                                    );
+                                  })()}
+                                </button>
+                                {activeCategory === c ? (
+                                  <div className="mt-1 mb-2">
+                                    {categoryItems.length === 0 ? (
+                                      <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
+                                        No events
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-1">
+                                        {categoryItems.map((h, index) => {
+                                          const slug = (h.title || "")
+                                            .toLowerCase()
+                                            .replace(/[^a-z0-9]+/g, "-")
+                                            .replace(/^-+|-+$/g, "");
+                                          const dataObj: any =
+                                            (h as any)?.data || {};
+                                          const prettyHref = dataObj?.signupForm
+                                            ? `/smart-signup-form/${h.id}`
+                                            : `/event/${slug}-${h.id}`;
+                                          const explicitCat = (h as any)?.data
+                                            ?.category as string | null;
+                                          const effectiveCategory = (() => {
+                                            const explicit =
+                                              normalizeCategoryLabel(
+                                                explicitCat
+                                              );
+                                            if (explicit) return explicit;
+                                            try {
+                                              const text = [
+                                                String((h as any)?.title || ""),
+                                                String(
+                                                  (h as any)?.data
+                                                    ?.description || ""
+                                                ),
+                                                String(
+                                                  (h as any)?.data?.rsvp || ""
+                                                ),
+                                                String(
+                                                  (h as any)?.data?.location ||
+                                                    ""
+                                                ),
+                                              ]
+                                                .filter(Boolean)
+                                                .join(" ");
+                                              const guessed =
+                                                guessCategoryFromText(text);
+                                              return normalizeCategoryLabel(
+                                                guessed
+                                              );
+                                            } catch {
+                                              return null;
+                                            }
+                                          })();
+                                          const isShared = Boolean(
+                                            (h as any)?.data?.shared ||
+                                              (h as any)?.data?.sharedOut ||
+                                              (h as any)?.data?.category ===
+                                                "Shared events"
+                                          );
+                                          const rowAndBadge = (() => {
+                                            if (isShared) {
+                                              return {
+                                                row: `${sharedGradientRowClass()} ${sharedTextClass}`,
+                                                badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
+                                              };
+                                            }
+                                            if (!effectiveCategory)
+                                              return {
+                                                row: "",
+                                                badge:
+                                                  "bg-surface/70 text-foreground/70 border-border/70",
+                                              };
+                                            const color =
+                                              categoryColors[
+                                                effectiveCategory
+                                              ] ||
+                                              defaultCategoryColor(
+                                                effectiveCategory
+                                              );
+                                            const ccls = colorClasses(color);
+                                            const row = ccls.tint;
+                                            return { row, badge: ccls.badge };
+                                          })();
+                                          return (
+                                            <Fragment key={h.id}>
+                                              <div
+                                                data-history-item={h.id}
+                                                className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
                                               >
-                                                <div className="truncate flex items-center gap-2">
-                                                  <span className="truncate">
-                                                    {h.title ||
-                                                      "Untitled event"}
-                                                  </span>
-                                                </div>
-                                                <div
-                                                  className={`text-xs ${
-                                                    isShared
-                                                      ? sharedMutedTextClass
-                                                      : "text-foreground/60"
-                                                  }`}
+                                                <Link
+                                                  href={prettyHref}
+                                                  onClick={() => {
+                                                    try {
+                                                      const isTouch =
+                                                        typeof window !==
+                                                          "undefined" &&
+                                                        typeof window.matchMedia ===
+                                                          "function" &&
+                                                        window.matchMedia(
+                                                          "(hover: none), (pointer: coarse)"
+                                                        ).matches;
+                                                      if (isTouch)
+                                                        setIsCollapsed(true);
+                                                    } catch {}
+                                                  }}
+                                                  className="block pr-8"
+                                                  title={h.title}
                                                 >
-                                                  {(() => {
-                                                    const start =
-                                                      (h as any)?.data?.start ||
-                                                      (h as any)?.data?.event
-                                                        ?.start;
-                                                    const dateStr =
-                                                      start || h.created_at;
-                                                    return dateStr
-                                                      ? new Date(
-                                                          dateStr
-                                                        ).toLocaleDateString()
-                                                      : "";
-                                                  })()}
-                                                </div>
-                                              </Link>
-                                              <button
-                                                type="button"
-                                                aria-label="Item options"
-                                                onClick={(e) => {
-                                                  e.preventDefault();
-                                                  e.stopPropagation();
-                                                  const target =
-                                                    e.currentTarget as HTMLElement | null;
-                                                  if (itemMenuId === h.id) {
-                                                    setItemMenuId(null);
-                                                    setItemMenuOpensUpward(
-                                                      false
-                                                    );
-                                                    setItemMenuPos(null);
+                                                  <div className="truncate flex items-center gap-2">
+                                                    <span className="truncate">
+                                                      {h.title ||
+                                                        "Untitled event"}
+                                                    </span>
+                                                  </div>
+                                                  <div
+                                                    className={`text-xs ${
+                                                      isShared
+                                                        ? sharedMutedTextClass
+                                                        : "text-foreground/60"
+                                                    }`}
+                                                  >
+                                                    {(() => {
+                                                      const start =
+                                                        (h as any)?.data
+                                                          ?.start ||
+                                                        (h as any)?.data?.event
+                                                          ?.start;
+                                                      const dateStr =
+                                                        start || h.created_at;
+                                                      return dateStr
+                                                        ? new Date(
+                                                            dateStr
+                                                          ).toLocaleDateString()
+                                                        : "";
+                                                    })()}
+                                                  </div>
+                                                </Link>
+                                                <button
+                                                  type="button"
+                                                  aria-label="Item options"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    const target =
+                                                      e.currentTarget as HTMLElement | null;
+                                                    if (itemMenuId === h.id) {
+                                                      setItemMenuId(null);
+                                                      setItemMenuOpensUpward(
+                                                        false
+                                                      );
+                                                      setItemMenuPos(null);
+                                                      setItemMenuCategoryOpenFor(
+                                                        null
+                                                      );
+                                                      return;
+                                                    }
+                                                    if (target) {
+                                                      const rect =
+                                                        target.getBoundingClientRect();
+                                                      const viewportHeight =
+                                                        window.innerHeight;
+                                                      const menuHeight = 200;
+                                                      const spaceBelow =
+                                                        viewportHeight -
+                                                        rect.top;
+                                                      const shouldOpenUpward =
+                                                        spaceBelow <
+                                                        menuHeight + 50;
+                                                      setItemMenuOpensUpward(
+                                                        shouldOpenUpward
+                                                      );
+                                                      setItemMenuPos({
+                                                        left: Math.round(
+                                                          rect.right + 8
+                                                        ),
+                                                        top: shouldOpenUpward
+                                                          ? Math.round(
+                                                              rect.top - 10
+                                                            )
+                                                          : Math.round(
+                                                              rect.top +
+                                                                rect.height / 2
+                                                            ),
+                                                      });
+                                                    }
                                                     setItemMenuCategoryOpenFor(
                                                       null
                                                     );
-                                                    return;
-                                                  }
-                                                  if (target) {
-                                                    const rect =
-                                                      target.getBoundingClientRect();
-                                                    const viewportHeight =
-                                                      window.innerHeight;
-                                                    const menuHeight = 200;
-                                                    const spaceBelow =
-                                                      viewportHeight - rect.top;
-                                                    const shouldOpenUpward =
-                                                      spaceBelow <
-                                                      menuHeight + 50;
-                                                    setItemMenuOpensUpward(
-                                                      shouldOpenUpward
-                                                    );
-                                                    setItemMenuPos({
-                                                      left: Math.round(
-                                                        rect.right + 8
-                                                      ),
-                                                      top: shouldOpenUpward
-                                                        ? Math.round(
-                                                            rect.top - 10
-                                                          )
-                                                        : Math.round(
-                                                            rect.top +
-                                                              rect.height / 2
-                                                          ),
-                                                    });
-                                                  }
-                                                  setItemMenuCategoryOpenFor(
-                                                    null
-                                                  );
-                                                  setItemMenuId(h.id);
-                                                }}
-                                                className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                                              >
-                                                <span
-                                                  className="text-lg font-normal leading-none"
-                                                  aria-hidden="true"
+                                                    setItemMenuId(h.id);
+                                                  }}
+                                                  className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
                                                 >
-                                                  ⋮
-                                                </span>
-                                              </button>
-                                              {itemMenuId === h.id &&
-                                                itemMenuPos &&
-                                                createPortal(
-                                                  <div
-                                                    data-popover="item-menu"
-                                                    onClick={(e) =>
-                                                      e.stopPropagation()
-                                                    }
-                                                    style={{
-                                                      position: "fixed",
-                                                      left: itemMenuPos.left,
-                                                      top: itemMenuPos.top,
-                                                      transform:
-                                                        itemMenuOpensUpward
-                                                          ? "translateY(-100%)"
-                                                          : "translateY(-10%)",
-                                                    }}
-                                                    className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
+                                                  <span
+                                                    className="text-lg font-normal leading-none"
+                                                    aria-hidden="true"
                                                   >
-                                                    <button
-                                                      type="button"
-                                                      onClick={async (e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setItemMenuId(null);
-                                                        setItemMenuOpensUpward(
-                                                          false
-                                                        );
-                                                        setItemMenuPos(null);
-                                                        await shareHistoryItem(
-                                                          prettyHref
-                                                        );
+                                                    ⋮
+                                                  </span>
+                                                </button>
+                                                {itemMenuId === h.id &&
+                                                  itemMenuPos &&
+                                                  createPortal(
+                                                    <div
+                                                      data-popover="item-menu"
+                                                      onClick={(e) =>
+                                                        e.stopPropagation()
+                                                      }
+                                                      style={{
+                                                        position: "fixed",
+                                                        left: itemMenuPos.left,
+                                                        top: itemMenuPos.top,
+                                                        transform:
+                                                          itemMenuOpensUpward
+                                                            ? "translateY(-100%)"
+                                                            : "translateY(-10%)",
                                                       }}
-                                                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                                      className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
                                                     >
-                                                      <span className="text-sm md:text-base">
-                                                        Delete
-                                                      </span>
-                                                    </button>
-                                                  </div>,
-                                                  document.body
-                                                )}
-                                            </div>
-                                            {categoryAdIndex !== null &&
-                                            categoryAdIndex === index ? (
-                                              <SidebarAdUnit />
-                                            ) : null}
-                                          </Fragment>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+                                                      <button
+                                                        type="button"
+                                                        onClick={async (e) => {
+                                                          e.preventDefault();
+                                                          e.stopPropagation();
+                                                          setItemMenuId(null);
+                                                          setItemMenuOpensUpward(
+                                                            false
+                                                          );
+                                                          setItemMenuPos(null);
+                                                          await shareHistoryItem(
+                                                            prettyHref
+                                                          );
+                                                        }}
+                                                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
+                                                      >
+                                                        <span className="text-sm md:text-base">
+                                                          Delete
+                                                        </span>
+                                                      </button>
+                                                    </div>,
+                                                    document.body
+                                                  )}
+                                              </div>
+                                              {categoryAdIndex !== null &&
+                                              categoryAdIndex === index ? (
+                                                <SidebarAdUnit />
+                                              ) : null}
+                                            </Fragment>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Bottom: User button with dropdown */}
-        <div className="border-t border-border py-2 px-3">
-          <div className="relative z-[900]">
-            <button
-              ref={buttonRef}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen((v) => {
-                  const next = !v;
-                  return next;
-                });
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              aria-expanded={menuOpen}
-              className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-foreground/90 transition-colors duration-150 hover:text-foreground hover:bg-surface/70 active:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
-            >
-              <div className="min-w-0 flex-1 inline-flex items-center gap-2">
-                <div className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-sm font-medium">
-                    {displayName}
-                  </div>
-                  {userEmail && (
-                    <div className="truncate text-xs md:text-sm text-foreground/60">
-                      {userEmail}
+          {/* Bottom: User button with dropdown */}
+          <div className="border-t border-border py-2 px-3">
+            <div className="relative z-[900]">
+              <button
+                ref={buttonRef}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen((v) => {
+                    const next = !v;
+                    return next;
+                  });
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-expanded={menuOpen}
+                className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-foreground/90 transition-colors duration-150 hover:text-foreground hover:bg-surface/70 active:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <div className="min-w-0 flex-1 inline-flex items-center gap-2">
+                  <div className="min-w-0 flex-1 text-left">
+                    <div className="truncate text-sm font-medium">
+                      {displayName}
                     </div>
+                    {userEmail && (
+                      <div className="truncate text-xs md:text-sm text-foreground/60">
+                        {userEmail}
+                      </div>
+                    )}
+                  </div>
+                  {showCreditsShell && creditsAreKnown && (
+                    <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      {creditsValue}
+                    </span>
                   )}
                 </div>
-                {showCreditsShell && creditsAreKnown && (
-                  <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {creditsValue}
-                  </span>
-                )}
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`h-4 w-4 transition-transform ${
-                  menuOpen ? "rotate-180" : "rotate-0"
-                }`}
-                aria-hidden="true"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-
-            {isOpen && menuOpen && (
-              <div className="pointer-events-none absolute bottom-full right-0 mb-3 z-[1000]">
-                <div
-                  ref={menuRef}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="pointer-events-auto w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-4 w-4 transition-transform ${
+                    menuOpen ? "rotate-180" : "rotate-0"
+                  }`}
+                  aria-hidden="true"
                 >
-                  <div className="p-2">
-                    <Link
-                      href="/settings"
-                      onClick={() => {
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="7" r="4" />
-                        <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                      </svg>
-                      <span className="text-sm md:text-base">Profile</span>
-                    </Link>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
 
-                    <div className="mt-1 relative">
-                      <button
-                        type="button"
-                        onClick={() => {}}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+              {isOpen && menuOpen && (
+                <div className="pointer-events-none absolute bottom-full right-0 mb-3 z-[1000]">
+                  <div
+                    ref={menuRef}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="pointer-events-auto w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
+                  >
+                    <div className="p-2">
+                      <Link
+                        href="/settings"
+                        onClick={() => {
+                          setMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                       >
-                        <div className="flex items-center gap-3">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <rect
-                              x="3"
-                              y="4"
-                              width="18"
-                              height="18"
-                              rx="2"
-                              ry="2"
-                            />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                          </svg>
-                          <span className="text-sm md:text-base">Calendar</span>
-                        </div>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -3608,137 +3776,19 @@ export default function LeftSidebar() {
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className={`h-4 w-4 transition-transform ${
-                            false ? "rotate-0" : "rotate-90"
-                          }`}
+                          className="h-4 w-4"
                           aria-hidden="true"
                         >
-                          <polyline points="9 18 15 12 9 6" />
+                          <circle cx="12" cy="7" r="4" />
+                          <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                         </svg>
-                      </button>
-                      {false && (
-                        <div className="mt-2 px-3 pb-2 space-y-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
-                              Connection status
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
-                              const active = connectedCalendars[key];
-                              return (
-                                <div
-                                  key={key}
-                                  className={`flex flex-col items-center gap-1 text-[11px] ${
-                                    active
-                                      ? "text-emerald-600"
-                                      : "text-foreground/60"
-                                  }`}
-                                >
-                                  <button
-                                    type="button"
-                                    aria-pressed={active}
-                                    title={
-                                      active
-                                        ? `${label} calendar connected`
-                                        : `Connect ${label} calendar`
-                                    }
-                                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
-                                      active
-                                        ? "border-emerald-600 bg-emerald-100 hover:border-emerald-500 shadow-lg shadow-emerald-600/30 ring-2 ring-emerald-600/20"
-                                        : "border-border bg-surface hover:border-primary hover:bg-primary/10"
-                                    }`}
-                                    onClick={() => handleCalendarConnect(key)}
-                                  >
-                                    <Icon
-                                      className={`h-4 w-4 ${
-                                        active ? "text-emerald-700" : ""
-                                      }`}
-                                    />
-                                    {active && (
-                                      <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-lg z-10">
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 12 12"
-                                          fill="none"
-                                          className="h-3 w-3 text-white"
-                                        >
-                                          <path
-                                            d="M10 3L4.5 8.5L2 6"
-                                            stroke="currentColor"
-                                            strokeWidth="2.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                          />
-                                        </svg>
-                                      </div>
-                                    )}
-                                  </button>
-                                  <span>{label}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                        <span className="text-sm md:text-base">Profile</span>
+                      </Link>
 
-                    <Link
-                      href="/about"
-                      onClick={() => {
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                      <span className="text-sm md:text-base">About us</span>
-                    </Link>
-
-                    <Link
-                      href="/contact"
-                      onClick={() => {
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-                    >
-                      <svg
-                        fill="currentColor"
-                        viewBox="0 0 492.014 492.014"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
-                        <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
-                        <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
-                        <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
-                        <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
-                        <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
-                        <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
-                      </svg>
-                      <span className="text-sm md:text-base">Contact us</span>
-                    </Link>
-
-                    {isAdmin && (
-                      <div className="relative">
+                      <div className="mt-1 relative">
                         <button
                           type="button"
-                          onClick={() => {
-                            setAdminOpenFloating((v) => !v);
-                          }}
+                          onClick={() => {}}
                           className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                         >
                           <div className="flex items-center gap-3">
@@ -3753,9 +3803,21 @@ export default function LeftSidebar() {
                               className="h-4 w-4"
                               aria-hidden="true"
                             >
-                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                              <rect
+                                x="3"
+                                y="4"
+                                width="18"
+                                height="18"
+                                rx="2"
+                                ry="2"
+                              />
+                              <line x1="16" y1="2" x2="16" y2="6" />
+                              <line x1="8" y1="2" x2="8" y2="6" />
+                              <line x1="3" y1="10" x2="21" y2="10" />
                             </svg>
-                            <span className="text-sm md:text-base">Admin</span>
+                            <span className="text-sm md:text-base">
+                              Calendar
+                            </span>
                           </div>
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -3766,83 +3828,242 @@ export default function LeftSidebar() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             className={`h-4 w-4 transition-transform ${
-                              adminOpenFloating ? "rotate-0" : "rotate-90"
+                              false ? "rotate-0" : "rotate-90"
                             }`}
                             aria-hidden="true"
                           >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
-                        {adminOpenFloating && (
-                          <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
-                            <Link
-                              href="/admin"
-                              onClick={() => {
-                                setMenuOpen(false);
-                                setAdminOpenFloating(false);
-                              }}
-                              className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                            >
-                              <span className="text-sm md:text-base">
-                                Dashboard
-                              </span>
-                            </Link>
-                            <Link
-                              href="/admin/emails"
-                              onClick={() => {
-                                setMenuOpen(false);
-                                setAdminOpenFloating(false);
-                              }}
-                              className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                            >
-                              <span className="text-sm md:text-base">
-                                Emails
-                              </span>
-                            </Link>
-                            <Link
-                              href="/admin/campaigns"
-                              onClick={() => {
-                                setMenuOpen(false);
-                                setAdminOpenFloating(false);
-                              }}
-                              className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
-                            >
-                              <span className="text-sm md:text-base">
-                                Campaigns
-                              </span>
-                            </Link>
+                        {false && (
+                          <div className="mt-2 px-3 pb-2 space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
+                                Connection status
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
+                                const active = connectedCalendars[key];
+                                return (
+                                  <div
+                                    key={key}
+                                    className={`flex flex-col items-center gap-1 text-[11px] ${
+                                      active
+                                        ? "text-emerald-600"
+                                        : "text-foreground/60"
+                                    }`}
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-pressed={active}
+                                      title={
+                                        active
+                                          ? `${label} calendar connected`
+                                          : `Connect ${label} calendar`
+                                      }
+                                      className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
+                                        active
+                                          ? "border-emerald-600 bg-emerald-100 hover:border-emerald-500 shadow-lg shadow-emerald-600/30 ring-2 ring-emerald-600/20"
+                                          : "border-border bg-surface hover:border-primary hover:bg-primary/10"
+                                      }`}
+                                      onClick={() => handleCalendarConnect(key)}
+                                    >
+                                      <Icon
+                                        className={`h-4 w-4 ${
+                                          active ? "text-emerald-700" : ""
+                                        }`}
+                                      />
+                                      {active && (
+                                        <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-lg z-10">
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 12 12"
+                                            fill="none"
+                                            className="h-3 w-3 text-white"
+                                          >
+                                            <path
+                                              d="M10 3L4.5 8.5L2 6"
+                                              stroke="currentColor"
+                                              strokeWidth="2.5"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                            />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </button>
+                                    <span>{label}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
-                    )}
 
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
+                      <Link
+                        href="/about"
+                        onClick={() => {
+                          setMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
                       >
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                      </svg>
-                      <span className="text-sm md:text-base">Log out</span>
-                    </button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        <span className="text-sm md:text-base">About us</span>
+                      </Link>
+
+                      <Link
+                        href="/contact"
+                        onClick={() => {
+                          setMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                      >
+                        <svg
+                          fill="currentColor"
+                          viewBox="0 0 492.014 492.014"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
+                          <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
+                          <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
+                          <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
+                          <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
+                          <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
+                          <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
+                        </svg>
+                        <span className="text-sm md:text-base">Contact us</span>
+                      </Link>
+
+                      {isAdmin && (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminOpenFloating((v) => !v);
+                            }}
+                            className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                          >
+                            <div className="flex items-center gap-3">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                              </svg>
+                              <span className="text-sm md:text-base">
+                                Admin
+                              </span>
+                            </div>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className={`h-4 w-4 transition-transform ${
+                                adminOpenFloating ? "rotate-0" : "rotate-90"
+                              }`}
+                              aria-hidden="true"
+                            >
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                          </button>
+                          {adminOpenFloating && (
+                            <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
+                              <Link
+                                href="/admin"
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  setAdminOpenFloating(false);
+                                }}
+                                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                              >
+                                <span className="text-sm md:text-base">
+                                  Dashboard
+                                </span>
+                              </Link>
+                              <Link
+                                href="/admin/emails"
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  setAdminOpenFloating(false);
+                                }}
+                                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                              >
+                                <span className="text-sm md:text-base">
+                                  Emails
+                                </span>
+                              </Link>
+                              <Link
+                                href="/admin/campaigns"
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  setAdminOpenFloating(false);
+                                }}
+                                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                              >
+                                <span className="text-sm md:text-base">
+                                  Campaigns
+                                </span>
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                          <polyline points="16 17 21 12 16 7" />
+                          <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                        <span className="text-sm md:text-base">Log out</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </aside>
 
@@ -3859,7 +4080,9 @@ export default function LeftSidebar() {
             >
               <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Create New Event</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Create New Event
+                  </h2>
                   <p className="text-gray-500 text-sm mt-1">
                     Choose a category to get started quickly
                   </p>
@@ -3879,7 +4102,10 @@ export default function LeftSidebar() {
                     <div key={`${cat.title}-${idx}`} className="space-y-4">
                       <div className="flex items-center space-x-2 mb-4">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-bold ${cat.color.replace("text-", "bg-opacity-20 ")}`}
+                          className={`px-2 py-1 rounded text-xs font-bold ${cat.color.replace(
+                            "text-",
+                            "bg-opacity-20 "
+                          )}`}
                         >
                           {cat.items.length}
                         </span>

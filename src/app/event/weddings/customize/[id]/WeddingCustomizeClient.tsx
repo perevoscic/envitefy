@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import DesignThemes from "./_components/DesignThemes";
 import WeddingRenderer from "./_components/WeddingRenderer";
+import RegistryPanel from "./RegistryPanel";
 
 type WeddingCustomizeClientProps = {
   event: any;
@@ -133,7 +134,17 @@ export default function WeddingCustomizeClient({ event, template }: WeddingCusto
         {activeView === "thingsToDo" && renderPlaceholder("Things To Do")}
         {activeView === "photos" && renderPlaceholder("Photos")}
         {activeView === "rsvp" && renderPlaceholder("RSVP")}
-        {activeView === "registry" && renderPlaceholder("Registry")}
+        {activeView === "registry" && event?.id && (
+          <div className="space-y-4">
+            <button
+              onClick={() => setActiveView("main")}
+              className="text-sm text-slate-500 hover:text-slate-800 transition mb-2"
+            >
+              ← Back
+            </button>
+            <RegistryPanel eventId={String(event.id)} />
+          </div>
+        )}
       </div>
     </div>
   );

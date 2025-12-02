@@ -42,6 +42,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
+import Link from "next/link";
 import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" assert { type: "json" };
 import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" assert { type: "json" };
 import rusticBoho from "../../../../../templates/weddings/rustic-boho/config.json" assert { type: "json" };
@@ -63,6 +64,8 @@ import libraryWedding from "../../../../../templates/weddings/library-wedding/co
 import gardenWedding from "../../../../../templates/weddings/garden-wedding/config.json" assert { type: "json" };
 import skylineWedding from "../../../../../templates/weddings/skyline-wedding/config.json" assert { type: "json" };
 import DesignThemes from "./_components/DesignThemes";
+import weddingTemplateCatalog from "../../../../../templates/weddings/index.json" assert { type: "json" };
+import RegistryPanel from "./[id]/RegistryPanel";
 
 const NAV_ITEMS = [
   "Home",
@@ -149,6 +152,40 @@ const TEMPLATE_CONFIGS: Record<string, any> = {
   "library-wedding": libraryWedding,
   "garden-wedding": gardenWedding,
   "skyline-wedding": skylineWedding,
+};
+
+const TEMPLATE_LIBRARY = (Array.isArray(weddingTemplateCatalog)
+  ? weddingTemplateCatalog
+  : []) as Array<{ id?: string; name?: string }>;
+const DEFAULT_TEMPLATE_ID =
+  TEMPLATE_LIBRARY.find((template) => typeof template?.id === "string")?.id ||
+  "ethereal-classic";
+
+const getTemplateTitle = (themeId?: string | null) => {
+  const id = themeId || DEFAULT_TEMPLATE_ID;
+  const fromConfig = (TEMPLATE_CONFIGS[id] as any)?.name;
+  if (typeof fromConfig === "string" && fromConfig.trim()) return fromConfig;
+  const fromLibrary = TEMPLATE_LIBRARY.find((template) => template?.id === id);
+  if (fromLibrary && typeof fromLibrary.name === "string") {
+    return fromLibrary.name.trim() || "Wedding";
+  }
+  return "Wedding";
+};
+
+const getCoupleNames = (partner1?: string, partner2?: string) => {
+  const names = [partner1, partner2].filter(Boolean).join(" & ").trim();
+  return names || "";
+};
+
+const buildDisplayTitle = (themeId?: string | null, partner1?: string, partner2?: string) => {
+  const templateName = getTemplateTitle(themeId);
+  const coupleNames = getCoupleNames(partner1, partner2);
+  return coupleNames ? `${templateName} — ${coupleNames}` : templateName;
+};
+
+const buildDraftTitle = (themeId?: string | null, partner1?: string, partner2?: string) => {
+  const base = buildDisplayTitle(themeId, partner1, partner2);
+  return `${base} (draft)`;
 };
 
 const FONTS = {
@@ -948,7 +985,7 @@ const INITIAL_DATA = {
   theme: {
     font: "playfair",
     fontSize: "medium",
-    themeId: "blush_peony_arch",
+    themeId: DEFAULT_TEMPLATE_ID,
   },
   images: {
     hero: "/templates/wedding-placeholders/midnight-bloom-hero.jpeg",
@@ -1429,6 +1466,8 @@ const App = () => {
   const search = useSearchParams();
   const router = useRouter();
   const editEventId = search?.get("edit") ?? undefined;
+  const templateIdParam = search?.get("templateId") ?? undefined;
+  const variationIdParam = search?.get("variationId") ?? undefined;
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
@@ -1444,6 +1483,7 @@ const App = () => {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
@@ -1468,11 +1508,161 @@ const App = () => {
     code: "",
     distance: "",
   });
+  const [creatingDraft, setCreatingDraft] = useState(false);
+
+  // When no editEventId is present, create a draft event_history row
+  // so the builder always has an id to attach nested data (registry, etc.).
+  useEffect(() => {
+    if (editEventId || creatingDraft) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setCreatingDraft(true);
+        const draftThemeId =
+          (templateIdParam && TEMPLATE_CONFIGS[templateIdParam]
+            ? templateIdParam
+            : null) ||
+          INITIAL_DATA.theme.themeId ||
+          DEFAULT_TEMPLATE_ID;
+        const draftTitle = buildDraftTitle(
+          draftThemeId,
+          INITIAL_DATA.partner1,
+          INITIAL_DATA.partner2
+        );
+        const res = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: draftTitle,
+            data: {
+              category: "Weddings",
+              createdVia: "template",
+              createdManually: true,
+              status: "draft",
+              templateId: "wedding",
+              variationId: draftThemeId,
+              title: draftTitle,
+              templateName: getTemplateTitle(draftThemeId),
+              coupleNames: getCoupleNames(INITIAL_DATA.partner1, INITIAL_DATA.partner2),
+              theme: { ...INITIAL_DATA.theme, themeId: draftThemeId },
+            },
+          }),
+        });
+        if (!res.ok) {
+          return;
+        }
+        const row = await res.json().catch(() => null);
+        const id = (row as any)?.id as string | undefined;
+        if (!id || cancelled) return;
+
+        const params = new URLSearchParams(search?.toString() || "");
+        params.set("edit", id);
+        // templateId/variationId are baked into the draft; keep URL clean
+        params.delete("templateId");
+        params.delete("variationId");
+        const qs = params.toString();
+        router.replace(`/event/weddings/customize${qs ? `?${qs}` : ""}`);
+      } catch {
+        // If draft creation fails, fall back to old behavior (create on publish)
+      } finally {
+        if (!cancelled) {
+          setCreatingDraft(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventId, creatingDraft, templateIdParam, variationIdParam, search, router]);
+
+  // When an editEventId is present, hydrate the builder from the
+  // corresponding event_history row so drafts and published weddings
+  // reopen with their saved content.
+  useEffect(() => {
+    if (!editEventId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const row = await res.json().catch(() => null);
+        if (!row || cancelled) return;
+        const payload = (row as any).data || {};
+
+        setData((prev) => ({
+          ...prev,
+          partner1: payload.partner1 ?? prev.partner1,
+          partner2: payload.partner2 ?? prev.partner2,
+          date: payload.date ?? prev.date,
+          time: payload.time ?? prev.time,
+          city: payload.city ?? prev.city,
+          state: payload.state ?? prev.state,
+          story: payload.story ?? prev.story,
+          weddingParty:
+            (Array.isArray(payload.weddingParty)
+              ? payload.weddingParty
+              : Array.isArray(payload.party)
+              ? payload.party
+              : prev.weddingParty) || prev.weddingParty,
+          schedule: Array.isArray(payload.schedule)
+            ? payload.schedule
+            : prev.schedule,
+          travel: {
+            ...prev.travel,
+            ...(payload.travel || {}),
+          },
+          thingsToDo: Array.isArray(payload.thingsToDo)
+            ? payload.thingsToDo
+            : prev.thingsToDo,
+          hosts: payload.hosts ?? prev.hosts,
+          images: {
+            ...prev.images,
+            hero:
+              payload.customHeroImage ??
+              payload.images?.hero ??
+              prev.images?.hero,
+            headlineBg:
+              payload.headlineBg ??
+              payload.images?.headlineBg ??
+              prev.images?.headlineBg,
+          },
+          gallery: Array.isArray(payload.gallery)
+            ? payload.gallery
+            : prev.gallery,
+          registry: Array.isArray(payload.registry)
+            ? payload.registry
+            : Array.isArray(payload.registries)
+            ? payload.registries
+            : prev.registry,
+          theme: {
+            ...prev.theme,
+            ...(payload.theme || {}),
+          },
+        }));
+      } catch {
+        // If hydration fails, keep using INITIAL_DATA defaults
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventId]);
 
   const selectedTemplate = useMemo(() => {
+    const templateId = data.theme.themeId || DEFAULT_TEMPLATE_ID;
     const fromMap =
-      TEMPLATE_CONFIGS[data.theme.themeId] ||
-      TEMPLATE_CONFIGS["ethereal-classic"] ||
+      TEMPLATE_CONFIGS[templateId] ||
+      TEMPLATE_CONFIGS[DEFAULT_TEMPLATE_ID] ||
       etherealClassic;
     const chosenFont = FONTS[data.theme.font];
     const appliedFonts = {
@@ -1575,15 +1765,25 @@ const App = () => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateTheme = (field, value) => {
+  const updateTheme = useCallback((field, value) => {
     setData((prev) => ({
       ...prev,
       theme: { ...prev.theme, [field]: value },
     }));
-  };
+  }, []);
+
+  useEffect(() => {
+    if (editEventId) return;
+    if (!templateIdParam) return;
+    if (!TEMPLATE_CONFIGS[templateIdParam]) return;
+    updateTheme("themeId", templateIdParam);
+  }, [editEventId, templateIdParam, updateTheme]);
+
+  const themeLocked = Boolean(editEventId);
 
   const selectTheme = useCallback(
     async (themeId: string) => {
+      if (themeLocked) return;
       const previewTop = previewRef.current?.scrollTop ?? null;
       const designTop = designGridRef.current?.scrollTop ?? null;
       updateTheme("themeId", themeId);
@@ -1846,10 +2046,8 @@ const App = () => {
 
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
-  const handlePublish = useCallback(async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
+  const buildHistoryPayload = useCallback(
+    (status: "draft" | "published") => {
       let startISO: string | null = null;
       let endISO: string | null = null;
       if (data.date) {
@@ -1863,10 +2061,13 @@ const App = () => {
       const location =
         data.city && data.state ? `${data.city}, ${data.state}` : undefined;
 
+      const variationId = data.theme.themeId || DEFAULT_TEMPLATE_ID;
+      const templateName = getTemplateTitle(variationId);
       const title =
-        data.partner1 && data.partner2
-          ? `${data.partner1} & ${data.partner2} Wedding`
-          : "Wedding";
+        status === "draft"
+          ? buildDraftTitle(variationId, data.partner1, data.partner2)
+          : buildDisplayTitle(variationId, data.partner1, data.partner2);
+      const coupleNames = getCoupleNames(data.partner1, data.partner2);
 
       const payload: any = {
         title,
@@ -1874,6 +2075,7 @@ const App = () => {
           category: "Weddings",
           createdVia: "template",
           createdManually: true,
+          status,
           startISO,
           endISO,
           location,
@@ -1881,7 +2083,9 @@ const App = () => {
           rsvp: data.rsvp?.isEnabled ? data.rsvp?.deadline || "" : undefined,
           numberOfGuests: 0,
           templateId: "wedding",
-          variationId: data.theme.themeId || "blush_peony_arch",
+          variationId,
+          templateName,
+          coupleNames,
           // Customization data
           partner1: data.partner1,
           partner2: data.partner2,
@@ -1895,7 +2099,7 @@ const App = () => {
           travel: data.travel,
           thingsToDo: data.thingsToDo,
           hosts: data.hosts,
-          theme: data.theme,
+          theme: { ...data.theme, name: templateName },
           registries:
             data.registries
               ?.filter((r) => r?.url?.trim())
@@ -1909,6 +2113,16 @@ const App = () => {
         },
       };
 
+      return payload;
+    },
+    [data]
+  );
+
+  const handlePublish = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const payload = buildHistoryPayload("published");
       let id: string | undefined;
 
       if (editEventId) {
@@ -1947,7 +2161,54 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, editEventId, router]);
+  }, [buildHistoryPayload, editEventId, router, submitting]);
+
+  const handleSaveDraft = useCallback(async () => {
+    if (savingDraft || submitting) return;
+    setSavingDraft(true);
+    try {
+      const payload = buildHistoryPayload("draft");
+      let id: string | undefined = editEventId;
+
+      if (id) {
+        await fetch(`/api/history/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: payload.title,
+            data: payload.data,
+          }),
+        });
+      } else {
+        const res = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json().catch(() => ({}));
+        id = (body as any)?.id as string | undefined;
+        if (id) {
+          const params = new URLSearchParams(search?.toString() || "");
+          params.set("edit", id);
+          params.delete("templateId");
+          params.delete("variationId");
+          const qs = params.toString();
+          router.replace(`/event/weddings/customize${qs ? `?${qs}` : ""}`);
+        }
+      }
+
+      if (!id) {
+        throw new Error("Failed to save draft");
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || err || "Failed to save draft");
+      alert(msg);
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [buildHistoryPayload, editEventId, router, savingDraft, search, submitting]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -2043,11 +2304,16 @@ const App = () => {
             </button>
           )}
           <button
+            onClick={handleSaveDraft}
+            disabled={savingDraft || submitting}
+            className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {savingDraft ? "Saving draft..." : "Save draft"}
+          </button>
+          <button
             onClick={handlePublish}
             disabled={submitting}
-            className={`${
-              editEventId ? "flex-1" : "w-full"
-            } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+            className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting
               ? editEventId
@@ -2171,9 +2437,21 @@ const App = () => {
 
         {activeDesignView === "themes" && (
           <div className="border border-slate-100 rounded-xl shadow-sm">
+            {themeLocked && (
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50 text-slate-600 text-sm">
+                <span>Theme locked after draft creation.</span>
+                <Link
+                  href="/event/weddings/customize"
+                  className="text-indigo-600 font-semibold text-xs hover:underline"
+                >
+                  Create new event to try another theme
+                </Link>
+              </div>
+            )}
             <DesignThemes
               selectedTemplateId={data.theme.themeId}
               onSelect={(id) => selectTheme(id)}
+              disabled={themeLocked}
             />
           </div>
         )}
@@ -2501,19 +2779,26 @@ const App = () => {
 
   const renderRegistryEditor = () => (
     <EditorLayout title="Registry" onBack={() => setActiveView("main")}>
-      <div className="space-y-6 text-center py-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full mb-4">
-          <Gift size={32} />
+      {editEventId ? (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-100 text-blue-900 text-sm rounded-lg p-3">
+            Add Amazon-style registry items to this wedding. Guests will see them on your live page.
+          </div>
+          <RegistryPanel eventId={editEventId} />
         </div>
-        <h3 className="text-lg font-medium text-slate-800">
-          Registry Coming Soon
-        </h3>
-        <p className="text-slate-500 text-sm px-4">
-          We are working on the ability to link your external registries (Zola,
-          Amazon, Target, etc.) directly here. For now, the Registry section
-          will show a "Coming Soon" message on your site.
-        </p>
-      </div>
+      ) : (
+        <div className="space-y-6 text-center py-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full mb-4">
+            <Gift size={32} />
+          </div>
+          <h3 className="text-lg font-medium text-slate-800">
+            Registry activates after your draft is created
+          </h3>
+          <p className="text-slate-500 text-sm px-4">
+            We’ll create a draft automatically when this builder loads. If you’re seeing this message, please wait a moment and ensure your draft ID is set.
+          </p>
+        </div>
+      )}
     </EditorLayout>
   );
 

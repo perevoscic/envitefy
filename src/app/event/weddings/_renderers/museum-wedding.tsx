@@ -100,7 +100,10 @@ export default function MuseumWedding({ theme, event }: Props) {
   const scheduleItems = getScheduleItems(event.schedule);
   const galleryImages =
     event.gallery?.slice(1, 3) || event.photos?.slice(1, 3) || [];
-  const rsvpUrl = event.rsvp?.url || "#rsvp";
+  const rsvpUrl =
+    event.rsvp?.url && typeof event.rsvp.url === "string"
+      ? event.rsvp.url
+      : "#rsvp";
 
   return (
     <div
@@ -310,6 +313,12 @@ export default function MuseumWedding({ theme, event }: Props) {
                   {reg.label || "REGISTRY"}
                 </a>
               ))}
+              {event.registry.length === 0 && (
+                <p className="text-sm text-gray-200">
+                  Registry coming soon. Check back for Amazon, Zola, Crate & Barrel, or Honeyfund
+                  links.
+                </p>
+              )}
             </div>
           </section>
         )}
