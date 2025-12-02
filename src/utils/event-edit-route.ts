@@ -95,6 +95,19 @@ export const resolveEditHref = (
       return `/event/baby-showers/customize${qs ? `?${qs}` : ""}`;
     }
 
+    // Gender Reveal
+    if (
+      normalizedCategory.includes("gender reveal") ||
+      normalizedCategory === "gender reveal" ||
+      title.includes("gender reveal")
+    ) {
+      const params = new URLSearchParams();
+      if (templateId) params.set("templateId", templateId);
+      params.set("edit", eventId);
+      const qs = params.toString();
+      return `/event/gender-reveal/customize${qs ? `?${qs}` : ""}`;
+    }
+
     // Weddings
     if (normalizedCategory.includes("wedding") || title.includes("wedding")) {
       if (templateId && variationId) {
