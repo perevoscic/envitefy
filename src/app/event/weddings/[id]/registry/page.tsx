@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getEventHistoryById, listRegistryItemsByEventId } from "@/lib/db";
+import { getEventHistoryBySlugOrId, listRegistryItemsByEventId } from "@/lib/db";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 
 export const dynamic = "force-dynamic";
@@ -9,13 +9,13 @@ type PageProps = {
 };
 
 export default async function WeddingRegistryPage({ params }: PageProps) {
-  const row = await getEventHistoryById(params.id);
+  const row = await getEventHistoryBySlugOrId({ value: params.id });
 
   if (!row) {
     return notFound();
   }
 
-  const items = await listRegistryItemsByEventId(params.id);
+  const items = await listRegistryItemsByEventId(row.id);
   const hasItems = items.length > 0;
 
   const eventData = (row.data as any) || {};
