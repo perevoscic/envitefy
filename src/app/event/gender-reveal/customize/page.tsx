@@ -878,8 +878,22 @@ export default function GenderRevealTemplateCustomizePage() {
             })),
           customHeroImage: heroImageToSave,
           heroImage: heroImageToSave, // Also save as heroImage for compatibility
+          // Also save in images object for compatibility
+          images: {
+            hero: heroImageToSave,
+          },
         },
       };
+      
+      console.log("[Gender Reveal Publish] Payload data keys:", Object.keys(payload.data));
+      console.log("[Gender Reveal Publish] Image saved in payload:", {
+        hasCustomHeroImage: !!payload.data.customHeroImage,
+        hasHeroImage: !!payload.data.heroImage,
+        hasImagesHero: !!payload.data.images?.hero,
+        customHeroImageLength: payload.data.customHeroImage?.length || 0,
+        heroImageLength: payload.data.heroImage?.length || 0,
+        imagesHeroLength: payload.data.images?.hero?.length || 0,
+      });
 
       let id: string | undefined;
 
