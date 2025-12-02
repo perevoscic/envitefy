@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import getPrismaClient from "@/lib/prisma";
-import { listRegistryItemsByEventId } from "@/lib/db";
+import { getEventHistoryById, listRegistryItemsByEventId } from "@/lib/db";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 
 export const dynamic = "force-dynamic";
@@ -10,23 +9,20 @@ type PageProps = {
 };
 
 export default async function WeddingRegistryPage({ params }: PageProps) {
-  const prisma = getPrismaClient();
-  const event = await prisma.event
-    .findUnique({
-      where: { id: params.id },
-    })
-    .catch(() => null);
+  const row = await getEventHistoryById(params.id);
 
-  if (!event) {
+  if (!row) {
     return notFound();
   }
 
   const items = await listRegistryItemsByEventId(params.id);
   const hasItems = items.length > 0;
 
+  const eventData = (row.data as any) || {};
+  const couple = eventData.couple || {};
   const title =
-    (event as any)?.title ||
-    [((event as any)?.partner1 as string | undefined) || "", ((event as any)?.partner2 as string | undefined) || ""]
+    row.title ||
+    [couple.partner1 || "", couple.partner2 || ""]
       .filter(Boolean)
       .join(" & ") ||
     "Wedding Registry";
@@ -34,11 +30,11 @@ export default async function WeddingRegistryPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-serif font-semibold mb-2">
-          {title}
-        </h1>
+        <h1 className="text-3xl font-serif font-semibold mb-2">{title}</h1>
         <p className="text-sm text-slate-600 mb-6">
-          Thank you for celebrating with us. Your presence is the greatest gift, but if you&apos;d like to give something extra, here are a few things that would help us start our life together.
+          Thank you for celebrating with us. Your presence is the greatest gift,
+          but if you&apos;d like to give something extra, here are a few things
+          that would help us start our life together.
         </p>
 
         {!hasItems && (
@@ -73,8 +69,7 @@ export default async function WeddingRegistryPage({ params }: PageProps) {
                       {item.title}
                     </p>
                     <p className="text-xs text-slate-500 mb-2">
-                      {item.price || ""}{" "}
-                      {item.category && `• ${item.category}`}
+                      {item.price || ""} {item.category && `• ${item.category}`}
                     </p>
                     <p className="text-xs text-slate-500 mb-3">
                       {soldOut
@@ -105,4 +100,3 @@ export default async function WeddingRegistryPage({ params }: PageProps) {
     </div>
   );
 }
-

@@ -321,17 +321,21 @@ export function Footer({
     const timer = setTimeout(() => {
       window.open(webUrl, "_blank", "noopener,noreferrer");
     }, 700);
-    const clear = () => {
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", clear);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        clearTimeout(timer);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange
+        );
+      }
     };
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") clear();
-    });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     try {
       window.location.href = appUrl;
     } catch {
       clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.open(webUrl, "_blank", "noopener,noreferrer");
     }
   };
