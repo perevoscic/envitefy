@@ -2,10 +2,12 @@ export default function ThemeCard({
   theme,
   selected,
   onSelect,
+  disabled = false,
 }: {
   theme: any;
   selected: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 }) {
   const primary = theme.primaryColor || "#f8fafc";
   const secondary = theme.secondaryColor || "#1f2937";
@@ -31,11 +33,14 @@ export default function ThemeCard({
   return (
     <button
       onClick={onSelect}
+      disabled={disabled}
       className={`border rounded-md overflow-hidden transition ${
         selected ? "border-[var(--accent-color)] ring-2 ring-[var(--accent-color)]/40" : "border-gray-200"
       }`}
       style={{
         ["--accent-color" as string]: textColor,
+        opacity: disabled ? 0.6 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
       <div

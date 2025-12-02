@@ -72,7 +72,12 @@ export default function CinematicWedding({ theme, event }: Props) {
   const galleryImages =
     event.gallery?.slice(0, 2) || event.photos?.slice(0, 2) || [];
   const showtime = formatTime(event.schedule);
-  const rsvpUrl = event.rsvp?.url || "#rsvp";
+  const rsvpUrl =
+    typeof event.rsvp?.url === "string" && event.rsvp.url.trim()
+      ? event.rsvp.url
+      : typeof event.rsvpLink === "string" && event.rsvpLink.trim()
+      ? event.rsvpLink
+      : "#rsvp";
 
   return (
     <div
@@ -80,24 +85,24 @@ export default function CinematicWedding({ theme, event }: Props) {
       style={{ fontFamily: theme.fonts.body }}
     >
       {/* Sticky Nav */}
-      <nav className="sticky top-0 w-full z-50 px-8 py-6 flex justify-between items-center mix-blend-difference bg-transparent">
-        <div className="text-xs font-bold tracking-[0.3em] uppercase">
+      <nav className="sticky top-0 w-full z-50 px-8 py-6 flex justify-between items-center bg-black/60 backdrop-blur">
+        <div className="text-xs font-bold tracking-[0.3em] uppercase text-gray-200">
           The Premiere
         </div>
-        <div className="hidden md:flex gap-8 text-xs font-bold tracking-[0.2em] uppercase">
-          <a href="#plot" className="hover:opacity-50 transition-opacity">
+        <div className="hidden md:flex gap-8 text-xs font-bold tracking-[0.2em] uppercase text-gray-200">
+          <a href="#plot" className="hover:opacity-80 transition-opacity">
             The Plot
           </a>
-          <a href="#set" className="hover:opacity-50 transition-opacity">
+          <a href="#set" className="hover:opacity-80 transition-opacity">
             The Set
           </a>
-          <a href="#cast" className="hover:opacity-50 transition-opacity">
+          <a href="#cast" className="hover:opacity-80 transition-opacity">
             The Cast
           </a>
         </div>
         <a
           href={rsvpUrl}
-          className="border border-white px-6 py-2 text-xs font-bold tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-all"
+          className="border border-white/70 px-6 py-2 text-xs font-bold tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-all text-gray-100"
         >
           Ticket Info
         </a>
@@ -117,14 +122,14 @@ export default function CinematicWedding({ theme, event }: Props) {
         </div>
 
         <div className="relative z-10 pt-20">
-          <p className="text-xs md:text-sm font-bold tracking-[0.5em] uppercase text-gray-300 mb-4 animate-fade-in-up">
+          <p className="text-xs md:text-sm font-bold tracking-[0.5em] uppercase text-gray-100 mb-4 animate-fade-in-up">
             Based on a True Story
           </p>
         </div>
 
         <div className="relative z-10 max-w-4xl">
           <h1
-            className="text-6xl md:text-9xl font-black uppercase tracking-tighter leading-[0.8] mb-8 mix-blend-overlay opacity-90"
+            className="text-6xl md:text-9xl font-black uppercase tracking-tighter leading-[0.8] mb-8 text-white drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
             style={{ fontFamily: theme.fonts.headline }}
           >
             Forever
@@ -142,14 +147,14 @@ export default function CinematicWedding({ theme, event }: Props) {
                 <p className="text-sm font-bold uppercase tracking-widest">
                   {names}
                 </p>
-                <p className="text-xs text-gray-300 uppercase tracking-widest">
+                <p className="text-xs text-gray-100 uppercase tracking-widest">
                   Director's Cut
                 </p>
               </div>
             </div>
             <div className="hidden md:block w-px h-12 bg-white/20"></div>
             <div>
-              <p className="text-xs text-gray-300 uppercase tracking-widest mb-1">
+              <p className="text-xs text-gray-100 uppercase tracking-widest mb-1">
                 Release Date
               </p>
               <p className="text-xl font-bold uppercase tracking-widest">
@@ -172,9 +177,9 @@ export default function CinematicWedding({ theme, event }: Props) {
           >
             Two Lives.
             <br />
-            <span className="text-gray-300">One Destiny.</span>
+            <span className="text-gray-100">One Destiny.</span>
           </h2>
-          <p className="text-gray-200 leading-relaxed text-lg mb-8 max-w-md">
+          <p className="text-gray-100 leading-relaxed text-lg mb-8 max-w-md">
             {story}
           </p>
         </div>
@@ -245,33 +250,33 @@ export default function CinematicWedding({ theme, event }: Props) {
         className="py-24 bg-neutral-900 border-y border-neutral-800"
       >
         <div className="max-w-7xl mx-auto px-8">
-          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-300 mb-16 text-center">
+          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-amber-200 mb-16 text-center">
             Production Details
           </h2>
 
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="group p-8 border border-neutral-800 hover:bg-neutral-800 transition-colors">
               <Calendar className="w-8 h-8 mx-auto mb-6 text-white group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-white">
+              <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-amber-100">
                 The Date
               </h3>
-              <p className="text-gray-200">
+              <p className="text-amber-50">
                 {event.date || "December 14, 2025"}
               </p>
             </div>
             <div className="group p-8 border border-neutral-800 hover:bg-neutral-800 transition-colors">
               <Clock className="w-8 h-8 mx-auto mb-6 text-white group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-white">
+              <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-amber-100">
                 Showtime
               </h3>
-              <p className="text-gray-200">Ceremony: {showtime}</p>
+              <p className="text-amber-50">Ceremony: {showtime}</p>
             </div>
             <div className="group p-8 border border-neutral-800 hover:bg-neutral-800 transition-colors">
               <MapPin className="w-8 h-8 mx-auto mb-6 text-white group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-white">
+              <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-amber-100">
                 Location
               </h3>
-              <p className="text-gray-200">{location}</p>
+              <p className="text-amber-50">{location}</p>
             </div>
           </div>
         </div>
@@ -280,7 +285,7 @@ export default function CinematicWedding({ theme, event }: Props) {
       {/* Full Schedule List */}
       {event.schedule && event.schedule.length > 0 && (
         <section className="py-24 px-8 md:px-24 max-w-7xl mx-auto border-y border-neutral-800">
-          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-300 mb-16 text-center">
+          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-amber-200 mb-16 text-center">
             Full Schedule
           </h2>
           <div className="space-y-4 max-w-3xl mx-auto">
@@ -289,10 +294,10 @@ export default function CinematicWedding({ theme, event }: Props) {
                 key={idx}
                 className="border-l-4 border-white/20 pl-6 py-4 hover:border-white/40 transition-colors"
               >
-                <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-white">
+                <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-amber-100">
                   {item.title}
                 </h3>
-                <div className="flex flex-wrap gap-6 text-gray-200 text-sm">
+                <div className="flex flex-wrap gap-6 text-amber-50 text-sm">
                   {item.time && (
                     <span className="flex items-center gap-2">
                       <Clock size={16} />
@@ -315,7 +320,7 @@ export default function CinematicWedding({ theme, event }: Props) {
       {/* Wedding Party / Cast */}
       {event.party && event.party.length > 0 && (
         <section id="cast" className="py-24 px-8 md:px-24 max-w-7xl mx-auto">
-          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-300 mb-16 text-center">
+          <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-amber-200 mb-16 text-center">
             The Cast
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
@@ -324,10 +329,10 @@ export default function CinematicWedding({ theme, event }: Props) {
                 key={idx}
                 className="border border-neutral-800 p-6 hover:bg-neutral-900 transition-colors"
               >
-                <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-white">
+                <h3 className="text-xl font-bold uppercase tracking-widest mb-2 text-amber-100">
                   {member.name}
                 </h3>
-                <p className="text-gray-200 text-sm uppercase tracking-widest">
+                <p className="text-amber-50 text-sm uppercase tracking-widest">
                   {member.role}
                 </p>
               </div>
@@ -342,11 +347,11 @@ export default function CinematicWedding({ theme, event }: Props) {
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-4 mb-8">
               <Plane className="w-8 h-8 text-white" />
-              <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-300">
+              <h2 className="text-xs font-bold tracking-[0.5em] uppercase text-gray-100">
                 Travel & Accommodations
               </h2>
             </div>
-            <p className="text-gray-200 leading-relaxed text-lg whitespace-pre-wrap">
+            <p className="text-gray-100 leading-relaxed text-lg whitespace-pre-wrap">
               {event.travel}
             </p>
           </div>
