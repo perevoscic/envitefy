@@ -1,7 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -315,8 +321,13 @@ export default function BabyShowerTemplateCustomizePage() {
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
-
-  const template = getTemplateById(templateId);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
+    templateId || undefined
+  );
+  const template = useMemo(
+    () => getTemplateById(activeTemplateId),
+    [activeTemplateId]
+  );
 
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
@@ -334,6 +345,7 @@ export default function BabyShowerTemplateCustomizePage() {
   const [submitting, setSubmitting] = useState(false);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const [loadingExisting, setLoadingExisting] = useState(false);
   const buildCalendarDetails = () => {
     const title = data.title || "Baby Shower";
     let start: Date | null = null;
@@ -556,6 +568,172 @@ export default function BabyShowerTemplateCustomizePage() {
 
   const heroImageSrc = "/templates/hero-images/baby-shower-hero.jpeg";
 
+  // Keep template selection in sync with URL when not editing
+  useEffect(() => {
+    if (!editEventId && templateId) {
+      setActiveTemplateId(templateId);
+    }
+  }, [editEventId, templateId]);
+
+  // Load existing event data when editing so design choices persist
+  useEffect(() => {
+    const loadExisting = async () => {
+      if (!editEventId) return;
+      setLoadingExisting(true);
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          console.error("[Baby Shower Edit] Failed to load event:", res.status);
+          setLoadingExisting(false);
+          return;
+        }
+        const json = await res.json();
+        const existing = json?.data || {};
+
+        const startIso =
+          existing.startISO || existing.start || existing.startIso || null;
+        let loadedDate: string | undefined;
+        let loadedTime: string | undefined;
+        if (startIso) {
+          const d = new Date(startIso);
+          if (!Number.isNaN(d.getTime())) {
+            loadedDate = d.toISOString().split("T")[0];
+            loadedTime = d.toISOString().slice(11, 16);
+          }
+        }
+
+        const resolvedTemplateId =
+          existing.templateId || existing.template?.id || activeTemplateId;
+        if (resolvedTemplateId) {
+          setActiveTemplateId(resolvedTemplateId);
+        }
+
+        const resolvedThemeId =
+          existing.themeId ||
+          existing.theme?.themeId ||
+          existing.theme?.id ||
+          INITIAL_DATA.theme.themeId;
+        const resolvedFont =
+          existing.theme?.font || existing.fontId || INITIAL_DATA.theme.font;
+        const resolvedFontSize =
+          existing.theme?.fontSize ||
+          existing.fontSize ||
+          INITIAL_DATA.theme.fontSize;
+
+        // Restore full theme object from saved data, or fallback to theme from DESIGN_THEMES
+        const savedTheme = existing.theme || {};
+        const themeFromCatalog =
+          DESIGN_THEMES.find((t) => t.id === resolvedThemeId) ||
+          DESIGN_THEMES[0];
+        // Merge saved theme with catalog theme, preserving saved properties (bg, text, accent, bgStyle, name, etc.)
+        const restoredTheme = {
+          ...themeFromCatalog,
+          ...savedTheme, // Saved theme takes precedence
+          // Ensure id and themeId are set
+          id: resolvedThemeId,
+          themeId: resolvedThemeId,
+          // Preserve name from saved theme if available, otherwise use catalog
+          name: savedTheme.name || themeFromCatalog.name,
+          // Preserve font settings
+          font: resolvedFont,
+          fontSize: resolvedFontSize,
+        };
+
+        const resolvedRsvpDeadline =
+          existing.rsvpDeadline ||
+          (typeof existing.rsvp === "string"
+            ? existing.rsvp
+            : existing.rsvp?.deadline) ||
+          null;
+
+        const normalizedHosts =
+          Array.isArray(existing.hosts) && existing.hosts.length > 0
+            ? existing.hosts.map((host: any, idx: number) => ({
+                id: host.id || idx + 1,
+                name: host.name || "",
+                role: host.role || "",
+              }))
+            : INITIAL_DATA.hosts;
+
+        const normalizedRegistries =
+          Array.isArray(existing.registries) && existing.registries.length > 0
+            ? existing.registries.map((reg: any, idx: number) => ({
+                id: reg.id || idx + 1,
+                label: reg.label || "Registry",
+                url: reg.url || "",
+              }))
+            : INITIAL_DATA.registries;
+
+        setData((prev) => ({
+          ...prev,
+          babyName: existing.babyName || prev.babyName,
+          momName: existing.momName || prev.momName,
+          date: loadedDate || prev.date,
+          time: loadedTime || prev.time,
+          city: existing.city || prev.city,
+          state: existing.state || prev.state,
+          address: existing.address || existing.location || prev.address,
+          babyDetails: {
+            ...prev.babyDetails,
+            expectingDate:
+              existing.babyDetails?.expectingDate ||
+              existing.customFields?.expectingDate ||
+              prev.babyDetails.expectingDate,
+            gender:
+              existing.babyDetails?.gender ||
+              existing.customFields?.gender ||
+              prev.babyDetails.gender,
+            notes:
+              existing.babyDetails?.notes ||
+              existing.customFields?.aboutBaby ||
+              existing.description ||
+              prev.babyDetails.notes,
+          },
+          momDetails: {
+            ...prev.momDetails,
+            notes:
+              existing.momDetails?.notes ||
+              existing.customFields?.aboutMom ||
+              prev.momDetails.notes,
+          },
+          hosts: normalizedHosts,
+          theme: {
+            ...prev.theme,
+            ...restoredTheme,
+            font: resolvedFont,
+            fontSize: resolvedFontSize,
+            themeId: resolvedThemeId,
+          },
+          images: {
+            ...prev.images,
+            hero:
+              existing.heroImage || existing.images?.hero || prev.images.hero,
+          },
+          registries: normalizedRegistries,
+          rsvp: {
+            isEnabled:
+              existing.rsvpEnabled ||
+              Boolean(resolvedRsvpDeadline) ||
+              Boolean(existing.rsvp?.isEnabled),
+            deadline: resolvedRsvpDeadline || prev.rsvp.deadline,
+          },
+          gallery:
+            Array.isArray(existing.gallery) && existing.gallery.length > 0
+              ? existing.gallery
+              : prev.gallery,
+        }));
+      } catch (err) {
+        console.error("[Baby Shower Edit] Error loading event", err);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExisting();
+  }, [editEventId, activeTemplateId, templateId]);
+
   const handlePublish = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -673,10 +851,16 @@ export default function BabyShowerTemplateCustomizePage() {
           hosts: data.hosts,
           themeId: selectedTheme.id,
           theme: {
+            // Save the ENTIRE theme object directly (like gymnastics does with themeToSave)
+            // This automatically includes ALL properties: id, name, category, bg, text, accent, bgStyle, previewColor, previewStyle
             ...selectedTheme,
+            // Add font-related properties on top
+            font: data.theme.font,
+            fontSize: data.theme.fontSize,
             fontFamily: selectedFont.preview,
             fontSizeH1: selectedSize.h1,
             fontSizeH2: selectedSize.h2,
+            fontSizeClass: selectedSize.h1,
           },
           fontId: data.theme.font,
           fontSize: data.theme.fontSize,

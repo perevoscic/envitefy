@@ -1,7 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -367,6 +373,151 @@ export default function GenderRevealTemplateCustomizePage() {
   const [submitting, setSubmitting] = useState(false);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const [loadingExisting, setLoadingExisting] = useState(false);
+  const hasLoadedRef = useRef(false);
+
+  // Load existing event data when editing so design choices persist
+  useEffect(() => {
+    const loadExisting = async () => {
+      if (!editEventId || loadingExisting || hasLoadedRef.current) return;
+      hasLoadedRef.current = true;
+      setLoadingExisting(true);
+      try {
+        const res = await fetch(`/api/history/${editEventId}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          console.error(
+            "[Gender Reveal Edit] Failed to load event:",
+            res.status
+          );
+          setLoadingExisting(false);
+          return;
+        }
+        const json = await res.json();
+        const existing = json?.data || {};
+
+        const startIso =
+          existing.startISO || existing.start || existing.startIso || null;
+        let loadedDate: string | undefined;
+        let loadedTime: string | undefined;
+        if (startIso) {
+          const d = new Date(startIso);
+          if (!Number.isNaN(d.getTime())) {
+            loadedDate = d.toISOString().split("T")[0];
+            loadedTime = d.toISOString().slice(11, 16);
+          }
+        }
+
+        const resolvedThemeId =
+          existing.themeId ||
+          existing.theme?.themeId ||
+          existing.theme?.id ||
+          INITIAL_DATA.theme.themeId;
+        const resolvedFont =
+          existing.theme?.font || existing.fontId || INITIAL_DATA.theme.font;
+        const resolvedFontSize =
+          existing.theme?.fontSize ||
+          existing.fontSize ||
+          INITIAL_DATA.theme.fontSize;
+
+        // Restore full theme object from saved data, or fallback to theme from DESIGN_THEMES
+        const savedTheme = existing.theme || {};
+        const themeFromCatalog =
+          DESIGN_THEMES.find((t) => t.id === resolvedThemeId) ||
+          DESIGN_THEMES[0];
+        // Merge saved theme with catalog theme, preserving saved properties (bg, text, accent, bgStyle, name, etc.)
+        const restoredTheme = {
+          ...themeFromCatalog,
+          ...savedTheme, // Saved theme takes precedence
+          // Ensure id and themeId are set
+          id: resolvedThemeId,
+          themeId: resolvedThemeId,
+          // Preserve name from saved theme if available, otherwise use catalog
+          name: savedTheme.name || themeFromCatalog.name,
+          // Preserve font settings
+          font: resolvedFont,
+          fontSize: resolvedFontSize,
+        };
+
+        const normalizedHosts =
+          Array.isArray(existing.hosts) && existing.hosts.length > 0
+            ? existing.hosts.map((host: any, idx: number) => ({
+                id: host.id || idx + 1,
+                name: host.name || "",
+                role: host.role || "",
+              }))
+            : INITIAL_DATA.hosts;
+
+        const normalizedRegistries =
+          Array.isArray(existing.registries) && existing.registries.length > 0
+            ? existing.registries.map((reg: any, idx: number) => ({
+                id: reg.id || idx + 1,
+                label: reg.label || "Registry",
+                url: reg.url || "",
+              }))
+            : INITIAL_DATA.registries;
+
+        setData((prev) => ({
+          ...prev,
+          eventTitle: existing.eventTitle || prev.eventTitle,
+          parentsName: existing.parentsName || prev.parentsName,
+          date: loadedDate || prev.date,
+          time: loadedTime || prev.time,
+          city: existing.city || prev.city,
+          state: existing.state || prev.state,
+          venue: existing.venue || existing.location || prev.venue,
+          eventDetails: {
+            ...prev.eventDetails,
+            notes:
+              existing.eventDetails?.notes ||
+              existing.description ||
+              prev.eventDetails.notes,
+          },
+          hosts: normalizedHosts,
+          theme: {
+            font: resolvedFont,
+            fontSize: resolvedFontSize,
+            themeId: resolvedThemeId,
+            // Include all theme properties from restoredTheme
+            ...restoredTheme,
+          },
+          images: {
+            ...prev.images,
+            hero:
+              existing.customHeroImage ||
+              existing.images?.hero ||
+              prev.images.hero,
+          },
+          registries: normalizedRegistries,
+          rsvp: {
+            isEnabled:
+              existing.rsvpEnabled ||
+              Boolean(existing.rsvp?.isEnabled) ||
+              Boolean(existing.rsvp),
+            deadline:
+              existing.rsvpDeadline ||
+              (typeof existing.rsvp === "string"
+                ? existing.rsvp
+                : existing.rsvp?.deadline) ||
+              prev.rsvp.deadline,
+          },
+          gallery:
+            Array.isArray(existing.gallery) && existing.gallery.length > 0
+              ? existing.gallery
+              : prev.gallery,
+        }));
+      } catch (err) {
+        console.error("[Gender Reveal Edit] Error loading event", err);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExisting();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editEventId]);
+
   const buildCalendarDetails = () => {
     const title = data.title || "Gender Reveal";
     let start: Date | null = null;
@@ -542,8 +693,18 @@ export default function GenderRevealTemplateCustomizePage() {
     }));
   };
 
-  const currentTheme =
-    DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
+  // Use the full theme object from data.theme if it has all properties, otherwise look it up
+  const currentTheme = useMemo(() => {
+    // If data.theme has text and either bg or bgStyle, it's a full theme object - use it directly
+    // (gradient themes have bgStyle instead of bg)
+    if (data.theme?.text && (data.theme?.bg || data.theme?.bgStyle)) {
+      return data.theme;
+    }
+    // Otherwise, look it up by themeId
+    return (
+      DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0]
+    );
+  }, [data.theme]);
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
@@ -596,6 +757,78 @@ export default function GenderRevealTemplateCustomizePage() {
       const location =
         data.city && data.state ? `${data.city}, ${data.state}` : undefined;
 
+      // Resolve design selections (like baby showers and gymnastics)
+      // Use currentTheme which is the full theme object from data.theme
+      const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
+      const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+
+      // Persist hero image (convert blob URLs to data URLs)
+      const heroImageToSave = await (async () => {
+        if (!data.images.hero) {
+          console.log("[Gender Reveal Publish] No hero image to save");
+          return undefined;
+        }
+        console.log("[Gender Reveal Publish] Hero image found:", {
+          type: data.images.hero.startsWith("blob:")
+            ? "blob"
+            : data.images.hero.startsWith("data:")
+            ? "data-url"
+            : "other",
+          length: data.images.hero.length,
+        });
+        if (/^data:/i.test(data.images.hero)) {
+          console.log("[Gender Reveal Publish] Using existing data URL");
+          return data.images.hero;
+        }
+        if (data.images.hero.startsWith("blob:")) {
+          try {
+            console.log(
+              "[Gender Reveal Publish] Converting blob to data URL..."
+            );
+            const response = await fetch(data.images.hero);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            const result = await new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => {
+                const dataUrl = (reader.result as string) || "";
+                console.log(
+                  "[Gender Reveal Publish] Blob converted, length:",
+                  dataUrl.length
+                );
+                resolve(dataUrl);
+              };
+              reader.onerror = (err) => {
+                console.error(
+                  "[Gender Reveal Publish] Blob conversion error:",
+                  err
+                );
+                reject(err);
+              };
+              reader.readAsDataURL(blob);
+            });
+            return result;
+          } catch (err) {
+            console.error(
+              "[Gender Reveal Publish] Failed to convert blob URL",
+              err
+            );
+            return undefined;
+          }
+        }
+        console.log("[Gender Reveal Publish] Using image as-is");
+        return data.images.hero;
+      })();
+
+      console.log("[Gender Reveal Publish] Final heroImageToSave:", {
+        exists: !!heroImageToSave,
+        type: heroImageToSave?.startsWith("data:")
+          ? "data-url"
+          : heroImageToSave?.startsWith("http")
+          ? "http-url"
+          : "other",
+        length: heroImageToSave?.length || 0,
+      });
+
       const payload: any = {
         title: data.eventTitle || "Gender Reveal Party",
         data: {
@@ -616,14 +849,35 @@ export default function GenderRevealTemplateCustomizePage() {
           parentsName: data.parentsName,
           eventDetails: data.eventDetails,
           hosts: data.hosts,
-          theme: data.theme,
+          themeId:
+            currentTheme.id || currentTheme.themeId || data.theme.themeId,
+          theme: {
+            // Save the ENTIRE theme object (like gymnastics/baby showers) - includes all properties: bg, text, accent, bgStyle, name, etc.
+            ...currentTheme,
+            // Ensure id and themeId are set
+            id: currentTheme.id || currentTheme.themeId || data.theme.themeId,
+            themeId:
+              currentTheme.id || currentTheme.themeId || data.theme.themeId,
+            // Add font-related properties on top
+            font: data.theme.font,
+            fontSize: data.theme.fontSize,
+            fontFamily: selectedFont.preview,
+            fontSizeH1: selectedSize.h1,
+            fontSizeH2: selectedSize.h2,
+            fontSizeClass: selectedSize.h1,
+          },
+          fontId: data.theme.font,
+          fontSize: data.theme.fontSize,
+          fontFamily: selectedFont.preview,
+          fontSizeClass: selectedSize.h1,
           registries: data.registries
             .filter((r) => r.url.trim())
             .map((r) => ({
               label: r.label.trim() || "Registry",
               url: r.url.trim(),
             })),
-          customHeroImage: data.images.hero || undefined,
+          customHeroImage: heroImageToSave,
+          heroImage: heroImageToSave, // Also save as heroImage for compatibility
         },
       };
 
@@ -1259,7 +1513,7 @@ export default function GenderRevealTemplateCustomizePage() {
               <div
                 className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
               >
-                <div>
+                <div className="flex-1">
                   <h1
                     className={`${currentSize.h1} mb-2 leading-tight`}
                     style={{
@@ -1292,6 +1546,50 @@ export default function GenderRevealTemplateCustomizePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Navigation Pills */}
+              {(() => {
+                const previewNavItems = [
+                  {
+                    id: "details",
+                    label: "Details",
+                    enabled: Boolean(data.eventDetails.notes),
+                  },
+                  {
+                    id: "hosts",
+                    label: "Hosted By",
+                    enabled: data.hosts.length > 0,
+                  },
+                  {
+                    id: "location",
+                    label: "Location",
+                    enabled: Boolean(data.address || data.city || data.state),
+                  },
+                  {
+                    id: "registry",
+                    label: "Registry",
+                    enabled: data.registries.length > 0,
+                  },
+                  { id: "rsvp", label: "RSVP", enabled: data.rsvp.isEnabled },
+                ].filter((item) => item.enabled);
+
+                return previewNavItems.length > 1 ? (
+                  <nav className="border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {previewNavItems.map((item) => (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          className="rounded-full border border-white/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] opacity-80 transition hover:border-white/80 hover:opacity-100"
+                          style={{ fontFamily: currentFont.preview }}
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  </nav>
+                ) : null;
+              })()}
 
               <div className="relative w-full aspect-video">
                 {data.images.hero ? (
@@ -1421,14 +1719,14 @@ export default function GenderRevealTemplateCustomizePage() {
               )}
 
               {data.rsvp.isEnabled && (
-                <section className="max-w-xl mx-auto text-center p-6 md:p-8">
+                <section className="max-w-3xl mx-auto text-center p-6 md:p-10">
                   <h2
                     className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
                     style={titleColor}
                   >
                     RSVP
                   </h2>
-                  <div className="bg-white/5 border border-white/10 p-8 rounded-xl text-left">
+                  <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
                     {!rsvpSubmitted ? (
                       <div className="space-y-6">
                         <div className="text-center mb-4">

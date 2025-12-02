@@ -116,7 +116,10 @@ const normalizeRosterAthletes = (roster: any): NormalizedRosterAthlete[] => {
         name: entry.name || entry.athleteName || `Player ${idx + 1}`,
         level: entry.level || entry.grade || position || undefined,
         status: normalizeRosterStatus(
-          entry.status || entry.playerStatus || entry.attendanceStatus || "active"
+          entry.status ||
+            entry.playerStatus ||
+            entry.attendanceStatus ||
+            "active"
         ),
         primaryEvents,
         events,
@@ -245,7 +248,8 @@ export default function SimpleTemplateView({
       );
     }
 
-    if (storedTheme?.bg && storedTheme?.text) {
+    // Accept theme if it has text and either bg (solid) or bgStyle (gradient)
+    if (storedTheme?.text && (storedTheme?.bg || storedTheme?.bgStyle)) {
       return storedTheme;
     }
     return DEFAULT_THEME;
@@ -264,9 +268,7 @@ export default function SimpleTemplateView({
   const getLuminance = (hex: string): number => {
     const rgb = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
     if (!rgb) return 0.5;
-    const [r, g, b] = [rgb[1], rgb[2], rgb[3]].map((val) =>
-      parseInt(val, 16)
-    );
+    const [r, g, b] = [rgb[1], rgb[2], rgb[3]].map((val) => parseInt(val, 16));
     const toLinear = (v: number) => {
       const n = v / 255;
       return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
@@ -308,13 +310,60 @@ export default function SimpleTemplateView({
     paletteColors.length > 0 ? isPaletteDark(paletteColors) : null;
 
   // Event data extraction - use state data if available, fallback to prop
-  const heroImage = currentData?.heroImage || "";
-  const description = currentData?.description || "";
+  // Check ALL possible locations for the hero image
+  const heroImage =
+    currentData?.heroImage ||
+    currentData?.customHeroImage ||
+    (currentData as any)?.images?.hero ||
+    "";
+
+  // Debug logging for gender reveal
+  if (
+    typeof window !== "undefined" &&
+    currentData?.category?.toLowerCase()?.includes("gender reveal")
+  ) {
+    console.log("[SimpleTemplateView] Gender Reveal Data - FULL INSPECTION:", {
+      currentDataKeys: Object.keys(currentData || {}),
+      hasHeroImage: !!currentData?.heroImage,
+      hasCustomHeroImage: !!currentData?.customHeroImage,
+      hasImagesHero: !!(currentData as any)?.images?.hero,
+      heroImageValue: currentData?.heroImage
+        ? `${String(currentData.heroImage).substring(0, 50)}...`
+        : "undefined",
+      customHeroImageValue: currentData?.customHeroImage
+        ? `${String(currentData.customHeroImage).substring(0, 50)}...`
+        : "undefined",
+      imagesHeroValue: (currentData as any)?.images?.hero
+        ? `${String((currentData as any).images.hero).substring(0, 50)}...`
+        : "undefined",
+      finalHeroImage: heroImage ? `${heroImage.substring(0, 50)}...` : "EMPTY",
+      heroImageType: heroImage
+        ? heroImage.startsWith("data:")
+          ? "data-url"
+          : heroImage.startsWith("http")
+          ? "http-url"
+          : "other"
+        : "none",
+      heroImageLength: heroImage?.length || 0,
+      description: currentData?.description || currentData?.eventDetails?.notes,
+      eventTitle: currentData?.eventTitle,
+      parentsName: currentData?.parentsName,
+      hosts: currentData?.hosts,
+      registries: currentData?.registries,
+      theme: currentData?.theme,
+      themeId: currentData?.themeId,
+    });
+  }
+  const description =
+    currentData?.description || currentData?.eventDetails?.notes || "";
   const customFields = currentData?.customFields || {};
   const advancedSections =
     currentData?.advancedSections || customFields?.advancedSections || {};
-  const rsvpEnabled = currentData?.rsvpEnabled ?? false;
-  const rsvpDeadline = currentData?.rsvpDeadline || "";
+  const rsvpEnabled = currentData?.rsvpEnabled ?? Boolean(currentData?.rsvp);
+  const rsvpDeadline =
+    currentData?.rsvpDeadline ||
+    (typeof currentData?.rsvp === "string" ? currentData.rsvp : "") ||
+    "";
   const isSignedIn = Boolean(sessionEmail);
   const venue = currentData?.venue || "";
   const city = currentData?.city || "";
@@ -324,6 +373,11 @@ export default function SimpleTemplateView({
     customFields?.stadiumAddress ||
     customFields?.address ||
     "";
+  const hosts = Array.isArray(currentData?.hosts) ? currentData.hosts : [];
+  const registries = Array.isArray(currentData?.registries)
+    ? currentData.registries
+    : [];
+  const parentsName = currentData?.parentsName || "";
   const time = currentData?.time || "";
   const date = currentData?.date || "";
   const opponentName =
@@ -343,9 +397,7 @@ export default function SimpleTemplateView({
     advancedSections?.logistics?.transport ||
     "";
   const meetingPoint =
-    customFields?.meetingPoint ||
-    currentData?.extra?.meetingPoint ||
-    "";
+    customFields?.meetingPoint || currentData?.extra?.meetingPoint || "";
   const weatherSummary =
     customFields?.weatherPlan ||
     currentData?.extra?.weatherPlan ||
@@ -446,6 +498,17 @@ export default function SimpleTemplateView({
       : "text-slate-900";
 
   const rawTextClass = theme?.text || paletteTextFallback;
+
+  // Handle background: check for bgStyle (gradient) or bg (solid color)
+  const hasBgStyle = theme?.bgStyle && typeof theme.bgStyle === "object";
+  const backgroundClass = hasBgStyle
+    ? "" // Don't apply bg class when using bgStyle
+    : typeof theme?.bg === "string" && theme.bg
+    ? theme.bg
+    : "";
+  const backgroundStyle = hasBgStyle
+    ? (theme.bgStyle as CSSProperties)
+    : undefined;
   const forceLightText =
     isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
   const textClass = forceLightText
@@ -725,10 +788,26 @@ export default function SimpleTemplateView({
     Array.isArray(advancedSections?.snacks?.slots) &&
     advancedSections.snacks.slots.length > 0;
 
+  // Check for gender reveal / baby shower specific sections
+  const hasHosts = hosts.length > 0;
+  const hasParents = Boolean(parentsName);
+  const hasRegistry = registries.length > 0;
+  const isGenderReveal = normalizedCategory.includes("gender reveal");
+  const isBabyShower =
+    normalizedCategory.includes("baby") ||
+    normalizedCategory.includes("shower");
+
   const navItems = useMemo(
     () =>
       [
         { id: "details", label: "Details", enabled: true },
+        { id: "hosts", label: "Hosted By", enabled: hasHosts },
+        {
+          id: "parents",
+          label: "Parents-to-Be",
+          enabled: hasParents && isGenderReveal,
+        },
+        { id: "registry", label: "Registry", enabled: hasRegistry },
         {
           id: "events",
           label: isSoccerTemplate ? "Matches" : "Events",
@@ -755,6 +834,10 @@ export default function SimpleTemplateView({
       hasGear,
       hasLogistics,
       hasLineup,
+      hasHosts,
+      hasParents,
+      hasRegistry,
+      isGenderReveal,
       hasMeet,
       hasPractice,
       hasRoster,
@@ -885,10 +968,7 @@ export default function SimpleTemplateView({
         id="events"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Events & Competitions
         </h2>
         <div
@@ -955,7 +1035,8 @@ export default function SimpleTemplateView({
                 {(event.warmupTime || event.onMatTime) && (
                   <div className="text-xs uppercase tracking-wide opacity-70">
                     Warm-up: {formatTime(event.warmupTime)}{" "}
-                    {event.onMatTime && `• On mat: ${formatTime(event.onMatTime)}`}
+                    {event.onMatTime &&
+                      `• On mat: ${formatTime(event.onMatTime)}`}
                   </div>
                 )}
                 {event.notes && (
@@ -981,9 +1062,7 @@ export default function SimpleTemplateView({
             {opponentName ? `vs ${opponentName}` : "Match details"}
           </div>
           {meetingPoint && (
-            <p className="opacity-70 mt-2">
-              Meeting point: {meetingPoint}
-            </p>
+            <p className="opacity-70 mt-2">Meeting point: {meetingPoint}</p>
           )}
         </div>
         <div className="bg-white/10 border border-white/20 rounded-2xl p-4 shadow-lg">
@@ -993,9 +1072,7 @@ export default function SimpleTemplateView({
           <div className="text-lg font-semibold" style={bodyShadow}>
             {uniformColors || "Confirm kit"}
           </div>
-          {travelDetails && (
-            <p className="opacity-70 mt-2">{travelDetails}</p>
-          )}
+          {travelDetails && <p className="opacity-70 mt-2">{travelDetails}</p>}
         </div>
         <div className="bg-white/10 border border-white/20 rounded-2xl p-4 shadow-lg">
           <p className="text-xs uppercase tracking-wide opacity-70">Weather</p>
@@ -1003,9 +1080,7 @@ export default function SimpleTemplateView({
             {weatherSummary || "Check forecast"}
           </div>
           {time && (
-            <p className="opacity-70 mt-2">
-              Kick at {formatTime(time)}
-            </p>
+            <p className="opacity-70 mt-2">Kick at {formatTime(time)}</p>
           )}
         </div>
       </div>
@@ -1020,10 +1095,7 @@ export default function SimpleTemplateView({
           id="roster"
           className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
         >
-          <h2
-            className={`text-2xl mb-4 ${accentClass}`}
-            style={headingStyle}
-          >
+          <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
             Team Roster
           </h2>
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80">
@@ -1078,10 +1150,7 @@ export default function SimpleTemplateView({
         id="roster"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Team Roster
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1131,9 +1200,7 @@ export default function SimpleTemplateView({
                 </p>
               )}
               {athlete.medicalNotes && (
-                <p className="text-xs opacity-70">
-                  {athlete.medicalNotes}
-                </p>
+                <p className="text-xs opacity-70">{athlete.medicalNotes}</p>
               )}
             </div>
           ))}
@@ -1164,10 +1231,7 @@ export default function SimpleTemplateView({
           id="meet"
           className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
         >
-          <h2
-            className={`text-2xl mb-4 ${accentClass}`}
-            style={headingStyle}
-          >
+          <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
             Meet Details
           </h2>
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80">
@@ -1195,10 +1259,7 @@ export default function SimpleTemplateView({
         id="meet"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Meet Details
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -1291,10 +1352,7 @@ export default function SimpleTemplateView({
           id="practice"
           className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
         >
-          <h2
-            className={`text-2xl mb-4 ${accentClass}`}
-            style={headingStyle}
-          >
+          <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
             Practice Schedule
           </h2>
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80">
@@ -1349,10 +1407,7 @@ export default function SimpleTemplateView({
         id="practice"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Practice Schedule
         </h2>
         <div className="space-y-4">
@@ -1405,19 +1460,14 @@ export default function SimpleTemplateView({
     const formation = advancedSections?.lineup?.formation;
     if (!isSoccerTemplate || !formation?.length) return null;
     const lines = Array.from(
-      new Set(
-        formation.map((slot: any) => Number(slot.line) || 1)
-      )
+      new Set(formation.map((slot: any) => Number(slot.line) || 1))
     ).sort((a, b) => a - b);
     return (
       <section
         id="lineup"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Lineup & Formation
         </h2>
         {uniformColors && (
@@ -1503,10 +1553,7 @@ export default function SimpleTemplateView({
           id="logistics"
           className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
         >
-          <h2
-            className={`text-2xl mb-4 ${accentClass}`}
-            style={headingStyle}
-          >
+          <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
             Logistics
           </h2>
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80 space-y-2">
@@ -1538,10 +1585,7 @@ export default function SimpleTemplateView({
         id="logistics"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Logistics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1807,10 +1851,7 @@ export default function SimpleTemplateView({
         id="gear"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Gear & Uniform Checklist
         </h2>
         {gearInfo && (
@@ -1858,9 +1899,10 @@ export default function SimpleTemplateView({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {gearItems.map((item: any, idx: number) => {
             const normalized =
-              typeof item === "string" ? { id: `gear-${idx}`, name: item } : item;
-            const itemId =
-              normalized?.id || normalized?.name || `gear-${idx}`;
+              typeof item === "string"
+                ? { id: `gear-${idx}`, name: item }
+                : item;
+            const itemId = normalized?.id || normalized?.name || `gear-${idx}`;
             const itemName = normalized?.name || String(itemId);
             const isChecked = Boolean(gearChecklist[itemId]);
             return (
@@ -1909,10 +1951,7 @@ export default function SimpleTemplateView({
         id="snacks"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Snacks & Hydration
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1964,7 +2003,11 @@ export default function SimpleTemplateView({
                     <button
                       className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-xs font-semibold hover:bg-white/20 transition-colors"
                       onClick={() => {
-                        setVolunteerSignupForm({ name: "", email: "", phone: "" });
+                        setVolunteerSignupForm({
+                          name: "",
+                          email: "",
+                          phone: "",
+                        });
                         setVolunteerSignupModal({
                           open: true,
                           slotId,
@@ -2201,10 +2244,7 @@ export default function SimpleTemplateView({
           id="volunteers"
           className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
         >
-          <h2
-            className={`text-2xl mb-4 ${accentClass}`}
-            style={headingStyle}
-          >
+          <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
             Volunteers & Carpool
           </h2>
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm opacity-80 space-y-2">
@@ -2249,10 +2289,7 @@ export default function SimpleTemplateView({
       >
         {slots.length > 0 && (
           <div className="mb-8">
-            <h2
-              className={`text-2xl mb-4 ${accentClass}`}
-              style={headingStyle}
-            >
+            <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
               Volunteers Needed
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2305,10 +2342,7 @@ export default function SimpleTemplateView({
         )}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2
-              className={`text-2xl ${accentClass}`}
-              style={headingStyle}
-            >
+            <h2 className={`text-2xl ${accentClass}`} style={headingStyle}>
               Carpool Offers
             </h2>
             <button
@@ -2319,13 +2353,13 @@ export default function SimpleTemplateView({
             </button>
           </div>
           {carpools.length > 0 ? (
-        <div
-          className={
-            isSoccerTemplate
-              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-              : "space-y-3"
-          }
-        >
+            <div
+              className={
+                isSoccerTemplate
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+                  : "space-y-3"
+              }
+            >
               {carpools
                 .filter((cp: any) => cp.driverName || cp.driver)
                 .map((carpool: any, idx: number) => {
@@ -2464,10 +2498,7 @@ export default function SimpleTemplateView({
         id="announcements"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        <h2
-          className={`text-2xl mb-6 ${accentClass}`}
-          style={headingStyle}
-        >
+        <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
           Announcements/Urgent
         </h2>
         <div className="space-y-4">
@@ -2555,8 +2586,10 @@ export default function SimpleTemplateView({
     <div className="min-h-screen w-full bg-[#f0f2f5] flex justify-center py-4 md:py-8">
       <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
         <div
-          className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${theme?.bg || ""} ${textClass} transition-all duration-500 relative z-0`}
-          style={paletteBackgroundStyle || theme?.backgroundStyle}
+          className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
+            backgroundClass || ""
+          } ${textClass} transition-all duration-500 relative z-0`}
+          style={paletteBackgroundStyle || backgroundStyle}
         >
           <div className="relative z-10">
             {/* Header */}
@@ -2609,9 +2642,12 @@ export default function SimpleTemplateView({
               <div className="pr-32">
                 <h1
                   className={`${headingSizeClass} mb-2 leading-tight ${textClass}`}
-                  style={headingStyle}
+                  style={{
+                    ...headingStyle,
+                    fontFamily: headingFontFamily,
+                  }}
                 >
-                  {eventTitle}
+                  {currentData?.eventTitle || eventTitle}
                 </h1>
                 {infoLine}
                 {/* Address line (if different from header location) */}
@@ -2625,37 +2661,38 @@ export default function SimpleTemplateView({
                   </div>
                 )}
                 {navItems.length > 1 && !isLocked && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {navItems.map((item) => {
-                      const isActive = activeSection === item.id;
-                      return (
-                        <a
-                          key={item.id}
-                          href={`#${item.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const el = document.getElementById(item.id);
-                            if (el) {
-                              el.scrollIntoView({ behavior: "smooth" });
-                              window.history.replaceState(
-                                null,
-                                "",
-                                `#${item.id}`
-                              );
-                              setActiveSection(item.id);
-                            }
-                          }}
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
-                            isActive
-                              ? "bg-white/80 text-[#1b1540] border-white/90 shadow"
-                              : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
-                          }`}
-                        >
-                          {item.label}
-                        </a>
-                      );
-                    })}
-                  </div>
+                  <nav className="border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg mt-4">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {navItems.map((item) => {
+                        const isActive = activeSection === item.id;
+                        return (
+                          <a
+                            key={item.id}
+                            href={`#${item.id}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const el = document.getElementById(item.id);
+                              if (el) {
+                                el.scrollIntoView({ behavior: "smooth" });
+                                window.history.replaceState(
+                                  null,
+                                  "",
+                                  `#${item.id}`
+                                );
+                                setActiveSection(item.id);
+                              }
+                            }}
+                            className={`rounded-full border border-white/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] opacity-80 transition hover:border-white/80 hover:opacity-100 ${
+                              isActive ? "border-white/90 opacity-100" : ""
+                            }`}
+                            style={headingStyle}
+                          >
+                            {item.label}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </nav>
                 )}
                 {renderHeaderWidget()}
               </div>
@@ -2663,24 +2700,49 @@ export default function SimpleTemplateView({
 
             {/* Hero Image */}
             <div className="relative w-full h-64 md:h-96">
-              {heroImage ? (
-                heroImage.startsWith("http") ? (
+              {heroImage && heroImage.trim() ? (
+                heroImage.startsWith("data:") ? (
+                  <img
+                    src={heroImage}
+                    alt="Hero"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error(
+                        "[SimpleTemplateView] Hero image failed to load (data URL)"
+                      );
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : heroImage.startsWith("http") ? (
                   <Image
                     src={heroImage}
                     alt="Hero"
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 1000px"
+                    onError={() => {
+                      console.error(
+                        "[SimpleTemplateView] Hero image failed to load (HTTP URL)"
+                      );
+                    }}
                   />
                 ) : (
                   <img
                     src={heroImage}
                     alt="Hero"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error(
+                        "[SimpleTemplateView] Hero image failed to load (other)"
+                      );
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
                   />
                 )
               ) : (
-                <div className="w-full h-full bg-white/5" />
+                <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                  <span className="text-white/30 text-sm">No image</span>
+                </div>
               )}
             </div>
 
@@ -2755,6 +2817,92 @@ export default function SimpleTemplateView({
             {renderVolunteersSection()}
             {renderAnnouncementsSection()}
 
+            {/* Hosts Section (for gender reveal, baby showers, etc.) */}
+            {hosts.length > 0 && (
+              <section
+                id="hosts"
+                className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
+              >
+                <h2
+                  className={`text-2xl mb-6 ${accentClass}`}
+                  style={headingStyle}
+                >
+                  Hosted By
+                </h2>
+                <div className="flex flex-wrap justify-center gap-6">
+                  {hosts.map((host: any) => (
+                    <div key={host.id || host.name} className="text-center">
+                      <div
+                        className="font-semibold text-lg mb-1 opacity-90"
+                        style={bodyShadow}
+                      >
+                        {host.name}
+                      </div>
+                      {host.role && (
+                        <div className="text-sm opacity-70" style={bodyShadow}>
+                          {host.role}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Parents Name Section (for gender reveal) */}
+            {parentsName && (
+              <section
+                id="parents"
+                className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
+              >
+                <h2
+                  className={`text-2xl mb-4 ${accentClass}`}
+                  style={headingStyle}
+                >
+                  Parents-to-Be
+                </h2>
+                <div
+                  className="text-lg font-semibold opacity-90"
+                  style={bodyShadow}
+                >
+                  {parentsName}
+                </div>
+              </section>
+            )}
+
+            {/* Registry Section (for gender reveal, baby showers, weddings) */}
+            {registries.length > 0 && (
+              <section
+                id="registry"
+                className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
+              >
+                <h2
+                  className={`text-2xl mb-6 ${accentClass}`}
+                  style={headingStyle}
+                >
+                  Registry
+                </h2>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {registries.map((registry: any, idx: number) => (
+                    <a
+                      key={registry.id || idx}
+                      href={registry.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
+                    >
+                      <span
+                        className="uppercase tracking-widest text-sm font-semibold opacity-90"
+                        style={bodyShadow}
+                      >
+                        {registry.label || "Registry"}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* RSVP Section */}
             {rsvpEnabled && (
               <section
@@ -2795,18 +2943,18 @@ export default function SimpleTemplateView({
                           <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
                             Select Athlete (updates roster)
                           </label>
-                        <select
-                          className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                          value={selectedAthleteId}
-                          onChange={(e) =>
-                            setSelectedAthleteId(
-                              e.target.value === "__other"
-                                ? ""
-                                : e.target.value
-                            )
-                          }
-                        >
-                          <option value="">Choose athlete</option>
+                          <select
+                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                            value={selectedAthleteId}
+                            onChange={(e) =>
+                              setSelectedAthleteId(
+                                e.target.value === "__other"
+                                  ? ""
+                                  : e.target.value
+                              )
+                            }
+                          >
+                            <option value="">Choose athlete</option>
                             {rosterAthletes.map((athlete) => {
                               const labelParts = [
                                 athlete.name,
@@ -2824,9 +2972,9 @@ export default function SimpleTemplateView({
                                 </option>
                               );
                             })}
-                          <option value="__other">Not listed / other</option>
-                        </select>
-                      </div>
+                            <option value="__other">Not listed / other</option>
+                          </select>
+                        </div>
                       )}
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
