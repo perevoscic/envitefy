@@ -758,6 +758,22 @@ export default function BabyShowerTemplateCustomizePage() {
       const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
       const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
+      const backgroundImageCss =
+        selectedTheme?.bgStyle?.backgroundImage &&
+        typeof selectedTheme.bgStyle.backgroundImage === "string"
+          ? selectedTheme.bgStyle.backgroundImage
+          : undefined;
+      const backgroundColorCss =
+        selectedTheme?.bgStyle?.backgroundColor &&
+        typeof selectedTheme.bgStyle.backgroundColor === "string"
+          ? selectedTheme.bgStyle.backgroundColor
+          : undefined;
+      const headerBgCss =
+        backgroundImageCss ||
+        (backgroundColorCss
+          ? `linear-gradient(0deg, ${backgroundColorCss}, ${backgroundColorCss})`
+          : undefined);
+
       // Persist hero image (convert blob URLs to data URLs)
       const heroImageToSave = await (async () => {
         if (!data.images.hero) return heroImageSrc;
@@ -840,11 +856,14 @@ export default function BabyShowerTemplateCustomizePage() {
             expectingDate: data.babyDetails.expectingDate,
             gender: data.babyDetails.gender,
             hosts: hostsText,
-            registries: registryText,
-            aboutBaby: data.babyDetails.notes,
-            aboutMom: data.momDetails.notes,
-            rsvpDeadline: data.rsvp.deadline,
-          },
+          registries: registryText,
+          aboutBaby: data.babyDetails.notes,
+          aboutMom: data.momDetails.notes,
+          rsvpDeadline: data.rsvp.deadline,
+        },
+          templateBackgroundCss: backgroundImageCss || backgroundColorCss,
+          headerBgCss: headerBgCss,
+          headerBgColor: backgroundColorCss,
           babyName: data.babyName,
           momName: data.momName,
           babyDetails: data.babyDetails,

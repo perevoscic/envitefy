@@ -1852,6 +1852,20 @@ export default function BirthdayTemplateCustomizePage() {
         PROFESSIONAL_THEME_CLASSES[data.theme?.professionalThemeId || ""] ||
         PROFESSIONAL_THEME_CLASSES.default;
 
+      const backgroundImageCss =
+        typeof professionalBackgroundStyle?.backgroundImage === "string"
+          ? professionalBackgroundStyle.backgroundImage
+          : undefined;
+      const backgroundColorCss =
+        typeof professionalBackgroundStyle?.backgroundColor === "string"
+          ? professionalBackgroundStyle.backgroundColor
+          : undefined;
+      const headerBgCss =
+        backgroundImageCss ||
+        (backgroundColorCss
+          ? `linear-gradient(0deg, ${backgroundColorCss}, ${backgroundColorCss})`
+          : undefined);
+
       const payload: any = {
         title: `${data.childName}'s ${data.age}${getAgeSuffix(
           data.age
@@ -1897,6 +1911,9 @@ export default function BirthdayTemplateCustomizePage() {
           fontFamily: currentFont.preview,
           fontSizeClass: currentSize.h1,
           themePalette: professionalPalette,
+          templateBackgroundCss: backgroundImageCss || backgroundColorCss,
+          headerBgCss: headerBgCss,
+          headerBgColor: backgroundColorCss,
           registries: data.registries
             .filter((r) => r.url.trim())
             .map((r) => ({

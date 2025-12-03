@@ -2126,7 +2126,7 @@ const App = () => {
       let id: string | undefined;
 
       if (editEventId) {
-        await fetch(`/api/history/${editEventId}`, {
+        const res = await fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2135,6 +2135,12 @@ const App = () => {
             data: payload.data,
           }),
         });
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          throw new Error(
+            errText || "Failed to update event. Please try again."
+          );
+        }
         id = editEventId;
       } else {
         const r = await fetch("/api/history", {
