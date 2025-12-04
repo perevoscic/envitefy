@@ -420,6 +420,33 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Output**: `{ asin: string|null, title: string|null, imageUrl: string|null, price: string|null }`.
 - **Env**: None specific beyond general egress; uses a lightweight browser-like `User-Agent` for the HTML fetch.
 
+### Uploads Birthday Asset — POST `/api/uploads/birthday-asset`
+
+- **Purpose**: Upload and optimize birthday event images (hero images, decorations).
+- **Auth**: None (public upload endpoint).
+- **Input**: `multipart/form-data` with `file` (image: JPEG, PNG, WebP).
+- **Behavior**: Processes the uploaded image using Sharp: auto-rotates based on EXIF, resizes to max width 1600px (maintaining aspect ratio), and optimizes based on format (PNG with compression level 8, WebP with quality 80, JPEG with quality 80 and mozjpeg). Saves the optimized image to `public/uploads/birthdays/` with a UUID filename.
+- **Output**: `{ ok: true, url: string }` where `url` is the public path to the uploaded image (e.g., `/uploads/birthdays/{uuid}.jpg`).
+- **Env**: None specific (uses Sharp for image processing).
+
+### Templates Signup — GET `/api/templates/signup`
+
+- **Purpose**: List available signup template images for a given category (used by signup form builders).
+- **Auth**: None.
+- **Query params**: `category` (string, required) - the event category name (e.g., "Spring", "Sports & Recreation").
+- **Behavior**: Maps category names to folder names (e.g., "Spring" → "spring", "Sports & Recreation" → "sports-and-recreation"), searches `public/templates/signup/{folder}/` for image files (JPG, JPEG, PNG, WebP, GIF), and returns sorted image URLs. Uses in-memory caching to avoid repeated filesystem reads.
+- **Output**: `{ ok: true, images: string[] }` where `images` is an array of public URLs to template images, or `{ ok: false, error }` on failure.
+- **Env**: None (reads from filesystem).
+
+### Maps Static — GET `/api/maps/static`
+
+- **Purpose**: Proxy to Google Maps Static API to serve location map images.
+- **Auth**: None.
+- **Query params**: `q` or `query` (string, required - location query), `zoom` (number, 1-21, default 14), `width` (number, 64-2048, default 640), `height` (number, 64-2048, default 640).
+- **Behavior**: Constructs a Google Maps Static API URL with the provided location query, zoom, and dimensions, adds a red marker at the center, and proxies the image response. Returns 204 (No Content) if `NEXT_PUBLIC_GOOGLE_MAPS_STATIC_API_KEY` or `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is not configured, allowing callers to render a fallback.
+- **Output**: Binary image (PNG/JPEG) with `Content-Type` header and cache headers (`Cache-Control: public, max-age=86400`), or 204 if API key is missing, or 502 on upstream errors.
+- **Env**: `NEXT_PUBLIC_GOOGLE_MAPS_STATIC_API_KEY` or `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (optional; returns 204 if missing).
+
 ---
 
 ### History — GET/POST `/api/history`, GET/PATCH/DELETE `/api/history/[id]`
@@ -468,6 +495,68 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - When a legacy-only form exists in `event_history.data.signupForm`, the API backfills it into `signup_forms` on first access if it has a valid form shape.
 - **Output**: `{ ok: true, signupForm, response? }` with the normalized form state and (for reserve) the caller's latest response. Errors return `{ error }` with HTTP 4xx/5xx codes.
 - **Notes**: Fails with 400 when the event lacks a sign-up form. Contact fields are optional unless the sign-up settings require them.
+
+### History Volunteer — POST `/api/history/[id]/volunteer`
+
+- **Purpose**: Sign up for volunteer slots or snack duty for an event (e.g., soccer snack sign-ups).
+- **Auth**: None (public action; no account required).
+- **Input (JSON)**: `{ slotId: string, name: string, email?: string, phone?: string }`.
+- **Behavior**: Finds the volunteer slot by `slotId` in `advancedSections.volunteers.volunteerSlots` or `advancedSections.volunteers.slots`, marks it as filled with the provided contact info, and updates both `advancedSections.volunteers` and `advancedSections.snacks` (if the slot is a snack slot). Supports both `volunteerSlots` and `slots` data structures for backward compatibility.
+- **Output**: `{ ok: true, slot }` with the updated slot object, or `{ error }` if the slot is already filled or not found.
+- **Env**: `DATABASE_URL` (Postgres).
+
+### History Carpool — POST `/api/history/[id]/carpool`
+
+- **Purpose**: Add a carpool offer or sign up for an existing carpool for an event.
+- **Auth**: None (public action; no account required).
+- **Input (JSON)**:
+  - Add offer: `{ action?: "add", driverName: string, seatsAvailable: number, phone?: string, email?: string, departureLocation?: string, departureTime?: string, direction?: string }`.
+  - Sign up: `{ action: "signup", carpoolId: string, passengerName: string, seatsRequested: number, passengerPhone?: string, passengerEmail?: string }`.
+- **Behavior**: 
+  - Add: Creates a new carpool offer in `advancedSections.volunteers.carpoolOffers` or `advancedSections.volunteers.carpools` with available seats and driver info.
+  - Sign up: Finds the carpool by `carpoolId`, validates seat availability, adds the passenger signup to the carpool's `signups` array, and increments `seatsTaken`. Returns an error if not enough seats are available.
+- **Output**: `{ ok: true, carpool }` (for add) or `{ ok: true, signup, carpool }` (for signup), or `{ error }`.
+- **Env**: `DATABASE_URL` (Postgres).
+
+### Event Update Theme — POST `/api/events/[id]/update-theme`
+
+- **Purpose**: Update the theme/template ID for an existing event.
+- **Auth**: None (public endpoint; event access control handled by event visibility).
+- **Input (JSON)**: `{ templateId: string }`.
+- **Behavior**: Updates the event's `data.theme.themeId` and `data.variationId` to the provided `templateId`, merging with existing theme data.
+- **Output**: `{ ok: true }` or `{ error }`.
+- **Env**: `DATABASE_URL` (Postgres).
+
+### Event Thumbnail — GET `/api/events/[id]/thumbnail`
+
+- **Purpose**: Serve the event's thumbnail or attachment image as a binary image response.
+- **Auth**: None (public endpoint; event access control handled by event visibility).
+- **Query params**: Optional `variant` (`attachment`|`thumbnail`) to prefer attachment over thumbnail or vice versa.
+- **Behavior**: Reads the event's `data.thumbnail` (base64 data URL) or `data.attachment.dataUrl`, decodes the base64, and returns it as an image with appropriate `Content-Type` headers. Defaults to thumbnail if available, otherwise falls back to attachment. Returns 404 if no image is found.
+- **Output**: Binary image data (PNG/JPEG/WebP) with `Content-Type` header and cache headers (`Cache-Control: public, max-age=3600`).
+- **Env**: `DATABASE_URL` (Postgres).
+
+### Event RSVP — GET/POST/PATCH/DELETE `/api/events/[id]/rsvp`
+
+- **Purpose**: Manage RSVP responses for an event (submit, view stats, update, delete).
+- **Auth**: 
+  - GET: None (public read).
+  - POST: Optional (anonymous RSVPs allowed with name/email).
+  - PATCH/DELETE: NextAuth session required; caller must be the event owner.
+- **Input (JSON)**:
+  - POST: `{ response: "yes"|"no"|"maybe", name?: string, email?: string }`.
+  - PATCH: `{ response: "yes"|"no"|"maybe", target: { userId?: string, email?: string, name?: string } }`.
+  - DELETE: `{ target: { userId?: string, email?: string, name?: string } }`.
+- **Behavior**:
+  - POST: Creates or updates an RSVP response in `rsvp_responses` table. Uses `user_id` (if authenticated), `email`, or `name` as the identifier. Supports anonymous RSVPs with name-only. Enforces uniqueness per event per identifier.
+  - GET: Returns RSVP statistics (counts by response type), `numberOfGuests` from event data, `remaining` seats, and a list of all responses with names/emails/timestamps.
+  - PATCH: Owner updates a specific RSVP's response status by `userId`, `email`, or `name`.
+  - DELETE: Owner deletes a specific RSVP by `userId`, `email`, or `name`.
+- **Storage**: Uses `rsvp_responses` table with unique indexes on `(event_id, user_id)`, `(event_id, email)`, and `(event_id, LOWER(TRIM(name)))` (for anonymous name-based RSVPs).
+- **Output**:
+  - GET: `{ ok: true, stats: { yes, no, maybe }, numberOfGuests, remaining, filled, responses: Array<{ name, email, response, createdAt, updatedAt }> }`.
+  - POST/PATCH/DELETE: `{ ok: true }` or `{ error }`.
+- **Env**: `DATABASE_URL` (Postgres). The route auto-creates the `rsvp_responses` table and indexes if they don't exist.
 
 ### OAuth disconnect — POST `/api/oauth/disconnect`
 
@@ -536,6 +625,14 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Inspect recent `event_history` inserts and whether the current session has user-linked rows.
 - **Output**: `{ user: { id, email }|null, mineCount, recentCount, mine: HistoryRow[], recent: HistoryRow[] }`.
+
+### Debug: Promo — GET `/api/debug/promo`
+
+- **Purpose**: Inspect promo code records and database identity for debugging.
+- **Auth**: None (debug endpoint).
+- **Query params**: Optional `code` (string) to look up a specific promo code, optional `limit` (number, default 5) for recent codes list.
+- **Output**: `{ ok: true, identity: {...}, byCode?: PromoCodeRow, recent?: PromoCodeRow[] }` when `code` is provided, or `{ ok: true, identity: {...}, recent: PromoCodeRow[] }` for recent codes list.
+- **Env**: `DATABASE_URL` (Postgres).
 
 ### Debug: Egress — GET `/api/debug-egress`
 
@@ -618,6 +715,8 @@ Payload used by the authenticated calendar agents.
     - Set `PGSSL_CA_BASE64=<base64 of rds-combined-ca-bundle.pem>` to enforce verification. The app sets `ssl: { ca, rejectUnauthorized: true }`. Remove `sslmode` from `DATABASE_URL` when passing SSL via env.
   - To get the latest AWS RDS CA bundle, download `https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem` and base64-encode its contents.
   - Optional debug connectivity also supports `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` via `/api/debug-db`.
+- **Google Maps (static map images)**
+  - `NEXT_PUBLIC_GOOGLE_MAPS_STATIC_API_KEY` or `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (optional; used by `/api/maps/static` for location map images).
 
 ---
 
