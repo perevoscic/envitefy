@@ -790,7 +790,8 @@ export default function BirthdayTemplateCustomizePage() {
         )} Birthday`,
         data: {
           category: "Birthdays",
-          createdVia: "simple-template",
+          // Use the full birthday template renderer (not the simple template)
+          createdVia: "template",
           createdManually: true,
           startISO,
           endISO,

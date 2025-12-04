@@ -2069,6 +2069,28 @@ const App = () => {
           : buildDisplayTitle(variationId, data.partner1, data.partner2);
       const coupleNames = getCoupleNames(data.partner1, data.partner2);
 
+      // Normalize registries and wedding party so publish/save matches builder state
+      const normalizedRegistries =
+        (Array.isArray(data.registry) ? data.registry : data.registries) || [];
+      const registries =
+        normalizedRegistries
+          .filter((r) => r?.url?.trim())
+          .map((r) => ({
+            label: r.label?.trim() || "Registry",
+            url: r.url?.trim(),
+          })) || [];
+
+      const weddingParty =
+        Array.isArray(data.weddingParty) && data.weddingParty.length > 0
+          ? data.weddingParty
+          : Array.isArray(data.party)
+          ? data.party
+          : [];
+
+      const rsvpPayload = data.rsvp
+        ? { ...data.rsvp }
+        : undefined;
+
       const payload: any = {
         title,
         data: {
@@ -2080,7 +2102,7 @@ const App = () => {
           endISO,
           location,
           description: data.story?.text || undefined,
-          rsvp: data.rsvp?.isEnabled ? data.rsvp?.deadline || "" : undefined,
+          rsvp: rsvpPayload,
           numberOfGuests: 0,
           templateId: "wedding",
           variationId,
@@ -2094,19 +2116,15 @@ const App = () => {
           city: data.city,
           state: data.state,
           story: data.story,
-          party: data.party,
+          weddingParty,
+          party: weddingParty, // keep legacy key aligned
           schedule: data.schedule,
           travel: data.travel,
           thingsToDo: data.thingsToDo,
           hosts: data.hosts,
           theme: { ...data.theme, name: templateName },
-          registries:
-            data.registries
-              ?.filter((r) => r?.url?.trim())
-              .map((r) => ({
-                label: r.label?.trim() || "Registry",
-                url: r.url?.trim(),
-              })) || [],
+          registries,
+          registry: registries, // keep builder-friendly key
           customHeroImage: data.images?.hero || undefined,
           headlineBg: data.images?.headlineBg || undefined,
           gallery: data.gallery || [],

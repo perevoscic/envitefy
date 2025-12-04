@@ -30,6 +30,7 @@ import { extractFirstPhoneNumber } from "@/utils/phone";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import { CandyDreamsLayout } from "./templates/CandyDreamsLayout";
 // Format event range display - simplified version
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
@@ -189,7 +190,11 @@ const parseHexColor = (hex: string) => {
   }
   const m = clean.match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
   if (!m) return null;
-  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+  return {
+    r: parseInt(m[1], 16),
+    g: parseInt(m[2], 16),
+    b: parseInt(m[3], 16),
+  };
 };
 
 const getLuminance = (hex: string): number => {
@@ -275,9 +280,6 @@ export default function BirthdayTemplateView({
     (eventData?.heroImage as string) ||
     (Array.isArray(eventData?.gallery) && eventData.gallery[0]?.url) ||
     `${heroImageBasePath}${template.heroImageName || `${template.id}.webp`}`;
-  const headerBackgroundStyle = {
-    ...paletteStyle,
-  };
 
   const venue = eventData?.venue || "";
   const location = eventData?.location || "";
@@ -308,6 +310,7 @@ export default function BirthdayTemplateView({
         .trim()
     : "";
   const rsvpName = rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "";
+  const rsvpContactLabel = rsvpName || rsvpContactSource;
   const hasRsvpContact = Boolean(rsvpPhone || rsvpEmail);
 
   const calendarStartIso =
@@ -359,12 +362,11 @@ export default function BirthdayTemplateView({
       : undefined;
   const zoomValue = parseCoordinateValue(eventData?.zoom);
 
-  const hosts = Array.isArray(eventData?.hosts) ? eventData.hosts : [];
+  type Host = { id?: string | number; name?: string; role?: string };
+  const hosts: Host[] = Array.isArray(eventData?.hosts) ? eventData.hosts : [];
   const partyDetails = eventData?.partyDetails || {};
   const activities =
-    typeof partyDetails?.activities === "string"
-      ? partyDetails.activities
-      : "";
+    typeof partyDetails?.activities === "string" ? partyDetails.activities : "";
   const partyTheme =
     partyDetails?.theme || eventData?.theme?.themeLabel || null;
 
@@ -483,6 +485,9 @@ export default function BirthdayTemplateView({
     ? (eventData.themePalette as string[])
     : [];
   const paletteStyle = getPreviewStyle(themePalette);
+  const headerBackgroundStyle = {
+    ...paletteStyle,
+  };
   const isDarkPalette = isPaletteDark(themePalette);
   const headingColor = isDarkPalette ? "#ffffff" : "#0f172a";
   const accentColor = isDarkPalette ? "#e2e8f0" : "#475569";
@@ -494,8 +499,7 @@ export default function BirthdayTemplateView({
     variation.titleFontFamily ||
     "var(--font-playfair)";
   const bodyFontFamily =
-    (eventData?.theme?.bodyFontFamily as string) ||
-    "var(--font-montserrat)";
+    (eventData?.theme?.bodyFontFamily as string) || "var(--font-montserrat)";
 
   const viewContent = (
     <section className="mx-auto w-full max-w-7xl">
@@ -777,10 +781,10 @@ export default function BirthdayTemplateView({
                       {mapCoordinates && (
                         <div className="h-60 overflow-hidden rounded-lg border border-stone-200">
                           <EventMap
-                            latitude={mapCoordinates.latitude}
-                            longitude={mapCoordinates.longitude}
+                            coordinates={mapCoordinates}
+                            venue={venue || undefined}
+                            location={locationQuery}
                             zoom={zoomValue ?? undefined}
-                            label={venue || locationQuery}
                           />
                         </div>
                       )}
@@ -869,18 +873,20 @@ export default function BirthdayTemplateView({
                   Registry
                 </h2>
                 <div className="space-y-2">
-                  {registryLinks.map((reg, idx) => (
-                    <div key={`${reg.url}-${idx}`}>
-                      <a
-                        href={reg.url}
-                        className="text-indigo-600 hover:text-indigo-800 font-medium"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {reg.label || "Registry link"}
-                      </a>
-                    </div>
-                  ))}
+                  {registryLinks.map(
+                    (reg: { url: string; label?: string }, idx: number) => (
+                      <div key={`${reg.url}-${idx}`}>
+                        <a
+                          href={reg.url}
+                          className="text-indigo-600 hover:text-indigo-800 font-medium"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {reg.label || "Registry link"}
+                        </a>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             </div>
