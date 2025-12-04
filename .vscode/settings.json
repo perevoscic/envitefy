@@ -2,5 +2,8 @@
     "chatToCodexCLI.model": "gpt-5-codex",
     "chatToCodexCLI.sandbox": "danger-full-access",
     "chatToCli.model": "gpt-5.1-codex-max",
-    "chatToCli.modelReasoningEffort": "high"
+    "chatToCli.modelReasoningEffort": "high",
+    "chatToCli.enableViewImageTool": true,
+    "chatToCli.enableFileOpenerTool": true,
+    "chatToCli.enableDiagnosticsLinter": true
 }
