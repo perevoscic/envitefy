@@ -457,6 +457,7 @@ const SIDEBAR_BADGE_CLASS =
   "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner";
 const SIDEBAR_WIDTH_REM = "20rem";
 const SIDEBAR_COLLAPSED_REM = "4.5rem";
+const SIDEBAR_LOGO_SRC = "/E.png";
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
@@ -2298,7 +2299,7 @@ export default function LeftSidebar() {
               className="flex items-center justify-center cursor-pointer hover:opacity-100 transition-opacity"
             >
               <Image
-                src="/E.png"
+                src={SIDEBAR_LOGO_SRC}
                 alt="Envitefy"
                 width={36}
                 height={36}
@@ -2397,7 +2398,7 @@ export default function LeftSidebar() {
                   className="flex h-12 w-12 items-center justify-center]"
                 >
                   <Image
-                    src="/E.png"
+                    src={SIDEBAR_LOGO_SRC}
                     alt="Envitefy"
                     width={64}
                     height={64}
