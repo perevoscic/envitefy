@@ -1,6 +1,9 @@
 {
     "chatToCodexCLI.model": "gpt-5-codex",
     "chatToCodexCLI.sandbox": "danger-full-access",
-    "chatToCli.model": "gpt-5.1",
-    "chatToCli.modelReasoningEffort": "high"
+    "chatToCli.model": "gpt-5.2-codex",
+    "chatToCli.modelReasoningEffort": "high",
+    "chatToCli.sandbox": "danger-full-access",
+    "chatToCli.approvalPolicy": "never",
+    "chatToCli.enableFileOpenerTool": true
 }

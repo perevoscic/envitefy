@@ -101,6 +101,7 @@ This document describes the app’s server-side agents (API routes) that extract
 ### Promo Gift Agent — POST `/api/promo/gift`
 
 - **Purpose**: Initiate a Stripe Checkout session for gifting subscriptions. The promo code is created and emailed only after payment succeeds (via webhook). UI now redirects the purchaser to Stripe.
+- **UI guard (temporary)**: The Gift flow is currently disabled client-side (see `src/components/GiftSnapModal.tsx`) to prevent Stripe calls while the Stripe account is inactivation/limited mode. API behavior unchanged.
 - **Auth**: Optional (reads NextAuth session to prefill purchaser email/name).
 - **Input (JSON)**: `{ quantity: number, period: "months"|"years", recipientName?: string, recipientEmail?: string, message: string, senderFirstName?: string, senderLastName?: string, senderEmail?: string }`. Non-authenticated purchasers must supply the sender fields.
 - **Pricing**: Server computes cents using Stripe plan pricing (defaults: $0.99/month, $9.99/year). `quantity` multiplies the unit amount.
@@ -120,6 +121,7 @@ This document describes the app’s server-side agents (API routes) that extract
 ### Stripe Checkout Agent — POST `/api/billing/stripe/checkout`
 
 - **Purpose**: Create a Stripe Checkout session for upgrading to the paid monthly or yearly plan.
+- **UI guard (temporary)**: The Subscription page currently blocks paid-plan checkout calls client-side (see `src/app/subscription/page.tsx`) to avoid Stripe requests while the Stripe account is inactivation/limited mode. API behavior unchanged.
 - **Auth**: NextAuth session required.
 - **Input (JSON)**: `{ plan: "monthly" | "yearly" }`.
 - **Behavior**: Ensures the user has a Stripe customer record, provisions or reuses the price (lookup keys `envitefy-monthly` / `envitefy-yearly`), and returns the hosted checkout URL. Active subscriptions short-circuit with HTTP 409.
@@ -129,6 +131,7 @@ This document describes the app’s server-side agents (API routes) that extract
 ### Stripe Billing Portal — POST `/api/billing/stripe/portal`
 
 - **Purpose**: Generate a Stripe Billing Portal session so users can update payment methods or cancel directly with Stripe.
+- **UI guard (temporary)**: The Subscription page currently disables opening the Billing Portal while Stripe payments are blocked (see `src/app/subscription/page.tsx`). API behavior unchanged.
 - **Auth**: NextAuth session required and `stripe_customer_id` must exist.
 - **Input**: none.
 - **Output**: `{ ok: true, url }`.

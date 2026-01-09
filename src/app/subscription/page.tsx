@@ -46,6 +46,7 @@ export default function SubscriptionPage() {
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
+  const stripePaymentsDisabled = true;
   const [bannerVisible, setBannerVisible] = useState<boolean>(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [pricing, setPricing] = useState<{ monthly: number; yearly: number }>({
@@ -325,8 +326,13 @@ export default function SubscriptionPage() {
 
   const hasActivePaidPlan =
     currentPlan === "monthly" || currentPlan === "yearly";
+  const stripePaidPlanSelected =
+    selectedPlan === "monthly" || selectedPlan === "yearly";
   const buttonDisabled =
-    loading || isLifetimePlan || (isAuthed && selectedPlan === currentPlan);
+    loading ||
+    isLifetimePlan ||
+    (isAuthed && selectedPlan === currentPlan) ||
+    (stripePaymentsDisabled && stripePaidPlanSelected && isAuthed);
   const buttonLabel = useMemo(() => {
     if (isLifetimePlan) return "Current plan";
     if (!isAuthed) return "Subscribe";
@@ -588,6 +594,15 @@ export default function SubscriptionPage() {
             }
             if (loading) return;
             if (isLifetimePlan) return;
+            if (stripePaymentsDisabled && stripePaidPlanSelected) {
+              setBanner({
+                type: "info",
+                message:
+                  "Stripe payments are temporarily disabled until the account is activated.",
+              });
+              setBannerVisible(true);
+              return;
+            }
             if (selectedPlan === "free" || selectedPlan === "freemium") {
               if (!hasActivePaidPlan) return;
               try {
@@ -659,6 +674,15 @@ export default function SubscriptionPage() {
             type="button"
             className="px-6 py-2 rounded-2xl border border-border bg-surface text-foreground hover:bg-surface/80 transition select-none disabled:opacity-60"
             onClick={async () => {
+              if (stripePaymentsDisabled) {
+                setBanner({
+                  type: "info",
+                  message:
+                    "Stripe billing is temporarily disabled until the account is activated.",
+                });
+                setBannerVisible(true);
+                return;
+              }
               if (portalLoading) return;
               try {
                 setPortalLoading(true);
@@ -681,9 +705,13 @@ export default function SubscriptionPage() {
                 setPortalLoading(false);
               }
             }}
-            disabled={portalLoading}
+            disabled={portalLoading || stripePaymentsDisabled}
           >
-            {portalLoading ? "Opening..." : "Manage Billing"}
+            {portalLoading
+              ? "Opening..."
+              : stripePaymentsDisabled
+              ? "Billing Disabled"
+              : "Manage Billing"}
           </button>
         )}
       </div>
@@ -723,8 +751,9 @@ export default function SubscriptionPage() {
             </button>
             <button
               type="button"
-              className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition"
+              className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={() => setGiftOpen(true)}
+              disabled={stripePaymentsDisabled}
             >
               Gift a Snap
             </button>

@@ -24,6 +24,7 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
   const [senderFirstName, setSenderFirstName] = useState("");
   const [senderLastName, setSenderLastName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
+  const stripePaymentsDisabled = true;
 
   function resetFormState() {
     setFirstName("");
@@ -76,6 +77,12 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
   if (!open) return null;
 
   const onSubmit = async () => {
+    if (stripePaymentsDisabled) {
+      setResult(
+        "Stripe payments are temporarily disabled until the account is activated."
+      );
+      return;
+    }
     const isAuthed = !!session?.user?.email;
     const fullName =
       `${firstName}`.trim() + (lastName.trim() ? ` ${lastName.trim()}` : "");
@@ -282,10 +289,14 @@ export default function GiftSnapModal({ open, onClose }: GiftSnapModalProps) {
               <button
                 type="button"
                 className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-white shadow hover:shadow-md active:shadow-sm transition disabled:opacity-60"
-                disabled={submitting}
+                disabled={submitting || stripePaymentsDisabled}
                 onClick={onSubmit}
               >
-                {submitting ? "Snapping..." : "Snap the Gift"}
+                {submitting
+                  ? "Snapping..."
+                  : stripePaymentsDisabled
+                  ? "Stripe Disabled"
+                  : "Snap the Gift"}
               </button>
             </div>
           </>
