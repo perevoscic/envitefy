@@ -13,7 +13,11 @@ type RsvpStats = {
 
 type RsvpResponse = {
   name: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
   email: string | null;
+  message?: string | null;
   response: string;
   createdAt: string | null;
   updatedAt: string | null;
@@ -200,9 +204,28 @@ export default function EventRsvpDashboard({
                   key={rsvpKey}
                   className="flex items-center justify-between text-sm py-1.5 px-2 rounded border border-border/50 bg-background/50"
                 >
-                  <span className="text-foreground truncate flex-1">
-                    {displayName}
-                  </span>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-foreground font-bold truncate">
+                      {rsvp.firstName && rsvp.lastName ? `${rsvp.firstName} ${rsvp.lastName}` : (rsvp.name || "Anonymous")}
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                      {rsvp.email && (
+                        <span className="text-[10px] text-foreground/50 truncate max-w-[150px]">
+                          📧 {rsvp.email}
+                        </span>
+                      )}
+                      {rsvp.phone && (
+                        <span className="text-[10px] text-foreground/50">
+                          📱 {rsvp.phone}
+                        </span>
+                      )}
+                    </div>
+                    {rsvp.message && (
+                      <p className="mt-1.5 text-xs text-foreground/70 bg-foreground/5 p-2 rounded italic border-l-2 border-primary/30">
+                        "{rsvp.message}"
+                      </p>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 ml-2">
                     <span
                       className={`${responseColor} font-medium hidden sm:inline-flex items-center gap-1.5`}

@@ -30,6 +30,7 @@ import { extractFirstPhoneNumber } from "@/utils/phone";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import { CandyDreamsLayout } from "./templates/CandyDreamsLayout";
 // Format event range display - simplified version
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
@@ -113,6 +114,18 @@ function formatEventRangeDisplay(
   } catch {
     return null;
   }
+}
+
+function formatDateSimple(dateStr?: string) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  
+  // Use UTC to prevent shifts for YYYY-MM-DD
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const yyyy = date.getUTCFullYear();
+  return `${mm}-${dd}-${yyyy}`;
 }
 
 function getTemplateById(id: string): BirthdayTemplateDefinition {
@@ -229,6 +242,8 @@ const getPreviewStyle = (palette: string[]) => {
   return {};
 };
 
+import GuestRsvpModal from "./GuestRsvpModal";
+
 export default function BirthdayTemplateView({
   eventId,
   eventData,
@@ -241,6 +256,7 @@ export default function BirthdayTemplateView({
   shareUrl,
   sessionEmail,
 }: Props) {
+  const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
   const variation = useMemo(() => {
     const v =
@@ -275,6 +291,10 @@ export default function BirthdayTemplateView({
     (eventData?.heroImage as string) ||
     (Array.isArray(eventData?.gallery) && eventData.gallery[0]?.url) ||
     `${heroImageBasePath}${template.heroImageName || `${template.id}.webp`}`;
+  const themePalette = Array.isArray(eventData?.themePalette)
+    ? (eventData.themePalette as string[])
+    : [];
+  const paletteStyle = getPreviewStyle(themePalette);
   const headerBackgroundStyle = {
     ...paletteStyle,
   };
@@ -479,10 +499,6 @@ export default function BirthdayTemplateView({
     };
   }, [navItems, templateId]);
 
-  const themePalette = Array.isArray(eventData?.themePalette)
-    ? (eventData.themePalette as string[])
-    : [];
-  const paletteStyle = getPreviewStyle(themePalette);
   const isDarkPalette = isPaletteDark(themePalette);
   const headingColor = isDarkPalette ? "#ffffff" : "#0f172a";
   const accentColor = isDarkPalette ? "#e2e8f0" : "#475569";
@@ -739,7 +755,7 @@ export default function BirthdayTemplateView({
                   Hosts
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {hosts.map((host, idx) => (
+                  {hosts.map((host: any, idx: number) => (
                     <div
                       key={host.id || idx}
                       className="rounded-lg border border-stone-200 bg-white px-3 py-3"
@@ -777,10 +793,9 @@ export default function BirthdayTemplateView({
                       {mapCoordinates && (
                         <div className="h-60 overflow-hidden rounded-lg border border-stone-200">
                           <EventMap
-                            latitude={mapCoordinates.latitude}
-                            longitude={mapCoordinates.longitude}
+                            coordinates={mapCoordinates}
                             zoom={zoomValue ?? undefined}
-                            label={venue || locationQuery}
+                            location={venue || locationQuery}
                           />
                         </div>
                       )}
@@ -869,7 +884,7 @@ export default function BirthdayTemplateView({
                   Registry
                 </h2>
                 <div className="space-y-2">
-                  {registryLinks.map((reg, idx) => (
+                  {registryLinks.map((reg: any, idx: number) => (
                     <div key={`${reg.url}-${idx}`}>
                       <a
                         href={reg.url}
@@ -901,16 +916,21 @@ export default function BirthdayTemplateView({
                 </h2>
                 {eventData?.rsvpDeadline && (
                   <p className="text-sm text-stone-700 mb-2">
-                    Please RSVP by {eventData.rsvpDeadline}
+                    Please RSVP by {formatDateSimple(eventData.rsvpDeadline)}
                   </p>
                 )}
-                {hasRsvpContact ? (
-                  <p className="text-sm text-stone-700">
-                    Contact: {rsvpContactLabel}
-                  </p>
-                ) : (
-                  <p className="text-sm text-stone-700">
-                    RSVP details will be shared by the host.
+                <div className="mt-4">
+                  <button
+                    onClick={() => setIsRsvpModalOpen(true)}
+                    className="inline-flex items-center justify-center px-8 py-3 rounded-full text-lg font-bold text-white transition-transform hover:scale-105 active:scale-95 shadow-lg"
+                    style={{ backgroundColor: accentColor || "#4f46e5" }}
+                  >
+                    RSVP NOW
+                  </button>
+                </div>
+                {hasRsvpContact && (
+                  <p className="text-xs text-stone-500 mt-4">
+                    Or contact: {rsvpContactSource}
                   </p>
                 )}
               </div>
@@ -978,5 +998,27 @@ export default function BirthdayTemplateView({
     );
   }
 
-  return <main className="px-5 py-10">{viewContent}</main>;
+  return (
+    <main className="px-5 py-10">
+      {viewContent}
+      
+      {isOwner && eventId && (
+        <div className="max-w-7xl mx-auto w-full mt-12">
+            <EventRsvpDashboard eventId={eventId} initialNumberOfGuests={numberOfGuests} />
+        </div>
+      )}
+
+      <GuestRsvpModal
+        isOpen={isRsvpModalOpen}
+        onClose={() => setIsRsvpModalOpen(false)}
+        eventId={eventId}
+        eventTitle={eventTitle}
+        rsvpDeadline={eventData?.rsvpDeadline}
+        themeColors={{
+          primary: accentColor || "#4f46e5",
+          secondary: headingColor || "#000",
+        }}
+      />
+    </main>
+  );
 }

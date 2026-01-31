@@ -55,6 +55,8 @@ import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
+import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
+import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 
 export const dynamic = "force-dynamic";
 
@@ -1071,14 +1073,79 @@ export default async function EventPage({
     !isWeddingTemplate;
 
   // If it's a birthday template, render the template view
-  if (isBirthdayTemplate) {
+  if (isBirthdayTemplate || (categoryNormalized === "birthdays" && createdVia === "birthday-renderer")) {
+    const birthdayTheme = (data.theme && data.theme.id) ? data.theme : (variationId ? BIRTHDAY_THEMES.find(t => t.id === variationId) : null) || BIRTHDAY_THEMES[0];
+    
+    if (createdVia === "birthday-renderer" || (data.theme && data.theme.layout)) {
+        return (
+            <BirthdayRenderer
+                template={birthdayTheme}
+                eventId={row.id}
+                event={{
+                    headlineTitle: title || data.headlineTitle,
+                    date: data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
+                    location: data.location || [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
+                    story: data.story || data.description || (data.partyDetails && data.partyDetails.notes),
+                    schedule: data.schedule,
+                    registries: data.registries,
+                    rsvpEnabled: data.rsvpEnabled || (data.rsvp && data.rsvp.isEnabled),
+                    rsvpLink: "#rsvp",
+                    birthdayName: data.birthdayName || data.childName || "Birthday Star",
+                    age: data.age,
+                    party: data.party || data.partyDetails,
+                    thingsToDo: data.thingsToDo || (data.partyDetails && data.partyDetails.activities),
+                    hosts: data.hosts,
+                    gallery: Array.isArray(data.gallery) ? data.gallery.map((item: any) => typeof item === 'string' ? item : item.url) : [],
+                    rsvpDeadline: data.rsvpDeadline || (data.rsvp && data.rsvp.deadline),
+                    numberOfGuests: data.numberOfGuests || 0
+                }}
+                isOwner={isOwner}
+                actions={
+                  !isReadOnly && isOwner && (
+                    <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
+                      <Link
+                        href={buildEditLink(row.id, data, title)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                        title="Edit event"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        <span className="hidden sm:inline">Edit</span>
+                      </Link>
+                      <EventDeleteModal eventId={row.id} eventTitle={title} />
+                      <EventActions
+                        shareUrl={shareUrl}
+                        event={data as any}
+                        historyId={!isReadOnly ? row.id : undefined}
+                        className=""
+                        variant="compact"
+                        tone={"default" as any}
+                      />
+                    </div>
+                  )
+                }
+            />
+        );
+    }
+
     return (
       <BirthdayTemplateView
         eventId={row.id}
         eventData={clientSafeEventData}
         eventTitle={title}
-        templateId={templateId}
-        variationId={variationId}
+        templateId={templateId || "party-pop"}
+        variationId={variationId || "classic"}
         isOwner={isOwner}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}

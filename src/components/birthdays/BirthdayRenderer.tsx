@@ -1,6 +1,9 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { Share2, MapPin, Calendar, Clock } from "lucide-react";
 import Image from "next/image";
+import GuestRsvpModal from "../GuestRsvpModal";
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return "";
@@ -94,15 +97,22 @@ export type EventData = {
     activities?: string;
     notes?: string;
   };
+  numberOfGuests?: number;
 };
 
 interface Props {
   template: any; // We'll map the comprehensive theme object to this
   event: EventData;
+  actions?: React.ReactNode;
+  eventId?: string;
+  isOwner?: boolean;
 }
 
-export default function BirthdayRenderer({ template, event }: Props) {
+import EventRsvpDashboard from "../EventRsvpDashboard";
+
+export default function BirthdayRenderer({ template, event, actions, eventId, isOwner }: Props) {
   const { layout } = template;
+  const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
   
   // Normalize theme config from the template object
   const theme: ThemeConfig = {
@@ -134,63 +144,84 @@ export default function BirthdayRenderer({ template, event }: Props) {
         backgroundColor: theme.colors.primary,
       }}
     >
-      {renderLayout(layout, theme, event)}
+      {renderLayout(layout, theme, event, actions, () => setIsRsvpModalOpen(true))}
+      
+      {isOwner && eventId && (
+        <div className="max-w-4xl mx-auto w-full px-6 pb-20 mt-12">
+            <EventRsvpDashboard eventId={eventId} initialNumberOfGuests={event.numberOfGuests || 0} />
+        </div>
+      )}
+
+      {eventId && (
+        <GuestRsvpModal
+          isOpen={isRsvpModalOpen}
+          onClose={() => setIsRsvpModalOpen(false)}
+          eventId={eventId}
+          eventTitle={event.headlineTitle || "Birthday Party"}
+          rsvpDeadline={event.rsvpDeadline}
+          themeColors={{
+            primary: theme.colors.secondary,
+            secondary: theme.colors.primary,
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function renderLayout(layout: string, theme: ThemeConfig, event: EventData) {
+function renderLayout(layout: string, theme: ThemeConfig, event: EventData, actions?: React.ReactNode, onRsvpClick?: () => void) {
   switch (layout) {
     case "confetti-splash":
-      return <ConfettiSplashLayout theme={theme} event={event} />;
+      return <ConfettiSplashLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "balloon-arch":
-      return <BalloonArchLayout theme={theme} event={event} />;
+      return <BalloonArchLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "magical-sparkle":
-      return <MagicalSparkleLayout theme={theme} event={event} />;
+      return <MagicalSparkleLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "neon-night":
-      return <NeonNightLayout theme={theme} event={event} />;
+      return <NeonNightLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "tropical-vibe":
-      return <TropicalVibeLayout theme={theme} event={event} />;
+      return <TropicalVibeLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "retro-pixel":
-      return <PixelArcadeLayout theme={theme} event={event} />;
+      return <PixelArcadeLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "elegant-serif":
-      return <ElegantSerifLayout theme={theme} event={event} />;
+      return <ElegantSerifLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "cosmic-glow":
-      return <CosmicAdventureLayout theme={theme} event={event} />;
+      return <CosmicAdventureLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "animal-party":
-      return <AnimalPartyLayout theme={theme} event={event} />;
+      return <AnimalPartyLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "dino-adventure":
-      return <DinoExplorerLayout theme={theme} event={event} />;
+      return <DinoExplorerLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "underwater-obsidian":
-      return <UnderwaterAdventureLayout theme={theme} event={event} />;
+      return <UnderwaterAdventureLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "whimsical-magic":
-      return <WhimsicalMagicLayout theme={theme} event={event} />;
+      return <WhimsicalMagicLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "glamor-sparkle":
-      return <GlamorousSparkleLayout theme={theme} event={event} />;
+      return <GlamorousSparkleLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "sports-stadium":
-      return <SportsStadiumLayout theme={theme} event={event} />;
+      return <SportsStadiumLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "luxury-royal":
-      return <LuxuryRoyalLayout theme={theme} event={event} />;
+      return <LuxuryRoyalLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "island-paradise":
-      return <IslandParadiseLayout theme={theme} event={event} />;
+      return <IslandParadiseLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "safari-adventure":
-      return <SafariAdventureLayout theme={theme} event={event} />;
+      return <SafariAdventureLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "pattern-play":
-      return <PatternPlayLayout theme={theme} event={event} />;
+      return <PatternPlayLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     default:
-      return <ConfettiSplashLayout theme={theme} event={event} />;
+      return <ConfettiSplashLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
   }
 }
 
 // --- Layouts ---
 
-function ConfettiSplashLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function ConfettiSplashLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
   const isSports = theme.decorations?.graphicType === "sports";
   const isStars = theme.decorations?.graphicType === "stars";
   
   return (
     <>
       <section className="relative w-full min-h-[600px] py-12 flex items-center justify-center overflow-hidden" style={{ backgroundColor: theme.colors.primary }}>
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Animated Confetti Background */}
         <div className="absolute inset-0 z-0">
              <div className="absolute top-10 left-[10%] text-2xl animate-bounce">🎊</div>
@@ -229,17 +260,18 @@ function ConfettiSplashLayout({ theme, event }: { theme: ThemeConfig; event: Eve
         </div>
       </section>
       <div className="bg-white">
-        <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+        <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
       </div>
       <Footer theme={theme} event={event} />
     </>
   );
 }
 
-function BalloonArchLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function BalloonArchLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
    return (
     <>
       <section className="relative w-full py-16 flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: theme.colors.primary }}>
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Balloon Strings Decoration */}
         <div className="absolute top-0 left-1/4 w-px h-32 bg-slate-300 opacity-30"></div>
         <div className="absolute top-0 right-1/4 w-px h-48 bg-slate-300 opacity-20"></div>
@@ -282,10 +314,11 @@ function BalloonArchLayout({ theme, event }: { theme: ThemeConfig; event: EventD
    );
 }
 
-function GlamorousSparkleLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function GlamorousSparkleLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions? : React.ReactNode; onRsvpClick?: () => void}) {
     return (
         <div className="min-h-screen bg-white flex flex-col">
             <header className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
+                {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                 {/* Glitter/Sparkle Particles */}
                 <div className="absolute inset-0 bg-[#fff5f8]" style={{ backgroundColor: theme.colors.primary }}></div>
                 <div className="absolute inset-0 opacity-40 mix-blend-overlay"
@@ -329,7 +362,7 @@ function GlamorousSparkleLayout({ theme, event }: { theme: ThemeConfig; event: E
 
             <main className="flex-1 -mt-12 relative z-20">
                 <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-xl rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
-                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                 </div>
             </main>
             
@@ -338,7 +371,7 @@ function GlamorousSparkleLayout({ theme, event }: { theme: ThemeConfig; event: E
     );
 }
 
-function WhimsicalMagicLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function WhimsicalMagicLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions? : React.ReactNode; onRsvpClick?: () => void}) {
     return (
         <div className="min-h-screen relative overflow-hidden flex flex-col" 
              style={{ backgroundColor: theme.colors.primary, backgroundImage: 'radial-gradient(circle at 50% 50%, white, transparent)' }}>
@@ -348,6 +381,7 @@ function WhimsicalMagicLayout({ theme, event }: { theme: ThemeConfig; event: Eve
             <div className="absolute top-40 right-10 w-72 h-40 bg-white rounded-full blur-3xl opacity-50"></div>
             
             <section className="relative z-10 pt-20 pb-12 px-6 flex flex-col items-center">
+                {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                 <div className="mb-12 text-center">
                     <div className="text-4xl mb-4 drop-shadow-md">✨🦄✨</div>
                     <h1 className="text-6xl md:text-8xl font-medium mb-4 italic" 
@@ -380,7 +414,7 @@ function WhimsicalMagicLayout({ theme, event }: { theme: ThemeConfig; event: Eve
             </section>
 
             <div className="mt-8">
-                <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
             </div>
             
             <Footer theme={theme} event={event} backgroundColor="transparent" />
@@ -388,7 +422,7 @@ function WhimsicalMagicLayout({ theme, event }: { theme: ThemeConfig; event: Eve
     );
 }
 
-function NeonNightLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function NeonNightLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     const isPixel = theme.decorations?.graphicType === "pixel";
     const bgGradient = isPixel 
       ? `linear-gradient(to bottom, ${theme.colors.primary}, #000)` 
@@ -399,6 +433,7 @@ function NeonNightLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
           <section className="relative w-full h-[500px] flex items-center justify-center overflow-hidden bg-slate-900 text-white"
                    style={{ backgroundColor: theme.colors.primary }}>
             <div className="absolute inset-0" style={{ background: bgGradient }}></div>
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             
             {/* Dynamic Neon Glows */}
             <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-[100px] opacity-20"
@@ -435,12 +470,13 @@ function NeonNightLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
     );
 }
 
-function MagicalSparkleLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function MagicalSparkleLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     const isWinter = theme.decorations?.graphicType === "snowflakes";
     
     return (
      <>
        <section className="relative w-full h-[400px] flex items-center justify-center" style={{ backgroundColor: theme.colors.primary }}>
+         {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
          {theme.decorations?.heroImage && (
            <img src={theme.decorations.heroImage} className="absolute inset-0 w-full h-full object-cover opacity-60 mask-image-gradient-b" alt="" />
          )}
@@ -465,13 +501,14 @@ function MagicalSparkleLayout({ theme, event }: { theme: ThemeConfig; event: Eve
     );
 }
 
-function TropicalVibeLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function TropicalVibeLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     const isGarden = theme.decorations?.graphicType === "flowers";
     const isDino = theme.decorations?.graphicType === "dinos";
 
     return (
         <>
           <section className="relative w-full py-20 flex flex-col items-center" style={{ backgroundColor: theme.colors.primary }}>
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-center px-6">
                 <div className="order-2 md:order-1 text-center md:text-left">
                     <span className="uppercase tracking-[0.3em] text-xs font-bold mb-3 block" style={{ color: theme.colors.secondary }}>
@@ -502,11 +539,12 @@ function TropicalVibeLayout({ theme, event }: { theme: ThemeConfig; event: Event
 
 // --- New Layouts ---
 
-function PixelArcadeLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function PixelArcadeLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
   return (
     <>
       <section className="relative w-full py-16 flex flex-col items-center justify-center bg-zinc-900 border-b-4 border-dashed"
                style={{ borderColor: theme.colors.secondary, backgroundColor: theme.colors.primary }}>
+         {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
          
          <div className="absolute inset-0 opacity-10" 
               style={{ backgroundImage: `linear-gradient(transparent 50%, rgba(0,0,0,0.5) 50%)`, backgroundSize: "100% 4px" }}></div>
@@ -542,9 +580,10 @@ function PixelArcadeLayout({ theme, event }: { theme: ThemeConfig; event: EventD
   );
 }
 
-function ElegantSerifLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function ElegantSerifLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen bg-[#fafafa] flex flex-col items-center pt-16 pb-16 px-6">
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             <div className="w-full max-w-2xl bg-white p-12 shadow-2xl relative border"
                  style={{ borderColor: theme.colors.secondary }}>
                 
@@ -579,16 +618,17 @@ function ElegantSerifLayout({ theme, event }: { theme: ThemeConfig; event: Event
             </div>
 
             <div className="max-w-2xl w-full mt-12 text-center text-slate-600">
-                <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                 <Footer theme={theme} event={event} backgroundColor="transparent" />
             </div>
         </div>
     );
 }
 
-function CosmicAdventureLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function CosmicAdventureLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="bg-black text-white min-h-screen relative overflow-hidden flex flex-col">
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-black to-black opacity-80"></div>
             
             {/* Stars/Dust */}
@@ -618,10 +658,11 @@ function CosmicAdventureLayout({ theme, event }: { theme: ThemeConfig; event: Ev
     );
 }
 
-function AnimalPartyLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function AnimalPartyLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen relative overflow-hidden" 
              style={{ backgroundColor: theme.colors.primary }}>
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             {/* Soft Pastel Shapes */}
             <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-30 blur-3xl -translate-x-1/2 -translate-y-1/2" style={{ backgroundColor: theme.colors.secondary }}></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full opacity-20 blur-3xl translate-x-1/3 translate-y-1/3" style={{ backgroundColor: theme.colors.secondary }}></div>
@@ -657,7 +698,7 @@ function AnimalPartyLayout({ theme, event }: { theme: ThemeConfig; event: EventD
                         <p className="text-2xl font-semibold mb-2">{formatDate(event.date)}</p>
                         <p className="text-slate-600 uppercase tracking-widest font-bold text-sm">{event.location}</p>
                     </div>
-                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                 </div>
                 
                 <Footer theme={theme} event={event} backgroundColor="transparent" />
@@ -666,13 +707,14 @@ function AnimalPartyLayout({ theme, event }: { theme: ThemeConfig; event: EventD
     );
 }
 
-function DinoExplorerLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function DinoExplorerLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen bg-[#f4f1ea]" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, rgba(0,0,0,0.05) 1px, transparent 0)`, backgroundSize: '40px 40px' }}>
             <div className="max-w-4xl mx-auto pt-12 px-6 pb-20">
                 {/* Torn Paper Header */}
                 <div className="relative mb-16">
                     <div className="bg-[#6b8c42] text-white p-12 md:p-20 shadow-lg relative rounded-sm" style={{ backgroundColor: theme.colors.secondary }}>
+                        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                         <div className="absolute top-0 left-0 w-full h-4 overflow-hidden -mt-2">
                              <div className="w-full h-8 bg-white rotate-1 origin-top-left"></div>
                         </div>
@@ -695,7 +737,7 @@ function DinoExplorerLayout({ theme, event }: { theme: ThemeConfig; event: Event
                             </div>
                         )}
                         <div className="bg-white p-8 md:p-12 shadow-sm rounded-lg border-l-8" style={{ borderColor: theme.colors.secondary }}>
-                            <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                            <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                         </div>
                     </div>
                     <div className="space-y-6">
@@ -715,9 +757,10 @@ function DinoExplorerLayout({ theme, event }: { theme: ThemeConfig; event: Event
     );
 }
 
-function UnderwaterAdventureLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function UnderwaterAdventureLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions? : React.ReactNode; onRsvpClick?: () => void}) {
     return (
         <div className="min-h-screen bg-sky-50 overflow-hidden relative" style={{ backgroundColor: theme.colors.primary }}>
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             {/* Animated Bubbles Background */}
             <div className="absolute top-20 left-10 w-8 h-8 rounded-full border-2 border-white opacity-40 animate-bounce"></div>
             <div className="absolute top-60 right-20 w-12 h-12 rounded-full border-2 border-white opacity-30 animate-[bounce_3s_infinite]"></div>
@@ -748,7 +791,7 @@ function UnderwaterAdventureLayout({ theme, event }: { theme: ThemeConfig; event
                 </div>
 
                 <div className="bg-white/80 backdrop-blur-sm rounded-[3rem] p-8 md:p-16 shadow-xl shadow-sky-900/5">
-                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                 </div>
                 
                 <Footer theme={theme} event={event} backgroundColor="transparent" />
@@ -757,14 +800,15 @@ function UnderwaterAdventureLayout({ theme, event }: { theme: ThemeConfig; event
     );
 }
 
-function PatternPlayLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function PatternPlayLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions? : React.ReactNode; onRsvpClick?: () => void}) {
     // Generate a simple pattern based on color
     const patternColor = theme.colors.secondary.replace('#', '%23');
     const bgPattern = `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='${patternColor}' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`;
 
     return (
-        <div className="min-h-screen border-[12px] border-white"
+        <div className="min-h-screen border-[12px] border-white relative"
              style={{ backgroundColor: theme.colors.primary, backgroundImage: bgPattern }}>
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             
             <div className="max-w-4xl mx-auto pt-20 px-4 pb-20">
                 <div className="bg-white p-2 shadow-xl rotate-1 max-w-lg mx-auto mb-16 transform hover:rotate-0 transition-transform duration-300">
@@ -787,7 +831,7 @@ function PatternPlayLayout({ theme, event }: { theme: ThemeConfig; event: EventD
                 </div>
 
                 <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 md:p-12 shadow-sm">
-                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                 </div>
                 
                 <Footer theme={theme} event={event} backgroundColor="transparent" />
@@ -798,7 +842,7 @@ function PatternPlayLayout({ theme, event }: { theme: ThemeConfig; event: EventD
 
 // --- Content Components ---
 
-function BirthdayContentSections({ theme, event, backgroundColor, darkMode = false }: { theme: ThemeConfig; event: EventData; backgroundColor?: string; darkMode?: boolean }) {
+function BirthdayContentSections({ theme, event, backgroundColor, darkMode = false, onRsvpClick }: { theme: ThemeConfig; event: EventData; backgroundColor?: string; darkMode?: boolean; onRsvpClick?: () => void }) {
     const bg = backgroundColor || (darkMode ? "#0f172a" : theme.colors.primary);
     const textColor = darkMode ? "#e2e8f0" : "#334155";
     const headingColor = darkMode ? "#f8fafc" : theme.colors.secondary;
@@ -966,13 +1010,13 @@ function BirthdayContentSections({ theme, event, backgroundColor, darkMode = fal
             
             {event.rsvpEnabled && (
                 <section className="text-center pt-8">
-                    <a href={event.rsvpLink} 
+                    <button onClick={onRsvpClick} 
                        className="inline-block px-12 py-5 text-xl font-black rounded-full shadow-2xl transform transition hover:scale-105 active:scale-95 uppercase tracking-tighter"
                        style={{ backgroundColor: theme.colors.secondary, color: '#fff' }}>
                         RSVP for the Fun!
-                    </a>
+                    </button>
                     {event.rsvpDeadline && (
-                        <p className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Please RSVP by {event.rsvpDeadline}</p>
+                        <p className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Please RSVP by {formatDate(event.rsvpDeadline)}</p>
                     )}
                 </section>
             )}
@@ -1002,10 +1046,11 @@ function Footer({ theme, event, backgroundColor, darkMode = false }: { theme: Th
     );
 }
 
-function SportsStadiumLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function SportsStadiumLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col">
             <section className="relative w-full h-[500px] overflow-hidden bg-green-700 flex flex-col items-center justify-center">
+                {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                 {/* Grass texture pattern */}
                 <div className="absolute inset-0 opacity-20"
                      style={{ 
@@ -1050,7 +1095,7 @@ function SportsStadiumLayout({ theme, event }: { theme: ThemeConfig; event: Even
                     </div>
                     
                     <div className="bg-white p-10 rounded-[2rem] shadow-sm border border-slate-100">
-                        <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                        <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                     </div>
                 </div>
             </main>
@@ -1060,10 +1105,11 @@ function SportsStadiumLayout({ theme, event }: { theme: ThemeConfig; event: Even
     );
 }
 
-function LuxuryRoyalLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function LuxuryRoyalLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen bg-[#0d1b33] text-[#e0c097] flex flex-col" style={{ backgroundColor: theme.colors.primary }}>
             <section className="relative h-[80vh] flex flex-col items-center justify-center p-6 border-b border-[#e0c097]/10">
+                {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                 {/* Elegant Pattern */}
                 <div className="absolute inset-0 opacity-5"
                      style={{ 
@@ -1106,10 +1152,11 @@ function LuxuryRoyalLayout({ theme, event }: { theme: ThemeConfig; event: EventD
 }
 
 
-function IslandParadiseLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function IslandParadiseLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen flex flex-col" style={{ backgroundColor: theme.colors.primary }}>
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
+                {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                 {/* Sun and Waves */}
                 <div className="absolute top-10 right-10 w-32 h-32 rounded-full bg-yellow-200 blur-2xl opacity-40"></div>
                 <div className="absolute bottom-0 left-0 w-full h-24 bg-sky-200/20 backdrop-blur-sm"></div>
@@ -1135,7 +1182,7 @@ function IslandParadiseLayout({ theme, event }: { theme: ThemeConfig; event: Eve
 
             <main className="flex-1 -mt-10 relative z-20">
                 <div className="max-w-5xl mx-auto">
-                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
+                    <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" onRsvpClick={onRsvpClick} />
                 </div>
             </main>
             
@@ -1144,10 +1191,11 @@ function IslandParadiseLayout({ theme, event }: { theme: ThemeConfig; event: Eve
     );
 }
 
-function SafariAdventureLayout({ theme, event }: { theme: ThemeConfig; event: EventData }) {
+function SafariAdventureLayout({ theme, event, actions, onRsvpClick }: { theme: ThemeConfig; event: EventData; actions?: React.ReactNode; onRsvpClick?: () => void }) {
     return (
         <div className="min-h-screen bg-[#fdfaf3] flex flex-col" style={{ backgroundColor: theme.colors.primary }}>
             <section className="relative pt-24 pb-12 px-6 flex flex-col items-center">
+                {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
                 {/* Wood Texture Effect */}
                 <div className="max-w-4xl w-full bg-[#f4e7d3] p-12 md:p-20 border-[16px] border-[#5d4037] relative shadow-2xl overflow-hidden">
                     <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(45deg, #000 25%, transparent 25%, transparent 50%, #000 50%, #000 75%, transparent 75%, transparent)' , backgroundSize: '40px 40px'}}></div>
