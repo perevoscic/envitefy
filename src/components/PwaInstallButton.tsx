@@ -298,6 +298,23 @@ const resolveInstallGuide = (win: Window): InstallGuide => {
 const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
 const DEBUG_STORE_KEY = "__snapInstallDebugLog";
 const INSTALLED_FLAG_KEY = "snapmydate:pwa-installed";
+const MAX_DEBUG_ENTRIES = 50;
+
+const appendDebugEntry = (
+  target: Record<string, any>,
+  entry: { message: string; meta?: Record<string, unknown> | null; ts: number }
+) => {
+  if (!Array.isArray(target[DEBUG_STORE_KEY])) {
+    target[DEBUG_STORE_KEY] = [];
+  }
+  target[DEBUG_STORE_KEY].push(entry);
+  if (target[DEBUG_STORE_KEY].length > MAX_DEBUG_ENTRIES) {
+    target[DEBUG_STORE_KEY].splice(
+      0,
+      target[DEBUG_STORE_KEY].length - MAX_DEBUG_ENTRIES
+    );
+  }
+};
 
 if (typeof window !== "undefined") {
   const w = window as SnapWindow;
@@ -314,11 +331,7 @@ if (typeof window !== "undefined") {
         })
       );
       try {
-        const dbg: any = window as any;
-        if (!Array.isArray(dbg[DEBUG_STORE_KEY])) {
-          dbg[DEBUG_STORE_KEY] = [];
-        }
-        dbg[DEBUG_STORE_KEY].push({
+        appendDebugEntry(window as any, {
           message: "beforeinstallprompt intercepted (module)",
           ts: Date.now(),
         });
@@ -340,11 +353,7 @@ export default function PwaInstallButton({
     (message: string, meta?: Record<string, unknown>) => {
       if (typeof window === "undefined") return;
       try {
-        const w = window as any;
-        if (!Array.isArray(w[DEBUG_STORE_KEY])) {
-          w[DEBUG_STORE_KEY] = [];
-        }
-        w[DEBUG_STORE_KEY].push({
+        appendDebugEntry(window as any, {
           message,
           meta: meta ?? null,
           ts: Date.now(),

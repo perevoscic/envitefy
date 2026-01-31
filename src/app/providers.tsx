@@ -105,14 +105,22 @@ export default function Providers({
 
 function RegisterServiceWorker() {
   useEffect(() => {
+    const DEBUG_STORE_KEY = "__snapInstallDebugLog";
+    const MAX_DEBUG_ENTRIES = 50;
     const pushDebug = (message: string, meta?: Record<string, unknown>) => {
       try {
         const w = window as any;
         const payload = { message, meta: meta ?? null, ts: Date.now() };
-        if (!Array.isArray(w.__snapInstallDebugLog)) {
-          w.__snapInstallDebugLog = [];
+        if (!Array.isArray(w[DEBUG_STORE_KEY])) {
+          w[DEBUG_STORE_KEY] = [];
         }
-        w.__snapInstallDebugLog.push(payload);
+        w[DEBUG_STORE_KEY].push(payload);
+        if (w[DEBUG_STORE_KEY].length > MAX_DEBUG_ENTRIES) {
+          w[DEBUG_STORE_KEY].splice(
+            0,
+            w[DEBUG_STORE_KEY].length - MAX_DEBUG_ENTRIES
+          );
+        }
       } catch {
         // ignore
       }

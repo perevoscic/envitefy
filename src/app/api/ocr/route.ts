@@ -18,12 +18,23 @@ export function OPTIONS(request: Request) {
 }
 
 const DEFAULT_OCR_MODEL = "gpt-5.1";
+const OPENAI_TIMEOUT_MS = 25_000;
 
 function resolveOcrModel(): string {
   return process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || DEFAULT_OCR_MODEL;
 }
 
 /* ------------------------------ helpers ------------------------------ */
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 // Basic low-confidence heuristic for titles
 function isTitleLowConfidence(title: string): boolean {
@@ -58,9 +69,12 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     console.error(">>> OpenAI API key not found in environment");
     return null;
   }
-  console.log(">>> OpenAI API key found:", apiKey ? `${apiKey.substring(0, 10)}...` : "missing");
   const model = resolveOcrModel();
-  console.log(">>> Using OpenAI model:", model);
+  const debug = process.env.NODE_ENV !== "production";
+  const log = (...args: any[]) => {
+    if (debug) console.log(...args);
+  };
+  log(">>> Using OpenAI model:", model);
   const base64 = imageBytes.toString("base64");
   const todayIso = new Date().toISOString().slice(0, 10);
   const system = `
@@ -115,8 +129,8 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
   If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
   `;
   try {
-    console.log(">>> Making OpenAI Vision API call...");
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    log(">>> Making OpenAI Vision API call...");
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -134,15 +148,15 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
           },
         ],
       }),
-    });
-    console.log(">>> OpenAI API response status:", res.status);
+    }, OPENAI_TIMEOUT_MS);
+    log(">>> OpenAI API response status:", res.status);
     if (!res.ok) {
       const errorBody = await res.text();
       console.error(">>> OpenAI API error:", { status: res.status, body: errorBody });
       return null;
     }
     const j: any = await res.json();
-    console.log(">>> OpenAI API response received");
+    log(">>> OpenAI API response received");
     const text = j?.choices?.[0]?.message?.content || "";
     if (!text) {
       console.warn(">>> OpenAI returned no content");
@@ -150,12 +164,12 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     }
     try {
       const parsed = JSON.parse(text) as any;
-      console.log(">>> OpenAI extracted data:", parsed);
-      console.log(">>> OpenAI title:", parsed.title);
-      console.log(">>> OpenAI description:", parsed.description);
+      log(">>> OpenAI extracted data:", parsed);
+      log(">>> OpenAI title:", parsed.title);
+      log(">>> OpenAI description:", parsed.description);
       // DEBUG: Check if birthday title is missing age
       if (parsed.title && /birthday/i.test(parsed.title) && !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)) {
-        console.log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
+        log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
       }
       return parsed;
     } catch (parseErr) {
@@ -196,7 +210,7 @@ async function llmExtractGymnasticsScheduleFromImage(
   const userText =
     "Extract gymnastics season schedule as strict JSON with keys: season (string|nullable), homeTeam (string|nullable), homeAddress (string|nullable if visible), events (array).\nRules: If the poster legend shows colors (e.g., red=HOME, black=AWAY), use that to set home vs away. Also use 'VS' for home and 'AT' for away when present. A trailing '*' means MAC MEETS; include 'MAC Meet' in description when starred.\nFor each event include: title (e.g., 'NIU Gymnastics: vs Central Michigan' or 'NIU Gymnastics: at Bowling Green'), start (ISO date at 00:00 local if time missing), end (ISO date next day for all-day), allDay:true, timezone set to provided TZ, location (home uses homeAddress if visible; away: leave empty if flyer doesn't show), description short (opponent + 'home' or 'away', include 'MAC Meet' when starred). Do not include any extra keys. Dates must include year from the poster heading if present.";
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -214,7 +228,7 @@ async function llmExtractGymnasticsScheduleFromImage(
           },
         ],
       }),
-    });
+    }, OPENAI_TIMEOUT_MS);
     if (!res.ok) return null;
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -308,7 +322,7 @@ async function llmExtractPracticeScheduleFromImage(
     ].join("\n");
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -326,7 +340,7 @@ async function llmExtractPracticeScheduleFromImage(
           },
         ],
       }),
-    });
+    }, OPENAI_TIMEOUT_MS);
     if (!res.ok) return null;
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -1233,7 +1247,7 @@ async function llmRewriteBirthdayDescription(
     "Rules: Extract the person's name from the TITLE (e.g., if title is 'Gemma's 7th Birthday Party at US Gym', use 'Gemma'). Extract the age ordinal from the TITLE (e.g., '7th', '10th', '5th') and include it as '<Age>th'. Format: 'Join us to celebrate Gemma's 7th Birthday at US Gym'. Prefer a concise venue/business name (e.g., 'US Gym', 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. ALWAYS start with 'Join us to celebrate' for birthday parties. Include the age ordinal if present in the title (e.g., '7th', '10th'). Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -1244,7 +1258,7 @@ async function llmRewriteBirthdayDescription(
           { role: "user", content: user },
         ],
       }),
-    });
+    }, OPENAI_TIMEOUT_MS);
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = (j?.choices?.[0]?.message?.content || "").trim();
@@ -1276,7 +1290,7 @@ async function llmRewriteWedding(
     `KNOWN LOCATION (optional): ${location || ""}`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -1288,7 +1302,7 @@ async function llmRewriteWedding(
           { role: "user", content: user },
         ],
       }),
-    });
+    }, OPENAI_TIMEOUT_MS);
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = j?.choices?.[0]?.message?.content || "";
@@ -1331,7 +1345,7 @@ async function llmRewriteSmartDescription(
     "Rules: Prefer venue/business names over street addresses. Skip RSVP/phone/email/URLs/prices. Don't invent times or places. Keep it natural and concise. Use a straightforward style like '<Team> vs <Team> at <Venue>', 'Don't miss …', or a simple declarative sentence. Avoid phrases like 'Join us' or 'You're invited'. Return only the sentence.";
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -1342,7 +1356,7 @@ async function llmRewriteSmartDescription(
           { role: "user", content: user },
         ],
       }),
-    });
+    }, OPENAI_TIMEOUT_MS);
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = (j?.choices?.[0]?.message?.content || "").replace(/\s+/g, " ").trim();
@@ -1491,6 +1505,10 @@ export async function POST(request: Request) {
   // Minimal debug; we can remove once stable
 
   try {
+    const debug = process.env.NODE_ENV !== "production";
+    const log = (...args: any[]) => {
+      if (debug) console.log(...args);
+    };
     const url = new URL(request.url);
     const forceLLM = url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
     const gymOnly = url.searchParams.get("gym") === "1" || url.searchParams.get("sport") === "gymnastics";
@@ -1507,7 +1525,12 @@ export async function POST(request: Request) {
     let ocrBuffer: Buffer = inputBuffer;
     if (!/pdf/i.test(mime)) {
       try {
-        ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
+        ocrBuffer = await sharp(inputBuffer)
+          .rotate()
+          .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+          .grayscale()
+          .normalize()
+          .toBuffer();
       } catch {
         ocrBuffer = inputBuffer;
       }
@@ -1522,7 +1545,7 @@ export async function POST(request: Request) {
     let openAiSucceeded = false;
     
     try {
-      console.log(">>> OCR: Trying OpenAI Vision (primary)...");
+      log(">>> OCR: Trying OpenAI Vision (primary)...");
       llmImage = await llmExtractEventFromImage(ocrBuffer, mime || "application/octet-stream");
       if (llmImage) {
         const parts: string[] = [];
@@ -1536,7 +1559,7 @@ export async function POST(request: Request) {
 
         if (parts.length) {
           // OpenAI produced meaningful data; treat this as the authoritative OCR result.
-          console.log(">>> OCR: OpenAI Vision succeeded ✓");
+          log(">>> OCR: OpenAI Vision succeeded ✓");
           raw = parts.join("\n");
           ocrSource = "openai";
           openAiSucceeded = true;
@@ -1560,7 +1583,7 @@ export async function POST(request: Request) {
     // =============================================================================
     if (!openAiSucceeded) {
       llmImage = null; // avoid mixing Google fallback with partial OpenAI fields
-      console.log(">>> OCR: Falling back to Google Vision...");
+      log(">>> OCR: Falling back to Google Vision...");
       const vision = getVisionClient();
       let result: any;
 
@@ -1576,12 +1599,12 @@ export async function POST(request: Request) {
           setTimeout(() => rej(new Error("VISION_SDK_TIMEOUT")), 45_000)
         );
         result = await Promise.race([sdkCall, timeout]);
-        console.log(">>> OCR: Google Vision SDK succeeded ✓");
+        log(">>> OCR: Google Vision SDK succeeded ✓");
         ocrSource = "google-sdk";
       } catch (e) {
         console.warn(">>> Google Vision SDK failed, using REST:", (e as Error)?.message);
         result = await visionRestOCR(ocrBuffer);
-        console.log(">>> OCR: Google Vision REST succeeded ✓");
+        log(">>> OCR: Google Vision REST succeeded ✓");
         ocrSource = "google-rest";
       }
 
