@@ -219,11 +219,10 @@ export default function BirthdayTemplateView({
   const heroImageSrc =
     (eventData?.customHeroImage as string) ||
     `${heroImageBasePath}${template.heroImageName || `${template.id}.webp`}`;
-  const backgroundImageSrc = `/templates/birthdays/${template.id}.webp`;
   const birthdayOverlay =
     "linear-gradient(180deg, rgba(18, 12, 36, 0.78) 0%, rgba(18, 12, 36, 0.55) 45%, rgba(18, 12, 36, 0.2) 100%)";
   const headerBackgroundStyle = {
-    backgroundImage: `${birthdayOverlay}, url(${backgroundImageSrc})`,
+    backgroundImage: `${birthdayOverlay}, url(${heroImageSrc})`,
     backgroundSize: "cover, cover",
     backgroundPosition: "center, center",
     backgroundRepeat: "no-repeat, no-repeat",
