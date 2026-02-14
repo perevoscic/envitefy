@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import path from "path";
-import { promises as fs } from "fs";
 
-const memoryCache = new Map<string, string[]>();
+// Edge Runtime: no Node (fs/path), so this route is bundled separately and stays under Vercel's 300MB limit.
+export const runtime = "edge";
 
 const THEME_FOLDER_MAP: Record<string, string> = {
   "Spring": "spring",
@@ -21,6 +20,18 @@ const THEME_FOLDER_MAP: Record<string, string> = {
   "Other / Special Interest": "other-special-interest",
 };
 
+type ManifestEntry = { name: string; tier: string; path: string };
+type Manifest = Record<string, ManifestEntry[]>;
+
+function slug(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9_-]/g, "-");
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -32,100 +43,54 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const mappedFolder = THEME_FOLDER_MAP[category] || category;
-    const cacheKey = `${mappedFolder}::${category}`;
-    if (memoryCache.has(cacheKey)) {
-      const images = memoryCache.get(cacheKey)!;
-      return new Response(JSON.stringify({ ok: true, images }), {
+    const origin = req.nextUrl?.origin ?? new URL(req.url).origin;
+    const manifestUrl = `${origin}/templates/signup/manifest.json`;
+    const res = await fetch(manifestUrl);
+    if (!res.ok) {
+      return new Response(JSON.stringify({ ok: false, error: "internal" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    const manifest: Manifest = await res.json();
+
+    const categorySlug = slug(category);
+    const mappedFolder = THEME_FOLDER_MAP[category] ?? category;
+    const candidates = [
+      category,
+      mappedFolder,
+      categorySlug,
+      slug(mappedFolder),
+      ...Object.keys(manifest),
+    ];
+
+    let images: string[] | null = null;
+    for (const cand of candidates) {
+      const entry = manifest[cand];
+      if (Array.isArray(entry) && entry.length > 0) {
+        images = entry.map((e) => e.path);
+        break;
+      }
+      const bySlug = Object.keys(manifest).find((k) => slug(k) === slug(cand));
+      if (bySlug && Array.isArray(manifest[bySlug])) {
+        images = manifest[bySlug].map((e) => e.path);
+        break;
+      }
+    }
+
+    if (!images) {
+      return new Response(JSON.stringify({ ok: true, images: [] }), {
         headers: { "content-type": "application/json" },
       });
     }
 
-    const root = path.join(process.cwd(), "public", "templates", "signup");
-    const slug = (s: string) =>
-      s
-        .trim()
-        .toLowerCase()
-        .replace(/&/g, "and")
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9_-]/g, "-");
-    const uslug = (s: string) =>
-      s
-        .trim()
-        .toLowerCase()
-        .replace(/&/g, "and")
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_-]/g, "_");
-
-    const original = category;
-    const andToWord = original.replace(/&/g, "and");
-    const andRemoved = original.replace(/&/g, "");
-    const candidates = Array.from(
-      new Set([
-        // explicit mapping and slug variants
-        mappedFolder,
-        mappedFolder.trim(),
-        decodeURIComponent(mappedFolder),
-        THEME_FOLDER_MAP[category] || slug(mappedFolder),
-        slug(decodeURIComponent(mappedFolder)),
-        uslug(mappedFolder),
-        uslug(decodeURIComponent(mappedFolder)),
-        // originals (including &)
-        original,
-        original.trim(),
-        decodeURIComponent(original),
-        // replace & with 'and' or remove it
-        andToWord,
-        slug(andToWord),
-        uslug(andToWord),
-        andRemoved,
-        slug(andRemoved),
-        uslug(andRemoved),
-        // plain slug of the original
-        slug(original),
-        slug(decodeURIComponent(original)),
-        uslug(original),
-        uslug(decodeURIComponent(original)),
-      ])
-    );
-
-    let files: string[] = [];
-    let resolvedDirName: string | null = null;
-    for (const cand of candidates) {
-      const dir = path.join(root, cand);
-      try {
-        const stats = await fs.stat(dir);
-        if (stats.isDirectory()) {
-          files = await fs.readdir(dir);
-          if (files.length >= 0) {
-            // resolve to this candidate
-            resolvedDirName = cand;
-            break;
-          }
-        }
-      } catch {
-        // try next candidate
-      }
-    }
-
-    const allowed = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
-    const folderForUrl = resolvedDirName || (THEME_FOLDER_MAP[category] || category);
-    const images = files
-      .filter((f) => allowed.has(path.extname(f).toLowerCase()))
-      .sort((a, b) => a.localeCompare(b))
-      .map((f) => `/templates/signup/${encodeURIComponent(folderForUrl)}/${encodeURIComponent(f)}`);
-
-    memoryCache.set(cacheKey, images);
-
     return new Response(JSON.stringify({ ok: true, images }), {
       headers: { "content-type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ ok: false, error: "internal" }), {
       status: 500,
       headers: { "content-type": "application/json" },
     });
   }
 }
-
-
