@@ -10,6 +10,18 @@ const nextConfig = {
   // Produce a minimal standalone server for Docker/App Runner
   output: "standalone",
 
+  // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)
+  serverExternalPackages: [
+    "@google-cloud/vision",
+    "@google-cloud/aiplatform",
+    "@google-cloud/vertexai",
+    "@google-cloud/storage",
+    "openai",
+    "googleapis",
+    "sharp",
+    "@aws-sdk/client-sesv2",
+  ],
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "fonts.gstatic.com" },
