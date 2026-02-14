@@ -15,6 +15,9 @@ import { Suspense, type CSSProperties } from "react";
 // Minimal font footprint: rely on system stacks set in globals.css (.font-vars).
 const fontVarsClass = "font-vars";
 
+// Root layout uses getServerSession (headers) — opt out of static generation.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   // Title must match Google OAuth consent screen app name exactly: "Envitefy"
   title: "Envitefy | Create. Share. Enjoy.",
