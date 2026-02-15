@@ -1,10 +1,15 @@
 import { ImageResponse } from "next/og";
-import { getEventHistoryBySlugOrId } from "@/lib/db";
-import { absoluteUrl } from "@/lib/absolute-url";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
-export const runtime = "nodejs";
+/** Base URL for same-origin API calls (keeps db out of this bundle). */
+function getBaseUrl(): string {
+  const v = process.env.VERCEL_URL;
+  if (v) return `https://${v}`;
+  return (
+    process.env.APP_URL || process.env.NEXTAUTH_URL || "https://envitefy.com"
+  );
+}
+
+export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -46,45 +51,28 @@ async function loadFont(): Promise<{
 // Helper to load image as base64 data URL
 async function loadImageAsDataUrl(imagePath: string): Promise<string> {
   try {
-    // Try to read from public folder
-    const publicPath = join(
-      process.cwd(),
-      "public",
-      imagePath.replace(/^\//, "")
-    );
-    const imageBuffer = await readFile(publicPath);
-    const base64 = imageBuffer.toString("base64");
-    const mimeType =
-      imagePath.endsWith(".jpg") || imagePath.endsWith(".jpeg")
-        ? "image/jpeg"
-        : imagePath.endsWith(".png")
-        ? "image/png"
-        : "image/jpeg";
+    const url = `${getBaseUrl()}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const mimeType = response.headers.get("content-type") || "image/jpeg";
+    let binary = "";
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    // Fallback: try to fetch from absolute URL
-    try {
-      const absoluteImgUrl = await absoluteUrl(imagePath);
-      const response = await fetch(absoluteImgUrl, {
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString("base64");
-      const mimeType = response.headers.get("content-type") || "image/jpeg";
-      return `data:${mimeType};base64,${base64}`;
-    } catch (fetchError) {
-      console.error("Failed to load OG image from file and URL:", {
-        fileError: error instanceof Error ? error.message : String(error),
-        fetchError:
-          fetchError instanceof Error ? fetchError.message : String(fetchError),
-        imagePath,
-      });
-      // Return a solid color as fallback
-      return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    }
+    console.error("Failed to load OG image URL:", {
+      error: error instanceof Error ? error.message : String(error),
+      imagePath,
+    });
+    // Return a solid color as fallback
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
   }
 }
 
@@ -97,15 +85,22 @@ export default async function OgImage(props: {
       throw new Error("Missing event ID");
     }
 
-    let row;
+    const apiUrl = `${getBaseUrl()}/api/events/${encodeURIComponent(awaitedParams.id)}/og-data`;
+    let ogData: {
+      title?: string;
+      description?: string | null;
+      location?: string | null;
+      thumbnail?: string | null;
+      attachmentDataUrl?: string | null;
+    } | null = null;
     try {
-      row = await getEventHistoryBySlugOrId({ value: awaitedParams.id });
-    } catch (dbError) {
-      console.error("Database error in OG image:", dbError);
-      throw new Error("Failed to load event data");
+      const res = await fetch(apiUrl, { cache: "no-store" });
+      if (res.ok) ogData = await res.json();
+    } catch (fetchError) {
+      console.error("OG data fetch error:", fetchError);
     }
 
-    if (!row) {
+    if (!ogData) {
       // Event not found - return default image
       const defaultBg = await loadImageAsDataUrl("/og-default.jpg");
       const font = await loadFont();
@@ -153,53 +148,22 @@ export default async function OgImage(props: {
       );
     }
 
-    const data: any = row?.data || {};
-
-    const title =
-      (typeof data?.title === "string" && data.title) ||
-      row?.title ||
-      "Envitefy Event";
+    const title = ogData.title ?? "Envitefy Event";
 
     // Extract description if available
-    const description =
-      typeof data?.description === "string" && data.description
-        ? truncateText(data.description, 120)
-        : null;
+    const description = ogData.description
+      ? truncateText(ogData.description, 120)
+      : null;
 
     // Extract location if available
-    const location =
-      typeof data?.location === "string" && data.location
-        ? truncateText(data.location, 80)
-        : null;
+    const location = ogData.location ? truncateText(ogData.location, 80) : null;
 
     // Use event's header image (thumbnail) if available, otherwise fall back to default
     let bg: string;
-    const hasThumbnail =
-      typeof data?.thumbnail === "string" &&
-      data.thumbnail.length > 0 &&
-      data.thumbnail.startsWith("data:image");
-    const hasAttachment =
-      data?.attachment &&
-      typeof data.attachment === "object" &&
-      typeof data.attachment.dataUrl === "string" &&
-      data.attachment.dataUrl.length > 0 &&
-      data.attachment.dataUrl.startsWith("data:image");
-
-    // Debug logging
-    console.log("OG Image - Thumbnail check:", {
-      hasThumbnail,
-      hasAttachment,
-      thumbnailLength: hasThumbnail ? data.thumbnail.length : 0,
-      attachmentLength: hasAttachment ? data.attachment.dataUrl.length : 0,
-      eventId: awaitedParams.id,
-    });
-
-    // Use event thumbnail/attachment if available, otherwise use default
-    // ImageResponse supports data URLs directly in img src
-    if (hasThumbnail) {
-      bg = data.thumbnail;
-    } else if (hasAttachment) {
-      bg = data.attachment.dataUrl;
+    if (ogData.thumbnail) {
+      bg = ogData.thumbnail;
+    } else if (ogData.attachmentDataUrl) {
+      bg = ogData.attachmentDataUrl;
     } else {
       // Final fallback: use default OG image
       bg = await loadImageAsDataUrl("/og-default.jpg");
@@ -370,19 +334,8 @@ export default async function OgImage(props: {
         }
       );
     } catch (fallbackError) {
-      // If even the fallback fails, return a minimal response
       console.error("Fallback ImageResponse also failed:", fallbackError);
-      // Return a simple 1x1 PNG as last resort
-      const minimalPng = Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-        "base64"
-      );
-      return new Response(minimalPng, {
-        status: 200,
-        headers: {
-          "Content-Type": "image/png",
-        },
-      });
+      throw fallbackError;
     }
   }
 }
