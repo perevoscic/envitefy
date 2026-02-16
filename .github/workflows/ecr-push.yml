@@ -1,20 +1,14 @@
-name: Build and Push to ECR
+name: Build Docker Image
 
 on:
   push:
     branches: [main]
 
-env:
-  AWS_REGION: us-east-1
-  ECR_REGISTRY: 161266029156.dkr.ecr.us-east-1.amazonaws.com
-  ECR_REPOSITORY: envitefy
-
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,22 +16,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and push image
+      - name: Build image (no registry push)
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          push: false
