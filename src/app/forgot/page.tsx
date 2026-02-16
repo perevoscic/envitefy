@@ -34,12 +34,13 @@ export default function ForgotPasswordPage() {
         throw new Error(
           (typeof json.error === "string" && json.error) ||
             (text || "").trim() ||
-            "Failed to send reset email"
+            "Failed to send reset email",
         );
       }
 
       if (json.emailSent === false) {
-        const resetUrl = typeof json.resetUrl === "string" ? json.resetUrl : null;
+        const resetUrl =
+          typeof json.resetUrl === "string" ? json.resetUrl : null;
         const hint = isNonProd
           ? typeof json.reason === "string" && json.reason.trim().length > 0
             ? `Diagnostic: ${json.reason}`
@@ -118,8 +119,8 @@ export default function ForgotPasswordPage() {
               result.kind === "error"
                 ? "border-red-300 bg-red-50 text-red-800"
                 : result.kind === "warning"
-                ? "border-amber-300 bg-amber-50 text-amber-800"
-                : "border-emerald-300 bg-emerald-50 text-emerald-800"
+                  ? "border-amber-300 bg-amber-50 text-amber-800"
+                  : "border-emerald-300 bg-emerald-50 text-emerald-800"
             }`}
           >
             <p className="break-all">{result.text}</p>

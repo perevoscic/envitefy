@@ -34,6 +34,11 @@ import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
+import {
+  SnapProcessingCard,
+  type SnapPreviewKind,
+  type SnapProcessingStatus,
+} from "@/components/snap/SnapProcessingCard";
 
 type EventFields = {
   title: string;
@@ -99,6 +104,112 @@ export default function Dashboard() {
   const [, setOcrText] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
+  const [scanStatus, setScanStatus] = useState<SnapProcessingStatus>("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewKind, setPreviewKind] = useState<SnapPreviewKind>(null);
+  const uploadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeOcrAbortRef = useRef<AbortController | null>(null);
+  const cancelledByUserRef = useRef(false);
+  const currentPreviewUrlRef = useRef<string | null>(null);
+  const scanStartedAtRef = useRef<number | null>(null);
+  const scanStatusRef = useRef<SnapProcessingStatus>("idle");
+
+  useEffect(() => {
+    scanStatusRef.current = scanStatus;
+  }, [scanStatus]);
+
+  const clearScanTimers = useCallback(() => {
+    if (uploadIntervalRef.current) {
+      clearInterval(uploadIntervalRef.current);
+      uploadIntervalRef.current = null;
+    }
+  }, []);
+
+  const resetScanUi = useCallback(
+    (clearPreview = true) => {
+      clearScanTimers();
+      setScanStatus("idle");
+      setUploadProgress(0);
+      scanStartedAtRef.current = null;
+      if (clearPreview) {
+        if (currentPreviewUrlRef.current) {
+          URL.revokeObjectURL(currentPreviewUrlRef.current);
+        }
+        currentPreviewUrlRef.current = null;
+        setPreviewUrl(null);
+        setPreviewKind(null);
+      }
+    },
+    [clearScanTimers]
+  );
+
+  const startScanUi = useCallback(
+    (selected: File) => {
+      clearScanTimers();
+      scanStartedAtRef.current = null;
+
+      if (currentPreviewUrlRef.current) {
+        URL.revokeObjectURL(currentPreviewUrlRef.current);
+      }
+      currentPreviewUrlRef.current = null;
+
+      const nextPreviewKind: SnapPreviewKind = selected.type.startsWith("image/")
+        ? "image"
+        : selected.type === "application/pdf"
+          ? "pdf"
+          : "file";
+      setPreviewKind(nextPreviewKind);
+      if (nextPreviewKind === "image") {
+        const nextPreviewUrl = URL.createObjectURL(selected);
+        currentPreviewUrlRef.current = nextPreviewUrl;
+        setPreviewUrl(nextPreviewUrl);
+      } else {
+        setPreviewUrl(null);
+      }
+
+      setUploadProgress(0);
+      setScanStatus("uploading");
+      uploadIntervalRef.current = setInterval(() => {
+        setUploadProgress((prev) => {
+          const next = Math.min(100, prev + 6);
+          if (next >= 100) {
+            if (uploadIntervalRef.current) {
+              clearInterval(uploadIntervalRef.current);
+              uploadIntervalRef.current = null;
+            }
+            setScanStatus("scanning");
+            scanStartedAtRef.current = Date.now();
+          }
+          return next;
+        });
+      }, 100);
+    },
+    [clearScanTimers]
+  );
+
+  const finishScanUi = useCallback(async () => {
+    if (uploadIntervalRef.current) {
+      clearInterval(uploadIntervalRef.current);
+      uploadIntervalRef.current = null;
+    }
+    setUploadProgress(100);
+
+    if (scanStatusRef.current !== "scanning") {
+      setScanStatus("scanning");
+      scanStartedAtRef.current = Date.now();
+    }
+
+    const minScanRevealMs = 1200;
+    const elapsed = scanStartedAtRef.current
+      ? Date.now() - scanStartedAtRef.current
+      : 0;
+    if (elapsed < minScanRevealMs) {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, minScanRevealMs - elapsed);
+      });
+    }
+  }, []);
 
   const logUploadIssue = useCallback(
     (err: unknown, stage: string, details?: Record<string, unknown>) => {
@@ -176,15 +287,33 @@ export default function Dashboard() {
   }, [router]);
 
   const resetForm = useCallback(() => {
+    cancelledByUserRef.current = true;
+    activeOcrAbortRef.current?.abort();
+    activeOcrAbortRef.current = null;
+    resetScanUi();
     setEvent(null);
     setModalOpen(false);
+    setLoading(false);
     setError(null);
     setOcrText("");
     setUploadedFile(null);
     setOcrCategory(null);
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  }, [resetScanUi]);
+
+  useEffect(
+    () => () => {
+      activeOcrAbortRef.current?.abort();
+      activeOcrAbortRef.current = null;
+      clearScanTimers();
+      if (currentPreviewUrlRef.current) {
+        URL.revokeObjectURL(currentPreviewUrlRef.current);
+      }
+      currentPreviewUrlRef.current = null;
+    },
+    [clearScanTimers]
+  );
 
   const parseStartToIso = useCallback(
     (value: string | null, timezone: string) => {
@@ -243,11 +372,13 @@ export default function Dashboard() {
   const ingest = useCallback(async (incoming: File) => {
     setLoading(true);
     setError(null);
+    cancelledByUserRef.current = false;
 
     // Validate file size before upload (10 MB limit)
     const maxSize = 10 * 1024 * 1024; // 10 MB
     if (incoming.size > maxSize) {
       setError("File is too large. Please upload a file smaller than 10 MB.");
+      resetScanUi();
       setLoading(false);
       return;
     }
@@ -278,6 +409,7 @@ export default function Dashboard() {
 
       // Add timeout handling for mobile/network issues
       const controller = new AbortController();
+      activeOcrAbortRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
       let res: Response;
@@ -293,16 +425,19 @@ export default function Dashboard() {
         clearTimeout(timeoutId);
       } catch (fetchErr) {
         clearTimeout(timeoutId);
+        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+          if (cancelledByUserRef.current) {
+            throw new Error("__scan_cancelled__");
+          }
+          throw new Error(
+            "Upload timed out. Please check your connection and try again."
+          );
+        }
         logUploadIssue(fetchErr, "fetch", {
           fileName: incoming.name,
           fileSize: incoming.size,
           fileType: incoming.type,
         });
-        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
-          throw new Error(
-            "Upload timed out. Please check your connection and try again."
-          );
-        }
         // Network errors, CORS issues, etc.
         const errorMessage =
           fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
@@ -391,12 +526,21 @@ export default function Dashboard() {
             rsvp: cleanedRsvp,
           }
         : null;
+      await finishScanUi();
+      resetScanUi();
       setEvent(adjusted);
       setModalOpen(Boolean(adjusted));
       setOcrText(data.ocrText || "");
       setUploadedFile(fileToUpload);
       setOcrCategory(data?.category || null);
     } catch (err) {
+      if (err instanceof Error && err.message === "__scan_cancelled__") {
+        setEvent(null);
+        setModalOpen(false);
+        setError(null);
+        return;
+      }
+      resetScanUi();
       setEvent(null);
       setModalOpen(false);
       const alreadyLogged =
@@ -417,9 +561,11 @@ export default function Dashboard() {
         setError("Failed to scan file. Please try again.");
       }
     } finally {
+      activeOcrAbortRef.current = null;
+      cancelledByUserRef.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [finishScanUi, logUploadIssue, resetScanUi]);
 
   const onFile = useCallback(
     (selected: File | null) => {
@@ -427,9 +573,10 @@ export default function Dashboard() {
         // User cancelled file selection - silently return
         return;
       }
+      startScanUi(selected);
       void ingest(selected);
     },
-    [ingest]
+    [ingest, startScanUi]
   );
 
   const openCamera = useCallback(() => {
@@ -973,7 +1120,9 @@ export default function Dashboard() {
     // Touch the session so provider connections hydrate promptly
   }, [session]);
 
-  const showScanSection = Boolean(error || loading || (modalOpen && event));
+  const showScanSection = Boolean(
+    error || loading || scanStatus !== "idle" || (modalOpen && event)
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1038,19 +1187,26 @@ export default function Dashboard() {
           <AppointmentsGeneralHero />
         </div>
       )}
+      {scanStatus !== "idle" && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#120b1e]/55 p-4 backdrop-blur-sm">
+          <div role="status" aria-live="polite" className="w-full max-w-md">
+            <SnapProcessingCard
+              status={scanStatus}
+              progress={uploadProgress}
+              previewUrl={previewUrl}
+              previewKind={previewKind}
+              onCancel={resetForm}
+            />
+          </div>
+        </div>
+      )}
+
       {showScanSection && (
         <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
           <div className="space-y-3">
             {error && (
               <div className="rounded border border-error bg-surface/90 p-3 text-sm text-error">
                 {error}
-              </div>
-            )}
-            {loading && (
-              <div role="status" aria-live="polite" className="mt-3">
-                <div className="scan-inline" style={{ height: 10 }}>
-                  <div className="scan-beam" />
-                </div>
               </div>
             )}
           </div>

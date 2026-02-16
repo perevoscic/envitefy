@@ -190,7 +190,7 @@ export default async function RootLayout({
   const htmlVariant: ThemeVariant = "light";
   const cssVariables = resolveThemeCssVariables(themeKey, htmlVariant);
   const htmlStyle = Object.fromEntries(
-    Object.entries(cssVariables).map(([key, value]) => [key, value])
+    Object.entries(cssVariables).map(([key, value]) => [key, value]),
   ) as CSSProperties;
 
   return (
