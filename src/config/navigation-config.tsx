@@ -1,4 +1,8 @@
 import React from "react";
+import {
+  TEMPLATE_DEFINITIONS,
+  type TemplateKey,
+} from "@/config/feature-visibility";
 
 export type NavItem = {
   label: string;
@@ -18,93 +22,85 @@ export type CreateEventSection = {
   }>;
 };
 
-export const TEMPLATE_LINKS = [
-  { label: "Birthdays", href: "/event/birthdays/customize", icon: "🎂" },
-  { label: "Weddings", href: "/event/weddings/customize", icon: "💍" },
-  { label: "Baby Showers", href: "/event/baby-showers/customize", icon: "🍼" },
-  {
-    label: "Gender Reveal",
-    href: "/event/gender-reveal/customize",
-    icon: "🎈",
-  },
-  {
-    label: "Doctor Appointments",
-    href: "/event/appointments/customize",
-    icon: "🩺",
-  },
-  {
-    label: "Football Season",
-    href: "/event/football-season/customize",
-    icon: "🏈",
-  },
-  {
-    label: "Gymnastics Schedule",
-    href: "/event/gymnastics/customize",
-    icon: "🤸",
-  },
-  { label: "Cheerleading", href: "/event/cheerleading/customize", icon: "📣" },
-  { label: "Dance / Ballet", href: "/event/dance-ballet/customize", icon: "🩰" },
-  { label: "Soccer", href: "/event/soccer/customize", icon: "⚽" },
-  { label: "Sport Events", href: "/event/sport-events/customize", icon: "🏅" },
-  {
-    label: "Workshops / Classes",
-    href: "/event/workshops/customize",
-    icon: "🧠",
-  },
-  { label: "General Events", href: "/event/general/customize", icon: "📅" },
-  {
-    label: "Special Events",
-    href: "/event/special-events/customize",
-    icon: "✨",
-  },
-] as const;
+export type TemplateLink = {
+  key: TemplateKey;
+  label: string;
+  href: string;
+  icon?: React.ReactNode;
+};
 
-const pickTemplate = (label: (typeof TEMPLATE_LINKS)[number]["label"]) =>
-  TEMPLATE_LINKS.find((t) => t.label === label)!;
+const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.map((t) => ({
+  key: t.key,
+  label: t.label,
+  href: t.href,
+  icon: t.icon,
+}));
 
-export const CREATE_EVENT_SECTIONS: CreateEventSection[] = [
+const QUICK_ACCESS_ITEMS: CreateEventSection["items"] = [
+  { label: "Snap Event", href: "/?action=camera", icon: "📸" },
+  { label: "Upload Event", href: "/?action=upload", icon: "📤" },
   {
-    title: "Quick access",
-    items: [
-      { label: "Snap Event", href: "/?action=camera", icon: "📸" },
-      { label: "Upload Event", href: "/?action=upload", icon: "📤" },
-      {
-        label: "Smart sign-up forms",
-        href: "/smart-signup-form",
-        icon: "📝",
-      },
-    ],
-  },
-  {
-    title: "Life Milestones & Celebrations",
-    items: [
-      pickTemplate("Birthdays"),
-      pickTemplate("Weddings"),
-      pickTemplate("Baby Showers"),
-      pickTemplate("Gender Reveal"),
-    ],
-  },
-  {
-    title: "Sports Season '25-'26",
-    items: [
-      pickTemplate("Football Season"),
-      pickTemplate("Gymnastics Schedule"),
-      pickTemplate("Cheerleading"),
-      pickTemplate("Dance / Ballet"),
-      pickTemplate("Soccer"),
-      pickTemplate("Sport Events"),
-    ],
-  },
-  {
-    title: "Appointments & General Events",
-    items: [
-      pickTemplate("Doctor Appointments"),
-      pickTemplate("Workshops / Classes"),
-      pickTemplate("General Events"),
-      pickTemplate("Special Events"),
-    ],
+    label: "Smart sign-up forms",
+    href: "/smart-signup-form",
+    icon: "📝",
   },
 ];
+
+export function getTemplateLinks(visibleTemplateKeys?: TemplateKey[]): TemplateLink[] {
+  if (!visibleTemplateKeys || visibleTemplateKeys.length === 0) {
+    return ALL_TEMPLATE_LINKS;
+  }
+  const visible = new Set(visibleTemplateKeys);
+  return ALL_TEMPLATE_LINKS.filter((t) => visible.has(t.key));
+}
+
+export function getCreateEventSections(
+  visibleTemplateKeys?: TemplateKey[]
+): CreateEventSection[] {
+  const links = getTemplateLinks(visibleTemplateKeys);
+  const byKey = new Map(links.map((l) => [l.key, l]));
+  const pick = (key: TemplateKey) => byKey.get(key);
+
+  return [
+    {
+      title: "Quick access",
+      items: QUICK_ACCESS_ITEMS,
+    },
+    {
+      title: "Life Milestones & Celebrations",
+      items: [
+        pick("birthdays"),
+        pick("weddings"),
+        pick("baby_showers"),
+        pick("gender_reveal"),
+      ].filter(Boolean) as CreateEventSection["items"],
+    },
+    {
+      title: "Sports Season '25-'26",
+      items: [
+        pick("football_season"),
+        pick("gymnastics"),
+        pick("cheerleading"),
+        pick("dance_ballet"),
+        pick("soccer"),
+        pick("sport_events"),
+      ].filter(Boolean) as CreateEventSection["items"],
+    },
+    {
+      title: "Appointments & General Events",
+      items: [
+        pick("appointments"),
+        pick("workshops"),
+        pick("general"),
+        pick("special_events"),
+      ].filter(Boolean) as CreateEventSection["items"],
+    },
+  ];
+}
+
+// Backward-compatible full lists for code paths not yet visibility-aware.
+export const TEMPLATE_LINKS = getTemplateLinks();
+export const CREATE_EVENT_SECTIONS = getCreateEventSections();
 
 export const MAIN_NAV_ITEMS: NavItem[] = [
   {

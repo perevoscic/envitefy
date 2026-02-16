@@ -12,6 +12,8 @@ import {
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEventCategories } from "@/hooks/useEventCategories";
+import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
+import type { TemplateKey } from "@/config/feature-visibility";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -30,6 +32,7 @@ interface MenuContextValue {
   isAdmin: boolean;
   initials: string;
   displayName: string;
+  visibleTemplateKeys: TemplateKey[];
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
@@ -38,6 +41,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const { categories, history } = useEventCategories();
+  const { visibleTemplateKeys } = useFeatureVisibility();
 
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -132,6 +136,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       isAdmin,
       initials,
       displayName,
+      visibleTemplateKeys,
     }),
     [
       session,
@@ -144,6 +149,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       isAdmin,
       initials,
       displayName,
+      visibleTemplateKeys,
     ]
   );
 

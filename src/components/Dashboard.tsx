@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -39,6 +40,13 @@ import {
   type SnapPreviewKind,
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
+import {
+  TEMPLATE_DEFINITIONS,
+  TEMPLATE_KEYS,
+  type TemplateKey,
+  inferTemplateKeyFromEventData,
+} from "@/config/feature-visibility";
+import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 
 type EventFields = {
   title: string;
@@ -50,6 +58,13 @@ type EventFields = {
   numberOfGuests: number;
   reminders?: { minutes: number }[] | null;
   rsvp?: string | null;
+};
+
+type UpcomingItem = {
+  id: string;
+  title: string;
+  start: string;
+  category: string | null;
 };
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
@@ -95,6 +110,17 @@ declare global {
 export default function Dashboard() {
   const { data: session } = useSession();
   const isSignedIn = Boolean(session?.user);
+  const {
+    loading: visibilityLoading,
+    required: onboardingRequired,
+    completed: onboardingCompleted,
+    persona,
+    personas,
+    promptDismissedAt,
+    visibleTemplateKeys,
+    dashboardLayout,
+    refresh: refreshVisibility,
+  } = useFeatureVisibility();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
@@ -114,10 +140,18 @@ export default function Dashboard() {
   const currentPreviewUrlRef = useRef<string | null>(null);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
+  const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
+  const [softPromptDismissed, setSoftPromptDismissed] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingItem[]>([]);
 
   useEffect(() => {
     scanStatusRef.current = scanStatus;
   }, [scanStatus]);
+
+  useEffect(() => {
+    if (!isSignedIn || visibilityLoading) return;
+    setOnboardingModalOpen(Boolean(onboardingRequired));
+  }, [isSignedIn, visibilityLoading, onboardingRequired]);
 
   const clearScanTimers = useCallback(() => {
     if (uploadIntervalRef.current) {
@@ -278,6 +312,81 @@ export default function Dashboard() {
     };
     fetchConnected();
   }, [session]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const loadUpcoming = async () => {
+      try {
+        const res = await fetch("/api/history?view=calendar&limit=100", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const json = await res.json().catch(() => ({ items: [] }));
+        const now = Date.now();
+        const items = (Array.isArray(json?.items) ? json.items : [])
+          .map((row: any) => {
+            const data = row?.data || {};
+            const startRaw =
+              data?.startISO ||
+              data?.start ||
+              data?.fieldsGuess?.start ||
+              data?.event?.start ||
+              null;
+            const startDate = startRaw ? new Date(startRaw) : null;
+            if (!startDate || Number.isNaN(startDate.getTime())) return null;
+            if (startDate.getTime() < now) return null;
+            const category = String(data?.category || row?.category || "");
+            const inferred = inferTemplateKeyFromEventData({
+              category,
+              title: row?.title || data?.title || null,
+            });
+            if (inferred && !visibleTemplateKeys.includes(inferred)) return null;
+            return {
+              id: row.id,
+              title: row.title || "Event",
+              start: startDate.toISOString(),
+              category: category || null,
+            } as UpcomingItem;
+          })
+          .filter(Boolean) as UpcomingItem[];
+        items.sort((a, b) => +new Date(a.start) - +new Date(b.start));
+        setUpcomingEvents(items.slice(0, 5));
+      } catch {
+        setUpcomingEvents([]);
+      }
+    };
+    void loadUpcoming();
+  }, [isSignedIn, visibleTemplateKeys]);
+
+  const visibleTemplateHrefs = useMemo(() => {
+    const visible = new Set<TemplateKey>(visibleTemplateKeys);
+    return TEMPLATE_DEFINITIONS.filter((d) => visible.has(d.key)).map(
+      (d) => d.href
+    );
+  }, [visibleTemplateKeys]);
+
+  const moduleOrder = useMemo(() => {
+    const personaSet = new Set(personas);
+    if (
+      personaSet.has("sports_staff") ||
+      persona === "sports_staff" ||
+      dashboardLayout === "sports_focused"
+    ) {
+      return ["sports", "milestones", "appointments"] as const;
+    }
+    if (personaSet.has("couples") || persona === "couples") {
+      return ["milestones", "appointments", "sports"] as const;
+    }
+    if (
+      personaSet.has("business_teams") ||
+      personaSet.has("organizers") ||
+      persona === "business_teams" ||
+      persona === "organizers"
+    ) {
+      return ["appointments", "milestones", "sports"] as const;
+    }
+    return ["milestones", "sports", "appointments"] as const;
+  }, [dashboardLayout, persona, personas]);
 
   const router = useRouter();
   const openCreateEvent = useCallback(() => {
@@ -1134,6 +1243,35 @@ export default function Dashboard() {
     };
   }, []);
 
+  const showSoftPrompt =
+    isSignedIn &&
+    !visibilityLoading &&
+    !onboardingRequired &&
+    !onboardingCompleted &&
+    !promptDismissedAt &&
+    !softPromptDismissed;
+
+  const handleDismissPrompt = useCallback(async () => {
+    try {
+      await fetch("/api/user/onboarding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "dismiss_prompt" }),
+      });
+    } catch {
+      // ignore network errors for dismiss
+    } finally {
+      setSoftPromptDismissed(true);
+      void refreshVisibility();
+    }
+  }, [refreshVisibility]);
+
+  const handleOnboardingComplete = useCallback(async () => {
+    setOnboardingModalOpen(false);
+    await refreshVisibility();
+  }, [refreshVisibility]);
+
   return (
     <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16">
       <input
@@ -1182,9 +1320,31 @@ export default function Dashboard() {
             <UploadHero onUpload={openUpload} className="h-full" />
             <SmartSignupHero className="h-full" />
           </div>
-          <EnvitefyBuilderHero />
-          <SportsPracticeHero />
-          <AppointmentsGeneralHero />
+          {moduleOrder.map((section: (typeof moduleOrder)[number]) => {
+            if (section === "milestones") {
+              return (
+                <EnvitefyBuilderHero
+                  key={section}
+                  allowedHrefs={visibleTemplateHrefs}
+                />
+              );
+            }
+            if (section === "sports") {
+              return (
+                <SportsPracticeHero
+                  key={section}
+                  allowedHrefs={visibleTemplateHrefs}
+                />
+              );
+            }
+            return (
+              <AppointmentsGeneralHero
+                key={section}
+                allowedHrefs={visibleTemplateHrefs}
+              />
+            );
+          })}
+          <UpcomingEventsPanel items={upcomingEvents} />
         </div>
       )}
       {scanStatus !== "idle" && (
@@ -1230,6 +1390,20 @@ export default function Dashboard() {
           />
         </section>
       )}
+      <OnboardingModal
+        open={onboardingModalOpen}
+        visibleTemplateKeys={visibleTemplateKeys}
+        required={onboardingRequired}
+        onClose={() => {
+          if (!onboardingRequired) setOnboardingModalOpen(false);
+        }}
+        onComplete={handleOnboardingComplete}
+      />
+      <OnboardingPromptPopup
+        open={showSoftPrompt && !onboardingModalOpen}
+        onStart={() => setOnboardingModalOpen(true)}
+        onDismiss={handleDismissPrompt}
+      />
     </main>
   );
 }
@@ -1251,6 +1425,237 @@ type SnapEventModalProps = {
   saveToEnvitefy: () => void;
   resetForm: () => void;
 };
+
+type OnboardingModalProps = {
+  open: boolean;
+  required: boolean;
+  visibleTemplateKeys: TemplateKey[];
+  onClose: () => void;
+  onComplete: () => void;
+};
+
+function OnboardingModal({
+  open,
+  required,
+  visibleTemplateKeys,
+  onClose,
+  onComplete,
+}: OnboardingModalProps) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [saving, setSaving] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<TemplateKey[]>(
+    visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    setStep(1);
+    setSelectedKeys(
+      visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
+    );
+  }, [open, visibleTemplateKeys]);
+
+  if (!open) return null;
+
+  const save = async () => {
+    if (!selectedKeys.length) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/onboarding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "complete",
+          persona: "general",
+          personas: ["general"],
+          visibleTemplateKeys: selectedKeys,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save onboarding");
+      onComplete();
+    } catch (err) {
+      console.error("[onboarding] save failed", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+      <div className="relative z-10 w-full max-w-2xl rounded-3xl border border-[#e2dafb] bg-white p-6 shadow-2xl">
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F8CFF]">
+              Onboarding
+            </p>
+            <h2 className="text-2xl font-semibold text-[#1b1540]">
+              Personalize your workspace
+            </h2>
+          </div>
+          {!required && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-[#e6ddff] px-3 py-1 text-sm"
+            >
+              Close
+            </button>
+          )}
+        </div>
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <p className="text-sm text-[#4f456f]">
+              Step 1: Choose the features you want visible.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {TEMPLATE_DEFINITIONS.map((item) => {
+                const checked = selectedKeys.includes(item.key);
+                return (
+                  <label
+                    key={item.key}
+                    className="flex items-center gap-3 rounded-xl border border-[#ebe6fb] px-3 py-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        setSelectedKeys((prev) => {
+                          if (e.target.checked) {
+                            if (prev.includes(item.key)) return prev;
+                            return [...prev, item.key];
+                          }
+                          return prev.filter((k) => k !== item.key);
+                        });
+                      }}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-3">
+            <p className="text-sm text-[#4f456f]">
+              Step 2: Confirm and apply your feature visibility.
+            </p>
+            <p className="text-sm text-[#1b1540]">
+              You can update this anytime in Settings.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setStep((s) => (s === 1 ? 1 : ((s - 1) as 1 | 2)))}
+            className="rounded-lg border border-[#e6ddff] px-3 py-1.5 text-sm"
+            disabled={step === 1 || saving}
+          >
+            Back
+          </button>
+          {step < 2 ? (
+            <button
+              type="button"
+              onClick={() => setStep((s) => ((s + 1) as 1 | 2))}
+              disabled={step === 1 && selectedKeys.length === 0}
+              className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving || selectedKeys.length === 0}
+              className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Finish"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UpcomingEventsPanel({ items }: { items: UpcomingItem[] }) {
+  if (!items.length) return null;
+  return (
+    <section className="rounded-3xl border border-[#e7defb] bg-white/80 p-5 shadow-sm">
+      <h3 className="text-lg font-semibold text-[#1b1540]">Upcoming events</h3>
+      <div className="mt-3 space-y-2">
+        {items.map((item) => (
+          <Link
+            key={item.id}
+            href={`/event/${item.id}`}
+            className="flex items-center justify-between rounded-xl border border-[#f1edff] bg-white px-3 py-2 text-sm hover:bg-[#faf8ff]"
+          >
+            <span className="font-medium text-[#2f1d47]">{item.title}</span>
+            <span className="text-[#6b5c9a]">
+              {new Intl.DateTimeFormat("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              }).format(new Date(item.start))}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OnboardingPromptPopup({
+  open,
+  onStart,
+  onDismiss,
+}: {
+  open: boolean;
+  onStart: () => void;
+  onDismiss: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[79] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="relative z-10 w-full max-w-lg rounded-3xl border border-[#e2dafb] bg-white p-6 shadow-2xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F8CFF]">
+          Quick Setup
+        </p>
+        <h3 className="mt-2 text-2xl font-semibold text-[#1b1540]">
+          Personalize your workspace
+        </h3>
+        <p className="mt-3 text-sm text-[#4f456f]">
+          Select the event features you want visible, and we will personalize
+          create menus and dashboard sections.
+        </p>
+        <div className="mt-6 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-lg border border-[#d8d2ef] px-3 py-1.5 text-sm font-semibold text-[#4a406b]"
+          >
+            Not now
+          </button>
+          <button
+            type="button"
+            onClick={onStart}
+            className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white"
+          >
+            Start onboarding
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SnapEventModal({
   open,

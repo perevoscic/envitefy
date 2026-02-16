@@ -3,7 +3,7 @@ export default function UseCases() {
     {
       title: "Parents",
       text: "Snap school flyers, share beautiful event pages, add smart sign-up forms, and keep calendars in sync.",
-      badgeClass: "bg-primary/15 text-primary",
+      badgeClass: "bg-[#efe9ff] text-[#6d5eea]",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -25,7 +25,7 @@ export default function UseCases() {
     {
       title: "Coaches",
       text: "Upload the season once; Envitefy creates every game and practice with reminders.",
-      badgeClass: "bg-secondary/15 text-secondary",
+      badgeClass: "bg-[#edeaff] text-[#5f63e6]",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -49,7 +49,7 @@ export default function UseCases() {
     {
       title: "Teachers",
       text: "Send calendar-ready class events with one link and gather volunteer or snack sign-ups without extra apps.",
-      badgeClass: "bg-accent/15 text-accent",
+      badgeClass: "bg-[#f3eeff] text-[#7F8CFF]",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +70,7 @@ export default function UseCases() {
     {
       title: "Weddings",
       text: "Registries, RSVPs, and timeline updates stay current for every guest.",
-      badgeClass: "bg-primary/15 text-primary",
+      badgeClass: "bg-[#efe9ff] text-[#6d5eea]",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -90,7 +90,7 @@ export default function UseCases() {
     {
       title: "Playdates",
       text: "Share allergy notes, packing lists, and directions in a single invite.",
-      badgeClass: "bg-secondary/15 text-secondary",
+      badgeClass: "bg-[#edeaff] text-[#5f63e6]",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -113,7 +113,7 @@ export default function UseCases() {
     {
       title: "Doctor appointments",
       text: "Save appointment cards with automatic follow-up reminders for the whole family.",
-      badgeClass: "bg-accent/15 text-accent",
+      badgeClass: "bg-[#f3eeff] text-[#7F8CFF]",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -136,12 +136,12 @@ export default function UseCases() {
   return (
     <section
       aria-labelledby="use-cases"
-      className="w-full bg-white/5 pb-12 transition"
+      className="w-full bg-transparent pb-12 transition"
     >
       <div className="max-w-7xl mx-auto px-6 py-12">
         <h2
           id="use-cases"
-          className="text-2xl sm:text-3xl font-bold text-center text-[#2b1b16]"
+          className="text-2xl sm:text-3xl font-bold text-center text-[#2f2850]"
         >
           Who it’s for
         </h2>
@@ -149,9 +149,9 @@ export default function UseCases() {
           {items.map((i) => (
             <div
               key={i.title}
-              className="rounded-3xl bg-white/90 border border-[#d9c5b8] p-6 shadow-[0_30px_40px_rgba(38,22,13,0.08)] transition hover:-translate-y-1 hover:shadow-[0_40px_50px_rgba(38,22,13,0.15)]"
+              className="rounded-3xl bg-white/95 border border-[#e5dcff] p-6 shadow-[0_30px_40px_rgba(79,63,142,0.1)] transition hover:-translate-y-1 hover:shadow-[0_40px_50px_rgba(79,63,142,0.15)]"
             >
-              <h3 className="text-lg font-semibold flex items-center gap-2 text-[#2b1b16]">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-[#2f2850]">
                 <span
                   className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${i.badgeClass}`}
                 >
@@ -159,7 +159,7 @@ export default function UseCases() {
                 </span>
                 {i.title}
               </h3>
-              <p className="mt-2 text-sm text-[#4a382f]">{i.text}</p>
+              <p className="mt-2 text-sm text-[#5a5377]">{i.text}</p>
             </div>
           ))}
         </div>

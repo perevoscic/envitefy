@@ -495,6 +495,19 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|"FF"|null, categoryColors?: Record<string,string>|null }`.
 - **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan, categoryColors, isAdmin }`.
 
+### User Onboarding — GET/PUT `/api/user/onboarding`
+
+- **Purpose**: Manage persona-driven onboarding and per-user feature visibility used across dashboard, create menus, and template pickers.
+- **Auth**: NextAuth session required.
+- **GET Output**: `{ required, completed, persona, promptDismissedAt, visibleTemplateKeys, dashboardLayout }`.
+- **PUT Input (JSON)**:
+  - Complete onboarding: `{ action: "complete", persona: "parents_moms"|"organizers"|"couples"|"sports_staff"|"educators"|"church_community"|"business_teams"|"general", visibleTemplateKeys?: string[] }`
+  - Dismiss one-time soft prompt: `{ action: "dismiss_prompt" }`
+- **PUT Output**: `{ ok: true, onboarding }` where `onboarding` matches GET output.
+- **Behavior**:
+  - Completing onboarding sets `users.onboarding_required=false`, stores `onboarding_persona`, sets `onboarding_completed_at`, and writes `feature_visibility` JSON metadata.
+  - Dismiss stores `onboarding_prompt_dismissed_at=now()` and keeps onboarding optional for existing users.
+
 ### Change Password — POST `/api/user/change-password`
 
 - **Purpose**: Change password for the signed-in user.

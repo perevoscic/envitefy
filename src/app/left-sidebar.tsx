@@ -26,13 +26,11 @@ import {
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
-import {
-  TEMPLATE_LINKS,
-  NAV_LINKS,
-  useUnifiedMenu,
-} from "@/components/navigation/TopNav";
 import { resolveEditHref } from "@/utils/event-edit-route";
-import { CREATE_EVENT_SECTIONS } from "@/config/navigation-config";
+import {
+  getCreateEventSections,
+  getTemplateLinks,
+} from "@/config/navigation-config";
 import {
   Baby,
   Cake,
@@ -59,7 +57,7 @@ import {
   LogOut,
   X,
 } from "lucide-react";
-import { useEventCategories } from "@/hooks/useEventCategories";
+import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 
 declare global {
   interface Window {
@@ -929,11 +927,17 @@ export default function LeftSidebar() {
     openSnapFromSidebar(mode);
   };
 
+  const { visibleTemplateKeys } = useFeatureVisibility();
+  const visibleTemplateLinks = useMemo(
+    () => getTemplateLinks(visibleTemplateKeys),
+    [visibleTemplateKeys]
+  );
+
   const templateHrefMap = useMemo(() => {
     const map = new Map<string, string>();
-    TEMPLATE_LINKS.forEach((t) => map.set(t.label, t.href));
+    visibleTemplateLinks.forEach((t) => map.set(t.label, t.href));
     return map;
-  }, []);
+  }, [visibleTemplateLinks]);
 
   const handleCreateModalSelect = (label: string, fallbackHref?: string) => {
     if (label === "Snap Event") {
@@ -961,13 +965,13 @@ export default function LeftSidebar() {
     triggerCreateEvent();
   };
 
-  const createModalSections = CREATE_EVENT_SECTIONS.filter(
-    (section) => section.title.toLowerCase() !== "quick access"
-  ).map((section, idx) => ({
-    title: section.title,
-    items: section.items,
-    color: CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length],
-  }));
+  const createModalSections = getCreateEventSections(visibleTemplateKeys)
+    .filter((section) => section.title.toLowerCase() !== "quick access")
+    .map((section, idx) => ({
+      title: section.title,
+      items: section.items,
+      color: CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length],
+    }));
 
   const profileMenuItemClass =
     "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";

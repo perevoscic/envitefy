@@ -32,7 +32,7 @@ const FeatureCard = ({
   title: string;
   description: string;
 }) => (
-  <div className="rounded-2xl bg-gradient-to-br from-surface/80 to-surface/60 border border-border/50 p-6 hover:border-border hover:shadow-lg transition-all duration-300">
+  <div className="rounded-2xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-6 hover:border-[#cfc2ff] hover:shadow-lg transition-all duration-300">
     <div className="text-4xl mb-3">{icon}</div>
     <h3 className="text-xl font-semibold mb-2 text-foreground">{title}</h3>
     <p className="text-foreground/70 leading-relaxed">{description}</p>
@@ -44,7 +44,7 @@ const FeatureList = ({ items }: { items: string[] }) => (
     {items.map((item, idx) => (
       <li key={idx} className="flex items-start gap-3 text-foreground/80">
         <svg
-          className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0"
+          className="w-5 h-5 text-[#7F8CFF] mt-0.5 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -64,14 +64,14 @@ const FeatureList = ({ items }: { items: string[] }) => (
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient py-12 px-4 sm:px-6">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground py-12 px-4 sm:px-6">
       <section className="w-full max-w-6xl mx-auto">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <div className="bg-gradient-to-tr from-fuchsia-500/15 via-sky-400/15 to-violet-500/15 rounded-3xl p-1 mb-8">
-            <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-10 sm:p-12 border border-border">
+          <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-1 mb-8">
+            <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-10 sm:p-12 border border-[#e5dcff]">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.18] tracking-tight pb-4">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-sky-500 to-fuchsia-600 dark:from-cyan-300 dark:via-sky-200 dark:to-fuchsia-300">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5a56d6] via-[#7F8CFF] to-[#9a84ff]">
                   About
                   <span> </span>
                   <span className="font-pacifico inline-block">Envitefy</span>
@@ -93,7 +93,7 @@ export default function AboutPage() {
 
         {/* Core Features Grid */}
         <div className="mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10 bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-fuchsia-600">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10 bg-clip-text text-transparent bg-gradient-to-r from-[#5a56d6] to-[#8a78f8]">
             Powerful Features for Busy Families
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -161,13 +161,13 @@ export default function AboutPage() {
         </div>
 
         {/* Event Templates Section */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-surface/80 to-surface/60 border border-border p-8 sm:p-10">
+        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
             Comprehensive Event Templates
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-teal-500">
+              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
                 Life Milestones & Celebrations
               </h3>
               <FeatureList
@@ -180,7 +180,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-teal-500">
+              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
                 Sports & Activities
               </h3>
               <FeatureList
@@ -195,7 +195,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-teal-500">
+              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
                 Appointments & Classes
               </h3>
               <FeatureList
@@ -208,7 +208,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-teal-500">
+              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
                 Advanced Features
               </h3>
               <FeatureList
@@ -225,7 +225,7 @@ export default function AboutPage() {
         </div>
 
         {/* Technology & Accuracy */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-surface/80 to-surface/60 border border-border p-8 sm:p-10">
+        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
             Built for Real Life
           </h2>
@@ -237,7 +237,7 @@ export default function AboutPage() {
               </h3>
               <ul className="space-y-3 text-foreground/80">
                 <li>• Reads names in cursive and decorative fonts</li>
-                <li>• Understands spelled-out times ("four o'clock")</li>
+                <li>• Understands spelled-out times (&quot;four o&apos;clock&quot;)</li>
                 <li>• Distinguishes home vs. away games</li>
                 <li>• Extracts RSVP contact information</li>
                 <li>• Recognizes event categories automatically</li>
@@ -260,7 +260,7 @@ export default function AboutPage() {
         </div>
 
         {/* What Families Love */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-surface/80 to-surface/60 border border-border p-8 sm:p-10">
+        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
             What Families Love
           </h2>
@@ -304,7 +304,7 @@ export default function AboutPage() {
               <div>
                 <h3 className="font-semibold text-lg mb-1">Thoughtful Gifts</h3>
                 <p className="text-foreground/70">
-                  Send a friend or coach a bundle of paid months and we'll
+                  Send a friend or coach a bundle of paid months and we&apos;ll
                   deliver a ready-to-use gift message when payment clears.
                 </p>
               </div>
@@ -313,7 +313,7 @@ export default function AboutPage() {
         </div>
 
         {/* Our Story */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-surface/80 to-surface/60 border border-border p-8 sm:p-10">
+        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
             Our Story
           </h2>
@@ -326,19 +326,19 @@ export default function AboutPage() {
             <p>
               We obsessed over accuracy — script names, spelled-out times, home
               vs. away — so the saved event feels like the original. Every
-              detail matters when you're coordinating a busy family schedule.
+              detail matters when you&apos;re coordinating a busy family schedule.
             </p>
             <p>
               Today, families, coaches, and club organizers use Envitefy to stay
               in sync without extra typing. From kindergarten concerts to travel
-              tournaments, we're here to make event management effortless.
+              tournaments, we&apos;re here to make event management effortless.
             </p>
           </div>
         </div>
 
         {/* CTA Section */}
         <div className="text-center">
-          <div className="bg-gradient-to-tr from-teal-500/20 via-cyan-500/20 to-sky-500/20 rounded-3xl p-8 sm:p-10 border border-teal-500/30">
+          <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-8 sm:p-10 border border-[#d9ceff]">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Ready to Get Started?
             </h2>
@@ -349,13 +349,13 @@ export default function AboutPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-semibold bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-neutral-900 shadow-lg shadow-teal-500/25 transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-semibold bg-[#7F8CFF] hover:bg-[#6d7af5] active:bg-[#5e69d9] text-white shadow-lg shadow-[#7F8CFF]/25 transition-all duration-200"
               >
                 Start Snapping Events
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-semibold border-2 border-border text-foreground/80 hover:text-foreground hover:border-foreground/60 bg-surface/50 transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-semibold border-2 border-[#d9ceff] text-[#433b66] hover:text-[#2f2850] hover:border-[#c6b8ff] bg-white transition-all duration-200"
               >
                 Contact Us
               </Link>

@@ -33,11 +33,19 @@ const APPOINTMENT_CARDS: AppointmentCard[] = [
 
 type AppointmentsGeneralHeroProps = {
   className?: string;
+  allowedHrefs?: string[];
 };
 
 export function AppointmentsGeneralHero({
   className,
+  allowedHrefs,
 }: AppointmentsGeneralHeroProps) {
+  const allowed = allowedHrefs ? new Set(allowedHrefs) : null;
+  const cards = allowed
+    ? APPOINTMENT_CARDS.filter((card) => allowed.has(card.href))
+    : APPOINTMENT_CARDS;
+  if (cards.length === 0) return null;
+
   const wrapperClassName = [
     "rounded-[40px] bg-gradient-to-bl from-[#DBEAFE] via-white to-[#BFDBFE] p-6 shadow-xl shadow-[#93C5FD] sm:p-8",
     className,
@@ -60,7 +68,7 @@ export function AppointmentsGeneralHero({
 
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {APPOINTMENT_CARDS.map((card) => (
+            {cards.map((card) => (
               <Link
                 key={card.label}
                 href={card.href}

@@ -75,13 +75,13 @@ export default function FaqPage() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-background text-foreground">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground">
       <section className="max-w-5xl mx-auto px-6 pt-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold text-center text-[#2f2850]">
           Frequently asked questions
         </h1>
       </section>
-      <FAQ />
+      <FAQ showHeader={false} />
       <Script
         id="ld-breadcrumb-faq"
         type="application/ld+json"

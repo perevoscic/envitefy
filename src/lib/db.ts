@@ -113,7 +113,9 @@ const USER_SELECT_COLUMNS = `
   scans_total, scans_birthdays, scans_weddings,
   scans_sport_events, scans_appointments, scans_doctor_appointments,
   scans_play_days, scans_general_events, scans_car_pool,
-  shares_sent
+  shares_sent,
+  onboarding_required, onboarding_persona, onboarding_completed_at,
+  onboarding_prompt_dismissed_at, feature_visibility
 `;
 
 export type AppUserRow = {
@@ -145,9 +147,15 @@ export type AppUserRow = {
   scans_general_events?: number | null;
   scans_car_pool?: number | null;
   shares_sent?: number | null;
+  onboarding_required?: boolean | null;
+  onboarding_persona?: string | null;
+  onboarding_completed_at?: string | null;
+  onboarding_prompt_dismissed_at?: string | null;
+  feature_visibility?: unknown;
 };
 
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
+  await ensureUsersHasOnboardingColumns();
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
@@ -160,6 +168,7 @@ export async function getUserByEmail(email: string): Promise<AppUserRow | null> 
 }
 
 export async function getUserById(id: string): Promise<AppUserRow | null> {
+  await ensureUsersHasOnboardingColumns();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS} from users where id = $1 limit 1`,
     [id]
@@ -373,6 +382,75 @@ async function ensureUsersHasCategoryColorsColumn(): Promise<void> {
   await query(`alter table users add column if not exists category_colors jsonb`);
 }
 
+async function ensureUsersHasOnboardingColumns(): Promise<void> {
+  await query(`
+    alter table users add column if not exists onboarding_required boolean;
+    alter table users alter column onboarding_required set default false;
+    alter table users add column if not exists onboarding_persona varchar(32);
+    alter table users add column if not exists onboarding_completed_at timestamptz(6);
+    alter table users add column if not exists onboarding_prompt_dismissed_at timestamptz(6);
+    alter table users add column if not exists feature_visibility jsonb;
+  `);
+}
+
+type OnboardingProfileRow = {
+  onboarding_required: boolean | null;
+  onboarding_persona: string | null;
+  onboarding_completed_at: string | null;
+  onboarding_prompt_dismissed_at: string | null;
+  feature_visibility: any;
+};
+
+export async function getOnboardingByEmail(email: string): Promise<OnboardingProfileRow | null> {
+  await ensureUsersHasOnboardingColumns();
+  const lower = email.toLowerCase();
+  const res = await query<OnboardingProfileRow>(
+    `select onboarding_required, onboarding_persona, onboarding_completed_at,
+            onboarding_prompt_dismissed_at, feature_visibility
+       from users
+      where email = $1
+      limit 1`,
+    [lower]
+  );
+  return res.rows[0] || null;
+}
+
+export async function completeOnboardingByEmail(params: {
+  email: string;
+  persona: string;
+  personas?: string[];
+  visibleTemplateKeys: string[];
+}): Promise<void> {
+  await ensureUsersHasOnboardingColumns();
+  const lower = params.email.toLowerCase();
+  const payload = {
+    v: 1,
+    personas: Array.isArray(params.personas) ? params.personas : [params.persona],
+    visibleTemplateKeys: params.visibleTemplateKeys,
+  };
+  await query(
+    `update users
+        set onboarding_required = false,
+            onboarding_persona = $2,
+            onboarding_completed_at = now(),
+            onboarding_prompt_dismissed_at = null,
+            feature_visibility = $3::jsonb
+      where email = $1`,
+    [lower, params.persona, JSON.stringify(payload)]
+  );
+}
+
+export async function dismissOnboardingPromptByEmail(email: string): Promise<void> {
+  await ensureUsersHasOnboardingColumns();
+  const lower = email.toLowerCase();
+  await query(
+    `update users
+        set onboarding_prompt_dismissed_at = now()
+      where email = $1`,
+    [lower]
+  );
+}
+
 export async function getCategoryColorsByEmail(email: string): Promise<Record<string, string> | null> {
   await ensureUsersHasCategoryColorsColumn();
   const lower = email.toLowerCase();
@@ -420,14 +498,17 @@ export async function createUserWithEmailPassword(params: {
   password: string;
 }): Promise<AppUserRow> {
   const { email, firstName, lastName, password } = params;
+  await ensureUsersHasOnboardingColumns();
   const existing = await getUserByEmail(email);
   if (existing) throw new Error("Account already exists for this email");
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid)
-     values ($1, $2, $3, $4, 'freemium', false)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
+    `insert into users (
+       email, first_name, last_name, password_hash, subscription_plan, ever_paid, onboarding_required
+     )
+     values ($1, $2, $3, $4, 'freemium', false, true)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at, onboarding_required`,
     [lower, firstName || null, lastName || null, password_hash]
   );
   return res.rows[0];
@@ -461,6 +542,7 @@ export async function createOrUpdateOAuthUser(params: {
   lastName?: string | null;
   provider: string;
 }): Promise<AppUserRow> {
+  await ensureUsersHasOnboardingColumns();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
 
@@ -471,9 +553,11 @@ export async function createOrUpdateOAuthUser(params: {
 
   // Create new OAuth user with NULL password_hash
   const res = await query<AppUserRow>(
-    `insert into users (email, first_name, last_name, password_hash, subscription_plan, ever_paid)
-     values ($1, $2, $3, NULL, 'freemium', false)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
+    `insert into users (
+       email, first_name, last_name, password_hash, subscription_plan, ever_paid, onboarding_required
+     )
+     values ($1, $2, $3, NULL, 'freemium', false, true)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at, onboarding_required`,
     [lower, params.firstName || null, params.lastName || null]
   );
   return res.rows[0];
@@ -705,6 +789,7 @@ function buildUserWhereClause(
 export async function getUserByStripeCustomerId(customerId: string): Promise<AppUserRow | null> {
   if (!customerId) return null;
   await ensureUsersHasStripeBillingColumns();
+  await ensureUsersHasOnboardingColumns();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
      from users
@@ -718,6 +803,7 @@ export async function getUserByStripeCustomerId(customerId: string): Promise<App
 export async function getUserByStripeSubscriptionId(subscriptionId: string): Promise<AppUserRow | null> {
   if (!subscriptionId) return null;
   await ensureUsersHasStripeBillingColumns();
+  await ensureUsersHasOnboardingColumns();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
      from users

@@ -76,8 +76,8 @@ export default function HowItWorks() {
     >
       <style jsx>{`
         .how-it-works-root {
-          --color-primary: #12b9d9;
-          --color-secondary: #00cc99;
+          --color-primary: #7F8CFF;
+          --color-secondary: #9a84ff;
           --color-text-dark: #1f2937;
           --color-bg-light: #fbfbfb;
           background-color: var(--color-bg-light);
@@ -178,7 +178,7 @@ export default function HowItWorks() {
           <br className="hidden sm:inline" /> Calendar Sync
         </h2>
 
-        <p className="text-lg sm:text-2xl text-gray-500 max-w-3xl mx-auto mb-16">
+        <p className="text-lg sm:text-2xl text-[#5a5377] max-w-3xl mx-auto mb-16">
           Eliminate manual entry. Our intuitive AI handles the organization so
           you can reclaim your time and focus on what matters.
         </p>
@@ -206,11 +206,11 @@ export default function HowItWorks() {
                 1. Capture
               </h3>
             </div>
-            <p className="text-gray-500 text-lg mb-6">
+            <p className="text-[#5a5377] text-lg mb-6">
               Snap a quick photo of any physical document, schedule, or invite.
               Effortless input.
             </p>
-            <div className="h-40 rounded-2xl p-4 relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-cyan-50">
+            <div className="h-40 rounded-2xl p-4 relative overflow-hidden bg-gradient-to-br from-white via-[#f3eeff] to-[#ece6ff]">
               <svg
                 viewBox="0 0 260 160"
                 className="absolute inset-0 w-full h-full"
@@ -279,7 +279,7 @@ export default function HowItWorks() {
                   height="22"
                   rx="5"
                   fill="none"
-                  stroke="#12b9d9"
+                  stroke="#7F8CFF"
                   strokeWidth="2"
                 />
                 <rect
@@ -288,7 +288,7 @@ export default function HowItWorks() {
                   width="8"
                   height="8"
                   rx="2"
-                  fill="#12b9d9"
+                  fill="#7F8CFF"
                   opacity="0.2"
                 />
                 <path
@@ -314,14 +314,14 @@ export default function HowItWorks() {
                   rx="12"
                   fill="#ffffff"
                 />
-                <circle cx="159" cy="70" r="16" fill="none" stroke="#12b9d9" />
+                <circle cx="159" cy="70" r="16" fill="none" stroke="#7F8CFF" />
                 <rect
                   x="153"
                   y="64"
                   width="12"
                   height="12"
                   rx="3"
-                  fill="#12b9d9"
+                  fill="#7F8CFF"
                   opacity="0.15"
                 />
                 <rect
@@ -359,7 +359,7 @@ export default function HowItWorks() {
                 2. Organize
               </h3>
             </div>
-            <p className="text-gray-500 text-lg mb-6">
+            <p className="text-[#5a5377] text-lg mb-6">
               We automatically pull the key details: Who, What, When, Where.
             </p>
             <div className="h-40 bg-white rounded-2xl p-4 relative overflow-hidden">
@@ -403,7 +403,7 @@ export default function HowItWorks() {
                     height="22"
                     rx="5"
                     fill="none"
-                    stroke="#12b9d9"
+                    stroke="#7F8CFF"
                   />
                   <rect
                     x="87"
@@ -411,7 +411,7 @@ export default function HowItWorks() {
                     width="8"
                     height="8"
                     rx="2"
-                    fill="#12b9d9"
+                    fill="#7F8CFF"
                     opacity="0.2"
                   />
                 </g>
@@ -498,7 +498,7 @@ export default function HowItWorks() {
 
           <div className="step-card p-6 sm:p-8 rounded-3xl">
             <div className="flex items-center mb-4">
-              <div className="p-3 rounded-xl bg-gray-800 shadow-lg mr-4">
+              <div className="p-3 rounded-xl bg-[#5e69d9] shadow-lg mr-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -522,11 +522,11 @@ export default function HowItWorks() {
                 3. Share
               </h3>
             </div>
-            <p className="text-gray-500 text-lg mb-6">
+            <p className="text-[#5a5377] text-lg mb-6">
               Events immediately appear across all family calendars (Google,
               Apple, Outlook).
             </p>
-            <div className="h-40 bg-gray-50 rounded-2xl p-4 relative overflow-hidden">
+            <div className="h-40 bg-[#f6f2ff] rounded-2xl p-4 relative overflow-hidden">
               <svg
                 viewBox="0 0 260 160"
                 className="absolute inset-0 w-full h-full"
@@ -556,7 +556,7 @@ export default function HowItWorks() {
                     fill="rgba(18,185,217,0.08)"
                     stroke="none"
                   />
-                  <g transform="translate(-14,-12)" stroke="#12b9d9" strokeWidth="2" fill="none">
+                  <g transform="translate(-14,-12)" stroke="#7F8CFF" strokeWidth="2" fill="none">
                     <path d="M10 10l20-10-10 20" strokeLinecap="round" strokeLinejoin="round" />
                     <circle cx="10" cy="18" r="4" />
                     <circle cx="24" cy="28" r="4" />

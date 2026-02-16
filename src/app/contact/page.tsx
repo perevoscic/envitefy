@@ -5,15 +5,19 @@ import ThankYouModal from "@/components/ThankYouModal";
 
 export default function ContactPage() {
   const { data: session } = useSession();
+  const userName =
+    typeof session?.user?.name === "string" ? session.user.name : "";
+  const userEmail =
+    typeof session?.user?.email === "string" ? session.user.email : "";
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState<null | { ok: boolean; message: string }>(
     null
   );
   const [showThankYou, setShowThankYou] = useState(false);
   return (
-    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-2xl">
-        <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-8 border border-border">
+        <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-8 border border-[#e5dcff] shadow-[0_20px_60px_rgba(127,140,255,0.12)]">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible text-center">
             <span
               className="text-foreground"
@@ -23,7 +27,7 @@ export default function ContactPage() {
             >
               Contact
               <span> </span>
-              <span style={{ color: "#f4d9a4" }}>Envitefy</span>
+              <span style={{ color: "#8a78f8" }}>Envitefy</span>
             </span>
           </h1>
           <p className="mt-3 text-foreground/80 text-center">
@@ -43,8 +47,8 @@ export default function ContactPage() {
               const message =
                 (form.querySelector("#message") as HTMLTextAreaElement)
                   ?.value || "";
-              const name = ((session?.user as any)?.name || "").toString();
-              const email = ((session?.user as any)?.email || "").toString();
+              const name = userName;
+              const email = userEmail;
               try {
                 const res = await fetch("/api/contact", {
                   method: "POST",
@@ -67,10 +71,11 @@ export default function ContactPage() {
                     message: data?.error || "Something went wrong.",
                   });
                 }
-              } catch (err: any) {
+              } catch (err: unknown) {
                 setSent({
                   ok: false,
-                  message: err?.message || "Network error.",
+                  message:
+                    err instanceof Error ? err.message : "Network error.",
                 });
               } finally {
                 setSubmitting(false);
@@ -84,8 +89,8 @@ export default function ContactPage() {
               <input
                 id="name"
                 required
-                defaultValue={(session?.user as any)?.name || ""}
-                className="mt-1 w-full border border-border bg-surface/60 text-foreground p-3 rounded opacity-60 cursor-not-allowed"
+                defaultValue={userName}
+                className="mt-1 w-full border border-[#d9cdfa] bg-[#f4eeff] text-foreground p-3 rounded opacity-60 cursor-not-allowed"
                 disabled
               />
             </div>
@@ -99,8 +104,8 @@ export default function ContactPage() {
                 type="email"
                 autoComplete="email"
                 required
-                defaultValue={(session?.user as any)?.email || ""}
-                className="mt-1 w-full border border-border bg-surface/60 text-foreground p-3 rounded opacity-60 cursor-not-allowed"
+                defaultValue={userEmail}
+                className="mt-1 w-full border border-[#d9cdfa] bg-[#f4eeff] text-foreground p-3 rounded opacity-60 cursor-not-allowed"
                 disabled
               />
             </div>
@@ -111,7 +116,7 @@ export default function ContactPage() {
               <input
                 id="title"
                 required
-                className="mt-1 w-full border border-border bg-surface/60 text-foreground p-3 rounded"
+                className="mt-1 w-full border border-[#d9cdfa] bg-[#fcfaff] text-foreground p-3 rounded"
                 placeholder="Subject of your message"
               />
             </div>
@@ -123,7 +128,7 @@ export default function ContactPage() {
                 id="message"
                 rows={5}
                 required
-                className="mt-1 w-full border border-border bg-surface/60 text-foreground p-3 rounded"
+                className="mt-1 w-full border border-[#d9cdfa] bg-[#fcfaff] text-foreground p-3 rounded"
               />
             </div>
             <div className="pt-2 flex items-center gap-3">
@@ -131,7 +136,7 @@ export default function ContactPage() {
                 disabled={submitting}
                 className="inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 style={{
-                  backgroundColor: "#14b8a6",
+                  backgroundColor: "#7F8CFF",
                 }}
               >
                 {submitting ? "Sending..." : "Send message"}

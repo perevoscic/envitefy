@@ -51,9 +51,19 @@ const SPORTS_CARDS: SportsCard[] = [
 
 type SportsPracticeHeroProps = {
   className?: string;
+  allowedHrefs?: string[];
 };
 
-export function SportsPracticeHero({ className }: SportsPracticeHeroProps) {
+export function SportsPracticeHero({
+  className,
+  allowedHrefs,
+}: SportsPracticeHeroProps) {
+  const allowed = allowedHrefs ? new Set(allowedHrefs) : null;
+  const cards = allowed
+    ? SPORTS_CARDS.filter((card) => allowed.has(card.href))
+    : SPORTS_CARDS;
+  if (cards.length === 0) return null;
+
   const wrapperClassName = [
     "rounded-[40px] bg-gradient-to-bl from-[#E0F2FE] via-white to-[#D1FAE5] p-6 shadow-xl shadow-[#BAE6FD] sm:p-8",
     className,
@@ -73,7 +83,7 @@ export function SportsPracticeHero({ className }: SportsPracticeHeroProps) {
 
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {SPORTS_CARDS.map((card) => (
+            {cards.map((card) => (
               <Link
                 key={card.label}
                 href={card.href}

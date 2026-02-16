@@ -47,9 +47,19 @@ const QUICK_START_CARDS: BuilderCard[] = [
 
 type EnvitefyBuilderHeroProps = {
   className?: string;
+  allowedHrefs?: string[];
 };
 
-export function EnvitefyBuilderHero({ className }: EnvitefyBuilderHeroProps) {
+export function EnvitefyBuilderHero({
+  className,
+  allowedHrefs,
+}: EnvitefyBuilderHeroProps) {
+  const allowed = allowedHrefs ? new Set(allowedHrefs) : null;
+  const cards = allowed
+    ? QUICK_START_CARDS.filter((card) => allowed.has(card.href))
+    : QUICK_START_CARDS;
+  if (cards.length === 0) return null;
+
   const wrapperClassName = [
     "rounded-[40px] bg-gradient-to-bl from-[#F4EEFF] via-white to-[#FEE8F0] p-6 shadow-xl shadow-[#E8DFFF] sm:p-8",
     className,
@@ -69,7 +79,7 @@ export function EnvitefyBuilderHero({ className }: EnvitefyBuilderHeroProps) {
 
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            {QUICK_START_CARDS.map((card) => (
+            {cards.map((card) => (
               <Link
                 key={card.label}
                 href={card.href}

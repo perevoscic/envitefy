@@ -14,9 +14,10 @@ import {
 import { useEventCategories } from "@/hooks/useEventCategories";
 import { useMenu } from "@/contexts/MenuContext";
 import {
-  CREATE_EVENT_SECTIONS,
-  TEMPLATE_LINKS,
+  getCreateEventSections,
+  getTemplateLinks,
 } from "@/config/navigation-config";
+import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -31,7 +32,7 @@ const CALENDAR_TARGETS: Array<{
 ];
 
 // Re-export TEMPLATE_LINKS for backward compatibility with left-sidebar
-export { TEMPLATE_LINKS };
+export const TEMPLATE_LINKS = getTemplateLinks();
 
 export const NAV_LINKS: Array<{
   label: string;
@@ -93,6 +94,7 @@ export function useUnifiedMenu() {
     microsoft: false,
     apple: false,
   });
+  const { visibleTemplateKeys } = useFeatureVisibility();
 
   const isAdmin = Boolean((session?.user as any)?.isAdmin);
 
@@ -191,6 +193,7 @@ export function useUnifiedMenu() {
     initials,
     displayName,
     formatRelative,
+    visibleTemplateKeys,
   };
 }
 
@@ -283,10 +286,17 @@ export function MyEventsDropdown({
   return null; // Sidebar will handle its own rendering
 }
 
-export function CreateEventMenu({ onSelect }: { onSelect?: () => void }) {
+export function CreateEventMenu({
+  onSelect,
+  visibleTemplateKeys,
+}: {
+  onSelect?: () => void;
+  visibleTemplateKeys?: Parameters<typeof getCreateEventSections>[0];
+}) {
+  const sections = getCreateEventSections(visibleTemplateKeys);
   return (
     <div className="flex min-w-[1260px] max-w-[1400px] flex-row flex-nowrap gap-10 overflow-x-auto px-2">
-      {CREATE_EVENT_SECTIONS.map((section) => (
+      {sections.map((section) => (
         <div
           key={section.title}
           className="flex min-w-[215px] max-w-[255px] flex-col gap-3"
@@ -678,6 +688,7 @@ export default function TopNav() {
     handleCalendarConnect,
     isAdmin,
     initials,
+    visibleTemplateKeys,
   } = useMenu();
 
   const [openRecent, setOpenRecent] = useState(false);
@@ -912,7 +923,11 @@ export default function TopNav() {
                       suppressHydrationWarning
                     >
                       <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
-                        {isHydrated && <CreateEventMenu />}
+                        {isHydrated && (
+                          <CreateEventMenu
+                            visibleTemplateKeys={visibleTemplateKeys}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>

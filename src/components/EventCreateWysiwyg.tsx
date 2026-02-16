@@ -27,6 +27,8 @@ import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 import styles from "./EventCreateWysiwyg.module.css";
 import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
 import { buildEventPath } from "@/utils/event-url";
+import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
+import { mapEventCategoryKeyToTemplateKey } from "@/config/feature-visibility";
 
 type ConnectedCalendars = {
   google: boolean;
@@ -158,6 +160,7 @@ export default function EventCreateWysiwyg({
   initialCategoryKey,
 }: Props) {
   const router = useRouter();
+  const { visibleTemplateKeys } = useFeatureVisibility();
 
   const initialStart = useMemo(() => {
     const base = defaultDate ? new Date(defaultDate) : new Date();
@@ -869,6 +872,14 @@ export default function EventCreateWysiwyg({
   const normalizedCategory = (categoryLabel || "").toLowerCase();
   const allowsRegistrySection = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
   const showRsvpField = true;
+  const visibleCategories = useMemo(
+    () =>
+      EVENT_CATEGORIES.filter((c) => {
+        const key = mapEventCategoryKeyToTemplateKey(c.key);
+        return key ? visibleTemplateKeys.includes(key) : true;
+      }),
+    [visibleTemplateKeys]
+  );
   // Inline category selector (no modal)
   const handleSelectTemplate = (key: string) => {
     const label = TEMPLATE_LABELS[key] || key;
@@ -918,7 +929,7 @@ export default function EventCreateWysiwyg({
                 </p>
               </div>
               <div className={styles.gallery}>
-                {EVENT_CATEGORIES.map((c) => {
+                {visibleCategories.map((c) => {
                   // Assign button colors and icon backgrounds based on category
                   const getCategoryStyles = (key: string) => {
                     const styleMap: Record<

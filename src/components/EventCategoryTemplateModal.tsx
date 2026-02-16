@@ -3,6 +3,8 @@
 import React from "react";
 import styles from "@/components/EventCreateWysiwyg.module.css";
 import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
+import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
+import { mapEventCategoryKeyToTemplateKey } from "@/config/feature-visibility";
 
 type Props = {
   open: boolean;
@@ -15,6 +17,12 @@ export default function EventCategoryTemplateModal({
   onClose,
   onSelect,
 }: Props) {
+  const { visibleTemplateKeys } = useFeatureVisibility();
+  const visibleCategories = EVENT_CATEGORIES.filter((c) => {
+    const key = mapEventCategoryKeyToTemplateKey(c.key);
+    return key ? visibleTemplateKeys.includes(key) : true;
+  });
+
   if (!open) return null;
   return (
     <div
@@ -37,7 +45,7 @@ export default function EventCategoryTemplateModal({
           </p>
         </div>
         <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {EVENT_CATEGORIES.map((c) => (
+          {visibleCategories.map((c) => (
             <button
               key={c.key}
               type="button"

@@ -3,14 +3,14 @@ import Link from "next/link";
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen w-full bg-background text-foreground landing-dark-gradient flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-5xl grid grid-cols-1 items-center">
         <div className="text-center">
           <h1 className="sr-only">Envitefy — Create. Share. Enjoy.</h1>
-          <div className="bg-gradient-to-tr from-fuchsia-500/15 via-sky-400/15 to-violet-500/15 rounded-3xl p-1">
-            <div className="rounded-3xl bg-surface/80 backdrop-blur-sm p-10 pb-16 border border-border">
+          <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-1">
+            <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-10 pb-16 border border-[#e5dcff] shadow-[0_20px_60px_rgba(127,140,255,0.12)]">
               <h1 className="text-5xl sm:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible">
-                <span className="bg-clip-text pb-10 text-transparent bg-gradient-to-r from-cyan-600 via-sky-500 to-fuchsia-600 dark:from-cyan-300 dark:via-sky-200 dark:to-fuchsia-300">
+                <span className="bg-clip-text pb-10 text-transparent bg-gradient-to-r from-[#5a56d6] via-[#7F8CFF] to-[#9a84ff]">
                   Privacy Policy
                 </span>
               </h1>
@@ -196,13 +196,13 @@ export default function PrivacyPage() {
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/"
-                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-neutral-900 shadow-lg shadow-teal-500/25"
+                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold bg-[#7F8CFF] hover:bg-[#6d7af5] active:bg-[#5e69d9] text-white shadow-lg shadow-[#7F8CFF]/25"
                 >
                   Back home
                 </Link>
                 <Link
                   href="/terms"
-                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-border text-foreground/80 hover:text-foreground hover:border-foreground/60"
+                  className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-lg font-semibold border border-[#d9ceff] text-[#433b66] hover:text-[#2f2850] hover:border-[#c6b8ff] bg-white"
                 >
                   Terms of use
                 </Link>

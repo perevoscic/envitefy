@@ -188,6 +188,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_general_events integer;
 ALTER TABLE users ALTER COLUMN scans_general_events SET DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_car_pool integer;
 ALTER TABLE users ALTER COLUMN scans_car_pool SET DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_required boolean;
+ALTER TABLE users ALTER COLUMN onboarding_required SET DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_persona varchar(32);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed_at timestamptz(6);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_prompt_dismissed_at timestamptz(6);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS feature_visibility jsonb;
 
 -- Ensure promo_codes has new Stripe linkage columns when upgrading
 ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_payment_intent_id text;
@@ -236,7 +242,6 @@ CREATE TABLE IF NOT EXISTS stripe_webhook_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_stripe_webhook_events_created_at ON stripe_webhook_events(created_at DESC);
-
 
 
 

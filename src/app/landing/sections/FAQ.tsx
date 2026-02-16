@@ -29,36 +29,38 @@ const qs = [
   },
 ];
 
-export default function FAQ() {
+export default function FAQ({ showHeader = true }: { showHeader?: boolean }) {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 bg-gray-50">
+    <section id="faq" className="py-24 bg-transparent">
       <div className="max-w-4xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-gray-600">
-            Have something else in mind? Reach out to us directly.
-          </p>
-        </div>
+        {showHeader && (
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#2f2850] mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-[#5a5377]">
+              Have something else in mind? Reach out to us directly.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           {qs.map((item, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all duration-200 hover:border-gray-200 hover:shadow-sm"
+              className="bg-white rounded-2xl border border-[#e5dcff] overflow-hidden transition-all duration-200 hover:border-[#cfc2ff] hover:shadow-sm"
             >
               <button
                 className="w-full text-left px-6 py-5 flex items-center justify-between gap-4"
                 onClick={() => setOpen(open === idx ? null : idx)}
                 aria-expanded={open === idx}
               >
-                <span className="font-semibold text-gray-900 text-lg">
+                <span className="font-semibold text-[#232a39] text-lg">
                   {item.q}
                 </span>
-                <span className="text-gray-400 flex-shrink-0">
+                <span className="text-[#9aa1af] flex-shrink-0">
                   {open === idx ? <Minus size={20} /> : <Plus size={20} />}
                 </span>
               </button>
@@ -69,7 +71,7 @@ export default function FAQ() {
                     : "max-h-0 opacity-0"
                 }`}
               >
-                <p className="text-gray-600 leading-relaxed">{item.a}</p>
+                <p className="text-[#4f5969] leading-relaxed">{item.a}</p>
               </div>
             </div>
           ))}
