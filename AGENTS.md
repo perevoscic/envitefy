@@ -284,6 +284,14 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Input (JSON)**: `{ events: NormalizedEvent[] }`.
 - **Output**: `{ ok: true, results: Array<{ index, id?, webLink?, error? }> }`.
 
+### Event OG Data — GET `/api/events/[id]/og-data`
+
+- **Purpose**: Return minimal event metadata for social image rendering.
+- **Auth**: None.
+- **Behavior**: Loads event data by slug/id and returns only fields needed by `src/app/event/[id]/opengraph-image.tsx` (`title`, `description`, `location`, and image data URLs). This keeps database imports out of the OG image route so it can stay on Edge runtime and avoid large serverless bundles.
+- **Output**: `{ title, description, location, thumbnail, attachmentDataUrl }` or `null` (404).
+- **Env**: `DATABASE_URL`.
+
 ### Event Access Unlock — POST `/api/events/[id]/unlock`
 
 - **Purpose**: Validate a private access code and grant a signed cookie so the invite unlocks without signing in.
@@ -592,6 +600,7 @@ Payload used by the authenticated calendar agents.
   - `AUTH_SECRET`: Optional; alternative read by auth setup. If both are set, either works.
   - `NEXTAUTH_URL`: External base URL for NextAuth; also used to compute callback redirects.
   - `PUBLIC_BASE_URL`: Optional; used by OAuth callbacks to construct external redirects when behind proxies.
+  - Dependency compatibility: keep `nodemailer` on major v6 (`^6.10.1`) while using `next-auth@4.x` to satisfy peerOptional ranges in npm/Vercel installs.
 - **Google OAuth/Calendar**
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 - **Microsoft OAuth/Graph**
@@ -626,6 +635,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2026-02-15: **OG image + deploy guardrails**: Documented `GET /api/events/[id]/og-data` as the dedicated metadata agent for OG rendering so `/event/[id]/opengraph-image` can remain Edge/lightweight and avoid oversized serverless bundles. Also documented dependency pin guidance: with `next-auth@4.x`, keep `nodemailer` on `^6.10.1` to prevent Vercel npm peer-resolution failures.
 - 2026-01-XX: **Football roster editing**: Resolved keyboard focus loss inside `/event/football-season/customize` by mirroring the Passcode input pattern—each roster text/textarea uses a local `useState`/`onBlur` commit (`src/components/event-templates/FootballSeasonTemplate.tsx`) while the parent editor now clones only the touched field/state before saving (`src/app/event/football-season/customize/page.tsx`) so remounts disappear. Document this walkthrough when future roster inputs misbehave.
 - 2026-02-XX: **Cheerleading design polish**: The cheer edit preview now waits for saved data (no more flash of the default template), the Design tab auto-expands its theme grid, and the palette list is capped at ~40vh so typography stays visible while scrolling; publishing now requires a street address and the public view renders Events & Competitions, Roster, Logistics, and Uniform/Props from the advanced sections so every filled field stays visible.
 - 2026-02-XX: **Soccer match coach view**: Expanded `/event/soccer/customize` detail fields (meeting point, travel plan, snack duty, keeper rotation, training focus, equipment, weather plan, staff contact, etc.) with meaningful prefills, added a loading guard so edits no longer flash the default template, and kept the Design panel expanded like other sports templates so every filled field publishes cleanly.

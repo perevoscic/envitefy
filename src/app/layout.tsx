@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "./providers";
 import type { Session } from "next-auth";
 import { getServerSession } from "next-auth";
@@ -282,6 +283,7 @@ export default async function RootLayout({
             </MainContentWrapper>
           </Providers>
         </Suspense>
+        <SpeedInsights />
       </body>
     </html>
   );
