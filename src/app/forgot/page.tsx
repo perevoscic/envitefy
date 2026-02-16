@@ -1,33 +1,71 @@
 "use client";
-import type { Metadata } from "next";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
+type ForgotPasswordResult = {
+  kind: "success" | "warning" | "error";
+  text: string;
+  hint?: string | null;
+  resetUrl?: string | null;
+};
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<ForgotPasswordResult | null>(null);
+  const isNonProd = process.env.NODE_ENV !== "production";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+    setResult(null);
     try {
       const res = await fetch("/api/auth/forgot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || "Failed to send reset email");
-      setMessage(
-        json.resetUrl
-          ? `Reset link (dev): ${json.resetUrl}`
-          : "If an account exists, a reset link has been sent."
-      );
+      const contentType = res.headers.get("content-type") || "";
+      const isJson = contentType.toLowerCase().includes("application/json");
+      const json = isJson ? await res.json().catch(() => ({})) : {};
+      const text = isJson ? "" : await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(
+          (typeof json.error === "string" && json.error) ||
+            (text || "").trim() ||
+            "Failed to send reset email"
+        );
+      }
+
+      if (json.emailSent === false) {
+        const resetUrl = typeof json.resetUrl === "string" ? json.resetUrl : null;
+        const hint = isNonProd
+          ? typeof json.reason === "string" && json.reason.trim().length > 0
+            ? `Diagnostic: ${json.reason}`
+            : "Diagnostic: reset email was not delivered. Check local email provider configuration and server logs."
+          : null;
+
+        setResult({
+          kind: "warning",
+          text: resetUrl
+            ? "Reset email was not delivered, but a development reset link is available below."
+            : "No reset email was sent for this request.",
+          hint,
+          resetUrl,
+        });
+        return;
+      }
+
+      setResult({
+        kind: "success",
+        text: "If an account exists, a reset link has been sent.",
+      });
     } catch (err: any) {
-      setMessage(err?.message || "Failed to send reset email");
+      setResult({
+        kind: "error",
+        text: err?.message || "Failed to send reset email",
+      });
     } finally {
       setLoading(false);
     }
@@ -74,10 +112,34 @@ export default function ForgotPasswordPage() {
             {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
-        {message && (
-          <p className="mt-4 text-sm text-muted-foreground break-all">
-            {message}
-          </p>
+        {result && (
+          <div
+            className={`mt-4 rounded-xl border p-3 text-sm ${
+              result.kind === "error"
+                ? "border-red-300 bg-red-50 text-red-800"
+                : result.kind === "warning"
+                ? "border-amber-300 bg-amber-50 text-amber-800"
+                : "border-emerald-300 bg-emerald-50 text-emerald-800"
+            }`}
+          >
+            <p className="break-all">{result.text}</p>
+            {result.resetUrl && (
+              <p className="mt-2 break-all">
+                <span className="font-medium">Reset link (dev): </span>
+                <a
+                  href={result.resetUrl}
+                  className="underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {result.resetUrl}
+                </a>
+              </p>
+            )}
+            {result.hint && (
+              <p className="mt-2 text-xs opacity-90">{result.hint}</p>
+            )}
+          </div>
         )}
       </section>
     </main>
