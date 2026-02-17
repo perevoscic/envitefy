@@ -1,4 +1,5 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+import nodemailer from "nodemailer";
 import { getUserByEmail } from "@/lib/db";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 import type { SignupForm, SignupResponse } from "@/types/signup";
@@ -44,6 +45,109 @@ function resolveNoReplySender(context: string): { from: string; usedFallback: bo
   }
 
   return { from, usedFallback };
+}
+
+function readEnv(name: string): string | undefined {
+  const value = process.env[name];
+  if (!value || value.trim().length === 0) return undefined;
+  return value.trim();
+}
+
+async function sendViaSmtp(params: {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  replyTo?: string;
+}): Promise<{ sent: boolean; reason?: string; messageId?: string }> {
+  const host = readEnv("SMTP_HOST");
+  const portRaw = readEnv("SMTP_PORT");
+  const user = readEnv("SMTP_USER");
+  const pass = readEnv("SMTP_PASS") || readEnv("SMTP_PASSWORD");
+  const secureRaw = readEnv("SMTP_SECURE");
+
+  if (!host || !portRaw || !user || !pass) {
+    return { sent: false, reason: "SMTP is not fully configured" };
+  }
+
+  const port = Number.parseInt(portRaw, 10) || 587;
+  const secure = (secureRaw || "").toLowerCase() === "true" || port === 465;
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+  } as any);
+
+  const info = await transporter.sendMail({
+    from: params.from,
+    to: params.to,
+    subject: params.subject,
+    text: params.text,
+    html: params.html,
+    replyTo: params.replyTo,
+  });
+  return { sent: true, messageId: info?.messageId };
+}
+
+async function sendViaResend(params: {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<{ sent: boolean; reason?: string; id?: string }> {
+  const apiKey = readEnv("RESEND_API_KEY");
+  if (!apiKey) {
+    return { sent: false, reason: "RESEND_API_KEY is not configured" };
+  }
+
+  const preferredFrom = readEnv("RESEND_FROM_EMAIL") || params.from;
+  const fallbackFrom = "Envitefy <onboarding@resend.dev>";
+
+  const attempt = async (fromValue: string) => {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromValue,
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+      }),
+    });
+    const data = (await res.json().catch(() => null)) as { id?: string; message?: string; error?: unknown } | null;
+    const errorMessage =
+      (typeof data?.message === "string" && data.message) ||
+      (typeof data?.error === "string" && data.error) ||
+      `Resend HTTP ${res.status}`;
+    return { ok: res.ok, status: res.status, id: data?.id, errorMessage };
+  };
+
+  const first = await attempt(preferredFrom);
+  if (first.ok) return { sent: true, id: first.id };
+
+  const shouldTryFallback =
+    preferredFrom !== fallbackFrom &&
+    (first.status === 400 ||
+      first.status === 401 ||
+      first.status === 403 ||
+      first.status === 422 ||
+      /domain|from|verify|authorized|permission/i.test(first.errorMessage));
+
+  if (!shouldTryFallback) {
+    return { sent: false, reason: first.errorMessage };
+  }
+
+  const second = await attempt(fallbackFrom);
+  if (second.ok) return { sent: true, id: second.id };
+  return { sent: false, reason: second.errorMessage };
 }
 
 export async function sendGiftEmail(params: {
@@ -217,39 +321,69 @@ export async function sendPasswordResetEmail(params: {
     footerText,
   });
 
-  const cmd = new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: {
-        Subject: { Data: subject },
-        Body: {
-          Text: { Data: text },
-          Html: { Data: html },
-        },
-      },
-    },
-  });
   try {
-    const result = await getSes().send(cmd);
+    const resendResult = await sendViaResend({
+      from,
+      to,
+      subject,
+      text,
+      html,
+    });
+    if (!resendResult.sent) {
+      throw new Error(resendResult.reason || "Resend send failed");
+    }
     try {
       console.log("[email] sendPasswordResetEmail success", {
         to: maskEmail(to),
         from: maskEmail(from),
-        messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
-        requestId: (result as any)?.$metadata?.requestId || null,
-        statusCode: (result as any)?.$metadata?.httpStatusCode || null,
+        provider: "resend",
+        messageId: resendResult.id || null,
       });
     } catch {}
   } catch (err: any) {
+    try {
+      const smtpResult = await sendViaSmtp({
+        from,
+        to,
+        subject,
+        text,
+        html,
+      });
+      if (smtpResult.sent) {
+        try {
+          console.log("[email] sendPasswordResetEmail SMTP fallback success", {
+            to: maskEmail(to),
+            from: maskEmail(from),
+            messageId: smtpResult.messageId || null,
+            resendError: err?.message || null,
+          });
+        } catch {}
+        return;
+      }
+      try {
+        console.warn("[email] sendPasswordResetEmail SMTP fallback skipped", {
+          to: maskEmail(to),
+          reason: smtpResult.reason || "unknown",
+          resendError: err?.message || null,
+        });
+      } catch {}
+    } catch (smtpErr: any) {
+      try {
+        console.error("[email] sendPasswordResetEmail SMTP fallback failed", {
+          to: maskEmail(to),
+          from: maskEmail(from),
+          error: smtpErr?.message,
+          name: smtpErr?.name,
+        });
+      } catch {}
+    }
+
     try {
       console.error("[email] sendPasswordResetEmail failed", {
         to: maskEmail(to),
         from: maskEmail(from),
         error: err?.message,
         name: err?.name,
-        statusCode: err?.$metadata?.httpStatusCode || null,
-        requestId: err?.$metadata?.requestId || null,
       });
     } catch {}
     throw err;

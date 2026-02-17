@@ -24,9 +24,9 @@ This document describes the app’s server-side agents (API routes) that extract
 
 - **Purpose**: Generate a password reset token and email the reset link.
 - **Auth**: None (always responds 200 to avoid user enumeration).
-- **Behavior**: Sends reset email when the user exists. Non-production responses include the reset URL and error reason if email sending fails.
-- **From/Sender**: Prefers `SES_FROM_EMAIL_NO_REPLY`; falls back to `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_CONTACT`, then `SMTP_FROM`, then `no-reply@envitefy.com`. Logs a warning when using a fallback sender.
-- **Env**: Standard AWS credentials and region envs; optionally SMTP fallback as above.
+- **Behavior**: Sends reset email when the user exists. When `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are configured, the route generates a Supabase Auth recovery link (and auto-seeds a Supabase auth user for legacy app accounts that do not yet exist there) and emails that link. If Supabase link generation fails, it falls back to the local `password_resets` token flow. Non-production responses include the reset URL and error reason if email sending fails.
+- **From/Sender**: Prefers `RESEND_FROM_EMAIL` when set, otherwise uses `SES_FROM_EMAIL_NO_REPLY`, then `SES_FROM_EMAIL`, then `SES_FROM_EMAIL_CONTACT`, then `SMTP_FROM`, then `no-reply@envitefy.com`.
+- **Env**: `RESEND_API_KEY` (preferred, for password reset delivery) with optional `RESEND_FROM_EMAIL`; optionally SMTP fallback with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`/`SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM`.
 
 ### Event Share — POST `/api/events/share`
 
@@ -614,20 +614,24 @@ Payload used by the authenticated calendar agents.
   - `NEXTAUTH_URL`: External base URL for NextAuth; also used to compute callback redirects.
   - `PUBLIC_BASE_URL`: Optional; used by OAuth callbacks to construct external redirects when behind proxies.
   - Dependency compatibility: keep `nodemailer` on major v6 (`^6.10.1`) while using `next-auth@4.x` to satisfy peerOptional ranges in npm/Vercel installs.
+- **Supabase Auth (password reset bridge)**
+  - `SUPABASE_URL`: Supabase project URL.
+  - `SUPABASE_SERVICE_ROLE_KEY`: Required for server-side recovery link generation and user lookup during reset completion.
 - **Google OAuth/Calendar**
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 - **Microsoft OAuth/Graph**
   - `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_REDIRECT_URI`, `OUTLOOK_TENANT_ID` (default `common`).
   - Token refresh requests include scopes: `offline_access https://graph.microsoft.com/Calendars.ReadWrite`.
-- **Resend (email campaigns)**
-  - `RESEND_API_KEY`: Required for admin bulk email campaigns via `/api/admin/campaigns/send`.
+- **Resend (email campaigns + password reset)**
+  - `RESEND_API_KEY`: Required for admin bulk email campaigns via `/api/admin/campaigns/send`; also used by `/api/auth/forgot` for password reset delivery.
+  - `RESEND_FROM_EMAIL`: Optional default sender (falls back to no-reply/onboarding sender when omitted).
 - **GCP Vision**
   - Prefer inline: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
   - Or ADC file path: `GOOGLE_APPLICATION_CREDENTIALS`.
 - **OpenAI (optional OCR fallback)**
 - `OPENAI_API_KEY`, `LLM_MODEL` (default `gpt-5.1-mini`).
 - **AWS SES (email senders)**
-  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Envitefy <no-reply@envitefy.com>` (password reset, system mail)
+  - `SES_FROM_EMAIL_NO_REPLY` e.g. `Envitefy <no-reply@envitefy.com>` (system mail; password reset now prefers Resend)
   - `SES_FROM_EMAIL_GIFT` e.g. `"Envitefy Gifts" <gift@envitefy.com>` (gift delivery emails)
   - `SES_FROM_EMAIL_CONTACT` e.g. `"Envitefy Contact" <contact@envitefy.com>` (reserved for contact replies)
   - Region: `AWS_REGION` or `AWS_DEFAULT_REGION` and standard AWS credentials
@@ -648,6 +652,8 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2026-02-16: Added Supabase Auth bridge for password reset: `/api/auth/forgot` now generates Supabase recovery links when Supabase envs are configured (with fallback to local `password_resets` tokens), and `/api/auth/reset` accepts Supabase recovery access tokens to update the app's password hash.
+- 2026-02-16: Password reset delivery (`POST /api/auth/forgot`) now sends through Resend first (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`) with SMTP fallback. Updated agent/env docs to remove AWS SES as a requirement for reset-email delivery.
 - 2026-02-15: **OG image + deploy guardrails**: Documented `GET /api/events/[id]/og-data` as the dedicated metadata agent for OG rendering so `/event/[id]/opengraph-image` can remain Edge/lightweight and avoid oversized serverless bundles. Also documented dependency pin guidance: with `next-auth@4.x`, keep `nodemailer` on `^6.10.1` to prevent Vercel npm peer-resolution failures.
 - 2026-01-XX: **Football roster editing**: Resolved keyboard focus loss inside `/event/football-season/customize` by mirroring the Passcode input pattern—each roster text/textarea uses a local `useState`/`onBlur` commit (`src/components/event-templates/FootballSeasonTemplate.tsx`) while the parent editor now clones only the touched field/state before saving (`src/app/event/football-season/customize/page.tsx`) so remounts disappear. Document this walkthrough when future roster inputs misbehave.
 - 2026-02-XX: **Cheerleading design polish**: The cheer edit preview now waits for saved data (no more flash of the default template), the Design tab auto-expands its theme grid, and the palette list is capped at ~40vh so typography stays visible while scrolling; publishing now requires a street address and the public view renders Events & Competitions, Roster, Logistics, and Uniform/Props from the advanced sections so every filled field stays visible.

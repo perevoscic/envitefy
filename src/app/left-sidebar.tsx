@@ -3763,7 +3763,7 @@ export default function LeftSidebar() {
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="pointer-events-auto w-45 rounded-xl border border-border bg-surface/95 backdrop-blur shadow-2xl overflow-visible"
+                    className="pointer-events-auto w-56 rounded-2xl border border-[#d9d3f3] bg-[linear-gradient(180deg,#ffffff_0%,#f3efff_100%)] shadow-[0_20px_44px_rgba(92,67,156,0.18)] overflow-visible"
                   >
                     <div className="p-2">
                       <Link
@@ -3771,8 +3771,9 @@ export default function LeftSidebar() {
                         onClick={() => {
                           setMenuOpen(false);
                         }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                       >
+                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -3781,12 +3782,13 @@ export default function LeftSidebar() {
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5"
                           aria-hidden="true"
                         >
                           <circle cx="12" cy="7" r="4" />
                           <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                         </svg>
+                        </span>
                         <span className="text-sm md:text-base">Profile</span>
                       </Link>
 
@@ -3794,9 +3796,10 @@ export default function LeftSidebar() {
                         <button
                           type="button"
                           onClick={() => {}}
-                          className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                          className="group w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                         >
                           <div className="flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
@@ -3805,7 +3808,7 @@ export default function LeftSidebar() {
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              className="h-4 w-4"
+                              className="h-3.5 w-3.5"
                               aria-hidden="true"
                             >
                               <rect
@@ -3820,6 +3823,7 @@ export default function LeftSidebar() {
                               <line x1="8" y1="2" x2="8" y2="6" />
                               <line x1="3" y1="10" x2="21" y2="10" />
                             </svg>
+                            </span>
                             <span className="text-sm md:text-base">
                               Calendar
                             </span>
@@ -3832,7 +3836,7 @@ export default function LeftSidebar() {
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            className={`h-4 w-4 transition-transform ${
+                            className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
                               false ? "rotate-0" : "rotate-90"
                             }`}
                             aria-hidden="true"
@@ -3912,8 +3916,9 @@ export default function LeftSidebar() {
                         onClick={() => {
                           setMenuOpen(false);
                         }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                       >
+                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -3922,13 +3927,14 @@ export default function LeftSidebar() {
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5"
                           aria-hidden="true"
                         >
                           <circle cx="12" cy="12" r="10" />
                           <line x1="12" y1="16" x2="12" y2="12" />
                           <line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>
+                        </span>
                         <span className="text-sm md:text-base">About us</span>
                       </Link>
 
@@ -3937,12 +3943,13 @@ export default function LeftSidebar() {
                         onClick={() => {
                           setMenuOpen(false);
                         }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                       >
+                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
                         <svg
                           fill="currentColor"
                           viewBox="0 0 492.014 492.014"
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5"
                           aria-hidden="true"
                         >
                           <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
@@ -3953,6 +3960,7 @@ export default function LeftSidebar() {
                           <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
                           <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
                         </svg>
+                        </span>
                         <span className="text-sm md:text-base">Contact us</span>
                       </Link>
 
@@ -3963,7 +3971,7 @@ export default function LeftSidebar() {
                             onClick={() => {
                               setAdminOpenFloating((v) => !v);
                             }}
-                            className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
+                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                           >
                             <div className="flex items-center gap-3">
                               <svg
@@ -3974,7 +3982,7 @@ export default function LeftSidebar() {
                                 strokeWidth="2"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                className="h-4 w-4"
+                                className="h-4 w-4 text-[#6e655f]"
                                 aria-hidden="true"
                               >
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -3991,7 +3999,7 @@ export default function LeftSidebar() {
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              className={`h-4 w-4 transition-transform ${
+                              className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
                                 adminOpenFloating ? "rotate-0" : "rotate-90"
                               }`}
                               aria-hidden="true"
@@ -4000,14 +4008,14 @@ export default function LeftSidebar() {
                             </svg>
                           </button>
                           {adminOpenFloating && (
-                            <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-lg border border-border bg-surface/95 backdrop-blur shadow-2xl p-2 z-[999]">
+                            <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-xl border border-[#d9d3f3] bg-[#f6f3ff]/95 backdrop-blur-xl shadow-[0_14px_30px_rgba(92,67,156,0.16)] p-2 z-[999]">
                               <Link
                                 href="/admin"
                                 onClick={() => {
                                   setMenuOpen(false);
                                   setAdminOpenFloating(false);
                                 }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-colors"
                               >
                                 <span className="text-sm md:text-base">
                                   Dashboard
@@ -4019,7 +4027,7 @@ export default function LeftSidebar() {
                                   setMenuOpen(false);
                                   setAdminOpenFloating(false);
                                 }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-colors"
                               >
                                 <span className="text-sm md:text-base">
                                   Emails
@@ -4031,7 +4039,7 @@ export default function LeftSidebar() {
                                   setMenuOpen(false);
                                   setAdminOpenFloating(false);
                                 }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-md text-foreground/90 hover:text-foreground hover:bg-surface"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-colors"
                               >
                                 <span className="text-sm md:text-base">
                                   Campaigns
@@ -4042,10 +4050,12 @@ export default function LeftSidebar() {
                         </div>
                       )}
 
+                      <div className="my-1 h-px bg-gradient-to-r from-transparent via-[#d8d2f3] to-transparent" />
                       <button
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
+                        className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#f0618a] hover:text-[#e44a79] hover:bg-[#ffeef5] transition-all"
                       >
+                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ffe8f0] text-current group-hover:bg-[#ffdce9]">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -4054,13 +4064,14 @@ export default function LeftSidebar() {
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5 text-current"
                           aria-hidden="true"
                         >
                           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                           <polyline points="16 17 21 12 16 7" />
                           <line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
+                        </span>
                         <span className="text-sm md:text-base">Log out</span>
                       </button>
                     </div>

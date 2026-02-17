@@ -1797,31 +1797,31 @@ function SnapEventModal({
     <div className="fixed inset-0 z-[70] overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-3 sm:p-5 md:px-8">
         <div
-          className="absolute inset-0 bg-gradient-to-br from-[#2f1d47]/80 via-[#1a1025]/75 to-[#0f0a15]/85 backdrop-blur-xl"
+          className="absolute inset-0 bg-gradient-to-br from-[#2f1d47]/62 via-[#3c2b5f]/58 to-[#2d2346]/62 backdrop-blur-xl"
           onClick={onClose}
         />
 
         <div
-          className="relative z-10 w-full max-w-3xl h-[90dvh] max-h-[90dvh] rounded-[32px] border border-white/60 bg-gradient-to-bl from-[#F9F2FF] via-white to-[#FFEAF4] shadow-[0_25px_60px_rgba(101,67,145,0.25)] backdrop-blur-2xl overflow-y-auto"
+          className="relative z-10 w-full max-w-3xl h-[90dvh] max-h-[90dvh] rounded-[32px] border border-[#ddd5f6] bg-gradient-to-bl from-[#f3efff] via-[#ffffff] to-[#f7f3ff] shadow-[0_25px_60px_rgba(101,67,145,0.20)] backdrop-blur-2xl overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex h-full flex-col">
-            <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-[#E8DFFF]/60 bg-gradient-to-r from-white/95 via-[#F9F2FF]/90 to-white/85 backdrop-blur-xl px-5 py-4 sm:px-7">
+            <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-[#e3dbf8] bg-gradient-to-r from-[#ffffff]/95 via-[#f4efff]/92 to-[#ffffff]/90 backdrop-blur-xl px-5 py-4 sm:px-7">
               <div className="flex-1 pt-1">
                 <h2
-                  className="text-lg sm:text-2xl font-semibold text-foreground mb-1 tracking-tight"
+                  className="text-lg sm:text-2xl font-semibold text-[#3e2f68] mb-1 tracking-tight"
                   style={{ fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif' }}
                 >
                   Review Event Details
                 </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-[#7f73a9] leading-relaxed">
                   Tweak anything before you save or send to a calendar.
                 </p>
               </div>
               <button
                 type="button"
                 aria-label="Close event editor"
-                className="rounded-2xl border border-border/40 bg-white/85 hover:bg-white shadow-sm hover:shadow-md transition-all p-2.5 text-foreground/80 hover:text-foreground hover:scale-105"
+                className="rounded-2xl border border-[#ddd5f6] bg-white/90 hover:bg-[#f7f3ff] shadow-sm hover:shadow-md transition-all p-2.5 text-[#7f73a9] hover:text-[#3e2f68] hover:scale-105"
                 onClick={onClose}
               >
                 <CloseIcon className="h-4 w-4" />
@@ -1832,13 +1832,13 @@ function SnapEventModal({
               <div className="space-y-2.5">
                 <label
                   htmlFor="snap-event-title"
-                  className="text-sm font-semibold text-foreground block"
+                  className="text-sm font-semibold text-[#43336d] block"
                 >
                   Title
                 </label>
                 <input
                   id="snap-event-title"
-                  className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                   value={event.title}
                   onChange={(e) =>
                     updateEvent((current) => ({
@@ -1853,13 +1853,13 @@ function SnapEventModal({
                 <div className="space-y-2.5">
                   <label
                     htmlFor="snap-event-start"
-                    className="text-sm font-semibold text-foreground block"
+                    className="text-sm font-semibold text-[#43336d] block"
                   >
                     Start
                   </label>
                   <input
                     id="snap-event-start"
-                    className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                    className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                     value={event.start || ""}
                     onChange={(e) => {
                       const value = e.target.value || null;
@@ -1870,13 +1870,13 @@ function SnapEventModal({
                 <div className="space-y-2.5">
                   <label
                     htmlFor="snap-event-end"
-                    className="text-sm font-semibold text-foreground block"
+                    className="text-sm font-semibold text-[#43336d] block"
                   >
                     End (optional)
                   </label>
                   <input
                     id="snap-event-end"
-                    className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                    className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                     value={event.end || ""}
                     onChange={(e) => {
                       const value = e.target.value || null;
@@ -1889,13 +1889,13 @@ function SnapEventModal({
               <div className="space-y-2.5">
                 <label
                   htmlFor="snap-event-location"
-                  className="text-sm font-semibold text-foreground block"
+                  className="text-sm font-semibold text-[#43336d] block"
                 >
                   Location
                 </label>
                 <input
                   id="snap-event-location"
-                  className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                   value={event.location}
                   onChange={(e) =>
                     updateEvent((current) => ({
@@ -1909,13 +1909,13 @@ function SnapEventModal({
               <div className="space-y-2.5">
                 <label
                   htmlFor="snap-event-description"
-                  className="text-sm font-semibold text-foreground block"
+                  className="text-sm font-semibold text-[#43336d] block"
                 >
                   Description
                 </label>
                 <textarea
                   id="snap-event-description"
-                  className="w-full rounded-xl border border-border/60 bg-white/75 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white resize-none"
+                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg resize-none"
                   rows={4}
                   value={event.description}
                   onChange={(e) =>
@@ -1930,7 +1930,7 @@ function SnapEventModal({
               <div className="space-y-2.5">
                 <label
                   htmlFor="snap-event-rsvp"
-                  className="text-sm font-semibold text-foreground block"
+                  className="text-sm font-semibold text-[#43336d] block"
                 >
                   RSVP (Phone or Email)
                 </label>
@@ -1940,7 +1940,7 @@ function SnapEventModal({
                   inputMode="tel"
                   maxLength={64}
                   style={{ minWidth: "14ch" }}
-                  className="w-full rounded-xl border border-border/60 bg-white/80 backdrop-blur-sm text-foreground px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                   placeholder="e.g., RSVP: Taya 850-555-8888 or contact@example.com"
                   value={event.rsvp || ""}
                   onChange={(e) =>
@@ -1950,13 +1950,13 @@ function SnapEventModal({
                     }))
                   }
                 />
-                <p className="text-xs text-muted-foreground/70 mt-1.5 pl-1">
+                <p className="text-xs text-[#8a7fb3] mt-1.5 pl-1">
                   Phone number or email for RSVP. Detected info is pre-filled.
                 </p>
               </div>
 
               <div className="space-y-3">
-                <span className="text-sm font-semibold text-foreground block">
+                <span className="text-sm font-semibold text-[#43336d] block">
                   Reminders
                 </span>
                 <div className="space-y-3">
@@ -1969,7 +1969,7 @@ function SnapEventModal({
                     return (
                       <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <select
-                          className="w-full sm:w-[240px] rounded-xl border border-border/60 bg-white/80 backdrop-blur-sm text-foreground px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary shadow-sm hover:shadow-md focus:shadow-lg focus:bg-white"
+                          className="w-full sm:w-[240px] rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                           value={currentDays}
                           onChange={(e) => {
                             const days = Math.max(1, Number(e.target.value) || 1);
@@ -2020,7 +2020,7 @@ function SnapEventModal({
                   <div>
                     <button
                       type="button"
-                      className="rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/15 px-4 py-2.5 text-sm text-primary font-semibold transition-all hover:border-primary/60 hover:scale-105 shadow-sm"
+                      className="rounded-xl border border-[#c8baf0] bg-[#f2edff] hover:bg-[#ebe3ff] px-4 py-2.5 text-sm text-[#6a58a8] font-semibold transition-all hover:border-[#b8a5ea] hover:scale-105 shadow-sm"
                       onClick={() =>
                         updateEvent((current) => {
                           const base = Array.isArray(current.reminders)
@@ -2040,12 +2040,12 @@ function SnapEventModal({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6 border-t border-border/40 bg-white/70 backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6 border-t border-[#e3dbf8] bg-gradient-to-r from-[#ffffff]/90 via-[#f5f1ff]/90 to-[#ffffff]/90 backdrop-blur-md">
               <div className="flex flex-wrap items-center gap-3">
                 {connectedCalendars.google ? (
                   <button
                     type="button"
-                    className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
+                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
                     onClick={addGoogle}
                   >
                     <span>Add to</span>
@@ -2054,7 +2054,7 @@ function SnapEventModal({
                 ) : (
                   <button
                     type="button"
-                    className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-primary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-primary/40 hover:scale-105 active:scale-100"
+                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
                     onClick={connectGoogle}
                   >
                     <span>Connect to</span>
@@ -2064,7 +2064,7 @@ function SnapEventModal({
                 {connectedCalendars.microsoft ? (
                   <button
                     type="button"
-                    className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
                     onClick={addOutlook}
                   >
                     <span>Add to</span>
@@ -2078,7 +2078,7 @@ function SnapEventModal({
                 ) : (
                   <button
                     type="button"
-                    className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
                     onClick={connectOutlook}
                   >
                     <span>Connect to</span>
@@ -2093,7 +2093,7 @@ function SnapEventModal({
                 {isAppleDevice && (
                   <button
                     type="button"
-                    className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
                     onClick={addAppleCalendar || dlIcs}
                   >
                     <span>Add to</span>
@@ -2110,14 +2110,14 @@ function SnapEventModal({
                 <button
                   type="button"
                   disabled={!event?.start}
-                  className="rounded-xl bg-secondary hover:bg-secondary/90 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-secondary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-secondary/40 hover:scale-105 active:scale-100"
+                  className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
                   onClick={saveToEnvitefy}
                 >
                   <span>Save to Envitefy</span>
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl border border-border/50 bg-white/70 hover:bg-white/85 backdrop-blur-sm px-5 py-3 text-sm text-foreground font-semibold transition-all hover:border-border hover:scale-105 active:scale-100 shadow-sm"
+                  className="rounded-xl border border-[#d8d1f3] bg-white/90 hover:bg-[#f4efff] backdrop-blur-sm px-5 py-3 text-sm text-[#4b3f72] font-semibold transition-all hover:border-[#c7b9ed] hover:scale-105 active:scale-100 shadow-sm"
                   onClick={onClose}
                 >
                   Cancel

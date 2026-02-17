@@ -9,6 +9,8 @@ export default function ResetPasswordPage() {
   const params = useSearchParams();
   const router = useRouter();
   const [token, setToken] = useState("");
+  const [supabaseAccessToken, setSupabaseAccessToken] = useState("");
+  const [provider, setProvider] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,12 +18,27 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const t = params.get("token") || "";
+    const p = (params.get("provider") || "").trim().toLowerCase();
     setToken(t);
+    setProvider(p);
+
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const hashParams = new URLSearchParams(hash);
+      const at = hashParams.get("access_token") || "";
+      if (at) setSupabaseAccessToken(at);
+    }
   }, [params]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) {
+    if (provider === "supabase" && !supabaseAccessToken) {
+      setMessage("Supabase reset session is missing or expired. Please request a new reset link.");
+      return;
+    }
+    if (provider !== "supabase" && !token) {
       setMessage("Reset token is missing");
       return;
     }
@@ -35,7 +52,11 @@ export default function ResetPasswordPage() {
       const res = await fetch("/api/auth/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword }),
+        body: JSON.stringify({
+          token: provider === "supabase" ? "" : token,
+          supabaseAccessToken: provider === "supabase" ? supabaseAccessToken : "",
+          newPassword,
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || "Failed to reset password");
