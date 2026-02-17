@@ -175,7 +175,7 @@ export default function Dashboard() {
         setPreviewKind(null);
       }
     },
-    [clearScanTimers]
+    [clearScanTimers],
   );
 
   const startScanUi = useCallback(
@@ -188,7 +188,9 @@ export default function Dashboard() {
       }
       currentPreviewUrlRef.current = null;
 
-      const nextPreviewKind: SnapPreviewKind = selected.type.startsWith("image/")
+      const nextPreviewKind: SnapPreviewKind = selected.type.startsWith(
+        "image/",
+      )
         ? "image"
         : selected.type === "application/pdf"
           ? "pdf"
@@ -219,7 +221,7 @@ export default function Dashboard() {
         });
       }, 100);
     },
-    [clearScanTimers]
+    [clearScanTimers],
   );
 
   const finishScanUi = useCallback(async () => {
@@ -286,7 +288,7 @@ export default function Dashboard() {
       }
       console.error("[snap-upload]", payload, err);
     },
-    []
+    [],
   );
 
   const [connected, setConnected] = useState<{
@@ -340,7 +342,8 @@ export default function Dashboard() {
               category,
               title: row?.title || data?.title || null,
             });
-            if (inferred && !visibleTemplateKeys.includes(inferred)) return null;
+            if (inferred && !visibleTemplateKeys.includes(inferred))
+              return null;
             return {
               id: row.id,
               title: row.title || "Event",
@@ -361,7 +364,7 @@ export default function Dashboard() {
   const visibleTemplateHrefs = useMemo(() => {
     const visible = new Set<TemplateKey>(visibleTemplateKeys);
     return TEMPLATE_DEFINITIONS.filter((d) => visible.has(d.key)).map(
-      (d) => d.href
+      (d) => d.href,
     );
   }, [visibleTemplateKeys]);
 
@@ -421,7 +424,7 @@ export default function Dashboard() {
       }
       currentPreviewUrlRef.current = null;
     },
-    [clearScanTimers]
+    [clearScanTimers],
   );
 
   const parseStartToIso = useCallback(
@@ -436,7 +439,7 @@ export default function Dashboard() {
       const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
       return parsed ? new Date(parsed.getTime()).toISOString() : null;
     },
-    []
+    [],
   );
 
   const normalizeAddress = useCallback((raw: string) => {
@@ -475,206 +478,210 @@ export default function Dashboard() {
         timezone,
       } as EventFields;
     },
-    [normalizeAddress, parseStartToIso]
+    [normalizeAddress, parseStartToIso],
   );
 
-  const ingest = useCallback(async (incoming: File) => {
-    setLoading(true);
-    setError(null);
-    cancelledByUserRef.current = false;
+  const ingest = useCallback(
+    async (incoming: File) => {
+      setLoading(true);
+      setError(null);
+      cancelledByUserRef.current = false;
 
-    // Validate file size before upload (10 MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10 MB
-    if (incoming.size > maxSize) {
-      setError("File is too large. Please upload a file smaller than 10 MB.");
-      resetScanUi();
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // On Android, file objects from file inputs can become invalid during async upload.
-      // Read the file into memory first to capture the data before it becomes stale.
-      let fileToUpload: File = incoming;
-      try {
-        // Read file into ArrayBuffer, then create a new File from it
-        // This ensures the data is captured in memory before the original file reference becomes stale
-        const arrayBuffer = await incoming.arrayBuffer();
-        fileToUpload = new File([arrayBuffer], incoming.name, {
-          type: incoming.type || "application/octet-stream",
-          lastModified: incoming.lastModified,
-        });
-      } catch (readErr) {
-        // If reading fails, fall back to using the original file object
-        // (works on most platforms but may fail on Android)
-        console.warn(
-          "Failed to read file into memory, using original file object:",
-          readErr
-        );
-      }
-
-      const form = new FormData();
-      form.append("file", fileToUpload);
-
-      // Add timeout handling for mobile/network issues
-      const controller = new AbortController();
-      activeOcrAbortRef.current = controller;
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-
-      let res: Response;
-      try {
-        res = await fetch("/api/ocr", {
-          method: "POST",
-          body: form,
-          signal: controller.signal,
-          mode: "cors",
-          // Ensure credentials are included for authenticated requests
-          credentials: "include",
-        });
-        clearTimeout(timeoutId);
-      } catch (fetchErr) {
-        clearTimeout(timeoutId);
-        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
-          if (cancelledByUserRef.current) {
-            throw new Error("__scan_cancelled__");
-          }
-          throw new Error(
-            "Upload timed out. Please check your connection and try again."
-          );
-        }
-        logUploadIssue(fetchErr, "fetch", {
-          fileName: incoming.name,
-          fileSize: incoming.size,
-          fileType: incoming.type,
-        });
-        // Network errors, CORS issues, etc.
-        const errorMessage =
-          fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-        throw new Error(
-          `Upload failed: ${errorMessage}. Please check your connection and try again.`
-        );
-      }
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMsg =
-          (payload as { error?: string })?.error ||
-          `Server error (${res.status})`;
-        logUploadIssue(new Error(errorMsg || "HTTP error"), "http", {
-          status: res.status,
-          statusText: res.statusText,
-          fileName: incoming.name,
-          fileSize: incoming.size,
-          fileType: incoming.type,
-        });
-        throw new Error(errorMsg || "Failed to scan file");
-      }
-
-      const data = await res.json();
-      const tz =
-        data?.fieldsGuess?.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC";
-      const formatIsoForInput = (iso: string | null, timezone: string) => {
-        if (!iso) return null;
-        try {
-          const dt = new Date(iso);
-          if (Number.isNaN(dt.getTime())) return iso;
-          return new Intl.DateTimeFormat(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "2-digit",
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: timezone,
-          }).format(dt);
-        } catch {
-          return iso;
-        }
-      };
-      // Clean RSVP field: extract ONLY phone number (digits only) or email (no "RSVP:", names, etc.)
-      // This ensures the field contains ONLY the contact info that can be used directly for SMS/email
-      const cleanRsvp = (
-        rsvpText: string | null | undefined
-      ): string | null => {
-        if (!rsvpText) return null;
-        // Try to extract phone number first
-        const phone = extractFirstPhoneNumber(rsvpText);
-        if (phone) {
-          // Return only digits (no formatting, no prefixes) - ready for SMS links
-          const digits = phone.replace(/\D/g, "");
-          if (digits.length === 11 && digits.startsWith("1")) {
-            // Remove leading 1, return 10 digits only
-            return digits.slice(1);
-          }
-          if (digits.length >= 10) {
-            // Return last 10 digits only
-            return digits.slice(-10);
-          }
-          return digits;
-        }
-        // Try to extract email (just the email address, no prefixes)
-        const email = findFirstEmail(rsvpText);
-        if (email) return email;
-        // If neither found, return null
-        return null;
-      };
-
-      const cleanedRsvp = data?.fieldsGuess?.rsvp
-        ? cleanRsvp(data.fieldsGuess.rsvp)
-        : null;
-
-      const adjusted = data?.fieldsGuess
-        ? {
-            ...data.fieldsGuess,
-            start: formatIsoForInput(data.fieldsGuess.start, tz),
-            end: formatIsoForInput(data.fieldsGuess.end, tz),
-            reminders: [{ minutes: 1440 }],
-            numberOfGuests: 0, // Keep in state for compatibility, but won't be saved
-            rsvp: cleanedRsvp,
-          }
-        : null;
-      await finishScanUi();
-      resetScanUi();
-      setEvent(adjusted);
-      setModalOpen(Boolean(adjusted));
-      setOcrText(data.ocrText || "");
-      setUploadedFile(fileToUpload);
-      setOcrCategory(data?.category || null);
-    } catch (err) {
-      if (err instanceof Error && err.message === "__scan_cancelled__") {
-        setEvent(null);
-        setModalOpen(false);
-        setError(null);
+      // Validate file size before upload (10 MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10 MB
+      if (incoming.size > maxSize) {
+        setError("File is too large. Please upload a file smaller than 10 MB.");
+        resetScanUi();
+        setLoading(false);
         return;
       }
-      resetScanUi();
-      setEvent(null);
-      setModalOpen(false);
-      const alreadyLogged =
-        err instanceof Error &&
-        Boolean(
-          (err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged
-        );
-      if (!alreadyLogged) {
-        logUploadIssue(err, "ingest-final", {
-          fileName: incoming.name,
-          fileSize: incoming.size,
-          fileType: incoming.type,
-        });
+
+      try {
+        // On Android, file objects from file inputs can become invalid during async upload.
+        // Read the file into memory first to capture the data before it becomes stale.
+        let fileToUpload: File = incoming;
+        try {
+          // Read file into ArrayBuffer, then create a new File from it
+          // This ensures the data is captured in memory before the original file reference becomes stale
+          const arrayBuffer = await incoming.arrayBuffer();
+          fileToUpload = new File([arrayBuffer], incoming.name, {
+            type: incoming.type || "application/octet-stream",
+            lastModified: incoming.lastModified,
+          });
+        } catch (readErr) {
+          // If reading fails, fall back to using the original file object
+          // (works on most platforms but may fail on Android)
+          console.warn(
+            "Failed to read file into memory, using original file object:",
+            readErr,
+          );
+        }
+
+        const form = new FormData();
+        form.append("file", fileToUpload);
+
+        // Add timeout handling for mobile/network issues
+        const controller = new AbortController();
+        activeOcrAbortRef.current = controller;
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
+        let res: Response;
+        try {
+          res = await fetch("/api/ocr", {
+            method: "POST",
+            body: form,
+            signal: controller.signal,
+            mode: "cors",
+            // Ensure credentials are included for authenticated requests
+            credentials: "include",
+          });
+          clearTimeout(timeoutId);
+        } catch (fetchErr) {
+          clearTimeout(timeoutId);
+          if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+            if (cancelledByUserRef.current) {
+              throw new Error("__scan_cancelled__");
+            }
+            throw new Error(
+              "Upload timed out. Please check your connection and try again.",
+            );
+          }
+          logUploadIssue(fetchErr, "fetch", {
+            fileName: incoming.name,
+            fileSize: incoming.size,
+            fileType: incoming.type,
+          });
+          // Network errors, CORS issues, etc.
+          const errorMessage =
+            fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+          throw new Error(
+            `Upload failed: ${errorMessage}. Please check your connection and try again.`,
+          );
+        }
+
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          const errorMsg =
+            (payload as { error?: string })?.error ||
+            `Server error (${res.status})`;
+          logUploadIssue(new Error(errorMsg || "HTTP error"), "http", {
+            status: res.status,
+            statusText: res.statusText,
+            fileName: incoming.name,
+            fileSize: incoming.size,
+            fileType: incoming.type,
+          });
+          throw new Error(errorMsg || "Failed to scan file");
+        }
+
+        const data = await res.json();
+        const tz =
+          data?.fieldsGuess?.timezone ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone ||
+          "UTC";
+        const formatIsoForInput = (iso: string | null, timezone: string) => {
+          if (!iso) return null;
+          try {
+            const dt = new Date(iso);
+            if (Number.isNaN(dt.getTime())) return iso;
+            return new Intl.DateTimeFormat(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "2-digit",
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+              timeZone: timezone,
+            }).format(dt);
+          } catch {
+            return iso;
+          }
+        };
+        // Clean RSVP field: extract ONLY phone number (digits only) or email (no "RSVP:", names, etc.)
+        // This ensures the field contains ONLY the contact info that can be used directly for SMS/email
+        const cleanRsvp = (
+          rsvpText: string | null | undefined,
+        ): string | null => {
+          if (!rsvpText) return null;
+          // Try to extract phone number first
+          const phone = extractFirstPhoneNumber(rsvpText);
+          if (phone) {
+            // Return only digits (no formatting, no prefixes) - ready for SMS links
+            const digits = phone.replace(/\D/g, "");
+            if (digits.length === 11 && digits.startsWith("1")) {
+              // Remove leading 1, return 10 digits only
+              return digits.slice(1);
+            }
+            if (digits.length >= 10) {
+              // Return last 10 digits only
+              return digits.slice(-10);
+            }
+            return digits;
+          }
+          // Try to extract email (just the email address, no prefixes)
+          const email = findFirstEmail(rsvpText);
+          if (email) return email;
+          // If neither found, return null
+          return null;
+        };
+
+        const cleanedRsvp = data?.fieldsGuess?.rsvp
+          ? cleanRsvp(data.fieldsGuess.rsvp)
+          : null;
+
+        const adjusted = data?.fieldsGuess
+          ? {
+              ...data.fieldsGuess,
+              start: formatIsoForInput(data.fieldsGuess.start, tz),
+              end: formatIsoForInput(data.fieldsGuess.end, tz),
+              reminders: [{ minutes: 1440 }],
+              numberOfGuests: 0, // Keep in state for compatibility, but won't be saved
+              rsvp: cleanedRsvp,
+            }
+          : null;
+        await finishScanUi();
+        resetScanUi();
+        setEvent(adjusted);
+        setModalOpen(Boolean(adjusted));
+        setOcrText(data.ocrText || "");
+        setUploadedFile(fileToUpload);
+        setOcrCategory(data?.category || null);
+      } catch (err) {
+        if (err instanceof Error && err.message === "__scan_cancelled__") {
+          setEvent(null);
+          setModalOpen(false);
+          setError(null);
+          return;
+        }
+        resetScanUi();
+        setEvent(null);
+        setModalOpen(false);
+        const alreadyLogged =
+          err instanceof Error &&
+          Boolean(
+            (err as Error & { __snapUploadLogged?: boolean })
+              .__snapUploadLogged,
+          );
+        if (!alreadyLogged) {
+          logUploadIssue(err, "ingest-final", {
+            fileName: incoming.name,
+            fileSize: incoming.size,
+            fileType: incoming.type,
+          });
+        }
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to scan file. Please try again.");
+        }
+      } finally {
+        activeOcrAbortRef.current = null;
+        cancelledByUserRef.current = false;
+        setLoading(false);
       }
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to scan file. Please try again.");
-      }
-    } finally {
-      activeOcrAbortRef.current = null;
-      cancelledByUserRef.current = false;
-      setLoading(false);
-    }
-  }, [finishScanUi, logUploadIssue, resetScanUi]);
+    },
+    [finishScanUi, logUploadIssue, resetScanUi],
+  );
 
   const onFile = useCallback(
     (selected: File | null) => {
@@ -685,7 +692,7 @@ export default function Dashboard() {
       startScanUi(selected);
       void ingest(selected);
     },
-    [ingest, startScanUi]
+    [ingest, startScanUi],
   );
 
   const openCamera = useCallback(() => {
@@ -857,7 +864,7 @@ export default function Dashboard() {
     const stateParam = btoa(encodeURIComponent(jsonStr));
     window.open(
       `/api/google/auth?state=${encodeURIComponent(stateParam)}`,
-      "_blank"
+      "_blank",
     );
   }, [event, buildSubmissionEvent, setError]);
 
@@ -944,7 +951,7 @@ export default function Dashboard() {
               category: ocrCategory || null,
               data: payload.data,
             },
-          })
+          }),
         );
       }
     } catch (err) {
@@ -1072,7 +1079,7 @@ export default function Dashboard() {
               category: ocrCategory || null,
               data: payload.data,
             },
-          })
+          }),
         );
       }
     } catch (err) {
@@ -1199,7 +1206,7 @@ export default function Dashboard() {
               category: ocrCategory || null,
               data: payload.data,
             },
-          })
+          }),
         );
       }
 
@@ -1230,7 +1237,7 @@ export default function Dashboard() {
   }, [session]);
 
   const showScanSection = Boolean(
-    error || loading || scanStatus !== "idle" || (modalOpen && event)
+    error || loading || scanStatus !== "idle" || (modalOpen && event),
   );
 
   useEffect(() => {
@@ -1444,14 +1451,14 @@ function OnboardingModal({
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<TemplateKey[]>(
-    visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
+    visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS],
   );
 
   useEffect(() => {
     if (!open) return;
     setStep(1);
     setSelectedKeys(
-      visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
+      visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS],
     );
   }, [open, visibleTemplateKeys]);
 
@@ -1562,7 +1569,7 @@ function OnboardingModal({
           {step < 2 ? (
             <button
               type="button"
-              onClick={() => setStep((s) => ((s + 1) as 1 | 2))}
+              onClick={() => setStep((s) => (s + 1) as 1 | 2)}
               disabled={step === 1 && selectedKeys.length === 0}
               className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
             >
@@ -1786,7 +1793,7 @@ function SnapEventModal({
         return mutator(prev);
       });
     },
-    [setEvent]
+    [setEvent],
   );
 
   if (!open || !event) {
@@ -1810,7 +1817,10 @@ function SnapEventModal({
               <div className="flex-1 pt-1">
                 <h2
                   className="text-lg sm:text-2xl font-semibold text-[#3e2f68] mb-1 tracking-tight"
-                  style={{ fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif' }}
+                  style={{
+                    fontFamily:
+                      '"Venturis ADF", "Venturis ADF Fallback", serif',
+                  }}
                 >
                   Review Event Details
                 </h2>
@@ -1964,15 +1974,21 @@ function SnapEventModal({
                     const dayOptions = [1, 2, 3, 7, 14, 30];
                     const currentDays = Math.max(
                       1,
-                      Math.round((reminder.minutes || 0) / 1440) || 1
+                      Math.round((reminder.minutes || 0) / 1440) || 1,
                     );
                     return (
-                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div
+                        key={idx}
+                        className="flex flex-col sm:flex-row sm:items-center gap-3"
+                      >
                         <select
                           className="w-full sm:w-[240px] rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                           value={currentDays}
                           onChange={(e) => {
-                            const days = Math.max(1, Number(e.target.value) || 1);
+                            const days = Math.max(
+                              1,
+                              Number(e.target.value) || 1,
+                            );
                             updateEvent((current) => {
                               const next = [...(current.reminders || [])];
                               next[idx] = { minutes: days * 1440 };
@@ -1994,7 +2010,7 @@ function SnapEventModal({
                             updateEvent((current) => ({
                               ...current,
                               reminders: (current.reminders || []).filter(
-                                (_, i) => i !== idx
+                                (_, i) => i !== idx,
                               ),
                             }))
                           }
@@ -2225,7 +2241,7 @@ function OptionCard({
   };
 
   const handlePrimaryAction = (
-    event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>
+    event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
   ) => {
     event.stopPropagation();
     if (showDetails) {
@@ -2267,7 +2283,7 @@ function OptionCard({
   };
 
   const handleInfoPointer = (
-    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>
+    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>,
   ) => {
     event.preventDefault();
     event.stopPropagation();
@@ -2281,7 +2297,7 @@ function OptionCard({
   };
 
   const closeDetails = (
-    event?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
+    event?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>,
   ) => {
     if (event) {
       event.preventDefault();

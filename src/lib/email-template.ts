@@ -111,7 +111,7 @@ export function createEmailTemplate(params: {
       .text-fore { color: #4E4E50; }
       .muted { color: #737373; }
       .border { border: 1px solid #E0E0E0; }
-      .btn { background: #2DD4BF; color: #FFFFFF !important; border-radius: 12px; padding: 14px 28px; font-weight: 700; display: inline-block; text-decoration: none; }
+      .btn { background: #7F67D3; color: #FFFFFF !important; border-radius: 12px; padding: 14px 28px; font-weight: 700; display: inline-block; text-decoration: none; }
       .btn:hover { opacity: 0.95; }
       .container { width: 100%; max-width: 600px; margin: 0 auto; }
       .card { border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
@@ -134,7 +134,7 @@ export function createEmailTemplate(params: {
                         <img src="${baseUrl}/E.png" width="40" height="40" alt="E" style="display:block; max-width: 100%;" />
                       </td>
                       <td style="vertical-align: middle;">
-                        <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #9a7b2f; letter-spacing: 0.02em;">nvitefy</span>
+                        <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #8A78F8; letter-spacing: 0.02em;">nvitefy</span>
                       </td>
                     </tr>
                   </table>
@@ -150,7 +150,7 @@ export function createEmailTemplate(params: {
                       ${params.body}
                       ${params.buttonText && params.buttonUrl ? `
                       <div style="text-align: center; margin: 28px 0 20px 0;">
-                        <a href="${escapeHtml(params.buttonUrl)}" style="background-color: #2DD4BF !important; color: #FFFFFF !important; border-radius: 12px; padding: 14px 28px; font-weight: 700; display: inline-block; text-decoration: none; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" target="_blank">${escapeHtml(params.buttonText)}</a>
+                        <a href="${escapeHtml(params.buttonUrl)}" style="background-color: #7F67D3 !important; color: #FFFFFF !important; border-radius: 12px; padding: 14px 28px; font-weight: 700; display: inline-block; text-decoration: none; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" target="_blank">${escapeHtml(params.buttonText)}</a>
                       </div>
                       ` : ""}
                       ${params.footerText ? `<p class="muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 1.6; color:#737373;">${params.footerText}</p>` : ""}
@@ -159,7 +159,7 @@ export function createEmailTemplate(params: {
                         <strong>Envitefy Team</strong>
                       </p>
                       <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
-                        SNAP IT. SAVE IT. DONE.
+                        CREATE | SHARE | ENJOY
                       </p>
                     </td>
                   </tr>

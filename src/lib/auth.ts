@@ -119,12 +119,27 @@ async authorize(credentials) {
           const tokenAny = token as any;
           tokenAny.providers = tokenAny.providers || {};
 
-          if (email && tokenAny.isAdmin === undefined) {
+          // Keep admin claims in sync with DB changes (e.g. user promoted while still logged in).
+          // We refresh periodically instead of only once to avoid stale JWT claims.
+          const now = Date.now();
+          const ADMIN_CLAIM_REFRESH_MS = 5 * 60 * 1000;
+          const lastAdminCheckAt =
+            typeof tokenAny?.isAdminCheckedAt === "number"
+              ? tokenAny.isAdminCheckedAt
+              : 0;
+          const shouldRefreshAdminClaim =
+            !email ||
+            tokenAny.isAdmin === undefined ||
+            now - lastAdminCheckAt > ADMIN_CLAIM_REFRESH_MS;
+
+          if (email && shouldRefreshAdminClaim) {
             try {
               tokenAny.isAdmin = await getIsAdminByEmail(email);
             } catch (err) {
               console.error("[auth] isAdmin lookup failed; defaulting to false", err);
               tokenAny.isAdmin = false;
+            } finally {
+              tokenAny.isAdminCheckedAt = now;
             }
           }
 

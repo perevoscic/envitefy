@@ -33,7 +33,7 @@ export default function EmailPreviewsPage() {
       description: "Email sent when user requests a password reset",
       href: "/admin/emails/password-reset",
       icon: "🔐",
-      color: "from-blue-500 to-cyan-500",
+      color: "from-[#cbbcf8] to-[#9d84e9]",
     },
     {
       title: "Password Changed",
@@ -41,43 +41,20 @@ export default function EmailPreviewsPage() {
         "Confirmation email sent after password is successfully changed",
       href: "/admin/emails/password-changed",
       icon: "✓",
-      color: "from-green-500 to-emerald-500",
-    },
-    {
-      title: "Subscription Change",
-      description:
-        "Email sent when upgrading from trial or switching plans (monthly/yearly)",
-      href: "/admin/emails/subscription-change",
-      icon: "💳",
-      color: "from-indigo-500 to-purple-500",
+      color: "from-[#bfaef4] to-[#8669d8]",
     },
     {
       title: "Event Share",
       description: "Email sent when an event is shared with another user",
       href: "/admin/emails/event-share",
       icon: "📅",
-      color: "from-emerald-500 to-teal-500",
-    },
-    {
-      title: "Gift - Code",
-      description: "Email sent when user receives a gift code to redeem",
-      href: "/admin/emails/gift-code",
-      icon: "🎁",
-      color: "from-purple-500 to-pink-500",
-    },
-    {
-      title: "Gift - Auto-Redeemed",
-      description:
-        "Email sent when gift is automatically applied to existing user",
-      href: "/admin/emails/gift-auto",
-      icon: "🎉",
-      color: "from-amber-500 to-yellow-500",
+      color: "from-[#cab9f7] to-[#8c71de]",
     },
   ];
 
   return (
     <div
-      className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -89,7 +66,7 @@ export default function EmailPreviewsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[#8c80b6] hover:text-[#43366f] transition-colors"
             >
               <svg
                 className="w-6 h-6"
@@ -106,16 +83,13 @@ export default function EmailPreviewsPage() {
               </svg>
             </Link>
             <h1
-              className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
+              className="text-3xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
               suppressHydrationWarning
             >
               Email Templates
             </h1>
           </div>
-          <p
-            className="text-sm text-muted-foreground ml-9"
-            suppressHydrationWarning
-          >
+          <p className="text-sm text-[#8c80b6] ml-9" suppressHydrationWarning>
             Preview all outgoing email templates
           </p>
         </div>
@@ -127,7 +101,7 @@ export default function EmailPreviewsPage() {
               <Link
                 key={email.href}
                 href={email.href}
-                className="group relative overflow-hidden rounded-xl bg-surface transition-all shadow-sm cursor-pointer ring-1 ring-border/50 hover:shadow-md hover:scale-[1.02] hover:ring-border/80"
+                className="group relative overflow-hidden rounded-xl bg-white border border-[#ddd5f6] transition-all shadow-sm cursor-pointer ring-1 ring-[#ede7ff] hover:shadow-md hover:scale-[1.02] hover:ring-[#d7ccf7]"
               >
                 <div className="p-6">
                   <div className="flex items-start gap-4">
@@ -137,15 +111,15 @@ export default function EmailPreviewsPage() {
                       {email.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-indigo-500 transition-colors">
+                      <h3 className="text-lg font-semibold text-[#43366f] mb-1 group-hover:text-[#6f57c8] transition-colors">
                         {email.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-[#8c80b6]">
                         {email.description}
                       </p>
                     </div>
                     <svg
-                      className="w-5 h-5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all flex-shrink-0"
+                      className="w-5 h-5 text-[#9a8fc0] group-hover:text-[#5f49bb] group-hover:translate-x-1 transition-all flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

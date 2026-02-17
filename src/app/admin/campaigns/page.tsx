@@ -73,7 +73,7 @@ export default function CampaignsPage() {
   const formatHeading = () =>
     insertFormatting(
       '<p style="font-size: 20px; font-weight: 600; margin: 16px 0 8px 0;">',
-      "</p>"
+      "</p>",
     );
   const formatCenter = () =>
     insertFormatting('<p style="text-align: center;">', "</p>");
@@ -82,18 +82,18 @@ export default function CampaignsPage() {
     if (url)
       insertFormatting(
         `<a href="${url}" style="color: #2DD4BF; text-decoration: underline;">`,
-        "</a>"
+        "</a>",
       );
   };
   const formatList = () =>
     insertFormatting(
       "<ul>\n  <li>",
-      "</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>"
+      "</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>",
     );
   const formatNumberedList = () =>
     insertFormatting(
       "<ol>\n  <li>",
-      "</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ol>"
+      "</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ol>",
     );
   const insertLineBreak = () => {
     const textarea = bodyTextareaRef.current;
@@ -253,7 +253,7 @@ export default function CampaignsPage() {
 
   const handlePlanToggle = (plan: string) => {
     setSelectedPlans((prev) =>
-      prev.includes(plan) ? prev.filter((p) => p !== plan) : [...prev, plan]
+      prev.includes(plan) ? prev.filter((p) => p !== plan) : [...prev, plan],
     );
   };
 
@@ -301,7 +301,7 @@ export default function CampaignsPage() {
                       <a href=\"${link.href}\" target=\"_blank\" title=\"${link.title}\" style=\"display: inline-block;\">
                         <img src=\"${link.src}\" width=\"36\" height=\"36\" alt=\"${link.title}\" style=\"display: block;\" />
                       </a>
-                    </td>`
+                    </td>`,
       )
       .join("");
     const currentYear = new Date().getFullYear();
@@ -343,7 +343,7 @@ export default function CampaignsPage() {
                     <img src="${baseUrl}/E.png" width="40" height="40" alt="E" style="display:block; max-width: 100%;" />
                   </td>
                   <td style="vertical-align: middle;">
-                    <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #9a7b2f; letter-spacing: 0.02em;">nvitefy</span>
+                    <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #8A78F8; letter-spacing: 0.02em;">nvitefy</span>
                   </td>
                 </tr>
               </table>
@@ -364,8 +364,8 @@ export default function CampaignsPage() {
                     ? `
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0 0 0;">
                   <tr>
-                    <td style="border-radius: 12px; background-color: #2DD4BF !important;" bgcolor="#2DD4BF">
-                      <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 16px; background-color: #2DD4BF;">
+                    <td style="border-radius: 12px; background-color: #7F67D3 !important;" bgcolor="#7F67D3">
+                      <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 16px; background-color: #7F67D3;">
                         ${buttonText}
                       </a>
                     </td>
@@ -384,7 +384,7 @@ export default function CampaignsPage() {
                   <strong style="color: #2E2C2D;">Envitefy Team</strong>
                 </p>
                 <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
-                  SNAP IT. SAVE IT. DONE.
+                  CREATE | SHARE | ENJOY
                 </p>
                 <p style="margin: 16px 0 0 0; font-size: 12px; color: #A3A3A3; line-height: 1.5;">
                   You're receiving this because you have a Envitefy account.
@@ -422,12 +422,12 @@ ${socialIconsHtml}
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      draft: "bg-gray-500",
-      queued: "bg-blue-500",
-      sending: "bg-yellow-500",
-      sent: "bg-green-500",
-      failed: "bg-red-500",
-      cancelled: "bg-gray-400",
+      draft: "bg-[#9b8ac8]",
+      queued: "bg-[#8c74df]",
+      sending: "bg-[#a58de9]",
+      sent: "bg-[#6f57c8]",
+      failed: "bg-[#e86b9a]",
+      cancelled: "bg-[#b2a5d6]",
     };
     return (
       <span
@@ -442,7 +442,7 @@ ${socialIconsHtml}
 
   return (
     <div
-      className="min-h-[100dvh] bg-background text-foreground"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269]"
       suppressHydrationWarning
     >
       <div className="max-w-7xl mx-auto p-6" suppressHydrationWarning>
@@ -451,16 +451,16 @@ ${socialIconsHtml}
           <div className="flex items-center gap-3 mb-2">
             <Link
               href="/admin"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[#8c80b6] hover:text-[#43366f] transition-colors"
             >
               ← Admin
             </Link>
-            <span className="text-muted-foreground">/</span>
-            <h1 className="text-2xl font-bold text-foreground">
+            <span className="text-[#a093c7]">/</span>
+            <h1 className="text-2xl font-bold text-[#43366f]">
               Email Campaigns
             </h1>
           </div>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-[#8c80b6] text-sm">
             Send bulk emails to your users using Resend
           </p>
         </div>
@@ -469,7 +469,7 @@ ${socialIconsHtml}
         <div className="mb-6">
           <button
             onClick={() => setShowComposer(!showComposer)}
-            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-all"
+            className="px-4 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all"
           >
             {showComposer ? "✕ Cancel" : "✉️ New Campaign"}
           </button>
@@ -479,15 +479,15 @@ ${socialIconsHtml}
         {showComposer && (
           <form
             onSubmit={handleSendCampaign}
-            className="bg-surface rounded-xl ring-1 ring-border/60 overflow-hidden shadow-sm p-6 mb-8"
+            className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] overflow-hidden shadow-sm p-6 mb-8"
           >
-            <h2 className="text-lg font-semibold text-foreground mb-4">
+            <h2 className="text-lg font-semibold text-[#43366f] mb-4">
               Compose Campaign
             </h2>
 
             {/* Subject */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-[#43366f] mb-2">
                 Subject <span className="text-red-500">*</span>
               </label>
               <input
@@ -495,34 +495,34 @@ ${socialIconsHtml}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Your campaign subject line"
-                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2 bg-white border border-[#d8d0f3] rounded-lg text-[#483a74] placeholder:text-[#9a8fc0] focus:outline-none focus:ring-2 focus:ring-[#baa9ea]/55 focus:border-[#9b86df]"
                 required
               />
             </div>
 
             {/* Body */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-[#43366f] mb-2">
                 Email Body <span className="text-red-500">*</span>
               </label>
-              <p className="text-xs text-muted-foreground mb-2">
+              <p className="text-xs text-[#8c80b6] mb-2">
                 Use{" "}
-                <code className="bg-surface-alt px-1 py-0.5 rounded">
+                <code className="bg-[#f2edff] px-1 py-0.5 rounded text-[#5f49bb]">
                   {"{{greeting}}"}
                 </code>{" "}
                 for personalized greeting,{" "}
-                <code className="bg-surface-alt px-1 py-0.5 rounded">
+                <code className="bg-[#f2edff] px-1 py-0.5 rounded text-[#5f49bb]">
                   {"{{firstName}} {{lastName}}"}
                 </code>{" "}
                 for full name
               </p>
 
               {/* Formatting Toolbar */}
-              <div className="flex flex-wrap gap-1 mb-2 p-2 bg-surface-alt/50 rounded-lg border border-border">
+              <div className="flex flex-wrap gap-1 mb-2 p-2 bg-[#f8f4ff] rounded-lg border border-[#e4def9]">
                 <button
                   type="button"
                   onClick={formatBold}
-                  className="px-3 py-1.5 text-sm font-bold rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm font-bold rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Bold"
                 >
                   <strong>B</strong>
@@ -530,7 +530,7 @@ ${socialIconsHtml}
                 <button
                   type="button"
                   onClick={formatItalic}
-                  className="px-3 py-1.5 text-sm italic rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm italic rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Italic"
                 >
                   <em>I</em>
@@ -538,16 +538,16 @@ ${socialIconsHtml}
                 <button
                   type="button"
                   onClick={formatUnderline}
-                  className="px-3 py-1.5 text-sm underline rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm underline rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Underline"
                 >
                   U
                 </button>
-                <div className="w-px h-6 bg-border my-auto mx-1" />
+                <div className="w-px h-6 bg-[#ddd5f6] my-auto mx-1" />
                 <button
                   type="button"
                   onClick={formatHeading}
-                  className="px-3 py-1.5 text-sm font-semibold rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm font-semibold rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Heading"
                 >
                   H
@@ -555,16 +555,16 @@ ${socialIconsHtml}
                 <button
                   type="button"
                   onClick={formatCenter}
-                  className="px-3 py-1.5 text-sm rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Center align"
                 >
                   ≡
                 </button>
-                <div className="w-px h-6 bg-border my-auto mx-1" />
+                <div className="w-px h-6 bg-[#ddd5f6] my-auto mx-1" />
                 <button
                   type="button"
                   onClick={formatLink}
-                  className="px-3 py-1.5 text-sm rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Insert link"
                 >
                   🔗
@@ -572,7 +572,7 @@ ${socialIconsHtml}
                 <button
                   type="button"
                   onClick={formatList}
-                  className="px-3 py-1.5 text-sm rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Bullet list"
                 >
                   • List
@@ -580,7 +580,7 @@ ${socialIconsHtml}
                 <button
                   type="button"
                   onClick={formatNumberedList}
-                  className="px-3 py-1.5 text-sm rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Numbered list"
                 >
                   1. List
@@ -588,28 +588,28 @@ ${socialIconsHtml}
                 <button
                   type="button"
                   onClick={insertLineBreak}
-                  className="px-3 py-1.5 text-sm rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Line break"
                 >
                   ↵
                 </button>
-                <div className="w-px h-6 bg-border my-auto mx-1" />
+                <div className="w-px h-6 bg-[#ddd5f6] my-auto mx-1" />
                 <button
                   type="button"
                   onClick={insertFullName}
-                  className="px-3 py-1.5 text-sm rounded hover:bg-surface transition-colors border border-border/50"
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Insert full name ({{firstName}} {{lastName}})"
                 >
                   👤 Name
                 </button>
-                <div className="w-px h-6 bg-border my-auto mx-1" />
+                <div className="w-px h-6 bg-[#ddd5f6] my-auto mx-1" />
                 <button
                   type="button"
                   onClick={toggleHtmlMode}
                   className={`px-3 py-1.5 text-sm rounded transition-colors border border-border/50 font-mono ${
                     htmlMode
-                      ? "bg-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/30"
-                      : "hover:bg-surface"
+                      ? "bg-[#efe9ff] text-[#6f57c8] hover:bg-[#e7ddff]"
+                      : "hover:bg-[#eee7ff]"
                   }`}
                   title={
                     htmlMode ? "Switch to visual editor" : "View HTML source"
@@ -620,29 +620,29 @@ ${socialIconsHtml}
               </div>
 
               {htmlMode && (
-                <div className="mb-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/30 rounded-lg">
-                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                <div className="mb-2 px-3 py-2 bg-[#f6f2ff] border border-[#ddd5f6] rounded-lg">
+                  <p className="text-xs text-[#6f57c8] mb-2">
                     <span className="font-semibold">💡 HTML Mode Tips:</span>
                   </p>
-                  <ul className="text-xs text-purple-700 dark:text-purple-300 space-y-1 ml-4 list-disc">
+                  <ul className="text-xs text-[#6f57c8] space-y-1 ml-4 list-disc">
                     <li>Use inline styles for best compatibility</li>
                     <li>
                       Add{" "}
-                      <code className="bg-purple-100 dark:bg-purple-800 px-1 rounded">
+                      <code className="bg-[#ece4ff] px-1 rounded">
                         !important
                       </code>{" "}
                       to colors & backgrounds for dark mode
                     </li>
                     <li>
                       Add{" "}
-                      <code className="bg-purple-100 dark:bg-purple-800 px-1 rounded">
+                      <code className="bg-[#ece4ff] px-1 rounded">
                         bgcolor="#FFFFFF"
                       </code>{" "}
                       attributes to elements with white backgrounds
                     </li>
                     <li>
                       Example:{" "}
-                      <code className="bg-purple-100 dark:bg-purple-800 px-1 rounded">
+                      <code className="bg-[#ece4ff] px-1 rounded">
                         style="background-color: #F59E0B !important; color:
                         white !important;"
                       </code>
@@ -663,8 +663,8 @@ ${socialIconsHtml}
                 rows={5}
                 className={`w-full px-4 py-2 bg-background border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 font-mono text-sm md:min-h-[300px] resize-y ${
                   htmlMode
-                    ? "border-purple-500/50 focus:ring-purple-500/50 bg-purple-50/5"
-                    : "border-border focus:ring-primary"
+                    ? "border-[#bca9ea] focus:ring-[#baa9ea]/55 bg-[#f8f4ff]"
+                    : "border-[#d8d0f3] focus:ring-[#baa9ea]/55"
                 }`}
                 required
               />
@@ -673,7 +673,7 @@ ${socialIconsHtml}
             {/* Button (optional) */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-[#43366f] mb-2">
                   Button Text (optional)
                 </label>
                 <input
@@ -681,11 +681,11 @@ ${socialIconsHtml}
                   value={buttonText}
                   onChange={(e) => setButtonText(e.target.value)}
                   placeholder="Get Started"
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-[#d8d0f3] rounded-lg text-[#483a74] placeholder:text-[#9a8fc0] focus:outline-none focus:ring-2 focus:ring-[#baa9ea]/55 focus:border-[#9b86df]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-[#43366f] mb-2">
                   Button URL (optional)
                 </label>
                 <input
@@ -693,14 +693,14 @@ ${socialIconsHtml}
                   value={buttonUrl}
                   onChange={(e) => setButtonUrl(e.target.value)}
                   placeholder="https://envitefy.com/subscription"
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-[#d8d0f3] rounded-lg text-[#483a74] placeholder:text-[#9a8fc0] focus:outline-none focus:ring-2 focus:ring-[#baa9ea]/55 focus:border-[#9b86df]"
                 />
               </div>
             </div>
 
             {/* Audience Selection */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-[#43366f] mb-2">
                 Audience <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
@@ -713,33 +713,33 @@ ${socialIconsHtml}
                       className={`px-4 py-2 rounded-lg font-medium transition-all ${
                         selectedPlans.includes(plan)
                           ? plan === "test"
-                            ? "bg-blue-500 text-white shadow-lg"
+                            ? "bg-[#7f67d3] text-white shadow-lg"
                             : plan === "all"
-                            ? "bg-indigo-600 text-white shadow-lg"
-                            : "bg-primary text-white shadow-lg"
-                          : "bg-surface-alt text-foreground hover:bg-surface-alt/80"
+                              ? "bg-[#6f57c8] text-white shadow-lg"
+                              : "bg-[#8c74df] text-white shadow-lg"
+                          : "bg-[#f3efff] text-[#4b3f72] hover:bg-[#eae2ff]"
                       }`}
                     >
                       {plan === "test"
                         ? "📧 Individual"
                         : plan === "all"
-                        ? "All users"
-                        : plan === "free"
-                        ? "Free Trial"
-                        : plan === "monthly"
-                        ? "Monthly Plan"
-                        : plan === "yearly"
-                        ? "Yearly Plan"
-                        : "Lifetime (FF)"}
+                          ? "All users"
+                          : plan === "free"
+                            ? "Free Trial"
+                            : plan === "monthly"
+                              ? "Monthly Plan"
+                              : plan === "yearly"
+                                ? "Yearly Plan"
+                                : "Lifetime (FF)"}
                     </button>
-                  )
+                  ),
                 )}
               </div>
 
               {/* Individual Recipients Email Input */}
               {selectedPlans.includes("test") && (
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-[#43366f] mb-2">
                     Recipient Email Addresses{" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -748,10 +748,10 @@ ${socialIconsHtml}
                     onChange={(e) => setTestEmail(e.target.value)}
                     placeholder="email1@example.com, email2@example.com, email3@example.com"
                     rows={3}
-                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                    className="w-full px-4 py-2 bg-white border border-[#d8d0f3] rounded-lg text-[#483a74] placeholder:text-[#9a8fc0] focus:outline-none focus:ring-2 focus:ring-[#baa9ea]/55 focus:border-[#9b86df] resize-y"
                     required={selectedPlans.includes("test")}
                   />
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-xs text-[#8c80b6] mt-2">
                     📧 Enter one or more email addresses (comma-separated).
                     Great for sending to specific recipients or testing before
                     full campaign launch.
@@ -766,14 +766,14 @@ ${socialIconsHtml}
                 type="button"
                 onClick={() => setShowPreview(true)}
                 disabled={!subject || !body || selectedPlans.length === 0}
-                className="px-6 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 👁️ Preview Email
               </button>
               <button
                 type="button"
                 onClick={() => setShowComposer(false)}
-                className="px-6 py-2 bg-surface-alt text-foreground rounded-lg font-medium hover:bg-surface-alt/80 transition-all"
+                className="px-6 py-2 bg-[#f3efff] text-[#4b3f72] rounded-lg font-medium hover:bg-[#eae2ff] transition-all"
               >
                 Cancel
               </button>
@@ -784,14 +784,14 @@ ${socialIconsHtml}
         {/* Preview Modal */}
         {showPreview && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-surface rounded-xl ring-1 ring-border/60 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center justify-between p-6 border-b border-[#e4def9] bg-[#faf8ff]">
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">
+                  <h2 className="text-xl font-semibold text-[#43366f]">
                     Email Preview
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-[#8c80b6] mt-1">
                     Review your campaign before sending to{" "}
                     {selectedPlans
                       .filter((p) => p !== "test")
@@ -799,23 +799,23 @@ ${socialIconsHtml}
                         p === "all"
                           ? "All users"
                           : p === "free"
-                          ? "Free Trial"
-                          : p === "monthly"
-                          ? "Monthly"
-                          : p === "yearly"
-                          ? "Yearly"
-                          : "Lifetime"
+                            ? "Free Trial"
+                            : p === "monthly"
+                              ? "Monthly"
+                              : p === "yearly"
+                                ? "Yearly"
+                                : "Lifetime",
                       )
                       .join(", ") || "your selection"}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="p-2 rounded-lg hover:bg-surface-alt transition-colors"
+                  className="p-2 rounded-lg hover:bg-[#eee7ff] transition-colors"
                   title="Close preview"
                 >
                   <svg
-                    className="w-6 h-6 text-muted-foreground"
+                    className="w-6 h-6 text-[#8c80b6]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -831,7 +831,7 @@ ${socialIconsHtml}
               </div>
 
               {/* Preview Content */}
-              <div className="flex-1 overflow-auto p-6 bg-surface-alt/30">
+              <div className="flex-1 overflow-auto p-6 bg-[#f8f4ff]">
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                   <iframe
                     srcDoc={generatePreviewHtml()}
@@ -844,10 +844,10 @@ ${socialIconsHtml}
               </div>
 
               {/* Modal Actions */}
-              <div className="flex items-center justify-between p-6 border-t border-border bg-surface-alt/50">
+              <div className="flex items-center justify-between p-6 border-t border-[#e4def9] bg-[#faf8ff]">
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="px-6 py-2 bg-surface-alt text-foreground rounded-lg font-medium hover:bg-surface-alt/80 transition-all"
+                  className="px-6 py-2 bg-[#f3efff] text-[#4b3f72] rounded-lg font-medium hover:bg-[#eae2ff] transition-all"
                 >
                   ← Back to Edit
                 </button>
@@ -857,7 +857,7 @@ ${socialIconsHtml}
                     handleSendCampaign(e as any);
                   }}
                   disabled={sending}
-                  className="px-6 py-2 bg-green-500 text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 shadow-lg"
+                  className="px-6 py-2 bg-[#6f57c8] text-white rounded-lg font-medium hover:bg-[#5f49bb] transition-all disabled:opacity-50 shadow-lg"
                 >
                   {sending ? "Sending..." : "✓ Approve & Send Campaign"}
                 </button>
@@ -867,9 +867,9 @@ ${socialIconsHtml}
         )}
 
         {/* Campaign History */}
-        <div className="bg-surface rounded-xl ring-1 ring-border/60 overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">
+        <div className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-[#e4def9] bg-[#faf8ff]">
+            <h2 className="text-lg font-semibold text-[#43366f]">
               Campaign History
             </h2>
           </div>
@@ -877,22 +877,22 @@ ${socialIconsHtml}
           {loading ? (
             <div className="p-6">Loading campaigns...</div>
           ) : campaigns.length === 0 ? (
-            <div className="p-6 text-center text-muted-foreground">
+            <div className="p-6 text-center text-[#8c80b6]">
               No campaigns yet. Create your first one above!
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-[#e4def9]">
               {campaigns.map((campaign) => (
                 <div
                   key={campaign.id}
-                  className="p-6 hover:bg-surface-alt/30 transition-colors"
+                  className="p-6 hover:bg-[#faf8ff] transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="font-semibold text-foreground mb-1">
+                      <h3 className="font-semibold text-[#43366f] mb-1">
                         {campaign.subject}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-[#8c80b6]">
                         by{" "}
                         {campaign.creator.firstName || campaign.creator.email}
                       </p>
@@ -902,31 +902,31 @@ ${socialIconsHtml}
 
                   <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Recipients:</span>{" "}
+                      <span className="text-[#8c80b6]">Recipients:</span>{" "}
                       <span className="font-medium">
                         {campaign.recipientCount}
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Sent:</span>{" "}
-                      <span className="font-medium text-green-600">
+                      <span className="text-[#8c80b6]">Sent:</span>{" "}
+                      <span className="font-medium text-[#6f57c8]">
                         {campaign.sentCount}
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Failed:</span>{" "}
-                      <span className="font-medium text-red-600">
+                      <span className="text-[#8c80b6]">Failed:</span>{" "}
+                      <span className="font-medium text-[#e86b9a]">
                         {campaign.failedCount}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between mt-3">
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-[#8c80b6]">
                       {campaign.sentAt
                         ? `Sent ${new Date(campaign.sentAt).toLocaleString()}`
                         : `Created ${new Date(
-                            campaign.createdAt
+                            campaign.createdAt,
                           ).toLocaleString()}`}
                     </div>
                     <button
@@ -937,7 +937,7 @@ ${socialIconsHtml}
                         setShowComposer(true);
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface hover:bg-surface-alt border border-border transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f6f2ff] hover:bg-[#eee7ff] border border-[#d8d0f3] transition-colors flex items-center gap-1.5 text-[#4b3f72]"
                       title="Copy this campaign to create a new one"
                     >
                       <svg

@@ -55,7 +55,6 @@ import {
   Upload,
   User,
   LogOut,
-  X,
 } from "lucide-react";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 
@@ -373,7 +372,7 @@ function DraftsSection({
             const href = resolveEditHref(
               row.id,
               row.data,
-              row.title || "Event"
+              row.title || "Event",
             );
             const dateStr =
               (row.data && (row.data.startISO || row.data.start)) ||
@@ -485,6 +484,7 @@ export default function LeftSidebar() {
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [adminOpenFloating, setAdminOpenFloating] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [createEventShowAll, setCreateEventShowAll] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -519,19 +519,19 @@ export default function LeftSidebar() {
           window.open(
             "/api/google/auth?source=sidebar",
             "_blank",
-            "noopener,noreferrer"
+            "noopener,noreferrer",
           );
         } else if (provider === "microsoft") {
           window.open(
             "/api/outlook/auth?source=sidebar",
             "_blank",
-            "noopener,noreferrer"
+            "noopener,noreferrer",
           );
         } else {
           window.open(
             "https://support.apple.com/guide/calendar/welcome/mac",
             "_blank",
-            "noopener,noreferrer"
+            "noopener,noreferrer",
           );
         }
         window.setTimeout(() => {
@@ -541,7 +541,7 @@ export default function LeftSidebar() {
         console.error("Failed to initiate calendar connection:", err);
       }
     },
-    [fetchConnectedCalendars]
+    [fetchConnectedCalendars],
   );
   const [itemMenuId, setItemMenuId] = useState<string | null>(null);
   const [itemMenuPos, setItemMenuPos] = useState<{
@@ -569,18 +569,18 @@ export default function LeftSidebar() {
   const sidebarTransform = isDesktop
     ? "translateX(0)"
     : isOpen
-    ? "translateX(0)"
-    : "translateX(-100%)";
+      ? "translateX(0)"
+      : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
     : isOpen
-    ? "pointer-events-auto"
-    : "pointer-events-none";
+      ? "pointer-events-auto"
+      : "pointer-events-none";
   const overflowClass = isCompact
     ? "overflow-hidden"
     : isDesktop || isOpen
-    ? "overflow-visible"
-    : "overflow-hidden";
+      ? "overflow-visible"
+      : "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -707,12 +707,12 @@ export default function LeftSidebar() {
         const target = e.target as Element | null;
         // If click is inside the open item's container OR the menu popover itself, ignore
         const itemEl = target?.closest(
-          "[data-history-item]"
+          "[data-history-item]",
         ) as HTMLElement | null;
         const inSameItem =
           itemEl && itemEl.getAttribute("data-history-item") === itemMenuId;
         const inMenuPopover = (target as HTMLElement | null)?.closest(
-          "[data-popover=item-menu]"
+          "[data-popover=item-menu]",
         );
         if (inSameItem || inMenuPopover) return;
       } catch {}
@@ -764,7 +764,7 @@ export default function LeftSidebar() {
   >(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
-    Boolean((session?.user as any)?.isAdmin)
+    Boolean((session?.user as any)?.isAdmin),
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [isClientLoaded, setIsClientLoaded] = useState(false);
@@ -777,7 +777,7 @@ export default function LeftSidebar() {
 
     const applyProfile = (
       plan: typeof subscriptionPlan,
-      creditsValue: number | null
+      creditsValue: number | null,
     ) => {
       setSubscriptionPlan(plan);
       setCredits(plan === "FF" ? Infinity : creditsValue);
@@ -805,13 +805,13 @@ export default function LeftSidebar() {
             plan === "FF"
               ? Infinity
               : typeof json.credits === "number"
-              ? (json.credits as number)
-              : null;
+                ? (json.credits as number)
+                : null;
           applyProfile(plan, nextCredits === Infinity ? null : nextCredits);
           writeProfileCache(
             profileEmailRef.current || profileEmail,
             plan,
-            nextCredits
+            nextCredits,
           );
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
@@ -898,7 +898,7 @@ export default function LeftSidebar() {
   };
   const handleSnapShortcutClick = (
     event: ReactMouseEvent<HTMLElement>,
-    mode: "camera" | "upload"
+    mode: "camera" | "upload",
   ) => {
     const win = window as any;
     const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
@@ -930,7 +930,7 @@ export default function LeftSidebar() {
   const { visibleTemplateKeys } = useFeatureVisibility();
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
-    [visibleTemplateKeys]
+    [visibleTemplateKeys],
   );
 
   const templateHrefMap = useMemo(() => {
@@ -965,13 +965,24 @@ export default function LeftSidebar() {
     triggerCreateEvent();
   };
 
-  const createModalSections = getCreateEventSections(visibleTemplateKeys)
-    .filter((section) => section.title.toLowerCase() !== "quick access")
-    .map((section, idx) => ({
-      title: section.title,
-      items: section.items,
-      color: CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length],
-    }));
+  const createMenuSections = useMemo(() => {
+    const keys = createEventShowAll ? undefined : visibleTemplateKeys;
+    return getCreateEventSections(keys)
+      .filter((section) => section.title.toLowerCase() !== "quick access")
+      .map((section, idx) => ({
+        title: section.title,
+        items: section.items,
+        color: CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length],
+      }));
+  }, [createEventShowAll, visibleTemplateKeys]);
+  const createMenuOptionCount = useMemo(
+    () =>
+      createMenuSections.reduce(
+        (total, section) => total + section.items.length,
+        0,
+      ),
+    [createMenuSections],
+  );
 
   const profileMenuItemClass =
     "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -1030,15 +1041,15 @@ export default function LeftSidebar() {
         (Array.isArray(data.events) && data.events.length > 0) ||
         Boolean(
           data.practiceSchedule &&
-            (data.practiceSchedule.detected ||
-              (Array.isArray(data.practiceSchedule.groups) &&
-                data.practiceSchedule.groups.length > 0))
+          (data.practiceSchedule.detected ||
+            (Array.isArray(data.practiceSchedule.groups) &&
+              data.practiceSchedule.groups.length > 0)),
         ) ||
         Boolean(
           data.schedule &&
-            (data.schedule.detected ||
-              (Array.isArray(data.schedule?.games) &&
-                data.schedule.games.length > 0))
+          (data.schedule.detected ||
+            (Array.isArray(data.schedule?.games) &&
+              data.schedule.games.length > 0)),
         );
 
       if (manualFlag || (hasManualFields && !hasOcrSignature)) {
@@ -1102,11 +1113,11 @@ export default function LeftSidebar() {
       { icon: User, label: "Profile", href: "/profile" },
       { icon: Settings, label: "Settings", href: "/settings" },
     ],
-    [createdEventsCount, smartSignupCount]
+    [createdEventsCount, smartSignupCount],
   );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
-    {}
+    {},
   );
   // Per Smart sign-up item gradient selections (keyed by history id)
   const [signupItemColors, setSignupItemColors] = useState<
@@ -1161,7 +1172,7 @@ export default function LeftSidebar() {
 
   // Normalize freeform/variant labels to our canonical sidebar categories
   const normalizeCategoryLabel = (
-    raw: string | null | undefined
+    raw: string | null | undefined,
   ): string | null => {
     const s = String(raw || "").trim();
     if (!s) return null;
@@ -1229,7 +1240,7 @@ export default function LeftSidebar() {
     if (/playdate|play\s*day|kids?\s*play/.test(s)) return "Play Days";
     if (
       /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(
-        s
+        s,
       )
     )
       return "Car Pool";
@@ -1317,8 +1328,8 @@ export default function LeftSidebar() {
               }`;
               return guessCategoryFromText(blob);
             })
-            .filter((c): c is string => Boolean(c))
-        )
+            .filter((c): c is string => Boolean(c)),
+        ),
       );
       if (categories.length === 0) return;
       setCategoryColors((prev) => {
@@ -1362,7 +1373,7 @@ export default function LeftSidebar() {
   };
 
   const colorClasses = (
-    color: string
+    color: string,
   ): { swatch: string; badge: string; tint: string; hoverTint: string } => {
     switch (color) {
       case "lime":
@@ -1718,7 +1729,7 @@ export default function LeftSidebar() {
         ({
           ...prev,
           [category]: color,
-        } as Record<string, string>)
+        }) as Record<string, string>,
     );
     setColorMenuFor(null);
     setColorMenuPos(null);
@@ -1733,7 +1744,7 @@ export default function LeftSidebar() {
     } catch {}
     try {
       window.dispatchEvent(
-        new CustomEvent("categoryColorsUpdated", { detail: categoryColors })
+        new CustomEvent("categoryColorsUpdated", { detail: categoryColors }),
       );
     } catch {}
     try {
@@ -1748,7 +1759,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         "signupItemColors",
-        JSON.stringify(signupItemColors)
+        JSON.stringify(signupItemColors),
       );
     } catch {}
   }, [signupItemColors]);
@@ -1759,7 +1770,7 @@ export default function LeftSidebar() {
       title: string;
       created_at?: string;
       data?: any;
-    }>
+    }>,
   ) => {
     return [...(rows || [])].sort((a, b) => {
       const at = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -1796,8 +1807,8 @@ export default function LeftSidebar() {
                 title: r.title,
                 created_at: r.created_at || undefined,
                 data: r.data,
-              }))
-            )
+              })),
+            ),
           );
       } catch {}
     })();
@@ -1862,7 +1873,7 @@ export default function LeftSidebar() {
                 {
                   cache: "no-cache",
                   credentials: "include",
-                }
+                },
               );
               const j = await res.json().catch(() => ({ items: [] }));
               if (!cancelled) {
@@ -1873,8 +1884,8 @@ export default function LeftSidebar() {
                       title: r.title,
                       created_at: r.created_at || undefined,
                       data: r.data,
-                    }))
-                  )
+                    })),
+                  ),
                 );
                 try {
                   console.debug("[sidebar] history refreshed from server", {
@@ -1905,8 +1916,8 @@ export default function LeftSidebar() {
                   title: r.title,
                   created_at: r.created_at || undefined,
                   data: r.data,
-                }))
-              )
+                })),
+              ),
             );
         }
       } catch {}
@@ -1947,7 +1958,7 @@ export default function LeftSidebar() {
         body: JSON.stringify({ title }),
       });
       setHistory((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, title } : r))
+        prev.map((r) => (r.id === id ? { ...r, title } : r)),
       );
     } catch {}
   };
@@ -1957,7 +1968,7 @@ export default function LeftSidebar() {
     const ok = confirm(
       `Are you sure you want to delete this event?\n\n${
         title || "Untitled event"
-      }`
+      }`,
     );
     if (!ok) return;
     try {
@@ -1967,7 +1978,7 @@ export default function LeftSidebar() {
       try {
         if (typeof window !== "undefined") {
           window.dispatchEvent(
-            new CustomEvent("history:deleted", { detail: { id } })
+            new CustomEvent("history:deleted", { detail: { id } }),
           );
         }
       } catch {}
@@ -2496,7 +2507,7 @@ export default function LeftSidebar() {
                     </button>
                     <div className="ml-auto flex items-center gap-2">
                       <span className={SIDEBAR_BADGE_CLASS}>
-                        {createdEventsCount}
+                        {createMenuOptionCount}
                       </span>
                       <button
                         type="button"
@@ -2526,6 +2537,76 @@ export default function LeftSidebar() {
                     </div>
                   </div>
                 </div>
+                {createEventOpen && (
+                  <div className="mt-1 mb-2">
+                    <div className="rounded-2xl border border-white/65 bg-white/85 px-3 py-3 shadow-[0_16px_35px_rgba(91,63,135,0.12)] backdrop-blur-xl">
+                      <div className="space-y-3">
+                        {createMenuSections.map((cat, idx) => (
+                          <div
+                            key={`${cat.title}-${idx}`}
+                            className="space-y-1.5"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${cat.color.replace(
+                                  "text-",
+                                  "bg-opacity-20 ",
+                                )}`}
+                              >
+                                {cat.items.length}
+                              </span>
+                              <h3 className="font-semibold text-[#665682] text-[11px] uppercase tracking-wider">
+                                {cat.title}
+                              </h3>
+                            </div>
+                            <div className="space-y-1">
+                              {cat.items.map((item) => {
+                                const Icon =
+                                  ICON_LOOKUP[item.label] || Sparkles;
+                                return (
+                                  <button
+                                    key={item.label}
+                                    type="button"
+                                    className="w-full flex items-center space-x-2.5 p-2.5 bg-white/90 hover:bg-indigo-50 border border-white/80 hover:border-indigo-100 rounded-xl transition-all duration-200 group text-left shadow-sm"
+                                    onClick={() =>
+                                      handleCreateModalSelect(
+                                        item.label,
+                                        (item as any).href,
+                                      )
+                                    }
+                                  >
+                                    <div
+                                      className={`p-1.5 rounded-lg ${cat.color} group-hover:scale-110 transition-transform`}
+                                    >
+                                      <Icon size={15} />
+                                    </div>
+                                    <span className="text-[#3e315c] font-medium text-sm group-hover:text-indigo-700">
+                                      {item.label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setCreateEventShowAll((prev) => !prev);
+                          }}
+                          className="rounded-full border border-white/80 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#5f4a8d] shadow-sm hover:bg-[#f6f2ff]"
+                        >
+                          {createEventShowAll
+                            ? "Use onboarding view"
+                            : "View all templates"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div
                   className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 ${
@@ -2538,7 +2619,7 @@ export default function LeftSidebar() {
                     type="button"
                     onClick={() => {
                       setActiveCategory((prev) =>
-                        prev === "Smart sign-up" ? null : "Smart sign-up"
+                        prev === "Smart sign-up" ? null : "Smart sign-up",
                       );
                     }}
                     className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
@@ -2617,7 +2698,7 @@ export default function LeftSidebar() {
                             return Boolean(emailMatches || userIdMatches);
                           });
                           return hasMyActiveResponse;
-                        }) as any
+                        }) as any,
                       );
                       if (items.length === 0)
                         return (
@@ -2635,7 +2716,7 @@ export default function LeftSidebar() {
                             const prettyHref = `/smart-signup-form/${h.id}`;
                             // Item-specific gradient row style (falls back to Smart sign-up default)
                             const signupRowClass = `${signupItemGradientRowClass(
-                              h.id
+                              h.id,
                             )} ${sharedTextClass}`;
                             return (
                               <div
@@ -2652,7 +2733,7 @@ export default function LeftSidebar() {
                                         typeof window.matchMedia ===
                                           "function" &&
                                         window.matchMedia(
-                                          "(hover: none), (pointer: coarse)"
+                                          "(hover: none), (pointer: coarse)",
                                         ).matches;
                                       if (isTouch) setIsCollapsed(true);
                                     } catch {}
@@ -2703,8 +2784,8 @@ export default function LeftSidebar() {
                                           idealLeft,
                                           window.innerWidth -
                                             menuWidth -
-                                            viewportPadding
-                                        )
+                                            viewportPadding,
+                                        ),
                                       );
                                       setColorMenuPos({
                                         left: Math.round(clampedLeft),
@@ -2722,7 +2803,7 @@ export default function LeftSidebar() {
                                     }
                                   }}
                                   className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${signupItemGradientSwatchClass(
-                                    h.id
+                                    h.id,
                                   )} border-0`}
                                   title="Edit color"
                                 />
@@ -2760,7 +2841,7 @@ export default function LeftSidebar() {
                                         top: shouldOpenUpward
                                           ? Math.round(rect.top - 10)
                                           : Math.round(
-                                              rect.top + rect.height / 2
+                                              rect.top + rect.height / 2,
                                             ),
                                       });
                                     }
@@ -2861,7 +2942,7 @@ export default function LeftSidebar() {
                         type="button"
                         onClick={() => {
                           setActiveCategory((prev) =>
-                            prev === "Shared events" ? null : "Shared events"
+                            prev === "Shared events" ? null : "Shared events",
                           );
                         }}
                         className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
@@ -2920,8 +3001,8 @@ export default function LeftSidebar() {
                                     idealLeft,
                                     window.innerWidth -
                                       menuWidth -
-                                      viewportPadding
-                                  )
+                                      viewportPadding,
+                                  ),
                                 );
                                 setColorMenuPos({
                                   left: Math.round(clampedLeft),
@@ -2950,11 +3031,11 @@ export default function LeftSidebar() {
                               history.filter((h) =>
                                 Boolean(
                                   (h as any)?.data?.shared ||
-                                    (h as any)?.data?.sharedOut ||
-                                    (h as any)?.data?.category ===
-                                      "Shared events"
-                                )
-                              )
+                                  (h as any)?.data?.sharedOut ||
+                                  (h as any)?.data?.category ===
+                                    "Shared events",
+                                ),
+                              ),
                             );
                             if (items.length === 0)
                               return (
@@ -2980,11 +3061,11 @@ export default function LeftSidebar() {
                                       const text = [
                                         String((h as any)?.title || ""),
                                         String(
-                                          (h as any)?.data?.description || ""
+                                          (h as any)?.data?.description || "",
                                         ),
                                         String((h as any)?.data?.rsvp || ""),
                                         String(
-                                          (h as any)?.data?.location || ""
+                                          (h as any)?.data?.location || "",
                                         ),
                                       ]
                                         .filter(Boolean)
@@ -2998,9 +3079,9 @@ export default function LeftSidebar() {
                                   })();
                                   const isShared = Boolean(
                                     (h as any)?.data?.shared ||
-                                      (h as any)?.data?.sharedOut ||
-                                      (h as any)?.data?.category ===
-                                        "Shared events"
+                                    (h as any)?.data?.sharedOut ||
+                                    (h as any)?.data?.category ===
+                                      "Shared events",
                                   );
                                   const rowAndBadge = (() => {
                                     if (isShared) {
@@ -3037,7 +3118,7 @@ export default function LeftSidebar() {
                                               typeof window.matchMedia ===
                                                 "function" &&
                                               window.matchMedia(
-                                                "(hover: none), (pointer: coarse)"
+                                                "(hover: none), (pointer: coarse)",
                                               ).matches;
                                             if (isTouch) setIsCollapsed(true);
                                           } catch {}
@@ -3065,7 +3146,7 @@ export default function LeftSidebar() {
                                               start || h.created_at;
                                             return dateStr
                                               ? new Date(
-                                                  dateStr
+                                                  dateStr,
                                                 ).toLocaleDateString()
                                               : "";
                                           })()}
@@ -3073,8 +3154,8 @@ export default function LeftSidebar() {
                                       </Link>
                                       {Boolean(
                                         (h as any)?.data &&
-                                          (((h as any).data.shared as any) ||
-                                            ((h as any).data.sharedOut as any))
+                                        (((h as any).data.shared as any) ||
+                                          ((h as any).data.sharedOut as any)),
                                       ) && (
                                         <svg
                                           viewBox="0 0 25.274 25.274"
@@ -3118,14 +3199,14 @@ export default function LeftSidebar() {
                                             const shouldOpenUpward =
                                               spaceBelow < menuHeight + 50;
                                             setItemMenuOpensUpward(
-                                              shouldOpenUpward
+                                              shouldOpenUpward,
                                             );
                                             setItemMenuPos({
                                               left: Math.round(rect.right + 8),
                                               top: shouldOpenUpward
                                                 ? Math.round(rect.top - 10)
                                                 : Math.round(
-                                                    rect.top + rect.height / 2
+                                                    rect.top + rect.height / 2,
                                                   ),
                                             });
                                           }
@@ -3171,7 +3252,7 @@ export default function LeftSidebar() {
                                                 setItemMenuOpensUpward(false);
                                                 setItemMenuPos(null);
                                                 await shareHistoryItem(
-                                                  prettyHref
+                                                  prettyHref,
                                                 );
                                               }}
                                               className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
@@ -3191,7 +3272,7 @@ export default function LeftSidebar() {
                                                   setItemMenuPos(null);
                                                   await renameHistoryItem(
                                                     h.id,
-                                                    h.title
+                                                    h.title,
                                                   );
                                                 }}
                                                 className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
@@ -3235,7 +3316,7 @@ export default function LeftSidebar() {
                                               </span>
                                             </button>
                                           </div>,
-                                          document.body
+                                          document.body,
                                         )}
                                     </div>
                                   );
@@ -3299,7 +3380,7 @@ export default function LeftSidebar() {
                             .map((h) => {
                               try {
                                 const explicit = normalizeCategoryLabel(
-                                  (h as any)?.data?.category as string | null
+                                  (h as any)?.data?.category as string | null,
                                 );
                                 if (explicit) return explicit;
                                 const text = [
@@ -3316,14 +3397,14 @@ export default function LeftSidebar() {
                                 return null;
                               }
                             })
-                            .filter((c): c is string => Boolean(c))
-                        )
+                            .filter((c): c is string => Boolean(c)),
+                        ),
                       ).filter(
-                        (c) => c.trim().toLowerCase() !== "shared events"
+                        (c) => c.trim().toLowerCase() !== "shared events",
                       ); // Shared events section renders above with gradient treatment
                       // Sort categories A → Z for consistent display
                       const sortedCategories = [...categories].sort((a, b) =>
-                        a.localeCompare(b)
+                        a.localeCompare(b),
                       );
                       if (categories.length === 0) return null;
                       const buttonClass = (_c: string) => {
@@ -3337,7 +3418,7 @@ export default function LeftSidebar() {
                               try {
                                 return history.filter((h) => {
                                   const explicit = normalizeCategoryLabel(
-                                    (h as any)?.data?.category as string | null
+                                    (h as any)?.data?.category as string | null,
                                   );
                                   if (explicit) return explicit === c;
                                   const text = [
@@ -3349,7 +3430,7 @@ export default function LeftSidebar() {
                                     .filter(Boolean)
                                     .join(" ");
                                   const guessed = normalizeCategoryLabel(
-                                    guessCategoryFromText(text)
+                                    guessCategoryFromText(text),
                                   );
                                   return guessed === c;
                                 });
@@ -3366,7 +3447,7 @@ export default function LeftSidebar() {
                                   type="button"
                                   onClick={() => {
                                     setActiveCategory((prev) =>
-                                      prev === c ? null : c
+                                      prev === c ? null : c,
                                     );
                                   }}
                                   className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
@@ -3413,13 +3494,13 @@ export default function LeftSidebar() {
                                                   idealLeft,
                                                   window.innerWidth -
                                                     menuWidth -
-                                                    viewportPadding
-                                                )
+                                                    viewportPadding,
+                                                ),
                                               );
                                               setColorMenuPos({
                                                 left: Math.round(clampedLeft),
                                                 top: Math.round(
-                                                  rect.bottom + 12
+                                                  rect.bottom + 12,
                                                 ),
                                               });
                                             } catch {
@@ -3468,7 +3549,7 @@ export default function LeftSidebar() {
                                           const effectiveCategory = (() => {
                                             const explicit =
                                               normalizeCategoryLabel(
-                                                explicitCat
+                                                explicitCat,
                                               );
                                             if (explicit) return explicit;
                                             try {
@@ -3476,14 +3557,14 @@ export default function LeftSidebar() {
                                                 String((h as any)?.title || ""),
                                                 String(
                                                   (h as any)?.data
-                                                    ?.description || ""
+                                                    ?.description || "",
                                                 ),
                                                 String(
-                                                  (h as any)?.data?.rsvp || ""
+                                                  (h as any)?.data?.rsvp || "",
                                                 ),
                                                 String(
                                                   (h as any)?.data?.location ||
-                                                    ""
+                                                    "",
                                                 ),
                                               ]
                                                 .filter(Boolean)
@@ -3491,7 +3572,7 @@ export default function LeftSidebar() {
                                               const guessed =
                                                 guessCategoryFromText(text);
                                               return normalizeCategoryLabel(
-                                                guessed
+                                                guessed,
                                               );
                                             } catch {
                                               return null;
@@ -3499,9 +3580,9 @@ export default function LeftSidebar() {
                                           })();
                                           const isShared = Boolean(
                                             (h as any)?.data?.shared ||
-                                              (h as any)?.data?.sharedOut ||
-                                              (h as any)?.data?.category ===
-                                                "Shared events"
+                                            (h as any)?.data?.sharedOut ||
+                                            (h as any)?.data?.category ===
+                                              "Shared events",
                                           );
                                           const rowAndBadge = (() => {
                                             if (isShared) {
@@ -3521,7 +3602,7 @@ export default function LeftSidebar() {
                                                 effectiveCategory
                                               ] ||
                                               defaultCategoryColor(
-                                                effectiveCategory
+                                                effectiveCategory,
                                               );
                                             const ccls = colorClasses(color);
                                             const row = ccls.tint;
@@ -3543,7 +3624,7 @@ export default function LeftSidebar() {
                                                         typeof window.matchMedia ===
                                                           "function" &&
                                                         window.matchMedia(
-                                                          "(hover: none), (pointer: coarse)"
+                                                          "(hover: none), (pointer: coarse)",
                                                         ).matches;
                                                       if (isTouch)
                                                         setIsCollapsed(true);
@@ -3575,7 +3656,7 @@ export default function LeftSidebar() {
                                                         start || h.created_at;
                                                       return dateStr
                                                         ? new Date(
-                                                            dateStr
+                                                            dateStr,
                                                           ).toLocaleDateString()
                                                         : "";
                                                     })()}
@@ -3592,11 +3673,11 @@ export default function LeftSidebar() {
                                                     if (itemMenuId === h.id) {
                                                       setItemMenuId(null);
                                                       setItemMenuOpensUpward(
-                                                        false
+                                                        false,
                                                       );
                                                       setItemMenuPos(null);
                                                       setItemMenuCategoryOpenFor(
-                                                        null
+                                                        null,
                                                       );
                                                       return;
                                                     }
@@ -3613,24 +3694,24 @@ export default function LeftSidebar() {
                                                         spaceBelow <
                                                         menuHeight + 50;
                                                       setItemMenuOpensUpward(
-                                                        shouldOpenUpward
+                                                        shouldOpenUpward,
                                                       );
                                                       setItemMenuPos({
                                                         left: Math.round(
-                                                          rect.right + 8
+                                                          rect.right + 8,
                                                         ),
                                                         top: shouldOpenUpward
                                                           ? Math.round(
-                                                              rect.top - 10
+                                                              rect.top - 10,
                                                             )
                                                           : Math.round(
                                                               rect.top +
-                                                                rect.height / 2
+                                                                rect.height / 2,
                                                             ),
                                                       });
                                                     }
                                                     setItemMenuCategoryOpenFor(
-                                                      null
+                                                      null,
                                                     );
                                                     setItemMenuId(h.id);
                                                   }}
@@ -3669,11 +3750,11 @@ export default function LeftSidebar() {
                                                           e.stopPropagation();
                                                           setItemMenuId(null);
                                                           setItemMenuOpensUpward(
-                                                            false
+                                                            false,
                                                           );
                                                           setItemMenuPos(null);
                                                           await shareHistoryItem(
-                                                            prettyHref
+                                                            prettyHref,
                                                           );
                                                         }}
                                                         className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
@@ -3683,7 +3764,7 @@ export default function LeftSidebar() {
                                                         </span>
                                                       </button>
                                                     </div>,
-                                                    document.body
+                                                    document.body,
                                                   )}
                                               </div>
                                               {categoryAdIndex !== null &&
@@ -3779,20 +3860,20 @@ export default function LeftSidebar() {
                         className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                       >
                         <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-3.5 w-3.5"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="7" r="4" />
-                          <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                        </svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="7" r="4" />
+                            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+                          </svg>
                         </span>
                         <span className="text-sm md:text-base">Profile</span>
                       </Link>
@@ -3807,29 +3888,29 @@ export default function LeftSidebar() {
                         >
                           <div className="flex items-center gap-3">
                             <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            >
-                              <rect
-                                x="3"
-                                y="4"
-                                width="18"
-                                height="18"
-                                rx="2"
-                                ry="2"
-                              />
-                              <line x1="16" y1="2" x2="16" y2="6" />
-                              <line x1="8" y1="2" x2="8" y2="6" />
-                              <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                              >
+                                <rect
+                                  x="3"
+                                  y="4"
+                                  width="18"
+                                  height="18"
+                                  rx="2"
+                                  ry="2"
+                                />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
                             </span>
                             <span className="text-sm md:text-base">
                               Calendar
@@ -3887,7 +3968,9 @@ export default function LeftSidebar() {
                                     >
                                       <Icon
                                         className={`h-4 w-4 ${
-                                          active ? "text-[#5a4699]" : "text-[#8677b4]"
+                                          active
+                                            ? "text-[#5a4699]"
+                                            : "text-[#8677b4]"
                                         }`}
                                       />
                                       {active && (
@@ -3931,21 +4014,21 @@ export default function LeftSidebar() {
                         className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                       >
                         <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-3.5 w-3.5"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="16" x2="12" y2="12" />
-                          <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                          </svg>
                         </span>
                         <span className="text-sm md:text-base">About us</span>
                       </Link>
@@ -3958,20 +4041,20 @@ export default function LeftSidebar() {
                         className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                       >
                         <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                        <svg
-                          fill="currentColor"
-                          viewBox="0 0 492.014 492.014"
-                          className="h-3.5 w-3.5"
-                          aria-hidden="true"
-                        >
-                          <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
-                          <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
-                          <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
-                          <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
-                          <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
-                          <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
-                          <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
-                        </svg>
+                          <svg
+                            fill="currentColor"
+                            viewBox="0 0 492.014 492.014"
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          >
+                            <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
+                            <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
+                            <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
+                            <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
+                            <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
+                            <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
+                            <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
+                          </svg>
                         </span>
                         <span className="text-sm md:text-base">Contact us</span>
                       </Link>
@@ -4068,21 +4151,21 @@ export default function LeftSidebar() {
                         className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#f0618a] hover:text-[#e44a79] hover:bg-[#ffeef5] transition-all"
                       >
                         <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ffe8f0] text-current group-hover:bg-[#ffdce9]">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-3.5 w-3.5 text-current"
-                          aria-hidden="true"
-                        >
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                          <polyline points="16 17 21 12 16 7" />
-                          <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-3.5 w-3.5 text-current"
+                            aria-hidden="true"
+                          >
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                          </svg>
                         </span>
                         <span className="text-sm md:text-base">Log out</span>
                       </button>
@@ -4094,105 +4177,6 @@ export default function LeftSidebar() {
           </div>
         </div>
       </aside>
-
-      {createEventOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[11500] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setCreateEventOpen(false)}
-          >
-            <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] md:h-auto overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Create New Event
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Choose a category to get started quickly
-                  </p>
-                </div>
-                <button
-                  onClick={() => setCreateEventOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="Close create event menu"
-                >
-                  <X size={22} />
-                </button>
-              </div>
-
-              <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {createModalSections.map((cat, idx) => (
-                    <div key={`${cat.title}-${idx}`} className="space-y-4">
-                      <div className="flex items-center space-x-2 mb-4">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-bold ${cat.color.replace(
-                            "text-",
-                            "bg-opacity-20 "
-                          )}`}
-                        >
-                          {cat.items.length}
-                        </span>
-                        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wider">
-                          {cat.title}
-                        </h3>
-                      </div>
-                      <div className="space-y-2">
-                        {cat.items.map((item) => {
-                          const Icon = ICON_LOOKUP[item.label] || Sparkles;
-                          return (
-                            <button
-                              key={item.label}
-                              className="w-full flex items-center space-x-3 p-3 bg-white hover:bg-indigo-50 border border-transparent hover:border-indigo-100 rounded-xl transition-all duration-200 group text-left shadow-sm hover:shadow-md"
-                              onClick={() =>
-                                handleCreateModalSelect(
-                                  item.label,
-                                  (item as any).href
-                                )
-                              }
-                            >
-                              <div
-                                className={`p-2 rounded-lg ${cat.color} group-hover:scale-110 transition-transform`}
-                              >
-                                <Icon size={18} />
-                              </div>
-                              <span className="text-gray-700 font-medium text-sm group-hover:text-indigo-700">
-                                {item.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-gray-100 bg-white flex justify-end">
-                <button
-                  onClick={() => {
-                    setCreateEventOpen(false);
-                    collapseSidebarOnTouch();
-                    try {
-                      router.push("/templates");
-                    } catch (err) {
-                      console.debug("[sidebar] templates nav failed", err);
-                      triggerCreateEvent();
-                    }
-                  }}
-                  className="text-sm text-gray-500 hover:text-gray-900 font-medium px-4"
-                >
-                  View All Templates
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
 
       {colorMenuFor &&
         colorMenuPos &&
@@ -4249,7 +4233,7 @@ export default function LeftSidebar() {
               <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
                 {SHARED_GRADIENTS.map((g) => {
                   const historyId = String(
-                    (colorMenuFor || "").split(":")[1] || ""
+                    (colorMenuFor || "").split(":")[1] || "",
                   );
                   const selected = getSignupItemGradientId(historyId) === g.id;
                   return (
@@ -4265,7 +4249,7 @@ export default function LeftSidebar() {
                         e.preventDefault();
                         e.stopPropagation();
                         const hid = String(
-                          (colorMenuFor || "").split(":")[1] || ""
+                          (colorMenuFor || "").split(":")[1] || "",
                         );
                         setSignupItemColor(hid, g.id);
                       }}
@@ -4319,7 +4303,7 @@ export default function LeftSidebar() {
               </div>
             )}
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );

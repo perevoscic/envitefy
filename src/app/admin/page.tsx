@@ -86,7 +86,7 @@ export default function AdminPage() {
     : [];
   const categorizedTotal = categoryStats.reduce(
     (sum, item) => sum + item.count,
-    0
+    0,
   );
   const scanStats = overview ? getEventTypeStats(overview.scansByCategory) : [];
 
@@ -168,7 +168,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-white text-[#2b1b16] transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -178,12 +178,12 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col gap-2 pt-8" suppressHydrationWarning>
           <h1
-            className="text-3xl font-bold bg-gradient-to-r from-[#58a6ff] to-[#f97316] bg-clip-text text-transparent"
+            className="text-3xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
             suppressHydrationWarning
           >
             Admin Dashboard
           </h1>
-          <p className="text-sm text-[#adbcd6]" suppressHydrationWarning>
+          <p className="text-sm text-[#8c80b6]" suppressHydrationWarning>
             Platform insights, user analytics, and administrative tools
           </p>
         </div>
@@ -193,46 +193,46 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link
               href="/admin/campaigns"
-              className="group relative overflow-hidden rounded-2xl border border-border bg-white shadow transition-all hover:shadow-lg"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
                       Email Campaigns
                     </p>
-                    <p className="text-sm text-foreground/80">
+                    <p className="text-sm text-[#5b4d86]">
                       Send bulk emails to users
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#dcb887] to-[#c57f5f] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#3d1e10]">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
                     EC
                   </div>
                 </div>
               </div>
-              <div className="h-1 bg-gradient-to-r from-[#2d6ef4] to-[#7c3aed] opacity-80" />
+              <div className="h-1 bg-gradient-to-r from-[#9f8ceb] to-[#6f57c8] opacity-80" />
             </Link>
 
             <Link
               href="/admin/emails"
-              className="group relative overflow-hidden rounded-2xl border border-border bg-white shadow transition-all hover:shadow-lg"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
                       Email Templates
                     </p>
-                    <p className="text-sm text-foreground/80">
+                    <p className="text-sm text-[#5b4d86]">
                       Preview email designs
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#dcb887] to-[#c57f5f] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#3d1e10]">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
                     ET
                   </div>
                 </div>
               </div>
-              <div className="h-1 bg-gradient-to-r from-[#1dd1a1] to-[#0f766e] opacity-80" />
+              <div className="h-1 bg-gradient-to-r from-[#b4a4ef] to-[#7b63cf] opacity-80" />
             </Link>
           </div>
         </section>
@@ -262,7 +262,7 @@ export default function AdminPage() {
         {/* Overview Stats */}
         <section suppressHydrationWarning>
           <h2
-            className="text-xl font-semibold mb-3 text-foreground"
+            className="text-xl font-semibold mb-3 text-[#43366f]"
             suppressHydrationWarning
           >
             Platform Overview
@@ -301,7 +301,7 @@ export default function AdminPage() {
                 label="Total Users"
                 value={overview.totalUsers}
                 icon="U"
-                gradient="from-[#22d3ee] to-[#1d4ed8]"
+                gradient="from-[#bbaaf3] to-[#7f67d3]"
                 onClick={() => handleStatClick("all")}
                 isActive={activeStatView === "all"}
               />
@@ -322,21 +322,21 @@ export default function AdminPage() {
         {/* User Search */}
         <section suppressHydrationWarning>
           <div
-            className="bg-white border border-border rounded-2xl overflow-hidden shadow-xl"
+            className="bg-white border border-[#ddd5f6] rounded-2xl overflow-hidden shadow-xl"
             suppressHydrationWarning
           >
             <div
-              className="px-6 py-4 border-b border-border"
+              className="px-6 py-4 border-b border-[#e4def9]"
               suppressHydrationWarning
             >
               <h2
-                className="text-lg font-semibold text-foreground"
+                className="text-lg font-semibold text-[#43366f]"
                 suppressHydrationWarning
               >
                 {getActiveViewTitle()}
               </h2>
               <p
-                className="text-sm text-muted-foreground mt-1"
+                className="text-sm text-[#8c80b6] mt-1"
                 suppressHydrationWarning
               >
                 {activeStatView
@@ -344,25 +344,25 @@ export default function AdminPage() {
                       activeStatView === "all"
                         ? "all users"
                         : activeStatView === "paid"
-                        ? "paid users"
-                        : activeStatView === "ff"
-                        ? "FF lifetime users"
-                        : activeStatView === "scans"
-                        ? "users sorted by total scans"
-                        : "users sorted by shares sent"
+                          ? "paid users"
+                          : activeStatView === "ff"
+                            ? "FF lifetime users"
+                            : activeStatView === "scans"
+                              ? "users sorted by total scans"
+                              : "users sorted by shares sent"
                     }`
                   : "Search for users by email, first name, or last name"}
               </p>
             </div>
             <div className="p-6">
               {activeStatView && (
-                <div className="mb-4 flex items-center justify-between rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3">
-                  <span className="text-sm text-secondary font-medium">
+                <div className="mb-4 flex items-center justify-between rounded-lg border border-[#cbbbf1] bg-[#f4efff] px-4 py-3">
+                  <span className="text-sm text-[#6f57c8] font-medium">
                     Active Filter: {getActiveViewTitle()}
                   </span>
                   <button
                     onClick={handleClearSearch}
-                    className="text-sm text-secondary hover:text-secondary/80 font-semibold flex items-center gap-1"
+                    className="text-sm text-[#6f57c8] hover:text-[#5a42b7] font-semibold flex items-center gap-1"
                   >
                     <svg
                       className="w-4 h-4"
@@ -392,11 +392,11 @@ export default function AdminPage() {
                     }}
                     placeholder="Search by email, first or last name..."
                     disabled={!!activeStatView}
-                    className="w-full pl-11 pr-10 py-3 text-sm rounded-2xl border border-border bg-white text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full pl-11 pr-10 py-3 text-sm rounded-2xl border border-[#d8d0f3] bg-white text-[#483a74] placeholder:text-[#9a8fc0] focus:border-[#9b86df] focus:ring-2 focus:ring-[#baa9ea]/55 focus:outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     suppressHydrationWarning
                   />
                   <svg
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#998fc0]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -412,11 +412,11 @@ export default function AdminPage() {
                   {q && (
                     <button
                       onClick={handleClearSearch}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[#fff0e3]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[#f1edff]"
                       title="Clear search"
                     >
                       <svg
-                        className="w-4 h-4 text-muted-foreground"
+                        className="w-4 h-4 text-[#998fc0]"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -434,7 +434,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleSearch}
                   disabled={usersLoading || !!activeStatView}
-                  className="px-6 py-3 text-sm font-semibold rounded-2xl bg-gradient-to-r from-[#c58b71] to-[#a35b3a] hover:from-[#c58b71] hover:to-[#a35b3a] text-white shadow-lg shadow-[#b99c8b]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="px-6 py-3 text-sm font-semibold rounded-2xl bg-gradient-to-r from-[#8b70de] to-[#6f57c8] hover:from-[#7f63d8] hover:to-[#5f49bb] text-white shadow-lg shadow-[#8b70de]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {usersLoading ? (
                     <>
@@ -487,7 +487,7 @@ export default function AdminPage() {
               )}
 
               {hasSearched && users.length === 0 && !usersLoading && (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-[#9186bb]">
                   <svg
                     className="mx-auto h-12 w-12 mb-3"
                     fill="none"
@@ -514,7 +514,7 @@ export default function AdminPage() {
                       const breakdown = getEventTypeStats(u);
                       const eventTotal = breakdown.reduce(
                         (sum, item) => sum + item.count,
-                        0
+                        0,
                       );
                       const scanTotal =
                         typeof u.scans_total === "number" &&
@@ -524,31 +524,31 @@ export default function AdminPage() {
                       return (
                         <div
                           key={u.id}
-                          className="rounded-2xl border border-border bg-white p-4 space-y-4"
+                          className="rounded-2xl border border-[#ddd5f6] bg-white p-4 space-y-4"
                         >
                           <div className="flex items-start gap-4">
                             <div className="flex-1 min-w-0 space-y-1">
-                              <p className="text-xs uppercase tracking-[0.3em] text-[#6a5549]">
+                              <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
                                 Name
                               </p>
-                              <p className="text-base font-semibold text-[#2b1b16] truncate">
+                              <p className="text-base font-semibold text-[#43366f] truncate">
                                 {[u.first_name, u.last_name]
                                   .filter(Boolean)
                                   .join(" ") || "-"}
                               </p>
-                              <p className="text-xs uppercase tracking-[0.3em] text-[#6a5549]">
+                              <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
                                 Email
                               </p>
-                              <p className="text-sm text-[#4a382f] break-words">
+                              <p className="text-sm text-[#5b4d86] break-words">
                                 {u.email}
                               </p>
                             </div>
                           </div>
 
-                          <div className="pt-3 border-t border-border space-y-3">
+                          <div className="pt-3 border-t border-[#e5defa] space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <p className="text-[10px] uppercase tracking-[0.4em] text-[#6a5549]">
+                                <p className="text-[10px] uppercase tracking-[0.4em] text-[#8b7fb6]">
                                   Events
                                 </p>
                                 <BreakdownPopup
@@ -559,7 +559,7 @@ export default function AdminPage() {
                                 />
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-[0.4em] text-[#6a5549]">
+                                <p className="text-[10px] uppercase tracking-[0.4em] text-[#8b7fb6]">
                                   Scans
                                 </p>
                                 <BreakdownPopup
@@ -572,11 +572,11 @@ export default function AdminPage() {
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-border">
-                            <p className="text-xs uppercase tracking-wider text-[#6a5549] mb-1">
+                          <div className="pt-2 border-t border-[#e5defa]">
+                            <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
                               Joined
                             </p>
-                            <p className="text-sm text-[#4a382f]">
+                            <p className="text-sm text-[#5b4d86]">
                               {formatDate(u.created_at)}
                             </p>
                           </div>
@@ -587,11 +587,11 @@ export default function AdminPage() {
 
                   {/* Desktop Table View */}
                   <div
-                    className="hidden md:block overflow-x-auto rounded-2xl border border-border bg-white shadow-lg"
+                    className="hidden md:block overflow-x-auto rounded-2xl border border-[#ddd5f6] bg-white shadow-lg"
                     suppressHydrationWarning
                   >
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-white/80 text-xs uppercase tracking-wider font-semibold text-muted-foreground border-b border-border">
+                      <thead className="bg-[#faf8ff] text-xs uppercase tracking-wider font-semibold text-[#8b7fb6] border-b border-[#e4def9]">
                         <tr>
                           <th className="px-4 py-3">Name</th>
                           <th className="px-4 py-3">Email</th>
@@ -600,12 +600,12 @@ export default function AdminPage() {
                           <th className="px-4 py-3">Joined</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border/60 bg-white">
+                      <tbody className="divide-y divide-[#e8e1fb] bg-white">
                         {users.map((u) => {
                           const breakdown = getEventTypeStats(u);
                           const eventTotal = breakdown.reduce(
                             (sum, item) => sum + item.count,
-                            0
+                            0,
                           );
                           const scanTotal =
                             typeof u.scans_total === "number" &&
@@ -615,7 +615,7 @@ export default function AdminPage() {
                           return (
                             <tr
                               key={u.id}
-                              className="hover:bg-white/80 transition-colors"
+                              className="hover:bg-[#f8f4ff] transition-colors"
                             >
                               <td className="px-4 py-3 text-foreground/80">
                                 {[u.first_name, u.last_name]
@@ -649,7 +649,7 @@ export default function AdminPage() {
                     </table>
                   </div>
                   <div className="mt-4 flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-[#8c80b6]">
                       Showing {users.length} result
                       {users.length !== 1 ? "s" : ""}
                     </p>
@@ -657,7 +657,7 @@ export default function AdminPage() {
                       <button
                         onClick={handleLoadMore}
                         disabled={usersLoading}
-                        className="px-4 py-2 text-sm font-medium rounded-2xl border border-border bg-white text-foreground hover:bg-white/80 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm font-medium rounded-2xl border border-[#d8d0f3] bg-white text-[#4b3f72] hover:bg-[#f4efff] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {usersLoading ? "Loading…" : "Load more"}
                       </button>
@@ -691,12 +691,12 @@ function StatCard({
   helperText?: string;
 }) {
   const activeBorderClass = isActive
-    ? "border-2 border-indigo-500 shadow-2xl"
+    ? "border-2 border-[#7f67d3] shadow-2xl"
     : "";
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl bg-white border border-border transition-all shadow-lg cursor-pointer ring-1 ring-border/50 ${activeBorderClass} ${
+      className={`relative overflow-hidden rounded-xl bg-white border border-[#ddd5f6] transition-all shadow-lg cursor-pointer ring-1 ring-[#ede7ff] ${activeBorderClass} ${
         onClick ? "hover:-translate-y-0.5" : ""
       }`}
       onClick={onClick}
@@ -704,20 +704,20 @@ function StatCard({
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
               {label}
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+            <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
               {value.toLocaleString()}
             </p>
             {helperText && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs text-[#8c80b6] mt-1 line-clamp-2">
                 {helperText}
               </p>
             )}
           </div>
           <div
-            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-2xl border border-border/20`}
+            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-2xl border border-[#e8e1fb] text-white`}
           >
             {icon}
           </div>
@@ -738,22 +738,22 @@ function CategoryBreakdownCard({
   total: number;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-border/50 border border-border">
+    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-[#ede7ff] border border-[#ddd5f6]">
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-[#8b7fb6] mb-1.5">
               {label}
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+            <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
               {total.toLocaleString()}
             </p>
           </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#dcb887] to-[#c57f5f] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
             🗂️
           </div>
         </div>
-        <div className="mt-3 pt-3 border-t border-border/50">
+        <div className="mt-3 pt-3 border-t border-[#e7e1fb]">
           {categoryStats.length > 0 ? (
             <div className="space-y-2">
               {categoryStats.map((item) => (
@@ -761,23 +761,21 @@ function CategoryBreakdownCard({
                   key={item.key}
                   className="flex items-center justify-between gap-2 text-sm"
                 >
-                  <span className="text-foreground/80 font-medium truncate">
+                  <span className="text-[#5b4d86] font-medium truncate">
                     {item.label}
                   </span>
-                  <span className="text-foreground font-semibold whitespace-nowrap">
+                  <span className="text-[#43366f] font-semibold whitespace-nowrap">
                     {item.count.toLocaleString()}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">
-              No categorized events yet
-            </p>
+            <p className="text-xs text-[#9186bb]">No categorized events yet</p>
           )}
         </div>
       </div>
-      <div className="h-1 bg-gradient-to-r from-[#dcb887] to-[#c57f5f] opacity-60" />
+      <div className="h-1 bg-gradient-to-r from-[#b8a8f0] to-[#7d65d2] opacity-80" />
     </div>
   );
 }
@@ -792,22 +790,22 @@ function ScanBreakdownCard({
   total: number;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-border/50 border border-border">
+    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-[#ede7ff] border border-[#ddd5f6]">
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-[#8b7fb6] mb-1.5">
               {label}
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+            <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
               {total.toLocaleString()}
             </p>
           </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#91b48c] to-[#7a8b6c] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
             🌀
           </div>
         </div>
-        <div className="mt-3 pt-3 border-t border-border/50">
+        <div className="mt-3 pt-3 border-t border-[#e7e1fb]">
           {scanStats.length > 0 ? (
             <div className="space-y-2">
               {scanStats.map((item) => (
@@ -815,25 +813,23 @@ function ScanBreakdownCard({
                   key={item.key}
                   className="flex items-center justify-between gap-2 text-sm"
                 >
-                  <span className="text-foreground/80 font-medium truncate">
+                  <span className="text-[#5b4d86] font-medium truncate">
                     {item.label}
                   </span>
-                  <span className="text-foreground font-semibold whitespace-nowrap">
+                  <span className="text-[#43366f] font-semibold whitespace-nowrap">
                     {item.count.toLocaleString()}
                   </span>
                 </div>
               ))}
             </div>
           ) : total > 0 ? (
-            <p className="text-xs text-muted-foreground">
-              Scans not categorized
-            </p>
+            <p className="text-xs text-[#9186bb]">Scans not categorized</p>
           ) : (
-            <p className="text-xs text-muted-foreground">No scans yet</p>
+            <p className="text-xs text-[#9186bb]">No scans yet</p>
           )}
         </div>
       </div>
-      <div className="h-1 bg-gradient-to-r from-[#91b48c] to-[#7a8b6c] opacity-60" />
+      <div className="h-1 bg-gradient-to-r from-[#b8a8f0] to-[#7d65d2] opacity-80" />
     </div>
   );
 }
@@ -882,10 +878,10 @@ function BreakdownPopup({
     <button
       type="button"
       onClick={() => setOpen((prev) => !prev)}
-      className="flex flex-col items-start gap-0.5 text-left focus-visible:outline-2 focus-visible:outline-primary"
+      className="flex flex-col items-start gap-0.5 text-left focus-visible:outline-2 focus-visible:outline-[#8c74df]"
       aria-expanded={open}
     >
-      <span className="text-2xl font-semibold text-foreground">
+      <span className="text-2xl font-semibold text-[#43366f]">
         {normalizedCount.toLocaleString()}
       </span>
     </button>
@@ -893,23 +889,21 @@ function BreakdownPopup({
 
   const content = (
     <div className="space-y-2 text-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#8b7fb6]">
         {label} by type
       </p>
       {hasItems ? (
         breakdown.map((item) => (
           <div
             key={item.key}
-            className="flex items-center justify-between text-xs text-foreground"
+            className="flex items-center justify-between text-xs text-[#4b3f72]"
           >
             <span className="truncate">{item.label}</span>
             <span className="font-semibold">{item.count.toLocaleString()}</span>
           </div>
         ))
       ) : (
-        <p className="text-xs text-muted-foreground">
-          No {label.toLowerCase()} yet
-        </p>
+        <p className="text-xs text-[#9186bb]">No {label.toLowerCase()} yet</p>
       )}
     </div>
   );
@@ -919,7 +913,7 @@ function BreakdownPopup({
       <div ref={ref} className="w-full">
         {summary}
         {open && (
-          <div className="mt-2 rounded-2xl border border-border bg-white p-3 shadow-xl">
+          <div className="mt-2 rounded-2xl border border-[#ddd5f6] bg-white p-3 shadow-xl">
             {content}
           </div>
         )}
@@ -931,7 +925,7 @@ function BreakdownPopup({
     <div ref={ref} className="relative inline-flex">
       {summary}
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-border bg-white p-3 shadow-xl">
+        <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-[#ddd5f6] bg-white p-3 shadow-xl">
           {content}
         </div>
       )}
@@ -940,7 +934,7 @@ function BreakdownPopup({
 }
 
 function getEventTypeStats(
-  source: Partial<Record<EventTypeKey, number>> | null | undefined
+  source: Partial<Record<EventTypeKey, number>> | null | undefined,
 ) {
   if (!source) return [];
   return (Object.keys(EVENT_TYPE_LABELS) as EventTypeKey[])

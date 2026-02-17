@@ -41,12 +41,12 @@ export default function EventSharePreviewPage() {
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
       <strong>${escapeHtml(
-        senderName
+        senderName,
       )}</strong> has shared an event with you on Envitefy.
     </p>
     <div style="background: #F9FAFB; border-left: 4px solid #2DD4BF; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0; font-size: 18px; font-weight: 600; color: #2E2C2D;">📅 ${escapeHtml(
-        eventTitle
+        eventTitle,
       )}</p>
     </div>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
@@ -57,7 +57,7 @@ export default function EventSharePreviewPage() {
   const footerText = `
     Don't have a Envitefy account yet? 
     <a href="${escapeHtml(
-      signupUrl
+      signupUrl,
     )}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Sign up now</a> 
     to manage all your events in one place.
   `;
@@ -73,7 +73,7 @@ export default function EventSharePreviewPage() {
 
   return (
     <div
-      className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -85,7 +85,7 @@ export default function EventSharePreviewPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin/emails"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[#8c80b6] hover:text-[#43366f] transition-colors"
             >
               <svg
                 className="w-6 h-6"
@@ -102,16 +102,13 @@ export default function EventSharePreviewPage() {
               </svg>
             </Link>
             <h1
-              className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent"
+              className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
               suppressHydrationWarning
             >
               📅 Event Share Email
             </h1>
           </div>
-          <p
-            className="text-sm text-muted-foreground ml-9"
-            suppressHydrationWarning
-          >
+          <p className="text-sm text-[#8c80b6] ml-9" suppressHydrationWarning>
             Sent when a user shares an event with another user via
             /api/events/share
           </p>
@@ -119,16 +116,16 @@ export default function EventSharePreviewPage() {
 
         {/* Email Preview */}
         <section suppressHydrationWarning>
-          <div className="bg-surface rounded-xl ring-1 ring-border/60 overflow-hidden shadow-lg">
-            <div className="px-6 py-4 border-b border-border bg-surface/80">
-              <h2 className="text-lg font-semibold text-foreground">
+          <div className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] overflow-hidden shadow-lg">
+            <div className="px-6 py-4 border-b border-[#e4def9] bg-[#faf8ff]">
+              <h2 className="text-lg font-semibold text-[#43366f]">
                 Email Preview
               </h2>
             </div>
             <div className="p-6">
               <iframe
                 srcDoc={html}
-                className="w-full border border-border rounded-lg"
+                className="w-full border border-[#ddd5f6] rounded-lg"
                 style={{ height: "700px" }}
                 title="Email Preview"
                 suppressHydrationWarning
@@ -140,4 +137,3 @@ export default function EventSharePreviewPage() {
     </div>
   );
 }
-

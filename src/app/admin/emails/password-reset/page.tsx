@@ -39,10 +39,10 @@ export default function PasswordResetPreviewPage() {
 
   const footerText = `This link will expire soon for your security. If the button doesn't work, copy and paste this URL into your browser:<br/><br/>
     <a href="${escapeHtml(
-      resetUrl
+      resetUrl,
     )}" target="_blank" style="color:#2DD4BF; word-break: break-all;">${escapeHtml(
-    resetUrl
-  )}</a><br/><br/>
+      resetUrl,
+    )}</a><br/><br/>
     If you didn't request this password reset, you can safely ignore this email.`;
 
   const html = createEmailTemplate({
@@ -56,7 +56,7 @@ export default function PasswordResetPreviewPage() {
 
   return (
     <div
-      className="min-h-[100dvh] landing-dark-gradient bg-background text-foreground transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
       suppressHydrationWarning
     >
       <div
@@ -68,7 +68,7 @@ export default function PasswordResetPreviewPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin/emails"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[#8c80b6] hover:text-[#43366f] transition-colors"
             >
               <svg
                 className="w-6 h-6"
@@ -85,32 +85,29 @@ export default function PasswordResetPreviewPage() {
               </svg>
             </Link>
             <h1
-              className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent"
+              className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
               suppressHydrationWarning
             >
               🔐 Password Reset Email
             </h1>
           </div>
-          <p
-            className="text-sm text-muted-foreground ml-9"
-            suppressHydrationWarning
-          >
+          <p className="text-sm text-[#8c80b6] ml-9" suppressHydrationWarning>
             Sent when user requests a password reset via /forgot
           </p>
         </div>
 
         {/* Email Preview */}
         <section suppressHydrationWarning>
-          <div className="bg-surface rounded-xl ring-1 ring-border/60 overflow-hidden shadow-lg">
-            <div className="px-6 py-4 border-b border-border bg-surface/80">
-              <h2 className="text-lg font-semibold text-foreground">
+          <div className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] overflow-hidden shadow-lg">
+            <div className="px-6 py-4 border-b border-[#e4def9] bg-[#faf8ff]">
+              <h2 className="text-lg font-semibold text-[#43366f]">
                 Email Preview
               </h2>
             </div>
             <div className="p-6">
               <iframe
                 srcDoc={html}
-                className="w-full border border-border rounded-lg"
+                className="w-full border border-[#ddd5f6] rounded-lg"
                 style={{ height: "600px" }}
                 title="Email Preview"
                 suppressHydrationWarning
@@ -122,4 +119,3 @@ export default function PasswordResetPreviewPage() {
     </div>
   );
 }
-
