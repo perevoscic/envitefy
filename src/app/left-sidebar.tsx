@@ -482,7 +482,6 @@ export default function LeftSidebar() {
   const [myEventsOpen, setMyEventsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
-  const [adminOpenFloating, setAdminOpenFloating] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [createEventShowAll, setCreateEventShowAll] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -4060,89 +4059,28 @@ export default function LeftSidebar() {
                       </Link>
 
                       {isAdmin && (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdminOpenFloating((v) => !v);
-                            }}
-                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                        <Link
+                          href="/admin"
+                          onClick={() => {
+                            setMenuOpen(false);
+                          }}
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4 text-[#6e655f]"
+                            aria-hidden="true"
                           >
-                            <div className="flex items-center gap-3">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 text-[#6e655f]"
-                                aria-hidden="true"
-                              >
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                              </svg>
-                              <span className="text-sm md:text-base">
-                                Admin
-                              </span>
-                            </div>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
-                                adminOpenFloating ? "rotate-0" : "rotate-90"
-                              }`}
-                              aria-hidden="true"
-                            >
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                          </button>
-                          {adminOpenFloating && (
-                            <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 w-44 rounded-xl border border-[#d9d3f3] bg-[#f6f3ff]/95 backdrop-blur-xl shadow-[0_14px_30px_rgba(92,67,156,0.16)] p-2 z-[999]">
-                              <Link
-                                href="/admin"
-                                onClick={() => {
-                                  setMenuOpen(false);
-                                  setAdminOpenFloating(false);
-                                }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-colors"
-                              >
-                                <span className="text-sm md:text-base">
-                                  Dashboard
-                                </span>
-                              </Link>
-                              <Link
-                                href="/admin/emails"
-                                onClick={() => {
-                                  setMenuOpen(false);
-                                  setAdminOpenFloating(false);
-                                }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-colors"
-                              >
-                                <span className="text-sm md:text-base">
-                                  Emails
-                                </span>
-                              </Link>
-                              <Link
-                                href="/admin/campaigns"
-                                onClick={() => {
-                                  setMenuOpen(false);
-                                  setAdminOpenFloating(false);
-                                }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-colors"
-                              >
-                                <span className="text-sm md:text-base">
-                                  Campaigns
-                                </span>
-                              </Link>
-                            </div>
-                          )}
-                        </div>
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          </svg>
+                          <span className="text-sm md:text-base">Admin</span>
+                        </Link>
                       )}
 
                       <div className="my-1 h-px bg-gradient-to-r from-transparent via-[#d8d2f3] to-transparent" />
