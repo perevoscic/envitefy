@@ -39,18 +39,11 @@ export function CalendarIconApple({ className }: { className?: string }) {
       width="20"
       height="20"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
       className={className}
     >
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-      <circle cx="12" cy="15" r="1.5" fill="#ef4444" />
+      <path d="M15.5 2.2c-.8 0-1.8.5-2.3 1.1-.5.6-.9 1.5-.8 2.3.9.1 1.8-.4 2.4-1 .5-.6.9-1.5.7-2.4z" />
+      <path d="M20.3 17.1c-.4 1-1 1.9-1.7 2.8-.9 1.2-1.8 2.4-3.3 2.4-1.5 0-2-.9-3.7-.9-1.7 0-2.3.9-3.7.9-1.4 0-2.4-1.1-3.3-2.3-1.8-2.5-3.2-7-1.3-10.3 1-1.6 2.6-2.7 4.4-2.7 1.4 0 2.8 1 3.7 1 1 0 2.7-1.2 4.6-1 .8 0 3 .3 4.4 2.3-.1.1-2.6 1.5-2.6 4.5 0 3.6 3.2 4.8 3.3 4.8-.1.3-.4 1.1-.8 1.9z" />
     </svg>
   );
 }

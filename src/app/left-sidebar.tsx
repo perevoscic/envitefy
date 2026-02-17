@@ -2139,7 +2139,7 @@ export default function LeftSidebar() {
                     <div
                       key={key}
                       className={`flex flex-col items-center gap-1 text-[11px] ${
-                        active ? "text-emerald-600" : "text-foreground/60"
+                        active ? "text-[#4b3f72]" : "text-[#8f86b3]"
                       }`}
                     >
                       <button
@@ -2152,18 +2152,18 @@ export default function LeftSidebar() {
                         }
                         className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
                           active
-                            ? "border-emerald-600 bg-emerald-50 hover:border-emerald-500 shadow-md shadow-emerald-600/20"
-                            : "border-border bg-surface hover:border-primary hover:bg-primary/10"
+                            ? "border-[#b9a7ea] bg-[#f7f3ff] hover:border-[#a892e3] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
+                            : "border-[#ddd3f5] bg-white hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
                         }`}
                         onClick={() => handleCalendarConnect(key)}
                       >
                         <Icon
                           className={`h-4 w-4 ${
-                            active ? "text-emerald-700" : ""
+                            active ? "text-[#5a4699]" : "text-[#8677b4]"
                           }`}
                         />
                         {active && (
-                          <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-sm">
+                          <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 12 12"
@@ -2182,6 +2182,11 @@ export default function LeftSidebar() {
                         )}
                       </button>
                       <span>{label}</span>
+                      {active ? (
+                        <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
+                          Connected
+                        </span>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -2189,7 +2194,7 @@ export default function LeftSidebar() {
               {!connectedCalendars.google &&
                 !connectedCalendars.apple &&
                 !connectedCalendars.microsoft && (
-                  <p className="text-[11px] text-foreground/60">
+                  <p className="text-[11px] text-[#8f86b3]">
                     Connect calendars from Settings to sync events in one tap.
                   </p>
                 )}
@@ -3705,7 +3710,7 @@ export default function LeftSidebar() {
           </div>
 
           {/* Bottom: User button with dropdown */}
-          <div className="border-t border-border py-2 px-3">
+          <div className="border-t border-[#ddd6f5] py-2 px-3">
             <div className="relative z-[900]">
               <button
                 ref={buttonRef}
@@ -3720,7 +3725,7 @@ export default function LeftSidebar() {
                 onMouseDown={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
                 aria-expanded={menuOpen}
-                className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-foreground/90 transition-colors duration-150 hover:text-foreground hover:bg-surface/70 active:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-[#4b3f72] transition-colors duration-150 hover:text-[#34275c] hover:bg-[#f1edff] active:bg-[#eae3ff] focus:outline-none focus:ring-2 focus:ring-[#b8aae8]/60"
               >
                 <div className="min-w-0 flex-1 inline-flex items-center gap-2">
                   <div className="min-w-0 flex-1 text-left">
@@ -3728,7 +3733,7 @@ export default function LeftSidebar() {
                       {displayName}
                     </div>
                     {userEmail && (
-                      <div className="truncate text-xs md:text-sm text-foreground/60">
+                      <div className="truncate text-xs md:text-sm text-[#8d84b3]">
                         {userEmail}
                       </div>
                     )}
@@ -3747,7 +3752,7 @@ export default function LeftSidebar() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`h-4 w-4 transition-transform ${
+                  className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
                     menuOpen ? "rotate-180" : "rotate-0"
                   }`}
                   aria-hidden="true"
@@ -3795,7 +3800,9 @@ export default function LeftSidebar() {
                       <div className="mt-1 relative">
                         <button
                           type="button"
-                          onClick={() => {}}
+                          onClick={() => {
+                            setCalendarsOpenFloating((v) => !v);
+                          }}
                           className="group w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                         >
                           <div className="flex items-center gap-3">
@@ -3837,14 +3844,14 @@ export default function LeftSidebar() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
-                              false ? "rotate-0" : "rotate-90"
+                              calendarsOpenFloating ? "rotate-0" : "rotate-90"
                             }`}
                             aria-hidden="true"
                           >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
-                        {false && (
+                        {calendarsOpenFloating && (
                           <div className="mt-2 px-3 pb-2 space-y-3">
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
@@ -3859,8 +3866,8 @@ export default function LeftSidebar() {
                                     key={key}
                                     className={`flex flex-col items-center gap-1 text-[11px] ${
                                       active
-                                        ? "text-emerald-600"
-                                        : "text-foreground/60"
+                                        ? "text-[#4b3f72]"
+                                        : "text-[#8f86b3]"
                                     }`}
                                   >
                                     <button
@@ -3873,28 +3880,28 @@ export default function LeftSidebar() {
                                       }
                                       className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
                                         active
-                                          ? "border-emerald-600 bg-emerald-100 hover:border-emerald-500 shadow-lg shadow-emerald-600/30 ring-2 ring-emerald-600/20"
-                                          : "border-border bg-surface hover:border-primary hover:bg-primary/10"
+                                          ? "border-[#b9a7ea] bg-[#f7f3ff] hover:border-[#a892e3] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
+                                          : "border-[#ddd3f5] bg-white hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
                                       }`}
                                       onClick={() => handleCalendarConnect(key)}
                                     >
                                       <Icon
                                         className={`h-4 w-4 ${
-                                          active ? "text-emerald-700" : ""
+                                          active ? "text-[#5a4699]" : "text-[#8677b4]"
                                         }`}
                                       />
                                       {active && (
-                                        <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-lg z-10">
+                                        <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
                                           <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 12 12"
                                             fill="none"
-                                            className="h-3 w-3 text-white"
+                                            className="h-2.5 w-2.5 text-white"
                                           >
                                             <path
                                               d="M10 3L4.5 8.5L2 6"
                                               stroke="currentColor"
-                                              strokeWidth="2.5"
+                                              strokeWidth="2"
                                               strokeLinecap="round"
                                               strokeLinejoin="round"
                                             />
@@ -3903,6 +3910,11 @@ export default function LeftSidebar() {
                                       )}
                                     </button>
                                     <span>{label}</span>
+                                    {active ? (
+                                      <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
+                                        Connected
+                                      </span>
+                                    ) : null}
                                   </div>
                                 );
                               })}
