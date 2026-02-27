@@ -91,8 +91,8 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
       return { tint: "bg-slate-500/20", dot: "bg-slate-500" };
     default:
       return {
-        tint: "bg-[#f3f0ff]/85 dark:bg-surface/75",
-        dot: "bg-[#7f8cff] dark:bg-foreground/50",
+        tint: "bg-[#f3f0ff]/85",
+        dot: "bg-[#7f8cff]",
       };
   }
 }
@@ -151,19 +151,11 @@ function sharedGradientRowClass(
   const id = categoryColors["Shared events"];
   const found = SHARED_GRADIENTS.find((g) => g.id === id);
   const palette = found ?? SHARED_GRADIENTS[0];
-  return `${palette.lightRow} ${prefixDark(palette.darkRow)}`;
+  return palette.lightRow;
 }
 
-function prefixDark(classList: string): string {
-  return classList
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((token) => `dark:${token}`)
-    .join(" ");
-}
-
-const SHARED_TEXT_CLASS = "text-neutral-900 dark:text-foreground";
-const SHARED_MUTED_TEXT_CLASS = "text-neutral-600 dark:text-foreground/70";
+const SHARED_TEXT_CLASS = "text-neutral-900";
+const SHARED_MUTED_TEXT_CLASS = "text-neutral-600";
 
 function isSharedEvent(
   ev:
@@ -903,16 +895,16 @@ export default function CalendarPage() {
   };
 
   const focusRingClass =
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a855f7]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-background";
-  const baseTextClass = "text-[#1b1540] dark:text-foreground";
-  const mutedTextClass = "text-[#6b5c9a] dark:text-muted-foreground";
-  const defaultEventTextClass = "text-[#2f1d47] dark:text-foreground";
-  const defaultEventMutedTextClass = "text-[#6b5c9a] dark:text-foreground/70";
-  const secondaryButtonClass = `inline-flex items-center justify-center rounded-full border border-[#dcd8ff] bg-white text-[#4a4170] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#bfb6ff] hover:bg-[#f8f5ff] hover:shadow-md dark:border-border dark:bg-surface dark:text-foreground ${focusRingClass}`;
-  const primaryButtonClass = `inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7f8cff] to-[#a855f7] text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-lg ${focusRingClass}`;
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF] focus-visible:ring-offset-2 focus-visible:ring-offset-white";
+  const baseTextClass = "text-[#1F1536]";
+  const mutedTextClass = "text-[#5A4F78]";
+  const defaultEventTextClass = "text-[#2F1D47]";
+  const defaultEventMutedTextClass = "text-[#5A4F78]";
+  const secondaryButtonClass = `inline-flex items-center justify-center rounded-full border border-[#D8CBFF] bg-white/90 text-[#4A3E72] shadow-sm shadow-[#D8CBFF]/40 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#B8A4FF] hover:bg-[#F9F5FF] hover:shadow-md hover:shadow-[#D8CBFF]/50 ${focusRingClass}`;
+  const primaryButtonClass = `inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#A06BFF] text-white shadow-lg shadow-[#7F8CFF]/35 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-xl hover:shadow-[#7F8CFF]/45 ${focusRingClass}`;
   const panelClass =
-    "rounded-3xl border border-[#e7defb] bg-white/80 shadow-sm dark:border-border dark:bg-surface";
-  const closeButtonClass = `inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dcd8ff] bg-white/90 text-[#6b5b95] transition-colors hover:border-[#bfb6ff] hover:text-[#2f1d47] dark:border-border dark:bg-surface dark:text-foreground/70 dark:hover:text-foreground ${focusRingClass}`;
+    "rounded-[36px] border border-[#F1ECFF] bg-gradient-to-bl from-[#F4EEFF] via-white to-[#FEE8F0] shadow-xl shadow-[#E8DFFF]/60";
+  const closeButtonClass = `inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D8CBFF] bg-white/90 text-[#6A5A9C] shadow-sm shadow-[#D8CBFF]/35 transition-colors hover:border-[#B8A4FF] hover:text-[#2F1D47] ${focusRingClass}`;
 
   const renderEventPill = (ev: CalendarEvent) => {
     const isShared = isSharedEvent(ev);
@@ -923,7 +915,7 @@ export default function CalendarPage() {
       ? { tint: sharedGradientTint, dot: "" }
       : chosenColorName
       ? colorTintAndDot(chosenColorName)
-      : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
+      : { tint: "bg-[#f3f0ff]/85", dot: "bg-[#7f8cff]" };
     return (
       <button
         key={`${ev.id}@${ev.start}`}
@@ -966,7 +958,7 @@ export default function CalendarPage() {
         }
       : chosenColorName
       ? colorTintAndDot(chosenColorName)
-      : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
+      : { tint: "bg-[#f3f0ff]/85", dot: "bg-[#7f8cff]" };
     // Always render a circle for all events, shared or not
     return (
       <span
@@ -978,7 +970,7 @@ export default function CalendarPage() {
 
   return (
     <div
-      className={`min-h-[60vh] bg-gradient-to-b from-[#F8F5FF] via-white to-white p-4 pt-8 dark:from-background dark:via-surface dark:to-background sm:p-6 sm:pt-10 ${baseTextClass}`}
+      className={`min-h-[60vh] bg-gradient-to-bl from-[#F4EEFF] via-white to-[#FEE8F0] p-4 pt-8 sm:p-6 sm:pt-10 ${baseTextClass}`}
     >
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -1042,7 +1034,7 @@ export default function CalendarPage() {
               <span>Add event</span>
             </button>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#7f8cff] to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1F1536]">
             {monthFormatter.format(new Date(year, month, 1))}
           </h1>
           <div className={`hidden sm:block text-sm font-medium ${mutedTextClass}`}>
@@ -1070,7 +1062,7 @@ export default function CalendarPage() {
           </div>
 
           <div
-            className="mt-3 grid w-full max-w-full grid-cols-7 grid-rows-6 gap-px overflow-hidden rounded-2xl border border-[#f1edff] bg-[#f7f3ff]/70 dark:border-border dark:bg-background/50"
+            className="mt-3 grid w-full max-w-full grid-cols-7 grid-rows-6 gap-px overflow-hidden rounded-3xl border border-[#F1ECFF] bg-gradient-to-br from-white to-[#FCFAFF] shadow-sm shadow-[#E8DFFF]/35"
             style={{
               gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
               gridTemplateRows: "repeat(6, minmax(0, 1fr))",
@@ -1087,11 +1079,11 @@ export default function CalendarPage() {
                     <div
                       key={date.toISOString()}
                       onClick={() => onDayClick(date)}
-                      className={`h-full min-h-[32px] cursor-pointer bg-white p-2 transition-all duration-200 hover:bg-[#faf8ff] dark:bg-surface dark:hover:bg-surface/90 sm:min-h-[40px] sm:p-3 md:min-h-[48px] ${
-                        isCurrentMonth ? "" : "bg-[#f8f5ff]/70 opacity-65 dark:bg-surface/50"
+                      className={`h-full min-h-[32px] cursor-pointer bg-gradient-to-br from-white to-[#FCFAFF] p-2 transition-all duration-200 hover:from-[#FCFAFF] hover:to-[#F4EEFF] sm:min-h-[40px] sm:p-3 md:min-h-[48px] ${
+                        isCurrentMonth ? "" : "bg-[#FCF9FF] opacity-65"
                       } ${
                         isToday
-                          ? "ring-2 ring-[#7f8cff] ring-inset dark:ring-[#a855f7]"
+                          ? "ring-2 ring-[#8A6BFF] ring-inset"
                           : ""
                       }`}
                     >
@@ -1101,8 +1093,8 @@ export default function CalendarPage() {
                             isToday
                               ? "bg-gradient-to-br from-[#7f8cff] to-[#a855f7] text-white shadow-md"
                               : isCurrentMonth
-                              ? "text-[#2f1d47] dark:text-foreground"
-                              : "text-[#9a90bc] dark:text-muted-foreground"
+                              ? "text-[#1F1536]"
+                              : "text-[#A79CC8]"
                           }`}
                         >
                           {date.getDate()}
@@ -1117,7 +1109,7 @@ export default function CalendarPage() {
                                   e.stopPropagation();
                                   setOpenDay({ date, items });
                                 }}
-                                className={`text-[10px] font-medium ${mutedTextClass} transition-colors hover:text-[#2f1d47] dark:hover:text-foreground ${focusRingClass}`}
+                                className={`text-[10px] font-medium ${mutedTextClass} transition-colors hover:text-[#2f1d47] ${focusRingClass}`}
                               >
                                 +{items.length - 8}
                               </button>
@@ -1148,7 +1140,7 @@ export default function CalendarPage() {
         <div className="mt-3 flex justify-start">
           {/* Elastic Tabs Toggle */}
           <nav
-            className="tabs-elastic relative flex w-[280px] rounded-full border border-[#dcd8ff] bg-[#f8f5ff] px-1 py-1 shadow-sm dark:border-border dark:bg-background"
+            className="tabs-elastic relative flex w-[280px] rounded-full border border-[#D8CBFF] bg-white/85 px-1 py-1 shadow-sm shadow-[#D8CBFF]/35"
             suppressHydrationWarning
           >
             <div
@@ -1166,7 +1158,7 @@ export default function CalendarPage() {
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
                 upcomingView === "week"
                   ? "text-white"
-                  : "text-[#6b5c9a] dark:text-foreground/70"
+                  : "text-[#5A4F78]"
               } ${focusRingClass}`}
               onClick={() => setUpcomingView("week")}
             >
@@ -1215,7 +1207,7 @@ export default function CalendarPage() {
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
                 upcomingView === "month"
                   ? "text-white"
-                  : "text-[#6b5c9a] dark:text-foreground/70"
+                  : "text-[#5A4F78]"
               } ${focusRingClass}`}
               onClick={() => setUpcomingView("month")}
             >
@@ -1285,7 +1277,7 @@ export default function CalendarPage() {
                   ? { tint: sharedGradientTint, dot: "" }
                   : chosenColorName
                   ? colorTintAndDot(chosenColorName)
-                  : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
+                  : { tint: "bg-[#f3f0ff]/85", dot: "bg-[#7f8cff]" };
                 return (
                   <button
                     key={ev.id}
@@ -1339,9 +1331,9 @@ export default function CalendarPage() {
             {groupedByMonth.map((group, idx) => (
               <div
                 key={idx}
-                className="overflow-hidden rounded-xl border border-[#e7defb] bg-white ring-1 ring-[#ece9ff] shadow-sm dark:border-border dark:bg-surface dark:ring-border/40"
+                className="overflow-hidden rounded-2xl border border-[#F1ECFF] bg-gradient-to-br from-white to-[#FCFAFF] ring-1 ring-[#ECE9FF] shadow-sm shadow-[#E8DFFF]/35"
               >
-                <div className="border-b border-[#ece9ff] bg-[#faf8ff] px-3 py-2 text-sm text-[#4a4170] dark:border-border dark:bg-surface/80 dark:text-foreground">
+                <div className="border-b border-[#ECE9FF] bg-[#FAF8FF] px-3 py-2 text-sm text-[#4A3E72]">
                   {group.label}
                 </div>
                 <ul className="mt-1.5 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:p-3 md:pt-3 md:pb-4">
@@ -1365,7 +1357,7 @@ export default function CalendarPage() {
                           }
                         : chosenColorName
                         ? colorTintAndDot(chosenColorName)
-                        : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
+                        : { tint: "bg-[#f3f0ff]/85", dot: "bg-[#7f8cff]" };
                       return (
                         <li key={ev.id} className="md:h-full">
                           <button
@@ -1420,7 +1412,7 @@ export default function CalendarPage() {
         >
           <div className="absolute inset-0 bg-black/45" />
           <div
-            className="relative z-50 w-full rounded-t-2xl border border-[#e7defb] bg-white p-4 shadow-xl ring-1 ring-[#ece9ff] dark:border-border dark:bg-surface dark:ring-border/40 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:p-5"
+            className="relative z-50 w-full rounded-t-2xl border border-[#F1ECFF] bg-gradient-to-br from-white to-[#FCFAFF] p-4 shadow-xl shadow-[#E8DFFF]/70 ring-1 ring-[#ECE9FF] sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -1489,7 +1481,7 @@ export default function CalendarPage() {
                   ? { tint: sharedGradientTint, dot: "" }
                   : chosenColorName
                   ? colorTintAndDot(chosenColorName)
-                  : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
+                  : { tint: "bg-[#f3f0ff]/85", dot: "bg-[#7f8cff]" };
                 return (
                   <button
                     key={ev.id}
@@ -1522,14 +1514,14 @@ export default function CalendarPage() {
         >
           <div className="absolute inset-0 bg-black/45" />
           <div
-            className="event-theme-scope relative z-50 w-full rounded-t-2xl border border-[#e7defb] bg-white p-4 shadow-xl ring-1 ring-[#ece9ff] dark:border-border dark:bg-surface dark:ring-border/40 sm:mx-auto sm:max-w-xl sm:rounded-2xl sm:p-6 space-y-4"
+            className="event-theme-scope relative z-50 w-full rounded-t-2xl border border-[#F1ECFF] bg-gradient-to-br from-white to-[#FCFAFF] p-4 shadow-xl shadow-[#E8DFFF]/70 ring-1 ring-[#ECE9FF] sm:mx-auto sm:max-w-xl sm:rounded-2xl sm:p-6 space-y-4"
             style={openEventStyleVars}
             onClick={(e) => e.stopPropagation()}
           >
             <section className="event-theme-header rounded-xl border px-4 py-4 sm:px-5 sm:py-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="event-theme-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                  <div className="event-theme-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-2xl shadow-sm ring-1 ring-black/5">
                     <span aria-hidden="true">{openEventIcon}</span>
                     <span className="sr-only">
                       {openEventCategoryLabel} icon
@@ -1641,7 +1633,7 @@ export default function CalendarPage() {
               </section>
             )}
 
-            <div className="border-t border-[#ece9ff] pt-4 dark:border-border">
+            <div className="border-t border-[#ECE9FF] pt-4">
               <EventActions
                 shareUrl={`/event/${slugify(openEvent.title)}-${
                   openEvent.historyId

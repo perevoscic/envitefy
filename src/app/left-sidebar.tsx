@@ -282,6 +282,7 @@ type DraftsSectionProps = {
   draftsCount: number;
   collapseSidebarOnTouch: () => void;
   onDeleteDraft: (id: string, title?: string) => void;
+  embedded?: boolean;
 };
 
 function DraftsSection({
@@ -289,6 +290,7 @@ function DraftsSection({
   draftsCount,
   collapseSidebarOnTouch,
   onDeleteDraft,
+  embedded = false,
 }: DraftsSectionProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -340,35 +342,47 @@ function DraftsSection({
   };
 
   return (
-    <div className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3`}>
+    <div
+      className={
+        embedded
+          ? "flex flex-col"
+          : `${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3`
+      }
+    >
       <button
         type="button"
         onClick={(event) => {
           event.preventDefault();
           setOpen((prev) => !prev);
         }}
-        className="flex items-center justify-between gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
+        className={
+          embedded
+            ? "w-full flex items-center justify-between gap-2 px-2.5 py-2.5 text-left text-sm font-medium text-[#3e315c] bg-[#f1f3f5] hover:bg-[#e9edf2] transition-all duration-150"
+            : "flex items-center justify-between gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
+        }
       >
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-            <FileEdit size={18} />
-          </span>
-          <span>Drafts</span>
-        </div>
+        <span>Drafts</span>
         <div className="flex items-center gap-2">
-          <span className={SIDEBAR_BADGE_CLASS}>{draftsCount}</span>
           <span
-            className={`inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition-transform ${
-              open ? "rotate-90" : ""
-            }`}
-            aria-hidden="true"
+            className={
+              embedded
+                ? "inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80"
+                : SIDEBAR_BADGE_CLASS
+            }
           >
-            <ChevronRight size={14} />
+            {draftsCount}
           </span>
+          {embedded && (
+            <span
+              className="inline-flex items-center justify-center h-5 w-5 rounded-[4px] border border-[#d1d5db] bg-[#e5e7eb]"
+              aria-hidden="true"
+              title="Draft color"
+            />
+          )}
         </div>
       </button>
       {open && (
-        <div className="mt-2 space-y-1">
+        <div className={embedded ? "border-t border-[#eee7ff]" : "mt-2 space-y-1"}>
           {drafts.map((row) => {
             const href = resolveEditHref(
               row.id,
@@ -390,12 +404,16 @@ function DraftsSection({
                   collapseSidebarOnTouch();
                   router.push(href);
                 }}
-                className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 hover:bg-surface/70 cursor-pointer"
+                className={
+                  embedded
+                    ? "w-full flex items-center justify-between gap-2 px-2.5 py-2 text-sm text-[#3e315c] bg-[#f1f3f5] hover:bg-[#e9edf2] cursor-pointer border-b border-[#e5e7eb] last:border-b-0"
+                    : "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 bg-[#f1f3f5] hover:bg-[#e9edf2] cursor-pointer"
+                }
               >
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{getDraftLabel(row)}</div>
                   {formattedDate && (
-                    <div className="text-[10px] text-foreground/50">
+                    <div className={embedded ? "text-[11px] text-foreground/50" : "text-[10px] text-foreground/50"}>
                       {formattedDate}
                     </div>
                   )}
@@ -3344,19 +3362,8 @@ export default function LeftSidebar() {
                     </div>
                   </div>
 
-                  {myEventsOpen && draftsCount > 0 && (
-                    <div className="mt-3">
-                      <DraftsSection
-                        drafts={drafts}
-                        draftsCount={draftsCount}
-                        collapseSidebarOnTouch={collapseSidebarOnTouch}
-                        onDeleteDraft={deleteHistoryItem}
-                      />
-                    </div>
-                  )}
-
                   <div
-                    className={`pl-2 mt-3 border-l-2 border-border/40 ml-2 ${
+                    className={`mt-3 border-t border-white/70 pt-3 ${
                       myEventsOpen ? "" : "hidden"
                     }`}
                   >
@@ -3393,12 +3400,22 @@ export default function LeftSidebar() {
                       const sortedCategories = [...categories].sort((a, b) =>
                         a.localeCompare(b),
                       );
-                      if (categories.length === 0) return null;
-                      const buttonClass = (_c: string) => {
-                        return `hover:bg-surface/70`;
-                      };
+                      if (categories.length === 0 && draftsCount === 0)
+                        return null;
                       return (
-                        <div ref={categoriesRef} className="mt-2 space-y-1">
+                        <div
+                          ref={categoriesRef}
+                          className="overflow-hidden rounded-xl bg-white/60 divide-y divide-[#eee7ff]"
+                        >
+                          {draftsCount > 0 && (
+                            <DraftsSection
+                              embedded
+                              drafts={drafts}
+                              draftsCount={draftsCount}
+                              collapseSidebarOnTouch={collapseSidebarOnTouch}
+                              onDeleteDraft={deleteHistoryItem}
+                            />
+                          )}
                           {sortedCategories.map((c) => {
                             // Gather items under this category once to reuse below
                             const categoryItems = (() => {
@@ -3437,11 +3454,11 @@ export default function LeftSidebar() {
                                       prev === c ? null : c,
                                     );
                                   }}
-                                  className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
+                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2.5 text-left text-sm font-medium text-[#3e315c] hover:bg-indigo-50/70 transition-all duration-150 ${
                                     activeCategory === c
-                                      ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
+                                      ? "bg-indigo-50/70"
                                       : ""
-                                  } ${buttonClass(c)}`}
+                                  }`}
                                   aria-pressed={activeCategory === c}
                                   title={c}
                                 >
