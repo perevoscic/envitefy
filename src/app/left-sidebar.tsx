@@ -988,23 +988,15 @@ export default function LeftSidebar() {
     triggerCreateEvent();
   };
 
-  const createMenuSections = useMemo(() => {
+  const createMenuItems = useMemo(() => {
     const keys = createEventShowAll ? undefined : visibleTemplateKeys;
     return getCreateEventSections(keys)
       .filter((section) => section.title.toLowerCase() !== "quick access")
-      .map((section, idx) => ({
-        title: section.title,
-        items: section.items,
-        color: CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length],
-      }));
+      .flatMap((section) => section.items);
   }, [createEventShowAll, visibleTemplateKeys]);
   const createMenuOptionCount = useMemo(
-    () =>
-      createMenuSections.reduce(
-        (total, section) => total + section.items.length,
-        0,
-      ),
-    [createMenuSections],
+    () => createMenuItems.length,
+    [createMenuItems],
   );
 
   const profileMenuItemClass =
@@ -1116,6 +1108,7 @@ export default function LeftSidebar() {
   }, [history, profileEmail, session]);
   const compactNavItems = useMemo(
     () => [
+      { icon: Home, label: "Home", href: "/" },
       { icon: Camera, label: "Snap", action: "snap" },
       { icon: Upload, label: "Upload", action: "upload" },
       {
@@ -1124,7 +1117,6 @@ export default function LeftSidebar() {
         href: "/smart-signup-form",
         badge: smartSignupCount,
       },
-      { icon: Home, label: "Home", href: "/" },
       { icon: Plus, label: "Create Event", action: "create" },
       { icon: CalendarDays, label: "Calendar", href: "/calendar" },
       {
@@ -2460,17 +2452,28 @@ export default function LeftSidebar() {
               {/* Separator line */}
               <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
+                  <Link
+                    href="/"
+                    onClick={collapseSidebarOnTouch}
+                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                      <Home size={16} />
+                    </span>
+                    <span>Home</span>
+                  </Link>
+
                   <button
                     type="button"
                     onClick={(event) => {
                       event.preventDefault();
                       launchSnapFromMenu("camera");
                     }}
-                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                      <Camera size={18} />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                      <Camera size={16} />
                     </span>
                     <span>Snap</span>
                   </button>
@@ -2481,10 +2484,10 @@ export default function LeftSidebar() {
                       event.preventDefault();
                       launchSnapFromMenu("upload");
                     }}
-                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                      <Upload size={18} />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                      <Upload size={16} />
                     </span>
                     <span>Upload</span>
                   </button>
@@ -2496,7 +2499,7 @@ export default function LeftSidebar() {
                         event.preventDefault();
                         toggleSmartSignupCategory();
                       }}
-                      className={`flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition ${
+                      className={`flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition ${
                         activeCategory === "Smart sign-up"
                           ? "ring-2 ring-[#d9ccff]"
                           : ""
@@ -2504,8 +2507,8 @@ export default function LeftSidebar() {
                       aria-pressed={activeCategory === "Smart sign-up"}
                       title="Sign up"
                     >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                        <FileEdit size={18} />
+                      <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                        <FileEdit size={16} />
                       </span>
                       <span>Sign up</span>
                     </button>
@@ -2516,25 +2519,6 @@ export default function LeftSidebar() {
                     )}
                   </div>
                 </div>
-
-                <Link
-                  href="/"
-                  onClick={collapseSidebarOnTouch}
-                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 text-sm md:text-base font-semibold text-[#2f1d47]`}
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5efff] to-white text-[#7a5ec0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                    <Home size={18} />
-                  </span>
-                  <span>Home</span>
-                </Link>
-
-                {/* Drafts dropdown (above My events) */}
-                <DraftsSection
-                  drafts={drafts}
-                  draftsCount={draftsCount}
-                  collapseSidebarOnTouch={collapseSidebarOnTouch}
-                  onDeleteDraft={deleteHistoryItem}
-                />
 
                 <div
                   className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 ${
@@ -2586,59 +2570,38 @@ export default function LeftSidebar() {
                       </button>
                     </div>
                   </div>
-                </div>
-                {createEventOpen && (
-                  <div className="mt-1 mb-2">
-                    <div className="rounded-2xl border border-white/65 bg-white/85 px-3 py-3 shadow-[0_16px_35px_rgba(91,63,135,0.12)] backdrop-blur-xl">
-                      <div className="space-y-3">
-                        {createMenuSections.map((cat, idx) => (
-                          <div
-                            key={`${cat.title}-${idx}`}
-                            className="space-y-1.5"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${cat.color.replace(
-                                  "text-",
-                                  "bg-opacity-20 ",
-                                )}`}
+                  {createEventOpen && (
+                    <div className="mt-3 border-t border-white/70 pt-3">
+                      <div className="overflow-hidden rounded-xl bg-white/60 divide-y divide-[#eee7ff]">
+                        {createMenuItems.map((item, idx) => {
+                          const Icon = ICON_LOOKUP[item.label] || Sparkles;
+                          const colorClass =
+                            CREATE_SECTION_COLORS[
+                              idx % CREATE_SECTION_COLORS.length
+                            ];
+                          return (
+                            <button
+                              key={item.label}
+                              type="button"
+                              className="w-full flex items-center gap-2.5 px-2.5 py-2.5 hover:bg-indigo-50/70 transition-all duration-150 group text-left"
+                              onClick={() =>
+                                handleCreateModalSelect(
+                                  item.label,
+                                  (item as any).href,
+                                )
+                              }
+                            >
+                              <div
+                                className={`p-1.5 rounded-lg ${colorClass} group-hover:scale-110 transition-transform`}
                               >
-                                {cat.items.length}
+                                <Icon size={15} />
+                              </div>
+                              <span className="text-[#3e315c] font-medium text-sm group-hover:text-indigo-700">
+                                {item.label}
                               </span>
-                              <h3 className="font-semibold text-[#665682] text-[11px] uppercase tracking-wider">
-                                {cat.title}
-                              </h3>
-                            </div>
-                            <div className="space-y-1">
-                              {cat.items.map((item) => {
-                                const Icon =
-                                  ICON_LOOKUP[item.label] || Sparkles;
-                                return (
-                                  <button
-                                    key={item.label}
-                                    type="button"
-                                    className="w-full flex items-center space-x-2.5 p-2.5 bg-white/90 hover:bg-indigo-50 border border-white/80 hover:border-indigo-100 rounded-xl transition-all duration-200 group text-left shadow-sm"
-                                    onClick={() =>
-                                      handleCreateModalSelect(
-                                        item.label,
-                                        (item as any).href,
-                                      )
-                                    }
-                                  >
-                                    <div
-                                      className={`p-1.5 rounded-lg ${cat.color} group-hover:scale-110 transition-transform`}
-                                    >
-                                      <Icon size={15} />
-                                    </div>
-                                    <span className="text-[#3e315c] font-medium text-sm group-hover:text-indigo-700">
-                                      {item.label}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
+                            </button>
+                          );
+                        })}
                       </div>
                       <div className="mt-3 flex justify-end">
                         <button
@@ -2655,8 +2618,8 @@ export default function LeftSidebar() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {activeCategory === "Smart sign-up" && (
                   <div className="mt-1 mb-2">
@@ -3380,6 +3343,17 @@ export default function LeftSidebar() {
                       </button>
                     </div>
                   </div>
+
+                  {myEventsOpen && draftsCount > 0 && (
+                    <div className="mt-3">
+                      <DraftsSection
+                        drafts={drafts}
+                        draftsCount={draftsCount}
+                        collapseSidebarOnTouch={collapseSidebarOnTouch}
+                        onDeleteDraft={deleteHistoryItem}
+                      />
+                    </div>
+                  )}
 
                   <div
                     className={`pl-2 mt-3 border-l-2 border-border/40 ml-2 ${
