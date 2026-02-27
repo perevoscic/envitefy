@@ -1105,14 +1105,14 @@ export default function LeftSidebar() {
     () => [
       { icon: Camera, label: "Snap", action: "snap" },
       { icon: Upload, label: "Upload", action: "upload" },
-      { icon: Home, label: "Home", href: "/" },
-      { icon: Plus, label: "Create Event", action: "create" },
       {
         icon: FileEdit,
         label: "Sign up",
         href: "/smart-signup-form",
         badge: smartSignupCount,
       },
+      { icon: Home, label: "Home", href: "/" },
+      { icon: Plus, label: "Create Event", action: "create" },
       { icon: CalendarDays, label: "Calendar", href: "/calendar" },
       {
         icon: Trophy,
