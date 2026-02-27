@@ -256,6 +256,7 @@ const ICON_LOOKUP: Record<string, any> = {
   "Snap Event": Camera,
   "Upload Event": Upload,
   "Smart sign-up forms": FileEdit,
+  "Sign up": FileEdit,
   Birthdays: Cake,
   Weddings: Heart,
   "Baby Showers": Baby,
@@ -925,6 +926,16 @@ export default function LeftSidebar() {
     } catch {}
     openSnapFromSidebar(mode);
   };
+  const toggleSmartSignupCategory = () => {
+    setActiveCategory((prev) =>
+      prev === "Smart sign-up" ? null : "Smart sign-up",
+    );
+  };
+  const openSmartSignupBuilder = () => {
+    try {
+      (window as any).__openSmartSignup?.();
+    } catch {}
+  };
 
   const { visibleTemplateKeys } = useFeatureVisibility();
   const visibleTemplateLinks = useMemo(
@@ -947,7 +958,7 @@ export default function LeftSidebar() {
       launchSnapFromMenu("upload");
       return;
     }
-    if (label === "Smart sign-up forms") {
+    if (label === "Smart sign-up forms" || label === "Sign up") {
       collapseSidebarOnTouch();
       setCreateEventOpen(false);
       router.push("/smart-signup-form");
@@ -1098,7 +1109,7 @@ export default function LeftSidebar() {
       { icon: Plus, label: "Create Event", action: "create" },
       {
         icon: FileEdit,
-        label: "Smart sign-up",
+        label: "Sign up",
         href: "/smart-signup-form",
         badge: smartSignupCount,
       },
@@ -2436,7 +2447,7 @@ export default function LeftSidebar() {
               {/* Separator line */}
               <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={(event) => {
@@ -2464,6 +2475,33 @@ export default function LeftSidebar() {
                     </span>
                     <span>Upload</span>
                   </button>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        toggleSmartSignupCategory();
+                      }}
+                      className={`flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition ${
+                        activeCategory === "Smart sign-up"
+                          ? "ring-2 ring-[#d9ccff]"
+                          : ""
+                      }`}
+                      aria-pressed={activeCategory === "Smart sign-up"}
+                      title="Sign up"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                        <FileEdit size={18} />
+                      </span>
+                      <span>Sign up</span>
+                    </button>
+                    {smartSignupCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
+                        {smartSignupCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <Link
@@ -2607,62 +2645,25 @@ export default function LeftSidebar() {
                   </div>
                 )}
 
-                <div
-                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3 ${
-                    activeCategory === "Smart sign-up"
-                      ? "ring-2 ring-[#d9ccff]"
-                      : ""
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveCategory((prev) =>
-                        prev === "Smart sign-up" ? null : "Smart sign-up",
-                      );
-                    }}
-                    className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                    aria-pressed={activeCategory === "Smart sign-up"}
-                    title="Smart sign-up"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6faff] to-white text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                      <FileEdit size={18} />
-                    </span>
-                    <span>Smart sign-up</span>
-                  </button>
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className={SIDEBAR_BADGE_CLASS}>
-                      {smartSignupCount}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        try {
-                          (window as any).__openSmartSignup?.();
-                        } catch {}
-                      }}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                      aria-label="Open Smart sign-up"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
                 {activeCategory === "Smart sign-up" && (
                   <div className="mt-1 mb-2">
+                    <div className="mb-2 flex items-center justify-between px-1">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6a5b8f]">
+                        Sign up forms
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openSmartSignupBuilder();
+                        }}
+                        className="inline-flex h-7 items-center justify-center gap-1 rounded-full bg-white/85 px-2.5 text-[11px] font-semibold text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
+                        aria-label="Create sign up form"
+                      >
+                        <Plus size={13} />
+                        <span>New</span>
+                      </button>
+                    </div>
                     {(() => {
                       const myEmail = (profileEmail ||
                         profileEmailRef.current ||

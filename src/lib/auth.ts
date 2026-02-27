@@ -3,6 +3,16 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken } from "@/lib/db";
 
+function isTransientDbError(err: unknown): boolean {
+  const anyErr = err as any;
+  const code = String(anyErr?.code || "");
+  const message = String(anyErr?.message || "");
+  return (
+    ["ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code) ||
+    /getaddrinfo|timeout|refused|not known/i.test(message)
+  );
+}
+
 export function getAuthOptions(): NextAuthOptions {
   const secret =
     process.env.AUTH_SECRET ??
@@ -136,7 +146,12 @@ async authorize(credentials) {
             try {
               tokenAny.isAdmin = await getIsAdminByEmail(email);
             } catch (err) {
-              console.error("[auth] isAdmin lookup failed; defaulting to false", err);
+              const message = (err as any)?.message || String(err);
+              if (isTransientDbError(err)) {
+                console.warn("[auth] isAdmin lookup skipped: database unavailable", message);
+              } else {
+                console.error("[auth] isAdmin lookup failed; defaulting to false", message);
+              }
               tokenAny.isAdmin = false;
             } finally {
               tokenAny.isAdminCheckedAt = now;
@@ -169,7 +184,12 @@ async authorize(credentials) {
               try {
                 await saveGoogleRefreshToken(email, (account as any).refresh_token as string);
               } catch (err) {
-                console.error('[auth] saveGoogleRefreshToken failed', err);
+                const message = (err as any)?.message || String(err);
+                if (isTransientDbError(err)) {
+                  console.warn("[auth] saveGoogleRefreshToken skipped: database unavailable", message);
+                } else {
+                  console.error("[auth] saveGoogleRefreshToken failed", message);
+                }
               }
             }
           }
@@ -194,12 +214,22 @@ async authorize(credentials) {
                 }
               }
             } catch (err) {
-              console.error('[auth] failed to load stored provider tokens', err);
+              const message = (err as any)?.message || String(err);
+              if (isTransientDbError(err)) {
+                console.warn("[auth] stored provider token lookup skipped: database unavailable", message);
+              } else {
+                console.error("[auth] failed to load stored provider tokens", message);
+              }
               // Continue even if loading fails - database lookup in /api/calendars will handle it
             }
           }
         } catch (err) {
-          console.error('[auth] jwt callback error', err);
+          const message = (err as any)?.message || String(err);
+          if (isTransientDbError(err)) {
+            console.warn("[auth] jwt callback recovered from transient database error", message);
+          } else {
+            console.error("[auth] jwt callback error", message);
+          }
         }
         return token;
       },

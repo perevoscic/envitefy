@@ -532,8 +532,16 @@ export async function verifyPassword(password: string, passwordHash: string | nu
 
 export async function getUserIdByEmail(email: string): Promise<string | null> {
   const lower = email.toLowerCase();
-  const res = await query<{ id: string }>(`select id from users where email = $1 limit 1`, [lower]);
-  return res.rows[0]?.id || null;
+  try {
+    const res = await query<{ id: string }>(`select id from users where email = $1 limit 1`, [lower]);
+    return res.rows[0]?.id || null;
+  } catch (err) {
+    if (isTransientPgError(err)) {
+      console.warn("[db] getUserIdByEmail: database unavailable, returning null", (err as any)?.message || err);
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function createOrUpdateOAuthUser(params: {
@@ -581,19 +589,27 @@ export async function saveMicrosoftRefreshToken(email: string, refreshToken: str
 
 export async function getMicrosoftRefreshToken(email: string): Promise<string | null> {
   const lower = email.toLowerCase();
-  const userId = await getUserIdByEmail(lower);
-  if (userId) {
+  try {
+    const userId = await getUserIdByEmail(lower);
+    if (userId) {
+      const res = await query<{ refresh_token: string }>(
+        `select refresh_token from oauth_tokens where provider = 'microsoft' and user_id = $1 limit 1`,
+        [userId]
+      );
+      if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
+    }
     const res = await query<{ refresh_token: string }>(
-      `select refresh_token from oauth_tokens where provider = 'microsoft' and user_id = $1 limit 1`,
-      [userId]
+      `select refresh_token from oauth_tokens where provider = 'microsoft' and email = $1 limit 1`,
+      [lower]
     );
-    if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
+    return res.rows[0]?.refresh_token || null;
+  } catch (err) {
+    if (isTransientPgError(err)) {
+      console.warn("[db] getMicrosoftRefreshToken: database unavailable, returning null", (err as any)?.message || err);
+      return null;
+    }
+    throw err;
   }
-  const res = await query<{ refresh_token: string }>(
-    `select refresh_token from oauth_tokens where provider = 'microsoft' and email = $1 limit 1`,
-    [lower]
-  );
-  return res.rows[0]?.refresh_token || null;
 }
 
 export async function saveGoogleRefreshToken(email: string, refreshToken: string): Promise<void> {
@@ -612,19 +628,27 @@ export async function saveGoogleRefreshToken(email: string, refreshToken: string
 
 export async function getGoogleRefreshToken(email: string): Promise<string | null> {
   const lower = email.toLowerCase();
-  const userId = await getUserIdByEmail(lower);
-  if (userId) {
+  try {
+    const userId = await getUserIdByEmail(lower);
+    if (userId) {
+      const res = await query<{ refresh_token: string }>(
+        `select refresh_token from oauth_tokens where provider = 'google' and user_id = $1 limit 1`,
+        [userId]
+      );
+      if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
+    }
     const res = await query<{ refresh_token: string }>(
-      `select refresh_token from oauth_tokens where provider = 'google' and user_id = $1 limit 1`,
-      [userId]
+      `select refresh_token from oauth_tokens where provider = 'google' and email = $1 limit 1`,
+      [lower]
     );
-    if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
+    return res.rows[0]?.refresh_token || null;
+  } catch (err) {
+    if (isTransientPgError(err)) {
+      console.warn("[db] getGoogleRefreshToken: database unavailable, returning null", (err as any)?.message || err);
+      return null;
+    }
+    throw err;
   }
-  const res = await query<{ refresh_token: string }>(
-    `select refresh_token from oauth_tokens where provider = 'google' and email = $1 limit 1`,
-    [lower]
-  );
-  return res.rows[0]?.refresh_token || null;
 }
 
 

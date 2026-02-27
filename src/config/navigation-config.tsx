@@ -40,7 +40,7 @@ const QUICK_ACCESS_ITEMS: CreateEventSection["items"] = [
   { label: "Snap Event", href: "/?action=camera", icon: "📸" },
   { label: "Upload Event", href: "/?action=upload", icon: "📤" },
   {
-    label: "Smart sign-up forms",
+    label: "Sign up",
     href: "/smart-signup-form",
     icon: "📝",
   },
@@ -148,7 +148,7 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: "Smart sign-up",
+    label: "Sign up",
     href: "/smart-signup-form",
     match: (path) => path.startsWith("/smart-signup-form"),
     icon: (
