@@ -73,15 +73,26 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const fetchConnectedCalendars = useCallback(async () => {
     try {
       const res = await fetch("/api/calendars", { credentials: "include" });
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      const data = await res.json();
+      if (!res.ok) {
+        console.warn(`[menu-context] /api/calendars returned status ${res.status}`);
+        setConnectedCalendars({
+          google: false,
+          microsoft: false,
+          apple: false,
+        });
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
       setConnectedCalendars({
         google: Boolean(data?.google),
         microsoft: Boolean(data?.microsoft),
         apple: Boolean(data?.apple),
       });
     } catch (err) {
-      console.error("Failed to fetch connected calendars:", err);
+      console.error(
+        "Failed to fetch connected calendars:",
+        err instanceof Error ? err.message : String(err)
+      );
     }
   }, []);
 

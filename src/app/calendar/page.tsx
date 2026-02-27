@@ -90,7 +90,10 @@ function colorTintAndDot(color: string): { tint: string; dot: string } {
     case "slate":
       return { tint: "bg-slate-500/20", dot: "bg-slate-500" };
     default:
-      return { tint: "bg-surface/75", dot: "bg-foreground/50" };
+      return {
+        tint: "bg-[#f3f0ff]/85 dark:bg-surface/75",
+        dot: "bg-[#7f8cff] dark:bg-foreground/50",
+      };
   }
 }
 
@@ -233,7 +236,7 @@ function getMonthMatrix(anchor: Date): {
   // We want a 6x7 grid. Start from the Sunday before (or same day if Sunday)
   const gridStart = new Date(year, month, 1 - startWeekday);
   const weeks: Date[][] = [];
-  let day = new Date(gridStart);
+  const day = new Date(gridStart);
   for (let w = 0; w < 6; w++) {
     const week: Date[] = [];
     for (let d = 0; d < 7; d++) {
@@ -876,7 +879,6 @@ export default function CalendarPage() {
   const goPrev = () => setCursor((d) => addMonths(d, -1));
   const goNext = () => setCursor((d) => addMonths(d, 1));
   const goToday = () => setCursor(startOfDay(new Date()));
-
   // Use the global handler instead of overriding it
   // The global GlobalEventCreate component handles opening the modal
 
@@ -900,6 +902,18 @@ export default function CalendarPage() {
     } catch {}
   };
 
+  const focusRingClass =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a855f7]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-background";
+  const baseTextClass = "text-[#1b1540] dark:text-foreground";
+  const mutedTextClass = "text-[#6b5c9a] dark:text-muted-foreground";
+  const defaultEventTextClass = "text-[#2f1d47] dark:text-foreground";
+  const defaultEventMutedTextClass = "text-[#6b5c9a] dark:text-foreground/70";
+  const secondaryButtonClass = `inline-flex items-center justify-center rounded-full border border-[#dcd8ff] bg-white text-[#4a4170] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#bfb6ff] hover:bg-[#f8f5ff] hover:shadow-md dark:border-border dark:bg-surface dark:text-foreground ${focusRingClass}`;
+  const primaryButtonClass = `inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7f8cff] to-[#a855f7] text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-lg ${focusRingClass}`;
+  const panelClass =
+    "rounded-3xl border border-[#e7defb] bg-white/80 shadow-sm dark:border-border dark:bg-surface";
+  const closeButtonClass = `inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dcd8ff] bg-white/90 text-[#6b5b95] transition-colors hover:border-[#bfb6ff] hover:text-[#2f1d47] dark:border-border dark:bg-surface dark:text-foreground/70 dark:hover:text-foreground ${focusRingClass}`;
+
   const renderEventPill = (ev: CalendarEvent) => {
     const isShared = isSharedEvent(ev);
     const chosenColorName = ev.category
@@ -909,7 +923,7 @@ export default function CalendarPage() {
       ? { tint: sharedGradientTint, dot: "" }
       : chosenColorName
       ? colorTintAndDot(chosenColorName)
-      : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+      : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
     return (
       <button
         key={`${ev.id}@${ev.start}`}
@@ -918,8 +932,8 @@ export default function CalendarPage() {
           setOpenEvent(ev);
         }}
         className={`hidden md:flex flex-col rounded-md ${tone.tint} ${
-          isShared ? SHARED_TEXT_CLASS : "text-foreground"
-        } px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+          isShared ? SHARED_TEXT_CLASS : defaultEventTextClass
+        } px-2 py-1 text-[11px] leading-tight shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md ${focusRingClass}`}
         title={ev.title}
       >
         <span className="truncate max-w-[10rem] inline-flex items-center gap-1">
@@ -952,7 +966,7 @@ export default function CalendarPage() {
         }
       : chosenColorName
       ? colorTintAndDot(chosenColorName)
-      : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+      : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
     // Always render a circle for all events, shared or not
     return (
       <span
@@ -963,28 +977,30 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-[60vh] p-4 sm:p-6 pt-8 sm:pt-10 landing-dark-gradient bg-background text-foreground">
+    <div
+      className={`min-h-[60vh] bg-gradient-to-b from-[#F8F5FF] via-white to-white p-4 pt-8 dark:from-background dark:via-surface dark:to-background sm:p-6 sm:pt-10 ${baseTextClass}`}
+    >
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={goPrev}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface/80 hover:border-border/80 transition-all duration-200 shadow-sm hover:shadow ring-1 ring-border/50"
+              className={`${secondaryButtonClass} px-3 py-2 text-sm`}
             >
               ←
             </button>
             <button
               type="button"
               onClick={goToday}
-              className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground hover:bg-surface/80 hover:border-border/80 transition-all duration-200 shadow-sm hover:shadow ring-1 ring-border/50"
+              className={`${secondaryButtonClass} px-4 py-2 text-sm`}
             >
               Today
             </button>
             <button
               type="button"
               onClick={goNext}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface/80 hover:border-border/80 transition-all duration-200 shadow-sm hover:shadow ring-1 ring-border/50"
+              className={`${secondaryButtonClass} px-3 py-2 text-sm`}
             >
               →
             </button>
@@ -1004,7 +1020,7 @@ export default function CalendarPage() {
                 } catch {}
               }}
               title="New event"
-              className="ml-2 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-background"
+              className={`${primaryButtonClass} ml-2 px-4 py-2 text-sm`}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -1026,10 +1042,10 @@ export default function CalendarPage() {
               <span>Add event</span>
             </button>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#7f8cff] to-[#a855f7] bg-clip-text text-transparent">
             {monthFormatter.format(new Date(year, month, 1))}
           </h1>
-          <div className="hidden sm:block text-sm text-muted-foreground font-medium">
+          <div className={`hidden sm:block text-sm font-medium ${mutedTextClass}`}>
             {loading
               ? "Loading…"
               : error
@@ -1038,9 +1054,9 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-border bg-background p-4 sm:p-5 shadow-lg ring-1 ring-border/50">
+        <div className={`mt-6 p-4 sm:p-5 ${panelClass}`}>
           <div
-            className="grid grid-cols-7 text-center text-xs sm:text-sm text-foreground/70"
+            className={`grid grid-cols-7 text-center text-xs sm:text-sm font-medium ${mutedTextClass}`}
             style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
           >
             {Array.from({ length: 7 }).map((_, i) => {
@@ -1054,7 +1070,7 @@ export default function CalendarPage() {
           </div>
 
           <div
-            className="mt-3 grid grid-cols-7 grid-rows-6 gap-px rounded-xl border border-border bg-background/50 w-full max-w-full overflow-hidden"
+            className="mt-3 grid w-full max-w-full grid-cols-7 grid-rows-6 gap-px overflow-hidden rounded-2xl border border-[#f1edff] bg-[#f7f3ff]/70 dark:border-border dark:bg-background/50"
             style={{
               gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
               gridTemplateRows: "repeat(6, minmax(0, 1fr))",
@@ -1071,11 +1087,11 @@ export default function CalendarPage() {
                     <div
                       key={date.toISOString()}
                       onClick={() => onDayClick(date)}
-                      className={`h-full cursor-pointer bg-background p-2 sm:p-3 min-h-[32px] sm:min-h-[40px] md:min-h-[48px] transition-all duration-200 hover:bg-background/90 ${
-                        isCurrentMonth ? "" : "bg-background/50 opacity-60"
+                      className={`h-full min-h-[32px] cursor-pointer bg-white p-2 transition-all duration-200 hover:bg-[#faf8ff] dark:bg-surface dark:hover:bg-surface/90 sm:min-h-[40px] sm:p-3 md:min-h-[48px] ${
+                        isCurrentMonth ? "" : "bg-[#f8f5ff]/70 opacity-65 dark:bg-surface/50"
                       } ${
                         isToday
-                          ? "ring-2 ring-indigo-500 ring-inset bg-background"
+                          ? "ring-2 ring-[#7f8cff] ring-inset dark:ring-[#a855f7]"
                           : ""
                       }`}
                     >
@@ -1083,10 +1099,10 @@ export default function CalendarPage() {
                         <div
                           className={`h-6 w-6 -mt-0.5 -ml-0.5 flex items-center justify-center rounded-full text-[11px] font-semibold transition-all ${
                             isToday
-                              ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md"
+                              ? "bg-gradient-to-br from-[#7f8cff] to-[#a855f7] text-white shadow-md"
                               : isCurrentMonth
-                              ? "text-foreground"
-                              : "text-muted-foreground"
+                              ? "text-[#2f1d47] dark:text-foreground"
+                              : "text-[#9a90bc] dark:text-muted-foreground"
                           }`}
                         >
                           {date.getDate()}
@@ -1101,7 +1117,7 @@ export default function CalendarPage() {
                                   e.stopPropagation();
                                   setOpenDay({ date, items });
                                 }}
-                                className="text-[10px] text-muted-foreground hover:text-foreground font-medium transition-colors"
+                                className={`text-[10px] font-medium ${mutedTextClass} transition-colors hover:text-[#2f1d47] dark:hover:text-foreground ${focusRingClass}`}
                               >
                                 +{items.length - 8}
                               </button>
@@ -1124,19 +1140,19 @@ export default function CalendarPage() {
       </div>
 
       {/* Upcoming (toggle) */}
-      <div className="mx-auto max-w-6xl mt-8">
-        <h2 className="text-lg font-semibold text-foreground">
+      <div className={`mx-auto mt-8 max-w-6xl p-4 sm:p-5 ${panelClass}`}>
+        <h2 className={`text-lg font-semibold ${baseTextClass}`}>
           Upcoming events
         </h2>
 
         <div className="mt-3 flex justify-start">
           {/* Elastic Tabs Toggle */}
           <nav
-            className="relative flex bg-surface shadow-md rounded-full px-1 py-1 w-[280px] tabs-elastic ring-1 ring-border/50"
+            className="tabs-elastic relative flex w-[280px] rounded-full border border-[#dcd8ff] bg-[#f8f5ff] px-1 py-1 shadow-sm dark:border-border dark:bg-background"
             suppressHydrationWarning
           >
             <div
-              className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-elastic bg-gradient-to-r from-indigo-600 to-purple-600 z-0"
+              className="absolute left-0 top-0 z-0 h-full rounded-full bg-gradient-to-r from-[#7f8cff] to-[#a855f7] transition-all duration-500 ease-elastic"
               style={{
                 width: "50%",
                 transform:
@@ -1148,8 +1164,10 @@ export default function CalendarPage() {
             <button
               type="button"
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                upcomingView === "week" ? "text-white" : "text-muted-foreground"
-              }`}
+                upcomingView === "week"
+                  ? "text-white"
+                  : "text-[#6b5c9a] dark:text-foreground/70"
+              } ${focusRingClass}`}
               onClick={() => setUpcomingView("week")}
             >
               <div className="flex items-center justify-center gap-2">
@@ -1197,8 +1215,8 @@ export default function CalendarPage() {
               className={`relative z-10 flex-1 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
                 upcomingView === "month"
                   ? "text-white"
-                  : "text-muted-foreground"
-              }`}
+                  : "text-[#6b5c9a] dark:text-foreground/70"
+              } ${focusRingClass}`}
               onClick={() => setUpcomingView("month")}
             >
               <div className="flex items-center justify-center gap-2">
@@ -1247,7 +1265,7 @@ export default function CalendarPage() {
         {upcomingView === "week" ? (
           <div className="mt-4 space-y-2">
             {upcomingWeek.length === 0 && (
-              <div className="text-sm text-muted-foreground">
+              <div className={`text-sm ${mutedTextClass}`}>
                 No upcoming events this week.
               </div>
             )}
@@ -1267,15 +1285,15 @@ export default function CalendarPage() {
                   ? { tint: sharedGradientTint, dot: "" }
                   : chosenColorName
                   ? colorTintAndDot(chosenColorName)
-                  : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+                  : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
                 return (
                   <button
                     key={ev.id}
                     type="button"
                     onClick={() => setOpenEvent(ev)}
                     className={`w-full text-left rounded-md ${tone.tint} ${
-                      isShared ? SHARED_TEXT_CLASS : "text-foreground"
-                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                      isShared ? SHARED_TEXT_CLASS : defaultEventTextClass
+                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md ${focusRingClass}`}
                     title={ev.title}
                   >
                     <div className="flex items-center gap-3">
@@ -1298,7 +1316,7 @@ export default function CalendarPage() {
                       className={`mt-0.5 text-xs ${
                         isShared
                           ? SHARED_MUTED_TEXT_CLASS
-                          : "text-foreground/70"
+                          : defaultEventMutedTextClass
                       } truncate`}
                     >
                       {ev.venue || ev.location
@@ -1314,16 +1332,16 @@ export default function CalendarPage() {
         ) : (
           <div className="mt-4 space-y-4">
             {groupedByMonth.length === 0 && (
-              <div className="text-sm text-muted-foreground">
+              <div className={`text-sm ${mutedTextClass}`}>
                 No upcoming events.
               </div>
             )}
             {groupedByMonth.map((group, idx) => (
               <div
                 key={idx}
-                className="border border-border rounded-xl overflow-hidden bg-surface ring-1 ring-border/50 shadow-sm"
+                className="overflow-hidden rounded-xl border border-[#e7defb] bg-white ring-1 ring-[#ece9ff] shadow-sm dark:border-border dark:bg-surface dark:ring-border/40"
               >
-                <div className="px-3 py-2 bg-surface/80 text-sm text-foreground border-b border-border">
+                <div className="border-b border-[#ece9ff] bg-[#faf8ff] px-3 py-2 text-sm text-[#4a4170] dark:border-border dark:bg-surface/80 dark:text-foreground">
                   {group.label}
                 </div>
                 <ul className="mt-1.5 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:p-3 md:pt-3 md:pb-4">
@@ -1347,7 +1365,7 @@ export default function CalendarPage() {
                           }
                         : chosenColorName
                         ? colorTintAndDot(chosenColorName)
-                        : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+                        : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
                       return (
                         <li key={ev.id} className="md:h-full">
                           <button
@@ -1356,8 +1374,8 @@ export default function CalendarPage() {
                             className={`w-full text-left rounded-md ${
                               tone.tint
                             } ${
-                              isShared ? SHARED_TEXT_CLASS : "text-foreground"
-                            } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 md:h-full`}
+                              isShared ? SHARED_TEXT_CLASS : defaultEventTextClass
+                            } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md md:h-full ${focusRingClass}`}
                             title={ev.title}
                           >
                             <div className="flex items-center gap-3">
@@ -1369,7 +1387,7 @@ export default function CalendarPage() {
                               className={`mt-0.5 text-xs ${
                                 isShared
                                   ? SHARED_MUTED_TEXT_CLASS
-                                  : "text-foreground/70"
+                                  : defaultEventMutedTextClass
                               } truncate`}
                             >
                               {ev.venue || ev.location
@@ -1400,9 +1418,9 @@ export default function CalendarPage() {
           className="fixed inset-0 z-40 flex items-end sm:items-center justify-center"
           onClick={() => setOpenDay(null)}
         >
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-black/45" />
           <div
-            className="relative z-50 w-full sm:max-w-lg sm:rounded-xl bg-surface border border-border p-4 sm:p-5 shadow-xl sm:mx-auto"
+            className="relative z-50 w-full rounded-t-2xl border border-[#e7defb] bg-white p-4 shadow-xl ring-1 ring-[#ece9ff] dark:border-border dark:bg-surface dark:ring-border/40 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -1427,7 +1445,7 @@ export default function CalendarPage() {
                         );
                       } catch {}
                     }}
-                    className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-foreground/5 inline-flex items-center gap-2"
+                    className={`${primaryButtonClass} px-3 py-1.5 text-sm`}
                     title="Add event"
                   >
                     <svg
@@ -1453,7 +1471,7 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setOpenDay(null)}
-                  className="text-foreground/70 hover:text-foreground"
+                  className={closeButtonClass}
                   aria-label="Close"
                 >
                   ✕
@@ -1471,7 +1489,7 @@ export default function CalendarPage() {
                   ? { tint: sharedGradientTint, dot: "" }
                   : chosenColorName
                   ? colorTintAndDot(chosenColorName)
-                  : { tint: "bg-surface/60", dot: "bg-foreground/40" };
+                  : { tint: "bg-[#f3f0ff]/85 dark:bg-surface/60", dot: "bg-[#7f8cff]" };
                 return (
                   <button
                     key={ev.id}
@@ -1480,8 +1498,8 @@ export default function CalendarPage() {
                       setOpenEvent(ev);
                     }}
                     className={`w-full text-left rounded-md ${tone.tint} ${
-                      isShared ? SHARED_TEXT_CLASS : "text-foreground"
-                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20`}
+                      isShared ? SHARED_TEXT_CLASS : defaultEventTextClass
+                    } px-3 py-2 text-sm shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-md ${focusRingClass}`}
                   >
                     <div className="flex flex-col">
                       <span className="truncate">{ev.title}</span>
@@ -1502,9 +1520,9 @@ export default function CalendarPage() {
           className="fixed inset-0 z-40 flex items-end sm:items-center justify-center"
           onClick={() => setOpenEvent(null)}
         >
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-black/45" />
           <div
-            className="relative z-50 w-full sm:max-w-xl sm:rounded-xl border border-border bg-surface p-4 sm:p-6 shadow-xl sm:mx-auto space-y-4 event-theme-scope"
+            className="event-theme-scope relative z-50 w-full rounded-t-2xl border border-[#e7defb] bg-white p-4 shadow-xl ring-1 ring-[#ece9ff] dark:border-border dark:bg-surface dark:ring-border/40 sm:mx-auto sm:max-w-xl sm:rounded-2xl sm:p-6 space-y-4"
             style={openEventStyleVars}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1529,7 +1547,7 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setOpenEvent(null)}
-                  className="text-foreground/70 hover:text-foreground"
+                  className={closeButtonClass}
                   aria-label="Close"
                 >
                   ✕
@@ -1623,7 +1641,7 @@ export default function CalendarPage() {
               </section>
             )}
 
-            <div className="pt-4 border-t border-border">
+            <div className="border-t border-[#ece9ff] pt-4 dark:border-border">
               <EventActions
                 shareUrl={`/event/${slugify(openEvent.title)}-${
                   openEvent.historyId

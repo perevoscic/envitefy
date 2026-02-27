@@ -47,3 +47,15 @@ export function buildEventPath(
   const qs = search.toString();
   return qs ? `${base}?${qs}` : base;
 }
+
+const UUID_SEGMENT_REGEX =
+  /(?:^|-)(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}))$/i;
+
+export function isEventDetailPath(pathname?: string | null): boolean {
+  const path = String(pathname || "").trim();
+  if (!path.startsWith("/event/")) return false;
+  const match = path.match(/^\/event\/([^/]+)$/);
+  if (!match) return false;
+  const segment = match[1] || "";
+  return UUID_SEGMENT_REGEX.test(segment);
+}
