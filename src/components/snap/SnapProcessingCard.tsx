@@ -24,34 +24,33 @@ export function SnapProcessingCard({
 
   return (
     <div className="w-full max-w-md">
-      <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-2 inline-flex items-center justify-center rounded-2xl bg-white/5 px-4 py-2">
-            <img
-              src="/navElogo.png"
-              alt="Envitefy"
-              className="h-auto w-[190px] object-contain"
-            />
-          </div>
-          <p className="mt-1 text-sm text-slate-400">
+      <div className="relative overflow-hidden rounded-3xl border border-[#dfd6fb] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f2ecff] p-6 text-[#2f2550] shadow-[0_24px_60px_rgba(84,61,140,0.24)]">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#b7a5ff]/20 blur-2xl" />
+        <div className="pointer-events-none absolute -left-14 -bottom-14 h-36 w-36 rounded-full bg-[#88d2ff]/15 blur-3xl" />
+        <div className="mb-4 text-center">
+          <p className="text-sm font-medium text-[#625089]">
             Upload your flyer, we&apos;ll extract the details.
           </p>
         </div>
 
         <div className="relative flex flex-col items-center">
-          <div className="relative mb-5 aspect-[3/4] w-full overflow-hidden rounded-xl border border-slate-700 bg-black shadow-inner">
+          <div className="relative mb-5 aspect-[3/4] w-full overflow-hidden rounded-2xl border border-[#d8cff5] bg-[#f9f5ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
             {previewKind === "image" && previewUrl ? (
               <img
                 src={previewUrl}
                 alt="Flyer preview"
                 className={`h-full w-full object-cover transition-all duration-700 ${
-                  status === "scanning" ? "brightness-50 grayscale-[0.5]" : ""
+                  status === "scanning"
+                    ? "brightness-[0.65] saturate-[0.9]"
+                    : ""
                 }`}
               />
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-900 text-slate-300">
-                <Upload className="h-10 w-10 text-blue-400" />
-                <p className="text-sm font-medium">
+              <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#fbf9ff] via-[#f5eeff] to-[#eef5ff] text-[#5c4c83]">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8e74df] to-[#7392ff] text-white shadow-[0_12px_30px_rgba(99,73,175,0.35)]">
+                  <Upload className="h-7 w-7" />
+                </span>
+                <p className="text-sm font-semibold">
                   {previewKind === "pdf" ? "PDF ready to scan" : "File ready to scan"}
                 </p>
               </div>
@@ -59,7 +58,7 @@ export function SnapProcessingCard({
 
             {status === "scanning" && (
               <>
-                <div className="animate-scan-line absolute left-0 top-0 z-20 h-1 w-full bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
+                <div className="animate-scan-line absolute left-0 top-0 z-20 h-1 w-full bg-gradient-to-r from-transparent via-[#8f75de] to-transparent shadow-[0_0_14px_rgba(143,117,222,0.85)]" />
                 <DataNode
                   label="Event Date"
                   icon={<Calendar size={12} />}
@@ -89,9 +88,10 @@ export function SnapProcessingCard({
                   left="42%"
                 />
                 <div
-                  className="pointer-events-none absolute inset-0 opacity-20"
+                  className="pointer-events-none absolute inset-0 opacity-25"
                   style={{
-                    backgroundImage: "radial-gradient(circle, #3b82f6 1px, transparent 1px)",
+                    backgroundImage:
+                      "radial-gradient(circle, rgba(134,105,221,0.65) 1px, transparent 1px)",
                     backgroundSize: "20px 20px",
                   }}
                 />
@@ -99,26 +99,25 @@ export function SnapProcessingCard({
             )}
 
             {status === "uploading" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#f8f2ff]/75 backdrop-blur-sm">
                 <ProgressRing radius={52} stroke={6} progress={progress} />
-                <p className="mt-4 font-mono text-lg font-bold text-blue-400">
+                <p className="mt-4 font-mono text-lg font-bold text-[#6f57c7]">
                   {Math.max(0, Math.min(100, Math.round(progress)))}%
                 </p>
-                <p className="mt-1 text-xs uppercase tracking-widest text-slate-300">
+                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-[#6c5a97]">
                   Uploading...
                 </p>
               </div>
             )}
-
           </div>
 
           <div className="w-full">
             <div className="mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+              <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[#685691]">
                 {status === "scanning" ? (
                   <>
-                    <Sparkles className="h-4 w-4 animate-pulse text-blue-400" />
-                    AI Analysis in Progress
+                    <Sparkles className="h-4 w-4 animate-pulse text-[#7f64d4]" />
+                    Analysing
                   </>
                 ) : (
                   "Uploading Flyer"
@@ -127,7 +126,7 @@ export function SnapProcessingCard({
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-full p-1 text-slate-500 transition-colors hover:bg-slate-800 hover:text-red-400"
+                className="rounded-full border border-[#ddd2fa] bg-white/85 p-1.5 text-[#7d6aa9] transition-colors hover:border-[#cbbcf2] hover:bg-white hover:text-[#5b4a88]"
                 aria-label="Cancel upload"
               >
                 <X size={18} />
@@ -135,8 +134,8 @@ export function SnapProcessingCard({
             </div>
 
             {status === "scanning" && (
-              <div className="h-1 w-full overflow-hidden rounded-full bg-slate-800">
-                <div className="animate-scanning-bar h-full bg-blue-500" />
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e9e1ff]">
+                <div className="animate-scanning-bar h-full bg-gradient-to-r from-[#8f75de] via-[#7a63d8] to-[#6e8eff]" />
               </div>
             )}
           </div>
@@ -215,7 +214,7 @@ function ProgressRing({
       aria-hidden="true"
     >
       <circle
-        stroke="rgba(255,255,255,0.1)"
+        stroke="rgba(110, 92, 164, 0.18)"
         fill="transparent"
         strokeWidth={stroke}
         r={normalizedRadius}
@@ -223,7 +222,7 @@ function ProgressRing({
         cy={radius}
       />
       <circle
-        stroke="#3b82f6"
+        stroke="#7f66d5"
         fill="transparent"
         strokeWidth={stroke}
         strokeDasharray={`${circumference} ${circumference}`}
@@ -252,7 +251,7 @@ function DataNode({
 }) {
   return (
     <div
-      className="animate-float-node absolute z-30 flex items-center gap-2 rounded-full border border-blue-300/30 bg-blue-500/80 px-2 py-1 text-[10px] font-bold text-white shadow-xl backdrop-blur-md"
+      className="animate-float-node absolute z-30 flex items-center gap-2 rounded-full border border-[#dccffc] bg-white/90 px-2.5 py-1 text-[10px] font-bold text-[#5c4a8e] shadow-[0_10px_24px_rgba(102,77,171,0.2)] backdrop-blur-md"
       style={{ top, left, animationDelay: delay }}
     >
       {icon}

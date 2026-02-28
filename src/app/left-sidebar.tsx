@@ -599,6 +599,7 @@ export default function LeftSidebar() {
     setSelectedEventId,
     selectedEventTitle,
     setSelectedEventTitle,
+    selectedEventHref,
     setSelectedEventHref,
     setSelectedEventEditHref,
     activeEventTab,
@@ -848,6 +849,15 @@ export default function LeftSidebar() {
   ]);
 
   useEffect(() => {
+    if (pathname !== "/") return;
+    const hasEventContext =
+      Boolean(selectedEventId) || sidebarPage === "eventContext";
+    if (!hasEventContext) return;
+    clearEventContext();
+    setSidebarPage("root");
+  }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
+
+  useEffect(() => {
     if (sidebarPage !== "myEvents") {
       setShowPastEvents(false);
     }
@@ -1026,6 +1036,11 @@ export default function LeftSidebar() {
     } catch {}
     openSnapFromSidebar(mode);
   };
+  const goHomeFromSidebar = useCallback(() => {
+    clearEventContext();
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+  }, [clearEventContext, setSidebarPage, collapseSidebarOnTouch]);
   const { visibleTemplateKeys } = useFeatureVisibility();
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
@@ -2181,6 +2196,28 @@ export default function LeftSidebar() {
     } catch {}
   }, []);
 
+  const buildEventOwnerHref = useCallback(
+    (
+      baseHref: string | null | undefined,
+      eventId: string,
+      tab: EventContextTab,
+    ) => {
+      const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
+      try {
+        const normalizedBase =
+          typeof baseHref === "string" && baseHref.trim()
+            ? baseHref
+            : fallbackPath;
+        const parsed = new URL(normalizedBase, "https://envitefy.local");
+        parsed.searchParams.set("tab", tab);
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      } catch {
+        return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
+      }
+    },
+    [],
+  );
+
   const openEventContext = useCallback(
     (row: { id: string; title: string; data?: any }, href: string) => {
       const title = row.title || "Untitled event";
@@ -2190,9 +2227,10 @@ export default function LeftSidebar() {
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
       setActiveEventTab("dashboard");
       setSidebarPage("eventContext");
-      router.push("/");
+      router.push(buildEventOwnerHref(href, row.id, "dashboard"));
     },
     [
+      buildEventOwnerHref,
       router,
       setActiveEventTab,
       setSelectedEventEditHref,
@@ -2207,15 +2245,20 @@ export default function LeftSidebar() {
     (tab: EventContextTab) => {
       setActiveEventTab(tab);
       try {
-        if (pathname !== "/") {
-          router.push("/");
-        }
+        if (!selectedEventId) return;
+        const nextHref = buildEventOwnerHref(selectedEventHref, selectedEventId, tab);
+        router.push(nextHref);
       } catch {}
-      if (tab === "dashboard") {
-        setSidebarPage("eventContext");
-      }
+      setSidebarPage("eventContext");
     },
-    [pathname, router, setActiveEventTab, setSidebarPage],
+    [
+      buildEventOwnerHref,
+      router,
+      selectedEventHref,
+      selectedEventId,
+      setActiveEventTab,
+      setSidebarPage,
+    ],
   );
 
   const handleSidebarBackToMyEvents = useCallback(() => {
@@ -2546,11 +2589,20 @@ export default function LeftSidebar() {
   // Avoid SSR/client mismatch by rendering sidebar only after hydration
   if (!isHydrated) return null;
 
-  const selectedHistoryRow = selectedEventId
-    ? history.find((row) => row.id === selectedEventId)
-    : null;
-  const selectedEventLabel =
-    selectedEventTitle || selectedHistoryRow?.title || "Untitled event";
+  const panelTransitionStyle: CSSProperties = {
+    transition: "transform 240ms ease-in-out",
+  };
+  const rootPanelTransform = sidebarPage === "root" ? "translateX(0%)" : "translateX(-100%)";
+  const createEventPanelTransform =
+    sidebarPage === "createEvent" ? "translateX(0%)" : "translateX(100%)";
+  const myEventsPanelTransform =
+    sidebarPage === "myEvents"
+      ? "translateX(0%)"
+      : sidebarPage === "eventContext"
+        ? "translateX(-100%)"
+        : "translateX(100%)";
+  const eventPanelTransform =
+    sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
 
   return (
     <>
@@ -2701,7 +2753,7 @@ export default function LeftSidebar() {
               <div className="flex flex-col items-center gap-3 text-center">
                 <Link
                   href="/"
-                  onClick={collapseSidebarOnTouch}
+                  onClick={goHomeFromSidebar}
                   className="flex h-12 w-12 items-center justify-center"
                 >
                   <Image
@@ -2724,7 +2776,7 @@ export default function LeftSidebar() {
               <div className="grid grid-cols-4 gap-3">
                 <Link
                   href="/"
-                  onClick={collapseSidebarOnTouch}
+                  onClick={goHomeFromSidebar}
                   className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
@@ -2793,11 +2845,12 @@ export default function LeftSidebar() {
 
             <div className="relative mt-3 min-h-0 flex-1 overflow-hidden">
               <div
-                className={`absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5 transition-transform duration-[240ms] ease-in-out ${
-                  sidebarPage === "root"
-                    ? "translate-x-0 pointer-events-auto"
-                    : "-translate-x-full pointer-events-none"
-                }`}
+                className="absolute inset-0 z-[5] overflow-y-auto no-scrollbar px-4 pb-5"
+                style={{
+                  ...panelTransitionStyle,
+                  transform: rootPanelTransform,
+                  pointerEvents: sidebarPage === "root" ? "auto" : "none",
+                }}
                 aria-hidden={sidebarPage !== "root"}
               >
                 <div className="space-y-3">
@@ -2848,11 +2901,12 @@ export default function LeftSidebar() {
               </div>
 
               <div
-                className={`absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5 transition-transform duration-[240ms] ease-in-out ${
-                  sidebarPage === "createEvent"
-                    ? "translate-x-0 pointer-events-auto"
-                    : "translate-x-full pointer-events-none"
-                }`}
+                className="absolute inset-0 z-[10] overflow-y-auto no-scrollbar px-4 pb-5"
+                style={{
+                  ...panelTransitionStyle,
+                  transform: createEventPanelTransform,
+                  pointerEvents: sidebarPage === "createEvent" ? "auto" : "none",
+                }}
                 aria-hidden={sidebarPage !== "createEvent"}
               >
                 <div className="space-y-3">
@@ -2898,13 +2952,12 @@ export default function LeftSidebar() {
               </div>
 
               <div
-                className={`absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5 transition-transform duration-[240ms] ease-in-out ${
-                  sidebarPage === "myEvents"
-                    ? "translate-x-0 pointer-events-auto"
-                    : sidebarPage === "eventContext"
-                      ? "-translate-x-full pointer-events-none"
-                      : "translate-x-full pointer-events-none"
-                }`}
+                className="absolute inset-0 z-[15] overflow-y-auto no-scrollbar px-4 pb-5"
+                style={{
+                  ...panelTransitionStyle,
+                  transform: myEventsPanelTransform,
+                  pointerEvents: sidebarPage === "myEvents" ? "auto" : "none",
+                }}
                 aria-hidden={sidebarPage !== "myEvents"}
               >
                 <div className="space-y-3">
@@ -3044,16 +3097,16 @@ export default function LeftSidebar() {
               </div>
 
               <div
-                className={`absolute inset-0 overflow-hidden transition-transform duration-[240ms] ease-in-out ${
-                  sidebarPage === "eventContext"
-                    ? "translate-x-0 pointer-events-auto"
-                    : "translate-x-full pointer-events-none"
-                }`}
+                className="absolute inset-0 z-[30] overflow-hidden bg-[#f6f3ff]"
+                style={{
+                  ...panelTransitionStyle,
+                  transform: eventPanelTransform,
+                  pointerEvents: sidebarPage === "eventContext" ? "auto" : "none",
+                }}
                 aria-hidden={sidebarPage !== "eventContext"}
               >
                 <EventSidebar
                   ref={eventSidebarRef}
-                  eventTitle={selectedEventLabel}
                   activeEventTab={activeEventTab}
                   onBack={handleSidebarBackToMyEvents}
                   onTabChange={handleEventTabChange}

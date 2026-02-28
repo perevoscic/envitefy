@@ -22,7 +22,7 @@ import {
   UploadIllustration,
 } from "@/components/landing/action-illustrations";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
 import { Eye, Mail, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
@@ -41,7 +41,7 @@ import {
   inferTemplateKeyFromEventData,
 } from "@/config/feature-visibility";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
-import { useSidebar } from "@/app/sidebar-context";
+import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
 
 type EventFields = {
   title: string;
@@ -122,16 +122,39 @@ declare global {
   }
 }
 
-export default function Dashboard() {
+type DashboardInitialEventContext = {
+  eventId: string;
+  eventTitle: string;
+  eventHref: string;
+  eventEditHref: string;
+  activeEventTab: EventContextTab;
+};
+
+export default function Dashboard({
+  initialEventContext = null,
+}: {
+  initialEventContext?: DashboardInitialEventContext | null;
+}) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const {
-    selectedEventId,
-    selectedEventTitle,
-    selectedEventHref,
-    selectedEventEditHref,
-    activeEventTab,
+    selectedEventId: sidebarSelectedEventId,
+    selectedEventTitle: sidebarSelectedEventTitle,
+    selectedEventHref: sidebarSelectedEventHref,
+    selectedEventEditHref: sidebarSelectedEventEditHref,
+    activeEventTab: sidebarActiveEventTab,
     clearEventContext,
   } = useSidebar();
+  const selectedEventId =
+    initialEventContext?.eventId ?? sidebarSelectedEventId ?? null;
+  const selectedEventTitle =
+    initialEventContext?.eventTitle ?? sidebarSelectedEventTitle ?? null;
+  const selectedEventHref =
+    initialEventContext?.eventHref ?? sidebarSelectedEventHref ?? null;
+  const selectedEventEditHref =
+    initialEventContext?.eventEditHref ?? sidebarSelectedEventEditHref ?? null;
+  const activeEventTab =
+    initialEventContext?.activeEventTab ?? sidebarActiveEventTab;
   const isSignedIn = Boolean(session?.user);
   const {
     loading: visibilityLoading,
@@ -565,17 +588,22 @@ export default function Dashboard() {
     } catch {}
   }, [router]);
 
-  const showEventHeaderActions = Boolean(selectedEventId);
+  const isEventRoute =
+    (pathname?.startsWith("/event/") ?? false) || Boolean(initialEventContext);
+  const hasEventContextOnPage = Boolean(selectedEventId) && isEventRoute;
+  const showEventHeaderActions = hasEventContextOnPage;
+  const showWelcomeMessage = isSignedIn && pathname === "/";
+  const showHeaderRow = isSignedIn && (showWelcomeMessage || showEventHeaderActions);
   const selectedEventLabel = selectedEventTitle || "Untitled event";
   const headerPrimaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#5b4ed1] bg-[#5b4ed1] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#4f44bc]";
   const headerSecondaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#ddd6ff] bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#4f457a] shadow-sm transition hover:border-[#c8beff] hover:bg-white";
   const showOwnerDashboard = Boolean(
-    selectedEventId && activeEventTab === "dashboard"
+    hasEventContextOnPage && activeEventTab === "dashboard"
   );
   const showOwnerTabPlaceholder = Boolean(
-    selectedEventId && activeEventTab !== "dashboard"
+    hasEventContextOnPage && activeEventTab !== "dashboard"
   );
 
   const handleHeaderPreview = useCallback(() => {
@@ -1542,28 +1570,39 @@ export default function Dashboard() {
         onChange={(event) => onFile(event.target.files?.[0] ?? null)}
         className="hidden"
       />
-      {/* Welcome message */}
-      {isSignedIn && (
-        <div className="w-full max-w-6xl mb-8 mt-0 flex flex-col gap-4 md:mb-10">
-          <div className="flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0 flex flex-col items-start text-left">
-              <div
-                className="truncate text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
-                style={{
-                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-                }}
-              >
-                <span className="text-[#1b1540]">Welcome Back,</span>
-                <span className="ml-2 text-[#7F8CFF] italic">
-                  {(session?.user?.name as string) ||
-                    (session?.user?.email as string)?.split("@")[0] ||
-                    "there"}
-                </span>
+      {showHeaderRow && (
+        <div
+          className={`w-full max-w-6xl mt-0 flex flex-col gap-4 ${
+            showWelcomeMessage ? "mb-8 md:mb-10" : "mb-4 md:mb-6"
+          }`}
+        >
+          <div
+            className={`flex w-full gap-4 ${
+              showWelcomeMessage
+                ? "flex-col md:flex-row md:items-start md:justify-between"
+                : "justify-end"
+            }`}
+          >
+            {showWelcomeMessage && (
+              <div className="min-w-0 flex flex-col items-start text-left">
+                <div
+                  className="truncate text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+                  style={{
+                    fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                  }}
+                >
+                  <span className="text-[#1b1540]">Welcome Back,</span>
+                  <span className="ml-2 text-[#7F8CFF] italic">
+                    {(session?.user?.name as string) ||
+                      (session?.user?.email as string)?.split("@")[0] ||
+                      "there"}
+                  </span>
+                </div>
+                <p className="text-lg sm:text-xl md:text-xl text-[#1b1540] mt-2">
+                  Let&apos;s create something unforgettable.
+                </p>
               </div>
-              <p className="text-lg sm:text-xl md:text-xl text-[#1b1540] mt-2">
-                Let&apos;s create something unforgettable.
-              </p>
-            </div>
+            )}
             {showEventHeaderActions && (
               <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
                 <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -1646,7 +1685,7 @@ export default function Dashboard() {
         </div>
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#120b1e]/55 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#f4eeff]/78 p-4 backdrop-blur-md">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}
@@ -1663,7 +1702,7 @@ export default function Dashboard() {
         <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
           <div className="space-y-3">
             {error && (
-              <div className="rounded border border-error bg-surface/90 p-3 text-sm text-error">
+              <div className="rounded-xl border border-[#f3cade] bg-[#fff6fb] p-3 text-sm font-medium text-[#9f2d5d] shadow-sm">
                 {error}
               </div>
             )}

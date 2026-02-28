@@ -12,7 +12,6 @@ import {
 import type { EventContextTab } from "@/app/sidebar-context";
 
 type EventSidebarProps = {
-  eventTitle: string;
   activeEventTab: EventContextTab;
   onBack: () => void;
   onTabChange: (tab: EventContextTab) => void;
@@ -30,10 +29,7 @@ const TAB_ITEMS: Array<{
 ];
 
 const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
-  (
-    { eventTitle, activeEventTab, onBack, onTabChange },
-    ref,
-  ) => {
+  ({ activeEventTab, onBack, onTabChange }, ref) => {
     return (
       <div
         ref={ref}
@@ -60,14 +56,6 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
               >
                 My Events
               </button>
-            </div>
-            <div className="mt-3 rounded-2xl border border-white/70 bg-gradient-to-r from-[#f4f2ff] via-[#f7f5ff] to-[#f2f8ff] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-              <p
-                className="truncate text-sm font-semibold text-[#2f1d47]"
-                title={eventTitle}
-              >
-                {eventTitle || "Untitled event"}
-              </p>
             </div>
           </div>
         </div>

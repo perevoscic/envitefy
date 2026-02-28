@@ -57,6 +57,7 @@ import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
+import EventOwnerWorkspace from "@/components/EventOwnerWorkspace";
 
 export const dynamic = "force-dynamic";
 
@@ -542,6 +543,18 @@ export default async function EventPage({
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
   const data = row.data as any;
+  const requestedTab = String(
+    ((awaitedSearchParams as any)?.tab ?? "") as string
+  )
+    .trim()
+    .toLowerCase();
+  const ownerWorkspaceTab =
+    requestedTab === "dashboard" ||
+    requestedTab === "guests" ||
+    requestedTab === "communications" ||
+    requestedTab === "settings"
+      ? (requestedTab as "dashboard" | "guests" | "communications" | "settings")
+      : null;
 
   // Handle edit redirect - if edit param is present and user is owner, redirect to customize
   const editParam = String(
@@ -550,6 +563,18 @@ export default async function EventPage({
   if (editParam && isOwner) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
+  }
+
+  if (isOwner && ownerWorkspaceTab) {
+    return (
+      <EventOwnerWorkspace
+        eventId={row.id}
+        eventTitle={title}
+        eventData={data}
+        eventHref={buildEventPath(row.id, title)}
+        initialTab={ownerWorkspaceTab}
+      />
+    );
   }
 
   const rawThumbnailValue =
