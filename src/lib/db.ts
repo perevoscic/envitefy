@@ -63,10 +63,12 @@ function getPool(): Pool {
       }
     }
 
-    const poolConfig: any = { connectionString: connectionStringToUse, max: 10 };
+    const parsedPoolMax = Number.parseInt(process.env.PG_POOL_MAX || "3", 10);
+    const poolMax = Number.isFinite(parsedPoolMax) && parsedPoolMax > 0 ? parsedPoolMax : 3;
+    const poolConfig: any = { connectionString: connectionStringToUse, max: poolMax };
     // Timeouts to prevent hanging requests causing upstream 504s
     const connectTimeoutMs = Number.parseInt(process.env.PG_CONNECT_TIMEOUT_MS || "5000", 10);
-    const idleTimeoutMs = Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "10000", 10);
+    const idleTimeoutMs = Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "30000", 10);
     const statementTimeoutMs = Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10);
     if (Number.isFinite(connectTimeoutMs)) poolConfig.connectionTimeoutMillis = connectTimeoutMs;
     if (Number.isFinite(idleTimeoutMs)) poolConfig.idleTimeoutMillis = idleTimeoutMs;

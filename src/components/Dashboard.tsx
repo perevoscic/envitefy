@@ -148,11 +148,21 @@ type DashboardResponse = {
   };
   checklist: {
     source: "tasks" | "derived";
-    items: Array<{ id: string; title: string; done: boolean; dueAt: string | null }>;
+    items: Array<{
+      id: string;
+      title: string;
+      done: boolean;
+      dueAt: string | null;
+    }>;
   };
   drafts: {
     count: number;
-    items: Array<{ id: string; title: string; updatedAt: string | null; startAt: string }>;
+    items: Array<{
+      id: string;
+      title: string;
+      updatedAt: string | null;
+      startAt: string;
+    }>;
   };
   metricsCache: DashboardMetricsCache | null;
   metricsEligibility: {
@@ -161,16 +171,24 @@ type DashboardResponse = {
   };
 };
 
-function isDashboardResponsePayload(value: unknown): value is DashboardResponse {
+function isDashboardResponsePayload(
+  value: unknown
+): value is DashboardResponse {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<DashboardResponse> & { ok?: unknown };
   if (candidate.ok !== true) return false;
-  if (!candidate.snapshot || typeof candidate.snapshot !== "object") return false;
+  if (!candidate.snapshot || typeof candidate.snapshot !== "object")
+    return false;
   if (!Array.isArray(candidate.upcoming)) return false;
-  if (!candidate.setupHealth || typeof candidate.setupHealth !== "object") return false;
-  if (!candidate.checklist || typeof candidate.checklist !== "object") return false;
+  if (!candidate.setupHealth || typeof candidate.setupHealth !== "object")
+    return false;
+  if (!candidate.checklist || typeof candidate.checklist !== "object")
+    return false;
   if (!candidate.drafts || typeof candidate.drafts !== "object") return false;
-  if (!candidate.metricsEligibility || typeof candidate.metricsEligibility !== "object") {
+  if (
+    !candidate.metricsEligibility ||
+    typeof candidate.metricsEligibility !== "object"
+  ) {
     return false;
   }
   return true;
@@ -313,21 +331,23 @@ export default function Dashboard({
   const activeOcrAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
-  const submitScannedEventRef =
-    useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
-      async () => false
-    );
+  const submitScannedEventRef = useRef<
+    (params: SubmitScannedEventParams) => Promise<boolean>
+  >(async () => false);
   const currentPreviewUrlRef = useRef<string | null>(null);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [softPromptDismissed, setSoftPromptDismissed] = useState(false);
-  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-  const [nextEventMetrics, setNextEventMetrics] = useState<DashboardMetricsCache | null>(
+  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(
     null
   );
-  const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [nextEventMetrics, setNextEventMetrics] =
+    useState<DashboardMetricsCache | null>(null);
+  const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(
+    null
+  );
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [ownerDashboardData, setOwnerDashboardData] =
     useState<OwnerDashboardData | null>(null);
@@ -546,7 +566,9 @@ export default function Dashboard({
           credentials: "include",
           cache: "no-store",
         });
-        const json = (await res.json().catch(() => null)) as DashboardResponse | null;
+        const json = (await res
+          .json()
+          .catch(() => null)) as DashboardResponse | null;
         if (res.ok && isDashboardResponsePayload(json)) {
           setDashboardData(json);
           setNextEventMetrics(json.metricsCache || null);
@@ -577,9 +599,14 @@ export default function Dashboard({
         let storedOrigin: { lat: number; lng: number } | null = null;
         try {
           if (typeof window !== "undefined") {
-            const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
+            const raw = window.localStorage.getItem(
+              DASHBOARD_ORIGIN_STORAGE_KEY
+            );
             if (raw) {
-              const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown };
+              const parsed = JSON.parse(raw) as {
+                lat?: unknown;
+                lng?: unknown;
+              };
               const lat = Number(parsed?.lat);
               const lng = Number(parsed?.lng);
               if (
@@ -707,7 +734,10 @@ export default function Dashboard({
           rowData?.event?.end ||
           null;
         const dateLine = startRaw
-          ? formatEventTimeRange(String(startRaw), endRaw ? String(endRaw) : null)
+          ? formatEventTimeRange(
+              String(startRaw),
+              endRaw ? String(endRaw) : null
+            )
           : "Date pending";
 
         const stats = rsvpPayload?.stats || { yes: 0, no: 0, maybe: 0 };
@@ -723,33 +753,35 @@ export default function Dashboard({
           totalGuests > 0 ? Math.round((filled / totalGuests) * 100) : 0;
 
         const responses: OwnerRsvpRow[] = Array.isArray(rsvpPayload?.responses)
-          ? rsvpPayload.responses.slice(0, 6).map((entry: any, index: number) => {
-              const fullName = [entry?.firstName, entry?.lastName]
-                .map((part) => String(part || "").trim())
-                .filter(Boolean)
-                .join(" ");
-              const displayName =
-                fullName ||
-                String(entry?.name || "").trim() ||
-                String(entry?.email || "").trim() ||
-                `Guest ${index + 1}`;
-              const responseRaw = String(entry?.response || "").toLowerCase();
-              const status: OwnerRsvpRow["status"] =
-                responseRaw === "yes"
-                  ? "Attending"
-                  : responseRaw === "no"
-                  ? "Declined"
-                  : responseRaw === "maybe"
-                  ? "Maybe"
-                  : "Pending";
-              return {
-                id: `${selectedEventId}-rsvp-${index}`,
-                name: displayName,
-                status,
-                plusOnes: String(entry?.plusOnes ?? "0"),
-                foodPrefs: String(entry?.foodPrefs || "-"),
-              };
-            })
+          ? rsvpPayload.responses
+              .slice(0, 6)
+              .map((entry: any, index: number) => {
+                const fullName = [entry?.firstName, entry?.lastName]
+                  .map((part) => String(part || "").trim())
+                  .filter(Boolean)
+                  .join(" ");
+                const displayName =
+                  fullName ||
+                  String(entry?.name || "").trim() ||
+                  String(entry?.email || "").trim() ||
+                  `Guest ${index + 1}`;
+                const responseRaw = String(entry?.response || "").toLowerCase();
+                const status: OwnerRsvpRow["status"] =
+                  responseRaw === "yes"
+                    ? "Attending"
+                    : responseRaw === "no"
+                    ? "Declined"
+                    : responseRaw === "maybe"
+                    ? "Maybe"
+                    : "Pending";
+                return {
+                  id: `${selectedEventId}-rsvp-${index}`,
+                  name: displayName,
+                  status,
+                  plusOnes: String(entry?.plusOnes ?? "0"),
+                  foodPrefs: String(entry?.foodPrefs || "-"),
+                };
+              })
           : [];
 
         const pageViewsRaw =
@@ -790,7 +822,10 @@ export default function Dashboard({
   }, [selectedEventId, selectedEventTitle]);
 
   const router = useRouter();
-  const readStoredOrigin = useCallback((): { lat: number; lng: number } | null => {
+  const readStoredOrigin = useCallback((): {
+    lat: number;
+    lng: number;
+  } | null => {
     if (typeof window === "undefined") return null;
     try {
       const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
@@ -861,7 +896,8 @@ export default function Dashboard({
     try {
       const shouldUseDeviceOrigin =
         enrichMeta?.hasOrigin === false ||
-        (nextEventMetrics?.travelMinutes == null && nextEventMetrics?.travelDistanceKm == null);
+        (nextEventMetrics?.travelMinutes == null &&
+          nextEventMetrics?.travelDistanceKm == null);
       const currentOrigin = shouldUseDeviceOrigin
         ? await resolveCurrentPosition()
         : null;
@@ -910,7 +946,8 @@ export default function Dashboard({
   const hasEventContextOnPage = Boolean(selectedEventId) && isEventRoute;
   const showEventHeaderActions = hasEventContextOnPage;
   const showWelcomeMessage = isSignedIn && pathname === "/";
-  const showHeaderRow = isSignedIn && (showWelcomeMessage || showEventHeaderActions);
+  const showHeaderRow =
+    isSignedIn && (showWelcomeMessage || showEventHeaderActions);
   const selectedEventLabel = selectedEventTitle || "Untitled event";
   const headerPrimaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#5b4ed1] bg-[#5b4ed1] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#4f44bc]";
@@ -1006,7 +1043,13 @@ export default function Dashboard({
     } catch {
       // no-op placeholder until a global toast system is wired here
     }
-  }, [clearEventContext, pathname, router, selectedEventId, selectedEventLabel]);
+  }, [
+    clearEventContext,
+    pathname,
+    router,
+    selectedEventId,
+    selectedEventLabel,
+  ]);
 
   const resetForm = useCallback(() => {
     cancelledByUserRef.current = true;
@@ -1267,7 +1310,9 @@ export default function Dashboard({
         } else {
           resetScanUi();
           setModalOpen(false);
-          setError("Unable to create an event from this scan. Please try again.");
+          setError(
+            "Unable to create an event from this scan. Please try again."
+          );
         }
       } catch (err) {
         if (err instanceof Error && err.message === "__scan_cancelled__") {
@@ -1810,7 +1855,8 @@ export default function Dashboard({
                 <div
                   className="truncate text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
                   style={{
-                    fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                    fontFamily:
+                      '"Venturis ADF", "Venturis ADF Fallback", serif',
                   }}
                 >
                   <span className="text-[#1b1540]">Welcome Back,</span>
@@ -1886,15 +1932,17 @@ export default function Dashboard({
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
           {showOwnerDashboard ? (
             <EventOwnerDashboardPanel
-              data={ownerDashboardData || {
-                title: selectedEventLabel,
-                dateLine: "Date pending",
-                totalGuests: 0,
-                rsvpRate: 0,
-                declined: 0,
-                pageViews: "--",
-                recentRsvps: [],
-              }}
+              data={
+                ownerDashboardData || {
+                  title: selectedEventLabel,
+                  dateLine: "Date pending",
+                  totalGuests: 0,
+                  rsvpRate: 0,
+                  declined: 0,
+                  pageViews: "--",
+                  recentRsvps: [],
+                }
+              }
             />
           ) : showOwnerTabPlaceholder ? (
             <EventOwnerTabPlaceholder tab={activeEventTab} />
@@ -2207,13 +2255,25 @@ function WeatherIcon({
   if (normalized.includes("thunder")) {
     return <CloudLightning className={className} aria-hidden="true" />;
   }
-  if (normalized.includes("snow") || normalized.includes("sleet") || normalized.includes("ice")) {
+  if (
+    normalized.includes("snow") ||
+    normalized.includes("sleet") ||
+    normalized.includes("ice")
+  ) {
     return <CloudSnow className={className} aria-hidden="true" />;
   }
-  if (normalized.includes("fog") || normalized.includes("mist") || normalized.includes("haze")) {
+  if (
+    normalized.includes("fog") ||
+    normalized.includes("mist") ||
+    normalized.includes("haze")
+  ) {
     return <CloudFog className={className} aria-hidden="true" />;
   }
-  if (normalized.includes("rain") || normalized.includes("drizzle") || normalized.includes("shower")) {
+  if (
+    normalized.includes("rain") ||
+    normalized.includes("drizzle") ||
+    normalized.includes("shower")
+  ) {
     return <CloudRain className={className} aria-hidden="true" />;
   }
   if (normalized.includes("overcast") || normalized.includes("cloud")) {
@@ -2345,9 +2405,12 @@ function UpcomingEventsPanel({
           const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
           const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
           const seconds = totalSeconds % 60;
-          return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(2, "0")}h : ${String(
-            minutes
-          ).padStart(2, "0")}m : ${String(seconds).padStart(2, "0")}s`;
+          return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(
+            2,
+            "0"
+          )}h : ${String(minutes).padStart(2, "0")}m : ${String(
+            seconds
+          ).padStart(2, "0")}s`;
         })()
       : "00d : 00h : 00m : 00s";
   const daysMessage =
@@ -2361,7 +2424,9 @@ function UpcomingEventsPanel({
   const statusNormalized = String(nextEvent?.status || "").toLowerCase();
   const createdVia = String(nextEvent?.createdVia || "").toLowerCase();
   const isScannedOrUploaded =
-    createdVia === "ocr" || createdVia.includes("scan") || createdVia.includes("upload");
+    createdVia === "ocr" ||
+    createdVia.includes("scan") ||
+    createdVia.includes("upload");
   const nextBadges: string[] = [];
   if (statusNormalized === "draft") nextBadges.push("Draft");
   if (!nextEvent?.locationText) {
@@ -2376,13 +2441,22 @@ function UpcomingEventsPanel({
   // Temporary preview mode: always render weather card for next event.
   const showWeather = Boolean(nextEvent);
   const weatherEligible = Boolean(data?.metricsEligibility?.weatherEligible);
-  const hasTravelMetrics = metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
+  const hasTravelMetrics =
+    metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
   const travelMiles =
-    metrics?.travelDistanceKm != null ? toMiles(metrics.travelDistanceKm) : null;
-  const travelMissingOrigin = enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
-  const weatherHasData = Boolean(metrics?.weatherSummary || metrics?.weatherTemp != null);
+    metrics?.travelDistanceKm != null
+      ? toMiles(metrics.travelDistanceKm)
+      : null;
+  const travelMissingOrigin =
+    enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
+  const weatherHasData = Boolean(
+    metrics?.weatherSummary || metrics?.weatherTemp != null
+  );
   const weatherNormalized = String(metrics?.weatherSummary || "").toLowerCase();
-  const weatherSunny = !weatherNormalized || weatherNormalized.includes("sun") || weatherNormalized.includes("clear");
+  const weatherSunny =
+    !weatherNormalized ||
+    weatherNormalized.includes("sun") ||
+    weatherNormalized.includes("clear");
 
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
@@ -2419,7 +2493,9 @@ function UpcomingEventsPanel({
                 </div>
                 <div className="flex items-center gap-3 text-indigo-100/80">
                   <MapPin className="h-5 w-5" />
-                  <span className="text-sm md:text-base">{nextEvent.locationText || daysMessage}</span>
+                  <span className="text-sm md:text-base">
+                    {nextEvent.locationText || daysMessage}
+                  </span>
                 </div>
                 <div className="pt-2">
                   <p className="text-2xl font-light tracking-wide tabular-nums text-white md:text-3xl">
@@ -2460,7 +2536,10 @@ function UpcomingEventsPanel({
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
                       Travel
                     </span>
-                    <Navigation className="h-4 w-4 text-white/55" aria-hidden="true" />
+                    <Navigation
+                      className="h-4 w-4 text-white/55"
+                      aria-hidden="true"
+                    />
                   </div>
                   {metricsLoading ? (
                     <div className="h-8 w-32 animate-pulse rounded bg-white/25" />
@@ -2468,7 +2547,9 @@ function UpcomingEventsPanel({
                     <>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-white">
-                          {metrics?.travelMinutes != null ? metrics.travelMinutes : "--"}
+                          {metrics?.travelMinutes != null
+                            ? metrics.travelMinutes
+                            : "--"}
                         </span>
                         <span className="text-lg text-indigo-200">min</span>
                         <span className="mx-1 h-6 w-px bg-white/20" />
@@ -2495,11 +2576,16 @@ function UpcomingEventsPanel({
                             target="_blank"
                             className="inline-flex items-center gap-1 text-xs font-semibold text-white underline underline-offset-2"
                           >
-                            <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
+                            <MapPinned
+                              className="h-3.5 w-3.5"
+                              aria-hidden="true"
+                            />
                             Open in Maps
                           </Link>
                         ) : (
-                          <span className="text-xs text-white/80">Open in Maps</span>
+                          <span className="text-xs text-white/80">
+                            Open in Maps
+                          </span>
                         )}
                         <button
                           type="button"
@@ -2519,7 +2605,10 @@ function UpcomingEventsPanel({
                       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
                         Weather
                       </span>
-                      <Clock className="h-4 w-4 text-white/55" aria-hidden="true" />
+                      <Clock
+                        className="h-4 w-4 text-white/55"
+                        aria-hidden="true"
+                      />
                     </div>
                     {metricsLoading ? (
                       <div className="h-8 w-24 animate-pulse rounded bg-white/25" />
@@ -2528,13 +2617,19 @@ function UpcomingEventsPanel({
                         <div className="relative">
                           <WeatherIcon
                             summary={metrics?.weatherSummary}
-                            className={`h-12 w-12 ${weatherSunny ? "animate-[spin_8s_linear_infinite] text-yellow-300" : "text-white"}`}
+                            className={`h-12 w-12 ${
+                              weatherSunny
+                                ? "animate-[spin_8s_linear_infinite] text-yellow-300"
+                                : "text-white"
+                            }`}
                           />
                           <div className="pointer-events-none absolute inset-0 rounded-full bg-yellow-400/20 blur-lg transition-opacity group-hover:bg-yellow-400/35" />
                         </div>
                         <div>
                           <p className="text-3xl font-bold text-white">
-                            {metrics?.weatherTemp != null ? `${Math.round(metrics.weatherTemp)}°F` : "--"}
+                            {metrics?.weatherTemp != null
+                              ? `${Math.round(metrics.weatherTemp)}°F`
+                              : "--"}
                           </p>
                           <p className="font-medium text-indigo-200">
                             {metrics?.weatherSummary || "Forecast"}
@@ -2543,7 +2638,9 @@ function UpcomingEventsPanel({
                       </div>
                     ) : (
                       <p className="text-xs text-indigo-200/75">
-                        {weatherEligible ? "Forecast pending" : "Weather available 72h before event"}
+                        {weatherEligible
+                          ? "Forecast pending"
+                          : "Weather available 72h before event"}
                       </p>
                     )}
                   </article>
@@ -2556,7 +2653,8 @@ function UpcomingEventsPanel({
                 No upcoming events yet
               </h3>
               <p className="mt-3 text-sm text-white/85 sm:text-base">
-                Start with a new event and this dashboard will highlight what is next.
+                Start with a new event and this dashboard will highlight what is
+                next.
               </p>
               <div className="mt-7">
                 <button
@@ -2572,7 +2670,9 @@ function UpcomingEventsPanel({
         </article>
 
         <aside className="rounded-[28px] border border-[#d8dbff] bg-white/88 p-6 shadow-[0_18px_36px_rgba(70,56,120,0.12)] backdrop-blur-sm">
-          <h3 className="text-xl font-semibold text-[#221b45]">Schedule Snapshot</h3>
+          <h3 className="text-xl font-semibold text-[#221b45]">
+            Schedule Snapshot
+          </h3>
           <div className="mt-5 text-center">
             <p className="text-4xl font-bold tracking-tight text-[#31275e]">
               {data?.snapshot?.upcomingCount30Days ?? 0}
@@ -2599,28 +2699,37 @@ function UpcomingEventsPanel({
             <p className="text-xs text-[#7a71a7]">{daysMessage}</p>
           </div>
 
-          <h4 className="mt-4 text-lg font-semibold text-[#221b45]">RSVP Snapshot</h4>
+          <h4 className="mt-4 text-lg font-semibold text-[#221b45]">
+            RSVP Snapshot
+          </h4>
           {nextEvent && data?.rsvp ? (
             <>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <p className="rounded-xl bg-[#eefcf4] px-3 py-2 text-[#1f7d52]">
-                  Going: <span className="font-semibold">{data.rsvp.going}</span>
+                  Going:{" "}
+                  <span className="font-semibold">{data.rsvp.going}</span>
                 </p>
                 <p className="rounded-xl bg-[#fff8e9] px-3 py-2 text-[#9c6b00]">
-                  Maybe: <span className="font-semibold">{data.rsvp.maybe}</span>
+                  Maybe:{" "}
+                  <span className="font-semibold">{data.rsvp.maybe}</span>
                 </p>
                 <p className="rounded-xl bg-[#fff1f4] px-3 py-2 text-[#a33d56]">
-                  Declined: <span className="font-semibold">{data.rsvp.declined}</span>
+                  Declined:{" "}
+                  <span className="font-semibold">{data.rsvp.declined}</span>
                 </p>
                 <p className="rounded-xl bg-[#f3f2fd] px-3 py-2 text-[#4b437f]">
-                  Pending: <span className="font-semibold">{data.rsvp.pending}</span>
+                  Pending:{" "}
+                  <span className="font-semibold">{data.rsvp.pending}</span>
                 </p>
               </div>
               <div className="mt-3 space-y-1.5">
                 {data.rsvp.recent.length > 0 ? (
                   data.rsvp.recent.slice(0, 3).map((row) => (
                     <p key={row.id} className="text-sm text-[#5a4f87]">
-                      <span className="font-semibold text-[#2d2555]">{row.name}</span> - {row.status}
+                      <span className="font-semibold text-[#2d2555]">
+                        {row.name}
+                      </span>{" "}
+                      - {row.status}
                     </p>
                   ))
                 ) : (
@@ -2629,12 +2738,15 @@ function UpcomingEventsPanel({
               </div>
             </>
           ) : (
-            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
+            <p className="mt-3 text-sm text-[#7a71a8]">
+              No next event selected.
+            </p>
           )}
           <div className="mt-5 border-t border-[#e9e3ff] pt-4">
             <h4 className="text-lg font-semibold text-[#221b45]">Drafts</h4>
             <p className="mt-1 text-sm text-[#6a6196]">
-              {data?.drafts?.count ?? 0} draft{(data?.drafts?.count ?? 0) === 1 ? "" : "s"}
+              {data?.drafts?.count ?? 0} draft
+              {(data?.drafts?.count ?? 0) === 1 ? "" : "s"}
             </p>
             <div className="mt-2 space-y-1.5">
               {(data?.drafts?.items || []).length > 0 ? (
@@ -2829,7 +2941,9 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
           <h2 className="truncate text-2xl font-semibold text-[#201942] sm:text-3xl">
             {data.title}
           </h2>
-          <p className="mt-1 text-sm font-medium text-[#6e629f]">{data.dateLine}</p>
+          <p className="mt-1 text-sm font-medium text-[#6e629f]">
+            {data.dateLine}
+          </p>
         </header>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -2841,11 +2955,15 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
                 {card.label}
               </p>
-              <p className={`mt-2 text-3xl font-bold tracking-tight ${card.accent}`}>
+              <p
+                className={`mt-2 text-3xl font-bold tracking-tight ${card.accent}`}
+              >
                 {card.value}
               </p>
               {card.note ? (
-                <p className="mt-1 text-xs font-semibold text-[#4d9f76]">{card.note}</p>
+                <p className="mt-1 text-xs font-semibold text-[#4d9f76]">
+                  {card.note}
+                </p>
               ) : (
                 <p className="mt-1 text-xs text-transparent">.</p>
               )}
@@ -2855,8 +2973,12 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
 
         <section className="overflow-hidden rounded-[24px] border border-[#e1dafb] bg-white/92 shadow-[0_12px_30px_rgba(62,50,112,0.10)]">
           <div className="flex items-center justify-between border-b border-[#ece7ff] px-4 py-3 sm:px-6">
-            <h3 className="text-xl font-semibold text-[#221b45]">Recent RSVPs</h3>
-            <span className="text-sm font-semibold text-[#4e4acf]">View All</span>
+            <h3 className="text-xl font-semibold text-[#221b45]">
+              Recent RSVPs
+            </h3>
+            <span className="text-sm font-semibold text-[#4e4acf]">
+              View All
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left">
@@ -2871,10 +2993,19 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
               <tbody>
                 {data.recentRsvps.length > 0 ? (
                   data.recentRsvps.map((row) => (
-                    <tr key={row.id} className="border-t border-[#f0ecff] text-sm text-[#2b2350]">
-                      <td className="px-4 py-3 font-semibold sm:px-6">{row.name}</td>
+                    <tr
+                      key={row.id}
+                      className="border-t border-[#f0ecff] text-sm text-[#2b2350]"
+                    >
+                      <td className="px-4 py-3 font-semibold sm:px-6">
+                        {row.name}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(row.status)}`}>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(
+                            row.status
+                          )}`}
+                        >
                           {row.status}
                         </span>
                       </td>
