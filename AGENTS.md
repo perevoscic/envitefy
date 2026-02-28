@@ -158,7 +158,7 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
 - **Query params**:
-  - `fast=1` (default behavior in UI): enables latency-focused mode that time-budgets OCR stages and skips optional rewrite/deep schedule LLM passes.
+  - `fast=1`: enables latency-focused mode that time-budgets OCR stages and skips optional rewrite/deep schedule LLM passes.
   - `fast=0`: enables full-quality mode (allows extra rewrite/deep schedule passes when budget remains).
   - `turbo=1`: races OpenAI + Google OCR providers in parallel and returns the first usable extraction.
   - `timing=1` (or `debug=1`): includes per-stage timing metadata in the JSON response for diagnostics.
@@ -405,6 +405,25 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Liveness probe.
 - **Output**: `{ status: "ok" }`.
+
+### Dashboard Data — GET `/api/dashboard`
+
+- **Purpose**: Return DB-only home dashboard payload for the signed-in owner (no external API calls).
+- **Auth**: NextAuth session required; only the caller's own `event_history` rows are queried.
+- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, checklist/tasks (uses `tasks`/`event_tasks` when present, otherwise derives tasks from setup-health warnings), and drafts summary. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
+- **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility }`.
+- **Env**: `DATABASE_URL`.
+
+### Dashboard Next-Event Enrichment — POST `/api/dashboard/enrich-next-event`
+
+- **Purpose**: Lazily compute cached travel + weather for the **next event only**.
+- **Auth**: NextAuth session required; verifies requested `eventId` matches the owner’s next event.
+- **Input (JSON)**: `{ eventId?: string, forceTravel?: boolean }`.
+- **Travel rules**: Calls travel API only when destination lat/lng exists, origin (user home in `users.feature_visibility`) exists, and either event starts within 72 hours or `forceTravel=true`; cache TTL is 12 hours.
+- **Weather rules**: Calls weather API only when destination lat/lng exists and event starts within 7 days; cache TTL is 3 hours.
+- **Cache**: Persists/reads `event_metrics_cache(event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at)`.
+- **Output**: `{ ok, eventId, metrics, meta }` where `metrics` contains cached/refreshed next-event values.
+- **Env**: `DATABASE_URL`.
 
 ### Registry Add — POST `/api/registry/add`
 
@@ -662,7 +681,8 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
-- 2026-02-28: OCR latency hardening: `/api/ocr` now runs with a total request-time budget, stage-level timing logs, and fast-mode gating that skips optional rewrite/deep schedule LLM passes unless requested. Added `OPENAI_OCR_FAST_MODEL` support for fast scans, optional `turbo=1` parallel provider race (OpenAI+Google), and `timing=1` debug payloads. Dashboard/demo uploads now call `/api/ocr?fast=1&turbo=1&timing=1`.
+- 2026-02-28: Added dashboard APIs `GET /api/dashboard` (DB-only home tiles payload) and `POST /api/dashboard/enrich-next-event` (lazy next-event-only travel/weather enrichment with strict window checks + `event_metrics_cache` TTLs: travel 12h, weather 3h). Main dashboard now renders immediately from DB data and enriches only the next event after initial load.
+- 2026-02-28: OCR latency hardening: `/api/ocr` now runs with a total request-time budget, stage-level timing logs, and fast-mode gating that skips optional rewrite/deep schedule LLM passes unless requested. Added `OPENAI_OCR_FAST_MODEL` support for fast scans, optional `turbo=1` parallel provider race (OpenAI+Google), and `timing=1` debug payloads. Main dashboard/demo OCR calls are set to full-quality mode with `/api/ocr?fast=0`.
 - 2026-02-16: Added Supabase Auth bridge for password reset: `/api/auth/forgot` now generates Supabase recovery links when Supabase envs are configured (with fallback to local `password_resets` tokens), and `/api/auth/reset` accepts Supabase recovery access tokens to update the app's password hash.
 - 2026-02-16: Password reset delivery (`POST /api/auth/forgot`) now sends through Resend first (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`) with SMTP fallback. Updated agent/env docs to remove AWS SES as a requirement for reset-email delivery.
 - 2026-02-15: **OG image + deploy guardrails**: Documented `GET /api/events/[id]/og-data` as the dedicated metadata agent for OG rendering so `/event/[id]/opengraph-image` can remain Edge/lightweight and avoid oversized serverless bundles. Also documented dependency pin guidance: with `next-auth@4.x`, keep `nodemailer` on `^6.10.1` to prevent Vercel npm peer-resolution failures.

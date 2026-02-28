@@ -29,7 +29,6 @@ import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
-import { prepareFileForOcrUpload } from "@/utils/ocr-upload";
 import {
   SnapProcessingCard,
   type SnapPreviewKind,
@@ -39,7 +38,6 @@ import {
   TEMPLATE_DEFINITIONS,
   TEMPLATE_KEYS,
   type TemplateKey,
-  inferTemplateKeyFromEventData,
 } from "@/config/feature-visibility";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
@@ -67,13 +65,77 @@ type ProviderActionOptions = {
   enableAutoAdd?: boolean;
 };
 
-type UpcomingItem = {
+type SubmitScannedEventParams = {
+  eventInput: EventFields;
+  provider: CalendarProvider;
+  mode: "manual" | "auto";
+  sourceFile?: File | null;
+  rememberAutoAdd?: boolean;
+};
+
+type DashboardEventItem = {
   id: string;
   title: string;
-  start: string;
-  end: string | null;
+  startAt: string;
+  endAt: string | null;
+  locationText: string | null;
+  locationLat: number | null;
+  locationLng: number | null;
+  status: string | null;
   category: string | null;
-  location: string | null;
+  coverImageUrl?: string | null;
+  numberOfGuests?: number;
+  reminderCount?: number;
+  mapsUrl?: string | null;
+};
+
+type DashboardMetricsCache = {
+  eventId: string;
+  travelMinutes: number | null;
+  travelDistanceKm: number | null;
+  travelUpdatedAt: string | null;
+  weatherSummary: string | null;
+  weatherTemp: number | null;
+  weatherUpdatedAt: string | null;
+};
+
+type DashboardResponse = {
+  ok: boolean;
+  nextEvent: DashboardEventItem | null;
+  snapshot: {
+    upcomingCount30Days: number;
+    upcomingCount7Days: number;
+    nextEventInDays: number | null;
+  };
+  upcoming: DashboardEventItem[];
+  rsvp: {
+    going: number;
+    maybe: number;
+    declined: number;
+    pending: number;
+    recent: Array<{
+      id: string;
+      name: string;
+      status: "going" | "maybe" | "declined" | "pending";
+      updatedAt: string | null;
+    }>;
+  } | null;
+  setupHealth: {
+    flags: Array<{ key: string; label: string }>;
+  };
+  checklist: {
+    source: "tasks" | "derived";
+    items: Array<{ id: string; title: string; done: boolean; dueAt: string | null }>;
+  };
+  drafts: {
+    count: number;
+    items: Array<{ id: string; title: string; updatedAt: string | null; startAt: string }>;
+  };
+  metricsCache: DashboardMetricsCache | null;
+  metricsEligibility: {
+    weatherEligible: boolean;
+    travelWindowEligible: boolean;
+  };
 };
 
 const AUTO_ADD_PREFERENCE_STORAGE_KEY = "envitefy:snap:auto-add:v1";
@@ -202,18 +264,40 @@ export default function Dashboard({
   const activeOcrAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
+  const submitScannedEventRef =
+    useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
+      async () => false
+    );
   const currentPreviewUrlRef = useRef<string | null>(null);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [softPromptDismissed, setSoftPromptDismissed] = useState(false);
-  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingItem[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [nextEventMetrics, setNextEventMetrics] = useState<DashboardMetricsCache | null>(
+    null
+  );
+  const [metricsLoading, setMetricsLoading] = useState(false);
   const [ownerDashboardData, setOwnerDashboardData] =
     useState<OwnerDashboardData | null>(null);
 
   useEffect(() => {
     scanStatusRef.current = scanStatus;
   }, [scanStatus]);
+
+  const persistAutoAddPreference = useCallback((next: AutoAddPreference) => {
+    setAutoAddPreference(next);
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        AUTO_ADD_PREFERENCE_STORAGE_KEY,
+        JSON.stringify(next)
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -235,18 +319,6 @@ export default function Dashboard({
       setAutoAddPreference(DEFAULT_AUTO_ADD_PREFERENCE);
     }
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        AUTO_ADD_PREFERENCE_STORAGE_KEY,
-        JSON.stringify(autoAddPreference)
-      );
-    } catch {
-      // ignore storage failures
-    }
-  }, [autoAddPreference]);
 
   useEffect(() => {
     if (!isSignedIn || visibilityLoading) return;
@@ -417,66 +489,63 @@ export default function Dashboard({
 
   useEffect(() => {
     if (!isSignedIn) return;
-    const loadUpcoming = async () => {
+    const loadDashboard = async () => {
+      setDashboardLoading(true);
       try {
-        const res = await fetch("/api/history?view=calendar&limit=100", {
+        const res = await fetch("/api/dashboard", {
           credentials: "include",
           cache: "no-store",
         });
-        const json = await res.json().catch(() => ({ items: [] }));
-        const now = Date.now();
-        const items = (Array.isArray(json?.items) ? json.items : [])
-          .map((row: any) => {
-            const data = row?.data || {};
-            const startRaw =
-              data?.startISO ||
-              data?.start ||
-              data?.fieldsGuess?.start ||
-              data?.event?.start ||
-              null;
-            const endRaw =
-              data?.endISO ||
-              data?.end ||
-              data?.fieldsGuess?.end ||
-              data?.event?.end ||
-              null;
-            const startDate = startRaw ? new Date(startRaw) : null;
-            if (!startDate || Number.isNaN(startDate.getTime())) return null;
-            if (startDate.getTime() < now) return null;
-            const category = String(data?.category || row?.category || "");
-            const inferred = inferTemplateKeyFromEventData({
-              category,
-              title: row?.title || data?.title || null,
-            });
-            if (inferred && !visibleTemplateKeys.includes(inferred))
-              return null;
-            return {
-              id: row.id,
-              title: row.title || "Event",
-              start: startDate.toISOString(),
-              end:
-                endRaw && !Number.isNaN(new Date(endRaw).getTime())
-                  ? new Date(endRaw).toISOString()
-                  : null,
-              category: category || null,
-              location:
-                String(
-                  data?.location ||
-                    data?.fieldsGuess?.location ||
-                    data?.event?.location ||
-                    ""
-                ) || null,
-            } as UpcomingItem;
-          })
-          .filter(Boolean) as UpcomingItem[];
-        items.sort((a, b) => +new Date(a.start) - +new Date(b.start));
-        setUpcomingEvents(items.slice(0, 5));
+        const json = (await res.json().catch(() => null)) as DashboardResponse | null;
+        if (json && typeof json === "object") {
+          setDashboardData(json);
+          setNextEventMetrics(json.metricsCache || null);
+        } else {
+          setDashboardData(null);
+          setNextEventMetrics(null);
+        }
       } catch {
-        setUpcomingEvents([]);
+        setDashboardData(null);
+        setNextEventMetrics(null);
+      } finally {
+        setDashboardLoading(false);
       }
     };
-    void loadUpcoming();
-  }, [isSignedIn, visibleTemplateKeys]);
+    void loadDashboard();
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    if (!dashboardData?.nextEvent?.id) return;
+    let cancelled = false;
+    const enrich = async () => {
+      setMetricsLoading(true);
+      try {
+        const res = await fetch("/api/dashboard/enrich-next-event", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId: dashboardData.nextEvent?.id }),
+        });
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (json?.metrics) {
+          setNextEventMetrics(json.metrics as DashboardMetricsCache);
+        }
+      } catch {
+        // keep fallback UI state
+      } finally {
+        if (!cancelled) setMetricsLoading(false);
+      }
+    };
+    const timer = window.setTimeout(() => {
+      void enrich();
+    }, 80);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isSignedIn, dashboardData?.nextEvent?.id]);
 
   useEffect(() => {
     if (!selectedEventId) {
@@ -637,6 +706,28 @@ export default function Dashboard({
   }, [selectedEventId, selectedEventTitle]);
 
   const router = useRouter();
+  const forceRecalculateTravel = useCallback(async () => {
+    const eventId = dashboardData?.nextEvent?.id;
+    if (!eventId) return;
+    setMetricsLoading(true);
+    try {
+      const res = await fetch("/api/dashboard/enrich-next-event", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId, forceTravel: true }),
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.metrics) {
+        setNextEventMetrics(json.metrics as DashboardMetricsCache);
+      }
+    } catch {
+      // keep existing state
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, [dashboardData?.nextEvent?.id]);
+
   const openCreateEvent = useCallback(() => {
     try {
       router.push("/event/new");
@@ -829,9 +920,10 @@ export default function Dashboard({
       try {
         let fileToUpload: File = incoming;
         try {
-          fileToUpload = await prepareFileForOcrUpload(incoming, {
-            maxDimension: 1600,
-            quality: 0.78,
+          const arrayBuffer = await incoming.arrayBuffer();
+          fileToUpload = new File([arrayBuffer], incoming.name, {
+            type: incoming.type || "application/octet-stream",
+            lastModified: incoming.lastModified,
           });
         } catch (readErr) {
           // If reading fails, fall back to using the original file object
@@ -852,7 +944,7 @@ export default function Dashboard({
 
         let res: Response;
         try {
-          res = await fetch("/api/ocr?fast=1&turbo=1&timing=1", {
+          res = await fetch("/api/ocr?fast=0", {
             method: "POST",
             body: form,
             signal: controller.signal,
@@ -900,9 +992,6 @@ export default function Dashboard({
         }
 
         const data = await res.json();
-        if (data?.timing) {
-          console.info("OCR timing", data.timing);
-        }
         const tz =
           data?.fieldsGuess?.timezone ||
           Intl.DateTimeFormat().resolvedOptions().timeZone ||
@@ -957,23 +1046,40 @@ export default function Dashboard({
           ? cleanRsvp(data.fieldsGuess.rsvp)
           : null;
 
-        const adjusted = data?.fieldsGuess
+        const adjusted: EventFields | null = data?.fieldsGuess
           ? {
-              ...data.fieldsGuess,
+              title: String(data.fieldsGuess.title || "Event"),
               start: formatIsoForInput(data.fieldsGuess.start, tz),
               end: formatIsoForInput(data.fieldsGuess.end, tz),
+              location: String(data.fieldsGuess.location || ""),
+              description: String(data.fieldsGuess.description || ""),
+              timezone: String(data.fieldsGuess.timezone || tz || "UTC"),
               reminders: [{ minutes: 1440 }],
-              numberOfGuests: 0, // Keep in state for compatibility, but won't be saved
+              numberOfGuests: 0,
               rsvp: cleanedRsvp,
             }
           : null;
         await finishScanUi();
         resetScanUi();
         setEvent(adjusted);
-        setModalOpen(Boolean(adjusted));
         setOcrText(data.ocrText || "");
         setUploadedFile(fileToUpload);
         setOcrCategory(data?.category || null);
+        const autoProvider =
+          autoAddPreference.enabled && autoAddPreference.provider
+            ? autoAddPreference.provider
+            : null;
+        if (adjusted && autoProvider) {
+          setModalOpen(false);
+          await submitScannedEventRef.current({
+            eventInput: adjusted,
+            provider: autoProvider,
+            mode: "auto",
+            sourceFile: fileToUpload,
+          });
+        } else {
+          setModalOpen(Boolean(adjusted));
+        }
       } catch (err) {
         if (err instanceof Error && err.message === "__scan_cancelled__") {
           setEvent(null);
@@ -1007,7 +1113,7 @@ export default function Dashboard({
         setLoading(false);
       }
     },
-    [finishScanUi, logUploadIssue, resetScanUi]
+    [finishScanUi, logUploadIssue, resetScanUi, autoAddPreference]
   );
 
   const onFile = useCallback(
@@ -1112,57 +1218,122 @@ export default function Dashboard({
     };
   }, [modalOpen]);
 
-  const dlIcs = useCallback(() => {
-    if (!event?.start) return;
-    const ready = buildSubmissionEvent(event);
-    if (!ready) {
-      setError("Missing start time for calendar export");
-      return;
-    }
-    const q = new URLSearchParams({
+  const providerLabel = useCallback((provider: CalendarProvider) => {
+    if (provider === "google") return "Google Calendar";
+    if (provider === "microsoft") return "Outlook Calendar";
+    return "Apple Calendar";
+  }, []);
+
+  const buildIcsQuery = useCallback((ready: EventFields, inline = false) => {
+    return new URLSearchParams({
       title: ready.title || "Event",
       start: ready.start ?? "",
       end: ready.end ?? "",
       location: ready.location || "",
       description: ready.description || "",
       timezone: ready.timezone || "America/Chicago",
+      ...(inline ? { disposition: "inline" } : {}),
       ...(ready.reminders && ready.reminders.length
         ? {
             reminders: ready.reminders.map((r) => String(r.minutes)).join(","),
           }
         : {}),
     }).toString();
-    window.location.href = `/api/ics?${q}`;
-  }, [event, buildSubmissionEvent]);
+  }, []);
 
-  const addAppleCalendar = useCallback(() => {
-    if (!event?.start) return;
-    const ready = buildSubmissionEvent(event);
-    if (!ready) {
-      setError("Missing start time for calendar export");
-      return;
-    }
-    const q = new URLSearchParams({
-      title: ready.title || "Event",
-      start: ready.start ?? "",
-      end: ready.end ?? "",
-      location: ready.location || "",
-      description: ready.description || "",
-      timezone: ready.timezone || "America/Chicago",
-      disposition: "inline",
-      ...(ready.reminders && ready.reminders.length
-        ? {
-            reminders: ready.reminders.map((r) => String(r.minutes)).join(","),
+  const saveToEnvitefyHistory = useCallback(
+    async ({
+      eventInput,
+      ready,
+      sourceFile,
+    }: {
+      eventInput: EventFields;
+      ready: EventFields;
+      sourceFile?: File | null;
+    }) => {
+      let eventId: string | undefined;
+      let savedTitle: string | undefined;
+      try {
+        const timezone =
+          eventInput.timezone ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone ||
+          "UTC";
+
+        let thumbnail: string | undefined;
+        let attachment:
+          | { name: string; type: string; dataUrl: string }
+          | undefined;
+        const fileForUpload =
+          typeof sourceFile !== "undefined" ? sourceFile : uploadedFile;
+        if (fileForUpload && fileForUpload.type.startsWith("image/")) {
+          try {
+            thumbnail =
+              (await createThumbnailDataUrl(fileForUpload, 1200, 0.85)) ||
+              undefined;
+            const dataUrl = await readFileAsDataUrl(fileForUpload);
+            attachment = {
+              name: fileForUpload.name,
+              type: fileForUpload.type,
+              dataUrl,
+            };
+          } catch (err) {
+            console.error("Failed to create thumbnail:", err);
           }
-        : {}),
-    }).toString();
+        }
 
-    // On macOS Safari, opening the ICS endpoint with disposition=inline
-    // in a new window should trigger Calendar.app
-    // Using window.open() gives Safari a better chance to intercept and open natively
-    const url = `${window.location.origin}/api/ics?${q}`;
-    window.open(url, "_blank");
-  }, [event, buildSubmissionEvent, setError]);
+        const payload: any = {
+          title: eventInput.title || "Event",
+          data: {
+            category: ocrCategory || undefined,
+            startISO: ready.start,
+            endISO: ready.end,
+            location: ready.location || undefined,
+            description: eventInput.description || undefined,
+            rsvp: eventInput.rsvp || undefined,
+            timezone,
+            numberOfGuests: eventInput.numberOfGuests || 0,
+            reminders: eventInput.reminders || undefined,
+            createdVia: "ocr",
+            thumbnail,
+            attachment,
+          },
+        };
+
+        const historyRes = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+
+        const historyData: any = await historyRes.json().catch(() => ({}));
+        eventId = (historyData as any)?.id as string | undefined;
+        if (typeof historyData?.title === "string") {
+          savedTitle = historyData.title as string;
+        }
+
+        if (eventId && typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("history:created", {
+              detail: {
+                id: eventId,
+                title: historyData?.title || payload.title,
+                created_at: historyData?.created_at || new Date().toISOString(),
+                start: ready.start,
+                category: ocrCategory || null,
+                data: payload.data,
+              },
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Failed to save to Envitefy history:", err);
+      }
+
+      return { eventId, savedTitle };
+    },
+    [ocrCategory, uploadedFile]
+  );
 
   const connectGoogle = useCallback(() => {
     if (!event?.start) return;
@@ -1199,365 +1370,172 @@ export default function Dashboard({
     window.open("/api/outlook/auth", "_blank");
   }, []);
 
-  const addGoogle = useCallback(async () => {
+  const submitScannedEvent = useCallback(
+    async ({
+      eventInput,
+      provider,
+      mode,
+      sourceFile,
+      rememberAutoAdd = false,
+    }: SubmitScannedEventParams) => {
+      if (isSubmittingRef.current) return false;
+      isSubmittingRef.current = true;
+      try {
+        const ready = buildSubmissionEvent(eventInput);
+        if (!ready) {
+          const label = providerLabel(provider);
+          setError(`Missing start time for ${label}`);
+          if (mode === "auto") {
+            setEvent(eventInput);
+            setModalOpen(true);
+          }
+          return false;
+        }
+
+        const { eventId, savedTitle } = await saveToEnvitefyHistory({
+          eventInput,
+          ready,
+          sourceFile,
+        });
+
+        try {
+          if (provider === "google") {
+            const res = await fetch("/api/events/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify(ready),
+            });
+            const payload: any = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              throw new Error(
+                payload?.error || "Failed to add to Google Calendar"
+              );
+            }
+            if (payload?.htmlLink) {
+              window.open(payload.htmlLink, "_blank");
+            }
+          } else if (provider === "microsoft") {
+            const res = await fetch("/api/events/outlook", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify(ready),
+            });
+            const payload: any = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              throw new Error(
+                payload?.error || "Failed to add to Outlook Calendar"
+              );
+            }
+            if (payload?.webLink) {
+              window.open(payload.webLink, "_blank");
+            }
+          } else {
+            const q = buildIcsQuery(ready, true);
+            const url = `${window.location.origin}/api/ics?${q}`;
+            const popup = window.open(url, "_blank");
+            if (!popup) {
+              throw new Error(
+                "Popup was blocked while opening Apple Calendar. Allow popups and try again."
+              );
+            }
+          }
+        } catch (providerErr: any) {
+          const label = providerLabel(provider);
+          const baseError =
+            providerErr?.message ||
+            `Failed to add to ${label}. Please try again from review.`;
+          setError(
+            mode === "auto"
+              ? `${baseError} Review details and retry.`
+              : baseError
+          );
+          if (mode === "auto") {
+            setEvent(eventInput);
+            setModalOpen(true);
+          }
+          return false;
+        }
+
+        if (rememberAutoAdd) {
+          persistAutoAddPreference({ enabled: true, provider });
+        }
+
+        if (eventId) {
+          const eventTitle = savedTitle || eventInput.title || "Event";
+          resetForm();
+          router.push(buildEventPath(eventId, eventTitle, { created: true }));
+        } else {
+          resetForm();
+        }
+        return true;
+      } finally {
+        isSubmittingRef.current = false;
+      }
+    },
+    [
+      buildSubmissionEvent,
+      buildIcsQuery,
+      persistAutoAddPreference,
+      providerLabel,
+      resetForm,
+      router,
+      saveToEnvitefyHistory,
+    ]
+  );
+
+  submitScannedEventRef.current = submitScannedEvent;
+
+  const dlIcs = useCallback(() => {
     if (!event?.start) return;
     const ready = buildSubmissionEvent(event);
     if (!ready) {
-      setError("Missing start time for Google Calendar");
+      setError("Missing start time for calendar export");
       return;
     }
+    const q = buildIcsQuery(ready);
+    window.location.href = `/api/ics?${q}`;
+  }, [event, buildIcsQuery, buildSubmissionEvent]);
 
-    // Save to Envitefy history first
-    let eventId: string | undefined;
-    let savedTitle: string | undefined;
-    try {
-      const timezone =
-        event.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC";
-
-      // Create thumbnail if file is an image
-      let thumbnail: string | undefined;
-      let attachment:
-        | { name: string; type: string; dataUrl: string }
-        | undefined;
-      if (uploadedFile && uploadedFile.type.startsWith("image/")) {
-        try {
-          thumbnail =
-            (await createThumbnailDataUrl(uploadedFile, 1200, 0.85)) ||
-            undefined;
-          const dataUrl = await readFileAsDataUrl(uploadedFile);
-          attachment = {
-            name: uploadedFile.name,
-            type: uploadedFile.type,
-            dataUrl,
-          };
-        } catch (err) {
-          console.error("Failed to create thumbnail:", err);
-        }
-      }
-
-      const payload: any = {
-        title: event.title || "Event",
-        data: {
-          category: ocrCategory || undefined,
-          startISO: ready.start,
-          endISO: ready.end,
-          location: ready.location || undefined,
-          description: event.description || undefined,
-          timezone,
-          reminders: event.reminders || undefined,
-          createdVia: "ocr",
-          thumbnail,
-          attachment,
-        },
-      };
-
-      const historyRes = await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+  const addGoogle = useCallback(
+    async (options?: ProviderActionOptions) => {
+      if (!event) return;
+      await submitScannedEvent({
+        eventInput: event,
+        provider: "google",
+        mode: "manual",
+        rememberAutoAdd: Boolean(options?.enableAutoAdd),
       });
+    },
+    [event, submitScannedEvent]
+  );
 
-      const historyData: any = await historyRes.json().catch(() => ({}));
-      eventId = (historyData as any)?.id as string | undefined;
-      if (typeof historyData?.title === "string") {
-        savedTitle = historyData.title as string;
-      }
-
-      // Emit event for sidebar refresh
-      if (eventId && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("history:created", {
-            detail: {
-              id: eventId,
-              title: historyData?.title || payload.title,
-              created_at: historyData?.created_at || new Date().toISOString(),
-              start: ready.start,
-              category: ocrCategory || null,
-              data: payload.data,
-            },
-          })
-        );
-      }
-    } catch (err) {
-      console.error("Failed to save to Envitefy history:", err);
-      // Continue even if history save fails
-    }
-
-    // Add to Google Calendar
-    const res = await fetch("/api/events/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(ready),
-    });
-    let payload: any = {};
-    try {
-      payload = await res.json();
-    } catch {
-      // ignore
-    }
-    if (!res.ok) {
-      setError(payload?.error || "Failed to add to Google Calendar");
-      return;
-    }
-
-    // Open Google Calendar in a new tab
-    if (payload?.htmlLink) {
-      window.open(payload.htmlLink, "_blank");
-    }
-
-    // Close modal and navigate to event page
-    if (eventId) {
-      const eventTitle = savedTitle || payload.title;
-      resetForm();
-      router.push(buildEventPath(eventId, eventTitle, { created: true }));
-    } else {
-      resetForm();
-    }
-  }, [
-    event,
-    buildSubmissionEvent,
-    uploadedFile,
-    ocrCategory,
-    setError,
-    resetForm,
-    router,
-  ]);
-
-  const addOutlook = useCallback(async () => {
-    if (!event?.start) return;
-    const ready = buildSubmissionEvent(event);
-    if (!ready) {
-      setError("Missing start time for Outlook Calendar");
-      return;
-    }
-
-    // Save to Envitefy history first
-    let eventId: string | undefined;
-    let savedTitle: string | undefined;
-    try {
-      const timezone =
-        event.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC";
-
-      // Create thumbnail if file is an image
-      let thumbnail: string | undefined;
-      let attachment:
-        | { name: string; type: string; dataUrl: string }
-        | undefined;
-      if (uploadedFile && uploadedFile.type.startsWith("image/")) {
-        try {
-          thumbnail =
-            (await createThumbnailDataUrl(uploadedFile, 1200, 0.85)) ||
-            undefined;
-          const dataUrl = await readFileAsDataUrl(uploadedFile);
-          attachment = {
-            name: uploadedFile.name,
-            type: uploadedFile.type,
-            dataUrl,
-          };
-        } catch (err) {
-          console.error("Failed to create thumbnail:", err);
-        }
-      }
-
-      const payload: any = {
-        title: event.title || "Event",
-        data: {
-          category: ocrCategory || undefined,
-          startISO: ready.start,
-          endISO: ready.end,
-          location: ready.location || undefined,
-          description: event.description || undefined,
-          timezone,
-          reminders: event.reminders || undefined,
-          createdVia: "ocr",
-          thumbnail,
-          attachment,
-        },
-      };
-
-      const historyRes = await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+  const addOutlook = useCallback(
+    async (options?: ProviderActionOptions) => {
+      if (!event) return;
+      await submitScannedEvent({
+        eventInput: event,
+        provider: "microsoft",
+        mode: "manual",
+        rememberAutoAdd: Boolean(options?.enableAutoAdd),
       });
+    },
+    [event, submitScannedEvent]
+  );
 
-      const historyData: any = await historyRes.json().catch(() => ({}));
-      eventId = (historyData as any)?.id as string | undefined;
-      if (typeof historyData?.title === "string") {
-        savedTitle = historyData.title as string;
-      }
-
-      // Emit event for sidebar refresh
-      if (eventId && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("history:created", {
-            detail: {
-              id: eventId,
-              title: historyData?.title || payload.title,
-              created_at: historyData?.created_at || new Date().toISOString(),
-              start: ready.start,
-              category: ocrCategory || null,
-              data: payload.data,
-            },
-          })
-        );
-      }
-    } catch (err) {
-      console.error("Failed to save to Envitefy history:", err);
-      // Continue even if history save fails
-    }
-
-    // Add to Outlook Calendar
-    const res = await fetch("/api/events/outlook", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ready),
-    });
-    let payload: any = {};
-    try {
-      payload = await res.json();
-    } catch {
-      // ignore
-    }
-    if (!res.ok) {
-      setError(payload?.error || "Failed to add to Outlook Calendar");
-      return;
-    }
-
-    // Open Outlook Calendar in a new tab
-    if (payload?.webLink) {
-      window.open(payload.webLink, "_blank");
-    }
-
-    // Close modal and navigate to event page
-    if (eventId) {
-      const eventTitle = savedTitle || payload.title;
-      resetForm();
-      router.push(buildEventPath(eventId, eventTitle, { created: true }));
-    } else {
-      resetForm();
-    }
-  }, [
-    event,
-    buildSubmissionEvent,
-    uploadedFile,
-    ocrCategory,
-    setError,
-    resetForm,
-    router,
-  ]);
-
-  const saveToEnvitefy = useCallback(async () => {
-    if (!event?.start) return;
-    const ready = buildSubmissionEvent(event);
-    if (!ready) {
-      setError("Missing start time to save event");
-      return;
-    }
-
-    try {
-      const timezone =
-        event.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC";
-
-      // Create thumbnail if file is an image
-      let thumbnail: string | undefined;
-      let attachment:
-        | { name: string; type: string; dataUrl: string }
-        | undefined;
-      if (uploadedFile && uploadedFile.type.startsWith("image/")) {
-        try {
-          thumbnail =
-            (await createThumbnailDataUrl(uploadedFile, 1200, 0.85)) ||
-            undefined;
-          const dataUrl = await readFileAsDataUrl(uploadedFile);
-          attachment = {
-            name: uploadedFile.name,
-            type: uploadedFile.type,
-            dataUrl,
-          };
-        } catch (err) {
-          console.error("Failed to create thumbnail:", err);
-        }
-      }
-
-      const payload: any = {
-        title: event.title || "Event",
-        data: {
-          category: ocrCategory || undefined,
-          startISO: ready.start,
-          endISO: ready.end,
-          location: ready.location || undefined,
-          description: event.description || undefined,
-          rsvp: event.rsvp || undefined,
-          timezone,
-          numberOfGuests: event.numberOfGuests || 0,
-          reminders: event.reminders || undefined,
-          createdVia: "ocr",
-          thumbnail,
-          attachment,
-        },
-      };
-
-      const historyRes = await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+  const addAppleCalendar = useCallback(
+    async (options?: ProviderActionOptions) => {
+      if (!event) return;
+      await submitScannedEvent({
+        eventInput: event,
+        provider: "apple",
+        mode: "manual",
+        rememberAutoAdd: Boolean(options?.enableAutoAdd),
       });
-
-      const historyData: any = await historyRes.json().catch(() => ({}));
-      const eventId = (historyData as any)?.id as string | undefined;
-      const savedTitle =
-        typeof historyData?.title === "string"
-          ? (historyData.title as string)
-          : undefined;
-
-      // Emit event for sidebar refresh
-      if (eventId && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("history:created", {
-            detail: {
-              id: eventId,
-              title: historyData?.title || payload.title,
-              created_at: historyData?.created_at || new Date().toISOString(),
-              start: ready.start,
-              category: ocrCategory || null,
-              data: payload.data,
-            },
-          })
-        );
-      }
-
-      // Navigate to event page if saved successfully
-      if (eventId) {
-        const eventTitle = savedTitle || payload.title;
-        resetForm();
-        router.push(buildEventPath(eventId, eventTitle, { created: true }));
-      } else {
-        resetForm();
-      }
-    } catch (err: any) {
-      console.error("Failed to save event:", err);
-      setError(err?.message || "Failed to save event. Please try again.");
-    }
-  }, [
-    event,
-    buildSubmissionEvent,
-    setError,
-    resetForm,
-    uploadedFile,
-    ocrCategory,
-    router,
-  ]);
+    },
+    [event, submitScannedEvent]
+  );
 
   useEffect(() => {
     // Touch the session so provider connections hydrate promptly
@@ -1566,6 +1544,12 @@ export default function Dashboard({
   const showScanSection = Boolean(
     error || loading || scanStatus !== "idle" || (modalOpen && event)
   );
+  const autoAddProviderLabel = autoAddPreference.provider
+    ? providerLabel(autoAddPreference.provider)
+    : null;
+  const disableAutoAdd = useCallback(() => {
+    persistAutoAddPreference(DEFAULT_AUTO_ADD_PREFERENCE);
+  }, [persistAutoAddPreference]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1731,11 +1715,33 @@ export default function Dashboard({
             <EventOwnerTabPlaceholder tab={activeEventTab} />
           ) : (
             <UpcomingEventsPanel
-              items={upcomingEvents}
+              data={dashboardData}
+              metrics={nextEventMetrics}
+              metricsLoading={metricsLoading}
+              loading={dashboardLoading}
+              onForceTravel={forceRecalculateTravel}
               onCreateEvent={openCreateEvent}
             />
           )}
         </div>
+      )}
+      {autoAddPreference.enabled && autoAddProviderLabel && (
+        <section className="w-full max-w-4xl">
+          <div className="rounded-xl border border-[#dfd6fb] bg-white/90 px-4 py-3 text-sm shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium text-[#3f356a]">
+                Auto-add ON: {autoAddProviderLabel} + Envitefy
+              </p>
+              <button
+                type="button"
+                onClick={disableAutoAdd}
+                className="rounded-lg border border-[#d7cff6] bg-[#f7f3ff] px-3 py-1.5 text-xs font-semibold text-[#51437f] transition hover:bg-[#efe9ff]"
+              >
+                Turn off
+              </button>
+            </div>
+          </div>
+        </section>
       )}
       {scanStatus !== "idle" && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#f4eeff]/78 p-4 backdrop-blur-md">
@@ -1775,8 +1781,8 @@ export default function Dashboard({
             addAppleCalendar={addAppleCalendar}
             buildSubmissionEvent={buildSubmissionEvent}
             setError={setError}
-            saveToEnvitefy={saveToEnvitefy}
             resetForm={resetForm}
+            autoAddEnabled={autoAddPreference.enabled}
           />
         </section>
       )}
@@ -1804,16 +1810,16 @@ type SnapEventModalProps = {
   onClose: () => void;
   setEvent: Dispatch<SetStateAction<EventFields | null>>;
   connected: { google: boolean; microsoft: boolean };
-  addGoogle: () => void;
+  addGoogle: (options?: ProviderActionOptions) => void | Promise<void>;
   connectGoogle: () => void;
-  addOutlook: () => void;
+  addOutlook: (options?: ProviderActionOptions) => void | Promise<void>;
   connectOutlook: () => void;
   dlIcs: () => void;
-  addAppleCalendar?: () => void;
+  addAppleCalendar?: (options?: ProviderActionOptions) => void | Promise<void>;
   buildSubmissionEvent: (input: EventFields) => any;
   setError: (error: string | null) => void;
-  saveToEnvitefy: () => void;
   resetForm: () => void;
+  autoAddEnabled: boolean;
 };
 
 type OnboardingModalProps = {
@@ -1974,7 +1980,7 @@ function OnboardingModal({
   );
 }
 
-function eventGlyph(item: UpcomingItem): string {
+function eventGlyph(item: DashboardEventItem): string {
   const haystack = `${item.title} ${item.category || ""}`.toLowerCase();
   if (haystack.includes("birthday")) return "BD";
   if (haystack.includes("wedding")) return "WD";
@@ -2019,37 +2025,117 @@ function formatEventTimeRange(startRaw: string, endRaw: string | null): string {
 }
 
 function UpcomingEventsPanel({
-  items,
+  data,
+  metrics,
+  metricsLoading,
+  loading,
+  onForceTravel,
   onCreateEvent,
 }: {
-  items: UpcomingItem[];
+  data: DashboardResponse | null;
+  metrics: DashboardMetricsCache | null;
+  metricsLoading: boolean;
+  loading: boolean;
+  onForceTravel: () => void;
   onCreateEvent: () => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [cardsPerRow, setCardsPerRow] = useState(4);
+  const [firstCardHeight, setFirstCardHeight] = useState(236);
+  const firstScheduleCardRef = useRef<HTMLAnchorElement | null>(null);
   const now = Date.now();
-  const nextEvent = items[0] ?? null;
-  const additionalEvents = items.slice(1, 4);
-  const scheduleEvents =
-    additionalEvents.length > 0
-      ? additionalEvents
-      : nextEvent
-      ? [nextEvent]
-      : [];
-  const upcomingIn30Days = items.filter((item) => {
-    const start = parseSafeDate(item.start);
-    if (!start) return false;
-    const diff = start.getTime() - now;
-    return diff >= 0 && diff <= 30 * 24 * 60 * 60 * 1000;
-  }).length;
-  const scheduleHealth = items.length
-    ? Math.max(
-        10,
-        Math.min(100, Math.round((upcomingIn30Days / items.length) * 100))
-      )
-    : 0;
-  const nextStart = parseSafeDate(nextEvent?.start);
+  const nextEvent = data?.nextEvent ?? null;
+  const scheduleEvents = data?.upcoming ?? [];
+  const hasOverflow = scheduleEvents.length > cardsPerRow;
+  const showCollapsedTeaser = hasOverflow && !isExpanded;
+  const previewLimit = cardsPerRow * 2;
+  const visibleScheduleEvents = showCollapsedTeaser
+    ? scheduleEvents.slice(0, previewLimit)
+    : scheduleEvents;
+  const teaserHeightPx = 96;
+  const gridGapPx = 12;
+  const collapsedMaxHeight = firstCardHeight + gridGapPx + teaserHeightPx;
+  const showCreateTile = isExpanded || scheduleEvents.length === 0;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mobileQuery = window.matchMedia("(max-width: 639px)");
+    const desktopQuery = window.matchMedia("(min-width: 1280px)");
+    const syncCardsPerRow = () => {
+      if (desktopQuery.matches) {
+        setCardsPerRow(4);
+        return;
+      }
+      if (mobileQuery.matches) {
+        setCardsPerRow(1);
+        return;
+      }
+      setCardsPerRow(2);
+    };
+    syncCardsPerRow();
+
+    const onChange = () => syncCardsPerRow();
+    const addListener = (query: MediaQueryList) => {
+      if (typeof query.addEventListener === "function") {
+        query.addEventListener("change", onChange);
+        return () => query.removeEventListener("change", onChange);
+      }
+      query.addListener(onChange);
+      return () => query.removeListener(onChange);
+    };
+    const cleanupMobile = addListener(mobileQuery);
+    const cleanupDesktop = addListener(desktopQuery);
+
+    return () => {
+      cleanupMobile();
+      cleanupDesktop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasOverflow && isExpanded) {
+      setIsExpanded(false);
+    }
+  }, [hasOverflow, isExpanded]);
+
+  useEffect(() => {
+    if (!showCollapsedTeaser) return;
+    const el = firstScheduleCardRef.current;
+    if (!el) return;
+
+    const syncHeight = () => {
+      const measured = Math.ceil(el.getBoundingClientRect().height);
+      if (Number.isFinite(measured) && measured > 0) {
+        setFirstCardHeight(measured);
+      }
+    };
+
+    syncHeight();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", syncHeight);
+      return () => window.removeEventListener("resize", syncHeight);
+    }
+
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [showCollapsedTeaser, visibleScheduleEvents.length, cardsPerRow]);
+
+  const nextStart = parseSafeDate(nextEvent?.startAt);
   const daysUntilNext = nextStart
     ? Math.ceil((nextStart.getTime() - now) / (24 * 60 * 60 * 1000))
     : null;
+  const msUntilNext = nextStart ? nextStart.getTime() - now : null;
+  const countdown =
+    msUntilNext != null && msUntilNext > 0
+      ? (() => {
+          const totalMinutes = Math.floor(msUntilNext / (1000 * 60));
+          const days = Math.floor(totalMinutes / (60 * 24));
+          const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+          const minutes = totalMinutes % 60;
+          return `Starts in ${days}d ${hours}h ${minutes}m`;
+        })()
+      : "Starts soon";
   const daysMessage =
     daysUntilNext === null
       ? "Add your next event"
@@ -2058,6 +2144,16 @@ function UpcomingEventsPanel({
       : daysUntilNext === 1
       ? "Tomorrow"
       : `In ${daysUntilNext} days`;
+  const statusNormalized = String(nextEvent?.status || "").toLowerCase();
+  const nextBadges: string[] = [];
+  if (statusNormalized === "draft") nextBadges.push("Draft");
+  if (!nextEvent?.locationText || nextEvent.locationLat == null || nextEvent.locationLng == null) {
+    nextBadges.push("Missing Location");
+  }
+  if (!nextEvent?.numberOfGuests || nextEvent.numberOfGuests <= 0) {
+    nextBadges.push("No Guests");
+  }
+  const showWeather = Boolean(data?.metricsEligibility?.weatherEligible);
 
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
@@ -2068,17 +2164,38 @@ function UpcomingEventsPanel({
           <span className="inline-flex rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/90">
             Next Event
           </span>
-          {nextEvent ? (
+          {loading ? (
+            <div className="mt-4 space-y-3">
+              <div className="h-8 w-3/4 animate-pulse rounded bg-white/25" />
+              <div className="h-4 w-2/3 animate-pulse rounded bg-white/20" />
+              <div className="h-4 w-1/2 animate-pulse rounded bg-white/20" />
+            </div>
+          ) : nextEvent ? (
             <>
               <h3 className="mt-4 text-3xl font-semibold leading-tight !text-white sm:text-4xl">
                 {nextEvent.title}
               </h3>
               <p className="mt-3 text-sm font-medium text-white/90 sm:text-base">
-                {formatEventTimeRange(nextEvent.start, nextEvent.end)}
+                {formatEventTimeRange(nextEvent.startAt, nextEvent.endAt)}
               </p>
               <p className="mt-2 text-sm text-white/80">
-                {nextEvent.location || daysMessage}
+                {nextEvent.locationText || daysMessage}
               </p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80">
+                {countdown}
+              </p>
+              {nextBadges.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {nextBadges.map((badge) => (
+                    <span
+                      key={badge}
+                      className="rounded-full border border-white/35 bg-white/15 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-white"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link
                   href={`/event/${nextEvent.id}`}
@@ -2086,6 +2203,63 @@ function UpcomingEventsPanel({
                 >
                   Open Event
                 </Link>
+              </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <article className="rounded-2xl border border-white/25 bg-white/10 p-3">
+                  <p className="text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white/80">
+                    Travel
+                  </p>
+                  {metricsLoading ? (
+                    <div className="mt-2 h-4 w-28 animate-pulse rounded bg-white/25" />
+                  ) : metrics?.travelMinutes != null || metrics?.travelDistanceKm != null ? (
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {metrics?.travelMinutes != null ? `${metrics.travelMinutes} min` : "--"}
+                      {metrics?.travelDistanceKm != null
+                        ? ` • ${metrics.travelDistanceKm.toFixed(1)} km`
+                        : ""}
+                    </p>
+                  ) : (
+                    <div className="mt-1 flex items-center gap-2">
+                      {nextEvent.mapsUrl ? (
+                        <Link
+                          href={nextEvent.mapsUrl}
+                          target="_blank"
+                          className="text-xs font-semibold text-white underline underline-offset-2"
+                        >
+                          Open in Maps
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-white/80">Open in Maps</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={onForceTravel}
+                        className="rounded-full border border-white/35 px-2 py-0.5 text-[0.65rem] font-semibold text-white"
+                      >
+                        Calculate travel
+                      </button>
+                    </div>
+                  )}
+                </article>
+                {showWeather ? (
+                  <article className="rounded-2xl border border-white/25 bg-white/10 p-3">
+                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white/80">
+                      Weather
+                    </p>
+                    {metricsLoading ? (
+                      <div className="mt-2 h-4 w-24 animate-pulse rounded bg-white/25" />
+                    ) : metrics?.weatherSummary || metrics?.weatherTemp != null ? (
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {metrics?.weatherSummary || "Forecast"}
+                        {metrics?.weatherTemp != null
+                          ? ` • ${Math.round(metrics.weatherTemp)}°`
+                          : ""}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-white/80">Forecast pending</p>
+                    )}
+                  </article>
+                ) : null}
               </div>
             </>
           ) : (
@@ -2116,24 +2290,26 @@ function UpcomingEventsPanel({
           </h3>
           <div className="mt-8 text-center">
             <p className="text-5xl font-bold tracking-tight text-[#31275e]">
-              {items.length}
+              {data?.snapshot.upcomingCount30Days ?? 0}
             </p>
             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#6e629f]">
-              Upcoming events
+              Upcoming (30 days)
             </p>
           </div>
-          <div className="mt-10 space-y-2">
+          <div className="mt-8 space-y-2">
             <div className="flex items-center justify-between text-sm text-[#62588f]">
-              <span>Next 30 days</span>
+              <span>Next 7 days</span>
               <span className="font-semibold text-[#3a2f6f]">
-                {upcomingIn30Days} planned
+                {data?.snapshot.upcomingCount7Days ?? 0} planned
               </span>
             </div>
-            <div className="h-2 rounded-full bg-[#ebe8ff]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#5c78ff] to-[#49c0ab] transition-all"
-                style={{ width: `${scheduleHealth}%` }}
-              />
+            <div className="flex items-center justify-between text-sm text-[#62588f]">
+              <span>Next event in</span>
+              <span className="font-semibold text-[#3a2f6f]">
+                {data?.snapshot.nextEventInDays != null
+                  ? `${data.snapshot.nextEventInDays} days`
+                  : "--"}
+              </span>
             </div>
             <p className="text-xs text-[#7a71a7]">{daysMessage}</p>
           </div>
@@ -2150,77 +2326,218 @@ function UpcomingEventsPanel({
             View Calendar
           </Link>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {scheduleEvents.map((item) => {
-            const start = parseSafeDate(item.start);
-            const month = start
-              ? new Intl.DateTimeFormat("en-US", { month: "short" })
-                  .format(start)
-                  .toUpperCase()
-              : "--";
-            const day = start
-              ? new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(
-                  start
-                )
-              : "--";
-            const time = start
-              ? new Intl.DateTimeFormat("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                }).format(start)
-              : "Time TBD";
-            return (
-              <Link
-                key={item.id}
-                href={`/event/${item.id}`}
-                className="group rounded-[24px] border border-[#e5e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)] transition hover:-translate-y-1 hover:border-[#d4cbff] hover:shadow-[0_20px_36px_rgba(64,47,124,0.12)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f2eefe] text-[0.66rem] font-bold tracking-[0.08em] text-[#4f4293]">
-                    {eventGlyph(item)}
-                  </span>
-                  <span className="rounded-full bg-[#f1efff] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6660a0]">
-                    Upcoming
-                  </span>
-                </div>
-                <h4 className="mt-4 line-clamp-2 text-lg font-semibold leading-tight text-[#27204a]">
-                  {item.title}
-                </h4>
-                <p className="mt-1 line-clamp-1 text-sm text-[#7a71a8]">
-                  {item.location || item.category || "Event details"}
-                </p>
-                <div className="mt-6 border-t border-[#efecff] pt-3">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#8f86ba]">
-                    {month}
-                  </p>
-                  <div className="flex items-baseline justify-between">
-                    <p className="text-3xl font-bold tracking-tight text-[#231c47]">
-                      {day}
-                    </p>
-                    <p className="text-sm font-semibold text-[#3e3384]">
-                      {time}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-          <button
-            type="button"
-            onClick={onCreateEvent}
-            className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#c9c1f6] bg-white/45 px-4 text-center transition hover:-translate-y-1 hover:border-[#a7a0e9] hover:bg-white/70"
+        <div className="relative">
+          <div
+            className={showCollapsedTeaser ? "overflow-hidden" : ""}
+            style={
+              showCollapsedTeaser
+                ? { maxHeight: `${collapsedMaxHeight}px` }
+                : undefined
+            }
           >
-            <span className="text-5xl font-light leading-none text-[#6a61b2]">
-              +
-            </span>
-            <span className="mt-2 text-lg font-semibold text-[#4b437f]">
-              Book New Event
-            </span>
-            <span className="mt-1 text-sm text-[#7a71a8]">
-              Create a fresh invite in seconds
-            </span>
-          </button>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {visibleScheduleEvents.map((item, index) => {
+                const start = parseSafeDate(item.startAt);
+                const month = start
+                  ? new Intl.DateTimeFormat("en-US", { month: "short" })
+                      .format(start)
+                      .toUpperCase()
+                  : "--";
+                const day = start
+                  ? new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(
+                      start
+                    )
+                  : "--";
+                const time = start
+                  ? new Intl.DateTimeFormat("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    }).format(start)
+                  : "Time TBD";
+                return (
+                  <Link
+                    key={item.id}
+                    ref={index === 0 ? firstScheduleCardRef : undefined}
+                    href={`/event/${item.id}`}
+                    className="group min-h-[236px] rounded-[24px] border border-[#e5e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)] transition hover:-translate-y-1 hover:border-[#d4cbff] hover:shadow-[0_20px_36px_rgba(64,47,124,0.12)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f2eefe] text-[0.66rem] font-bold tracking-[0.08em] text-[#4f4293]">
+                        {eventGlyph(item)}
+                      </span>
+                      <span className="rounded-full bg-[#f1efff] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6660a0]">
+                        Upcoming
+                      </span>
+                    </div>
+                    <h4 className="mt-4 line-clamp-2 text-lg font-semibold leading-tight text-[#27204a]">
+                      {item.title}
+                    </h4>
+                    <p className="mt-1 line-clamp-1 text-sm text-[#7a71a8]">
+                      {item.locationText || item.category || "Event details"}
+                    </p>
+                    <div className="mt-6 border-t border-[#efecff] pt-3">
+                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#8f86ba]">
+                        {month}
+                      </p>
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-3xl font-bold tracking-tight text-[#231c47]">
+                          {day}
+                        </p>
+                        <p className="text-sm font-semibold text-[#3e3384]">
+                          {time}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+              {showCreateTile && (
+                <button
+                  type="button"
+                  onClick={onCreateEvent}
+                  className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#c9c1f6] bg-white/45 px-4 text-center transition hover:-translate-y-1 hover:border-[#a7a0e9] hover:bg-white/70"
+                >
+                  <span className="text-5xl font-light leading-none text-[#6a61b2]">
+                    +
+                  </span>
+                  <span className="mt-2 text-lg font-semibold text-[#4b437f]">
+                    Book New Event
+                  </span>
+                  <span className="mt-1 text-sm text-[#7a71a8]">
+                    Create a fresh invite in seconds
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+          {showCollapsedTeaser && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-b from-[#f4f1ff00] via-[#f5f2ffde] to-[#f4f1ffff]">
+              <div className="pointer-events-auto absolute inset-x-0 bottom-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(true)}
+                  className="inline-flex items-center justify-center rounded-full border border-[#cfc8f8] bg-white/95 px-5 py-2 text-sm font-semibold text-[#433c9f] shadow-[0_8px_22px_rgba(75,60,148,0.18)] transition hover:-translate-y-0.5 hover:border-[#bcb3ee]"
+                >
+                  Load more
+                </button>
+              </div>
+            </div>
+          )}
+          {hasOverflow && isExpanded && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                className="inline-flex items-center justify-center rounded-full border border-[#d3cbf8] bg-white/95 px-5 py-2 text-sm font-semibold text-[#433c9f] shadow-[0_8px_20px_rgba(75,60,148,0.12)] transition hover:-translate-y-0.5 hover:border-[#bcb3ee]"
+              >
+                Show less
+              </button>
+            </div>
+          )}
         </div>
+      </div>
+
+      <div className="relative z-10 mt-6 grid gap-3 lg:grid-cols-2">
+        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
+          <h4 className="text-lg font-semibold text-[#221b45]">RSVP Snapshot</h4>
+          {nextEvent && data?.rsvp ? (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                <p className="rounded-xl bg-[#eefcf4] px-3 py-2 text-[#1f7d52]">
+                  Going: <span className="font-semibold">{data.rsvp.going}</span>
+                </p>
+                <p className="rounded-xl bg-[#fff8e9] px-3 py-2 text-[#9c6b00]">
+                  Maybe: <span className="font-semibold">{data.rsvp.maybe}</span>
+                </p>
+                <p className="rounded-xl bg-[#fff1f4] px-3 py-2 text-[#a33d56]">
+                  Declined: <span className="font-semibold">{data.rsvp.declined}</span>
+                </p>
+                <p className="rounded-xl bg-[#f3f2fd] px-3 py-2 text-[#4b437f]">
+                  Pending: <span className="font-semibold">{data.rsvp.pending}</span>
+                </p>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                {data.rsvp.recent.length > 0 ? (
+                  data.rsvp.recent.map((row) => (
+                    <p key={row.id} className="text-sm text-[#5a4f87]">
+                      <span className="font-semibold text-[#2d2555]">{row.name}</span> - {row.status}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm text-[#7a71a8]">No recent RSVPs yet.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
+          <h4 className="text-lg font-semibold text-[#221b45]">Setup Health</h4>
+          {nextEvent ? (
+            data?.setupHealth?.flags?.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {data.setupHealth.flags.map((flag) => (
+                  <span
+                    key={flag.key}
+                    className="rounded-full bg-[#fff5de] px-3 py-1 text-xs font-semibold text-[#8a5b00]"
+                  >
+                    {flag.label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[#4a976f]">Everything looks ready.</p>
+            )
+          ) : (
+            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
+          <h4 className="text-lg font-semibold text-[#221b45]">Checklist / Tasks</h4>
+          {nextEvent ? (
+            data?.checklist?.items?.length ? (
+              <ul className="mt-3 space-y-1.5 text-sm text-[#4b437f]">
+                {data.checklist.items.slice(0, 6).map((task) => (
+                  <li key={task.id} className="flex items-center gap-2">
+                    <span>{task.done ? "✅" : "⬜"}</span>
+                    <span className={task.done ? "line-through opacity-60" : ""}>
+                      {task.title}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-[#7a71a8]">No tasks yet.</p>
+            )
+          ) : (
+            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
+          <h4 className="text-lg font-semibold text-[#221b45]">Drafts</h4>
+          <p className="mt-2 text-sm text-[#6a6196]">
+            {data?.drafts?.count ?? 0} draft{(data?.drafts?.count ?? 0) === 1 ? "" : "s"}
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {(data?.drafts?.items || []).length > 0 ? (
+              data?.drafts?.items.map((draft) => (
+                <Link
+                  key={draft.id}
+                  href={`/event/${draft.id}`}
+                  className="block text-sm font-medium text-[#3f3691] hover:underline"
+                >
+                  {draft.title}
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-[#7a71a8]">No drafts right now.</p>
+            )}
+          </div>
+        </article>
       </div>
     </section>
   );
@@ -2429,10 +2746,11 @@ function SnapEventModal({
   addAppleCalendar,
   buildSubmissionEvent,
   setError,
-  saveToEnvitefy,
   resetForm,
+  autoAddEnabled,
 }: SnapEventModalProps) {
   const router = useRouter();
+  const [enableAutoAddOnSave, setEnableAutoAddOnSave] = useState(false);
   const [isAppleDevice, setIsAppleDevice] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -2443,6 +2761,11 @@ function SnapEventModal({
     microsoft: connected.microsoft,
     apple: false,
   });
+
+  useEffect(() => {
+    if (!open) return;
+    setEnableAutoAddOnSave(false);
+  }, [open]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2807,13 +3130,35 @@ function SnapEventModal({
               </div>
             </div>
 
+            <div className="border-t border-[#ebe4fb] bg-[#fbf9ff] px-5 py-3 sm:px-7">
+              <label className="flex items-start gap-2.5 text-xs sm:text-sm text-[#51457d]">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-[#cfc4f2] text-[#7f8cff] focus:ring-[#bcaef0]"
+                  checked={enableAutoAddOnSave}
+                  onChange={(e) => setEnableAutoAddOnSave(e.target.checked)}
+                />
+                <span>
+                  Skip review next time and auto-add to the calendar button you
+                  tap now, plus Envitefy.
+                  {autoAddEnabled
+                    ? " Auto-add is currently enabled; saving here can update the provider."
+                    : ""}
+                </span>
+              </label>
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6 border-t border-[#e3dbf8] bg-gradient-to-r from-[#ffffff]/90 via-[#f5f1ff]/90 to-[#ffffff]/90 backdrop-blur-md">
               <div className="flex flex-wrap items-center gap-3">
                 {connectedCalendars.google ? (
                   <button
                     type="button"
                     className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={addGoogle}
+                    onClick={() =>
+                      void addGoogle({
+                        enableAutoAdd: enableAutoAddOnSave,
+                      })
+                    }
                   >
                     <span>Add to</span>
                     <CalendarIconGoogle className="h-5 w-5 text-white" />
@@ -2832,7 +3177,11 @@ function SnapEventModal({
                   <button
                     type="button"
                     className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={addOutlook}
+                    onClick={() =>
+                      void addOutlook({
+                        enableAutoAdd: enableAutoAddOnSave,
+                      })
+                    }
                   >
                     <span>Add to</span>
                     <Image
@@ -2861,7 +3210,15 @@ function SnapEventModal({
                   <button
                     type="button"
                     className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={addAppleCalendar || dlIcs}
+                    onClick={() => {
+                      if (addAppleCalendar) {
+                        void addAppleCalendar({
+                          enableAutoAdd: enableAutoAddOnSave,
+                        });
+                        return;
+                      }
+                      dlIcs();
+                    }}
                   >
                     <span>Add to</span>
                     <Image
@@ -2874,14 +3231,6 @@ function SnapEventModal({
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  disabled={!event?.start}
-                  className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                  onClick={saveToEnvitefy}
-                >
-                  <span>Save to Envitefy</span>
-                </button>
                 <button
                   type="button"
                   className="rounded-xl border border-[#d8d1f3] bg-white/90 hover:bg-[#f4efff] backdrop-blur-sm px-5 py-3 text-sm text-[#4b3f72] font-semibold transition-all hover:border-[#c7b9ed] hover:scale-105 active:scale-100 shadow-sm"

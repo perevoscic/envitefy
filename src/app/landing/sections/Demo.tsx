@@ -5,7 +5,6 @@ import {
   type SnapPreviewKind,
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
-import { prepareFileForOcrUpload } from "@/utils/ocr-upload";
 
 type DemoEvent = {
   title: string;
@@ -160,9 +159,10 @@ export default function Demo() {
 
     let fileToUpload: File = file;
     try {
-      fileToUpload = await prepareFileForOcrUpload(file, {
-        maxDimension: 1600,
-        quality: 0.78,
+      const arrayBuffer = await file.arrayBuffer();
+      fileToUpload = new File([arrayBuffer], file.name, {
+        type: file.type || "application/octet-stream",
+        lastModified: file.lastModified,
       });
     } catch (readErr) {
       // If reading fails, fall back to using the original file object
@@ -180,7 +180,7 @@ export default function Demo() {
       const controller = new AbortController();
       activeAbortRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 45000);
-      res = await fetch("/api/ocr?fast=1&turbo=1&timing=1", {
+      res = await fetch("/api/ocr?fast=0", {
         method: "POST",
         body: form,
         signal: controller.signal,
@@ -206,9 +206,6 @@ export default function Demo() {
       return;
     }
     const data = await res.json();
-    if (data?.timing) {
-      console.info("Demo OCR timing", data.timing);
-    }
     const e: DemoEvent = {
       title: data?.fieldsGuess?.title || "Event",
       start: data?.fieldsGuess?.start || null,

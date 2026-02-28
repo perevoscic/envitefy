@@ -33,9 +33,10 @@ function remainingBudgetMs(startedAt: number, totalMs: number, reserveMs = 0): n
 
 function resolveOcrModel(fastMode = false): string {
   if (fastMode) {
-    return process.env.OPENAI_OCR_FAST_MODEL || process.env.LLM_MODEL || "gpt-5.1-mini";
+    return process.env.OPENAI_OCR_FAST_MODEL || "gpt-5.1-mini";
   }
-  return process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || DEFAULT_OCR_MODEL;
+  // Quality path: always prefer dedicated OCR model/default, not generic LLM_MODEL.
+  return process.env.OPENAI_OCR_MODEL || DEFAULT_OCR_MODEL;
 }
 
 function llmEventToRawText(payload: any): string {
@@ -1561,7 +1562,7 @@ export async function POST(request: Request) {
     const url = new URL(request.url);
     const forceLLM = url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
     const gymOnly = url.searchParams.get("gym") === "1" || url.searchParams.get("sport") === "gymnastics";
-    const fastMode = url.searchParams.get("fast") !== "0";
+    const fastMode = url.searchParams.get("fast") === "1";
     const turboMode = url.searchParams.get("turbo") === "1";
     const includeTimings = url.searchParams.get("timing") === "1" || url.searchParams.get("debug") === "1";
     const ocrModel = resolveOcrModel(fastMode);
