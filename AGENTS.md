@@ -157,6 +157,13 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Purpose**: OCR event flyers/images, parse title/date/time/location/description with OpenAI Vision as primary OCR, Google Vision as fallback (optimized for invitations and appointments).
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
+- **Query params**:
+  - `fast=1` (default behavior in UI): enables latency-focused mode that time-budgets OCR stages and skips optional rewrite/deep schedule LLM passes.
+  - `fast=0`: enables full-quality mode (allows extra rewrite/deep schedule passes when budget remains).
+  - `turbo=1`: races OpenAI + Google OCR providers in parallel and returns the first usable extraction.
+  - `timing=1` (or `debug=1`): includes per-stage timing metadata in the JSON response for diagnostics.
+  - `rewrite=1`: forces rewrite passes on even when `fast=1`.
+  - Existing params remain supported: `llm=1` / `engine=openai` and `gym=1` / `sport=gymnastics`.
 - **OCR Pipeline**:
   1. **Primary**: OpenAI Vision API (direct image analysis, best for cursive/decorative fonts)
   2. **Fallback**: Google Cloud Vision API (used only if OpenAI fails or returns no results)
@@ -206,6 +213,9 @@ curl -X POST \
 - **Env**:
   - **Required**: `OPENAI_API_KEY` (Primary OCR via OpenAI Vision).
   - **Optional**: `OPENAI_OCR_MODEL` to override the dedicated OCR model (defaults to `gpt-5.1`; falls back to `LLM_MODEL` when set).
+  - **Optional**: `OPENAI_OCR_FAST_MODEL` for `fast=1` extraction path (defaults to `gpt-5.1-mini`, then `LLM_MODEL`).
+  - **Optional**: `OCR_TOTAL_BUDGET_MS` to cap total OCR processing budget (default `35000`).
+  - **Optional**: `OCR_ENABLE_REWRITES=1` to re-enable rewrite passes by default in fast mode.
   - **Optional fallback**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Google Vision fallback.
 
 #### Common OCR Errors
@@ -652,6 +662,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2026-02-28: OCR latency hardening: `/api/ocr` now runs with a total request-time budget, stage-level timing logs, and fast-mode gating that skips optional rewrite/deep schedule LLM passes unless requested. Added `OPENAI_OCR_FAST_MODEL` support for fast scans, optional `turbo=1` parallel provider race (OpenAI+Google), and `timing=1` debug payloads. Dashboard/demo uploads now call `/api/ocr?fast=1&turbo=1&timing=1`.
 - 2026-02-16: Added Supabase Auth bridge for password reset: `/api/auth/forgot` now generates Supabase recovery links when Supabase envs are configured (with fallback to local `password_resets` tokens), and `/api/auth/reset` accepts Supabase recovery access tokens to update the app's password hash.
 - 2026-02-16: Password reset delivery (`POST /api/auth/forgot`) now sends through Resend first (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`) with SMTP fallback. Updated agent/env docs to remove AWS SES as a requirement for reset-email delivery.
 - 2026-02-15: **OG image + deploy guardrails**: Documented `GET /api/events/[id]/og-data` as the dedicated metadata agent for OG rendering so `/event/[id]/opengraph-image` can remain Edge/lightweight and avoid oversized serverless bundles. Also documented dependency pin guidance: with `next-auth@4.x`, keep `nodemailer` on `^6.10.1` to prevent Vercel npm peer-resolution failures.

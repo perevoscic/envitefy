@@ -4,6 +4,7 @@ import { forwardRef } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
+  Eye,
   LayoutDashboard,
   MessageSquare,
   Settings,
@@ -11,13 +12,17 @@ import {
 } from "lucide-react";
 import type { EventContextTab } from "@/app/sidebar-context";
 
+type EventSidebarMode = "owner" | "guest";
+
 type EventSidebarProps = {
   activeEventTab: EventContextTab;
   onBack: () => void;
   onTabChange: (tab: EventContextTab) => void;
+  mode?: EventSidebarMode;
+  backLabel?: string;
 };
 
-const TAB_ITEMS: Array<{
+const OWNER_TAB_ITEMS: Array<{
   key: EventContextTab;
   label: string;
   icon: LucideIcon;
@@ -28,8 +33,25 @@ const TAB_ITEMS: Array<{
   { key: "settings", label: "Settings", icon: Settings },
 ];
 
+const GUEST_TAB_ITEMS: Array<{
+  key: EventContextTab;
+  label: string;
+  icon: LucideIcon;
+}> = [{ key: "dashboard", label: "Preview", icon: Eye }];
+
 const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
-  ({ activeEventTab, onBack, onTabChange }, ref) => {
+  (
+    {
+      activeEventTab,
+      onBack,
+      onTabChange,
+      mode = "owner",
+      backLabel = "My Events",
+    },
+    ref,
+  ) => {
+    const tabItems = mode === "guest" ? GUEST_TAB_ITEMS : OWNER_TAB_ITEMS;
+
     return (
       <div
         ref={ref}
@@ -44,7 +66,7 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
               <button
                 type="button"
                 onClick={onBack}
-                aria-label="Back to My Events"
+                aria-label={`Back to ${backLabel}`}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/85 text-[#6d5b9f] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#cdbdff]/70"
               >
                 <ArrowLeft size={16} />
@@ -54,7 +76,7 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
                 onClick={onBack}
                 className="min-w-0 text-left text-sm font-semibold text-[#4a3b76] hover:text-[#2f2453]"
               >
-                My Events
+                {backLabel}
               </button>
             </div>
           </div>
@@ -63,7 +85,7 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-1">
           <div className="rounded-2xl border border-white/60 bg-white/80 px-3 py-3 shadow-[0_18px_40px_rgba(81,54,123,0.15)] backdrop-blur-xl">
             <div className="space-y-2">
-              {TAB_ITEMS.map((item) => {
+              {tabItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeEventTab === item.key;
                 return (

@@ -19,9 +19,35 @@ export function OPTIONS(request: Request) {
 
 const DEFAULT_OCR_MODEL = "gpt-5.1";
 const OPENAI_TIMEOUT_MS = 25_000;
+const OCR_TOTAL_BUDGET_MS = 35_000;
 
-function resolveOcrModel(): string {
+function clampTimeoutMs(ms: number, maxMs: number): number {
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.max(0, Math.min(maxMs, Math.floor(ms)));
+}
+
+function remainingBudgetMs(startedAt: number, totalMs: number, reserveMs = 0): number {
+  const elapsed = Date.now() - startedAt;
+  return Math.max(0, totalMs - elapsed - Math.max(0, reserveMs));
+}
+
+function resolveOcrModel(fastMode = false): string {
+  if (fastMode) {
+    return process.env.OPENAI_OCR_FAST_MODEL || process.env.LLM_MODEL || "gpt-5.1-mini";
+  }
   return process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || DEFAULT_OCR_MODEL;
+}
+
+function llmEventToRawText(payload: any): string {
+  const parts: string[] = [];
+  if (typeof payload?.title === "string" && payload.title.trim()) parts.push(payload.title.trim());
+  if (typeof payload?.start === "string" && payload.start.trim()) parts.push(payload.start.trim());
+  if (typeof payload?.end === "string" && payload.end.trim()) parts.push(payload.end.trim());
+  if (typeof payload?.address === "string" && payload.address.trim()) parts.push(payload.address.trim());
+  if (typeof payload?.description === "string" && payload.description.trim())
+    parts.push(payload.description.trim());
+  if (typeof payload?.rsvp === "string" && payload.rsvp.trim()) parts.push(payload.rsvp.trim());
+  return parts.join("\n").trim();
 }
 
 /* ------------------------------ helpers ------------------------------ */
@@ -54,7 +80,12 @@ function isTitleLowConfidence(title: string): boolean {
   return false;
 }
 
-async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promise<{
+async function llmExtractEventFromImage(
+  imageBytes: Buffer,
+  mime: string,
+  timeoutMs = OPENAI_TIMEOUT_MS,
+  modelOverride?: string
+): Promise<{
   title?: string;
   start?: string | null;
   end?: string | null;
@@ -69,7 +100,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
     console.error(">>> OpenAI API key not found in environment");
     return null;
   }
-  const model = resolveOcrModel();
+  const model = modelOverride || resolveOcrModel();
   const debug = process.env.NODE_ENV !== "production";
   const log = (...args: any[]) => {
     if (debug) console.log(...args);
@@ -148,7 +179,7 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
           },
         ],
       }),
-    }, OPENAI_TIMEOUT_MS);
+    }, timeoutMs);
     log(">>> OpenAI API response status:", res.status);
     if (!res.ok) {
       const errorBody = await res.text();
@@ -186,7 +217,8 @@ async function llmExtractEventFromImage(imageBytes: Buffer, mime: string): Promi
 async function llmExtractGymnasticsScheduleFromImage(
   imageBytes: Buffer,
   mime: string,
-  timezone: string
+  timezone: string,
+  timeoutMs = OPENAI_TIMEOUT_MS
 ): Promise<{
   season?: string | null;
   homeTeam?: string | null;
@@ -228,7 +260,7 @@ async function llmExtractGymnasticsScheduleFromImage(
           },
         ],
       }),
-    }, OPENAI_TIMEOUT_MS);
+    }, timeoutMs);
     if (!res.ok) return null;
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -298,7 +330,8 @@ type PracticeScheduleLLMResponse = {
 async function llmExtractPracticeScheduleFromImage(
   imageBytes: Buffer,
   mime: string,
-  timezone: string
+  timezone: string,
+  timeoutMs = OPENAI_TIMEOUT_MS
 ): Promise<PracticeScheduleLLMResponse | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -340,7 +373,7 @@ async function llmExtractPracticeScheduleFromImage(
           },
         ],
       }),
-    }, OPENAI_TIMEOUT_MS);
+    }, timeoutMs);
     if (!res.ok) return null;
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -1233,7 +1266,8 @@ function extractRsvpCompact(rawText: string, fallbackText?: string): string | nu
 async function llmRewriteBirthdayDescription(
   title: string,
   location: string,
-  description: string
+  description: string,
+  timeoutMs = OPENAI_TIMEOUT_MS
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -1258,7 +1292,7 @@ async function llmRewriteBirthdayDescription(
           { role: "user", content: user },
         ],
       }),
-    }, OPENAI_TIMEOUT_MS);
+    }, timeoutMs);
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = (j?.choices?.[0]?.message?.content || "").trim();
@@ -1274,7 +1308,8 @@ async function llmRewriteBirthdayDescription(
 async function llmRewriteWedding(
   rawText: string,
   title: string,
-  location: string
+  location: string,
+  timeoutMs = OPENAI_TIMEOUT_MS
 ): Promise<{ title: string; description: string } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -1302,7 +1337,7 @@ async function llmRewriteWedding(
           { role: "user", content: user },
         ],
       }),
-    }, OPENAI_TIMEOUT_MS);
+    }, timeoutMs);
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = j?.choices?.[0]?.message?.content || "";
@@ -1329,7 +1364,8 @@ async function llmRewriteSmartDescription(
   title: string,
   location: string,
   category: string | null,
-  baseline: string
+  baseline: string,
+  timeoutMs = OPENAI_TIMEOUT_MS
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -1356,7 +1392,7 @@ async function llmRewriteSmartDescription(
           { role: "user", content: user },
         ],
       }),
-    }, OPENAI_TIMEOUT_MS);
+    }, timeoutMs);
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = (j?.choices?.[0]?.message?.content || "").replace(/\s+/g, " ").trim();
@@ -1452,7 +1488,7 @@ function pickTitle(lines: string[], raw: string): string {
 
 /* ------------------------------ Vision REST fallback ------------------------------ */
 
-async function visionRestOCR(ocrBuffer: Buffer) {
+async function visionRestOCR(ocrBuffer: Buffer, timeoutMs = 30_000) {
   const b64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
   if (!b64) throw new Error("Missing GOOGLE_APPLICATION_CREDENTIALS_BASE64");
   const creds = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
@@ -1465,7 +1501,7 @@ async function visionRestOCR(ocrBuffer: Buffer) {
   const token = await client.getAccessToken();
 
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 30_000); // 30s cap for REST
+  const timer = setTimeout(() => ac.abort(), timeoutMs); // capped by remaining request budget
   const resp = await fetch("https://vision.googleapis.com/v1/images:annotate", {
     method: "POST",
     headers: {
@@ -1509,9 +1545,29 @@ export async function POST(request: Request) {
     const log = (...args: any[]) => {
       if (debug) console.log(...args);
     };
+    const startedAt = Date.now();
+    const configuredBudgetMs = Number(process.env.OCR_TOTAL_BUDGET_MS);
+    const totalBudgetMs =
+      Number.isFinite(configuredBudgetMs) && configuredBudgetMs >= 10_000
+        ? configuredBudgetMs
+        : OCR_TOTAL_BUDGET_MS;
+    const stage = {
+      preprocessMs: 0,
+      primaryOcrMs: 0,
+      fallbackOcrMs: 0,
+      rewriteMs: 0,
+      scheduleMs: 0,
+    };
     const url = new URL(request.url);
     const forceLLM = url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
     const gymOnly = url.searchParams.get("gym") === "1" || url.searchParams.get("sport") === "gymnastics";
+    const fastMode = url.searchParams.get("fast") !== "0";
+    const turboMode = url.searchParams.get("turbo") === "1";
+    const includeTimings = url.searchParams.get("timing") === "1" || url.searchParams.get("debug") === "1";
+    const ocrModel = resolveOcrModel(fastMode);
+    const rewritesRequested = url.searchParams.get("rewrite") === "1";
+    const enableRewrites = rewritesRequested || !fastMode || process.env.OCR_ENABLE_REWRITES === "1";
+    const allowDeepScheduleExtraction = !fastMode || forceLLM || gymOnly;
     const formData = await request.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) {
@@ -1523,6 +1579,7 @@ export async function POST(request: Request) {
 
     // Preprocess image for better OCR; gracefully fall back if sharp can't handle the format
     let ocrBuffer: Buffer = inputBuffer;
+    const preprocessStartedAt = Date.now();
     if (!/pdf/i.test(mime)) {
       try {
         ocrBuffer = await sharp(inputBuffer)
@@ -1535,59 +1592,35 @@ export async function POST(request: Request) {
         ocrBuffer = inputBuffer;
       }
     }
+    stage.preprocessMs = Date.now() - preprocessStartedAt;
 
     // =============================================================================
-    // STEP 1: Try OpenAI Vision FIRST (PRIMARY OCR)
+    // STEP 1/2: OCR extraction (OpenAI primary + Google fallback, optional turbo race)
     // =============================================================================
     let llmImage: any = null;
     let raw = "";
     let ocrSource = "none";
     let openAiSucceeded = false;
-    
-    try {
-      log(">>> OCR: Trying OpenAI Vision (primary)...");
-      llmImage = await llmExtractEventFromImage(ocrBuffer, mime || "application/octet-stream");
-      if (llmImage) {
-        const parts: string[] = [];
-        if (typeof llmImage.title === "string" && llmImage.title.trim()) parts.push(llmImage.title.trim());
-        if (typeof llmImage.start === "string" && llmImage.start.trim()) parts.push(llmImage.start.trim());
-        if (typeof llmImage.end === "string" && llmImage.end.trim()) parts.push(llmImage.end.trim());
-        if (typeof llmImage.address === "string" && llmImage.address.trim()) parts.push(llmImage.address.trim());
-        if (typeof llmImage.description === "string" && llmImage.description.trim())
-          parts.push(llmImage.description.trim());
-        if (typeof llmImage.rsvp === "string" && llmImage.rsvp.trim()) parts.push(llmImage.rsvp.trim());
+    const vision = getVisionClient();
 
-        if (parts.length) {
-          // OpenAI produced meaningful data; treat this as the authoritative OCR result.
-          log(">>> OCR: OpenAI Vision succeeded ✓");
-          raw = parts.join("\n");
-          ocrSource = "openai";
-          openAiSucceeded = true;
-        } else {
-          console.warn(">>> OCR: OpenAI returned an object without usable fields", llmImage);
-        }
-      } else {
-        console.warn(">>> OCR: OpenAI returned empty/null result:", llmImage);
-      }
-    } catch (e) {
-      console.error(">>> OCR: OpenAI Vision failed with error:", e);
-      console.error(">>> Error details:", {
-        message: (e as Error)?.message,
-        stack: (e as Error)?.stack,
-        fullError: e
-      });
-    }
+    const runOpenAiPrimary = async (timeoutMs: number): Promise<{ rawText: string; llm: any }> => {
+      const llm = await llmExtractEventFromImage(
+        ocrBuffer,
+        mime || "application/octet-stream",
+        timeoutMs,
+        ocrModel
+      );
+      const rawText = llmEventToRawText(llm);
+      if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
+      return { rawText, llm };
+    };
 
-    // =============================================================================
-    // STEP 2: Fallback to Google Vision if OpenAI failed
-    // =============================================================================
-    if (!openAiSucceeded) {
-      llmImage = null; // avoid mixing Google fallback with partial OpenAI fields
-      log(">>> OCR: Falling back to Google Vision...");
-      const vision = getVisionClient();
-      let result: any;
-
+    const runGoogleVisionFallback = async (
+      sdkTimeoutMs: number,
+      restTimeoutMs: number
+    ): Promise<{ rawText: string; source: "google-sdk" | "google-rest" }> => {
       try {
+        if (sdkTimeoutMs < 3_000) throw new Error("VISION_SDK_SKIPPED_LOW_BUDGET");
         const sdkCall = (async () => {
           const [res] = await vision.textDetection({
             image: { content: ocrBuffer },
@@ -1596,23 +1629,120 @@ export async function POST(request: Request) {
           return res;
         })();
         const timeout = new Promise<never>((_, rej) =>
-          setTimeout(() => rej(new Error("VISION_SDK_TIMEOUT")), 45_000)
+          setTimeout(() => rej(new Error("VISION_SDK_TIMEOUT")), sdkTimeoutMs)
         );
-        result = await Promise.race([sdkCall, timeout]);
-        log(">>> OCR: Google Vision SDK succeeded ✓");
-        ocrSource = "google-sdk";
+        const result = await Promise.race([sdkCall, timeout]);
+        const text =
+          result.fullTextAnnotation?.text ||
+          result.textAnnotations?.[0]?.description ||
+          "";
+        const rawText = (text || "").replace(/\s+\n/g, "\n").trim();
+        if (!rawText) throw new Error("VISION_SDK_EMPTY");
+        return { rawText, source: "google-sdk" };
       } catch (e) {
         console.warn(">>> Google Vision SDK failed, using REST:", (e as Error)?.message);
-        result = await visionRestOCR(ocrBuffer);
-        log(">>> OCR: Google Vision REST succeeded ✓");
-        ocrSource = "google-rest";
+        if (restTimeoutMs < 3_000) throw new Error("VISION_REST_SKIPPED_LOW_BUDGET");
+        const result = await visionRestOCR(ocrBuffer, restTimeoutMs);
+        const text =
+          result.fullTextAnnotation?.text ||
+          result.textAnnotations?.[0]?.description ||
+          "";
+        const rawText = (text || "").replace(/\s+\n/g, "\n").trim();
+        if (!rawText) throw new Error("VISION_REST_EMPTY");
+        return { rawText, source: "google-rest" };
       }
+    };
 
-      const text =
-        result.fullTextAnnotation?.text ||
-        result.textAnnotations?.[0]?.description ||
-        "";
-      raw = (text || "").replace(/\s+\n/g, "\n").trim();
+    const primaryStartedAt = Date.now();
+    if (turboMode && remainingBudgetMs(startedAt, totalBudgetMs, 2_000) > 0) {
+      const openAiTimeoutMs = clampTimeoutMs(
+        Math.min(12_000, OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 4_000)),
+        OPENAI_TIMEOUT_MS
+      );
+      const googleSdkTimeoutMs = clampTimeoutMs(
+        Math.min(12_000, remainingBudgetMs(startedAt, totalBudgetMs, 2_500)),
+        45_000
+      );
+      const googleRestTimeoutMs = clampTimeoutMs(
+        Math.min(8_000, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
+        30_000
+      );
+      const raceTasks: Promise<{ source: string; rawText: string; llm?: any }>[] = [];
+      if (openAiTimeoutMs >= 3_000) {
+        raceTasks.push(
+          runOpenAiPrimary(openAiTimeoutMs).then(({ rawText, llm }) => ({ source: "openai", rawText, llm }))
+        );
+      }
+      if (googleSdkTimeoutMs >= 3_000 || googleRestTimeoutMs >= 3_000) {
+        raceTasks.push(
+          runGoogleVisionFallback(googleSdkTimeoutMs, googleRestTimeoutMs).then(({ rawText, source }) => ({
+            source,
+            rawText,
+          }))
+        );
+      }
+      if (raceTasks.length) {
+        try {
+          const winner = await Promise.any(raceTasks);
+          raw = winner.rawText;
+          ocrSource = winner.source;
+          if (winner.source === "openai") {
+            llmImage = winner.llm || null;
+            openAiSucceeded = true;
+            log(">>> OCR turbo race winner: OpenAI");
+          } else {
+            llmImage = null;
+            log(">>> OCR turbo race winner:", winner.source);
+          }
+        } catch {
+          log(">>> OCR turbo race: no winner (all providers failed)");
+        }
+      }
+    }
+
+    if (!raw) {
+      const primaryTimeoutMs = clampTimeoutMs(
+        Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 5_000)),
+        OPENAI_TIMEOUT_MS
+      );
+      if (primaryTimeoutMs >= 3_000) {
+        try {
+          log(">>> OCR: Trying OpenAI Vision (primary)...", { timeoutMs: primaryTimeoutMs, fastMode, ocrModel });
+          const primary = await runOpenAiPrimary(primaryTimeoutMs);
+          raw = primary.rawText;
+          llmImage = primary.llm;
+          ocrSource = "openai";
+          openAiSucceeded = true;
+          log(">>> OCR: OpenAI Vision succeeded ✓");
+        } catch (e) {
+          console.error(">>> OCR: OpenAI Vision failed with error:", e);
+        }
+      } else {
+        log(">>> OCR: Skipping OpenAI primary due to low remaining budget", { primaryTimeoutMs });
+      }
+    }
+    stage.primaryOcrMs = Date.now() - primaryStartedAt;
+
+    if (!openAiSucceeded && !raw && remainingBudgetMs(startedAt, totalBudgetMs, 1_500) > 0) {
+      const fallbackStartedAt = Date.now();
+      log(">>> OCR: Falling back to Google Vision...");
+      const sdkTimeoutMs = clampTimeoutMs(
+        Math.min(45_000, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
+        45_000
+      );
+      const restTimeoutMs = clampTimeoutMs(
+        Math.min(30_000, remainingBudgetMs(startedAt, totalBudgetMs, 1_000)),
+        30_000
+      );
+      try {
+        const fallback = await runGoogleVisionFallback(sdkTimeoutMs, restTimeoutMs);
+        raw = fallback.rawText;
+        ocrSource = fallback.source;
+        log(">>> OCR: Google Vision fallback succeeded ✓", { source: fallback.source });
+      } catch (e) {
+        log(">>> OCR: Google fallback unavailable", { error: (e as Error)?.message || String(e) });
+      }
+      stage.fallbackOcrMs = Date.now() - fallbackStartedAt;
     }
 
     // Title detection
@@ -2301,32 +2431,57 @@ export async function POST(request: Request) {
         finalDescription = deterministic;
         descriptionWasGeneratedAsBirthday = true;
         // Second attempt: let LLM refine; fall back to deterministic if LLM returns weird multiline text
-        const rewritten = await llmRewriteBirthdayDescription(
-          finalTitle,
-          venueForSentence,
-          deterministic
-        );
-        const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
-        // Remove any title repetition from the rewritten description
-        if (cleaned && /\.$/.test(cleaned) && cleaned.length >= 20 && cleaned.length <= 200) {
-          // Check if rewritten description contains the full title and remove it
-          const titleLower = finalTitle.toLowerCase();
-          const cleanedLower = cleaned.toLowerCase();
-          if (cleanedLower.includes(titleLower)) {
-            // Remove title from description
-            const withoutTitle = cleaned.replace(new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "").trim();
-            finalDescription = withoutTitle.replace(/^[\s\n.,;:!?-]+/, "").replace(/[\s\n.,;:!?-]+$/, "").trim() || deterministic;
-          } else {
-            finalDescription = cleaned;
+        if (enableRewrites) {
+          const rewriteStartedAt = Date.now();
+          const rewriteTimeoutMs = clampTimeoutMs(
+            Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_500)),
+            OPENAI_TIMEOUT_MS
+          );
+          if (rewriteTimeoutMs >= 3_000) {
+            const rewritten = await llmRewriteBirthdayDescription(
+              finalTitle,
+              venueForSentence,
+              deterministic,
+              rewriteTimeoutMs
+            );
+            const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
+            // Remove any title repetition from the rewritten description
+            if (cleaned && /\.$/.test(cleaned) && cleaned.length >= 20 && cleaned.length <= 200) {
+              // Check if rewritten description contains the full title and remove it
+              const titleLower = finalTitle.toLowerCase();
+              const cleanedLower = cleaned.toLowerCase();
+              if (cleanedLower.includes(titleLower)) {
+                // Remove title from description
+                const withoutTitle = cleaned.replace(new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "").trim();
+                finalDescription = withoutTitle.replace(/^[\s\n.,;:!?-]+/, "").replace(/[\s\n.,;:!?-]+$/, "").trim() || deterministic;
+              } else {
+                finalDescription = cleaned;
+              }
+            }
           }
+          stage.rewriteMs += Date.now() - rewriteStartedAt;
         }
       } catch {}
     }
 
     // If this looks like a wedding/marriage invite, produce a clean title and short human sentence
-    if (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) || /(wedding|marriage)/i.test(finalTitle)) {
+    if (
+      enableRewrites &&
+      (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) || /(wedding|marriage)/i.test(finalTitle))
+    ) {
       try {
-        const wr = await llmRewriteWedding(raw, finalTitle, locationForNarrative || finalAddress);
+        const rewriteStartedAt = Date.now();
+        const rewriteTimeoutMs = clampTimeoutMs(
+          Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
+          OPENAI_TIMEOUT_MS
+        );
+        if (rewriteTimeoutMs < 3_000) throw new Error("WEDDING_REWRITE_SKIPPED_LOW_BUDGET");
+        const wr = await llmRewriteWedding(
+          raw,
+          finalTitle,
+          locationForNarrative || finalAddress,
+          rewriteTimeoutMs
+        );
         if (wr?.title) finalTitle = wr.title;
     if (wr?.description) {
           let desc = wr.description;
@@ -2339,15 +2494,22 @@ export async function POST(request: Request) {
           }
           finalDescription = desc;
         }
+        stage.rewriteMs += Date.now() - rewriteStartedAt;
       } catch {}
     }
 
     // Generic rewrite for non-birthday/wedding flyers or when current description is long/multiline
     // Reuse isBirthdayForDesc from above - already checked if it's a birthday
     const isWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
-    if (!isBirthdayForDesc && !isWedding && !isMedicalAppointment) {
+    if (enableRewrites && !isBirthdayForDesc && !isWedding && !isMedicalAppointment) {
       try {
         const looksMultiline = /\n/.test(finalDescription) || (finalDescription || "").length > 180;
+        const rewriteStartedAt = Date.now();
+        const rewriteTimeoutMs = clampTimeoutMs(
+          Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
+          OPENAI_TIMEOUT_MS
+        );
+        if (rewriteTimeoutMs < 3_000) throw new Error("SMART_REWRITE_SKIPPED_LOW_BUDGET");
         const refined = await llmRewriteSmartDescription(
           raw,
           finalTitle,
@@ -2356,12 +2518,14 @@ export async function POST(request: Request) {
             finalAddress ||
             locationForNarrative,
           null,
-          looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription
+          looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription,
+          rewriteTimeoutMs
         );
         const cleaned = (refined || "").replace(/\s+/g, " ").trim();
         if (cleaned && cleaned.length >= 20 && cleaned.length <= 200) {
           finalDescription = cleaned;
         }
+        stage.rewriteMs += Date.now() - rewriteStartedAt;
       } catch {}
     }
 
@@ -2557,14 +2721,25 @@ export async function POST(request: Request) {
       }> = [];
 
       let llmPractice: PracticeScheduleLLMResponse | null = null;
-      try {
-        llmPractice = await llmExtractPracticeScheduleFromImage(
-          ocrBuffer,
-          mime || "application/octet-stream",
-          tz
-        );
-      } catch {
-        llmPractice = null;
+      if (allowDeepScheduleExtraction) {
+        try {
+          const scheduleStartedAt = Date.now();
+          const scheduleTimeoutMs = clampTimeoutMs(
+            Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
+            OPENAI_TIMEOUT_MS
+          );
+          if (scheduleTimeoutMs >= 3_000) {
+            llmPractice = await llmExtractPracticeScheduleFromImage(
+              ocrBuffer,
+              mime || "application/octet-stream",
+              tz,
+              scheduleTimeoutMs
+            );
+          }
+          stage.scheduleMs += Date.now() - scheduleStartedAt;
+        } catch {
+          llmPractice = null;
+        }
       }
 
       if (llmPractice?.groups && llmPractice.groups.length) {
@@ -2782,7 +2957,21 @@ export async function POST(request: Request) {
     const hasGymnasticsSchedule = /gymnastics/i.test(raw) && /schedule/i.test(raw);
     if (hasGymnasticsSchedule && (gymOnly || forceLLM)) {
       // OpenAI-exclusive path for gymnastics schedules
-      const llmSched = await llmExtractGymnasticsScheduleFromImage(ocrBuffer, mime || "application/octet-stream", tz);
+      const scheduleStartedAt = Date.now();
+      const scheduleTimeoutMs = clampTimeoutMs(
+        Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
+        OPENAI_TIMEOUT_MS
+      );
+      const llmSched =
+        scheduleTimeoutMs >= 3_000
+          ? await llmExtractGymnasticsScheduleFromImage(
+              ocrBuffer,
+              mime || "application/octet-stream",
+              tz,
+              scheduleTimeoutMs
+            )
+          : null;
+      stage.scheduleMs += Date.now() - scheduleStartedAt;
       if (llmSched && Array.isArray(llmSched.events) && llmSched.events.length) {
         schedule.detected = true;
         schedule.homeTeam = (llmSched.homeTeam as any) || schedule.homeTeam;
@@ -2997,29 +3186,70 @@ export async function POST(request: Request) {
     let category: string | null = detectCategory(raw, schedule, fieldsGuess);
     if (practiceSchedule.detected) category = "Sport Events";
 
-    try {
-      const session = await getServerSession(authOptions);
-      const email = session?.user?.email as string | undefined;
-      // Only decrement credits for free-plan users; paid plans are unlimited.
-      if (email) {
-        try {
-          const profileRes = await fetch(`${new URL(request.url).origin}/api/user/profile`, { headers: { cookie: request.headers.get("cookie") || "" } } as any).catch(() => null);
-          const plan = profileRes && profileRes.ok ? (await profileRes.json().catch(() => ({}))).subscriptionPlan : null;
-          if (!plan || plan === "free") {
+    // Non-blocking metering: do not hold the OCR response while profile/credits update.
+    const requestOrigin = new URL(request.url).origin;
+    const requestCookie = request.headers.get("cookie") || "";
+    void (async () => {
+      try {
+        const session = await getServerSession(authOptions);
+        const email = session?.user?.email as string | undefined;
+        // Only decrement credits for free-plan users; paid plans are unlimited.
+        if (email) {
+          try {
+            const profileRes = await fetch(`${requestOrigin}/api/user/profile`, {
+              headers: { cookie: requestCookie },
+            } as any).catch(() => null);
+            const plan =
+              profileRes && profileRes.ok
+                ? (await profileRes.json().catch(() => ({}))).subscriptionPlan
+                : null;
+            if (!plan || plan === "free") {
+              await incrementCreditsByEmail(email, -1);
+            }
+          } catch {
+            // Fallback: if plan is unknown, keep old behavior for safety
             await incrementCreditsByEmail(email, -1);
           }
-        } catch {
-          // Fallback: if plan is unknown, keep old behavior for safety
-          await incrementCreditsByEmail(email, -1);
+          // Increment scan counters for admin metrics
+          try {
+            await incrementUserScanCounters({ email, category });
+          } catch {}
         }
-        // Increment scan counters for admin metrics
-        try { await incrementUserScanCounters({ email, category }); } catch {}
-      }
-    } catch {}
+      } catch {}
+    })();
+
+    const ocrTiming = {
+      totalMs: Date.now() - startedAt,
+      preprocessMs: stage.preprocessMs,
+      primaryOcrMs: stage.primaryOcrMs,
+      fallbackOcrMs: stage.fallbackOcrMs,
+      rewriteMs: stage.rewriteMs,
+      scheduleMs: stage.scheduleMs,
+      fastMode,
+      enableRewrites,
+      turboMode,
+      model: ocrModel,
+      ocrSource,
+    };
+    log(">>> OCR timing (ms)", ocrTiming);
+
+    const responseBody: any = {
+      intakeId,
+      ocrText: raw,
+      fieldsGuess,
+      practiceSchedule,
+      schedule,
+      events,
+      category,
+      ocrSource,
+    };
+    if (includeTimings) {
+      responseBody.timing = ocrTiming;
+    }
 
     return corsJson(
       request,
-      { intakeId, ocrText: raw, fieldsGuess, practiceSchedule, schedule, events, category, ocrSource },
+      responseBody,
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err: unknown) {

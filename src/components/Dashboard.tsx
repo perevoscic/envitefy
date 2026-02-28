@@ -29,6 +29,7 @@ import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
+import { prepareFileForOcrUpload } from "@/utils/ocr-upload";
 import {
   SnapProcessingCard,
   type SnapPreviewKind,
@@ -55,6 +56,17 @@ type EventFields = {
   rsvp?: string | null;
 };
 
+type CalendarProvider = "google" | "microsoft" | "apple";
+
+type AutoAddPreference = {
+  enabled: boolean;
+  provider: CalendarProvider | null;
+};
+
+type ProviderActionOptions = {
+  enableAutoAdd?: boolean;
+};
+
 type UpcomingItem = {
   id: string;
   title: string;
@@ -62,6 +74,12 @@ type UpcomingItem = {
   end: string | null;
   category: string | null;
   location: string | null;
+};
+
+const AUTO_ADD_PREFERENCE_STORAGE_KEY = "envitefy:snap:auto-add:v1";
+const DEFAULT_AUTO_ADD_PREFERENCE: AutoAddPreference = {
+  enabled: false,
+  provider: null,
 };
 
 type OwnerRsvpRow = {
@@ -173,6 +191,9 @@ export default function Dashboard({
   const [, setOcrText] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
+  const [autoAddPreference, setAutoAddPreference] = useState<AutoAddPreference>(
+    DEFAULT_AUTO_ADD_PREFERENCE
+  );
   const [scanStatus, setScanStatus] = useState<SnapProcessingStatus>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -180,6 +201,7 @@ export default function Dashboard({
   const uploadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeOcrAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
+  const isSubmittingRef = useRef(false);
   const currentPreviewUrlRef = useRef<string | null>(null);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
@@ -192,6 +214,39 @@ export default function Dashboard({
   useEffect(() => {
     scanStatusRef.current = scanStatus;
   }, [scanStatus]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(AUTO_ADD_PREFERENCE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<AutoAddPreference>;
+      const provider =
+        parsed?.provider === "google" ||
+        parsed?.provider === "microsoft" ||
+        parsed?.provider === "apple"
+          ? parsed.provider
+          : null;
+      setAutoAddPreference({
+        enabled: Boolean(parsed?.enabled && provider),
+        provider,
+      });
+    } catch {
+      setAutoAddPreference(DEFAULT_AUTO_ADD_PREFERENCE);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        AUTO_ADD_PREFERENCE_STORAGE_KEY,
+        JSON.stringify(autoAddPreference)
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [autoAddPreference]);
 
   useEffect(() => {
     if (!isSignedIn || visibilityLoading) return;
@@ -772,22 +827,17 @@ export default function Dashboard({
       }
 
       try {
-        // On Android, file objects from file inputs can become invalid during async upload.
-        // Read the file into memory first to capture the data before it becomes stale.
         let fileToUpload: File = incoming;
         try {
-          // Read file into ArrayBuffer, then create a new File from it
-          // This ensures the data is captured in memory before the original file reference becomes stale
-          const arrayBuffer = await incoming.arrayBuffer();
-          fileToUpload = new File([arrayBuffer], incoming.name, {
-            type: incoming.type || "application/octet-stream",
-            lastModified: incoming.lastModified,
+          fileToUpload = await prepareFileForOcrUpload(incoming, {
+            maxDimension: 1600,
+            quality: 0.78,
           });
         } catch (readErr) {
           // If reading fails, fall back to using the original file object
           // (works on most platforms but may fail on Android)
           console.warn(
-            "Failed to read file into memory, using original file object:",
+            "Failed to prepare OCR upload file, using original file object:",
             readErr
           );
         }
@@ -802,7 +852,7 @@ export default function Dashboard({
 
         let res: Response;
         try {
-          res = await fetch("/api/ocr", {
+          res = await fetch("/api/ocr?fast=1&turbo=1&timing=1", {
             method: "POST",
             body: form,
             signal: controller.signal,
@@ -850,6 +900,9 @@ export default function Dashboard({
         }
 
         const data = await res.json();
+        if (data?.timing) {
+          console.info("OCR timing", data.timing);
+        }
         const tz =
           data?.fieldsGuess?.timezone ||
           Intl.DateTimeFormat().resolvedOptions().timeZone ||

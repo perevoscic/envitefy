@@ -5,6 +5,7 @@ import {
   type SnapPreviewKind,
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
+import { prepareFileForOcrUpload } from "@/utils/ocr-upload";
 
 type DemoEvent = {
   title: string;
@@ -157,22 +158,17 @@ export default function Demo() {
     setEvent(null);
     cancelledByUserRef.current = false;
 
-    // On Android, file objects from file inputs can become invalid during async upload.
-    // Read the file into memory first to capture the data before it becomes stale.
     let fileToUpload: File = file;
     try {
-      // Read file into ArrayBuffer, then create a new File from it
-      // This ensures the data is captured in memory before the original file reference becomes stale
-      const arrayBuffer = await file.arrayBuffer();
-      fileToUpload = new File([arrayBuffer], file.name, {
-        type: file.type || "application/octet-stream",
-        lastModified: file.lastModified,
+      fileToUpload = await prepareFileForOcrUpload(file, {
+        maxDimension: 1600,
+        quality: 0.78,
       });
     } catch (readErr) {
       // If reading fails, fall back to using the original file object
       // (works on most platforms but may fail on Android)
       console.warn(
-        "Failed to read file into memory, using original file object:",
+        "Failed to prepare OCR upload file, using original file object:",
         readErr
       );
     }
@@ -184,7 +180,7 @@ export default function Demo() {
       const controller = new AbortController();
       activeAbortRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 45000);
-      res = await fetch("/api/ocr", {
+      res = await fetch("/api/ocr?fast=1&turbo=1&timing=1", {
         method: "POST",
         body: form,
         signal: controller.signal,
@@ -210,6 +206,9 @@ export default function Demo() {
       return;
     }
     const data = await res.json();
+    if (data?.timing) {
+      console.info("Demo OCR timing", data.timing);
+    }
     const e: DemoEvent = {
       title: data?.fieldsGuess?.title || "Event",
       start: data?.fieldsGuess?.start || null,

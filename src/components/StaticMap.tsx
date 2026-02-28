@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type StaticMapProps = {
   address: string;
   width?: number; // css pixels; actual image uses 2x scale for retina
@@ -15,26 +17,42 @@ export default function StaticMap({
   zoom = 14,
   className = "",
 }: StaticMapProps) {
+  const [useIframeFallback, setUseIframeFallback] = useState(false);
   const query = encodeURIComponent((address || "").trim());
   const searchUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
   // Use internal proxy to avoid client-side blockers/CSP
   const src = `/api/maps/static?q=${query}&zoom=${zoom}&width=${width}&height=${height}`;
+  const embedSrc = `https://www.google.com/maps?q=${query}&output=embed`;
 
   return (
-    <div className={`rounded-lg overflow-hidden ${className}`}>
-      <img
-        src={src}
-        alt="Map preview"
-        width={width}
-        height={height}
-        style={{ width: "100%", height: "auto", display: "block" }}
-      />
-      <div className="p-2 bg-muted/50 text-center">
+    <div
+      className={`overflow-hidden rounded-2xl border border-[#ddd5ff] bg-white shadow-[0_14px_32px_rgba(79,58,134,0.12)] ${className}`}
+    >
+      {useIframeFallback ? (
+        <iframe
+          src={embedSrc}
+          title="Map preview"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="w-full border-0"
+          style={{ height: `${Math.min(height, 420)}px`, display: "block" }}
+        />
+      ) : (
+        <img
+          src={src}
+          alt="Map preview"
+          width={width}
+          height={height}
+          style={{ width: "100%", height: "auto", display: "block" }}
+          onError={() => setUseIframeFallback(true)}
+        />
+      )}
+      <div className="border-t border-[#ece3ff] bg-gradient-to-r from-[#fbf8ff] to-[#f3efff] p-2.5 text-center">
         <a
           href={searchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-2 font-medium text-[#4f3f7a] transition hover:text-[#2f2550]"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

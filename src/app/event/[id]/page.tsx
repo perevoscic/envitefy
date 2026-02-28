@@ -637,6 +637,7 @@ export default async function EventPage({
     typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0
       ? data.numberOfGuests
       : 0;
+  const isOcrEvent = (data as any)?.createdVia === "ocr";
   const attachmentInfo = (() => {
     const raw = data?.attachment;
     if (!raw || typeof raw !== "object") return null;
@@ -657,6 +658,12 @@ export default async function EventPage({
       : null;
     return { name, type, dataUrl: previewUrl };
   })();
+  const locationText =
+    typeof data?.location === "string" ? (data.location as string) : "";
+  const venueText = typeof data?.venue === "string" ? (data.venue as string) : "";
+  const hasMapLocation = Boolean(
+    (venueText && venueText.trim()) || (locationText && locationText.trim())
+  );
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
   const registriesAllowed =
@@ -903,12 +910,6 @@ export default async function EventPage({
     "--event-text-light": "#2b2350",
     "--event-text-dark": "#2b2350",
   } satisfies Record<string, string>;
-
-  // Mirror editor page background (hero) gradient
-  const heroGradient: string =
-    headerGradientCss ||
-    (imageColors?.headerLight as string | undefined) ||
-    (eventTheme.headerLight as string);
 
   // Now finalize header style: prefer explicit header image (thumbnail) over flyer
   const headerImageUrl: string | null = thumbnailIsInline
@@ -1208,8 +1209,9 @@ export default async function EventPage({
       className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]"
       style={
         {
-          // Ensure the page background matches the editor's chosen header gradient
-          ["--theme-hero-gradient"]: heroGradient,
+          // Keep page chrome in the white/purple family for scanned event views.
+          ["--theme-hero-gradient"]:
+            "linear-gradient(180deg, #f7f3ff 0%, #ffffff 55%, #f8f5ff 100%)",
         } as CSSProperties
       }
     >
@@ -1217,7 +1219,7 @@ export default async function EventPage({
         dangerouslySetInnerHTML={{
           __html: `
             (function(){
-              var value = ${JSON.stringify(heroGradient)};
+              var value = "linear-gradient(180deg, #f7f3ff 0%, #ffffff 55%, #f8f5ff 100%)";
               function apply(){
                 try { document.documentElement.style.setProperty('--theme-hero-gradient', value); } catch {}
               }
@@ -1278,14 +1280,14 @@ export default async function EventPage({
                     ? "text-right"
                     : "text-left"
                 } ${
-                  titleColor
+                  titleColor && !isOcrEvent
                     ? ""
-                    : headerImageUrl
-                    ? "text-white drop-shadow-lg"
+                    : isOcrEvent || headerImageUrl
+                    ? "text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]"
                     : "text-foreground"
                 }`}
                 style={{
-                  color: titleColor || undefined,
+                  color: isOcrEvent ? "#ffffff" : titleColor || undefined,
                   fontFamily:
                     titleFont === "pacifico"
                       ? "var(--font-pacifico)"
@@ -1319,31 +1321,31 @@ export default async function EventPage({
           </div>
           {/* Actions pinned to bottom-right of header */}
           <div className="absolute bottom-3 right-3 z-40">
-            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
-              {!isReadOnly && isOwner && (
-                <>
-                  <Link
-                    href={buildEditLink(row.id, data, title)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
-                    title="Edit event"
+            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium rounded-xl border border-[#ddd4f8] bg-white/92 backdrop-blur px-2 sm:px-3 py-1.5 shadow-[0_12px_26px_rgba(76,55,134,0.22)]">
+              {!isReadOnly && isOwner && !isOcrEvent && (
+                <Link
+                  href={buildEditLink(row.id, data, title)}
+                  className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
+                  title="Edit event"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    <span className="hidden sm:inline">Edit</span>
-                  </Link>
-                  <EventDeleteModal eventId={row.id} eventTitle={title} />
-                </>
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span className="hidden sm:inline">Edit</span>
+                </Link>
+              )}
+              {!isReadOnly && isOwner && (
+                <EventDeleteModal eventId={row.id} eventTitle={title} />
               )}
               <EventActions
                 shareUrl={shareUrl}
@@ -1357,19 +1359,22 @@ export default async function EventPage({
           </div>
         </section>
 
-        <section
-          className={`event-theme-card rounded-2xl border px-3 sm:px-6 py-6 shadow-sm`}
-          style={{
-            backgroundImage: cardBackgroundImage,
-          }}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="event-theme-card rounded-[28px] border border-[#ddd5ff] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f3edff] px-3 py-6 shadow-[0_22px_56px_rgba(84,61,140,0.14)] sm:px-6">
+          {data?.description && (
+            <div className="mb-6 border-b border-[#e7defb] pb-4 text-sm leading-relaxed">
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                Description
+              </p>
+              <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Left column: Event details */}
             <div className="lg:col-span-1">
               <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
                 {data?.allDay && (
                   <div className="sm:col-span-2">
-                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                       When
                     </dt>
                     <dd className="mt-1 text-base font-semibold">
@@ -1393,13 +1398,13 @@ export default async function EventPage({
 
                     return (
                       <div className="sm:col-span-2">
-                        <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                           When
                         </dt>
                         <dd className="mt-1 break-all text-base font-semibold">
                           {timeAndDate.time && <div>{timeAndDate.time}</div>}
                           {timeAndDate.date && (
-                            <div className="text-sm mt-1 opacity-80">
+                            <div className="mt-1 text-sm text-[#6e629c]">
                               {timeAndDate.date}
                             </div>
                           )}
@@ -1412,7 +1417,7 @@ export default async function EventPage({
                   <>
                     {data?.start && (
                       <div>
-                        <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                           Start
                         </dt>
                         <dd className="mt-1 break-all text-base font-semibold">
@@ -1422,7 +1427,7 @@ export default async function EventPage({
                     )}
                     {data?.end && (
                       <div>
-                        <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                           End
                         </dt>
                         <dd className="mt-1 break-all text-base font-semibold">
@@ -1432,81 +1437,67 @@ export default async function EventPage({
                     )}
                   </>
                 )}
-                {data?.venue && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                      Venue
-                    </dt>
-                    <dd className="mt-1 text-2xl font-semibold">
-                      {data.venue}
-                    </dd>
-                  </div>
-                )}
-                <div className="sm:col-span-2">
-                  <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                    {data?.venue ? "Address" : "Location"}
-                  </dt>
-                  <dd className="mt-1">
-                    {(() => {
-                      const locationStr =
-                        typeof data?.location === "string" ? data.location : "";
-                      const { street, cityStateZip } =
-                        splitAddress(locationStr);
-                      const fullQuery = combineVenueAndLocation(
-                        (typeof data?.venue === "string" && data.venue) || null,
-                        locationStr || null
-                      );
-
-                      return (
-                        <>
-                          {street && (
-                            <div className="text-base font-semibold">
-                              <LocationLink
-                                location={street}
-                                query={fullQuery}
-                                className="font-semibold"
-                              />
-                            </div>
-                          )}
-                          {cityStateZip && (
-                            <div className="text-sm mt-1 opacity-80">
-                              <LocationLink
-                                location={cityStateZip}
-                                query={fullQuery}
-                                className=""
-                              />
-                            </div>
-                          )}
-                          {!street && !cityStateZip && locationStr && (
-                            <LocationLink
-                              location={locationStr}
-                              query={fullQuery}
-                              className="text-base font-semibold"
-                            />
-                          )}
-                        </>
-                      );
-                    })()}
-                  </dd>
-                </div>
                 {/* Calendar + RSVP moved to separate two-column row below */}
               </dl>
             </div>
-            {/* Right column: Map */}
+            {/* Right column: Location */}
             <div className="lg:col-span-1 lg:self-start">
-              <EventMap
-                coordinates={data?.coordinates}
-                venue={data?.venue}
-                location={data?.location}
-                className="sticky top-4"
-              />
+              <div className="rounded-2xl bg-white/92 p-5">
+                <dd>
+                  {(() => {
+                    const { street, cityStateZip } = splitAddress(locationText);
+                    const fullQuery = combineVenueAndLocation(
+                      venueText || null,
+                      locationText || null
+                    );
+
+                    return (
+                      <>
+                        {venueText && (
+                          <div className="mb-2 text-xl font-semibold text-[#2b2350]">
+                            {venueText}
+                          </div>
+                        )}
+                        {street && (
+                          <div className="text-base font-semibold">
+                            <LocationLink
+                              location={street}
+                              query={fullQuery}
+                              className="font-semibold"
+                            />
+                          </div>
+                        )}
+                        {cityStateZip && (
+                          <div className="mt-1 text-sm text-[#6e629c]">
+                            <LocationLink
+                              location={cityStateZip}
+                              query={fullQuery}
+                              className=""
+                            />
+                          </div>
+                        )}
+                        {!street && !cityStateZip && locationText && (
+                          <LocationLink
+                            location={locationText}
+                            query={fullQuery}
+                            className="text-base font-semibold"
+                          />
+                        )}
+                        {!venueText && !locationText && (
+                          <p className="text-sm text-[#6e629c]">Location TBD</p>
+                        )}
+                      </>
+                    );
+                  })()}
+                </dd>
+              </div>
             </div>
           </div>
           {/* Second row: RSVP (left) and Add to calendar (right) */}
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
             {(rsvpName || rsvpPhone || rsvpEmail) && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                   RSVP
                 </dt>
                 <dd className="mt-1">
@@ -1523,14 +1514,14 @@ export default async function EventPage({
             )}
             {calendarLinks && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                   Add to calendar
                 </dt>
                 <dd className="mt-1  space-y-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <a
                       href={calendarLinks.appleInline}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
                       aria-label="Add to Apple Calendar"
                       title="Apple Calendar"
                     >
@@ -1540,7 +1531,7 @@ export default async function EventPage({
                       href={calendarLinks.google}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
                       aria-label="Add to Google Calendar"
                       title="Google Calendar"
                     >
@@ -1550,7 +1541,7 @@ export default async function EventPage({
                       href={calendarLinks.outlook}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/30 text-foreground transition-colors hover:bg-surface/50"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
                       aria-label="Add to Outlook Calendar"
                       title="Outlook Calendar"
                     >
@@ -1563,7 +1554,7 @@ export default async function EventPage({
           </div>
           {/* Share/Email actions moved to header top-right */}
           {attachmentInfo && false && (
-            <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
+            <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 Attachment
               </p>
@@ -1586,34 +1577,36 @@ export default async function EventPage({
               </a>
             </div>
           )}
-          {(data?.description ||
-            (attachmentInfo?.type?.startsWith?.("image/") &&
-              attachmentInfo?.dataUrl)) && (
-            <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
-              {data?.description && (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                    Description
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
-                </div>
-              )}
-              {attachmentInfo?.type?.startsWith?.("image/") &&
-                attachmentInfo?.dataUrl && (
-                  <div
-                    className={
-                      data?.description
-                        ? "mt-6 flex justify-center"
-                        : "flex justify-center"
-                    }
-                  >
-                    <ThumbnailModal
-                      src={attachmentInfo.dataUrl}
-                      alt={`${title} flyer`}
-                      className="relative rounded max-w-md w-auto"
+          {((attachmentInfo?.type?.startsWith?.("image/") &&
+              attachmentInfo?.dataUrl) ||
+            hasMapLocation) && (
+            <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
+              {(attachmentInfo?.type?.startsWith?.("image/") &&
+                attachmentInfo?.dataUrl) ||
+              hasMapLocation ? (
+                <div className="grid justify-items-center gap-4 md:grid-cols-2">
+                  {attachmentInfo?.type?.startsWith?.("image/") &&
+                    attachmentInfo?.dataUrl && (
+                      <div className="flex justify-center">
+                        <ThumbnailModal
+                          src={attachmentInfo.dataUrl}
+                          alt={`${title} flyer`}
+                          className="relative block w-full max-w-[220px] overflow-hidden rounded-2xl shadow-[0_14px_32px_rgba(79,58,134,0.12)]"
+                        />
+                      </div>
+                    )}
+                  {hasMapLocation && (
+                    <EventMap
+                      coordinates={data?.coordinates}
+                      venue={venueText || null}
+                      location={locationText || null}
+                      mapWidth={320}
+                      mapHeight={280}
+                      className="w-full max-w-[220px] overflow-hidden rounded-2xl border border-[#ddd5ff] bg-white/90 p-1 shadow-[0_14px_32px_rgba(79,58,134,0.12)]"
                     />
-                  </div>
-                )}
+                  )}
+                </div>
+              ) : null}
             </div>
           )}
           {signupForm && (
@@ -1650,7 +1643,7 @@ export default async function EventPage({
             />
           )}
           {registriesAllowed && registryCards.length > 0 && (
-            <div className="mt-6 border-t border-black/10 pt-4 text-sm leading-relaxed dark:border-white/15">
+            <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 Registries
               </p>
@@ -1669,7 +1662,7 @@ export default async function EventPage({
                       href={decorated}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-start gap-3 rounded-lg border border-border bg-surface/30 p-3 transition-colors hover:border-foreground/40 hover:bg-surface/50"
+                      className="group flex items-start gap-3 rounded-xl border border-[#ddd4f8] bg-white/90 p-3 transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
                     >
                       <span
                         className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold"

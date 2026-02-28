@@ -57,6 +57,7 @@ import {
   Trophy,
   Upload,
   User,
+  Users,
   LogOut,
 } from "lucide-react";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
@@ -81,7 +82,41 @@ type SidebarAdUnitProps = {
 };
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
-type SidebarPage = "root" | "createEvent" | "myEvents" | "eventContext";
+type SidebarPage =
+  | "root"
+  | "createEvent"
+  | "myEvents"
+  | "invitedEvents"
+  | "eventContext";
+type EventSidebarMode = "owner" | "guest";
+type EventListPage = "myEvents" | "invitedEvents";
+type HistoryRow = { id: string; title: string; created_at?: string; data?: unknown };
+type GroupedEventItem = {
+  row: HistoryRow;
+  href: string;
+  title: string;
+  dateLabel: string;
+  dateMs: number;
+  tintClass: string;
+  hoverTintClass: string;
+  swatchClass: string;
+  style?: CSSProperties;
+};
+type GroupedEventSection = {
+  category: string;
+  items: GroupedEventItem[];
+};
+
+function isInvitedHistoryEvent(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const record = data as Record<string, unknown>;
+  if (Boolean(record.shared)) return true;
+  if (Boolean(record.invitedFromScan)) return true;
+  const createdVia = String(record.createdVia || "")
+    .trim()
+    .toLowerCase();
+  return createdVia === "ocr";
+}
 
 const CALENDAR_TARGETS: Array<{
   key: CalendarProviderKey;
@@ -481,6 +516,9 @@ const SIDEBAR_COLLAPSED_REM = "4.5rem";
 const SIDEBAR_LOGO_SRC = "/E.png";
 const SUBPAGE_STICKY_HEADER_CLASS =
   "sticky top-0 z-20 -mx-4 bg-[rgba(246,243,255,0.86)] px-4 pb-2 pt-1 backdrop-blur-xl";
+const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:my-events:past-expanded";
+const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
+  "sidebar:invited-events:past-expanded";
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
@@ -508,7 +546,12 @@ export default function LeftSidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
-  const [showPastEvents, setShowPastEvents] = useState(false);
+  const [showPastMyEvents, setShowPastMyEvents] = useState(false);
+  const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
+  const [eventSidebarMode, setEventSidebarMode] =
+    useState<EventSidebarMode>("owner");
+  const [eventContextSourcePage, setEventContextSourcePage] =
+    useState<EventListPage>("myEvents");
   const [isHydrated, setIsHydrated] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -824,12 +867,12 @@ export default function LeftSidebar() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         clearEventContext();
-        setSidebarPage("myEvents");
+        setSidebarPage(eventContextSourcePage);
       }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [clearEventContext, isEventMenuActive, setSidebarPage]);
+  }, [clearEventContext, eventContextSourcePage, isEventMenuActive, setSidebarPage]);
 
   useEffect(() => {
     if (!selectedEventId) return;
@@ -856,12 +899,6 @@ export default function LeftSidebar() {
     clearEventContext();
     setSidebarPage("root");
   }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
-
-  useEffect(() => {
-    if (sidebarPage !== "myEvents") {
-      setShowPastEvents(false);
-    }
-  }, [sidebarPage]);
 
   const displayName =
     (session?.user?.name as string) ||
@@ -1103,9 +1140,7 @@ export default function LeftSidebar() {
     return (first + last).toUpperCase();
   })();
 
-  const [history, setHistory] = useState<
-    { id: string; title: string; created_at?: string; data?: any }[]
-  >([]);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const drafts = useMemo(() => {
     const byId = new Map<
       string,
@@ -1115,7 +1150,7 @@ export default function LeftSidebar() {
       if (!row || typeof row !== "object") continue;
       const data: any = row.data || {};
       const status = String(data.status || "").toLowerCase();
-      if (status !== "draft" || data.shared) continue;
+      if (status !== "draft" || isInvitedHistoryEvent(data)) continue;
       if (!byId.has(row.id)) {
         byId.set(row.id, row);
       }
@@ -1128,40 +1163,17 @@ export default function LeftSidebar() {
       if (!row || typeof row !== "object") return acc;
       const data: any = row?.data;
       if (!data || typeof data !== "object") return acc;
-      if (data.shared) return acc;
-
-      const manualFlag =
-        data.createdVia === "manual" ||
-        data.createdManually === true ||
-        data.manual === true ||
-        data.savedVia === "manual";
-
-      const hasManualFields =
-        typeof data.startISO === "string" ||
-        typeof data.endISO === "string" ||
-        typeof data.recurrence === "string";
-
-      const hasOcrSignature =
-        Boolean(data.ocrText || data.fieldsGuess || data.ocrSource) ||
-        (Array.isArray(data.events) && data.events.length > 0) ||
-        Boolean(
-          data.practiceSchedule &&
-          (data.practiceSchedule.detected ||
-            (Array.isArray(data.practiceSchedule.groups) &&
-              data.practiceSchedule.groups.length > 0)),
-        ) ||
-        Boolean(
-          data.schedule &&
-          (data.schedule.detected ||
-            (Array.isArray(data.schedule?.games) &&
-              data.schedule.games.length > 0)),
-        );
-
-      if (manualFlag || (hasManualFields && !hasOcrSignature)) {
-        return acc + 1;
-      }
-
-      return acc;
+      if (isInvitedHistoryEvent(data) || data.signupForm) return acc;
+      return acc + 1;
+    }, 0);
+  }, [history]);
+  const invitedEventsCount = useMemo(() => {
+    return history.reduce((acc, row) => {
+      if (!row || typeof row !== "object") return acc;
+      const data: any = row?.data;
+      if (!data || typeof data !== "object") return acc;
+      if (!isInvitedHistoryEvent(data) || data.signupForm) return acc;
+      return acc + 1;
     }, 0);
   }, [history]);
   const smartSignupCount = useMemo(() => {
@@ -1174,8 +1186,8 @@ export default function LeftSidebar() {
       const form = (data as any)?.signupForm;
       if (!form || typeof form !== "object") return acc;
 
-      // If it's the owner's item (not marked shared), always count it as a created form
-      if (!data.shared) return acc + 1;
+      // If it's the owner's item (not invited/shared), always count it as a created form
+      if (!isInvitedHistoryEvent(data)) return acc + 1;
 
       // For shared items, count only if the current user has an active (non-cancelled) response
       const responses: any[] = Array.isArray(form.responses)
@@ -1378,6 +1390,20 @@ export default function LeftSidebar() {
         const parsed = JSON.parse(rawItems);
         if (parsed && typeof parsed === "object") setSignupItemColors(parsed);
       }
+    } catch {}
+    try {
+      const rawMyEvents = localStorage.getItem(
+        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+      );
+      setShowPastMyEvents(rawMyEvents === "1" || rawMyEvents === "true");
+    } catch {}
+    try {
+      const rawInvitedEvents = localStorage.getItem(
+        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+      );
+      setShowPastInvitedEvents(
+        rawInvitedEvents === "1" || rawInvitedEvents === "true",
+      );
     } catch {}
   }, []);
 
@@ -1628,7 +1654,7 @@ export default function LeftSidebar() {
     }
   };
 
-  const myEventsGrouped = useMemo(() => {
+  const groupedEventLists = useMemo(() => {
     const priority = new Map<string, number>([
       ["drafts", 0],
       ["birthdays", 1],
@@ -1666,49 +1692,40 @@ export default function LeftSidebar() {
         year: "numeric",
       });
     };
-
-    const upcomingGroups = new Map<
-      string,
-      Array<{
-        row: { id: string; title: string; created_at?: string; data?: any };
-        href: string;
-        title: string;
-        dateLabel: string;
-        dateMs: number;
-        tintClass: string;
-        hoverTintClass: string;
-        swatchClass: string;
-        style?: CSSProperties;
-      }>
-    >();
-    const pastGroups = new Map<
-      string,
-      Array<{
-        row: { id: string; title: string; created_at?: string; data?: any };
-        href: string;
-        title: string;
-        dateLabel: string;
-        dateMs: number;
-        tintClass: string;
-        hoverTintClass: string;
-        swatchClass: string;
-        style?: CSSProperties;
-      }>
-    >();
-    const nowMs = Date.now();
+    const createBuckets = () => ({
+      upcoming: new Map<string, GroupedEventItem[]>(),
+      past: new Map<string, GroupedEventItem[]>(),
+    });
+    const bucketsByList: Record<EventListPage, ReturnType<typeof createBuckets>> =
+      {
+        myEvents: createBuckets(),
+        invitedEvents: createBuckets(),
+      };
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
 
     for (const row of history) {
       if (!row || typeof row !== "object") continue;
       const data = (row as any)?.data || {};
       if (data?.signupForm) continue;
+      const isInvited = isInvitedHistoryEvent(data);
+      const targetList: EventListPage = isInvited ? "invitedEvents" : "myEvents";
 
       const isDraft = String(data?.status || "").toLowerCase() === "draft";
-      const normalizedCategory = normalizeCategoryLabel(
+      const normalizedCategoryRaw = normalizeCategoryLabel(
         (data?.category as string | null) ||
           guessCategoryFromText(
             `${row.title || ""} ${String(data?.description || "")}`,
           ),
       );
+      const normalizedCategory =
+        isInvited &&
+        String(normalizedCategoryRaw || "")
+          .trim()
+          .toLowerCase() === "shared events"
+          ? "Invited Events"
+          : normalizedCategoryRaw;
       const category = isDraft
         ? "Drafts"
         : normalizedCategory || "General Events";
@@ -1725,10 +1742,12 @@ export default function LeftSidebar() {
         .replace(/^-+|-+$/g, "");
       const href = `/event/${slug || "event"}-${row.id}`;
 
-      const categoryColor = categoryColors[category] || defaultCategoryColor(category);
+      const categoryColor = isInvited
+        ? "slate"
+        : categoryColors[category] || defaultCategoryColor(category);
       const palette = colorClasses(categoryColor);
       const eventHex = String(data?.color || data?.event?.color || "").trim();
-      const style = isHexColor(eventHex)
+      const style = !isInvited && isHexColor(eventHex)
         ? {
             backgroundColor: hexToRgba(eventHex, 0.12),
             borderColor: hexToRgba(eventHex, 0.26),
@@ -1746,29 +1765,19 @@ export default function LeftSidebar() {
         swatchClass: palette.swatch,
         style,
       };
+      const targetBuckets = bucketsByList[targetList];
       const targetGroups =
-        Number.isFinite(dateMs) && dateMs < nowMs ? pastGroups : upcomingGroups;
+        Number.isFinite(dateMs) && dateMs < startOfTodayMs
+          ? targetBuckets.past
+          : targetBuckets.upcoming;
       const existing = targetGroups.get(category) || [];
       existing.push(entry);
       targetGroups.set(category, existing);
     }
 
     const sortGroups = (
-      source: Map<
-        string,
-        Array<{
-          row: { id: string; title: string; created_at?: string; data?: any };
-          href: string;
-          title: string;
-          dateLabel: string;
-          dateMs: number;
-          tintClass: string;
-          hoverTintClass: string;
-          swatchClass: string;
-          style?: CSSProperties;
-        }>
-      >,
-    ) =>
+      source: Map<string, GroupedEventItem[]>,
+    ): GroupedEventSection[] =>
       Array.from(source.entries())
         .map(([category, items]) => ({
           category,
@@ -1787,10 +1796,18 @@ export default function LeftSidebar() {
         });
 
     return {
-      upcoming: sortGroups(upcomingGroups),
-      past: sortGroups(pastGroups),
+      myEvents: {
+        upcoming: sortGroups(bucketsByList.myEvents.upcoming),
+        past: sortGroups(bucketsByList.myEvents.past),
+      },
+      invitedEvents: {
+        upcoming: sortGroups(bucketsByList.invitedEvents.upcoming),
+        past: sortGroups(bucketsByList.invitedEvents.past),
+      },
     };
   }, [categoryColors, history]);
+  const myEventsGrouped = groupedEventLists.myEvents;
+  const invitedEventsGrouped = groupedEventLists.invitedEvents;
 
   const recentAdIndex = useMemo<number | null>(() => {
     if (!history || history.length <= 1) return null;
@@ -2016,6 +2033,24 @@ export default function LeftSidebar() {
     } catch {}
   }, [signupItemColors]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+        showPastMyEvents ? "1" : "0",
+      );
+    } catch {}
+  }, [showPastMyEvents]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+        showPastInvitedEvents ? "1" : "0",
+      );
+    } catch {}
+  }, [showPastInvitedEvents]);
+
   const sortHistoryRows = (
     rows: Array<{
       id: string;
@@ -2218,20 +2253,69 @@ export default function LeftSidebar() {
     [],
   );
 
-  const openEventContext = useCallback(
-    (row: { id: string; title: string; data?: any }, href: string) => {
+  const buildEventGuestHref = useCallback(
+    (baseHref: string | null | undefined, eventId: string) => {
+      const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
+      try {
+        const normalizedBase =
+          typeof baseHref === "string" && baseHref.trim()
+            ? baseHref
+            : fallbackPath;
+        const parsed = new URL(normalizedBase, "https://envitefy.local");
+        parsed.searchParams.set("tab", "preview");
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      } catch {
+        return `${fallbackPath}?tab=preview`;
+      }
+    },
+    [],
+  );
+
+  const openOwnerEventContext = useCallback(
+    (row: HistoryRow, href: string) => {
       const title = row.title || "Untitled event";
       setSelectedEventId(row.id);
       setSelectedEventTitle(title);
       setSelectedEventHref(href);
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
       setActiveEventTab("dashboard");
+      setEventSidebarMode("owner");
+      setEventContextSourcePage("myEvents");
       setSidebarPage("eventContext");
       router.push(buildEventOwnerHref(href, row.id, "dashboard"));
     },
     [
       buildEventOwnerHref,
       router,
+      setEventContextSourcePage,
+      setEventSidebarMode,
+      setActiveEventTab,
+      setSelectedEventEditHref,
+      setSelectedEventHref,
+      setSelectedEventId,
+      setSelectedEventTitle,
+      setSidebarPage,
+    ],
+  );
+
+  const openGuestEventContext = useCallback(
+    (row: HistoryRow, href: string) => {
+      const title = row.title || "Untitled event";
+      setSelectedEventId(row.id);
+      setSelectedEventTitle(title);
+      setSelectedEventHref(href);
+      setSelectedEventEditHref(null);
+      setActiveEventTab("dashboard");
+      setEventSidebarMode("guest");
+      setEventContextSourcePage("invitedEvents");
+      setSidebarPage("eventContext");
+      router.push(buildEventGuestHref(href, row.id));
+    },
+    [
+      buildEventGuestHref,
+      router,
+      setEventContextSourcePage,
+      setEventSidebarMode,
       setActiveEventTab,
       setSelectedEventEditHref,
       setSelectedEventHref,
@@ -2243,6 +2327,16 @@ export default function LeftSidebar() {
 
   const handleEventTabChange = useCallback(
     (tab: EventContextTab) => {
+      if (eventSidebarMode === "guest") {
+        setActiveEventTab("dashboard");
+        try {
+          if (!selectedEventId) return;
+          const nextHref = buildEventGuestHref(selectedEventHref, selectedEventId);
+          router.push(nextHref);
+        } catch {}
+        setSidebarPage("eventContext");
+        return;
+      }
       setActiveEventTab(tab);
       try {
         if (!selectedEventId) return;
@@ -2252,7 +2346,9 @@ export default function LeftSidebar() {
       setSidebarPage("eventContext");
     },
     [
+      buildEventGuestHref,
       buildEventOwnerHref,
+      eventSidebarMode,
       router,
       selectedEventHref,
       selectedEventId,
@@ -2261,10 +2357,10 @@ export default function LeftSidebar() {
     ],
   );
 
-  const handleSidebarBackToMyEvents = useCallback(() => {
+  const handleSidebarBackToEvents = useCallback(() => {
     clearEventContext();
-    setSidebarPage("myEvents");
-  }, [clearEventContext]);
+    setSidebarPage(eventContextSourcePage);
+  }, [clearEventContext, eventContextSourcePage]);
 
   const renameHistoryItem = async (id: string, currentTitle: string) => {
     const next = prompt("Rename event", currentTitle || "");
@@ -2598,7 +2694,13 @@ export default function LeftSidebar() {
   const myEventsPanelTransform =
     sidebarPage === "myEvents"
       ? "translateX(0%)"
-      : sidebarPage === "eventContext"
+      : sidebarPage === "eventContext" && eventContextSourcePage === "myEvents"
+        ? "translateX(-100%)"
+        : "translateX(100%)";
+  const invitedEventsPanelTransform =
+    sidebarPage === "invitedEvents"
+      ? "translateX(0%)"
+      : sidebarPage === "eventContext" && eventContextSourcePage === "invitedEvents"
         ? "translateX(-100%)"
         : "translateX(100%)";
   const eventPanelTransform =
@@ -2897,6 +2999,21 @@ export default function LeftSidebar() {
                       <ChevronRight size={16} className="text-[#7a5fc0]" />
                     </span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSidebarPage("invitedEvents")}
+                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <Users size={18} />
+                    </span>
+                    <span className="truncate">Invited Events</span>
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className={SIDEBAR_BADGE_CLASS}>{invitedEventsCount}</span>
+                      <ChevronRight size={16} className="text-[#7a5fc0]" />
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -2999,7 +3116,7 @@ export default function LeftSidebar() {
                                 <button
                                   key={item.row.id}
                                   type="button"
-                                  onClick={() => openEventContext(item.row, item.href)}
+                                  onClick={() => openOwnerEventContext(item.row, item.href)}
                                   className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
                                   style={item.style}
                                 >
@@ -3034,16 +3151,16 @@ export default function LeftSidebar() {
                                 </p>
                                 <button
                                   type="button"
-                                  onClick={() => setShowPastEvents((prev) => !prev)}
+                                  onClick={() => setShowPastMyEvents((prev) => !prev)}
                                   className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
                                 >
                                   <span>
-                                    {showPastEvents ? "Hide past events" : "Show past events"}
+                                    {showPastMyEvents ? "Hide past events" : "Show past events"}
                                   </span>
                                   <ChevronRight
                                     size={12}
                                     className={`transition-transform ${
-                                      showPastEvents ? "rotate-90" : ""
+                                      showPastMyEvents ? "rotate-90" : ""
                                     }`}
                                   />
                                 </button>
@@ -3051,7 +3168,7 @@ export default function LeftSidebar() {
                               <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
                             </div>
 
-                            {showPastEvents &&
+                            {showPastMyEvents &&
                               myEventsGrouped.past.map((group) => (
                                 <section key={`past-${group.category}`} className="space-y-2">
                                   <div className="px-1 pt-1">
@@ -3064,8 +3181,8 @@ export default function LeftSidebar() {
                                     <button
                                       key={item.row.id}
                                       type="button"
-                                      onClick={() => openEventContext(item.row, item.href)}
-                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                      onClick={() => openOwnerEventContext(item.row, item.href)}
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-75 saturate-75`}
                                       style={item.style}
                                     >
                                       <span
@@ -3097,6 +3214,155 @@ export default function LeftSidebar() {
               </div>
 
               <div
+                className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5"
+                style={{
+                  ...panelTransitionStyle,
+                  transform: invitedEventsPanelTransform,
+                  pointerEvents: sidebarPage === "invitedEvents" ? "auto" : "none",
+                }}
+                aria-hidden={sidebarPage !== "invitedEvents"}
+              >
+                <div className="space-y-3">
+                  <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                    <button
+                      type="button"
+                      onClick={() => setSidebarPage("root")}
+                      className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <ChevronLeft size={16} />
+                      </span>
+                      <span className="truncate">Invited Events</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {invitedEventsGrouped.upcoming.length === 0 &&
+                    invitedEventsGrouped.past.length === 0 ? (
+                      <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
+                        No invited events yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {invitedEventsGrouped.upcoming.length === 0 ? (
+                          <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
+                            No upcoming events.
+                          </div>
+                        ) : (
+                          invitedEventsGrouped.upcoming.map((group) => (
+                            <section key={`invited-upcoming-${group.category}`} className="space-y-2">
+                              <div className="px-1 pt-1">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                  {group.category}
+                                </p>
+                                <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                              </div>
+                              {group.items.map((item) => (
+                                <button
+                                  key={item.row.id}
+                                  type="button"
+                                  onClick={() => openGuestEventContext(item.row, item.href)}
+                                  className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                  style={item.style}
+                                >
+                                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm md:text-base font-semibold">
+                                      {item.title}
+                                    </span>
+                                    <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                      {item.dateLabel}
+                                    </span>
+                                  </span>
+                                  <span className="inline-flex shrink-0 items-center rounded-full border border-[#cfd9ff] bg-[#f4f7ff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#4d63a8]">
+                                    Invited
+                                  </span>
+                                  <ChevronRight
+                                    size={16}
+                                    className="mt-1 shrink-0 text-[#6f84ff]"
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              ))}
+                            </section>
+                          ))
+                        )}
+
+                        {invitedEventsGrouped.past.length > 0 && (
+                          <section className="space-y-2">
+                            <div className="px-1 pt-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                  Past Events
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPastInvitedEvents((prev) => !prev)}
+                                  className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
+                                >
+                                  <span>
+                                    {showPastInvitedEvents
+                                      ? "Hide past events"
+                                      : "Show past events"}
+                                  </span>
+                                  <ChevronRight
+                                    size={12}
+                                    className={`transition-transform ${
+                                      showPastInvitedEvents ? "rotate-90" : ""
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+                              <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                            </div>
+
+                            {showPastInvitedEvents &&
+                              invitedEventsGrouped.past.map((group) => (
+                                <section key={`invited-past-${group.category}`} className="space-y-2">
+                                  <div className="px-1 pt-1">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                      {group.category}
+                                    </p>
+                                    <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                  </div>
+                                  {group.items.map((item) => (
+                                    <button
+                                      key={item.row.id}
+                                      type="button"
+                                      onClick={() => openGuestEventContext(item.row, item.href)}
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-70 saturate-75`}
+                                      style={item.style}
+                                    >
+                                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
+                                      <span className="min-w-0 flex-1">
+                                        <span className="block truncate text-sm md:text-base font-semibold">
+                                          {item.title}
+                                        </span>
+                                        <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                          {item.dateLabel}
+                                        </span>
+                                      </span>
+                                      <span className="inline-flex shrink-0 items-center rounded-full border border-[#cfd9ff] bg-[#f4f7ff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#4d63a8]">
+                                        Invited
+                                      </span>
+                                      <ChevronRight
+                                        size={16}
+                                        className="mt-1 shrink-0 text-[#6f84ff]"
+                                        aria-hidden="true"
+                                      />
+                                    </button>
+                                  ))}
+                                </section>
+                              ))}
+                          </section>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div
                 className="absolute inset-0 z-[30] overflow-hidden bg-[#f6f3ff]"
                 style={{
                   ...panelTransitionStyle,
@@ -3108,8 +3374,14 @@ export default function LeftSidebar() {
                 <EventSidebar
                   ref={eventSidebarRef}
                   activeEventTab={activeEventTab}
-                  onBack={handleSidebarBackToMyEvents}
+                  onBack={handleSidebarBackToEvents}
                   onTabChange={handleEventTabChange}
+                  mode={eventSidebarMode}
+                  backLabel={
+                    eventContextSourcePage === "invitedEvents"
+                      ? "Invited Events"
+                      : "My Events"
+                  }
                 />
               </div>
             </div>

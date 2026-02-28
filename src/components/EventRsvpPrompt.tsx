@@ -408,7 +408,7 @@ export default function EventRsvpPrompt({
             key={option.intent}
             type="button"
             onClick={() => openModalFor(option.intent)}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface/30 px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-surface/50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-white/90 px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
           >
             <span aria-hidden="true">{option.icon}</span>
             <span suppressHydrationWarning>{option.label}</span>
