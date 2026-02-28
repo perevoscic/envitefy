@@ -2296,6 +2296,70 @@ export default function LeftSidebar() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
+
+    const onDeleted = async (e: Event) => {
+      try {
+        const anyEvent = e as any;
+        const detail = (anyEvent && anyEvent.detail) || null;
+        const deletedId =
+          detail && detail.id != null ? String(detail.id).trim() : "";
+
+        if (!deletedId) {
+          return;
+        }
+
+        // Remove immediately for responsive UI.
+        setHistory((prev) => prev.filter((row) => row.id !== deletedId));
+
+        // If the deleted event is currently selected in sidebar context, clear it.
+        if (selectedEventId === deletedId) {
+          clearEventContext();
+        }
+
+        // Refetch shortly after delete to fully sync computed sidebar sections/counts.
+        const refetchTimeout = setTimeout(async () => {
+          pendingTimeouts.delete(refetchTimeout as any);
+          if (cancelled || status !== "authenticated") return;
+          try {
+            const res = await fetch(
+              `/api/history?view=full&limit=40&t=${Date.now()}`,
+              {
+                cache: "no-cache",
+                credentials: "include",
+              }
+            );
+            const j = await res.json().catch(() => ({ items: [] }));
+            if (!cancelled) {
+              setHistory(
+                sortHistoryRows(
+                  (j.items || []).map((r: any) => ({
+                    id: r.id,
+                    title: r.title,
+                    created_at: r.created_at || undefined,
+                    data: r.data,
+                  }))
+                )
+              );
+            }
+          } catch {}
+        }, 350);
+
+        pendingTimeouts.add(refetchTimeout as any);
+      } catch {}
+    };
+
+    window.addEventListener("history:deleted", onDeleted as EventListener);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("history:deleted", onDeleted as EventListener);
+      pendingTimeouts.forEach((timeout) => clearTimeout(timeout as any));
+      pendingTimeouts.clear();
+    };
+  }, [clearEventContext, selectedEventId, status]);
+
   const shareHistoryItem = useCallback(async (prettyHref: string) => {
     try {
       const url = new URL(prettyHref, window.location.origin).toString();
@@ -2487,7 +2551,10 @@ export default function LeftSidebar() {
     );
     if (!ok) return;
     try {
-      await fetch(`/api/history/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/history/${id}`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
       setHistory((prev) => prev.filter((r) => r.id !== id));
       if (selectedEventId === id) {
         clearEventContext();
@@ -2507,10 +2574,13 @@ export default function LeftSidebar() {
         if (
           currentPath &&
           (currentPath === `/event/${id}` ||
+            currentPath.startsWith(`/event/${id}/`) ||
             currentPath === `/smart-signup-form/${id}` ||
+            currentPath.startsWith(`/smart-signup-form/${id}/`) ||
             currentPath.endsWith(`-${id}`))
         ) {
           router.replace("/");
+          router.refresh();
         }
       } catch {}
     } catch {}

@@ -14,11 +14,12 @@ export const dynamic = "force-dynamic";
 
 const TRAVEL_TTL_MS = 12 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
-const WEATHER_FORECAST_WINDOW_HOURS = 24 * 5; // OpenWeather 5-day forecast window.
+const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
 let metricsCacheTableEnsured = false;
 const MAPBOX_ACCESS_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_API_KEY || null;
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || null;
+const WEATHERAPI_KEY =
+  process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY || null;
 
 type MetricsRow = {
   event_id: string;
@@ -83,6 +84,24 @@ function parseInlineLatLng(text: string): { lat: number; lng: number } | null {
   if (lat == null || lng == null) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   return { lat, lng };
+}
+
+function parseBodyOrigin(body: any):
+  | {
+      lat: number;
+      lng: number;
+      label: string | null;
+    }
+  | null {
+  const lat = parseFinite(body?.originLat);
+  const lng = parseFinite(body?.originLng);
+  if (lat == null || lng == null) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  const label =
+    typeof body?.originLabel === "string" && body.originLabel.trim()
+      ? body.originLabel.trim()
+      : null;
+  return { lat, lng, label };
 }
 
 async function ensureMetricsCacheTable() {
@@ -201,19 +220,38 @@ async function geocodeWithMapbox(queryText: string): Promise<{ lat: number; lng:
   if (!raw || !MAPBOX_ACCESS_TOKEN) return null;
   const inline = parseInlineLatLng(raw);
   if (inline) return inline;
-  const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(raw)}.json`);
-  url.searchParams.set("access_token", MAPBOX_ACCESS_TOKEN);
-  url.searchParams.set("limit", "1");
-  url.searchParams.set("types", "address,poi,place,postcode,neighborhood,locality");
-  const res = await fetch(url.toString(), { cache: "no-store" });
-  if (!res.ok) return null;
-  const payload = await res.json().catch(() => null);
-  const center = payload?.features?.[0]?.center;
-  if (!Array.isArray(center) || center.length < 2) return null;
-  const lng = parseFinite(center[0]);
-  const lat = parseFinite(center[1]);
-  if (lat == null || lng == null) return null;
-  return { lat, lng };
+  const candidates = Array.from(
+    new Set(
+      [
+        raw,
+        raw.split("\n")[0]?.trim() || "",
+        raw.replace(/\s{2,}/g, " ").trim(),
+        (() => {
+          const index = raw.search(/\d{1,6}\s+/);
+          return index >= 0 ? raw.slice(index).trim() : "";
+        })(),
+      ].filter(Boolean)
+    )
+  );
+
+  for (const candidate of candidates) {
+    const url = new URL(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(candidate)}.json`
+    );
+    url.searchParams.set("access_token", MAPBOX_ACCESS_TOKEN);
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("types", "address,poi,place,postcode,neighborhood,locality");
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) continue;
+    const payload = await res.json().catch(() => null);
+    const center = payload?.features?.[0]?.center;
+    if (!Array.isArray(center) || center.length < 2) continue;
+    const lng = parseFinite(center[0]);
+    const lat = parseFinite(center[1]);
+    if (lat == null || lng == null) continue;
+    return { lat, lng };
+  }
+  return null;
 }
 
 async function fetchTravelMinutesAndDistance(params: {
@@ -249,33 +287,41 @@ async function fetchWeatherAtEvent(params: {
   lng: number;
   eventIso: string;
 }): Promise<{ summary: string | null; temp: number | null }> {
-  if (!OPENWEATHER_API_KEY) return { summary: null, temp: null };
-  const url = new URL("https://api.openweathermap.org/data/2.5/forecast");
-  url.searchParams.set("lat", String(params.lat));
-  url.searchParams.set("lon", String(params.lng));
-  url.searchParams.set("appid", OPENWEATHER_API_KEY);
-  url.searchParams.set("units", "imperial");
+  if (!WEATHERAPI_KEY) return { summary: null, temp: null };
+  const url = new URL("https://api.weatherapi.com/v1/forecast.json");
+  url.searchParams.set("key", WEATHERAPI_KEY);
+  url.searchParams.set("q", `${params.lat},${params.lng}`);
+  url.searchParams.set("days", "3");
+  url.searchParams.set("aqi", "no");
+  url.searchParams.set("alerts", "no");
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) return { summary: null, temp: null };
   const payload = await res.json().catch(() => null);
-  const list: Array<any> = Array.isArray(payload?.list) ? payload.list : [];
-  if (!list.length) return { summary: null, temp: null };
+  const days: Array<any> = Array.isArray(payload?.forecast?.forecastday)
+    ? payload.forecast.forecastday
+    : [];
+  const hourly: Array<any> = [];
+  for (const day of days) {
+    if (!Array.isArray(day?.hour)) continue;
+    for (const hour of day.hour) hourly.push(hour);
+  }
+  if (!hourly.length) return { summary: null, temp: null };
   const targetMs = new Date(params.eventIso).getTime();
-  let bestEntry: any = null;
+  let bestHour: any = null;
   let bestDelta = Number.POSITIVE_INFINITY;
-  for (const entry of list) {
-    const dtSeconds = parseFinite(entry?.dt);
-    const ts = dtSeconds != null ? dtSeconds * 1000 : Number.NaN;
+  for (const hour of hourly) {
+    const epoch = parseFinite(hour?.time_epoch);
+    const ts = epoch != null ? epoch * 1000 : Number.NaN;
     if (!Number.isFinite(ts)) continue;
     const delta = Math.abs(ts - targetMs);
     if (delta < bestDelta) {
       bestDelta = delta;
-      bestEntry = entry;
+      bestHour = hour;
     }
   }
-  if (!bestEntry) return { summary: null, temp: null };
-  const temp = parseFinite(bestEntry?.main?.temp);
-  const summaryRaw = bestEntry?.weather?.[0]?.main ?? bestEntry?.weather?.[0]?.description;
+  if (!bestHour) return { summary: null, temp: null };
+  const temp = parseFinite(bestHour?.temp_f);
+  const summaryRaw = bestHour?.condition?.text;
   const summary =
     typeof summaryRaw === "string" && summaryRaw.trim() ? summaryRaw.trim() : null;
   return { summary, temp };
@@ -295,6 +341,7 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const forceTravel = Boolean(body?.forceTravel);
+    const requestOrigin = parseBodyOrigin(body);
     const requestedEventId =
       typeof body?.eventId === "string" && body.eventId.trim() ? body.eventId.trim() : null;
 
@@ -319,7 +366,10 @@ export async function POST(req: Request) {
     const homeLabel = resolveHomeLabel(featureVisibility);
     const geocodedOrigin =
       !homeOrigin && homeLabel ? await geocodeWithMapbox(homeLabel).catch(() => null) : null;
-    const origin = homeOrigin || (geocodedOrigin ? { ...geocodedOrigin, label: homeLabel } : null);
+    const origin =
+      requestOrigin ||
+      homeOrigin ||
+      (geocodedOrigin ? { ...geocodedOrigin, label: homeLabel } : null);
     const startMs = new Date(nextEvent.startAt).getTime();
     const nowMs = Date.now();
     const hoursToStart = (startMs - nowMs) / (1000 * 60 * 60);
@@ -342,7 +392,7 @@ export async function POST(req: Request) {
       !travelFresh;
     const canCallWeather =
       hasDestination &&
-      !!OPENWEATHER_API_KEY &&
+      !!WEATHERAPI_KEY &&
       hoursToStart <= WEATHER_FORECAST_WINDOW_HOURS &&
       !weatherFresh;
 
@@ -405,6 +455,13 @@ export async function POST(req: Request) {
       meta: {
         hasDestination,
         hasOrigin: Boolean(origin),
+        originSource: requestOrigin
+          ? "request"
+          : homeOrigin
+          ? "profile"
+          : geocodedOrigin
+          ? "profile-geocoded"
+          : "none",
         travelWindowEligible: hoursToStart <= 72,
         weatherWindowEligible: hoursToStart <= WEATHER_FORECAST_WINDOW_HOURS,
         travelUsedCache: travelFresh,

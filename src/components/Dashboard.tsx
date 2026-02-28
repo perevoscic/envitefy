@@ -24,7 +24,24 @@ import {
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
-import { Eye, Mail, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
+import {
+  Car,
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Eye,
+  Mail,
+  MapPinned,
+  Pencil,
+  Share2,
+  Sun,
+  Trash2,
+  UserPlus,
+  Wind,
+} from "lucide-react";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
@@ -87,6 +104,7 @@ type DashboardEventItem = {
   numberOfGuests?: number;
   reminderCount?: number;
   mapsUrl?: string | null;
+  createdVia?: string | null;
 };
 
 type DashboardMetricsCache = {
@@ -138,7 +156,18 @@ type DashboardResponse = {
   };
 };
 
+type DashboardEnrichMeta = {
+  hasDestination?: boolean;
+  hasOrigin?: boolean;
+  originSource?: "request" | "profile" | "profile-geocoded" | "none" | string;
+  travelWindowEligible?: boolean;
+  weatherWindowEligible?: boolean;
+  travelUsedCache?: boolean;
+  weatherUsedCache?: boolean;
+};
+
 const AUTO_ADD_PREFERENCE_STORAGE_KEY = "envitefy:snap:auto-add:v1";
+const DASHBOARD_ORIGIN_STORAGE_KEY = "envitefy:dashboard:last-origin:v1";
 const DEFAULT_AUTO_ADD_PREFERENCE: AutoAddPreference = {
   enabled: false,
   provider: null,
@@ -278,6 +307,7 @@ export default function Dashboard({
   const [nextEventMetrics, setNextEventMetrics] = useState<DashboardMetricsCache | null>(
     null
   );
+  const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [ownerDashboardData, setOwnerDashboardData] =
     useState<OwnerDashboardData | null>(null);
@@ -500,13 +530,16 @@ export default function Dashboard({
         if (json && typeof json === "object") {
           setDashboardData(json);
           setNextEventMetrics(json.metricsCache || null);
+          setEnrichMeta(null);
         } else {
           setDashboardData(null);
           setNextEventMetrics(null);
+          setEnrichMeta(null);
         }
       } catch {
         setDashboardData(null);
         setNextEventMetrics(null);
+        setEnrichMeta(null);
       } finally {
         setDashboardLoading(false);
       }
@@ -521,17 +554,48 @@ export default function Dashboard({
     const enrich = async () => {
       setMetricsLoading(true);
       try {
+        let storedOrigin: { lat: number; lng: number } | null = null;
+        try {
+          if (typeof window !== "undefined") {
+            const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown };
+              const lat = Number(parsed?.lat);
+              const lng = Number(parsed?.lng);
+              if (
+                Number.isFinite(lat) &&
+                Number.isFinite(lng) &&
+                lat >= -90 &&
+                lat <= 90 &&
+                lng >= -180 &&
+                lng <= 180
+              ) {
+                storedOrigin = { lat, lng };
+              }
+            }
+          }
+        } catch {}
         const res = await fetch("/api/dashboard/enrich-next-event", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: dashboardData.nextEvent?.id }),
+          body: JSON.stringify({
+            eventId: dashboardData.nextEvent?.id,
+            ...(storedOrigin
+              ? {
+                  originLat: storedOrigin.lat,
+                  originLng: storedOrigin.lng,
+                  originLabel: "Saved location",
+                }
+              : {}),
+          }),
         });
         const json = await res.json().catch(() => null);
         if (cancelled) return;
         if (json?.metrics) {
           setNextEventMetrics(json.metrics as DashboardMetricsCache);
         }
+        setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
       } catch {
         // keep fallback UI state
       } finally {
@@ -706,27 +770,114 @@ export default function Dashboard({
   }, [selectedEventId, selectedEventTitle]);
 
   const router = useRouter();
+  const readStoredOrigin = useCallback((): { lat: number; lng: number } | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown };
+      const lat = Number(parsed?.lat);
+      const lng = Number(parsed?.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      return { lat, lng };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const persistOrigin = useCallback((origin: { lat: number; lng: number }) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        DASHBOARD_ORIGIN_STORAGE_KEY,
+        JSON.stringify({
+          lat: origin.lat,
+          lng: origin.lng,
+          savedAt: new Date().toISOString(),
+        })
+      );
+    } catch {}
+  }, []);
+
+  const resolveCurrentPosition = useCallback(async () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      return readStoredOrigin();
+    }
+    const livePosition = await new Promise<{ lat: number; lng: number } | null>(
+      (resolve) => {
+        const timeout = window.setTimeout(() => resolve(null), 10500);
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            window.clearTimeout(timeout);
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          () => {
+            window.clearTimeout(timeout);
+            resolve(null);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5 * 60 * 1000,
+          }
+        );
+      }
+    );
+    if (livePosition) {
+      persistOrigin(livePosition);
+      return livePosition;
+    }
+    return readStoredOrigin();
+  }, [persistOrigin, readStoredOrigin]);
+
   const forceRecalculateTravel = useCallback(async () => {
     const eventId = dashboardData?.nextEvent?.id;
     if (!eventId) return;
     setMetricsLoading(true);
     try {
+      const shouldUseDeviceOrigin =
+        enrichMeta?.hasOrigin === false ||
+        (nextEventMetrics?.travelMinutes == null && nextEventMetrics?.travelDistanceKm == null);
+      const currentOrigin = shouldUseDeviceOrigin
+        ? await resolveCurrentPosition()
+        : null;
       const res = await fetch("/api/dashboard/enrich-next-event", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId, forceTravel: true }),
+        body: JSON.stringify({
+          eventId,
+          forceTravel: true,
+          ...(currentOrigin
+            ? {
+                originLat: currentOrigin.lat,
+                originLng: currentOrigin.lng,
+                originLabel: "Current location",
+              }
+            : {}),
+        }),
       });
       const json = await res.json().catch(() => null);
       if (json?.metrics) {
         setNextEventMetrics(json.metrics as DashboardMetricsCache);
       }
+      setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
     } catch {
       // keep existing state
     } finally {
       setMetricsLoading(false);
     }
-  }, [dashboardData?.nextEvent?.id]);
+  }, [
+    dashboardData?.nextEvent?.id,
+    enrichMeta?.hasOrigin,
+    nextEventMetrics?.travelDistanceKm,
+    nextEventMetrics?.travelMinutes,
+    resolveCurrentPosition,
+  ]);
 
   const openCreateEvent = useCallback(() => {
     try {
@@ -809,15 +960,33 @@ export default function Dashboard({
     );
     if (!ok) return;
     try {
-      await fetch(`/api/history/${selectedEventId}`, { method: "DELETE" });
+      const response = await fetch(`/api/history/${selectedEventId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
       window.dispatchEvent(
         new CustomEvent("history:deleted", { detail: { id: selectedEventId } })
       );
       clearEventContext();
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : pathname;
+      if (
+        currentPath &&
+        (currentPath === `/event/${selectedEventId}` ||
+          currentPath.startsWith(`/event/${selectedEventId}/`) ||
+          currentPath === `/smart-signup-form/${selectedEventId}` ||
+          currentPath.startsWith(`/smart-signup-form/${selectedEventId}/`) ||
+          currentPath.endsWith(`-${selectedEventId}`))
+      ) {
+        router.replace("/");
+        router.refresh();
+      }
     } catch {
       // no-op placeholder until a global toast system is wired here
     }
-  }, [clearEventContext, selectedEventId, selectedEventLabel]);
+  }, [clearEventContext, pathname, router, selectedEventId, selectedEventLabel]);
 
   const resetForm = useCallback(() => {
     cancelledByUserRef.current = true;
@@ -1713,6 +1882,7 @@ export default function Dashboard({
             <UpcomingEventsPanel
               data={dashboardData}
               metrics={nextEventMetrics}
+              enrichMeta={enrichMeta}
               metricsLoading={metricsLoading}
               loading={dashboardLoading}
               onForceTravel={forceRecalculateTravel}
@@ -2002,9 +2172,40 @@ function formatEventTimeRange(startRaw: string, endRaw: string | null): string {
   return `${dayPart}, ${startTime} - ${endTime}`;
 }
 
+function toMiles(km: number): number {
+  return km * 0.621371;
+}
+
+function WeatherIcon({ summary }: { summary: string | null | undefined }) {
+  const normalized = String(summary || "").toLowerCase();
+  if (normalized.includes("thunder")) {
+    return <CloudLightning className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  if (normalized.includes("snow") || normalized.includes("sleet") || normalized.includes("ice")) {
+    return <CloudSnow className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  if (normalized.includes("fog") || normalized.includes("mist") || normalized.includes("haze")) {
+    return <CloudFog className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  if (normalized.includes("rain") || normalized.includes("drizzle") || normalized.includes("shower")) {
+    return <CloudRain className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  if (normalized.includes("overcast") || normalized.includes("cloud")) {
+    return <Cloud className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  if (normalized.includes("wind")) {
+    return <Wind className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  if (!normalized) {
+    return <CloudSun className="h-5 w-5 text-white" aria-hidden="true" />;
+  }
+  return <Sun className="h-5 w-5 text-white" aria-hidden="true" />;
+}
+
 function UpcomingEventsPanel({
   data,
   metrics,
+  enrichMeta,
   metricsLoading,
   loading,
   onForceTravel,
@@ -2012,6 +2213,7 @@ function UpcomingEventsPanel({
 }: {
   data: DashboardResponse | null;
   metrics: DashboardMetricsCache | null;
+  enrichMeta: DashboardEnrichMeta | null;
   metricsLoading: boolean;
   loading: boolean;
   onForceTravel: () => void;
@@ -2123,15 +2325,28 @@ function UpcomingEventsPanel({
       ? "Tomorrow"
       : `In ${daysUntilNext} days`;
   const statusNormalized = String(nextEvent?.status || "").toLowerCase();
+  const createdVia = String(nextEvent?.createdVia || "").toLowerCase();
+  const isScannedOrUploaded =
+    createdVia === "ocr" || createdVia.includes("scan") || createdVia.includes("upload");
   const nextBadges: string[] = [];
   if (statusNormalized === "draft") nextBadges.push("Draft");
-  if (!nextEvent?.locationText || nextEvent.locationLat == null || nextEvent.locationLng == null) {
+  if (!nextEvent?.locationText) {
     nextBadges.push("Missing Location");
   }
-  if (!nextEvent?.numberOfGuests || nextEvent.numberOfGuests <= 0) {
+  if (
+    !isScannedOrUploaded &&
+    (!nextEvent?.numberOfGuests || nextEvent.numberOfGuests <= 0)
+  ) {
     nextBadges.push("No Guests");
   }
-  const showWeather = Boolean(data?.metricsEligibility?.weatherEligible);
+  // Temporary preview mode: always render weather card for next event.
+  const showWeather = Boolean(nextEvent);
+  const weatherEligible = Boolean(data?.metricsEligibility?.weatherEligible);
+  const hasTravelMetrics = metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
+  const travelMiles =
+    metrics?.travelDistanceKm != null ? toMiles(metrics.travelDistanceKm) : null;
+  const travelMissingOrigin = enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
+  const weatherHasData = Boolean(metrics?.weatherSummary || metrics?.weatherTemp != null);
 
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
@@ -2189,34 +2404,50 @@ function UpcomingEventsPanel({
                   </p>
                   {metricsLoading ? (
                     <div className="mt-2 h-4 w-28 animate-pulse rounded bg-white/25" />
-                  ) : metrics?.travelMinutes != null || metrics?.travelDistanceKm != null ? (
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {metrics?.travelMinutes != null ? `${metrics.travelMinutes} min` : "--"}
-                      {metrics?.travelDistanceKm != null
-                        ? ` • ${metrics.travelDistanceKm.toFixed(1)} km`
-                        : ""}
-                    </p>
+                  ) : hasTravelMetrics ? (
+                    <>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+                          <Car className="h-4 w-4 text-white" aria-hidden="true" />
+                        </span>
+                        <p className="text-sm font-semibold text-white">
+                          {metrics?.travelMinutes != null ? `${metrics.travelMinutes} min` : "-- min"}
+                          {travelMiles != null ? ` • ${travelMiles.toFixed(1)} mi` : ""}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-[0.7rem] text-white/75">
+                        Estimated driving time from your origin
+                      </p>
+                    </>
                   ) : (
-                    <div className="mt-1 flex items-center gap-2">
-                      {nextEvent.mapsUrl ? (
-                        <Link
-                          href={nextEvent.mapsUrl}
-                          target="_blank"
-                          className="text-xs font-semibold text-white underline underline-offset-2"
+                    <>
+                      <p className="mt-1 text-xs text-white/80">
+                        {travelMissingOrigin
+                          ? "Allow location access to calculate from your current location."
+                          : "Travel estimate is not ready yet."}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        {nextEvent.mapsUrl ? (
+                          <Link
+                            href={nextEvent.mapsUrl}
+                            target="_blank"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-white underline underline-offset-2"
+                          >
+                            <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
+                            Open in Maps
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-white/80">Open in Maps</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={onForceTravel}
+                          className="rounded-full border border-white/35 px-2 py-0.5 text-[0.65rem] font-semibold text-white"
                         >
-                          Open in Maps
-                        </Link>
-                      ) : (
-                        <span className="text-xs text-white/80">Open in Maps</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={onForceTravel}
-                        className="rounded-full border border-white/35 px-2 py-0.5 text-[0.65rem] font-semibold text-white"
-                      >
-                        Calculate travel
-                      </button>
-                    </div>
+                          Calculate travel
+                        </button>
+                      </div>
+                    </>
                   )}
                 </article>
                 {showWeather ? (
@@ -2226,15 +2457,26 @@ function UpcomingEventsPanel({
                     </p>
                     {metricsLoading ? (
                       <div className="mt-2 h-4 w-24 animate-pulse rounded bg-white/25" />
-                    ) : metrics?.weatherSummary || metrics?.weatherTemp != null ? (
-                      <p className="mt-1 text-sm font-semibold text-white">
-                        {metrics?.weatherSummary || "Forecast"}
-                        {metrics?.weatherTemp != null
-                          ? ` • ${Math.round(metrics.weatherTemp)}°`
-                          : ""}
-                      </p>
+                    ) : weatherHasData ? (
+                      <>
+                        <div className="mt-2 flex items-center gap-2.5">
+                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                            <WeatherIcon summary={metrics?.weatherSummary} />
+                          </span>
+                          <p className="text-lg font-semibold text-white">
+                            {metrics?.weatherSummary || "Forecast"}
+                            {metrics?.weatherTemp != null
+                              ? ` • ${Math.round(metrics.weatherTemp)}°F`
+                              : ""}
+                          </p>
+                        </div>
+                      </>
                     ) : (
-                      <p className="mt-1 text-xs text-white/80">Forecast pending</p>
+                      <p className="mt-1 text-xs text-white/80">
+                        {weatherEligible
+                          ? "Forecast pending"
+                          : "Weather available 72h before event"}
+                      </p>
                     )}
                   </article>
                 ) : null}

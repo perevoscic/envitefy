@@ -11,8 +11,9 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const WEATHER_FORECAST_WINDOW_HOURS = 24 * 5; // OpenWeather 5-day forecast window.
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || null;
+const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
+const WEATHERAPI_KEY =
+  process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY || null;
 
 type DashboardMetricsCache = {
   eventId: string;
@@ -73,14 +74,17 @@ async function getCachedMetrics(eventId: string): Promise<DashboardMetricsCache 
 function buildSetupHealth(nextEvent: DashboardEvent | null, rsvpTotalForEvent: number) {
   if (!nextEvent) return [];
   const flags: Array<{ key: string; label: string }> = [];
-  if (!nextEvent.locationText || nextEvent.locationLat == null || nextEvent.locationLng == null) {
+  const createdVia = String(nextEvent.createdVia || "").toLowerCase();
+  const isScannedOrUploaded =
+    createdVia === "ocr" || createdVia.includes("scan") || createdVia.includes("upload");
+  if (!nextEvent.locationText) {
     flags.push({ key: "location", label: "Location not resolved" });
   }
   if (!nextEvent.coverImageUrl) {
     flags.push({ key: "cover", label: "Cover image missing" });
   }
   const hasGuests = nextEvent.numberOfGuests > 0 || rsvpTotalForEvent > 0;
-  if (!hasGuests) {
+  if (!hasGuests && !isScannedOrUploaded) {
     flags.push({ key: "guests", label: "No guests or invites" });
   }
   if (nextEvent.reminderCount <= 0) {
@@ -269,7 +273,7 @@ export async function GET() {
               : Boolean(nextEvent.locationText)) &&
             nextEventHours != null &&
             nextEventHours <= WEATHER_FORECAST_WINDOW_HOURS &&
-            OPENWEATHER_API_KEY
+            WEATHERAPI_KEY
         ),
         travelWindowEligible: Boolean(nextEvent && nextEventHours != null && nextEventHours <= 72),
       },

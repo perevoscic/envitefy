@@ -40,7 +40,8 @@ export default function EventDeleteModal({
       } catch {}
 
       // Redirect to home page after successful deletion
-      router.push("/");
+      router.replace("/");
+      router.refresh();
     } catch (error) {
       console.error("Failed to delete event:", error);
       alert("Failed to delete event. Please try again.");

@@ -14,6 +14,7 @@ export type DashboardEvent = {
   numberOfGuests: number;
   reminderCount: number;
   mapsUrl: string | null;
+  createdVia: string | null;
 };
 
 type HistoryRow = {
@@ -51,6 +52,13 @@ function buildMapsUrl(locationText: string | null): string | null {
 
 function normalizeStatus(statusRaw: unknown): string | null {
   const normalized = String(statusRaw || "")
+    .trim()
+    .toLowerCase();
+  return normalized || null;
+}
+
+function normalizeCreatedVia(createdViaRaw: unknown): string | null {
+  const normalized = String(createdViaRaw || "")
     .trim()
     .toLowerCase();
   return normalized || null;
@@ -115,6 +123,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     numberOfGuests,
     reminderCount,
     mapsUrl: buildMapsUrl(locationText),
+    createdVia: normalizeCreatedVia(data?.createdVia),
   };
 }
 
