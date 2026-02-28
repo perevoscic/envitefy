@@ -30,7 +30,11 @@ function formatTime(dateStr?: string) {
   const minutes = date.getMinutes();
   if (hours === 0 && minutes === 0) return "";
 
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 // Types

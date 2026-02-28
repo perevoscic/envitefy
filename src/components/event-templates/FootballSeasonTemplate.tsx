@@ -99,6 +99,75 @@ type VolunteerSlot = {
 
 const genId = () => Math.random().toString(36).substring(2, 9);
 
+const BufferedInput = ({
+  value,
+  onCommit,
+  className,
+  ...props
+}: {
+  value: string;
+  onCommit: (value: string) => void;
+  className?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) => {
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  const commit = () => {
+    const next = draft ?? "";
+    const current = value ?? "";
+    if (next !== current) onCommit(next);
+  };
+
+  return (
+    <input
+      {...props}
+      className={className}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+    />
+  );
+};
+
+const BufferedTextarea = ({
+  value,
+  onCommit,
+  className,
+  ...props
+}: {
+  value: string;
+  onCommit: (value: string) => void;
+  className?: string;
+} & Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "value" | "onChange"
+>) => {
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  const commit = () => {
+    const next = draft ?? "";
+    const current = value ?? "";
+    if (next !== current) onCommit(next);
+  };
+
+  return (
+    <textarea
+      {...props}
+      className={className}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+    />
+  );
+};
+
 const POSITIONS = [
   "QB",
   "RB",
@@ -262,13 +331,11 @@ const gameScheduleSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Opponent *
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Central High Tigers"
                   value={game.opponent}
-                  onChange={(e) =>
-                    updateGame(game.id, "opponent", e.target.value)
-                  }
+                  onCommit={(value) => updateGame(game.id, "opponent", value)}
                 />
               </div>
               <div>
@@ -332,22 +399,22 @@ const gameScheduleSection = {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Venue
               </label>
-              <input
+              <BufferedInput
                 className={inputClass}
                 placeholder="Panthers Stadium"
                 value={game.venue}
-                onChange={(e) => updateGame(game.id, "venue", e.target.value)}
+                onCommit={(value) => updateGame(game.id, "venue", value)}
               />
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Address
               </label>
-              <input
+              <BufferedInput
                 className={inputClass}
                 placeholder="123 Stadium Way, City, ST 12345"
                 value={game.address}
-                onChange={(e) => updateGame(game.id, "address", e.target.value)}
+                onCommit={(value) => updateGame(game.id, "address", value)}
               />
             </div>
 
@@ -381,11 +448,11 @@ const gameScheduleSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Score
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="28-14"
                   value={game.score}
-                  onChange={(e) => updateGame(game.id, "score", e.target.value)}
+                  onCommit={(value) => updateGame(game.id, "score", value)}
                 />
               </div>
             </div>
@@ -1133,11 +1200,11 @@ const practiceSection = {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Focus / Plan
               </label>
-              <textarea
+              <BufferedTextarea
                 className={textareaClass}
                 placeholder="Red zone offense, 7-on-7, conditioning..."
                 value={block.focus}
-                onChange={(e) => updateBlock(block.id, "focus", e.target.value)}
+                onCommit={(value) => updateBlock(block.id, "focus", value)}
                 rows={2}
               />
             </div>
@@ -1332,11 +1399,11 @@ const logisticsSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Pickup / Return Info
           </label>
-          <textarea
+          <BufferedTextarea
             className={textareaClass}
             placeholder="Return time, where to pick up players..."
             value={info.pickupWindow || ""}
-            onChange={(e) => updateField("pickupWindow", e.target.value)}
+            onCommit={(value) => updateField("pickupWindow", value)}
             rows={2}
           />
         </div>
@@ -1345,11 +1412,11 @@ const logisticsSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Meal Plan
           </label>
-          <input
+          <BufferedInput
             className={inputClass}
             placeholder="Pre-game meal info, bring snacks..."
             value={info.mealPlan || ""}
-            onChange={(e) => updateField("mealPlan", e.target.value)}
+            onCommit={(value) => updateField("mealPlan", value)}
           />
         </div>
 
@@ -1367,11 +1434,11 @@ const logisticsSection = {
               </div>
             </div>
           </div>
-          <textarea
+          <BufferedTextarea
             className={textareaClass}
             placeholder="Lightning protocol, rain policy, cancellation procedure..."
             value={info.weatherPolicy || ""}
-            onChange={(e) => updateField("weatherPolicy", e.target.value)}
+            onCommit={(value) => updateField("weatherPolicy", value)}
             rows={3}
           />
         </div>
@@ -1637,11 +1704,11 @@ const gearSection = {
               key={item.id}
               className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg p-3"
             >
-              <input
+              <BufferedInput
                 className={`flex-1 ${inputClass} !p-2`}
                 placeholder="Item name"
                 value={item.name}
-                onChange={(e) => updateItem(item.id, "name", e.target.value)}
+                onCommit={(value) => updateItem(item.id, "name", value)}
               />
               <label className="flex items-center gap-1 text-xs">
                 <input
@@ -1859,11 +1926,11 @@ const volunteersSection = {
                   updateSlot(slot.id, "gameDate", e.target.value)
                 }
               />
-              <input
+              <BufferedInput
                 className={`flex-1 ${inputClass} !p-2`}
                 placeholder="Volunteer name"
                 value={slot.name}
-                onChange={(e) => updateSlot(slot.id, "name", e.target.value)}
+                onCommit={(value) => updateSlot(slot.id, "name", value)}
               />
               <label className="flex items-center gap-1 text-xs">
                 <input

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventActions from "@/components/EventActions";
+import StaticMap from "@/components/StaticMap";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
 
@@ -50,6 +51,7 @@ type SimpleTemplateViewProps = {
   viewerKind: "owner" | "guest" | "readonly";
   shareUrl: string;
   sessionEmail: string | null;
+  disableProtectedSectionLocks?: boolean;
   protectSensitiveSections?: boolean;
   protectedSectionFlags?: {
     roster?: boolean;
@@ -144,6 +146,7 @@ export default function SimpleTemplateView({
   viewerKind,
   shareUrl,
   sessionEmail,
+  disableProtectedSectionLocks = false,
   protectSensitiveSections: protectSensitiveSectionsProp = false,
   protectedSectionFlags: protectedSectionFlagsProp = {},
 }: SimpleTemplateViewProps) {
@@ -218,6 +221,10 @@ export default function SimpleTemplateView({
     normalizedCategory === "sport_soccer" ||
     normalizedCategory === "soccer" ||
     currentData?.templateId === "soccer";
+  const isGymnasticsTemplate =
+    normalizedCategory === "gymnastics" ||
+    normalizedCategory === "sport_gymnastics" ||
+    currentData?.templateId === "gymnastics";
   const showRsvpSignInRequired = normalizedCategory === "gymnastics";
 
   // Default theme fallback
@@ -443,6 +450,7 @@ export default function SimpleTemplateView({
   const fullLocation =
     currentData?.location ||
     [venue, address, city, state].filter(Boolean).join(", ");
+  const mapAddress = [address, city, state].filter(Boolean).join(", ") || fullLocation;
 
   // Theme classes
   const isDarkBackground = (() => {
@@ -725,6 +733,7 @@ export default function SimpleTemplateView({
     ) {
       return Boolean(protectedSectionFlags.practice);
     }
+    if (advancedSections?.practice?.enabled === false) return false;
     if (Array.isArray(advancedSections?.practice?.blocks)) {
       return advancedSections.practice.blocks.length > 0;
     }
@@ -738,19 +747,30 @@ export default function SimpleTemplateView({
         : null;
     if (hasFlag !== null) return hasFlag;
     if (!logistics) return false;
+    if (logistics.enabled === false) return false;
+    const showTransportation = logistics.showTransportation !== false;
+    const showAccommodations = logistics.showAccommodations !== false;
+    const showFees = logistics.showFees !== false;
+    const showMeals = logistics.showMeals !== false;
+    const showAdditionalDocuments = logistics.showAdditionalDocuments !== false;
+    const additionalDocumentsCount = Array.isArray(logistics.additionalDocuments)
+      ? logistics.additionalDocuments.filter((doc: any) => doc?.name || doc?.url)
+          .length
+      : 0;
     return (
-      Boolean(logistics.travelMode) ||
-      Boolean(logistics.transport) ||
-      Boolean(logistics.hotel) ||
-      Boolean(logistics.hotelName) ||
-      Boolean(logistics.meals) ||
-      Boolean(logistics.mealPlan) ||
-      Boolean(logistics.callTime) ||
-      Boolean(logistics.pickupWindow) ||
-      Boolean(logistics.feeAmount) ||
-      Boolean(logistics.paymentLink) ||
-      (logistics.forms?.length ?? 0) > 0 ||
-      (logistics.waiverLinks?.length ?? 0) > 0
+      (showTransportation &&
+        (Boolean(logistics.travelMode) ||
+          Boolean(logistics.transport) ||
+          Boolean(logistics.callTime) ||
+          Boolean(logistics.pickupWindow))) ||
+      (showAccommodations &&
+        (Boolean(logistics.hotel) || Boolean(logistics.hotelName))) ||
+      (showMeals && (Boolean(logistics.meals) || Boolean(logistics.mealPlan))) ||
+      (showFees && Boolean(logistics.feeAmount)) ||
+      (showAdditionalDocuments &&
+        ((logistics.forms?.length ?? 0) > 0 ||
+          (logistics.waiverLinks?.length ?? 0) > 0 ||
+          additionalDocumentsCount > 0))
     );
   })();
   const gearSection = advancedSections?.gear;
@@ -770,10 +790,14 @@ export default function SimpleTemplateView({
   const hasVolunteers =
     protectSensitiveSections && protectedSectionFlags?.volunteers !== undefined
       ? Boolean(protectedSectionFlags.volunteers)
-      : (advancedSections?.volunteers?.volunteerSlots?.length ?? 0) > 0 ||
-        (advancedSections?.volunteers?.slots?.length ?? 0) > 0 ||
-        (advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
-        (advancedSections?.volunteers?.carpools?.length ?? 0) > 0;
+      : advancedSections?.volunteers?.enabled === false
+      ? false
+      : ((advancedSections?.volunteers?.showVolunteerSlots !== false &&
+          ((advancedSections?.volunteers?.volunteerSlots?.length ?? 0) > 0 ||
+            (advancedSections?.volunteers?.slots?.length ?? 0) > 0)) ||
+        (advancedSections?.volunteers?.showCarpool !== false &&
+          ((advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
+            (advancedSections?.volunteers?.carpools?.length ?? 0) > 0)));
   const hasAnnouncements =
     (advancedSections?.announcements?.items?.length ?? 0) > 0 ||
     (advancedSections?.announcements?.announcements?.length ?? 0) > 0;
@@ -911,7 +935,7 @@ export default function SimpleTemplateView({
   }, [eventId]);
 
   const wrapProtected = (node: React.ReactNode) => {
-    if (isSignedIn) return node;
+    if (isSignedIn || disableProtectedSectionLocks) return node;
     const loginHref =
       typeof window !== "undefined"
         ? `/login?callbackUrl=${encodeURIComponent(window.location.href)}`
@@ -1280,7 +1304,7 @@ export default function SimpleTemplateView({
               Warm-up
             </div>
             <div className={`mt-1 font-bold ${textClass}`} style={bodyShadow}>
-              {meet.warmupTime || meet.warmUpTime || "—"}
+              {formatTime(meet.warmupTime || meet.warmUpTime) || "—"}
             </div>
           </div>
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -1290,7 +1314,7 @@ export default function SimpleTemplateView({
               March-in
             </div>
             <div className={`mt-1 font-bold ${textClass}`} style={bodyShadow}>
-              {meet.marchInTime || meet.marchinTime || "—"}
+              {formatTime(meet.marchInTime || meet.marchinTime) || "—"}
             </div>
           </div>
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -1564,20 +1588,29 @@ export default function SimpleTemplateView({
       );
     }
     if (!logistics) return null;
+    if (logistics.enabled === false) return null;
+    const showTransportation = logistics.showTransportation !== false;
+    const showAccommodations = logistics.showAccommodations !== false;
+    const showFees = logistics.showFees !== false;
+    const showMeals = logistics.showMeals !== false;
+    const showAdditionalDocuments = logistics.showAdditionalDocuments !== false;
+    const additionalDocuments = Array.isArray(logistics.additionalDocuments)
+      ? logistics.additionalDocuments.filter((doc: any) => doc?.name || doc?.url)
+      : [];
 
     const hasContent =
-      logistics.travelMode ||
-      logistics.transport ||
-      logistics.hotel ||
-      logistics.hotelName ||
-      logistics.meals ||
-      logistics.mealPlan ||
-      logistics.forms?.length ||
-      logistics.feeAmount ||
-      logistics.paymentLink ||
-      logistics.waiverLinks?.length ||
-      logistics.callTime ||
-      logistics.pickupWindow;
+      (showTransportation &&
+        (logistics.travelMode ||
+          logistics.transport ||
+          logistics.callTime ||
+          logistics.pickupWindow)) ||
+      (showAccommodations && (logistics.hotel || logistics.hotelName)) ||
+      (showMeals && (logistics.meals || logistics.mealPlan)) ||
+      (showFees && logistics.feeAmount) ||
+      (showAdditionalDocuments &&
+        (logistics.forms?.length ||
+          logistics.waiverLinks?.length ||
+          additionalDocuments.length));
     if (!hasContent) return null;
 
     return wrapProtected(
@@ -1590,7 +1623,8 @@ export default function SimpleTemplateView({
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Transportation - show if travelMode, callTime, pickupWindow, or transport exists */}
-          {(logistics.travelMode ||
+          {showTransportation &&
+            (logistics.travelMode ||
             logistics.callTime ||
             logistics.pickupWindow ||
             logistics.transport) && (
@@ -1641,7 +1675,7 @@ export default function SimpleTemplateView({
           )}
 
           {/* Hotel - show if hotelName or hotel exists */}
-          {(logistics.hotelName || logistics.hotel) && (
+          {showAccommodations && (logistics.hotelName || logistics.hotel) && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Hotel size={18} className={accentClass} />
@@ -1680,9 +1714,7 @@ export default function SimpleTemplateView({
           )}
 
           {/* Fee - show if feeAmount, paymentLink, or waiverLinks exist */}
-          {(logistics.feeAmount ||
-            logistics.paymentLink ||
-            logistics.waiverLinks?.length) && (
+          {showFees && logistics.feeAmount && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <FileText size={18} className={accentClass} />
@@ -1704,39 +1736,11 @@ export default function SimpleTemplateView({
                   {new Date(logistics.feeDueDate).toLocaleDateString()}
                 </p>
               )}
-              <div className="flex flex-wrap gap-2 mt-3">
-                {logistics.paymentLink && (
-                  <a
-                    href={logistics.paymentLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
-                  >
-                    <LinkIcon size={16} />
-                    Pay Fees
-                  </a>
-                )}
-                {(logistics.waiverLinks || []).map(
-                  (link: string, idx: number) =>
-                    link && (
-                      <a
-                        key={idx}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
-                      >
-                        <FileText size={16} />
-                        Form #{idx + 1}
-                      </a>
-                    )
-                )}
-              </div>
             </div>
           )}
 
           {/* Meals - show if mealPlan or meals exists */}
-          {(logistics.mealPlan || logistics.meals) && (
+          {showMeals && (logistics.mealPlan || logistics.meals) && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Clock size={18} className={accentClass} />
@@ -1752,7 +1756,10 @@ export default function SimpleTemplateView({
               </p>
             </div>
           )}
-          {logistics.forms?.length > 0 && (
+          {showAdditionalDocuments &&
+            (additionalDocuments.length > 0 ||
+              logistics.forms?.length > 0 ||
+              logistics.waiverLinks?.length > 0) && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <FileText size={18} className={accentClass} />
@@ -1760,11 +1767,29 @@ export default function SimpleTemplateView({
                   className={`font-semibold ${textClass}`}
                   style={bodyShadow}
                 >
-                  Required Forms
+                  Additional Documents
                 </span>
               </div>
               <ul className="space-y-1">
-                {logistics.forms.map((form: any, idx: number) => (
+                {additionalDocuments.map((doc: any, idx: number) => (
+                  <li key={doc.id || `doc-${idx}`}>
+                    {doc.url ? (
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-sm underline ${accentClass}`}
+                      >
+                        {doc.name || `Document ${idx + 1}`}
+                      </a>
+                    ) : (
+                      <span className={`text-sm opacity-80 ${textClass}`}>
+                        {doc.name || `Document ${idx + 1}`}
+                      </span>
+                    )}
+                  </li>
+                ))}
+                {(logistics.forms || []).map((form: any, idx: number) => (
                   <li key={idx}>
                     {form.url ? (
                       <a
@@ -1782,46 +1807,23 @@ export default function SimpleTemplateView({
                     )}
                   </li>
                 ))}
+                {(logistics.waiverLinks || []).map((link: string, idx: number) =>
+                  link ? (
+                    <li key={`waiver-${idx}`}>
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-sm underline ${accentClass}`}
+                      >
+                        Document {idx + 1}
+                      </a>
+                    </li>
+                  ) : null
+                )}
               </ul>
             </div>
           )}
-          {/* Forms - only if not already shown in Fee section */}
-          {logistics.forms?.length > 0 &&
-            !logistics.feeAmount &&
-            !logistics.paymentLink &&
-            !logistics.waiverLinks?.length && (
-              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText size={18} className={accentClass} />
-                  <span
-                    className={`font-semibold ${textClass}`}
-                    style={bodyShadow}
-                  >
-                    Required Forms
-                  </span>
-                </div>
-                <ul className="space-y-1">
-                  {logistics.forms.map((form: any, idx: number) => (
-                    <li key={idx}>
-                      {form.url ? (
-                        <a
-                          href={form.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`text-sm underline ${accentClass}`}
-                        >
-                          {form.name}
-                        </a>
-                      ) : (
-                        <span className={`text-sm opacity-80 ${textClass}`}>
-                          {form.name}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
         </div>
       </section>
     );
@@ -2236,6 +2238,7 @@ export default function SimpleTemplateView({
   const renderVolunteersSection = () => {
     const advancedSections = currentData?.advancedSections || {};
     const volunteers = advancedSections?.volunteers;
+    if (volunteers?.enabled === false) return null;
 
     if (protectSensitiveSections) {
       if (!hasVolunteers) return null;
@@ -2258,8 +2261,14 @@ export default function SimpleTemplateView({
     // Handle both data structures: slots/carpools and volunteerSlots/carpoolOffers
     const slots = volunteers?.volunteerSlots || volunteers?.slots || [];
     const carpools = volunteers?.carpoolOffers || volunteers?.carpools || [];
+    const showVolunteerSlots = volunteers?.showVolunteerSlots !== false;
+    const showCarpool = volunteers?.showCarpool !== false;
 
-    if (!slots.length && !carpools.length) return null;
+    if (
+      (showVolunteerSlots ? !slots.length : true) &&
+      (showCarpool ? !carpools.length : true)
+    )
+      return null;
 
     // Format time helper
     const formatTime = (timeStr: string) => {
@@ -2287,7 +2296,7 @@ export default function SimpleTemplateView({
         id="volunteers"
         className="py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
       >
-        {slots.length > 0 && (
+        {showVolunteerSlots && slots.length > 0 && (
           <div className="mb-8">
             <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingStyle}>
               Volunteers Needed
@@ -2340,6 +2349,7 @@ export default function SimpleTemplateView({
             </div>
           </div>
         )}
+        {showCarpool && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className={`text-2xl ${accentClass}`} style={headingStyle}>
@@ -2477,6 +2487,7 @@ export default function SimpleTemplateView({
             </p>
           )}
         </div>
+        )}
       </section>
     );
   };
@@ -2661,8 +2672,8 @@ export default function SimpleTemplateView({
                   </div>
                 )}
                 {navItems.length > 1 && !isLocked && (
-                  <nav className="border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg mt-4">
-                    <div className="flex flex-wrap items-center justify-center gap-3">
+                  <nav className="mt-4 flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {navItems.map((item) => {
                         const isActive = activeSection === item.id;
                         return (
@@ -2682,8 +2693,10 @@ export default function SimpleTemplateView({
                                 setActiveSection(item.id);
                               }
                             }}
-                            className={`rounded-full border border-white/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] opacity-80 transition hover:border-white/80 hover:opacity-100 ${
-                              isActive ? "border-white/90 opacity-100" : ""
+                            className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
+                              isActive
+                                ? "bg-white/85 text-slate-900 border-white shadow"
+                                : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
                             }`}
                             style={headingStyle}
                           >
@@ -2929,11 +2942,13 @@ export default function SimpleTemplateView({
                       </div>
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                          Full Name
+                          {isGymnasticsTemplate ? "Athlete Name" : "Full Name"}
                         </label>
                         <input
                           className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                          placeholder="Guest Name"
+                          placeholder={
+                            isGymnasticsTemplate ? "Athlete Name" : "Guest Name"
+                          }
                           value={rsvpNameInput}
                           onChange={(e) => setRsvpNameInput(e.target.value)}
                         />
@@ -3120,6 +3135,21 @@ export default function SimpleTemplateView({
                 </button>
               </div>
             </section>
+
+            {/* Location map preview */}
+            {mapAddress && (
+              <section className="py-8 px-6 md:px-10 border-t border-white/10">
+                <h2
+                  className={`text-2xl text-center mb-5 ${accentClass}`}
+                  style={headingStyle}
+                >
+                  Location Map
+                </h2>
+                <div className="max-w-3xl mx-auto">
+                  <StaticMap address={mapAddress} height={420} />
+                </div>
+              </section>
+            )}
 
             {/* Footer */}
             <footer

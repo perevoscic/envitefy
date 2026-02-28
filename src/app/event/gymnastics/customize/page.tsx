@@ -43,6 +43,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
+import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 
@@ -105,7 +106,13 @@ type SimpleTemplateConfig = {
     toggleLabel?: string;
     deadlineLabel?: string;
     helperText?: string;
+    nameLabel?: string;
+    namePlaceholder?: string;
   };
+  showCategoryField?: boolean;
+  detailsDescriptionRows?: number;
+  detailsDescriptionPopup?: boolean;
+  defaultRsvpDeadlineDays?: number | null;
   prefill?: {
     title?: string;
     date?: string;
@@ -333,6 +340,34 @@ const MenuCard = ({
   </button>
 );
 
+const SectionToggle = ({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) => (
+  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+    <span className="font-medium text-slate-700 text-sm">{label}</span>
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`w-11 h-6 rounded-full transition-colors relative ${
+        checked ? "bg-indigo-600" : "bg-slate-300"
+      }`}
+      aria-pressed={checked}
+    >
+      <span
+        className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
+        }`}
+      ></span>
+    </button>
+  </div>
+);
+
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
@@ -367,12 +402,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       hero: config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
       rsvpDeadline:
-        config.prefill?.rsvpDeadline ||
-        (() => {
-          const d = new Date();
-          d.setDate(d.getDate() + 10);
-          return d.toISOString().split("T")[0];
-        })(),
+        config.prefill?.rsvpDeadline ??
+        (typeof config.defaultRsvpDeadlineDays === "number"
+          ? (() => {
+              const d = new Date();
+              d.setDate(d.getDate() + config.defaultRsvpDeadlineDays!);
+              return d.toISOString().split("T")[0];
+            })()
+          : ""),
       fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
@@ -521,17 +558,47 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const locationParts = data.venue || "";
     const addressLine = data.address || "";
 
-    const hasRoster = (advancedState?.roster?.athletes?.length ?? 0) > 0;
+    const hasRoster =
+      advancedState?.roster?.enabled !== false &&
+      (advancedState?.roster?.athletes?.length ?? 0) > 0;
     const hasMeet = Boolean(advancedState?.meet);
-    const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
-    const hasLogistics = Boolean(
-      advancedState?.logistics?.travelMode ||
-        advancedState?.logistics?.callTime ||
-        advancedState?.logistics?.pickupWindow ||
-        advancedState?.logistics?.hotelName
-    );
+    const hasPractice =
+      advancedState?.practice?.enabled !== false &&
+      (advancedState?.practice?.blocks?.length ?? 0) > 0;
+    const hasLogistics =
+      advancedState?.logistics?.enabled !== false &&
+      ((advancedState?.logistics?.showTransportation !== false &&
+        Boolean(
+          advancedState?.logistics?.travelMode ||
+            advancedState?.logistics?.callTime ||
+            advancedState?.logistics?.pickupWindow
+        )) ||
+        (advancedState?.logistics?.showAccommodations !== false &&
+          Boolean(
+            advancedState?.logistics?.hotelName ||
+              advancedState?.logistics?.hotelAddress ||
+              advancedState?.logistics?.hotelCheckIn
+          )) ||
+        (advancedState?.logistics?.showFees !== false &&
+          Boolean(
+            advancedState?.logistics?.feeAmount ||
+              advancedState?.logistics?.feeDueDate
+          )) ||
+        (advancedState?.logistics?.showMeals !== false &&
+          Boolean(advancedState?.logistics?.mealPlan)) ||
+        (advancedState?.logistics?.showAdditionalDocuments !== false &&
+          Boolean(advancedState?.logistics?.additionalDocuments?.length)));
     const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
-    const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
+    const hasVolunteers =
+      advancedState?.volunteers?.enabled !== false &&
+      ((advancedState?.volunteers?.showVolunteerSlots !== false &&
+        (advancedState?.volunteers?.volunteerSlots?.length ??
+          advancedState?.volunteers?.slots?.length ??
+          0) > 0) ||
+        (advancedState?.volunteers?.showCarpool !== false &&
+          (advancedState?.volunteers?.carpoolOffers?.length ??
+            advancedState?.volunteers?.carpools?.length ??
+            0) > 0));
     const hasAnnouncements =
       (advancedState?.announcements?.items?.length ?? 0) > 0;
     const navItems = useMemo(
@@ -1046,6 +1113,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       helperText:
         config.rsvpCopy?.helperText ||
         "The RSVP card in the preview updates with these settings.",
+      nameLabel: config.rsvpCopy?.nameLabel || "Full Name",
+      namePlaceholder: config.rsvpCopy?.namePlaceholder || "Guest Name",
     };
 
     const buildEventDetails = () => {
@@ -1448,20 +1517,34 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
-          <InputGroup
-            label="Description"
-            type="textarea"
-            value={data.details}
-            onChange={(v) => updateData("details", v)}
-            placeholder="Tell guests what to expect."
-          />
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+              Description
+            </label>
+            <textarea
+              className={`w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow ${
+                config.detailsDescriptionPopup
+                  ? "min-h-[160px]"
+                  : "min-h-[130px]"
+              }`}
+              rows={config.detailsDescriptionRows || 6}
+              value={data.details}
+              onChange={(e) => updateData("details", e.target.value)}
+              placeholder="Tell guests what to expect."
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Tip: press Shift+Enter for line breaks.
+            </p>
+          </div>
 
-          <InputGroup
-            label="Category"
-            value={config.categoryLabel || config.displayName}
-            onChange={() => {}}
-            readOnly
-          />
+          {config.showCategoryField !== false && (
+            <InputGroup
+              label="Category"
+              value={config.categoryLabel || config.displayName}
+              onChange={() => {}}
+              readOnly
+            />
+          )}
 
           <div className="grid grid-cols-1 gap-4">
             {config.detailFields.map((field) => (
@@ -1506,13 +1589,34 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </button>
           </div>
 
-          <InputGroup
-            label={rsvpCopy.deadlineLabel}
-            type="date"
-            value={data.rsvpDeadline}
-            onChange={(v) => updateData("rsvpDeadline", v)}
-            placeholder="Set a deadline"
-          />
+          <div className="space-y-3">
+            <SectionToggle
+              label={`Use ${rsvpCopy.deadlineLabel}`}
+              checked={Boolean(data.rsvpDeadline)}
+              onChange={(enabled) =>
+                updateData(
+                  "rsvpDeadline",
+                  enabled
+                    ? data.rsvpDeadline ||
+                        (() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + 10);
+                          return d.toISOString().split("T")[0];
+                        })()
+                    : ""
+                )
+              }
+            />
+            {Boolean(data.rsvpDeadline) && (
+              <InputGroup
+                label={rsvpCopy.deadlineLabel}
+                type="date"
+                value={data.rsvpDeadline}
+                onChange={(v) => updateData("rsvpDeadline", v)}
+                placeholder="Set a deadline"
+              />
+            )}
+          </div>
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
@@ -1586,28 +1690,102 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EditorLayout>
     );
 
-    const infoLine = (
-      <div
-        className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-base font-medium opacity-90 ${textClass}`}
-        style={bodyShadow}
-      >
-        <span>
-          {new Date(data.date).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
-        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-        <span>{data.time}</span>
-        {locationParts && (
-          <>
-            <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-            <span className="md:truncate">{locationParts}</span>
-          </>
-        )}
-      </div>
-    );
+    const previewEventData = useMemo(() => {
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (data.date) {
+        const start = new Date(`${data.date}T${data.time || "18:00"}:00`);
+        if (!Number.isNaN(start.getTime())) {
+          const end = new Date(start);
+          end.setHours(end.getHours() + 2);
+          startISO = start.toISOString();
+          endISO = end.toISOString();
+        }
+      }
+
+      return {
+        category: config.category,
+        createdVia: "simple-template",
+        createdManually: true,
+        startISO,
+        endISO,
+        location: locationParts || undefined,
+        address: data.address || undefined,
+        venue: data.venue || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        description: data.details || undefined,
+        rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+        rsvpEnabled: data.rsvpEnabled,
+        rsvpDeadline: data.rsvpDeadline || undefined,
+        numberOfGuests: 0,
+        templateId: config.slug,
+        templateConfig: {
+          displayName: config.displayName,
+          categoryLabel: config.categoryLabel || config.displayName,
+          detailFields: config.detailFields,
+          rsvpCopy: config.rsvpCopy,
+        },
+        customFields: {
+          ...data.extra,
+          advancedSections: advancedState,
+        },
+        advancedSections: advancedState,
+        heroImage: data.hero || config.defaultHero,
+        themeId: currentTheme?.id,
+        theme: currentTheme,
+        fontId: data.fontId,
+        fontSize: data.fontSize,
+        fontFamily: selectedFont?.css,
+        fontSizeClass: selectedSize?.className,
+        time: data.time,
+        date: data.date,
+        ...(data.passcodeRequired && data.passcode
+          ? {
+              accessControl: {
+                mode: "access-code",
+                passcodePlain: data.passcode,
+                requirePasscode: true,
+              },
+            }
+          : data.passcodeRequired === false
+          ? {
+              accessControl: {
+                mode: "public",
+                requirePasscode: false,
+              },
+            }
+          : {}),
+      };
+    }, [
+      advancedState,
+      config.category,
+      config.categoryLabel,
+      config.defaultHero,
+      config.detailFields,
+      config.displayName,
+      config.rsvpCopy,
+      config.slug,
+      currentTheme,
+      data.address,
+      data.city,
+      data.date,
+      data.details,
+      data.extra,
+      data.fontId,
+      data.fontSize,
+      data.hero,
+      data.passcode,
+      data.passcodeRequired,
+      data.rsvpDeadline,
+      data.rsvpEnabled,
+      data.state,
+      data.time,
+      data.venue,
+      locationParts,
+      selectedFont?.css,
+      selectedSize?.className,
+    ]);
 
     return (
       <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
@@ -1620,413 +1798,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }}
         >
           <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
-            <div
-              className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
-            >
-              <div className="relative z-10">
-                <div
-                  className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
-                >
-                  <div>
-                    <h1
-                      className={`${headingSizeClass} font-serif mb-2 leading-tight ${textClass}`}
-                      style={headingFontStyle}
-                    >
-                      {data.title || config.displayName}
-                    </h1>
-                    {infoLine}
-                    {data.address && (
-                      <div
-                        className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
-                        style={bodyShadow}
-                      >
-                        <MapPin size={14} />
-                        <span>{data.address}</span>
-                      </div>
-                    )}
-                    {navItems.length > 1 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {navItems.map((item) => {
-                          const isActive = activeSection === item.id;
-                          return (
-                            <a
-                              key={item.id}
-                              href={`#${item.id}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById(item.id);
-                                if (el) {
-                                  el.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                  setActiveSection(item.id);
-                                  window.history.replaceState(
-                                    null,
-                                    "",
-                                    `#${item.id}`
-                                  );
-                                }
-                              }}
-                              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
-                                isActive
-                                  ? "bg-white/85 text-slate-900 border-white shadow"
-                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
-                              }`}
-                            >
-                              {item.label}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative w-full aspect-video">
-                  {data.hero ? (
-                    <img
-                      src={data.hero}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Image
-                      src={config.defaultHero}
-                      alt="Hero"
-                      fill
-                      className="object-cover"
-                      sizes="100vw"
-                    />
-                  )}
-                </div>
-
-                <section
-                  id="details"
-                  className="py-10 border-t border-white/10 px-6 md:px-10"
-                >
-                  <h2
-                    className={`text-2xl mb-3 ${accentClass}`}
-                    style={headingFontStyle}
-                  >
-                    Details
-                  </h2>
-                  {data.details ? (
-                    <p
-                      className={`text-base leading-relaxed opacity-90 whitespace-pre-wrap ${textClass}`}
-                      style={bodyShadow}
-                    >
-                      {data.details}
-                    </p>
-                  ) : (
-                    <p
-                      className={`text-sm opacity-70 ${textClass}`}
-                      style={bodyShadow}
-                    >
-                      Add a short description so guests know what to expect.
-                    </p>
-                  )}
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {config.detailFields.map((field) => {
-                      const val = data.extra[field.key];
-                      return (
-                        <div
-                          key={field.key}
-                          className="bg-white/5 border border-white/10 rounded-lg p-4"
-                        >
-                          <div
-                            className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
-                            style={bodyShadow}
-                          >
-                            {field.label}
-                          </div>
-                          <div
-                            className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
-                            style={bodyShadow}
-                          >
-                            {val || "—"}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-
-                {config.advancedSections?.map((section) =>
-                  section.renderPreview ? (
-                    <section
-                      key={section.id}
-                      id={section.id}
-                      className="py-8 border-t border-white/10 px-6 md:px-10"
-                    >
-                      {section.renderPreview({
-                        state: advancedState?.[section.id],
-                        textClass,
-                        accentClass,
-                        headingShadow,
-                        bodyShadow,
-                        titleColor,
-                        headingFontStyle,
-                      })}
-                    </section>
-                  ) : null
-                )}
-
-                {data.rsvpEnabled && (
-                  <section
-                    id="rsvp"
-                    className="max-w-2xl mx-auto text-center p-6 md:p-10"
-                  >
-                    <h2
-                      className={`text-2xl mb-6 ${accentClass}`}
-                      style={{ ...headingShadow, ...(titleColor || {}) }}
-                    >
-                      {rsvpCopy.editorTitle}
-                    </h2>
-                    <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
-                      {!rsvpSubmitted ? (
-                        <div className="space-y-6">
-                          <div className="text-center mb-4">
-                            <p className="opacity-80">
-                              {data.rsvpDeadline
-                                ? `Kindly respond by ${new Date(
-                                    data.rsvpDeadline
-                                  ).toLocaleDateString()}`
-                                : "Please RSVP"}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                              Full Name
-                            </label>
-                            <input
-                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                              placeholder="Guest Name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                              Attending?
-                            </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <label className="group relative cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name="attending"
-                                  className="peer sr-only"
-                                  checked={rsvpAttending === "yes"}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    setRsvpAttending("yes");
-                                  }}
-                                />
-                                <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                                  <div className="mt-0.5">
-                                    <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                      <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                    </div>
-                                  </div>
-                                  <div className="text-left">
-                                    <div className="font-semibold">
-                                      Joyfully Accept
-                                    </div>
-                                    <p className="text-sm opacity-70">
-                                      We’ll be there.
-                                    </p>
-                                  </div>
-                                </div>
-                              </label>
-                              <label className="group relative cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name="attending"
-                                  className="peer sr-only"
-                                  checked={rsvpAttending === "no"}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    setRsvpAttending("no");
-                                  }}
-                                />
-                                <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                                  <div className="mt-0.5">
-                                    <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                      <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                    </div>
-                                  </div>
-                                  <div className="text-left">
-                                    <div className="font-semibold">
-                                      Regretfully Decline
-                                    </div>
-                                    <p className="text-sm opacity-70">
-                                      Sending warm wishes.
-                                    </p>
-                                  </div>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRsvpSubmitted(true);
-                            }}
-                            className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
-                          >
-                            Send RSVP
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="text-4xl mb-4">🎉</div>
-                          <h3 className="text-2xl font-serif mb-2">
-                            Thank you!
-                          </h3>
-                          <p className="opacity-70">Your RSVP has been sent.</p>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRsvpSubmitted(false);
-                              setRsvpAttending("yes");
-                            }}
-                            className="text-sm underline mt-6 opacity-50 hover:opacity-100"
-                          >
-                            Send another response
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                      <button
-                        onClick={() => handleShare()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Share2 size={16} />
-                        <span className="hidden sm:inline">Share link</span>
-                      </button>
-                      <button
-                        onClick={() => handleGoogleCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/google-white.svg"
-                          alt="Google"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Google Cal</span>
-                      </button>
-                      <button
-                        onClick={() => handleAppleCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/apple-white.svg"
-                          alt="Apple"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Apple Cal</span>
-                      </button>
-                      <button
-                        onClick={() => handleOutlookCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/microsoft-white.svg"
-                          alt="Microsoft"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Outlook</span>
-                      </button>
-                    </div>
-                  </section>
-                )}
-
-                <footer
-                  className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
-                >
-                  <a
-                    href="https://envitefy.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="space-y-1 inline-block no-underline"
-                  >
-                    <p className="text-sm opacity-60" style={bodyShadow}>
-                      Powered By Envitefy. Create. Share. Enjoy.
-                    </p>
-                    <p className="text-xs opacity-50" style={bodyShadow}>
-                      Create yours now.
-                    </p>
-                  </a>
-                  <div className="flex items-center justify-center gap-4 mt-4">
-                    <a
-                      href="https://www.facebook.com/envitefy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="Facebook"
-                    >
-                      <Image
-                        src="/email/social-facebook.svg"
-                        alt="Facebook"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                    <a
-                      href="https://www.instagram.com/envitefy/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="Instagram"
-                    >
-                      <Image
-                        src="/email/social-instagram.svg"
-                        alt="Instagram"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                    <a
-                      href="https://www.tiktok.com/@envitefy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="TikTok"
-                    >
-                      <Image
-                        src="/email/social-tiktok.svg"
-                        alt="TikTok"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                    <a
-                      href="https://www.youtube.com/@Envitefy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="YouTube"
-                    >
-                      <Image
-                        src="/email/social-youtube.svg"
-                        alt="YouTube"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                  </div>
-                </footer>
-              </div>
+            <div className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0">
+              <SimpleTemplateView
+                eventId={editEventId || "gymnastics-preview"}
+                eventData={previewEventData}
+                eventTitle={data.title || config.displayName}
+                isOwner={false}
+                isReadOnly={true}
+                viewerKind="readonly"
+                shareUrl=""
+                sessionEmail={null}
+                disableProtectedSectionLocks={true}
+              />
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ClipboardList,
@@ -110,31 +110,47 @@ const InputGroup = memo(
     placeholder?: string;
     type?: string;
     readOnly?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  ),
+  }) => {
+    const [draft, setDraft] = useState(value ?? "");
+
+    useEffect(() => {
+      setDraft(value ?? "");
+    }, [value]);
+
+    const commit = () => {
+      const next = draft ?? "";
+      const current = value ?? "";
+      if (next !== current) onChange(next);
+    };
+
+    return (
+      <div className="space-y-2">
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+          {label}
+        </label>
+        {type === "textarea" ? (
+          <textarea
+            className={baseTextareaClass}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            placeholder={placeholder}
+            readOnly={readOnly}
+          />
+        ) : (
+          <input
+            type={type}
+            className={baseInputClass}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            placeholder={placeholder}
+            readOnly={readOnly}
+          />
+        )}
+      </div>
+    );
+  },
   (prevProps, nextProps) => {
     // Custom comparison to prevent unnecessary re-renders
     return (

@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Users,
   Trophy,
@@ -16,7 +16,6 @@ import {
   MapPin,
   Phone,
   FileText,
-  Link as LinkIcon,
   CheckSquare,
   Bell,
   Download,
@@ -62,6 +61,12 @@ type PracticeBlock = {
 };
 
 type LogisticsInfo = {
+  enabled: boolean;
+  showTransportation: boolean;
+  showAccommodations: boolean;
+  showFees: boolean;
+  showMeals: boolean;
+  showAdditionalDocuments: boolean;
   travelMode: "bus" | "parent_drive" | "carpool" | "other";
   callTime: string;
   pickupWindow: string;
@@ -71,8 +76,8 @@ type LogisticsInfo = {
   mealPlan: string;
   feeDueDate: string;
   feeAmount: string;
-  paymentLink: string;
-  waiverLinks: string[];
+  additionalDocuments: { id: string; name: string; url: string }[];
+  waiverLinks?: string[];
 };
 
 type GearItem = {
@@ -140,6 +145,103 @@ const VOLUNTEER_ROLES = [
   "Setup/Teardown",
 ];
 
+const SectionToggle = ({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) => (
+  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 rounded-full transition-colors ${
+        checked ? "bg-indigo-600" : "bg-slate-300"
+      }`}
+      aria-pressed={checked}
+    >
+      <span
+        className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
+    </button>
+  </div>
+);
+
+const BufferedInput = ({
+  value,
+  onCommit,
+  className,
+  ...props
+}: {
+  value: string;
+  onCommit: (value: string) => void;
+  className?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) => {
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  const commit = () => {
+    const next = draft ?? "";
+    const current = value ?? "";
+    if (next !== current) onCommit(next);
+  };
+
+  return (
+    <input
+      {...props}
+      className={className}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+    />
+  );
+};
+
+const BufferedTextarea = ({
+  value,
+  onCommit,
+  className,
+  ...props
+}: {
+  value: string;
+  onCommit: (value: string) => void;
+  className?: string;
+} & Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "value" | "onChange"
+>) => {
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  const commit = () => {
+    const next = draft ?? "";
+    const current = value ?? "";
+    if (next !== current) onCommit(next);
+  };
+
+  return (
+    <textarea
+      {...props}
+      className={className}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+    />
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 1: ROSTER & ATTENDANCE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -149,6 +251,8 @@ const rosterSection = {
   menuTitle: "Roster & Attendance",
   menuDesc: "Athletes, levels, parent contacts, attendance tracking.",
   initialState: {
+    enabled: true,
+    showAttendance: true,
     athletes: [
       {
         id: "ath1",
@@ -209,6 +313,8 @@ const rosterSection = {
     showMedical: false,
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
+    const isEnabled = state?.enabled !== false;
+    const showAttendance = state?.showAttendance !== false;
     const athletes: Athlete[] = state?.athletes || [];
     const addAthlete = () => {
       setState((s: any) => ({
@@ -261,6 +367,25 @@ const rosterSection = {
 
     return (
       <div className="space-y-6">
+        <SectionToggle
+          label="Show Roster & Attendance"
+          checked={isEnabled}
+          onChange={(value) => setState((s: any) => ({ ...s, enabled: value }))}
+        />
+        <SectionToggle
+          label="Show Attendance Status"
+          checked={showAttendance}
+          onChange={(value) =>
+            setState((s: any) => ({ ...s, showAttendance: value }))
+          }
+        />
+
+        {!isEnabled ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Roster & attendance are hidden from the public page.
+          </div>
+        ) : (
+          <>
         <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Users className="text-purple-600 mt-0.5" size={20} />
@@ -296,13 +421,11 @@ const rosterSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Athlete Name *
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Sarah Johnson"
                   value={athlete.name}
-                  onChange={(e) =>
-                    updateAthlete(athlete.id, "name", e.target.value)
-                  }
+                  onCommit={(value) => updateAthlete(athlete.id, "name", value)}
                 />
               </div>
               <div>
@@ -380,31 +503,31 @@ const rosterSection = {
                 Parent/Guardian Contact
               </label>
               <div className="grid grid-cols-1 gap-3">
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Parent Name"
                   value={athlete.parentName}
-                  onChange={(e) =>
-                    updateAthlete(athlete.id, "parentName", e.target.value)
+                  onCommit={(value) =>
+                    updateAthlete(athlete.id, "parentName", value)
                   }
                 />
                 <div className="grid grid-cols-2 gap-3">
-                  <input
+                  <BufferedInput
                     className={inputClass}
                     placeholder="Phone"
                     type="tel"
                     value={athlete.parentPhone}
-                    onChange={(e) =>
-                      updateAthlete(athlete.id, "parentPhone", e.target.value)
+                    onCommit={(value) =>
+                      updateAthlete(athlete.id, "parentPhone", value)
                     }
                   />
-                  <input
+                  <BufferedInput
                     className={inputClass}
                     placeholder="Email"
                     type="email"
                     value={athlete.parentEmail}
-                    onChange={(e) =>
-                      updateAthlete(athlete.id, "parentEmail", e.target.value)
+                    onCommit={(value) =>
+                      updateAthlete(athlete.id, "parentEmail", value)
                     }
                   />
                 </div>
@@ -415,12 +538,12 @@ const rosterSection = {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Medical Notes (optional)
               </label>
-              <textarea
+              <BufferedTextarea
                 className={textareaClass}
                 placeholder="Allergies, injuries, restrictions..."
                 value={athlete.medicalNotes}
-                onChange={(e) =>
-                  updateAthlete(athlete.id, "medicalNotes", e.target.value)
+                onCommit={(value) =>
+                  updateAthlete(athlete.id, "medicalNotes", value)
                 }
                 rows={2}
               />
@@ -480,6 +603,8 @@ const rosterSection = {
             </div>
           </div>
         )}
+          </>
+        )}
       </div>
     );
   },
@@ -492,6 +617,8 @@ const rosterSection = {
     titleColor,
     headingFontStyle,
   }) => {
+    if (state?.enabled === false) return null;
+    const showAttendance = state?.showAttendance !== false;
     const athletes: Athlete[] = state?.athletes || [];
     if (athletes.length === 0) return null;
 
@@ -554,28 +681,32 @@ const rosterSection = {
                     {(athlete.primaryEvents || []).join(", ") || "All events"}
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${statusColor(
-                    athlete.status
-                  )}`}
-                >
-                  {statusIcon(athlete.status)}
-                </span>
+                {showAttendance && (
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${statusColor(
+                      athlete.status
+                    )}`}
+                  >
+                    {statusIcon(athlete.status)}
+                  </span>
+                )}
               </div>
             </div>
           ))}
         </div>
-        <div
-          className="mt-4 flex items-center gap-4 text-sm opacity-70"
-          style={bodyShadow}
-        >
-          <span className={textClass}>
-            {athletes.filter((a) => a.status === "going").length} confirmed
-          </span>
-          <span className={textClass}>
-            {athletes.filter((a) => a.status === "pending").length} pending
-          </span>
-        </div>
+        {showAttendance && (
+          <div
+            className="mt-4 flex items-center gap-4 text-sm opacity-70"
+            style={bodyShadow}
+          >
+            <span className={textClass}>
+              {athletes.filter((a) => a.status === "going").length} confirmed
+            </span>
+            <span className={textClass}>
+              {athletes.filter((a) => a.status === "pending").length} pending
+            </span>
+          </div>
+        )}
       </>
     );
   },
@@ -632,11 +763,11 @@ const meetSection = {
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
               Session Number
             </label>
-            <input
+            <BufferedInput
               className={inputClass}
               placeholder="Session 2"
               value={meet.sessionNumber || ""}
-              onChange={(e) => updateField("sessionNumber", e.target.value)}
+              onCommit={(value) => updateField("sessionNumber", value)}
             />
           </div>
           <div>
@@ -726,11 +857,11 @@ const meetSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Judging Panel / Notes
           </label>
-          <textarea
+          <BufferedTextarea
             className={textareaClass}
             placeholder="Head judge expectations, deduction reminders, presentation tips..."
             value={meet.judgingNotes || ""}
-            onChange={(e) => updateField("judgingNotes", e.target.value)}
+            onCommit={(value) => updateField("judgingNotes", value)}
             rows={3}
           />
         </div>
@@ -739,12 +870,12 @@ const meetSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Live Scores Link
           </label>
-          <input
+          <BufferedInput
             className={inputClass}
             placeholder="https://meetscoresonline.com/..."
             type="url"
             value={meet.scoresLink || ""}
-            onChange={(e) => updateField("scoresLink", e.target.value)}
+            onCommit={(value) => updateField("scoresLink", value)}
           />
           <p className="text-xs text-slate-400 mt-1">
             Link to live scoring (MeetScoresOnline, MyUSAGym, etc.)
@@ -906,6 +1037,7 @@ const practiceSection = {
   menuTitle: "Practice Planner",
   menuDesc: "Weekly schedule, apparatus focus, skill goals.",
   initialState: {
+    enabled: true,
     blocks: [
       {
         id: "prac1",
@@ -945,6 +1077,7 @@ const practiceSection = {
     modifiedTraining: [] as { athleteId: string; notes: string }[],
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
+    const isEnabled = state?.enabled !== false;
     const blocks: PracticeBlock[] = state?.blocks || [];
 
     const addBlock = () => {
@@ -1000,6 +1133,17 @@ const practiceSection = {
 
     return (
       <div className="space-y-6">
+        <SectionToggle
+          label="Show Practice Schedule"
+          checked={isEnabled}
+          onChange={(value) => setState((s: any) => ({ ...s, enabled: value }))}
+        />
+        {!isEnabled ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Practice schedule is hidden from the public page.
+          </div>
+        ) : (
+          <>
         <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <ClipboardList className="text-emerald-600 mt-0.5" size={20} />
@@ -1103,13 +1247,11 @@ const practiceSection = {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Skill Goals
               </label>
-              <textarea
+              <BufferedTextarea
                 className={textareaClass}
                 placeholder="Back walkover on beam, giants on bars, Yurchenko drills..."
                 value={block.skillGoals}
-                onChange={(e) =>
-                  updateBlock(block.id, "skillGoals", e.target.value)
-                }
+                onCommit={(value) => updateBlock(block.id, "skillGoals", value)}
                 rows={2}
               />
             </div>
@@ -1119,25 +1261,23 @@ const practiceSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Required Equipment
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Grips, panel mats..."
                   value={block.equipment}
-                  onChange={(e) =>
-                    updateBlock(block.id, "equipment", e.target.value)
-                  }
+                  onCommit={(value) => updateBlock(block.id, "equipment", value)}
                 />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Special Assignments
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Conditioning, flexibility..."
                   value={block.assignments}
-                  onChange={(e) =>
-                    updateBlock(block.id, "assignments", e.target.value)
+                  onCommit={(value) =>
+                    updateBlock(block.id, "assignments", value)
                   }
                 />
               </div>
@@ -1153,6 +1293,8 @@ const practiceSection = {
           <Plus size={18} />
           Add Practice Block
         </button>
+          </>
+        )}
       </div>
     );
   },
@@ -1165,6 +1307,7 @@ const practiceSection = {
     titleColor,
     headingFontStyle,
   }) => {
+    if (state?.enabled === false) return null;
     const blocks: PracticeBlock[] = state?.blocks || [];
     if (blocks.length === 0) return null;
 
@@ -1242,6 +1385,12 @@ const logisticsSection = {
   menuTitle: "Logistics & Travel",
   menuDesc: "Transport, hotel, meals, fees, waivers.",
   initialState: {
+    enabled: true,
+    showTransportation: true,
+    showAccommodations: true,
+    showFees: true,
+    showMeals: true,
+    showAdditionalDocuments: true,
     travelMode: "carpool",
     callTime: "07:30",
     pickupWindow: "5:00 - 5:30 PM",
@@ -1254,46 +1403,73 @@ const logisticsSection = {
       .toISOString()
       .split("T")[0],
     feeAmount: "$125 per athlete",
-    paymentLink: "https://niugymnastics.teamsnap.com/payments",
-    waiverLinks: [
-      "https://usagym.org/waiver/2025",
-      "https://forms.gle/travel-permission-2025",
+    additionalDocuments: [
+      {
+        id: "doc1",
+        name: "USAG Waiver",
+        url: "https://usagym.org/waiver/2025",
+      },
+      {
+        id: "doc2",
+        name: "Travel Permission",
+        url: "https://forms.gle/travel-permission-2025",
+      },
     ],
   } as LogisticsInfo,
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
     const logistics: LogisticsInfo = state || {};
+    const isEnabled = logistics.enabled !== false;
+    const showTransportation = logistics.showTransportation !== false;
+    const showAccommodations = logistics.showAccommodations !== false;
+    const showFees = logistics.showFees !== false;
+    const showMeals = logistics.showMeals !== false;
+    const showAdditionalDocuments = logistics.showAdditionalDocuments !== false;
 
     const updateField = (field: string, value: any) => {
       setState((s: any) => ({ ...s, [field]: value }));
     };
 
-    const addWaiverLink = () => {
+    const addDocument = () => {
       setState((s: any) => ({
         ...s,
-        waiverLinks: [...(s?.waiverLinks || []), ""],
+        additionalDocuments: [
+          ...(s?.additionalDocuments || []),
+          { id: genId(), name: "", url: "" },
+        ],
       }));
     };
 
-    const updateWaiverLink = (idx: number, value: string) => {
+    const updateDocument = (id: string, field: "name" | "url", value: string) => {
       setState((s: any) => ({
         ...s,
-        waiverLinks: (s?.waiverLinks || []).map((l: string, i: number) =>
-          i === idx ? value : l
+        additionalDocuments: (s?.additionalDocuments || []).map((doc: any) =>
+          doc.id === id ? { ...doc, [field]: value } : doc
         ),
       }));
     };
 
-    const removeWaiverLink = (idx: number) => {
+    const removeDocument = (id: string) => {
       setState((s: any) => ({
         ...s,
-        waiverLinks: (s?.waiverLinks || []).filter(
-          (_: string, i: number) => i !== idx
+        additionalDocuments: (s?.additionalDocuments || []).filter(
+          (doc: any) => doc.id !== id
         ),
       }));
     };
 
     return (
       <div className="space-y-6">
+        <SectionToggle
+          label="Show Logistics & Travel"
+          checked={isEnabled}
+          onChange={(value) => updateField("enabled", value)}
+        />
+        {!isEnabled ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Logistics & travel are hidden from the public page.
+          </div>
+        ) : (
+          <>
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Bus className="text-blue-600 mt-0.5" size={20} />
@@ -1309,10 +1485,18 @@ const logisticsSection = {
         </div>
 
         {/* Travel */}
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 space-y-3">
+          <SectionToggle
+            label="Show Transportation"
+            checked={showTransportation}
+            onChange={(value) => updateField("showTransportation", value)}
+          />
+          {showTransportation && (
           <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <Car size={18} /> Transportation
           </h4>
+          )}
+          {showTransportation && (
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
@@ -1345,34 +1529,43 @@ const logisticsSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Pickup Window
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="5:00-5:30 PM"
                   value={logistics.pickupWindow || ""}
-                  onChange={(e) => updateField("pickupWindow", e.target.value)}
+                  onCommit={(value) => updateField("pickupWindow", value)}
                 />
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Hotel */}
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 space-y-3">
+          <SectionToggle
+            label="Show Accommodations"
+            checked={showAccommodations}
+            onChange={(value) => updateField("showAccommodations", value)}
+          />
+          {showAccommodations && (
           <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <MapPin size={18} /> Accommodations
           </h4>
+          )}
+          {showAccommodations && (
           <div className="grid grid-cols-1 gap-4">
-            <input
+            <BufferedInput
               className={inputClass}
               placeholder="Hotel Name"
               value={logistics.hotelName || ""}
-              onChange={(e) => updateField("hotelName", e.target.value)}
+              onCommit={(value) => updateField("hotelName", value)}
             />
-            <input
+            <BufferedInput
               className={inputClass}
               placeholder="Hotel Address"
               value={logistics.hotelAddress || ""}
-              onChange={(e) => updateField("hotelAddress", e.target.value)}
+              onCommit={(value) => updateField("hotelAddress", value)}
             />
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -1390,32 +1583,41 @@ const logisticsSection = {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Meal Plan
                 </label>
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Team dinner at 6 PM"
                   value={logistics.mealPlan || ""}
-                  onChange={(e) => updateField("mealPlan", e.target.value)}
+                  onCommit={(value) => updateField("mealPlan", value)}
                 />
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Fees */}
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 space-y-3">
+          <SectionToggle
+            label="Show Fees"
+            checked={showFees}
+            onChange={(value) => updateField("showFees", value)}
+          />
+          {showFees && (
           <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <FileText size={18} /> Fees & Forms
+            <FileText size={18} /> Fees
           </h4>
+          )}
+          {showFees && (
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Fee Amount
               </label>
-              <input
+              <BufferedInput
                 className={inputClass}
                 placeholder="$125"
                 value={logistics.feeAmount || ""}
-                onChange={(e) => updateField("feeAmount", e.target.value)}
+                onCommit={(value) => updateField("feeAmount", value)}
               />
             </div>
             <div>
@@ -1430,46 +1632,76 @@ const logisticsSection = {
               />
             </div>
           </div>
-          <div className="mb-4">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Payment Link
-            </label>
-            <input
-              className={inputClass}
-              placeholder="https://payment.link/..."
-              type="url"
-              value={logistics.paymentLink || ""}
-              onChange={(e) => updateField("paymentLink", e.target.value)}
-            />
-          </div>
+          )}
+        </div>
 
+        <div className="border-t pt-4 space-y-3">
+          <SectionToggle
+            label="Show Meals"
+            checked={showMeals}
+            onChange={(value) => updateField("showMeals", value)}
+          />
+          {showMeals && (
+            <>
+              <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <Clock size={18} /> Meals
+              </h4>
+              <BufferedTextarea
+                className={textareaClass}
+                placeholder="Team dinner, breakfast, snack notes..."
+                value={logistics.mealPlan || ""}
+                onCommit={(value) => updateField("mealPlan", value)}
+                rows={2}
+              />
+            </>
+          )}
+        </div>
+
+        <div className="border-t pt-4 space-y-3">
+          <SectionToggle
+            label="Show Additional Documents"
+            checked={showAdditionalDocuments}
+            onChange={(value) => updateField("showAdditionalDocuments", value)}
+          />
+          {showAdditionalDocuments && (
+            <>
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
-            Waiver / Form Links
+            Additional Documents
           </label>
-          {(logistics.waiverLinks || []).map((link: string, idx: number) => (
-            <div key={idx} className="flex gap-2 mb-2">
-              <input
+          {(logistics.additionalDocuments || []).map((doc: any) => (
+            <div key={doc.id} className="grid grid-cols-1 gap-2 mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <BufferedInput
                 className={inputClass}
-                placeholder="https://form.link/..."
-                value={link}
-                onChange={(e) => updateWaiverLink(idx, e.target.value)}
+                placeholder="Document name (example: Travel Waiver)"
+                value={doc.name || ""}
+                onCommit={(value) => updateDocument(doc.id, "name", value)}
+              />
+              <BufferedInput
+                className={inputClass}
+                placeholder="https://document.link/..."
+                value={doc.url || ""}
+                onCommit={(value) => updateDocument(doc.id, "url", value)}
               />
               <button
-                onClick={() => removeWaiverLink(idx)}
-                className="text-red-400 hover:text-red-600 p-2"
+                onClick={() => removeDocument(doc.id)}
+                className="justify-self-start text-red-500 hover:text-red-700 text-sm font-medium"
               >
-                <Trash2 size={16} />
+                Remove document
               </button>
             </div>
           ))}
           <button
             type="button"
-            onClick={addWaiverLink}
+            onClick={addDocument}
             className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
           >
-            <Plus size={14} /> Add waiver link
+            <Plus size={14} /> Add document
           </button>
+            </>
+          )}
         </div>
+          </>
+        )}
       </div>
     );
   },
@@ -1483,8 +1715,21 @@ const logisticsSection = {
     headingFontStyle,
   }) => {
     const logistics: LogisticsInfo = state || {};
+    if (logistics.enabled === false) return null;
+    const showTransportation = logistics.showTransportation !== false;
+    const showAccommodations = logistics.showAccommodations !== false;
+    const showFees = logistics.showFees !== false;
+    const showMeals = logistics.showMeals !== false;
+    const showAdditionalDocuments = logistics.showAdditionalDocuments !== false;
+    const documents =
+      logistics.additionalDocuments?.filter((doc) => doc?.url || doc?.name) || [];
     const hasData =
-      logistics.travelMode || logistics.hotelName || logistics.feeAmount;
+      (showTransportation &&
+        (logistics.travelMode || logistics.callTime || logistics.pickupWindow)) ||
+      (showAccommodations && (logistics.hotelName || logistics.hotelAddress)) ||
+      (showFees && (logistics.feeAmount || logistics.feeDueDate)) ||
+      (showMeals && logistics.mealPlan) ||
+      (showAdditionalDocuments && documents.length > 0);
     if (!hasData) return null;
 
     const formatTime = (t: string) => {
@@ -1512,7 +1757,7 @@ const logisticsSection = {
           Logistics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {logistics.travelMode && (
+          {showTransportation && logistics.travelMode && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Car size={16} className="opacity-70" />
@@ -1536,7 +1781,7 @@ const logisticsSection = {
               )}
             </div>
           )}
-          {logistics.hotelName && (
+          {showAccommodations && logistics.hotelName && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <MapPin size={16} className="opacity-70" />
@@ -1560,7 +1805,7 @@ const logisticsSection = {
               )}
             </div>
           )}
-          {logistics.feeAmount && (
+          {showFees && logistics.feeAmount && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <FileText size={16} className="opacity-70" />
@@ -1584,7 +1829,7 @@ const logisticsSection = {
               )}
             </div>
           )}
-          {logistics.mealPlan && (
+          {showMeals && logistics.mealPlan && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Clock size={16} className="opacity-70" />
@@ -1601,34 +1846,21 @@ const logisticsSection = {
             </div>
           )}
         </div>
-        {(logistics.paymentLink ||
-          (logistics.waiverLinks?.length || 0) > 0) && (
+        {showAdditionalDocuments && documents.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {logistics.paymentLink && (
-              <a
-                href={logistics.paymentLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
-              >
-                <LinkIcon size={16} />
-                Pay Fees
-              </a>
-            )}
-            {(logistics.waiverLinks || []).map(
-              (link: string, idx: number) =>
-                link && (
-                  <a
-                    key={idx}
-                    href={link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
-                  >
-                    <FileText size={16} />
-                    Form #{idx + 1}
-                  </a>
-                )
+            {documents.map((doc, idx) =>
+              doc.url ? (
+                <a
+                  key={doc.id || idx}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
+                >
+                  <FileText size={16} />
+                  {doc.name || `Document ${idx + 1}`}
+                </a>
+              ) : null
             )}
           </div>
         )}
@@ -1761,11 +1993,11 @@ const gearSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Leotard of the Day
           </label>
-          <input
+          <BufferedInput
             className={inputClass}
             placeholder="Red competition leo, Team warm-ups..."
             value={state?.leotardOfDay || ""}
-            onChange={(e) => updateField("leotardOfDay", e.target.value)}
+            onCommit={(value) => updateField("leotardOfDay", value)}
           />
         </div>
 
@@ -1773,11 +2005,11 @@ const gearSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Hair & Makeup Notes
           </label>
-          <textarea
+          <BufferedTextarea
             className={textareaClass}
             placeholder="High bun with team scrunchie, natural makeup, no glitter..."
             value={state?.hairMakeupNotes || ""}
-            onChange={(e) => updateField("hairMakeupNotes", e.target.value)}
+            onCommit={(value) => updateField("hairMakeupNotes", value)}
             rows={2}
           />
         </div>
@@ -1786,12 +2018,12 @@ const gearSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Floor Music Link
           </label>
-          <input
+          <BufferedInput
             className={inputClass}
             placeholder="https://drive.google.com/..."
             type="url"
             value={state?.musicFileLink || ""}
-            onChange={(e) => updateField("musicFileLink", e.target.value)}
+            onCommit={(value) => updateField("musicFileLink", value)}
           />
         </div>
 
@@ -1813,11 +2045,11 @@ const gearSection = {
                   }
                   className="w-4 h-4 text-pink-600"
                 />
-                <input
+                <BufferedInput
                   className="flex-1 bg-transparent border-none focus:ring-0 text-sm"
                   placeholder="Item name"
                   value={item.name}
-                  onChange={(e) => updateItem(item.id, "name", e.target.value)}
+                  onCommit={(value) => updateItem(item.id, "name", value)}
                 />
                 <span className="text-xs text-slate-400">
                   {item.required ? "Required" : "Optional"}
@@ -1933,6 +2165,9 @@ const volunteersSection = {
   menuTitle: "Volunteers & Carpool",
   menuDesc: "Sign up for roles, coordinate rides.",
   initialState: {
+    enabled: true,
+    showVolunteerSlots: true,
+    showCarpool: true,
     volunteerSlots: [
       { id: "vol1", role: "Timer", name: "Sofia Rodriguez", filled: true },
       { id: "vol2", role: "Timer", name: "", filled: false },
@@ -1973,6 +2208,9 @@ const volunteersSection = {
     ] as CarpoolOffer[],
   },
   renderEditor: ({ state, setState, inputClass }) => {
+    const isEnabled = state?.enabled !== false;
+    const showVolunteerSlots = state?.showVolunteerSlots !== false;
+    const showCarpool = state?.showCarpool !== false;
     const slots: VolunteerSlot[] = state?.volunteerSlots || [];
     const carpools: CarpoolOffer[] = state?.carpoolOffers || [];
 
@@ -2041,7 +2279,35 @@ const volunteersSection = {
 
     return (
       <div className="space-y-6">
+        <SectionToggle
+          label="Show Volunteers & Carpool"
+          checked={isEnabled}
+          onChange={(value) => setState((s: any) => ({ ...s, enabled: value }))}
+        />
+        {!isEnabled ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Volunteers and carpool are hidden from the public page.
+          </div>
+        ) : (
+          <>
+        <SectionToggle
+          label="Show Volunteer Slots"
+          checked={showVolunteerSlots}
+          onChange={(value) =>
+            setState((s: any) => ({ ...s, showVolunteerSlots: value }))
+          }
+        />
+        <SectionToggle
+          label="Show Carpool Offers"
+          checked={showCarpool}
+          onChange={(value) =>
+            setState((s: any) => ({ ...s, showCarpool: value }))
+          }
+        />
+
         {/* Volunteers */}
+        {showVolunteerSlots && (
+          <>
         <div className="bg-orange-50 border border-orange-100 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Users className="text-orange-600 mt-0.5" size={20} />
@@ -2072,11 +2338,11 @@ const volunteersSection = {
                 </option>
               ))}
             </select>
-            <input
+            <BufferedInput
               className={`${inputClass} flex-1`}
               placeholder="Volunteer name"
               value={slot.name}
-              onChange={(e) => updateSlot(slot.id, "name", e.target.value)}
+              onCommit={(value) => updateSlot(slot.id, "name", value)}
             />
             <button
               type="button"
@@ -2106,9 +2372,12 @@ const volunteersSection = {
           <Plus size={16} />
           Add Volunteer Slot
         </button>
+          </>
+        )}
 
         {/* Carpool */}
-        <div className="border-t pt-6">
+        {showCarpool && (
+          <div className="border-t pt-6">
           <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-4 mb-4">
             <div className="flex items-start gap-3">
               <Car className="text-cyan-600 mt-0.5" size={20} />
@@ -2140,22 +2409,20 @@ const volunteersSection = {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Driver Name"
                   value={cp.driverName}
-                  onChange={(e) =>
-                    updateCarpool(cp.id, "driverName", e.target.value)
+                  onCommit={(value) =>
+                    updateCarpool(cp.id, "driverName", value)
                   }
                 />
-                <input
+                <BufferedInput
                   className={inputClass}
                   placeholder="Phone"
                   type="tel"
                   value={cp.phone}
-                  onChange={(e) =>
-                    updateCarpool(cp.id, "phone", e.target.value)
-                  }
+                  onCommit={(value) => updateCarpool(cp.id, "phone", value)}
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -2192,12 +2459,12 @@ const volunteersSection = {
                   />
                 </div>
               </div>
-              <input
+              <BufferedInput
                 className={inputClass}
                 placeholder="Departure location"
                 value={cp.departureLocation}
-                onChange={(e) =>
-                  updateCarpool(cp.id, "departureLocation", e.target.value)
+                onCommit={(value) =>
+                  updateCarpool(cp.id, "departureLocation", value)
                 }
               />
             </div>
@@ -2212,6 +2479,9 @@ const volunteersSection = {
             Add Carpool Offer
           </button>
         </div>
+        )}
+          </>
+        )}
       </div>
     );
   },
@@ -2224,9 +2494,16 @@ const volunteersSection = {
     titleColor,
     headingFontStyle,
   }) => {
+    if (state?.enabled === false) return null;
+    const showVolunteerSlots = state?.showVolunteerSlots !== false;
+    const showCarpool = state?.showCarpool !== false;
     const slots: VolunteerSlot[] = state?.volunteerSlots || [];
     const carpools: CarpoolOffer[] = state?.carpoolOffers || [];
-    if (slots.length === 0 && carpools.length === 0) return null;
+    if (
+      (showVolunteerSlots ? slots.length === 0 : true) &&
+      (showCarpool ? carpools.length === 0 : true)
+    )
+      return null;
 
     const formatTime = (t: string) => {
       if (!t) return "";
@@ -2239,7 +2516,7 @@ const volunteersSection = {
 
     return (
       <>
-        {slots.length > 0 && (
+        {showVolunteerSlots && slots.length > 0 && (
           <>
             <h2
               className={`text-2xl mb-4 ${accentClass}`}
@@ -2280,7 +2557,7 @@ const volunteersSection = {
             </div>
           </>
         )}
-        {carpools.length > 0 && (
+        {showCarpool && carpools.length > 0 && (
           <>
             <h2
               className={`text-2xl mb-4 ${accentClass}`}
@@ -2459,13 +2736,11 @@ const announcementsSection = {
                 </button>
               </div>
             </div>
-            <textarea
+            <BufferedTextarea
               className={textareaClass}
               placeholder="Type your announcement..."
               value={ann.text}
-              onChange={(e) =>
-                updateAnnouncement(ann.id, "text", e.target.value)
-              }
+              onCommit={(value) => updateAnnouncement(ann.id, "text", value)}
               rows={3}
             />
           </div>
@@ -2542,6 +2817,10 @@ const config = {
   displayName: "Gymnastics Schedule",
   category: "sport_gymnastics_schedule",
   categoryLabel: "Gymnastics",
+  showCategoryField: false,
+  detailsDescriptionRows: 8,
+  detailsDescriptionPopup: true,
+  defaultRsvpDeadlineDays: null,
   themesExpandedByDefault: false,
   defaultHero: "/templates/hero-images/gymnastics-hero.jpeg",
   rsvpCopy: {
@@ -2551,6 +2830,8 @@ const config = {
     toggleLabel: "Enable Attendance RSVP",
     deadlineLabel: "Response Deadline",
     helperText: "Athletes/parents can confirm attendance status.",
+    nameLabel: "Athlete Name",
+    namePlaceholder: "Athlete Name",
   },
   prefill: {
     title: "Illinois State Invitational",
@@ -2563,7 +2844,6 @@ const config = {
     extra: {
       team: "Northern Illinois Gymnastics",
       season: "2025 Season",
-      primaryVenue: "Redbird Arena, Normal IL",
       coach: "Coach Maria Rivera",
       assistantCoach: "Coach Jessica Thompson",
       coachPhone: "(815) 555-0142",
@@ -2572,7 +2852,6 @@ const config = {
   detailFields: [
     { key: "team", label: "Team", placeholder: "NIU Gymnastics" },
     { key: "season", label: "Season", placeholder: "2025 Season" },
-    { key: "primaryVenue", label: "Primary Venue", placeholder: "Main Gym" },
     { key: "coach", label: "Head Coach", placeholder: "Coach Rivera" },
     {
       key: "assistantCoach",

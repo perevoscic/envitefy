@@ -1199,24 +1199,52 @@ export default function LeftSidebar() {
     return Array.from(byId.values());
   }, [history]);
   const draftsCount = drafts.length;
+  const isActiveEventRow = useCallback((row: HistoryRow) => {
+    if (!row || typeof row !== "object") return false;
+    const data: any = row?.data;
+    if (!data || typeof data !== "object" || data.signupForm) return false;
+
+    const status = String(data?.status || "")
+      .trim()
+      .toLowerCase();
+    if (
+      status === "draft" ||
+      status === "cancelled" ||
+      status === "canceled" ||
+      status === "archived"
+    ) {
+      return false;
+    }
+
+    const dateRaw = String(
+      data?.startISO || data?.start || data?.event?.start || row?.created_at || ""
+    );
+    const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : NaN;
+    if (!Number.isFinite(parsedDateMs)) return true;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return parsedDateMs >= startOfToday.getTime();
+  }, []);
   const createdEventsCount = useMemo(() => {
     return history.reduce((acc, row) => {
       if (!row || typeof row !== "object") return acc;
       const data: any = row?.data;
       if (!data || typeof data !== "object") return acc;
-      if (isInvitedHistoryEvent(data) || data.signupForm) return acc;
+      if (isInvitedHistoryEvent(data) || !isActiveEventRow(row)) return acc;
       return acc + 1;
     }, 0);
-  }, [history]);
+  }, [history, isActiveEventRow]);
   const invitedEventsCount = useMemo(() => {
     return history.reduce((acc, row) => {
       if (!row || typeof row !== "object") return acc;
       const data: any = row?.data;
       if (!data || typeof data !== "object") return acc;
-      if (!isInvitedHistoryEvent(data) || data.signupForm) return acc;
+      if (!isInvitedHistoryEvent(data) || !isActiveEventRow(row)) return acc;
       return acc + 1;
     }, 0);
-  }, [history]);
+  }, [history, isActiveEventRow]);
+  const calendarEventsCount = createdEventsCount + invitedEventsCount;
   const smartSignupCount = useMemo(() => {
     const myEmail = profileEmail || profileEmailRef.current || null;
     const myUserId = ((session as any)?.user?.id as string | undefined) || null;
@@ -3155,7 +3183,7 @@ export default function LeftSidebar() {
                         </span>
                         <span className="truncate">Calendar</span>
                         <span className="ml-auto inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner">
-                          {history.length}
+                          {calendarEventsCount}
                         </span>
                       </Link>
 

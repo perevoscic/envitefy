@@ -282,7 +282,7 @@ function formatTimeAndDate(
     const tz = useFloatingTz ? "UTC" : timeZone || undefined;
 
     if (allDay) {
-      const dateFmt = new Intl.DateTimeFormat(undefined, {
+      const dateFmt = new Intl.DateTimeFormat("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -296,13 +296,13 @@ function formatTimeAndDate(
       return { time: null, date: `${dateLabel} (all day)` };
     }
 
-    const dateFmt = new Intl.DateTimeFormat(undefined, {
+    const dateFmt = new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
       timeZone: tz,
     });
-    const timeFmt = new Intl.DateTimeFormat(undefined, {
+    const timeFmt = new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,

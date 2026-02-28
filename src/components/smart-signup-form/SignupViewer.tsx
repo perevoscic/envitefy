@@ -77,6 +77,20 @@ const formatSlotRange = (
   return null;
 };
 
+const formatUsDateTime = (value?: string | null): string => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 const summarizeResponseSlots = (
   form: SignupForm,
   response: SignupResponse
@@ -1165,9 +1179,9 @@ const SignupViewer: React.FC<Props> = ({
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-600">
-                            {new Date(
+                            {formatUsDateTime(
                               response.updatedAt || response.createdAt || ""
-                            ).toLocaleString()}
+                            )}
                           </span>
                           <button
                             type="button"
@@ -1234,9 +1248,9 @@ const SignupViewer: React.FC<Props> = ({
                           {response.name}
                         </span>
                         <span className="text-xs text-amber-700">
-                          {new Date(
+                          {formatUsDateTime(
                             response.updatedAt || response.createdAt || ""
-                          ).toLocaleString()}
+                          )}
                         </span>
                       </div>
                       <div className="text-sm text-amber-800 mt-2">
@@ -1261,9 +1275,9 @@ const SignupViewer: React.FC<Props> = ({
                       className="rounded-lg bg-gray-50 px-3 py-2 border border-gray-200"
                     >
                       {response.name} —{" "}
-                      {new Date(
+                      {formatUsDateTime(
                         response.updatedAt || response.createdAt || ""
-                      ).toLocaleString()}
+                      )}
                     </div>
                   ))}
                 </div>

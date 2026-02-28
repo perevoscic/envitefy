@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const genId = () => Math.random().toString(36).slice(2, 9);
 
@@ -22,29 +22,57 @@ const InputGroup = ({
   onChange: (next: string) => void;
   placeholder?: string;
   type?: string;
-}) => (
-  <div className="space-y-1.5">
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-      {label}
-    </label>
-    {type === "textarea" ? (
-      <textarea
-        className={baseTextareaClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    ) : (
-      <input
-        type={type}
-        className={baseInputClass}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    )}
-  </div>
-);
+}) => {
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  const commit = () => {
+    const next = draft ?? "";
+    const current = value ?? "";
+    if (next !== current) onChange(next);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+        {label}
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          className={baseTextareaClass}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          placeholder={placeholder}
+        />
+      ) : (
+        <input
+          type={type}
+          className={baseInputClass}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  );
+};
+
+const formatUsTime = (value?: string) => {
+  if (!value) return "";
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return value;
+  const hour = Number.parseInt(match[1], 10);
+  const minute = match[2];
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) return value;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minute} ${suffix}`;
+};
 
 const matchScheduleSection = {
   id: "events",
@@ -192,7 +220,7 @@ const matchScheduleSection = {
                 {match.opponent || "Opponent"}
               </div>
               <div className="opacity-80">
-                {match.date || "Date"} · {match.time || "Time"}
+                {match.date || "Date"} · {formatUsTime(match.time) || "Time"}
               </div>
               {match.venue && <div>{match.venue}</div>}
               {match.notes && (
@@ -338,8 +366,8 @@ const practicePlanSection = {
               className="bg-white/10 border border-white/15 rounded-lg p-3"
             >
               <div className="font-semibold">
-                {block.day} · {block.startTime || "Start"} -{" "}
-                {block.endTime || "End"}
+                {block.day} · {formatUsTime(block.startTime) || "Start"} -{" "}
+                {formatUsTime(block.endTime) || "End"}
               </div>
               {block.focus && (
                 <p className="opacity-75 text-xs mt-1">{block.focus}</p>

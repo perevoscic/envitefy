@@ -924,10 +924,25 @@ ${socialIconsHtml}
                   <div className="flex items-center justify-between mt-3">
                     <div className="text-xs text-[#8c80b6]">
                       {campaign.sentAt
-                        ? `Sent ${new Date(campaign.sentAt).toLocaleString()}`
-                        : `Created ${new Date(
-                            campaign.createdAt,
-                          ).toLocaleString()}`}
+                        ? `Sent ${new Date(campaign.sentAt).toLocaleString("en-US", {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}`
+                        : `Created ${new Date(campaign.createdAt).toLocaleString(
+                            "en-US",
+                            {
+                              month: "numeric",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            },
+                          )}`}
                     </div>
                     <button
                       onClick={() => {
