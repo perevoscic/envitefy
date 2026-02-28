@@ -22,16 +22,21 @@ type DashboardMetricsCache = {
   weatherUpdatedAt: string | null;
 };
 
+let metricsCacheTableExists: boolean | null = null;
+
 function hoursUntil(iso: string): number {
   return (new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60);
 }
 
 async function getCachedMetrics(eventId: string): Promise<DashboardMetricsCache | null> {
   try {
-    const exists = await query<{ exists: string | null }>(
-      `select to_regclass('public.event_metrics_cache')::text as exists`
-    );
-    if (!exists.rows[0]?.exists) return null;
+    if (metricsCacheTableExists == null) {
+      const exists = await query<{ exists: string | null }>(
+        `select to_regclass('public.event_metrics_cache')::text as exists`
+      );
+      metricsCacheTableExists = Boolean(exists.rows[0]?.exists);
+    }
+    if (!metricsCacheTableExists) return null;
     const res = await query<{
       event_id: string;
       travel_minutes: number | null;
@@ -61,43 +66,6 @@ async function getCachedMetrics(eventId: string): Promise<DashboardMetricsCache 
   } catch {
     return null;
   }
-}
-
-async function getTasksForEvent(eventId: string): Promise<
-  Array<{ id: string; title: string; done: boolean; dueAt: string | null }>
-> {
-  const candidates = ["tasks", "event_tasks"];
-  for (const tableName of candidates) {
-    try {
-      const tableExists = await query<{ exists: string | null }>(
-        `select to_regclass($1)::text as exists`,
-        [`public.${tableName}`]
-      );
-      if (!tableExists.rows[0]?.exists) continue;
-      const res = await query<{
-        id: string;
-        title: string;
-        done: boolean | null;
-        due_at: string | null;
-      }>(
-        `select id::text as id, title, done, due_at
-         from ${tableName}
-         where event_id::text = $1
-         order by coalesce(due_at, now() + interval '100 years') asc, id asc
-         limit 30`,
-        [eventId]
-      );
-      return (res.rows || []).map((row) => ({
-        id: row.id,
-        title: row.title,
-        done: Boolean(row.done),
-        dueAt: row.due_at,
-      }));
-    } catch {
-      // Try next candidate table name.
-    }
-  }
-  return [];
 }
 
 function buildSetupHealth(nextEvent: DashboardEvent | null, rsvpTotalForEvent: number) {
@@ -135,7 +103,7 @@ export async function GET() {
     }
 
     const rows = await query<{ id: string; title: string; data: any; created_at: string | null }>(
-      `select id, title, data, created_at
+      `select id, title, (data - 'attachment') as data, created_at
        from event_history
        where user_id = $1
        order by created_at desc nulls last, id desc
@@ -173,7 +141,7 @@ export async function GET() {
       ? Math.max(0, Math.ceil((new Date(nextEvent.startAt).getTime() - now) / (24 * 60 * 60 * 1000)))
       : null;
 
-    let rsvp = {
+    const rsvp = {
       going: 0,
       maybe: 0,
       declined: 0,
@@ -183,13 +151,31 @@ export async function GET() {
 
     if (nextEvent) {
       try {
-        const grouped = await query<{ response: string; count: string }>(
-          `select response, count(*)::text as count
-           from rsvp_responses
-           where event_id = $1
-           group by response`,
-          [nextEvent.id]
-        );
+        const [grouped, recentRows] = await Promise.all([
+          query<{ response: string; count: string }>(
+            `select response, count(*)::text as count
+             from rsvp_responses
+             where event_id = $1
+             group by response`,
+            [nextEvent.id]
+          ),
+          query<{
+            id: string;
+            name: string | null;
+            first_name: string | null;
+            last_name: string | null;
+            email: string | null;
+            response: string;
+            updated_at: string | null;
+          }>(
+            `select id::text as id, name, first_name, last_name, email, response, updated_at
+             from rsvp_responses
+             where event_id = $1
+             order by updated_at desc nulls last
+             limit 3`,
+            [nextEvent.id]
+          ),
+        ]);
         for (const row of grouped.rows || []) {
           const key = String(row.response || "").toLowerCase();
           const count = Number(row.count || 0);
@@ -199,23 +185,6 @@ export async function GET() {
         }
         const filled = rsvp.going + rsvp.maybe + rsvp.declined;
         rsvp.pending = Math.max(0, (nextEvent.numberOfGuests || 0) - filled);
-
-        const recentRows = await query<{
-          id: string;
-          name: string | null;
-          first_name: string | null;
-          last_name: string | null;
-          email: string | null;
-          response: string;
-          updated_at: string | null;
-        }>(
-          `select id::text as id, name, first_name, last_name, email, response, updated_at
-           from rsvp_responses
-           where event_id = $1
-           order by updated_at desc nulls last
-           limit 3`,
-          [nextEvent.id]
-        );
         rsvp.recent = (recentRows.rows || []).map((row) => {
           const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
           const displayName =
@@ -242,7 +211,6 @@ export async function GET() {
     }
 
     const setupHealthFlags = buildSetupHealth(nextEvent, rsvp.going + rsvp.maybe + rsvp.declined);
-    const tasks = nextEvent ? await getTasksForEvent(nextEvent.id) : [];
     const derivedChecklist = nextEvent
       ? setupHealthFlags.map((flag) => ({
           id: `derived-${flag.key}`,
@@ -278,8 +246,8 @@ export async function GET() {
         flags: setupHealthFlags,
       },
       checklist: {
-        source: tasks.length > 0 ? "tasks" : "derived",
-        items: tasks.length > 0 ? tasks : derivedChecklist,
+        source: "derived",
+        items: derivedChecklist,
       },
       drafts: {
         count: allDrafts.length,

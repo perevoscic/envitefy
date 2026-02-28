@@ -410,7 +410,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Return DB-only home dashboard payload for the signed-in owner (no external API calls).
 - **Auth**: NextAuth session required; only the caller's own `event_history` rows are queried.
-- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, checklist/tasks (uses `tasks`/`event_tasks` when present, otherwise derives tasks from setup-health warnings), and drafts summary. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
+- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, derived checklist items (from setup-health warnings), and drafts summary. The query reads a lightweight `event_history.data` shape (excluding `attachment`) to reduce payload size. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
 - **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility }`.
 - **Env**: `DATABASE_URL`.
 

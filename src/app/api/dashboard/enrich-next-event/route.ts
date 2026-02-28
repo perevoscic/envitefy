@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 const TRAVEL_TTL_MS = 12 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
+let metricsCacheTableEnsured = false;
 
 type MetricsRow = {
   event_id: string;
@@ -38,6 +39,7 @@ function weatherCodeSummary(code: number | null | undefined): string | null {
 }
 
 async function ensureMetricsCacheTable() {
+  if (metricsCacheTableEnsured) return;
   await query(`
     create table if not exists event_metrics_cache (
       event_id uuid primary key references event_history(id) on delete cascade,
@@ -50,6 +52,7 @@ async function ensureMetricsCacheTable() {
       updated_at timestamptz(6) default now()
     )
   `);
+  metricsCacheTableEnsured = true;
 }
 
 async function getMetrics(eventId: string): Promise<MetricsRow | null> {
@@ -130,7 +133,7 @@ function isCacheFresh(updatedAtIso: string | null, ttlMs: number): boolean {
 
 async function getNextEventForOwner(userId: string): Promise<DashboardEvent | null> {
   const rows = await query<{ id: string; title: string; data: any; created_at: string | null }>(
-    `select id, title, data, created_at
+    `select id, title, (data - 'attachment') as data, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -233,14 +236,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, metrics: null, reason: "event-not-next" });
     }
 
-    const userRes = await query<{ feature_visibility: any }>(
-      `select feature_visibility from users where id = $1 limit 1`,
-      [userId]
-    );
-    const origin = extractHomeOrigin(userRes.rows[0]?.feature_visibility);
-
     await ensureMetricsCacheTable();
-    const cached = await getMetrics(nextEvent.id);
+    const [userRes, cached] = await Promise.all([
+      query<{ feature_visibility: any }>(
+        `select feature_visibility from users where id = $1 limit 1`,
+        [userId]
+      ),
+      getMetrics(nextEvent.id),
+    ]);
+    const origin = extractHomeOrigin(userRes.rows[0]?.feature_visibility);
     const startMs = new Date(nextEvent.startAt).getTime();
     const nowMs = Date.now();
     const hoursToStart = (startMs - nowMs) / (1000 * 60 * 60);

@@ -54,7 +54,7 @@ type EventFields = {
   rsvp?: string | null;
 };
 
-type CalendarProvider = "google" | "microsoft" | "apple";
+type CalendarProvider = "google" | "microsoft" | "apple" | "envitefy";
 
 type AutoAddPreference = {
   enabled: boolean;
@@ -1060,25 +1060,25 @@ export default function Dashboard({
             }
           : null;
         await finishScanUi();
-        resetScanUi();
         setEvent(adjusted);
         setOcrText(data.ocrText || "");
         setUploadedFile(fileToUpload);
         setOcrCategory(data?.category || null);
-        const autoProvider =
-          autoAddPreference.enabled && autoAddPreference.provider
-            ? autoAddPreference.provider
-            : null;
-        if (adjusted && autoProvider) {
+        if (adjusted) {
           setModalOpen(false);
-          await submitScannedEventRef.current({
+          const created = await submitScannedEventRef.current({
             eventInput: adjusted,
-            provider: autoProvider,
+            provider: "envitefy",
             mode: "auto",
             sourceFile: fileToUpload,
           });
+          if (!created) {
+            resetScanUi();
+          }
         } else {
-          setModalOpen(Boolean(adjusted));
+          resetScanUi();
+          setModalOpen(false);
+          setError("Unable to create an event from this scan. Please try again.");
         }
       } catch (err) {
         if (err instanceof Error && err.message === "__scan_cancelled__") {
@@ -1113,7 +1113,7 @@ export default function Dashboard({
         setLoading(false);
       }
     },
-    [finishScanUi, logUploadIssue, resetScanUi, autoAddPreference]
+    [finishScanUi, logUploadIssue, resetScanUi]
   );
 
   const onFile = useCallback(
@@ -1221,6 +1221,7 @@ export default function Dashboard({
   const providerLabel = useCallback((provider: CalendarProvider) => {
     if (provider === "google") return "Google Calendar";
     if (provider === "microsoft") return "Outlook Calendar";
+    if (provider === "envitefy") return "Envitefy";
     return "Apple Calendar";
   }, []);
 
@@ -1385,7 +1386,7 @@ export default function Dashboard({
         if (!ready) {
           const label = providerLabel(provider);
           setError(`Missing start time for ${label}`);
-          if (mode === "auto") {
+          if (mode === "auto" && provider !== "envitefy") {
             setEvent(eventInput);
             setModalOpen(true);
           }
@@ -1399,7 +1400,9 @@ export default function Dashboard({
         });
 
         try {
-          if (provider === "google") {
+          if (provider === "envitefy") {
+            // Envitefy-only flow: save to history and skip external calendar redirects.
+          } else if (provider === "google") {
             const res = await fetch("/api/events/google", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1451,7 +1454,7 @@ export default function Dashboard({
               ? `${baseError} Review details and retry.`
               : baseError
           );
-          if (mode === "auto") {
+          if (mode === "auto" && provider !== "envitefy") {
             setEvent(eventInput);
             setModalOpen(true);
           }
@@ -1464,7 +1467,6 @@ export default function Dashboard({
 
         if (eventId) {
           const eventTitle = savedTitle || eventInput.title || "Event";
-          resetForm();
           router.push(buildEventPath(eventId, eventTitle, { created: true }));
         } else {
           resetForm();
@@ -1544,12 +1546,6 @@ export default function Dashboard({
   const showScanSection = Boolean(
     error || loading || scanStatus !== "idle" || (modalOpen && event)
   );
-  const autoAddProviderLabel = autoAddPreference.provider
-    ? providerLabel(autoAddPreference.provider)
-    : null;
-  const disableAutoAdd = useCallback(() => {
-    persistAutoAddPreference(DEFAULT_AUTO_ADD_PREFERENCE);
-  }, [persistAutoAddPreference]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1724,24 +1720,6 @@ export default function Dashboard({
             />
           )}
         </div>
-      )}
-      {autoAddPreference.enabled && autoAddProviderLabel && (
-        <section className="w-full max-w-4xl">
-          <div className="rounded-xl border border-[#dfd6fb] bg-white/90 px-4 py-3 text-sm shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-medium text-[#3f356a]">
-                Auto-add ON: {autoAddProviderLabel} + Envitefy
-              </p>
-              <button
-                type="button"
-                onClick={disableAutoAdd}
-                className="rounded-lg border border-[#d7cff6] bg-[#f7f3ff] px-3 py-1.5 text-xs font-semibold text-[#51437f] transition hover:bg-[#efe9ff]"
-              >
-                Turn off
-              </button>
-            </div>
-          </div>
-        </section>
       )}
       {scanStatus !== "idle" && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#f4eeff]/78 p-4 backdrop-blur-md">
@@ -2316,6 +2294,65 @@ function UpcomingEventsPanel({
         </aside>
       </div>
 
+      <div className="relative z-10 mt-6 grid gap-3 lg:grid-cols-2">
+        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
+          <h4 className="text-lg font-semibold text-[#221b45]">RSVP Snapshot</h4>
+          {nextEvent && data?.rsvp ? (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                <p className="rounded-xl bg-[#eefcf4] px-3 py-2 text-[#1f7d52]">
+                  Going: <span className="font-semibold">{data.rsvp.going}</span>
+                </p>
+                <p className="rounded-xl bg-[#fff8e9] px-3 py-2 text-[#9c6b00]">
+                  Maybe: <span className="font-semibold">{data.rsvp.maybe}</span>
+                </p>
+                <p className="rounded-xl bg-[#fff1f4] px-3 py-2 text-[#a33d56]">
+                  Declined: <span className="font-semibold">{data.rsvp.declined}</span>
+                </p>
+                <p className="rounded-xl bg-[#f3f2fd] px-3 py-2 text-[#4b437f]">
+                  Pending: <span className="font-semibold">{data.rsvp.pending}</span>
+                </p>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                {data.rsvp.recent.length > 0 ? (
+                  data.rsvp.recent.map((row) => (
+                    <p key={row.id} className="text-sm text-[#5a4f87]">
+                      <span className="font-semibold text-[#2d2555]">{row.name}</span> - {row.status}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm text-[#7a71a8]">No recent RSVPs yet.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
+          <h4 className="text-lg font-semibold text-[#221b45]">Drafts</h4>
+          <p className="mt-2 text-sm text-[#6a6196]">
+            {data?.drafts?.count ?? 0} draft{(data?.drafts?.count ?? 0) === 1 ? "" : "s"}
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {(data?.drafts?.items || []).length > 0 ? (
+              data?.drafts?.items.map((draft) => (
+                <Link
+                  key={draft.id}
+                  href={`/event/${draft.id}`}
+                  className="block text-sm font-medium text-[#3f3691] hover:underline"
+                >
+                  {draft.title}
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-[#7a71a8]">No drafts right now.</p>
+            )}
+          </div>
+        </article>
+      </div>
+
       <div className="relative z-10 mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-2xl font-semibold text-[#201942]">My Schedule</h3>
@@ -2435,109 +2472,6 @@ function UpcomingEventsPanel({
             </div>
           )}
         </div>
-      </div>
-
-      <div className="relative z-10 mt-6 grid gap-3 lg:grid-cols-2">
-        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
-          <h4 className="text-lg font-semibold text-[#221b45]">RSVP Snapshot</h4>
-          {nextEvent && data?.rsvp ? (
-            <>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                <p className="rounded-xl bg-[#eefcf4] px-3 py-2 text-[#1f7d52]">
-                  Going: <span className="font-semibold">{data.rsvp.going}</span>
-                </p>
-                <p className="rounded-xl bg-[#fff8e9] px-3 py-2 text-[#9c6b00]">
-                  Maybe: <span className="font-semibold">{data.rsvp.maybe}</span>
-                </p>
-                <p className="rounded-xl bg-[#fff1f4] px-3 py-2 text-[#a33d56]">
-                  Declined: <span className="font-semibold">{data.rsvp.declined}</span>
-                </p>
-                <p className="rounded-xl bg-[#f3f2fd] px-3 py-2 text-[#4b437f]">
-                  Pending: <span className="font-semibold">{data.rsvp.pending}</span>
-                </p>
-              </div>
-              <div className="mt-3 space-y-1.5">
-                {data.rsvp.recent.length > 0 ? (
-                  data.rsvp.recent.map((row) => (
-                    <p key={row.id} className="text-sm text-[#5a4f87]">
-                      <span className="font-semibold text-[#2d2555]">{row.name}</span> - {row.status}
-                    </p>
-                  ))
-                ) : (
-                  <p className="text-sm text-[#7a71a8]">No recent RSVPs yet.</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
-          )}
-        </article>
-
-        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
-          <h4 className="text-lg font-semibold text-[#221b45]">Setup Health</h4>
-          {nextEvent ? (
-            data?.setupHealth?.flags?.length ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {data.setupHealth.flags.map((flag) => (
-                  <span
-                    key={flag.key}
-                    className="rounded-full bg-[#fff5de] px-3 py-1 text-xs font-semibold text-[#8a5b00]"
-                  >
-                    {flag.label}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-[#4a976f]">Everything looks ready.</p>
-            )
-          ) : (
-            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
-          )}
-        </article>
-
-        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
-          <h4 className="text-lg font-semibold text-[#221b45]">Checklist / Tasks</h4>
-          {nextEvent ? (
-            data?.checklist?.items?.length ? (
-              <ul className="mt-3 space-y-1.5 text-sm text-[#4b437f]">
-                {data.checklist.items.slice(0, 6).map((task) => (
-                  <li key={task.id} className="flex items-center gap-2">
-                    <span>{task.done ? "✅" : "⬜"}</span>
-                    <span className={task.done ? "line-through opacity-60" : ""}>
-                      {task.title}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-[#7a71a8]">No tasks yet.</p>
-            )
-          ) : (
-            <p className="mt-3 text-sm text-[#7a71a8]">No next event selected.</p>
-          )}
-        </article>
-
-        <article className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]">
-          <h4 className="text-lg font-semibold text-[#221b45]">Drafts</h4>
-          <p className="mt-2 text-sm text-[#6a6196]">
-            {data?.drafts?.count ?? 0} draft{(data?.drafts?.count ?? 0) === 1 ? "" : "s"}
-          </p>
-          <div className="mt-2 space-y-1.5">
-            {(data?.drafts?.items || []).length > 0 ? (
-              data?.drafts?.items.map((draft) => (
-                <Link
-                  key={draft.id}
-                  href={`/event/${draft.id}`}
-                  className="block text-sm font-medium text-[#3f3691] hover:underline"
-                >
-                  {draft.title}
-                </Link>
-              ))
-            ) : (
-              <p className="text-sm text-[#7a71a8]">No drafts right now.</p>
-            )}
-          </div>
-        </article>
       </div>
     </section>
   );

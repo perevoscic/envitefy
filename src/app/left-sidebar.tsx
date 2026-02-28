@@ -2308,7 +2308,8 @@ export default function LeftSidebar() {
       setActiveEventTab("dashboard");
       setEventSidebarMode("guest");
       setEventContextSourcePage("invitedEvents");
-      setSidebarPage("eventContext");
+      // Keep invited list visible; do not open the guest preview sidebar panel.
+      setSidebarPage("invitedEvents");
       router.push(buildEventGuestHref(href, row.id));
     },
     [
@@ -3214,7 +3215,7 @@ export default function LeftSidebar() {
               </div>
 
               <div
-                className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5"
+                className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5 bg-[#f6f3ff]"
                 style={{
                   ...panelTransitionStyle,
                   transform: invitedEventsPanelTransform,
@@ -3262,7 +3263,11 @@ export default function LeftSidebar() {
                                   key={item.row.id}
                                   type="button"
                                   onClick={() => openGuestEventContext(item.row, item.href)}
-                                  className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                  className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} ${
+                                    selectedEventId === item.row.id
+                                      ? "ring-2 ring-[#d9ccff]"
+                                      : ""
+                                  } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
                                   style={item.style}
                                 >
                                   <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
@@ -3330,7 +3335,11 @@ export default function LeftSidebar() {
                                       key={item.row.id}
                                       type="button"
                                       onClick={() => openGuestEventContext(item.row, item.href)}
-                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-70 saturate-75`}
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} ${
+                                        selectedEventId === item.row.id
+                                          ? "ring-2 ring-[#d9ccff]"
+                                          : ""
+                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-70 saturate-75`}
                                       style={item.style}
                                     >
                                       <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
