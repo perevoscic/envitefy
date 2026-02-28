@@ -854,10 +854,10 @@ export default function TopNav() {
             suppressHydrationWarning
           >
             <Image
-              src="/navElogo.png"
+              src="/E.png"
               alt="Envitefy logo"
-              width={120}
-              height={48}
+              width={64}
+              height={64}
               priority
             />
           </Link>

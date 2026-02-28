@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Calendar,
   CheckCircle2,
@@ -65,15 +64,8 @@ export default function SignupFormsPhones({ className = "" }: Props) {
             <div className="h-6 w-24 rounded-full bg-black" />
           </div>
 
-          {/* Header image / gradient */}
+          {/* Header gradient */}
           <div className="relative h-1/2 bg-[#e4f3f1]">
-            <Image
-              src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80"
-              alt="Classroom helpers"
-              fill
-              className="object-cover opacity-95 mix-blend-multiply"
-              priority
-            />
             <div className="absolute inset-0 bg-gradient-to-t from-teal-900/70 via-teal-900/20 to-transparent" />
             <div className="absolute bottom-6 left-6 text-white">
               <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.25em] opacity-90">
