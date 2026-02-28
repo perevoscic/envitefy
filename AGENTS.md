@@ -419,11 +419,11 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Lazily compute cached travel + weather for the **next event only**.
 - **Auth**: NextAuth session required; verifies requested `eventId` matches the owner’s next event.
 - **Input (JSON)**: `{ eventId?: string, forceTravel?: boolean }`.
-- **Travel rules**: Calls travel API only when destination lat/lng exists, origin (user home in `users.feature_visibility`) exists, and either event starts within 72 hours or `forceTravel=true`; cache TTL is 12 hours.
-- **Weather rules**: Calls weather API only when destination lat/lng exists and event starts within 7 days; cache TTL is 3 hours.
+- **Travel rules**: Uses Mapbox Directions API for ETA/distance. Calls only when origin + destination are available, either event starts within 72 hours or `forceTravel=true`, and cache is stale; cache TTL is 12 hours. When event/home coordinates are missing, the route attempts Mapbox Geocoding from location text before routing.
+- **Weather rules**: Uses OpenWeather 5-day forecast (`/data/2.5/forecast`) and picks the forecast point nearest the event start. Calls only when destination is available, event starts within 5 days, and cache is stale; cache TTL is 3 hours.
 - **Cache**: Persists/reads `event_metrics_cache(event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at)`.
 - **Output**: `{ ok, eventId, metrics, meta }` where `metrics` contains cached/refreshed next-event values.
-- **Env**: `DATABASE_URL`.
+- **Env**: `DATABASE_URL`, `MAPBOX_ACCESS_TOKEN` (or `MAPBOX_API_KEY`), `OPENWEATHER_API_KEY`.
 
 ### Registry Add — POST `/api/registry/add`
 
@@ -681,6 +681,7 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2026-02-28: Dashboard next-event enrichment now uses Mapbox Directions + Geocoding fallback for travel ETA/distance and OpenWeather (`OPENWEATHER_API_KEY`) for nearest-time forecast within a 5-day window. Updated `/api/dashboard` eligibility flags and `/api/dashboard/enrich-next-event` env requirements accordingly.
 - 2026-02-28: Added dashboard APIs `GET /api/dashboard` (DB-only home tiles payload) and `POST /api/dashboard/enrich-next-event` (lazy next-event-only travel/weather enrichment with strict window checks + `event_metrics_cache` TTLs: travel 12h, weather 3h). Main dashboard now renders immediately from DB data and enriches only the next event after initial load.
 - 2026-02-28: OCR latency hardening: `/api/ocr` now runs with a total request-time budget, stage-level timing logs, and fast-mode gating that skips optional rewrite/deep schedule LLM passes unless requested. Added `OPENAI_OCR_FAST_MODEL` support for fast scans, optional `turbo=1` parallel provider race (OpenAI+Google), and `timing=1` debug payloads. Main dashboard/demo OCR calls are set to full-quality mode with `/api/ocr?fast=0`.
 - 2026-02-16: Added Supabase Auth bridge for password reset: `/api/auth/forgot` now generates Supabase recovery links when Supabase envs are configured (with fallback to local `password_resets` tokens), and `/api/auth/reset` accepts Supabase recovery access tokens to update the app's password hash.

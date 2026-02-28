@@ -16,10 +16,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type {
-  CSSProperties,
-  MouseEvent as ReactMouseEvent,
-} from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
 import { useSidebar, type EventContextTab } from "./sidebar-context";
@@ -90,7 +87,12 @@ type SidebarPage =
   | "eventContext";
 type EventSidebarMode = "owner" | "guest";
 type EventListPage = "myEvents" | "invitedEvents";
-type HistoryRow = { id: string; title: string; created_at?: string; data?: unknown };
+type HistoryRow = {
+  id: string;
+  title: string;
+  created_at?: string;
+  data?: unknown;
+};
 type GroupedEventItem = {
   row: HistoryRow;
   href: string;
@@ -99,6 +101,8 @@ type GroupedEventItem = {
   dateMs: number;
   tintClass: string;
   hoverTintClass: string;
+  activeTintClass: string;
+  activeCardClass: string;
   swatchClass: string;
   style?: CSSProperties;
 };
@@ -422,12 +426,14 @@ function DraftsSection({
         </div>
       </button>
       {open && (
-        <div className={embedded ? "border-t border-[#eee7ff]" : "mt-2 space-y-1"}>
+        <div
+          className={embedded ? "border-t border-[#eee7ff]" : "mt-2 space-y-1"}
+        >
           {drafts.map((row) => {
             const href = resolveEditHref(
               row.id,
               row.data,
-              row.title || "Event",
+              row.title || "Event"
             );
             const dateStr =
               (row.data && (row.data.startISO || row.data.start)) ||
@@ -453,7 +459,13 @@ function DraftsSection({
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{getDraftLabel(row)}</div>
                   {formattedDate && (
-                    <div className={embedded ? "text-[11px] text-foreground/50" : "text-[10px] text-foreground/50"}>
+                    <div
+                      className={
+                        embedded
+                          ? "text-[11px] text-foreground/50"
+                          : "text-[10px] text-foreground/50"
+                      }
+                    >
                       {formattedDate}
                     </div>
                   )}
@@ -568,7 +580,7 @@ export default function LeftSidebar() {
       const res = await fetch("/api/calendars", { credentials: "include" });
       if (!res.ok) {
         console.warn(
-          `[left-sidebar] /api/calendars returned status ${res.status}`,
+          `[left-sidebar] /api/calendars returned status ${res.status}`
         );
         setConnectedCalendars({
           google: false,
@@ -586,7 +598,7 @@ export default function LeftSidebar() {
     } catch (err) {
       console.error(
         "Failed to fetch connected calendars:",
-        err instanceof Error ? err.message : String(err),
+        err instanceof Error ? err.message : String(err)
       );
     }
   }, []);
@@ -599,19 +611,19 @@ export default function LeftSidebar() {
           window.open(
             "/api/google/auth?source=sidebar",
             "_blank",
-            "noopener,noreferrer",
+            "noopener,noreferrer"
           );
         } else if (provider === "microsoft") {
           window.open(
             "/api/outlook/auth?source=sidebar",
             "_blank",
-            "noopener,noreferrer",
+            "noopener,noreferrer"
           );
         } else {
           window.open(
             "https://support.apple.com/guide/calendar/welcome/mac",
             "_blank",
-            "noopener,noreferrer",
+            "noopener,noreferrer"
           );
         }
         window.setTimeout(() => {
@@ -621,7 +633,7 @@ export default function LeftSidebar() {
         console.error("Failed to initiate calendar connection:", err);
       }
     },
-    [fetchConnectedCalendars],
+    [fetchConnectedCalendars]
   );
   const [itemMenuId, setItemMenuId] = useState<string | null>(null);
   const [itemMenuPos, setItemMenuPos] = useState<{
@@ -663,27 +675,29 @@ export default function LeftSidebar() {
   const sidebarTransform = isDesktop
     ? "translateX(0)"
     : isOpen
-      ? "translateX(0)"
-      : "translateX(-100%)";
+    ? "translateX(0)"
+    : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
     : isOpen
-      ? "pointer-events-auto"
-      : "pointer-events-none";
+    ? "pointer-events-auto"
+    : "pointer-events-none";
   const isEventMenuActive = Boolean(selectedEventId);
   const overflowClass = isCompact
     ? "overflow-hidden"
     : isEventMenuActive
-      ? "overflow-hidden"
+    ? "overflow-hidden"
     : isDesktop || isOpen
-      ? "overflow-visible"
-      : "overflow-hidden";
+    ? "overflow-visible"
+    : "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
   const eventSidebarRef = useRef<HTMLDivElement | null>(null);
+  const invitedNavigationPendingRef = useRef(false);
+  const prevSidebarPageRef = useRef<SidebarPage>("root");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -804,12 +818,12 @@ export default function LeftSidebar() {
         const target = e.target as Element | null;
         // If click is inside the open item's container OR the menu popover itself, ignore
         const itemEl = target?.closest(
-          "[data-history-item]",
+          "[data-history-item]"
         ) as HTMLElement | null;
         const inSameItem =
           itemEl && itemEl.getAttribute("data-history-item") === itemMenuId;
         const inMenuPopover = (target as HTMLElement | null)?.closest(
-          "[data-popover=item-menu]",
+          "[data-popover=item-menu]"
         );
         if (inSameItem || inMenuPopover) return;
       } catch {}
@@ -872,10 +886,16 @@ export default function LeftSidebar() {
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [clearEventContext, eventContextSourcePage, isEventMenuActive, setSidebarPage]);
+  }, [
+    clearEventContext,
+    eventContextSourcePage,
+    isEventMenuActive,
+    setSidebarPage,
+  ]);
 
   useEffect(() => {
     if (!selectedEventId) return;
+    if (invitedNavigationPendingRef.current) return;
     const isEventPage = pathname?.startsWith("/event/");
     if (isEventPage) return;
     // When an event is selected we first switch panel state, then route.
@@ -892,13 +912,34 @@ export default function LeftSidebar() {
   ]);
 
   useEffect(() => {
+    if (invitedNavigationPendingRef.current) return;
     if (pathname !== "/") return;
     const hasEventContext =
       Boolean(selectedEventId) || sidebarPage === "eventContext";
     if (!hasEventContext) return;
     clearEventContext();
     setSidebarPage("root");
-  }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
+  }, [
+    clearEventContext,
+    pathname,
+    selectedEventId,
+    setSidebarPage,
+    sidebarPage,
+  ]);
+
+  useEffect(() => {
+    if (!invitedNavigationPendingRef.current) return;
+    if (!pathname || pathname === "/") return;
+    invitedNavigationPendingRef.current = false;
+  }, [pathname]);
+
+  useEffect(() => {
+    const prevPage = prevSidebarPageRef.current;
+    if (sidebarPage === "invitedEvents" && prevPage !== "invitedEvents") {
+      setShowPastInvitedEvents(false);
+    }
+    prevSidebarPageRef.current = sidebarPage;
+  }, [sidebarPage]);
 
   const displayName =
     (session?.user?.name as string) ||
@@ -911,7 +952,7 @@ export default function LeftSidebar() {
   >(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
-    Boolean((session?.user as any)?.isAdmin),
+    Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [isClientLoaded, setIsClientLoaded] = useState(false);
@@ -924,7 +965,7 @@ export default function LeftSidebar() {
 
     const applyProfile = (
       plan: typeof subscriptionPlan,
-      creditsValue: number | null,
+      creditsValue: number | null
     ) => {
       setSubscriptionPlan(plan);
       setCredits(plan === "FF" ? Infinity : creditsValue);
@@ -952,13 +993,13 @@ export default function LeftSidebar() {
             plan === "FF"
               ? Infinity
               : typeof json.credits === "number"
-                ? (json.credits as number)
-                : null;
+              ? (json.credits as number)
+              : null;
           applyProfile(plan, nextCredits === Infinity ? null : nextCredits);
           writeProfileCache(
             profileEmailRef.current || profileEmail,
             plan,
-            nextCredits,
+            nextCredits
           );
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
@@ -1045,7 +1086,7 @@ export default function LeftSidebar() {
   };
   const handleSnapShortcutClick = (
     event: ReactMouseEvent<HTMLElement>,
-    mode: "camera" | "upload",
+    mode: "camera" | "upload"
   ) => {
     const win = window as any;
     const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
@@ -1081,7 +1122,7 @@ export default function LeftSidebar() {
   const { visibleTemplateKeys } = useFeatureVisibility();
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
-    [visibleTemplateKeys],
+    [visibleTemplateKeys]
   );
 
   const templateHrefMap = useMemo(() => {
@@ -1123,7 +1164,7 @@ export default function LeftSidebar() {
   }, [visibleTemplateKeys]);
   const createMenuOptionCount = useMemo(
     () => createMenuItems.length,
-    [createMenuItems],
+    [createMenuItems]
   );
 
   const profileMenuItemClass =
@@ -1230,10 +1271,10 @@ export default function LeftSidebar() {
       { icon: User, label: "Profile", href: "/profile" },
       { icon: Settings, label: "Settings", href: "/settings" },
     ],
-    [createdEventsCount, smartSignupCount],
+    [createdEventsCount, smartSignupCount]
   );
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
-    {},
+    {}
   );
   // Per Smart sign-up item gradient selections (keyed by history id)
   const [signupItemColors, setSignupItemColors] = useState<
@@ -1288,7 +1329,7 @@ export default function LeftSidebar() {
 
   // Normalize freeform/variant labels to our canonical sidebar categories
   const normalizeCategoryLabel = (
-    raw: string | null | undefined,
+    raw: string | null | undefined
   ): string | null => {
     const s = String(raw || "").trim();
     if (!s) return null;
@@ -1356,7 +1397,7 @@ export default function LeftSidebar() {
     if (/playdate|play\s*day|kids?\s*play/.test(s)) return "Play Days";
     if (
       /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(
-        s,
+        s
       )
     )
       return "Car Pool";
@@ -1393,16 +1434,16 @@ export default function LeftSidebar() {
     } catch {}
     try {
       const rawMyEvents = localStorage.getItem(
-        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY
       );
       setShowPastMyEvents(rawMyEvents === "1" || rawMyEvents === "true");
     } catch {}
     try {
       const rawInvitedEvents = localStorage.getItem(
-        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY
       );
       setShowPastInvitedEvents(
-        rawInvitedEvents === "1" || rawInvitedEvents === "true",
+        rawInvitedEvents === "1" || rawInvitedEvents === "true"
       );
     } catch {}
   }, []);
@@ -1442,8 +1483,8 @@ export default function LeftSidebar() {
               }`;
               return guessCategoryFromText(blob);
             })
-            .filter((c): c is string => Boolean(c)),
-        ),
+            .filter((c): c is string => Boolean(c))
+        )
       );
       if (categories.length === 0) return;
       setCategoryColors((prev) => {
@@ -1487,7 +1528,7 @@ export default function LeftSidebar() {
   };
 
   const colorClasses = (
-    color: string,
+    color: string
   ): { swatch: string; badge: string; tint: string; hoverTint: string } => {
     switch (color) {
       case "lime":
@@ -1654,6 +1695,35 @@ export default function LeftSidebar() {
     }
   };
 
+  const activeEventCardClasses = (color: string): string => {
+    switch (color) {
+      case "purple":
+      case "violet":
+      case "fuchsia":
+      case "indigo":
+      case "pink":
+        return "!bg-purple-100/80 !border-purple-300/80";
+      case "blue":
+      case "sky":
+      case "cyan":
+        return "!bg-blue-100/80 !border-blue-300/80";
+      case "teal":
+      case "emerald":
+      case "green":
+      case "lime":
+        return "!bg-emerald-100/80 !border-emerald-300/80";
+      case "yellow":
+      case "amber":
+      case "orange":
+        return "!bg-amber-100/80 !border-amber-300/80";
+      case "red":
+      case "rose":
+        return "!bg-rose-100/80 !border-rose-300/80";
+      default:
+        return "!bg-slate-100/80 !border-slate-300/80";
+    }
+  };
+
   const groupedEventLists = useMemo(() => {
     const priority = new Map<string, number>([
       ["drafts", 0],
@@ -1680,7 +1750,7 @@ export default function LeftSidebar() {
           row?.data?.start ||
           row?.data?.event?.start ||
           row?.created_at ||
-          "",
+          ""
       );
     const formatDate = (raw: string) => {
       if (!raw) return "No date";
@@ -1696,11 +1766,13 @@ export default function LeftSidebar() {
       upcoming: new Map<string, GroupedEventItem[]>(),
       past: new Map<string, GroupedEventItem[]>(),
     });
-    const bucketsByList: Record<EventListPage, ReturnType<typeof createBuckets>> =
-      {
-        myEvents: createBuckets(),
-        invitedEvents: createBuckets(),
-      };
+    const bucketsByList: Record<
+      EventListPage,
+      ReturnType<typeof createBuckets>
+    > = {
+      myEvents: createBuckets(),
+      invitedEvents: createBuckets(),
+    };
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayMs = startOfToday.getTime();
@@ -1710,14 +1782,16 @@ export default function LeftSidebar() {
       const data = (row as any)?.data || {};
       if (data?.signupForm) continue;
       const isInvited = isInvitedHistoryEvent(data);
-      const targetList: EventListPage = isInvited ? "invitedEvents" : "myEvents";
+      const targetList: EventListPage = isInvited
+        ? "invitedEvents"
+        : "myEvents";
 
       const isDraft = String(data?.status || "").toLowerCase() === "draft";
       const normalizedCategoryRaw = normalizeCategoryLabel(
         (data?.category as string | null) ||
           guessCategoryFromText(
-            `${row.title || ""} ${String(data?.description || "")}`,
-          ),
+            `${row.title || ""} ${String(data?.description || "")}`
+          )
       );
       const normalizedCategory =
         isInvited &&
@@ -1742,17 +1816,18 @@ export default function LeftSidebar() {
         .replace(/^-+|-+$/g, "");
       const href = `/event/${slug || "event"}-${row.id}`;
 
-      const categoryColor = isInvited
-        ? "slate"
-        : categoryColors[category] || defaultCategoryColor(category);
-      const palette = colorClasses(categoryColor);
+      const categoryColor =
+        categoryColors[category] || defaultCategoryColor(category);
+      const palette = colorClasses(isInvited ? "slate" : categoryColor);
+      const activePalette = colorClasses(categoryColor);
       const eventHex = String(data?.color || data?.event?.color || "").trim();
-      const style = !isInvited && isHexColor(eventHex)
-        ? {
-            backgroundColor: hexToRgba(eventHex, 0.12),
-            borderColor: hexToRgba(eventHex, 0.26),
-          }
-        : undefined;
+      const style =
+        !isInvited && isHexColor(eventHex)
+          ? {
+              backgroundColor: hexToRgba(eventHex, 0.12),
+              borderColor: hexToRgba(eventHex, 0.26),
+            }
+          : undefined;
 
       const entry = {
         row,
@@ -1762,6 +1837,8 @@ export default function LeftSidebar() {
         dateMs,
         tintClass: palette.tint,
         hoverTintClass: palette.hoverTint,
+        activeTintClass: activePalette.tint,
+        activeCardClass: activeEventCardClasses(categoryColor),
         swatchClass: palette.swatch,
         style,
       };
@@ -1776,7 +1853,7 @@ export default function LeftSidebar() {
     }
 
     const sortGroups = (
-      source: Map<string, GroupedEventItem[]>,
+      source: Map<string, GroupedEventItem[]>
     ): GroupedEventSection[] =>
       Array.from(source.entries())
         .map(([category, items]) => ({
@@ -1998,7 +2075,7 @@ export default function LeftSidebar() {
         ({
           ...prev,
           [category]: color,
-        }) as Record<string, string>,
+        } as Record<string, string>)
     );
     setColorMenuFor(null);
     setColorMenuPos(null);
@@ -2013,7 +2090,7 @@ export default function LeftSidebar() {
     } catch {}
     try {
       window.dispatchEvent(
-        new CustomEvent("categoryColorsUpdated", { detail: categoryColors }),
+        new CustomEvent("categoryColorsUpdated", { detail: categoryColors })
       );
     } catch {}
     try {
@@ -2028,7 +2105,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         "signupItemColors",
-        JSON.stringify(signupItemColors),
+        JSON.stringify(signupItemColors)
       );
     } catch {}
   }, [signupItemColors]);
@@ -2037,7 +2114,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastMyEvents ? "1" : "0",
+        showPastMyEvents ? "1" : "0"
       );
     } catch {}
   }, [showPastMyEvents]);
@@ -2046,7 +2123,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastInvitedEvents ? "1" : "0",
+        showPastInvitedEvents ? "1" : "0"
       );
     } catch {}
   }, [showPastInvitedEvents]);
@@ -2057,7 +2134,7 @@ export default function LeftSidebar() {
       title: string;
       created_at?: string;
       data?: any;
-    }>,
+    }>
   ) => {
     return [...(rows || [])].sort((a, b) => {
       const at = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -2094,8 +2171,8 @@ export default function LeftSidebar() {
                 title: r.title,
                 created_at: r.created_at || undefined,
                 data: r.data,
-              })),
-            ),
+              }))
+            )
           );
       } catch {}
     })();
@@ -2160,7 +2237,7 @@ export default function LeftSidebar() {
                 {
                   cache: "no-cache",
                   credentials: "include",
-                },
+                }
               );
               const j = await res.json().catch(() => ({ items: [] }));
               if (!cancelled) {
@@ -2171,8 +2248,8 @@ export default function LeftSidebar() {
                       title: r.title,
                       created_at: r.created_at || undefined,
                       data: r.data,
-                    })),
-                  ),
+                    }))
+                  )
                 );
                 try {
                   console.debug("[sidebar] history refreshed from server", {
@@ -2203,8 +2280,8 @@ export default function LeftSidebar() {
                   title: r.title,
                   created_at: r.created_at || undefined,
                   data: r.data,
-                })),
-              ),
+                }))
+              )
             );
         }
       } catch {}
@@ -2235,7 +2312,7 @@ export default function LeftSidebar() {
     (
       baseHref: string | null | undefined,
       eventId: string,
-      tab: EventContextTab,
+      tab: EventContextTab
     ) => {
       const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
       try {
@@ -2250,7 +2327,7 @@ export default function LeftSidebar() {
         return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
       }
     },
-    [],
+    []
   );
 
   const buildEventGuestHref = useCallback(
@@ -2268,8 +2345,15 @@ export default function LeftSidebar() {
         return `${fallbackPath}?tab=preview`;
       }
     },
-    [],
+    []
   );
+
+  const blurActiveElement = useCallback(() => {
+    try {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    } catch {}
+  }, []);
 
   const openOwnerEventContext = useCallback(
     (row: HistoryRow, href: string) => {
@@ -2281,10 +2365,12 @@ export default function LeftSidebar() {
       setActiveEventTab("dashboard");
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
+      blurActiveElement();
       setSidebarPage("eventContext");
       router.push(buildEventOwnerHref(href, row.id, "dashboard"));
     },
     [
+      blurActiveElement,
       buildEventOwnerHref,
       router,
       setEventContextSourcePage,
@@ -2295,35 +2381,38 @@ export default function LeftSidebar() {
       setSelectedEventId,
       setSelectedEventTitle,
       setSidebarPage,
-    ],
+    ]
   );
 
   const openGuestEventContext = useCallback(
     (row: HistoryRow, href: string) => {
-      const title = row.title || "Untitled event";
-      setSelectedEventId(row.id);
-      setSelectedEventTitle(title);
-      setSelectedEventHref(href);
-      setSelectedEventEditHref(null);
-      setActiveEventTab("dashboard");
-      setEventSidebarMode("guest");
-      setEventContextSourcePage("invitedEvents");
-      // Keep invited list visible; do not open the guest preview sidebar panel.
+      const nextHref = buildEventGuestHref(href, row.id);
+      // Invited events should navigate directly to the event page and never
+      // transition into the event context/sidebar preview panel.
+      clearEventContext();
       setSidebarPage("invitedEvents");
-      router.push(buildEventGuestHref(href, row.id));
+      invitedNavigationPendingRef.current = true;
+      try {
+        router.prefetch(nextHref);
+      } catch {}
+      router.push(nextHref);
     },
-    [
-      buildEventGuestHref,
-      router,
-      setEventContextSourcePage,
-      setEventSidebarMode,
-      setActiveEventTab,
-      setSelectedEventEditHref,
-      setSelectedEventHref,
-      setSelectedEventId,
-      setSelectedEventTitle,
-      setSidebarPage,
-    ],
+    [buildEventGuestHref, clearEventContext, router, setSidebarPage]
+  );
+
+  const isHistoryRowActive = useCallback(
+    (rowId: string) => {
+      if (!rowId) return false;
+      if (selectedEventId === rowId) return true;
+      const currentPath = String(pathname || "");
+      if (!currentPath) return false;
+      return (
+        currentPath === `/event/${rowId}` ||
+        currentPath === `/smart-signup-form/${rowId}` ||
+        currentPath.endsWith(`-${rowId}`)
+      );
+    },
+    [pathname, selectedEventId]
   );
 
   const handleEventTabChange = useCallback(
@@ -2332,21 +2421,31 @@ export default function LeftSidebar() {
         setActiveEventTab("dashboard");
         try {
           if (!selectedEventId) return;
-          const nextHref = buildEventGuestHref(selectedEventHref, selectedEventId);
+          const nextHref = buildEventGuestHref(
+            selectedEventHref,
+            selectedEventId
+          );
           router.push(nextHref);
         } catch {}
+        blurActiveElement();
         setSidebarPage("eventContext");
         return;
       }
       setActiveEventTab(tab);
       try {
         if (!selectedEventId) return;
-        const nextHref = buildEventOwnerHref(selectedEventHref, selectedEventId, tab);
+        const nextHref = buildEventOwnerHref(
+          selectedEventHref,
+          selectedEventId,
+          tab
+        );
         router.push(nextHref);
       } catch {}
+      blurActiveElement();
       setSidebarPage("eventContext");
     },
     [
+      blurActiveElement,
       buildEventGuestHref,
       buildEventOwnerHref,
       eventSidebarMode,
@@ -2355,7 +2454,7 @@ export default function LeftSidebar() {
       selectedEventId,
       setActiveEventTab,
       setSidebarPage,
-    ],
+    ]
   );
 
   const handleSidebarBackToEvents = useCallback(() => {
@@ -2375,7 +2474,7 @@ export default function LeftSidebar() {
         body: JSON.stringify({ title }),
       });
       setHistory((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, title } : r)),
+        prev.map((r) => (r.id === id ? { ...r, title } : r))
       );
     } catch {}
   };
@@ -2384,7 +2483,7 @@ export default function LeftSidebar() {
     const ok = confirm(
       `Are you sure you want to delete this event?\n\n${
         title || "Untitled event"
-      }`,
+      }`
     );
     if (!ok) return;
     try {
@@ -2397,7 +2496,7 @@ export default function LeftSidebar() {
       try {
         if (typeof window !== "undefined") {
           window.dispatchEvent(
-            new CustomEvent("history:deleted", { detail: { id } }),
+            new CustomEvent("history:deleted", { detail: { id } })
           );
         }
       } catch {}
@@ -2689,21 +2788,23 @@ export default function LeftSidebar() {
   const panelTransitionStyle: CSSProperties = {
     transition: "transform 240ms ease-in-out",
   };
-  const rootPanelTransform = sidebarPage === "root" ? "translateX(0%)" : "translateX(-100%)";
+  const rootPanelTransform =
+    sidebarPage === "root" ? "translateX(0%)" : "translateX(-100%)";
   const createEventPanelTransform =
     sidebarPage === "createEvent" ? "translateX(0%)" : "translateX(100%)";
   const myEventsPanelTransform =
     sidebarPage === "myEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" && eventContextSourcePage === "myEvents"
-        ? "translateX(-100%)"
-        : "translateX(100%)";
+      ? "translateX(-100%)"
+      : "translateX(100%)";
   const invitedEventsPanelTransform =
     sidebarPage === "invitedEvents"
       ? "translateX(0%)"
-      : sidebarPage === "eventContext" && eventContextSourcePage === "invitedEvents"
-        ? "translateX(-100%)"
-        : "translateX(100%)";
+      : sidebarPage === "eventContext" &&
+        eventContextSourcePage === "invitedEvents"
+      ? "translateX(-100%)"
+      : "translateX(100%)";
   const eventPanelTransform =
     sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
 
@@ -2835,343 +2936,301 @@ export default function LeftSidebar() {
         >
           <div className="relative h-full w-full overflow-hidden">
             <div className="absolute inset-0 z-[1] flex h-full flex-col">
-          {/* Header with close button */}
-          <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
-            {/* Hero-esque intro */}
-            <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
-              <button
-                type="button"
-                aria-label={
-                  isCollapsed ? "Expand navigation" : "Collapse navigation"
-                }
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
-              >
-                {isCollapsed ? (
-                  <ChevronRight size={16} />
-                ) : (
-                  <ChevronLeft size={16} />
-                )}
-              </button>
-              <div className="flex flex-col items-center gap-3 text-center">
-                <Link
-                  href="/"
-                  onClick={goHomeFromSidebar}
-                  className="flex h-12 w-12 items-center justify-center"
-                >
-                  <Image
-                    src={SIDEBAR_LOGO_SRC}
-                    alt="Envitefy"
-                    width={64}
-                    height={64}
-                    className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
-                  />
-                </Link>
-                <div className="text-xs md:text-sm font-semibold tracking-widest text-[#7f8cff]">
-                  CREATE | SHARE | ENJOY
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Middle: Navigation area */}
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex-shrink-0 px-4 pb-3">
-              <div className="grid grid-cols-4 gap-3">
-                <Link
-                  href="/"
-                  onClick={goHomeFromSidebar}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                    <Home size={16} />
-                  </span>
-                  <span>Home</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    launchSnapFromMenu("camera");
-                  }}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                    <Camera size={16} />
-                  </span>
-                  <span>Snap</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    launchSnapFromMenu("upload");
-                  }}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                    <Upload size={16} />
-                  </span>
-                  <span>Upload</span>
-                </button>
-
-                <div className="relative">
+              {/* Header with close button */}
+              <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
+                {/* Hero-esque intro */}
+                <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      collapseSidebarOnTouch();
-                      setSidebarPage("root");
-                      router.push("/smart-signup-form");
-                    }}
-                    className="flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                    title="Sign up"
+                    aria-label={
+                      isCollapsed ? "Expand navigation" : "Collapse navigation"
+                    }
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                      <FileEdit size={16} />
-                    </span>
-                    <span>Sign up</span>
-                  </button>
-                  {smartSignupCount > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
-                      {smartSignupCount}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="px-4">
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent" />
-            </div>
-
-            <div className="relative mt-3 min-h-0 flex-1 overflow-hidden">
-              <div
-                className="absolute inset-0 z-[5] overflow-y-auto no-scrollbar px-4 pb-5"
-                style={{
-                  ...panelTransitionStyle,
-                  transform: rootPanelTransform,
-                  pointerEvents: sidebarPage === "root" ? "auto" : "none",
-                }}
-                aria-hidden={sidebarPage !== "root"}
-              >
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setSidebarPage("createEvent")}
-                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <Plus size={18} />
-                    </span>
-                    <span className="truncate">Create Event</span>
-                    <span className="ml-auto flex items-center gap-2">
-                      <span className={SIDEBAR_BADGE_CLASS}>{createMenuOptionCount}</span>
-                      <ChevronRight size={16} className="text-[#7a5fc0]" />
-                    </span>
-                  </button>
-
-                  <Link
-                    href="/calendar"
-                    onClick={collapseSidebarOnTouch}
-                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <CalendarDays size={18} />
-                    </span>
-                    <span className="truncate">Calendar</span>
-                    <span className="ml-auto inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner">
-                      {history.length}
-                    </span>
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => setSidebarPage("myEvents")}
-                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <Trophy size={18} />
-                    </span>
-                    <span className="truncate">My Events</span>
-                    <span className="ml-auto flex items-center gap-2">
-                      <span className={SIDEBAR_BADGE_CLASS}>{createdEventsCount}</span>
-                      <ChevronRight size={16} className="text-[#7a5fc0]" />
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSidebarPage("invitedEvents")}
-                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <Users size={18} />
-                    </span>
-                    <span className="truncate">Invited Events</span>
-                    <span className="ml-auto flex items-center gap-2">
-                      <span className={SIDEBAR_BADGE_CLASS}>{invitedEventsCount}</span>
-                      <ChevronRight size={16} className="text-[#7a5fc0]" />
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div
-                className="absolute inset-0 z-[10] overflow-y-auto no-scrollbar px-4 pb-5"
-                style={{
-                  ...panelTransitionStyle,
-                  transform: createEventPanelTransform,
-                  pointerEvents: sidebarPage === "createEvent" ? "auto" : "none",
-                }}
-                aria-hidden={sidebarPage !== "createEvent"}
-              >
-                <div className="space-y-3">
-                  <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-                    <button
-                      type="button"
-                      onClick={() => setSidebarPage("root")}
-                      className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        <ChevronLeft size={16} />
-                      </span>
-                      <span className="truncate">Create Event</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {createMenuItems.map((item, idx) => {
-                      const Icon = ICON_LOOKUP[item.label] || Sparkles;
-                      const colorClass =
-                        CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length];
-                      return (
-                        <button
-                          key={item.label}
-                          type="button"
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                          onClick={() =>
-                            handleCreateModalSelect(item.label, (item as any).href)
-                          }
-                        >
-                          <span
-                            className={`flex h-9 w-9 items-center justify-center rounded-2xl ${colorClass}`}
-                          >
-                            <Icon size={16} />
-                          </span>
-                          <span className="truncate">{item.label}</span>
-                          <ChevronRight size={16} className="ml-auto text-[#7a5fc0]" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="absolute inset-0 z-[15] overflow-y-auto no-scrollbar px-4 pb-5"
-                style={{
-                  ...panelTransitionStyle,
-                  transform: myEventsPanelTransform,
-                  pointerEvents: sidebarPage === "myEvents" ? "auto" : "none",
-                }}
-                aria-hidden={sidebarPage !== "myEvents"}
-              >
-                <div className="space-y-3">
-                  <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-                    <button
-                      type="button"
-                      onClick={() => setSidebarPage("root")}
-                      className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        <ChevronLeft size={16} />
-                      </span>
-                      <span className="truncate">My Events</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {myEventsGrouped.upcoming.length === 0 &&
-                    myEventsGrouped.past.length === 0 ? (
-                      <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
-                        No events yet.
-                      </div>
+                    {isCollapsed ? (
+                      <ChevronRight size={16} />
                     ) : (
-                      <div className="space-y-4">
-                        {myEventsGrouped.upcoming.length === 0 ? (
-                          <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
-                            No upcoming events.
+                      <ChevronLeft size={16} />
+                    )}
+                  </button>
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <Link
+                      href="/"
+                      onClick={goHomeFromSidebar}
+                      className="flex h-12 w-12 items-center justify-center"
+                    >
+                      <Image
+                        src={SIDEBAR_LOGO_SRC}
+                        alt="Envitefy"
+                        width={64}
+                        height={64}
+                        className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
+                      />
+                    </Link>
+                    <div className="text-xs md:text-sm font-semibold tracking-widest text-[#7f8cff]">
+                      CREATE | SHARE | ENJOY
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Middle: Navigation area */}
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex-shrink-0 px-4 pb-3">
+                  <div className="grid grid-cols-4 gap-3">
+                    <Link
+                      href="/"
+                      onClick={goHomeFromSidebar}
+                      className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    >
+                      <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                        <Home size={16} />
+                      </span>
+                      <span>Home</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        launchSnapFromMenu("camera");
+                      }}
+                      className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    >
+                      <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                        <Camera size={16} />
+                      </span>
+                      <span>Snap</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        launchSnapFromMenu("upload");
+                      }}
+                      className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    >
+                      <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                        <Upload size={16} />
+                      </span>
+                      <span>Upload</span>
+                    </button>
+
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          collapseSidebarOnTouch();
+                          setSidebarPage("root");
+                          router.push("/smart-signup-form");
+                        }}
+                        className="flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                        title="Sign up"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                          <FileEdit size={16} />
+                        </span>
+                        <span>Sign up</span>
+                      </button>
+                      {smartSignupCount > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
+                          {smartSignupCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent" />
+                </div>
+
+                <div className="relative mt-3 min-h-0 flex-1 overflow-hidden">
+                  <div
+                    className="absolute inset-0 z-[5] overflow-y-auto no-scrollbar px-4 pb-5"
+                    style={{
+                      ...panelTransitionStyle,
+                      transform: rootPanelTransform,
+                      pointerEvents: sidebarPage === "root" ? "auto" : "none",
+                    }}
+                    aria-hidden={sidebarPage !== "root"}
+                  >
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => setSidebarPage("createEvent")}
+                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <Plus size={18} />
+                        </span>
+                        <span className="truncate">Create Event</span>
+                        <span className="ml-auto flex items-center gap-2">
+                          <span className={SIDEBAR_BADGE_CLASS}>
+                            {createMenuOptionCount}
+                          </span>
+                          <ChevronRight size={16} className="text-[#7a5fc0]" />
+                        </span>
+                      </button>
+
+                      <Link
+                        href="/calendar"
+                        onClick={collapseSidebarOnTouch}
+                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <CalendarDays size={18} />
+                        </span>
+                        <span className="truncate">Calendar</span>
+                        <span className="ml-auto inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner">
+                          {history.length}
+                        </span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => setSidebarPage("myEvents")}
+                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <Trophy size={18} />
+                        </span>
+                        <span className="truncate">My Events</span>
+                        <span className="ml-auto flex items-center gap-2">
+                          <span className={SIDEBAR_BADGE_CLASS}>
+                            {createdEventsCount}
+                          </span>
+                          <ChevronRight size={16} className="text-[#7a5fc0]" />
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSidebarPage("invitedEvents")}
+                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <Users size={18} />
+                        </span>
+                        <span className="truncate">Invited Events</span>
+                        <span className="ml-auto flex items-center gap-2">
+                          <span className={SIDEBAR_BADGE_CLASS}>
+                            {invitedEventsCount}
+                          </span>
+                          <ChevronRight size={16} className="text-[#7a5fc0]" />
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    className="absolute inset-0 z-[10] overflow-y-auto no-scrollbar px-4 pb-5"
+                    style={{
+                      ...panelTransitionStyle,
+                      transform: createEventPanelTransform,
+                      pointerEvents:
+                        sidebarPage === "createEvent" ? "auto" : "none",
+                    }}
+                    aria-hidden={sidebarPage !== "createEvent"}
+                  >
+                    <div className="space-y-3">
+                      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("root")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                            <ChevronLeft size={16} />
+                          </span>
+                          <span className="truncate">Create Event</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {createMenuItems.map((item, idx) => {
+                          const Icon = ICON_LOOKUP[item.label] || Sparkles;
+                          const colorClass =
+                            CREATE_SECTION_COLORS[
+                              idx % CREATE_SECTION_COLORS.length
+                            ];
+                          return (
+                            <button
+                              key={item.label}
+                              type="button"
+                              className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                              onClick={() =>
+                                handleCreateModalSelect(
+                                  item.label,
+                                  (item as any).href
+                                )
+                              }
+                            >
+                              <span
+                                className={`flex h-9 w-9 items-center justify-center rounded-2xl ${colorClass}`}
+                              >
+                                <Icon size={16} />
+                              </span>
+                              <span className="truncate">{item.label}</span>
+                              <ChevronRight
+                                size={16}
+                                className="ml-auto text-[#7a5fc0]"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className="absolute inset-0 z-[15] overflow-y-auto no-scrollbar px-4 pb-5"
+                    style={{
+                      ...panelTransitionStyle,
+                      transform: myEventsPanelTransform,
+                      pointerEvents:
+                        sidebarPage === "myEvents" ? "auto" : "none",
+                    }}
+                    aria-hidden={sidebarPage !== "myEvents"}
+                  >
+                    <div className="space-y-3">
+                      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("root")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                            <ChevronLeft size={16} />
+                          </span>
+                          <span className="truncate">My Events</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {myEventsGrouped.upcoming.length === 0 &&
+                        myEventsGrouped.past.length === 0 ? (
+                          <div
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                          >
+                            No events yet.
                           </div>
                         ) : (
-                          myEventsGrouped.upcoming.map((group) => (
-                            <section key={`upcoming-${group.category}`} className="space-y-2">
-                              <div className="px-1 pt-1">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
-                                  {group.category}
-                                </p>
-                                <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                          <div className="space-y-4">
+                            {myEventsGrouped.upcoming.length === 0 ? (
+                              <div
+                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                              >
+                                No upcoming events.
                               </div>
-                              {group.items.map((item) => (
-                                <button
-                                  key={item.row.id}
-                                  type="button"
-                                  onClick={() => openOwnerEventContext(item.row, item.href)}
-                                  className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
-                                  style={item.style}
+                            ) : (
+                              myEventsGrouped.upcoming.map((group) => (
+                                <section
+                                  key={`upcoming-${group.category}`}
+                                  className="space-y-2"
                                 >
-                                  <span
-                                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
-                                  />
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm md:text-base font-semibold">
-                                      {item.title}
-                                    </span>
-                                    <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
-                                      {item.dateLabel}
-                                    </span>
-                                  </span>
-                                  <ChevronRight
-                                    size={16}
-                                    className="mt-1 shrink-0 text-[#7a5fc0]"
-                                    aria-hidden="true"
-                                  />
-                                </button>
-                              ))}
-                            </section>
-                          ))
-                        )}
-
-                        {myEventsGrouped.past.length > 0 && (
-                          <section className="space-y-2">
-                            <div className="px-1 pt-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
-                                  Past Events
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPastMyEvents((prev) => !prev)}
-                                  className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
-                                >
-                                  <span>
-                                    {showPastMyEvents ? "Hide past events" : "Show past events"}
-                                  </span>
-                                  <ChevronRight
-                                    size={12}
-                                    className={`transition-transform ${
-                                      showPastMyEvents ? "rotate-90" : ""
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                              <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
-                            </div>
-
-                            {showPastMyEvents &&
-                              myEventsGrouped.past.map((group) => (
-                                <section key={`past-${group.category}`} className="space-y-2">
                                   <div className="px-1 pt-1">
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
                                       {group.category}
@@ -3182,8 +3241,13 @@ export default function LeftSidebar() {
                                     <button
                                       key={item.row.id}
                                       type="button"
-                                      onClick={() => openOwnerEventContext(item.row, item.href)}
-                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-75 saturate-75`}
+                                      onClick={() =>
+                                        openOwnerEventContext(
+                                          item.row,
+                                          item.href
+                                        )
+                                      }
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
                                       style={item.style}
                                     >
                                       <span
@@ -3205,125 +3269,138 @@ export default function LeftSidebar() {
                                     </button>
                                   ))}
                                 </section>
-                              ))}
-                          </section>
+                              ))
+                            )}
+
+                            {myEventsGrouped.past.length > 0 && (
+                              <section className="space-y-2">
+                                <div className="px-1 pt-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                      Past Events
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setShowPastMyEvents((prev) => !prev)
+                                      }
+                                      className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
+                                    >
+                                      <span>
+                                        {showPastMyEvents
+                                          ? "Hide past events"
+                                          : "Show past events"}
+                                      </span>
+                                      <ChevronRight
+                                        size={12}
+                                        className={`transition-transform ${
+                                          showPastMyEvents ? "rotate-90" : ""
+                                        }`}
+                                      />
+                                    </button>
+                                  </div>
+                                  <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                </div>
+
+                                {showPastMyEvents &&
+                                  myEventsGrouped.past.map((group) => (
+                                    <section
+                                      key={`past-${group.category}`}
+                                      className="space-y-2"
+                                    >
+                                      <div className="px-1 pt-1">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                          {group.category}
+                                        </p>
+                                        <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                      </div>
+                                      {group.items.map((item) => (
+                                        <button
+                                          key={item.row.id}
+                                          type="button"
+                                          onClick={() =>
+                                            openOwnerEventContext(
+                                              item.row,
+                                              item.href
+                                            )
+                                          }
+                                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-75 saturate-75`}
+                                          style={item.style}
+                                        >
+                                          <span
+                                            className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
+                                          />
+                                          <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-sm md:text-base font-semibold">
+                                              {item.title}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                              {item.dateLabel}
+                                            </span>
+                                          </span>
+                                          <ChevronRight
+                                            size={16}
+                                            className="mt-1 shrink-0 text-[#7a5fc0]"
+                                            aria-hidden="true"
+                                          />
+                                        </button>
+                                      ))}
+                                    </section>
+                                  ))}
+                              </section>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5 bg-[#f6f3ff]"
-                style={{
-                  ...panelTransitionStyle,
-                  transform: invitedEventsPanelTransform,
-                  pointerEvents: sidebarPage === "invitedEvents" ? "auto" : "none",
-                }}
-                aria-hidden={sidebarPage !== "invitedEvents"}
-              >
-                <div className="space-y-3">
-                  <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-                    <button
-                      type="button"
-                      onClick={() => setSidebarPage("root")}
-                      className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        <ChevronLeft size={16} />
-                      </span>
-                      <span className="truncate">Invited Events</span>
-                    </button>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {invitedEventsGrouped.upcoming.length === 0 &&
-                    invitedEventsGrouped.past.length === 0 ? (
-                      <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
-                        No invited events yet.
+                  <div
+                    className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5 bg-[#f6f3ff]"
+                    style={{
+                      ...panelTransitionStyle,
+                      transform: invitedEventsPanelTransform,
+                      pointerEvents:
+                        sidebarPage === "invitedEvents" ? "auto" : "none",
+                    }}
+                    aria-hidden={sidebarPage !== "invitedEvents"}
+                  >
+                    <div className="space-y-3">
+                      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("root")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                            <ChevronLeft size={16} />
+                          </span>
+                          <span className="truncate">Invited Events</span>
+                        </button>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {invitedEventsGrouped.upcoming.length === 0 ? (
-                          <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
-                            No upcoming events.
+
+                      <div className="space-y-3">
+                        {invitedEventsGrouped.upcoming.length === 0 &&
+                        invitedEventsGrouped.past.length === 0 ? (
+                          <div
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                          >
+                            No invited events yet.
                           </div>
                         ) : (
-                          invitedEventsGrouped.upcoming.map((group) => (
-                            <section key={`invited-upcoming-${group.category}`} className="space-y-2">
-                              <div className="px-1 pt-1">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
-                                  {group.category}
-                                </p>
-                                <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                          <div className="space-y-4">
+                            {invitedEventsGrouped.upcoming.length === 0 ? (
+                              <div
+                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                              >
+                                No upcoming events.
                               </div>
-                              {group.items.map((item) => (
-                                <button
-                                  key={item.row.id}
-                                  type="button"
-                                  onClick={() => openGuestEventContext(item.row, item.href)}
-                                  className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} ${
-                                    selectedEventId === item.row.id
-                                      ? "ring-2 ring-[#d9ccff]"
-                                      : ""
-                                  } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
-                                  style={item.style}
+                            ) : (
+                              invitedEventsGrouped.upcoming.map((group) => (
+                                <section
+                                  key={`invited-upcoming-${group.category}`}
+                                  className="space-y-2"
                                 >
-                                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm md:text-base font-semibold">
-                                      {item.title}
-                                    </span>
-                                    <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
-                                      {item.dateLabel}
-                                    </span>
-                                  </span>
-                                  <span className="inline-flex shrink-0 items-center rounded-full border border-[#cfd9ff] bg-[#f4f7ff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#4d63a8]">
-                                    Invited
-                                  </span>
-                                  <ChevronRight
-                                    size={16}
-                                    className="mt-1 shrink-0 text-[#6f84ff]"
-                                    aria-hidden="true"
-                                  />
-                                </button>
-                              ))}
-                            </section>
-                          ))
-                        )}
-
-                        {invitedEventsGrouped.past.length > 0 && (
-                          <section className="space-y-2">
-                            <div className="px-1 pt-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
-                                  Past Events
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPastInvitedEvents((prev) => !prev)}
-                                  className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
-                                >
-                                  <span>
-                                    {showPastInvitedEvents
-                                      ? "Hide past events"
-                                      : "Show past events"}
-                                  </span>
-                                  <ChevronRight
-                                    size={12}
-                                    className={`transition-transform ${
-                                      showPastInvitedEvents ? "rotate-90" : ""
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                              <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
-                            </div>
-
-                            {showPastInvitedEvents &&
-                              invitedEventsGrouped.past.map((group) => (
-                                <section key={`invited-past-${group.category}`} className="space-y-2">
                                   <div className="px-1 pt-1">
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
                                       {group.category}
@@ -3334,12 +3411,17 @@ export default function LeftSidebar() {
                                     <button
                                       key={item.row.id}
                                       type="button"
-                                      onClick={() => openGuestEventContext(item.row, item.href)}
-                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} ${
-                                        selectedEventId === item.row.id
-                                          ? "ring-2 ring-[#d9ccff]"
-                                          : ""
-                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-70 saturate-75`}
+                                      onClick={() =>
+                                        openGuestEventContext(
+                                          item.row,
+                                          item.href
+                                        )
+                                      }
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${
+                                        isHistoryRowActive(item.row.id)
+                                          ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                          : `${item.tintClass} ${item.hoverTintClass}`
+                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
                                       style={item.style}
                                     >
                                       <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
@@ -3351,9 +3433,6 @@ export default function LeftSidebar() {
                                           {item.dateLabel}
                                         </span>
                                       </span>
-                                      <span className="inline-flex shrink-0 items-center rounded-full border border-[#cfd9ff] bg-[#f4f7ff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#4d63a8]">
-                                        Invited
-                                      </span>
                                       <ChevronRight
                                         size={16}
                                         className="mt-1 shrink-0 text-[#6f84ff]"
@@ -3362,137 +3441,193 @@ export default function LeftSidebar() {
                                     </button>
                                   ))}
                                 </section>
-                              ))}
-                          </section>
+                              ))
+                            )}
+
+                            {invitedEventsGrouped.past.length > 0 && (
+                              <section className="space-y-2">
+                                <div className="px-1 pt-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                      Past Events
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setShowPastInvitedEvents(
+                                          (prev) => !prev
+                                        )
+                                      }
+                                      className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
+                                    >
+                                      <span>
+                                        {showPastInvitedEvents
+                                          ? "Hide past events"
+                                          : "Show past events"}
+                                      </span>
+                                      <ChevronRight
+                                        size={12}
+                                        className={`transition-transform ${
+                                          showPastInvitedEvents
+                                            ? "rotate-90"
+                                            : ""
+                                        }`}
+                                      />
+                                    </button>
+                                  </div>
+                                  <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                </div>
+
+                                {showPastInvitedEvents &&
+                                  invitedEventsGrouped.past.map((group) => (
+                                    <section
+                                      key={`invited-past-${group.category}`}
+                                      className="space-y-2"
+                                    >
+                                      <div className="px-1 pt-1">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                          {group.category}
+                                        </p>
+                                        <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                      </div>
+                                      {group.items.map((item) => (
+                                        <button
+                                          key={item.row.id}
+                                          type="button"
+                                          onClick={() =>
+                                            openGuestEventContext(
+                                              item.row,
+                                              item.href
+                                            )
+                                          }
+                                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${
+                                            isHistoryRowActive(item.row.id)
+                                              ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                              : `${item.tintClass} ${item.hoverTintClass}`
+                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-70 saturate-75`}
+                                          style={item.style}
+                                        >
+                                          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
+                                          <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-sm md:text-base font-semibold">
+                                              {item.title}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                              {item.dateLabel}
+                                            </span>
+                                          </span>
+                                          <ChevronRight
+                                            size={16}
+                                            className="mt-1 shrink-0 text-[#6f84ff]"
+                                            aria-hidden="true"
+                                          />
+                                        </button>
+                                      ))}
+                                    </section>
+                                  ))}
+                              </section>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="absolute inset-0 z-[30] overflow-hidden bg-[#f6f3ff]"
-                style={{
-                  ...panelTransitionStyle,
-                  transform: eventPanelTransform,
-                  pointerEvents: sidebarPage === "eventContext" ? "auto" : "none",
-                }}
-                aria-hidden={sidebarPage !== "eventContext"}
-              >
-                <EventSidebar
-                  ref={eventSidebarRef}
-                  activeEventTab={activeEventTab}
-                  onBack={handleSidebarBackToEvents}
-                  onTabChange={handleEventTabChange}
-                  mode={eventSidebarMode}
-                  backLabel={
-                    eventContextSourcePage === "invitedEvents"
-                      ? "Invited Events"
-                      : "My Events"
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom: User button with dropdown */}
-          <div className="border-t border-[#ddd6f5] py-2 px-3">
-            <div className="relative z-[900]">
-              <button
-                ref={buttonRef}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen((v) => {
-                    const next = !v;
-                    return next;
-                  });
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                aria-expanded={menuOpen}
-                className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-[#4b3f72] transition-colors duration-150 hover:text-[#34275c] hover:bg-[#f1edff] active:bg-[#eae3ff] focus:outline-none focus:ring-2 focus:ring-[#b8aae8]/60"
-              >
-                <div className="min-w-0 flex-1 inline-flex items-center gap-2">
-                  <div className="min-w-0 flex-1 text-left">
-                    <div className="truncate text-sm font-medium">
-                      {displayName}
                     </div>
-                    {userEmail && (
-                      <div className="truncate text-xs md:text-sm text-[#8d84b3]">
-                        {userEmail}
-                      </div>
-                    )}
                   </div>
-                  {showCreditsShell && creditsAreKnown && (
-                    <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                      {creditsValue}
-                    </span>
-                  )}
-                </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
-                    menuOpen ? "rotate-180" : "rotate-0"
-                  }`}
-                  aria-hidden="true"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
 
-              {isOpen && menuOpen && (
-                <div className="pointer-events-none absolute bottom-full right-0 mb-3 z-[1000]">
                   <div
-                    ref={menuRef}
-                    onClick={(e) => e.stopPropagation()}
+                    className="absolute inset-0 z-[30] overflow-hidden bg-[#f6f3ff]"
+                    style={{
+                      ...panelTransitionStyle,
+                      transform: eventPanelTransform,
+                      pointerEvents:
+                        sidebarPage === "eventContext" ? "auto" : "none",
+                    }}
+                    aria-hidden={sidebarPage !== "eventContext"}
+                  >
+                    <EventSidebar
+                      ref={eventSidebarRef}
+                      activeEventTab={activeEventTab}
+                      onBack={handleSidebarBackToEvents}
+                      onTabChange={handleEventTabChange}
+                      mode={eventSidebarMode}
+                      backLabel={
+                        eventContextSourcePage === "invitedEvents"
+                          ? "Invited Events"
+                          : "My Events"
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom: User button with dropdown */}
+              <div className="border-t border-[#ddd6f5] py-2 px-3">
+                <div className="relative z-[900]">
+                  <button
+                    ref={buttonRef}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen((v) => {
+                        const next = !v;
+                        return next;
+                      });
+                    }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="pointer-events-auto w-56 rounded-2xl border border-[#d9d3f3] bg-[linear-gradient(180deg,#ffffff_0%,#f3efff_100%)] shadow-[0_20px_44px_rgba(92,67,156,0.18)] overflow-visible"
+                    aria-expanded={menuOpen}
+                    className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-[#4b3f72] transition-colors duration-150 hover:text-[#34275c] hover:bg-[#f1edff] active:bg-[#eae3ff] focus:outline-none focus:ring-2 focus:ring-[#b8aae8]/60"
                   >
-                    <div className="p-2">
-                      <Link
-                        href="/settings"
-                        onClick={() => {
-                          setMenuOpen(false);
-                        }}
-                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                      >
-                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-3.5 w-3.5"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="7" r="4" />
-                            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                          </svg>
+                    <div className="min-w-0 flex-1 inline-flex items-center gap-2">
+                      <div className="min-w-0 flex-1 text-left">
+                        <div className="truncate text-sm font-medium">
+                          {displayName}
+                        </div>
+                        {userEmail && (
+                          <div className="truncate text-xs md:text-sm text-[#8d84b3]">
+                            {userEmail}
+                          </div>
+                        )}
+                      </div>
+                      {showCreditsShell && creditsAreKnown && (
+                        <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          {creditsValue}
                         </span>
-                        <span className="text-sm md:text-base">Profile</span>
-                      </Link>
+                      )}
+                    </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
+                        menuOpen ? "rotate-180" : "rotate-0"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
 
-                      <div className="mt-1 relative">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCalendarsOpenFloating((v) => !v);
-                          }}
-                          className="group w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                        >
-                          <div className="flex items-center gap-3">
+                  {isOpen && menuOpen && (
+                    <div className="pointer-events-none absolute bottom-full right-0 mb-3 z-[1000]">
+                      <div
+                        ref={menuRef}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="pointer-events-auto w-56 rounded-2xl border border-[#d9d3f3] bg-[linear-gradient(180deg,#ffffff_0%,#f3efff_100%)] shadow-[0_20px_44px_rgba(92,67,156,0.18)] overflow-visible"
+                      >
+                        <div className="p-2">
+                          <Link
+                            href="/settings"
+                            onClick={() => {
+                              setMenuOpen(false);
+                            }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                          >
                             <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -3505,225 +3640,268 @@ export default function LeftSidebar() {
                                 className="h-3.5 w-3.5"
                                 aria-hidden="true"
                               >
-                                <rect
-                                  x="3"
-                                  y="4"
-                                  width="18"
-                                  height="18"
-                                  rx="2"
-                                  ry="2"
-                                />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
+                                <circle cx="12" cy="7" r="4" />
+                                <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
                               </svg>
                             </span>
                             <span className="text-sm md:text-base">
-                              Calendar
+                              Profile
                             </span>
-                          </div>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
-                              calendarsOpenFloating ? "rotate-0" : "rotate-90"
-                            }`}
-                            aria-hidden="true"
-                          >
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </button>
-                        {calendarsOpenFloating && (
-                          <div className="mt-2 px-3 pb-2 space-y-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
-                                Connection status
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
-                                const active = connectedCalendars[key];
-                                return (
-                                  <div
-                                    key={key}
-                                    className={`flex flex-col items-center gap-1 text-[11px] ${
-                                      active
-                                        ? "text-[#4b3f72]"
-                                        : "text-[#8f86b3]"
-                                    }`}
+                          </Link>
+
+                          <div className="mt-1 relative">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCalendarsOpenFloating((v) => !v);
+                              }}
+                              className="group w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-3.5 w-3.5"
+                                    aria-hidden="true"
                                   >
-                                    <button
-                                      type="button"
-                                      aria-pressed={active}
-                                      title={
-                                        active
-                                          ? `${label} calendar connected`
-                                          : `Connect ${label} calendar`
-                                      }
-                                      className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
-                                        active
-                                          ? "border-[#b9a7ea] bg-[#f7f3ff] hover:border-[#a892e3] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
-                                          : "border-[#ddd3f5] bg-white hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
-                                      }`}
-                                      onClick={() => handleCalendarConnect(key)}
-                                    >
-                                      <Icon
-                                        className={`h-4 w-4 ${
-                                          active
-                                            ? "text-[#5a4699]"
-                                            : "text-[#8677b4]"
-                                        }`}
-                                      />
-                                      {active && (
-                                        <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 12 12"
-                                            fill="none"
-                                            className="h-2.5 w-2.5 text-white"
+                                    <rect
+                                      x="3"
+                                      y="4"
+                                      width="18"
+                                      height="18"
+                                      rx="2"
+                                      ry="2"
+                                    />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                  </svg>
+                                </span>
+                                <span className="text-sm md:text-base">
+                                  Calendar
+                                </span>
+                              </div>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
+                                  calendarsOpenFloating
+                                    ? "rotate-0"
+                                    : "rotate-90"
+                                }`}
+                                aria-hidden="true"
+                              >
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
+                            {calendarsOpenFloating && (
+                              <div className="mt-2 px-3 pb-2 space-y-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
+                                    Connection status
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  {CALENDAR_TARGETS.map(
+                                    ({ key, label, Icon }) => {
+                                      const active = connectedCalendars[key];
+                                      return (
+                                        <div
+                                          key={key}
+                                          className={`flex flex-col items-center gap-1 text-[11px] ${
+                                            active
+                                              ? "text-[#4b3f72]"
+                                              : "text-[#8f86b3]"
+                                          }`}
+                                        >
+                                          <button
+                                            type="button"
+                                            aria-pressed={active}
+                                            title={
+                                              active
+                                                ? `${label} calendar connected`
+                                                : `Connect ${label} calendar`
+                                            }
+                                            className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
+                                              active
+                                                ? "border-[#b9a7ea] bg-[#f7f3ff] hover:border-[#a892e3] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
+                                                : "border-[#ddd3f5] bg-white hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
+                                            }`}
+                                            onClick={() =>
+                                              handleCalendarConnect(key)
+                                            }
                                           >
-                                            <path
-                                              d="M10 3L4.5 8.5L2 6"
-                                              stroke="currentColor"
-                                              strokeWidth="2"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
+                                            <Icon
+                                              className={`h-4 w-4 ${
+                                                active
+                                                  ? "text-[#5a4699]"
+                                                  : "text-[#8677b4]"
+                                              }`}
                                             />
-                                          </svg>
+                                            {active && (
+                                              <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  viewBox="0 0 12 12"
+                                                  fill="none"
+                                                  className="h-2.5 w-2.5 text-white"
+                                                >
+                                                  <path
+                                                    d="M10 3L4.5 8.5L2 6"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                  />
+                                                </svg>
+                                              </div>
+                                            )}
+                                          </button>
+                                          <span>{label}</span>
+                                          {active ? (
+                                            <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
+                                              Connected
+                                            </span>
+                                          ) : null}
                                         </div>
-                                      )}
-                                    </button>
-                                    <span>{label}</span>
-                                    {active ? (
-                                      <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
-                                        Connected
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
+
+                          <Link
+                            href="/about"
+                            onClick={() => {
+                              setMenuOpen(false);
+                            }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                          >
+                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                              >
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
+                              </svg>
+                            </span>
+                            <span className="text-sm md:text-base">
+                              About us
+                            </span>
+                          </Link>
+
+                          <Link
+                            href="/contact"
+                            onClick={() => {
+                              setMenuOpen(false);
+                            }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                          >
+                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
+                              <svg
+                                fill="currentColor"
+                                viewBox="0 0 492.014 492.014"
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                              >
+                                <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
+                                <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
+                                <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
+                                <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
+                                <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
+                                <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
+                                <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
+                              </svg>
+                            </span>
+                            <span className="text-sm md:text-base">
+                              Contact us
+                            </span>
+                          </Link>
+
+                          {isAdmin && (
+                            <Link
+                              href="/admin"
+                              onClick={() => {
+                                setMenuOpen(false);
+                              }}
+                              className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4 text-[#6e655f]"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                              </svg>
+                              <span className="text-sm md:text-base">
+                                Admin
+                              </span>
+                            </Link>
+                          )}
+
+                          <div className="my-1 h-px bg-gradient-to-r from-transparent via-[#d8d2f3] to-transparent" />
+                          <button
+                            onClick={() => signOut({ callbackUrl: "/" })}
+                            className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#f0618a] hover:text-[#e44a79] hover:bg-[#ffeef5] transition-all"
+                          >
+                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ffe8f0] text-current group-hover:bg-[#ffdce9]">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3.5 w-3.5 text-current"
+                                aria-hidden="true"
+                              >
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                              </svg>
+                            </span>
+                            <span className="text-sm md:text-base">
+                              Log out
+                            </span>
+                          </button>
+                        </div>
                       </div>
-
-                      <Link
-                        href="/about"
-                        onClick={() => {
-                          setMenuOpen(false);
-                        }}
-                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                      >
-                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-3.5 w-3.5"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                          </svg>
-                        </span>
-                        <span className="text-sm md:text-base">About us</span>
-                      </Link>
-
-                      <Link
-                        href="/contact"
-                        onClick={() => {
-                          setMenuOpen(false);
-                        }}
-                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                      >
-                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                          <svg
-                            fill="currentColor"
-                            viewBox="0 0 492.014 492.014"
-                            className="h-3.5 w-3.5"
-                            aria-hidden="true"
-                          >
-                            <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
-                            <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
-                            <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
-                            <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
-                            <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
-                            <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
-                            <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
-                          </svg>
-                        </span>
-                        <span className="text-sm md:text-base">Contact us</span>
-                      </Link>
-
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          onClick={() => {
-                            setMenuOpen(false);
-                          }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4 text-[#6e655f]"
-                            aria-hidden="true"
-                          >
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                          </svg>
-                          <span className="text-sm md:text-base">Admin</span>
-                        </Link>
-                      )}
-
-                      <div className="my-1 h-px bg-gradient-to-r from-transparent via-[#d8d2f3] to-transparent" />
-                      <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
-                        className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#f0618a] hover:text-[#e44a79] hover:bg-[#ffeef5] transition-all"
-                      >
-                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ffe8f0] text-current group-hover:bg-[#ffdce9]">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-3.5 w-3.5 text-current"
-                            aria-hidden="true"
-                          >
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
-                          </svg>
-                        </span>
-                        <span className="text-sm md:text-base">Log out</span>
-                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
-
         </div>
-      </div>
-      </div>
       </aside>
 
       {colorMenuFor &&
@@ -3781,7 +3959,7 @@ export default function LeftSidebar() {
               <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
                 {SHARED_GRADIENTS.map((g) => {
                   const historyId = String(
-                    (colorMenuFor || "").split(":")[1] || "",
+                    (colorMenuFor || "").split(":")[1] || ""
                   );
                   const selected = getSignupItemGradientId(historyId) === g.id;
                   return (
@@ -3797,7 +3975,7 @@ export default function LeftSidebar() {
                         e.preventDefault();
                         e.stopPropagation();
                         const hid = String(
-                          (colorMenuFor || "").split(":")[1] || "",
+                          (colorMenuFor || "").split(":")[1] || ""
                         );
                         setSignupItemColor(hid, g.id);
                       }}
@@ -3851,9 +4029,8 @@ export default function LeftSidebar() {
               </div>
             )}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );
 }
-

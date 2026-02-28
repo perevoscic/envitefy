@@ -11,6 +11,8 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const WEATHER_FORECAST_WINDOW_HOURS = 24 * 5; // OpenWeather 5-day forecast window.
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || null;
 
 type DashboardMetricsCache = {
   eventId: string;
@@ -262,10 +264,12 @@ export async function GET() {
       metricsEligibility: {
         weatherEligible: Boolean(
           nextEvent &&
-            nextEvent.locationLat != null &&
-            nextEvent.locationLng != null &&
+            (nextEvent.locationLat != null && nextEvent.locationLng != null
+              ? true
+              : Boolean(nextEvent.locationText)) &&
             nextEventHours != null &&
-            nextEventHours <= 24 * 7
+            nextEventHours <= WEATHER_FORECAST_WINDOW_HOURS &&
+            OPENWEATHER_API_KEY
         ),
         travelWindowEligible: Boolean(nextEvent && nextEventHours != null && nextEventHours <= 72),
       },

@@ -14,7 +14,11 @@ export const dynamic = "force-dynamic";
 
 const TRAVEL_TTL_MS = 12 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
+const WEATHER_FORECAST_WINDOW_HOURS = 24 * 5; // OpenWeather 5-day forecast window.
 let metricsCacheTableEnsured = false;
+const MAPBOX_ACCESS_TOKEN =
+  process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_API_KEY || null;
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || null;
 
 type MetricsRow = {
   event_id: string;
@@ -26,16 +30,59 @@ type MetricsRow = {
   weather_updated_at: string | null;
 };
 
-function weatherCodeSummary(code: number | null | undefined): string | null {
-  if (code == null || !Number.isFinite(code)) return null;
-  if (code === 0) return "Clear";
-  if (code === 1 || code === 2 || code === 3) return "Partly cloudy";
-  if (code === 45 || code === 48) return "Fog";
-  if (code >= 51 && code <= 67) return "Rain";
-  if (code >= 71 && code <= 77) return "Snow";
-  if (code >= 80 && code <= 82) return "Rain showers";
-  if (code >= 95) return "Thunderstorm";
-  return "Conditions unavailable";
+function parseFinite(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function extractLocationLabel(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const source = value as Record<string, any>;
+  const candidates = [
+    source.label,
+    source.name,
+    source.address,
+    source.text,
+    source.location,
+    source.query,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
+  return null;
+}
+
+function resolveHomeLabel(featureVisibility: unknown): string | null {
+  if (!featureVisibility || typeof featureVisibility !== "object") return null;
+  const source = featureVisibility as Record<string, any>;
+  const candidates = [
+    source?.home,
+    source?.homeLocation,
+    source?.origin,
+    source?.settings?.homeLocation,
+    source?.settings?.origin,
+    source?.profile?.homeLocation,
+    source?.homeAddress,
+    source?.settings?.homeAddress,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    const label = extractLocationLabel(candidate);
+    if (label) return label;
+  }
+  return null;
+}
+
+function parseInlineLatLng(text: string): { lat: number; lng: number } | null {
+  const match = text.match(
+    /(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)/
+  );
+  if (!match) return null;
+  const lat = parseFinite(match[1]);
+  const lng = parseFinite(match[2]);
+  if (lat == null || lng == null) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
 }
 
 async function ensureMetricsCacheTable() {
@@ -149,13 +196,39 @@ async function getNextEventForOwner(userId: string): Promise<DashboardEvent | nu
   return upcoming[0] || null;
 }
 
+async function geocodeWithMapbox(queryText: string): Promise<{ lat: number; lng: number } | null> {
+  const raw = queryText.trim();
+  if (!raw || !MAPBOX_ACCESS_TOKEN) return null;
+  const inline = parseInlineLatLng(raw);
+  if (inline) return inline;
+  const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(raw)}.json`);
+  url.searchParams.set("access_token", MAPBOX_ACCESS_TOKEN);
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("types", "address,poi,place,postcode,neighborhood,locality");
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) return null;
+  const payload = await res.json().catch(() => null);
+  const center = payload?.features?.[0]?.center;
+  if (!Array.isArray(center) || center.length < 2) return null;
+  const lng = parseFinite(center[0]);
+  const lat = parseFinite(center[1]);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
 async function fetchTravelMinutesAndDistance(params: {
   originLat: number;
   originLng: number;
   destLat: number;
   destLng: number;
 }): Promise<{ minutes: number | null; distanceKm: number | null }> {
-  const url = `https://router.project-osrm.org/route/v1/driving/${params.originLng},${params.originLat};${params.destLng},${params.destLat}?overview=false`;
+  if (!MAPBOX_ACCESS_TOKEN) return { minutes: null, distanceKm: null };
+  const url = new URL(
+    `https://api.mapbox.com/directions/v5/mapbox/driving/${params.originLng},${params.originLat};${params.destLng},${params.destLat}`
+  );
+  url.searchParams.set("overview", "false");
+  url.searchParams.set("alternatives", "false");
+  url.searchParams.set("access_token", MAPBOX_ACCESS_TOKEN);
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return { minutes: null, distanceKm: null };
   const payload = await res.json().catch(() => null);
@@ -176,38 +249,35 @@ async function fetchWeatherAtEvent(params: {
   lng: number;
   eventIso: string;
 }): Promise<{ summary: string | null; temp: number | null }> {
-  const url = new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude", String(params.lat));
-  url.searchParams.set("longitude", String(params.lng));
-  url.searchParams.set("hourly", "temperature_2m,weather_code");
-  url.searchParams.set("forecast_days", "7");
-  url.searchParams.set("timezone", "auto");
+  if (!OPENWEATHER_API_KEY) return { summary: null, temp: null };
+  const url = new URL("https://api.openweathermap.org/data/2.5/forecast");
+  url.searchParams.set("lat", String(params.lat));
+  url.searchParams.set("lon", String(params.lng));
+  url.searchParams.set("appid", OPENWEATHER_API_KEY);
+  url.searchParams.set("units", "imperial");
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) return { summary: null, temp: null };
   const payload = await res.json().catch(() => null);
-  const times: string[] = Array.isArray(payload?.hourly?.time) ? payload.hourly.time : [];
-  const temps: number[] = Array.isArray(payload?.hourly?.temperature_2m)
-    ? payload.hourly.temperature_2m
-    : [];
-  const codes: number[] = Array.isArray(payload?.hourly?.weather_code)
-    ? payload.hourly.weather_code
-    : [];
-  if (!times.length) return { summary: null, temp: null };
+  const list: Array<any> = Array.isArray(payload?.list) ? payload.list : [];
+  if (!list.length) return { summary: null, temp: null };
   const targetMs = new Date(params.eventIso).getTime();
-  let bestIndex = -1;
+  let bestEntry: any = null;
   let bestDelta = Number.POSITIVE_INFINITY;
-  for (let i = 0; i < times.length; i += 1) {
-    const ts = new Date(times[i]).getTime();
+  for (const entry of list) {
+    const dtSeconds = parseFinite(entry?.dt);
+    const ts = dtSeconds != null ? dtSeconds * 1000 : Number.NaN;
     if (!Number.isFinite(ts)) continue;
     const delta = Math.abs(ts - targetMs);
     if (delta < bestDelta) {
       bestDelta = delta;
-      bestIndex = i;
+      bestEntry = entry;
     }
   }
-  if (bestIndex < 0) return { summary: null, temp: null };
-  const temp = Number.isFinite(Number(temps[bestIndex])) ? Number(temps[bestIndex]) : null;
-  const summary = weatherCodeSummary(Number(codes[bestIndex]));
+  if (!bestEntry) return { summary: null, temp: null };
+  const temp = parseFinite(bestEntry?.main?.temp);
+  const summaryRaw = bestEntry?.weather?.[0]?.main ?? bestEntry?.weather?.[0]?.description;
+  const summary =
+    typeof summaryRaw === "string" && summaryRaw.trim() ? summaryRaw.trim() : null;
   return { summary, temp };
 }
 
@@ -244,18 +314,37 @@ export async function POST(req: Request) {
       ),
       getMetrics(nextEvent.id),
     ]);
-    const origin = extractHomeOrigin(userRes.rows[0]?.feature_visibility);
+    const featureVisibility = userRes.rows[0]?.feature_visibility;
+    const homeOrigin = extractHomeOrigin(featureVisibility);
+    const homeLabel = resolveHomeLabel(featureVisibility);
+    const geocodedOrigin =
+      !homeOrigin && homeLabel ? await geocodeWithMapbox(homeLabel).catch(() => null) : null;
+    const origin = homeOrigin || (geocodedOrigin ? { ...geocodedOrigin, label: homeLabel } : null);
     const startMs = new Date(nextEvent.startAt).getTime();
     const nowMs = Date.now();
     const hoursToStart = (startMs - nowMs) / (1000 * 60 * 60);
-    const hasDestination = nextEvent.locationLat != null && nextEvent.locationLng != null;
+    const destinationCoords =
+      nextEvent.locationLat != null && nextEvent.locationLng != null
+        ? { lat: nextEvent.locationLat, lng: nextEvent.locationLng }
+        : nextEvent.locationText
+        ? await geocodeWithMapbox(nextEvent.locationText).catch(() => null)
+        : null;
+    const hasDestination = Boolean(destinationCoords);
 
     const travelFresh = isCacheFresh(cached?.travel_updated_at || null, TRAVEL_TTL_MS);
     const weatherFresh = isCacheFresh(cached?.weather_updated_at || null, WEATHER_TTL_MS);
 
     const canCallTravel =
-      hasDestination && !!origin && (hoursToStart <= 72 || forceTravel) && !travelFresh;
-    const canCallWeather = hasDestination && hoursToStart <= 24 * 7 && !weatherFresh;
+      hasDestination &&
+      !!origin &&
+      !!MAPBOX_ACCESS_TOKEN &&
+      (hoursToStart <= 72 || forceTravel) &&
+      !travelFresh;
+    const canCallWeather =
+      hasDestination &&
+      !!OPENWEATHER_API_KEY &&
+      hoursToStart <= WEATHER_FORECAST_WINDOW_HOURS &&
+      !weatherFresh;
 
     let travelMinutes = cached?.travel_minutes ?? null;
     let travelDistanceKm = cached?.travel_distance_km ?? null;
@@ -264,12 +353,12 @@ export async function POST(req: Request) {
     let weatherTemp = cached?.weather_temp ?? null;
     let weatherUpdatedAt = cached?.weather_updated_at ?? null;
 
-    if (canCallTravel && origin && nextEvent.locationLat != null && nextEvent.locationLng != null) {
+    if (canCallTravel && origin && destinationCoords) {
       const travel = await fetchTravelMinutesAndDistance({
         originLat: origin.lat,
         originLng: origin.lng,
-        destLat: nextEvent.locationLat,
-        destLng: nextEvent.locationLng,
+        destLat: destinationCoords.lat,
+        destLng: destinationCoords.lng,
       });
       if (travel.minutes != null || travel.distanceKm != null) {
         travelMinutes = travel.minutes;
@@ -283,10 +372,10 @@ export async function POST(req: Request) {
       }
     }
 
-    if (canCallWeather && nextEvent.locationLat != null && nextEvent.locationLng != null) {
+    if (canCallWeather && destinationCoords) {
       const weather = await fetchWeatherAtEvent({
-        lat: nextEvent.locationLat,
-        lng: nextEvent.locationLng,
+        lat: destinationCoords.lat,
+        lng: destinationCoords.lng,
         eventIso: nextEvent.startAt,
       });
       if (weather.summary != null || weather.temp != null) {
@@ -317,7 +406,7 @@ export async function POST(req: Request) {
         hasDestination,
         hasOrigin: Boolean(origin),
         travelWindowEligible: hoursToStart <= 72,
-        weatherWindowEligible: hoursToStart <= 24 * 7,
+        weatherWindowEligible: hoursToStart <= WEATHER_FORECAST_WINDOW_HOURS,
         travelUsedCache: travelFresh,
         weatherUsedCache: weatherFresh,
       },
