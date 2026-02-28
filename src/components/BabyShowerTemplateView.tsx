@@ -292,10 +292,12 @@ export default function BabyShowerTemplateView({
       return item;
     })
     .filter(Boolean) as typeof detailSections;
+  const hasRsvpSection = Boolean(rsvp?.isEnabled || rsvpDeadline);
 
   return (
-    <main className="min-h-screen bg-[#f5f6fb] px-4 py-10 font-sans text-slate-900">
-      <div className="mx-auto flex max-w-5xl flex-col">
+    <main className="event-modern-page font-sans text-slate-900">
+      <div className="event-modern-container">
+        <div className="mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10">
         <div
           className={`relative overflow-hidden rounded-[32px] shadow-[0_35px_120px_rgba(15,23,42,0.25)] ${backgroundClass}`}
           style={backgroundStyle}
@@ -363,7 +365,7 @@ export default function BabyShowerTemplateView({
           )}
 
           {/* Share Actions */}
-          <div className="absolute bottom-4 right-4">
+          <div className="absolute bottom-4 right-4 hidden md:block">
             <div className="flex items-center gap-2 rounded-full bg-white/80 px-2 py-1 shadow-xl">
               <EventActions
                 shareUrl={shareUrl}
@@ -560,7 +562,7 @@ export default function BabyShowerTemplateView({
           )}
 
           {/* RSVP Section */}
-          {(rsvp?.isEnabled || rsvpDeadline) && (
+          {hasRsvpSection && (
             <section
               className={`max-w-3xl mx-auto text-center px-4 md:px-0 py-12 border-t border-white/10 ${textClass}`}
             >
@@ -710,6 +712,40 @@ export default function BabyShowerTemplateView({
           </footer>
         </div>
       </div>
+      </div>
+      {!isReadOnly && (
+        <div className="event-modern-mobile-bar md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            {hasRsvpSection && (
+              <a
+                href="#rsvp"
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                RSVP
+              </a>
+            )}
+            {isOwner && (
+              <Link
+                href={editHref}
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Edit
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+              <EventActions
+                shareUrl={shareUrl}
+                event={eventData}
+                historyId={eventId}
+                className="w-full justify-center"
+                variant="compact"
+                tone={"default" as any}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {!isReadOnly && <div className="event-modern-mobile-spacer md:hidden" />}
     </main>
   );
 }

@@ -16,13 +16,36 @@ declare global {
   var __pgPool: Pool | undefined;
 }
 
-function isTransientPgError(err: unknown): boolean {
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value || "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const PG_AUTH_ERROR_THRESHOLD = parsePositiveInt(process.env.PG_AUTH_ERROR_THRESHOLD, 2);
+const PG_AUTH_BACKOFF_MS = parsePositiveInt(process.env.PG_AUTH_BACKOFF_MS, 60_000);
+let pgAuthErrorCount = 0;
+let pgAuthBackoffUntil = 0;
+
+function isAuthenticationPgError(err: unknown): boolean {
   const anyErr = err as any;
-  const code = anyErr?.code as string | undefined;
+  const code = String(anyErr?.code || "");
   const message = String(anyErr?.message || "");
   return (
-    (code && ["ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code)) ||
-    /timeout|terminat|refused|getaddrinfo|not known/i.test(message)
+    ["28P01", "28000"].includes(code) ||
+    /password authentication failed|authentication failed|invalid auth|invalid password|too many authentication errors|circuit breaker open/i.test(
+      message
+    )
+  );
+}
+
+function isTransientPgError(err: unknown): boolean {
+  const anyErr = err as any;
+  const code = String(anyErr?.code || "");
+  const message = String(anyErr?.message || "");
+  return (
+    ["PG_AUTH_BACKOFF", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code) ||
+    /timeout|terminat|refused|getaddrinfo|not known|too many authentication errors|circuit breaker open/i.test(message) ||
+    isAuthenticationPgError(err)
   );
 }
 
@@ -92,7 +115,28 @@ function getPool(): Pool {
 
 async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
   const pool = getPool();
-  const client = await pool.connect();
+  if (pgAuthBackoffUntil > Date.now()) {
+    const err: any = new Error("Database authentication temporarily paused after repeated failures");
+    err.code = "PG_AUTH_BACKOFF";
+    throw err;
+  }
+
+  let client: PoolClient;
+  try {
+    client = await pool.connect();
+    pgAuthErrorCount = 0;
+  } catch (err) {
+    if (isAuthenticationPgError(err)) {
+      pgAuthErrorCount += 1;
+      if (pgAuthErrorCount >= PG_AUTH_ERROR_THRESHOLD) {
+        pgAuthBackoffUntil = Date.now() + PG_AUTH_BACKOFF_MS;
+        console.warn(
+          `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`
+        );
+      }
+    }
+    throw err;
+  }
   try {
     return await callback(client);
   } finally {
@@ -213,12 +257,33 @@ export async function setUserAdminByEmail(email: string, isAdmin: boolean): Prom
 }
 
 export async function getIsAdminByEmail(email: string): Promise<boolean> {
+  const lower = email.toLowerCase();
+  const selectIsAdmin = async () =>
+    query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [lower]);
+
   try {
-    await ensureUsersHasAdminAndMetricsColumns();
-    const lower = email.toLowerCase();
-    const res = await query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [lower]);
+    const res = await selectIsAdmin();
     return Boolean(res.rows[0]?.is_admin);
   } catch (err) {
+    if ((err as any)?.code === "42703") {
+      try {
+        // Legacy DBs may not have the is_admin column yet; migrate lazily and retry once.
+        await ensureUsersHasAdminAndMetricsColumns();
+        const retry = await selectIsAdmin();
+        return Boolean(retry.rows[0]?.is_admin);
+      } catch (retryErr) {
+        if (isTransientPgError(retryErr)) {
+          console.warn(
+            "[db] getIsAdminByEmail: database unavailable during schema ensure, defaulting isAdmin=false",
+            (retryErr as any)?.message || retryErr
+          );
+          return false;
+        }
+        console.error("[db] getIsAdminByEmail failed after schema ensure, defaulting isAdmin=false", retryErr);
+        return false;
+      }
+    }
+
     if (isTransientPgError(err)) {
       console.warn("[db] getIsAdminByEmail: database unavailable, defaulting isAdmin=false", (err as any)?.message || err);
       return false;

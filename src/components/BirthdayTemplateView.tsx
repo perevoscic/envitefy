@@ -990,23 +990,63 @@ export default function BirthdayTemplateView({
     </section>
   );
 
-  if (templateLayout?.id === "candy-dreams" && templateLayout.palette) {
-    return (
+  const pageContent =
+    templateLayout?.id === "candy-dreams" && templateLayout.palette ? (
       <CandyDreamsLayout palette={templateLayout.palette}>
         {viewContent}
       </CandyDreamsLayout>
+    ) : (
+      viewContent
     );
-  }
 
   return (
-    <main className="px-5 py-10">
-      {viewContent}
-      
-      {isOwner && eventId && (
-        <div className="max-w-7xl mx-auto w-full mt-12">
-            <EventRsvpDashboard eventId={eventId} initialNumberOfGuests={numberOfGuests} />
+    <main className="event-modern-page">
+      <div className="event-modern-container py-6 md:py-10">
+        {pageContent}
+
+        {isOwner && eventId && (
+          <div className="mx-auto mt-12 w-full max-w-7xl">
+            <EventRsvpDashboard
+              eventId={eventId}
+              initialNumberOfGuests={numberOfGuests}
+            />
+          </div>
+        )}
+      </div>
+
+      {!isReadOnly && (
+        <div className="event-modern-mobile-bar md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            {hasRsvpSection && (
+              <a
+                href="#rsvp"
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                RSVP
+              </a>
+            )}
+            {isOwner && (
+              <Link
+                href={resolveEditHref(eventId, eventData, eventTitle)}
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Edit
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+              <EventActions
+                shareUrl={shareUrl}
+                event={eventData}
+                historyId={eventId}
+                className="w-full justify-center"
+                variant="compact"
+                tone="default"
+              />
+            </div>
+          </div>
         </div>
       )}
+      {!isReadOnly && <div className="event-modern-mobile-spacer md:hidden" />}
 
       <GuestRsvpModal
         isOpen={isRsvpModalOpen}

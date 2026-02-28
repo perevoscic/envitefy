@@ -763,6 +763,51 @@ h5 {
 
 /* Consistent responsive horizontal gutters for layouts */
 @layer utilities {
+  .event-modern-page {
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 520px at 8% -10%, rgba(14, 165, 233, 0.12), transparent 62%),
+      radial-gradient(900px 420px at 100% 0%, rgba(245, 158, 11, 0.1), transparent 64%),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 56%, #f8fafc 100%);
+  }
+
+  .event-modern-container {
+    width: 100%;
+    max-width: 1120px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    padding-top: calc(0.8rem + env(safe-area-inset-top));
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .event-modern-mobile-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    border-top: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -14px 30px rgba(15, 23, 42, 0.14);
+    padding: 0.7rem 0.85rem calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .event-modern-mobile-spacer {
+    height: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 768px) {
+    .event-modern-container {
+      padding-left: 1.4rem;
+      padding-right: 1.4rem;
+      padding-top: calc(1.25rem + env(safe-area-inset-top));
+      padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
+    }
+  }
+
   /* Applies symmetric horizontal padding that adapts with breakpoints */
   .content-gutters { padding-left: 1rem; padding-right: 1rem; }
   /* Add iOS safe-area insets on devices with notches (no-op elsewhere) */

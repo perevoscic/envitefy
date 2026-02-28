@@ -1055,13 +1055,24 @@ export default function WeddingTemplateView({
 
   const startISO = weddingData.startISO || null;
   const endISO = weddingData.endISO || null;
+  const shareEventPayload = {
+    title: eventTitle,
+    start: startISO || undefined,
+    end: endISO || undefined,
+    location: event.location || "",
+    venue: null,
+    description: event.story || "",
+    timezone: null,
+    rsvp: weddingData.rsvp || null,
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8F5FF]">
-      <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
+    <div className="event-modern-page">
+      <div className="event-modern-container">
+      <div className="relative w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
         {/* Edit/Delete buttons overlay */}
         {isOwner && !isReadOnly && (
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+          <div className="absolute top-4 right-4 z-50 hidden md:flex items-center gap-2">
             <Link
               href={buildEditLink(eventId, eventData, eventTitle)}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-white/90 backdrop-blur-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-white transition-colors rounded-lg shadow-md"
@@ -1094,23 +1105,40 @@ export default function WeddingTemplateView({
 
       {/* Event Actions for owner */}
       {isOwner && (
-        <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6">
+        <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6 hidden md:block">
           <EventActions
             shareUrl={shareUrl}
             historyId={eventId}
-            event={{
-              title: eventTitle,
-              start: startISO || undefined,
-              end: endISO || undefined,
-              location: event.location || "",
-              venue: null,
-              description: event.story || "",
-              timezone: null,
-              rsvp: weddingData.rsvp || null,
-            }}
+            event={shareEventPayload}
           />
         </div>
       )}
+      </div>
+      {!isReadOnly && (
+        <div className="event-modern-mobile-bar md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            {isOwner && (
+              <Link
+                href={buildEditLink(eventId, eventData, eventTitle)}
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Edit
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+              <EventActions
+                shareUrl={shareUrl}
+                historyId={eventId}
+                event={shareEventPayload}
+                className="w-full justify-center"
+                variant="compact"
+                tone="default"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {!isReadOnly && <div className="event-modern-mobile-spacer md:hidden" />}
     </div>
   );
 }

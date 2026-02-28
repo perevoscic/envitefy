@@ -1263,7 +1263,11 @@ export default async function EventPage({
 
   return (
     <main
-      className="max-w-3xl mx-auto px-5 sm:px-10 py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1em+env(safe-area-inset-bottom))]"
+      className={`event-modern-page max-w-5xl mx-auto px-5 sm:px-10 py-10 md:py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(2.6rem+env(safe-area-inset-top))] ${
+        isReadOnly
+          ? "pb-[calc(1em+env(safe-area-inset-bottom))]"
+          : "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-[calc(1em+env(safe-area-inset-bottom))]"
+      }`}
       style={
         {
           // Keep page chrome in the white/purple family for scanned event views.
@@ -1377,7 +1381,7 @@ export default async function EventPage({
             </div>
           </div>
           {/* Actions pinned to bottom-right of header */}
-          <div className="absolute bottom-3 right-3 z-40">
+          <div className="absolute bottom-3 right-3 z-40 hidden md:block">
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium rounded-xl border border-[#ddd4f8] bg-white/92 backdrop-blur px-2 sm:px-3 py-1.5 shadow-[0_12px_26px_rgba(76,55,134,0.22)]">
               {!isReadOnly && isOwner && !isOcrEvent && (
                 <Link
@@ -1553,7 +1557,7 @@ export default async function EventPage({
           {/* Second row: RSVP (left) and Add to calendar (right) */}
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
             {(rsvpName || rsvpPhone || rsvpEmail) && (
-              <div>
+              <div id="event-rsvp">
                 <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                   RSVP
                 </dt>
@@ -1860,6 +1864,39 @@ export default async function EventPage({
           </section>
         ) : null}
       </div>
+      {!isReadOnly && (
+        <div className="event-modern-mobile-bar md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            {(rsvpName || rsvpPhone || rsvpEmail) && (
+              <a
+                href="#event-rsvp"
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                RSVP
+              </a>
+            )}
+            {isOwner && !isOcrEvent && (
+              <Link
+                href={buildEditLink(row.id, data, title)}
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Edit
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+              <EventActions
+                shareUrl={shareUrl}
+                event={data as any}
+                historyId={!isReadOnly ? row.id : undefined}
+                className="w-full justify-center"
+                variant="compact"
+                tone={"default" as any}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {!isReadOnly && <div className="event-modern-mobile-spacer md:hidden" />}
       {isReadOnly && (
         <div className="mt-6">
           <ReadOnlyBanner />

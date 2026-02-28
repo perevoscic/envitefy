@@ -2626,7 +2626,8 @@ export default function SimpleTemplateView({
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#f0f2f5] flex justify-center py-4 md:py-8">
+    <div className="event-modern-page w-full">
+      <div className="event-modern-container flex justify-center py-3 md:py-8">
       <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
         <div
           className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
@@ -2641,7 +2642,7 @@ export default function SimpleTemplateView({
             >
               {/* Actions - White background bar with Edit/Delete/Share/Email */}
               {!isLocked && !isReadOnly && (
-                <div className="absolute top-3 right-3 z-40">
+                <div className="absolute top-3 right-3 z-40 hidden md:block">
                   <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
                     {isOwner && (
                       <>
@@ -2682,7 +2683,7 @@ export default function SimpleTemplateView({
                   </div>
                 </div>
               )}
-              <div className="pr-32">
+              <div className="pr-0 md:pr-32">
                 <h1
                   className={`${headingSizeClass} mb-2 leading-tight ${textClass}`}
                   style={{
@@ -3031,7 +3032,15 @@ export default function SimpleTemplateView({
                               )
                             }
                           >
-                            <option value="">Choose athlete</option>
+                            <option
+                              value=""
+                              style={{
+                                color: "#0f172a",
+                                backgroundColor: "#ffffff",
+                              }}
+                            >
+                              Choose athlete
+                            </option>
                             {rosterAthletes.map((athlete) => {
                               const labelParts = [
                                 athlete.name,
@@ -3044,12 +3053,27 @@ export default function SimpleTemplateView({
                                 athlete.level,
                               ].filter(Boolean);
                               return (
-                                <option key={athlete.id} value={athlete.id}>
+                                <option
+                                  key={athlete.id}
+                                  value={athlete.id}
+                                  style={{
+                                    color: "#0f172a",
+                                    backgroundColor: "#ffffff",
+                                  }}
+                                >
                                   {labelParts.join(" • ")}
                                 </option>
                               );
                             })}
-                            <option value="__other">Not listed / other</option>
+                            <option
+                              value="__other"
+                              style={{
+                                color: "#0f172a",
+                                backgroundColor: "#ffffff",
+                              }}
+                            >
+                              Not listed / other
+                            </option>
                           </select>
                         </div>
                       )}
@@ -3252,7 +3276,7 @@ export default function SimpleTemplateView({
                     alt="Facebook"
                     width={24}
                     height={24}
-                    className="w-6 h-6"
+                    className="w-6 h-6 brightness-0 invert"
                   />
                 </a>
                 <a
@@ -3267,7 +3291,7 @@ export default function SimpleTemplateView({
                     alt="Instagram"
                     width={24}
                     height={24}
-                    className="w-6 h-6"
+                    className="w-6 h-6 brightness-0 invert"
                   />
                 </a>
                 <a
@@ -3282,7 +3306,7 @@ export default function SimpleTemplateView({
                     alt="TikTok"
                     width={24}
                     height={24}
-                    className="w-6 h-6"
+                    className="w-6 h-6 brightness-0 invert"
                   />
                 </a>
                 <a
@@ -3297,7 +3321,7 @@ export default function SimpleTemplateView({
                     alt="YouTube"
                     width={24}
                     height={24}
-                    className="w-6 h-6"
+                    className="w-6 h-6 brightness-0 invert"
                   />
                 </a>
               </div>
@@ -3305,6 +3329,40 @@ export default function SimpleTemplateView({
           </div>
         </div>
       </div>
+      </div>
+      {!isReadOnly && (
+        <div className="event-modern-mobile-bar md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            {hasRsvpSection && (
+              <a
+                href="#rsvp"
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                RSVP
+              </a>
+            )}
+            {isOwner && (
+              <Link
+                href={resolveEditHref(eventId, eventData, eventTitle)}
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Edit
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+              <EventActions
+                shareUrl={shareUrl}
+                event={eventData}
+                historyId={eventId}
+                className="w-full justify-center"
+                variant="compact"
+                tone="default"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {!isReadOnly && <div className="event-modern-mobile-spacer md:hidden" />}
 
       {/* Volunteer Signup Modal */}
       {volunteerSignupModal.open && (
