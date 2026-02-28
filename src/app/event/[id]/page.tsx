@@ -877,13 +877,6 @@ export default async function EventPage({
   const titleSize: number =
     typeof titleStyle?.size === "number" ? (titleStyle.size as number) : 28;
 
-  // Use image colors if available, otherwise fall back to category theme
-  const cardBackgroundImage =
-    imageColors?.headerLight ||
-    headerBgCss ||
-    templateBackgroundCss ||
-    eventTheme.headerLight;
-
   const headerGradientCss =
     headerBgCss ||
     templateBackgroundCss ||
@@ -891,46 +884,25 @@ export default async function EventPage({
       ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
       : null);
 
-  const themeStyleVars = (
-    imageColors
-      ? {
-          "--event-header-gradient-light": imageColors.headerLight,
-          "--event-header-gradient-dark": imageColors.headerDark,
-          "--event-card-bg-light": imageColors.cardLight,
-          "--event-card-bg-dark": imageColors.cardDark,
-          "--event-border-light": imageColors.borderLight,
-          "--event-border-dark": imageColors.borderDark,
-          "--event-chip-light": imageColors.chipLight,
-          "--event-chip-dark": imageColors.chipDark,
-          "--event-text-light": imageColors.textLight,
-          "--event-text-dark": imageColors.textDark,
-        }
-      : headerGradientCss
-      ? {
-          "--event-header-gradient-light": headerGradientCss,
-          "--event-header-gradient-dark": headerGradientCss,
-          "--event-card-bg-light": eventTheme.cardLight,
-          "--event-card-bg-dark": eventTheme.cardDark,
-          "--event-border-light": eventTheme.borderLight,
-          "--event-border-dark": eventTheme.borderDark,
-          "--event-chip-light": eventTheme.chipLight,
-          "--event-chip-dark": eventTheme.chipDark,
-          "--event-text-light": eventTheme.textLight,
-          "--event-text-dark": eventTheme.textDark,
-        }
-      : {
-          "--event-header-gradient-light": eventTheme.headerLight,
-          "--event-header-gradient-dark": eventTheme.headerDark,
-          "--event-card-bg-light": eventTheme.cardLight,
-          "--event-card-bg-dark": eventTheme.cardDark,
-          "--event-border-light": eventTheme.borderLight,
-          "--event-border-dark": eventTheme.borderDark,
-          "--event-chip-light": eventTheme.chipLight,
-          "--event-chip-dark": eventTheme.chipDark,
-          "--event-text-light": eventTheme.textLight,
-          "--event-text-dark": eventTheme.textDark,
-        }
-  ) satisfies Record<string, string>;
+  const themedHeaderGradient =
+    imageColors?.headerLight ||
+    headerGradientCss ||
+    (eventTheme.headerLight as string);
+
+  const themeStyleVars = {
+    "--event-header-gradient-light": themedHeaderGradient,
+    "--event-header-gradient-dark": themedHeaderGradient,
+    "--event-card-bg-light":
+      "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(245,238,255,0.94))",
+    "--event-card-bg-dark":
+      "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(245,238,255,0.94))",
+    "--event-border-light": "#ddd5ff",
+    "--event-border-dark": "#ddd5ff",
+    "--event-chip-light": "rgba(255,255,255,0.9)",
+    "--event-chip-dark": "rgba(255,255,255,0.9)",
+    "--event-text-light": "#2b2350",
+    "--event-text-dark": "#2b2350",
+  } satisfies Record<string, string>;
 
   // Mirror editor page background (hero) gradient
   const heroGradient: string =
