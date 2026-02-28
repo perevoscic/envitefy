@@ -52,10 +52,10 @@ This document describes the app’s server-side agents (API routes) that extract
 ### RSVP Attendance — POST `/api/rsvp/attendance`
 
 - **Purpose**: Update an athlete's attendance status from the RSVP form and sync the Team Roster.
-- **Auth**: NextAuth session required; caller must be the event owner or an accepted share recipient.
-- **Input (JSON)**: `{ eventId: string, status: "going"|"notgoing"|"not_going"|"maybe"|"late"|"pending", athleteId?: string, athleteName?: string }`.
-- **Behavior**: Looks up the event's `advancedSections.roster.athletes`, matches by `athleteId` (preferred) or case-insensitive `athleteName`, sets `status`, and stamps `attendanceUpdatedAt`/`attendanceUpdatedByUserId`. Returns the updated event data.
-- **Output**: `{ ok: true, athlete, updatedEvent }` or `{ error }`.
+- **Auth**: Optional. Signed-in owners/share recipients can always update. Guests can update when the event is public or when they hold a valid passcode unlock cookie for protected events.
+- **Input (JSON)**: `{ eventId: string, status: "going"|"notgoing"|"not_going"|"maybe"|"late"|"pending", athleteId?: string, athleteName?: string, guest?: { name?: string, email?: string, phone?: string } }`.
+- **Behavior**: Looks up the event's `advancedSections.roster.athletes`, matches by `athleteId` (preferred) or case-insensitive `athleteName`, sets `status`, and stamps `attendanceUpdatedAt`. Signed-in updates set `attendanceUpdatedByUserId`; guest updates set `attendanceUpdatedByGuestName`/`attendanceUpdatedByGuestEmail`/`attendanceUpdatedByGuestPhone`.
+- **Output**: `{ ok: true, athlete, updatedEvent, updatedBy: "user"|"guest" }` or `{ error }`.
 - **Env**: None.
 
 ### Admin Users Search — GET `/api/admin/users/search`

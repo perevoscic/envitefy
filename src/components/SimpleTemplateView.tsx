@@ -191,6 +191,8 @@ export default function SimpleTemplateView({
   const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
   const [eventDataState, setEventDataState] = useState(eventData);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
+  const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
+  const [rsvpGuestPhoneInput, setRsvpGuestPhoneInput] = useState("");
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
@@ -224,8 +226,10 @@ export default function SimpleTemplateView({
   const isGymnasticsTemplate =
     normalizedCategory === "gymnastics" ||
     normalizedCategory === "sport_gymnastics" ||
-    currentData?.templateId === "gymnastics";
-  const showRsvpSignInRequired = normalizedCategory === "gymnastics";
+    normalizedCategory === "sport_gymnastics_schedule" ||
+    currentData?.templateId === "gymnastics" ||
+    currentData?.templateId === "gymnastics-schedule";
+  const allowGuestAttendanceRsvp = isGymnasticsTemplate;
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -938,8 +942,8 @@ export default function SimpleTemplateView({
     if (isSignedIn || disableProtectedSectionLocks) return node;
     const loginHref =
       typeof window !== "undefined"
-        ? `/login?callbackUrl=${encodeURIComponent(window.location.href)}`
-        : "/login";
+        ? `/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
+        : "/api/auth/signin";
     return (
       <div className="relative">
         <div className="blur-sm pointer-events-none select-none">{node}</div>
@@ -1774,14 +1778,30 @@ export default function SimpleTemplateView({
                 {additionalDocuments.map((doc: any, idx: number) => (
                   <li key={doc.id || `doc-${idx}`}>
                     {doc.url ? (
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`text-sm underline ${accentClass}`}
-                      >
-                        {doc.name || `Document ${idx + 1}`}
-                      </a>
+                      (() => {
+                        const isEmbeddedDocument =
+                          typeof doc.url === "string" &&
+                          doc.url.startsWith("data:");
+                        return (
+                          <a
+                            href={doc.url}
+                            target={isEmbeddedDocument ? undefined : "_blank"}
+                            rel={
+                              isEmbeddedDocument
+                                ? undefined
+                                : "noopener noreferrer"
+                            }
+                            download={
+                              isEmbeddedDocument
+                                ? doc.name || `document-${idx + 1}`
+                                : undefined
+                            }
+                            className={`text-sm underline ${accentClass}`}
+                          >
+                            {doc.name || `Document ${idx + 1}`}
+                          </a>
+                        );
+                      })()
                     ) : (
                       <span className={`text-sm opacity-80 ${textClass}`}>
                         {doc.name || `Document ${idx + 1}`}
@@ -2035,12 +2055,12 @@ export default function SimpleTemplateView({
   }, [eventData]);
 
   const handleRsvpSubmit = async () => {
-    // Redirect guests to sign-in
-    if (!isSignedIn) {
+    // Require sign-in when guest attendance is not enabled for the template.
+    if (!isSignedIn && !allowGuestAttendanceRsvp) {
       const loginHref =
         typeof window !== "undefined"
-          ? `/login?callbackUrl=${encodeURIComponent(window.location.href)}`
-          : "/login";
+          ? `/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
+          : "/api/auth/signin";
       window.location.href = loginHref;
       return;
     }
@@ -2061,6 +2081,14 @@ export default function SimpleTemplateView({
           status: rsvpAttending === "yes" ? "going" : "notgoing",
           athleteId: selectedAthleteId || null,
           athleteName: rsvpNameInput.trim() || null,
+          guest:
+            !isSignedIn && allowGuestAttendanceRsvp
+              ? {
+                  name: rsvpNameInput.trim() || undefined,
+                  email: rsvpGuestEmailInput.trim() || undefined,
+                  phone: rsvpGuestPhoneInput.trim() || undefined,
+                }
+              : undefined,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -2072,6 +2100,10 @@ export default function SimpleTemplateView({
         setEventDataState(json.updatedEvent.data);
       }
       setRsvpSubmitted(true);
+      if (!isSignedIn) {
+        setRsvpGuestEmailInput("");
+        setRsvpGuestPhoneInput("");
+      }
     } catch (err: any) {
       setRsvpError(err?.message || "Failed to submit attendance.");
     } finally {
@@ -2953,6 +2985,36 @@ export default function SimpleTemplateView({
                           onChange={(e) => setRsvpNameInput(e.target.value)}
                         />
                       </div>
+                      {!isSignedIn && allowGuestAttendanceRsvp && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                              Guardian Email (optional)
+                            </label>
+                            <input
+                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                              placeholder="name@email.com"
+                              value={rsvpGuestEmailInput}
+                              onChange={(e) =>
+                                setRsvpGuestEmailInput(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                              Guardian Phone (optional)
+                            </label>
+                            <input
+                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                              placeholder="(555) 555-5555"
+                              value={rsvpGuestPhoneInput}
+                              onChange={(e) =>
+                                setRsvpGuestPhoneInput(e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
                       {hasRoster && (
                         <div>
                           <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
@@ -3012,10 +3074,14 @@ export default function SimpleTemplateView({
                               </div>
                               <div className="text-left">
                                 <div className="font-semibold">
-                                  Joyfully Accept
+                                  {isGymnasticsTemplate
+                                    ? "Going"
+                                    : "Joyfully Accept"}
                                 </div>
                                 <p className="text-sm opacity-70">
-                                  I'll be there.
+                                  {isGymnasticsTemplate
+                                    ? "Athlete will attend."
+                                    : "I'll be there."}
                                 </p>
                               </div>
                             </div>
@@ -3036,19 +3102,24 @@ export default function SimpleTemplateView({
                               </div>
                               <div className="text-left">
                                 <div className="font-semibold">
-                                  Regretfully Decline
+                                  {isGymnasticsTemplate
+                                    ? "Not Going"
+                                    : "Regretfully Decline"}
                                 </div>
                                 <p className="text-sm opacity-70">
-                                  Sending warm wishes.
+                                  {isGymnasticsTemplate
+                                    ? "Athlete cannot attend."
+                                    : "Sending warm wishes."}
                                 </p>
                               </div>
                             </div>
                           </label>
                         </div>
                       </div>
-                      {showRsvpSignInRequired && !isSignedIn && (
-                        <div className="text-sm text-center text-red-100 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                          Sign in to confirm attendance and view roster details.
+                      {allowGuestAttendanceRsvp && !isSignedIn && (
+                        <div className="text-sm text-center text-emerald-100 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                          Guest attendance is enabled. Submit your athlete
+                          status directly from this page.
                         </div>
                       )}
                       {rsvpError && (

@@ -312,11 +312,13 @@ const MenuCard = ({
   title,
   desc,
   icon,
+  status,
   onClick,
 }: {
   title: string;
   desc: string;
   icon: React.ReactNode;
+  status?: "not-started" | "in-progress" | "ready";
   onClick: () => void;
 }) => (
   <button
@@ -330,10 +332,29 @@ const MenuCard = ({
     <div className="flex-1">
       <div className="flex justify-between items-center mb-1">
         <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
+        <div className="flex items-center gap-2">
+          {status && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                status === "ready"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : status === "in-progress"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-slate-100 text-slate-500"
+              }`}
+            >
+              {status === "ready"
+                ? "Ready"
+                : status === "in-progress"
+                ? "In progress"
+                : "Not started"}
+            </span>
+          )}
+          <ChevronRight
+            size={16}
+            className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
+          />
+        </div>
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
     </div>
@@ -368,6 +389,36 @@ const SectionToggle = ({
   </div>
 );
 
+const buildMinimalValue = (value: any): any => {
+  if (Array.isArray(value)) return [];
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, inner]) => [key, buildMinimalValue(inner)])
+    );
+  }
+  if (typeof value === "string") return "";
+  if (typeof value === "number") return 0;
+  if (typeof value === "boolean") return value;
+  return value ?? null;
+};
+
+const buildMinimalAdvancedState = (
+  sections: AdvancedSectionSpec[] | undefined
+): Record<string, any> =>
+  Object.fromEntries(
+    (sections || []).map((section) => [
+      section.id,
+      buildMinimalValue(section.initialState),
+    ])
+  );
+
+const buildSampleAdvancedState = (
+  sections: AdvancedSectionSpec[] | undefined
+): Record<string, any> =>
+  Object.fromEntries(
+    (sections || []).map((section) => [section.id, section.initialState])
+  );
+
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
@@ -390,45 +441,42 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [defaultDate]);
 
+    const sampleAdvancedState = useMemo(
+      () => buildSampleAdvancedState(config.advancedSections),
+      [config.advancedSections]
+    );
+
     const [data, setData] = useState(() => ({
-      title: config.prefill?.title || `${config.displayName}`,
-      date: config.prefill?.date || initialDate,
-      time: config.prefill?.time || "14:00",
-      city: config.prefill?.city || "Chicago",
-      state: config.prefill?.state || "IL",
-      address: config.prefill?.address || "",
-      venue: config.prefill?.venue || "",
-      details: config.prefill?.details || "Tell guests what to expect.",
-      hero: config.prefill?.hero || "",
-      rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
+      title: "",
+      date: initialDate,
+      time: "14:00",
+      city: "",
+      state: "",
+      address: "",
+      venue: "",
+      details: "",
+      hero: "",
+      rsvpEnabled: true,
       rsvpDeadline:
-        config.prefill?.rsvpDeadline ??
-        (typeof config.defaultRsvpDeadlineDays === "number"
+        typeof config.defaultRsvpDeadlineDays === "number"
           ? (() => {
               const d = new Date();
               d.setDate(d.getDate() + config.defaultRsvpDeadlineDays!);
               return d.toISOString().split("T")[0];
             })()
-          : ""),
+          : "",
       fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
       passcode: "",
+      passcodeHint: "",
       extra: Object.fromEntries(
-        config.detailFields.map((f) => [
-          f.key,
-          config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
-        ])
+        config.detailFields.map((f) => [f.key, ""])
       ),
     }));
-    const [advancedState, setAdvancedState] = useState(() => {
-      const entries =
-        config.advancedSections?.map((section) => [
-          section.id,
-          section.initialState,
-        ]) || [];
-      return Object.fromEntries(entries);
-    });
+    const [advancedState, setAdvancedState] = useState(() =>
+      buildMinimalAdvancedState(config.advancedSections)
+    );
     const [themeId, setThemeId] = useState(
       config.themes[0]?.id ?? "default-theme"
     );
@@ -561,7 +609,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const hasRoster =
       advancedState?.roster?.enabled !== false &&
       (advancedState?.roster?.athletes?.length ?? 0) > 0;
-    const hasMeet = Boolean(advancedState?.meet);
+    const hasMeet = Boolean(
+      advancedState?.meet?.sessionNumber ||
+        advancedState?.meet?.warmUpTime ||
+        advancedState?.meet?.marchInTime ||
+        advancedState?.meet?.startApparatus ||
+        advancedState?.meet?.judgingNotes ||
+        advancedState?.meet?.scoresLink
+    );
     const hasPractice =
       advancedState?.practice?.enabled !== false &&
       (advancedState?.practice?.blocks?.length ?? 0) > 0;
@@ -601,6 +656,51 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             0) > 0));
     const hasAnnouncements =
       (advancedState?.announcements?.items?.length ?? 0) > 0;
+    const hasAnnouncementEntries =
+      hasAnnouncements ||
+      (advancedState?.announcements?.announcements?.length ?? 0) > 0;
+
+    const headlineStatus: "not-started" | "in-progress" | "ready" = (() => {
+      const filled = [
+        Boolean(data.title?.trim()),
+        Boolean(data.date),
+        Boolean(data.time),
+        Boolean(data.venue?.trim() || data.address?.trim()),
+      ].filter(Boolean).length;
+      if (filled === 0) return "not-started";
+      return filled >= 4 ? "ready" : "in-progress";
+    })();
+
+    const detailsStatus: "not-started" | "in-progress" | "ready" = (() => {
+      const base = Boolean(data.details?.trim());
+      const extrasFilled = Object.values(data.extra || {}).filter((value) =>
+        String(value || "").trim()
+      ).length;
+      if (!base && extrasFilled === 0) return "not-started";
+      if (base && extrasFilled >= 2) return "ready";
+      return "in-progress";
+    })();
+
+    const advancedStatus = (enabled: boolean): "not-started" | "ready" =>
+      enabled ? "ready" : "not-started";
+    const passcodeStatus: "not-started" | "in-progress" | "ready" = (() => {
+      if (!data.passcodeRequired) return "ready";
+      if (!data.passcode?.trim()) return "in-progress";
+      return data.passcode.trim().length >= 4 ? "ready" : "in-progress";
+    })();
+    const rsvpStatus: "not-started" | "ready" = data.rsvpEnabled
+      ? "ready"
+      : "not-started";
+
+    const missingEssentials = [
+      !data.title?.trim() ? "Event title" : null,
+      !data.date ? "Date" : null,
+      !data.time ? "Start time" : null,
+      !data.venue?.trim() && !data.address?.trim()
+        ? "Venue or address"
+        : null,
+      !(data.details || "").trim() ? "Description" : null,
+    ].filter(Boolean) as string[];
     const navItems = useMemo(
       () =>
         [
@@ -614,13 +714,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           {
             id: "announcements",
             label: "Announcements",
-            enabled: hasAnnouncements,
+            enabled: hasAnnouncementEntries,
           },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
           { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
       [
-        hasAnnouncements,
+        hasAnnouncementEntries,
         hasGear,
         hasLogistics,
         hasMeet,
@@ -723,6 +823,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 : prev.fontSize || "medium",
             passcodeRequired: hasPasscode,
             passcode: "", // Never load plain passcode for security
+            passcodeHint:
+              typeof accessControl?.passcodeHint === "string"
+                ? accessControl.passcodeHint
+                : "",
             extra: {
               ...prev.extra,
               ...(existing.extra || {}),
@@ -996,6 +1100,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   accessControl: {
                     mode: "access-code",
                     passcodePlain: data.passcode,
+                    passcodeHint: data.passcodeHint || undefined,
                     requirePasscode: true,
                   },
                 }
@@ -1003,6 +1108,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ? {
                   accessControl: {
                     mode: "public",
+                    passcodeHint: "",
                     requirePasscode: false,
                   },
                 }
@@ -1089,6 +1195,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.extra,
       data.passcodeRequired,
       data.passcode,
+      data.passcodeHint,
       advancedState,
       locationParts,
       config.category,
@@ -1242,60 +1349,134 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Add your details
+            Build Your Meet Page
           </h2>
           <p className="text-slate-500 text-sm">
-            Customize every aspect of your {config.displayName.toLowerCase()}{" "}
-            site.
+            Complete the essentials first, then add operations and parent
+            communications.
           </p>
         </div>
 
+        <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+            Starter Mode
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={resetToBlank}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+            >
+              Start Blank
+            </button>
+            <button
+              type="button"
+              onClick={applySampleData}
+              className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+            >
+              Load Sample Meet
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+            Essentials
+          </p>
           <MenuCard
-            title="Headline"
-            desc="Title, date, location."
+            title="Event Basics"
+            desc="Title, date, time, and venue."
             icon={<Type size={18} />}
+            status={headlineStatus}
             onClick={() => setActiveView("headline")}
+          />
+          <MenuCard
+            title="Details"
+            desc="Description, coaches, and season context."
+            icon={<Edit2 size={18} />}
+            status={detailsStatus}
+            onClick={() => setActiveView("details")}
           />
           <MenuCard
             title="Design"
             desc="Theme presets and typography."
             icon={<Palette size={18} />}
+            status={themeId ? "ready" : "not-started"}
             onClick={() => setActiveView("design")}
           />
           <MenuCard
             title="Images"
-            desc="Hero & header photo."
+            desc="Hero and header photo."
             icon={<ImageIcon size={18} />}
+            status={data.hero ? "ready" : "not-started"}
             onClick={() => setActiveView("images")}
           />
-          <MenuCard
-            title="Details"
-            desc="Description and category specifics."
-            icon={<Edit2 size={18} />}
-            onClick={() => setActiveView("details")}
-          />
+
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 pt-2">
+            Operations
+          </p>
+          {config.advancedSections
+            ?.filter((section) => section.id !== "announcements")
+            .map((section) => {
+              const sectionEnabled = (() => {
+                switch (section.id) {
+                  case "roster":
+                    return hasRoster;
+                  case "meet":
+                    return hasMeet;
+                  case "practice":
+                    return hasPractice;
+                  case "logistics":
+                    return hasLogistics;
+                  case "gear":
+                    return hasGear;
+                  case "volunteers":
+                    return hasVolunteers;
+                  default:
+                    return Boolean(advancedState?.[section.id]);
+                }
+              })();
+              return (
+                <MenuCard
+                  key={section.id}
+                  title={section.menuTitle}
+                  desc={section.menuDesc}
+                  icon={<Edit2 size={18} />}
+                  status={advancedStatus(sectionEnabled)}
+                  onClick={() => setActiveView(section.id)}
+                />
+              );
+            })}
+
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 pt-2">
+            Communication
+          </p>
           <MenuCard
             title={rsvpCopy.menuTitle}
             desc={rsvpCopy.menuDesc}
             icon={<CheckSquare size={18} />}
+            status={rsvpStatus}
             onClick={() => setActiveView("rsvp")}
           />
           <MenuCard
             title="Passcode"
-            desc="Require access code to view event."
+            desc="Protect this page with an access code."
             icon={<LinkIcon size={18} />}
+            status={passcodeStatus}
             onClick={() => setActiveView("passcode")}
           />
-          {config.advancedSections?.map((section) => (
-            <MenuCard
-              key={section.id}
-              title={section.menuTitle}
-              desc={section.menuDesc}
-              icon={<Edit2 size={18} />}
-              onClick={() => setActiveView(section.id)}
-            />
-          ))}
+          {config.advancedSections
+            ?.filter((section) => section.id === "announcements")
+            .map((section) => (
+              <MenuCard
+                key={section.id}
+                title={section.menuTitle}
+                desc={section.menuDesc}
+                icon={<Edit2 size={18} />}
+                status={advancedStatus(hasAnnouncementEntries)}
+                onClick={() => setActiveView(section.id)}
+              />
+            ))}
         </div>
       </div>
     );
@@ -1312,15 +1493,62 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setActiveView("main");
     }, []);
 
+    const applySampleData = useCallback(() => {
+      setData((prev) => ({
+        ...prev,
+        title: config.prefill?.title ?? `${config.displayName}`,
+        city: config.prefill?.city || prev.city,
+        state: config.prefill?.state || prev.state,
+        address: config.prefill?.address || prev.address,
+        venue: config.prefill?.venue || prev.venue,
+        details: config.prefill?.details || prev.details,
+        hero: config.prefill?.hero || prev.hero,
+        extra: Object.fromEntries(
+          config.detailFields.map((f) => [
+            f.key,
+            config.prefill?.extra?.[f.key] ?? "",
+          ])
+        ),
+      }));
+      setAdvancedState(sampleAdvancedState);
+    }, [
+      config.detailFields,
+      config.displayName,
+      config.prefill?.address,
+      config.prefill?.city,
+      config.prefill?.details,
+      config.prefill?.extra,
+      config.prefill?.hero,
+      config.prefill?.state,
+      config.prefill?.title,
+      config.prefill?.venue,
+      sampleAdvancedState,
+    ]);
+
+    const resetToBlank = useCallback(() => {
+      setData((prev) => ({
+        ...prev,
+        title: "",
+        city: "",
+        state: "",
+        address: "",
+        venue: "",
+        details: "",
+        hero: "",
+        extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
+      }));
+      setAdvancedState(buildMinimalAdvancedState(config.advancedSections));
+    }, [config.advancedSections, config.detailFields]);
+
     const renderHeadlineEditor = useMemo(
       () => (
-        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+        <EditorLayout title="Event Basics" onBack={handleBackToMain} showBack>
           <div className="space-y-6">
             <InputGroup
-              label="Headline"
+              label="Event Title"
               value={data.title}
               onChange={(v) => updateData("title", v)}
-              placeholder={`${config.displayName} title`}
+              placeholder="Level 6 Invitational - Session 2"
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -1342,13 +1570,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               label="Venue"
               value={data.venue}
               onChange={(v) => updateData("venue", v)}
-              placeholder="Venue name (optional)"
+              placeholder="Arena or gym name"
             />
             <InputGroup
               label="Address"
               value={data.address}
               onChange={(v) => updateData("address", v)}
-              placeholder="Street address (optional)"
+              placeholder="Street address"
             />
           </div>
         </EditorLayout>
@@ -1530,7 +1758,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               rows={config.detailsDescriptionRows || 6}
               value={data.details}
               onChange={(e) => updateData("details", e.target.value)}
-              placeholder="Tell guests what to expect."
+              placeholder="Session notes, arrival instructions, spectator info, and what athletes should prepare."
             />
             <p className="mt-1 text-xs text-slate-400">
               Tip: press Shift+Enter for line breaks.
@@ -1638,7 +1866,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 Passcode Required
               </span>
               <p className="text-xs text-slate-600">
-                Only people with the link and access code can view this event.
+                Require a shared code before anyone can open this page.
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -1655,19 +1883,28 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
 
           {data.passcodeRequired && (
-            <InputGroup
-              label="Access Code"
-              type="text"
-              value={data.passcode}
-              onChange={(v) => updateData("passcode", v)}
-              placeholder="Cardinals2025"
-            />
+            <div className="space-y-4">
+              <InputGroup
+                label="Access Code"
+                type="text"
+                value={data.passcode}
+                onChange={(v) => updateData("passcode", v)}
+                placeholder="Gym2026Finals"
+              />
+              <InputGroup
+                label="Passcode Hint (optional)"
+                type="text"
+                value={data.passcodeHint}
+                onChange={(v) => updateData("passcodeHint", v)}
+                placeholder="Team nickname + year"
+              />
+            </div>
           )}
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
-            <strong>How it works:</strong> Your event stays unlisted. Only
-            people with the link and access code can view it. Perfect for team
-            events - share the link and code in your team group chat.
+            <strong>How it works:</strong> Guests need both the event link and
+            this code. If you rotate codes often, update it here before sharing
+            to families.
           </div>
         </div>
       </EditorLayout>
@@ -1745,6 +1982,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               accessControl: {
                 mode: "access-code",
                 passcodePlain: data.passcode,
+                passcodeHint: data.passcodeHint || undefined,
                 requirePasscode: true,
               },
             }
@@ -1752,6 +1990,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           ? {
               accessControl: {
                 mode: "public",
+                passcodeHint: "",
                 requirePasscode: false,
               },
             }
@@ -1776,6 +2015,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.fontSize,
       data.hero,
       data.passcode,
+      data.passcodeHint,
       data.passcodeRequired,
       data.rsvpDeadline,
       data.rsvpEnabled,
@@ -1860,6 +2100,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </ScrollHandoffContainer>
 
           <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+            <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Before Publish
+              </p>
+              {missingEssentials.length === 0 ? (
+                <p className="mt-1 text-xs text-emerald-700 font-medium">
+                  Essentials complete. You are ready to publish.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-amber-700">
+                  Missing: {missingEssentials.join(", ")}
+                </p>
+              )}
+            </div>
             <div className="flex gap-3">
               {editEventId && (
                 <button
@@ -1871,7 +2125,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
               <button
                 onClick={handlePublish}
-                disabled={submitting}
+                disabled={submitting || missingEssentials.length > 0}
                 className={`${
                   editEventId ? "flex-1" : "w-full"
                 } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}

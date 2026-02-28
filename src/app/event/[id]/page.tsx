@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createHash } from "crypto";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
@@ -8,6 +9,7 @@ import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import LocationLink from "@/components/LocationLink";
 import EventMap from "@/components/EventMap";
 import ReadOnlyBanner from "./ReadOnlyBanner";
+import AccessCodeGate from "@/components/AccessCodeGate";
 import Image from "next/image";
 import Link from "next/link";
 import { combineVenueAndLocation } from "@/lib/mappers";
@@ -58,6 +60,10 @@ import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import EventOwnerWorkspace from "@/components/EventOwnerWorkspace";
+import {
+  getEventAccessCookieName,
+  verifyEventAccessCookieValue,
+} from "@/lib/event-access";
 
 export const dynamic = "force-dynamic";
 
@@ -626,6 +632,57 @@ export default async function EventPage({
     data && typeof data.accessControl === "object"
       ? { ...data.accessControl }
       : null;
+  const requiresPasscode = Boolean(
+    accessControlRaw?.requirePasscode && accessControlRaw?.passcodeHash
+  );
+  let hasPasscodeAccess = false;
+  if (!requiresPasscode) {
+    hasPasscodeAccess = true;
+  } else if (isOwner || recipientAccepted) {
+    hasPasscodeAccess = true;
+  } else if (typeof accessControlRaw?.passcodeHash === "string") {
+    const cookieStore = await cookies();
+    const accessCookieName = getEventAccessCookieName(row.id);
+    const accessCookieValue = cookieStore.get(accessCookieName)?.value;
+    hasPasscodeAccess = verifyEventAccessCookieValue(
+      accessCookieValue,
+      row.id,
+      accessControlRaw.passcodeHash
+    );
+  }
+
+  const passcodeLocked =
+    requiresPasscode && !hasPasscodeAccess && !isOwner && !recipientAccepted;
+
+  if (passcodeLocked) {
+    return (
+      <main className="mx-auto w-full max-w-3xl px-4 py-10">
+        <section className="rounded-2xl border border-border bg-surface p-6 md:p-8 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground/60">
+            Private Event
+          </p>
+          <h1 className="mt-2 text-2xl md:text-3xl font-semibold text-foreground">
+            {title}
+          </h1>
+          <p className="mt-3 text-sm text-foreground/75 leading-relaxed">
+            This event requires an access code. Enter the code shared by the
+            organizer to continue.
+          </p>
+          <div className="mt-6">
+            <AccessCodeGate
+              eventId={row.id}
+              hint={
+                typeof accessControlRaw?.passcodeHint === "string"
+                  ? accessControlRaw.passcodeHint
+                  : null
+              }
+            />
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (data?.accessControl) {
     data.accessControl = {
       ...accessControlRaw,

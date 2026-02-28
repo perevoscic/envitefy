@@ -76,7 +76,12 @@ type LogisticsInfo = {
   mealPlan: string;
   feeDueDate: string;
   feeAmount: string;
-  additionalDocuments: { id: string; name: string; url: string }[];
+  additionalDocuments: {
+    id: string;
+    name: string;
+    url: string;
+    mimeType?: string;
+  }[];
   waiverLinks?: string[];
 };
 
@@ -1457,6 +1462,42 @@ const logisticsSection = {
       }));
     };
 
+    const handleDocumentUpload = async (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        window.alert("Please upload a file smaller than 10MB.");
+        return;
+      }
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+        if (!dataUrl) return;
+        setState((s: any) => ({
+          ...s,
+          additionalDocuments: [
+            ...(s?.additionalDocuments || []),
+            {
+              id: genId(),
+              name: file.name || "Uploaded document",
+              url: dataUrl,
+              mimeType: file.type || undefined,
+            },
+          ],
+        }));
+      } catch (err) {
+        console.error("Failed to upload additional document", err);
+        window.alert("Could not process this document. Please try another file.");
+      }
+    };
+
     return (
       <div className="space-y-6">
         <SectionToggle
@@ -1668,6 +1709,20 @@ const logisticsSection = {
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
             Additional Documents
           </label>
+          <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+              Upload document
+            </label>
+            <input
+              type="file"
+              className={inputClass}
+              accept=".pdf,.doc,.docx,.txt,.rtf,.png,.jpg,.jpeg,.webp"
+              onChange={handleDocumentUpload}
+            />
+            <p className="text-xs text-slate-500 mt-2">
+              Add a file directly, or keep using external links below.
+            </p>
+          </div>
           {(logistics.additionalDocuments || []).map((doc: any) => (
             <div key={doc.id} className="grid grid-cols-1 gap-2 mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <BufferedInput
@@ -1848,20 +1903,26 @@ const logisticsSection = {
         </div>
         {showAdditionalDocuments && documents.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {documents.map((doc, idx) =>
-              doc.url ? (
+            {documents.map((doc, idx) => {
+              if (!doc.url) return null;
+              const isEmbeddedDocument =
+                typeof doc.url === "string" && doc.url.startsWith("data:");
+              return (
                 <a
                   key={doc.id || idx}
                   href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target={isEmbeddedDocument ? undefined : "_blank"}
+                  rel={isEmbeddedDocument ? undefined : "noopener noreferrer"}
+                  download={
+                    isEmbeddedDocument ? doc.name || `document-${idx + 1}` : undefined
+                  }
                   className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors ${textClass}`}
                 >
                   <FileText size={16} />
                   {doc.name || `Document ${idx + 1}`}
                 </a>
-              ) : null
-            )}
+              );
+            })}
           </div>
         )}
       </>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { parse as parseCookie } from "cookie";
 import {
   getEventHistoryById,
   getUserIdByEmail,
@@ -8,6 +9,10 @@ import {
   updateEventHistoryData,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import {
+  getEventAccessCookieName,
+  verifyEventAccessCookieValue,
+} from "@/lib/event-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,13 +49,6 @@ export async function POST(req: Request) {
     if (!userId && sessionUser?.email) {
       userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
     }
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Sign in required to record attendance" },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
     const eventId = typeof body.eventId === "string" ? body.eventId : null;
     const requestedStatus = normalizeStatus(body.status);
@@ -58,6 +56,23 @@ export async function POST(req: Request) {
       typeof body.athleteId === "string" ? body.athleteId : null;
     const athleteName =
       typeof body.athleteName === "string" ? body.athleteName.trim() : null;
+    const guest =
+      body && typeof body.guest === "object" && body.guest
+        ? {
+            name:
+              typeof body.guest.name === "string"
+                ? body.guest.name.trim()
+                : "",
+            email:
+              typeof body.guest.email === "string"
+                ? body.guest.email.trim()
+                : "",
+            phone:
+              typeof body.guest.phone === "string"
+                ? body.guest.phone.trim()
+                : "",
+          }
+        : null;
 
     if (!eventId || !requestedStatus) {
       return NextResponse.json(
@@ -73,18 +88,39 @@ export async function POST(req: Request) {
 
     const isOwner = existing.user_id && existing.user_id === userId;
     let isRecipient = false;
-    if (!isOwner) {
+    if (!isOwner && userId) {
       try {
         isRecipient = Boolean(await isEventSharedWithUser(eventId, userId));
       } catch {
         isRecipient = false;
       }
     }
-    if (!isOwner && !isRecipient) {
-      return NextResponse.json(
-        { error: "You do not have access to update this roster" },
-        { status: 403 }
+
+    const accessControl =
+      existing.data &&
+      typeof existing.data === "object" &&
+      (existing.data as any).accessControl &&
+      typeof (existing.data as any).accessControl === "object"
+        ? ((existing.data as any).accessControl as any)
+        : null;
+    const requiresPasscode = Boolean(
+      accessControl?.requirePasscode && accessControl?.passcodeHash
+    );
+
+    let hasGuestAccess = !requiresPasscode;
+    if (requiresPasscode && accessControl?.passcodeHash) {
+      const cookieHeader = req.headers.get("cookie") || "";
+      const cookies = parseCookie(cookieHeader);
+      const cookieName = getEventAccessCookieName(eventId);
+      hasGuestAccess = verifyEventAccessCookieValue(
+        cookies?.[cookieName],
+        eventId,
+        String(accessControl.passcodeHash)
       );
+    }
+
+    if (!isOwner && !isRecipient && !hasGuestAccess) {
+      return NextResponse.json({ error: "This event is private" }, { status: 403 });
     }
 
     const data = (existing.data as any) || {};
@@ -124,12 +160,26 @@ export async function POST(req: Request) {
 
     const normalizedStatus =
       requestedStatus === "not_going" ? "notgoing" : requestedStatus;
+    const updatedByKind = isOwner || isRecipient ? "user" : "guest";
+    const guestName = guest?.name || athleteName || "";
 
     const updatedAthletes = [...athletes];
     updatedAthletes[idx] = {
       ...updatedAthletes[idx],
       status: normalizedStatus,
-      attendanceUpdatedByUserId: userId,
+      attendanceUpdatedByUserId:
+        updatedByKind === "user" ? userId || null : null,
+      ...(updatedByKind === "guest"
+        ? {
+            attendanceUpdatedByGuestName: guestName || null,
+            attendanceUpdatedByGuestEmail: guest?.email || null,
+            attendanceUpdatedByGuestPhone: guest?.phone || null,
+          }
+        : {
+            attendanceUpdatedByGuestName: null,
+            attendanceUpdatedByGuestEmail: null,
+            attendanceUpdatedByGuestPhone: null,
+          }),
       attendanceUpdatedAt: new Date().toISOString(),
     };
 
@@ -155,6 +205,7 @@ export async function POST(req: Request) {
       ok: true,
       athlete: updatedRow.data?.advancedSections?.roster?.athletes?.[idx] || null,
       updatedEvent: updatedRow,
+      updatedBy: updatedByKind,
     });
   } catch (err: any) {
     try {
