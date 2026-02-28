@@ -479,6 +479,8 @@ const SIDEBAR_BADGE_CLASS =
 const SIDEBAR_WIDTH_REM = "20rem";
 const SIDEBAR_COLLAPSED_REM = "4.5rem";
 const SIDEBAR_LOGO_SRC = "/E.png";
+const SUBPAGE_STICKY_HEADER_CLASS =
+  "sticky top-0 z-20 -mx-4 bg-[rgba(246,243,255,0.86)] px-4 pb-2 pt-1 backdrop-blur-xl";
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
@@ -506,6 +508,7 @@ export default function LeftSidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
+  const [showPastEvents, setShowPastEvents] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -596,7 +599,6 @@ export default function LeftSidebar() {
     setSelectedEventId,
     selectedEventTitle,
     setSelectedEventTitle,
-    selectedEventHref,
     setSelectedEventHref,
     setSelectedEventEditHref,
     activeEventTab,
@@ -829,12 +831,27 @@ export default function LeftSidebar() {
   }, [clearEventContext, isEventMenuActive, setSidebarPage]);
 
   useEffect(() => {
+    if (!selectedEventId) return;
     const isEventPage = pathname?.startsWith("/event/");
-    if (!isEventPage && selectedEventId) {
-      clearEventContext();
-      setSidebarPage("root");
+    if (isEventPage) return;
+    // When an event is selected we first switch panel state, then route.
+    // Avoid clearing context during that transition window.
+    if (sidebarPage === "eventContext") return;
+    clearEventContext();
+    setSidebarPage("root");
+  }, [
+    clearEventContext,
+    pathname,
+    selectedEventId,
+    setSidebarPage,
+    sidebarPage,
+  ]);
+
+  useEffect(() => {
+    if (sidebarPage !== "myEvents") {
+      setShowPastEvents(false);
     }
-  }, [clearEventContext, pathname, selectedEventId, setSidebarPage]);
+  }, [sidebarPage]);
 
   const displayName =
     (session?.user?.name as string) ||
@@ -1635,7 +1652,7 @@ export default function LeftSidebar() {
       });
     };
 
-    const groups = new Map<
+    const upcomingGroups = new Map<
       string,
       Array<{
         row: { id: string; title: string; created_at?: string; data?: any };
@@ -1649,6 +1666,21 @@ export default function LeftSidebar() {
         style?: CSSProperties;
       }>
     >();
+    const pastGroups = new Map<
+      string,
+      Array<{
+        row: { id: string; title: string; created_at?: string; data?: any };
+        href: string;
+        title: string;
+        dateLabel: string;
+        dateMs: number;
+        tintClass: string;
+        hoverTintClass: string;
+        swatchClass: string;
+        style?: CSSProperties;
+      }>
+    >();
+    const nowMs = Date.now();
 
     for (const row of history) {
       if (!row || typeof row !== "object") continue;
@@ -1699,27 +1731,50 @@ export default function LeftSidebar() {
         swatchClass: palette.swatch,
         style,
       };
-      const existing = groups.get(category) || [];
+      const targetGroups =
+        Number.isFinite(dateMs) && dateMs < nowMs ? pastGroups : upcomingGroups;
+      const existing = targetGroups.get(category) || [];
       existing.push(entry);
-      groups.set(category, existing);
+      targetGroups.set(category, existing);
     }
 
-    return Array.from(groups.entries())
-      .map(([category, items]) => ({
-        category,
-        items: [...items].sort((a, b) => {
-          if (a.dateMs !== b.dateMs) return a.dateMs - b.dateMs;
-          return a.title.localeCompare(b.title);
-        }),
-      }))
-      .sort((a, b) => {
-        const pa = priority.get(a.category.toLowerCase());
-        const pb = priority.get(b.category.toLowerCase());
-        if (typeof pa === "number" && typeof pb === "number") return pa - pb;
-        if (typeof pa === "number") return -1;
-        if (typeof pb === "number") return 1;
-        return a.category.localeCompare(b.category);
-      });
+    const sortGroups = (
+      source: Map<
+        string,
+        Array<{
+          row: { id: string; title: string; created_at?: string; data?: any };
+          href: string;
+          title: string;
+          dateLabel: string;
+          dateMs: number;
+          tintClass: string;
+          hoverTintClass: string;
+          swatchClass: string;
+          style?: CSSProperties;
+        }>
+      >,
+    ) =>
+      Array.from(source.entries())
+        .map(([category, items]) => ({
+          category,
+          items: [...items].sort((a, b) => {
+            if (a.dateMs !== b.dateMs) return a.dateMs - b.dateMs;
+            return a.title.localeCompare(b.title);
+          }),
+        }))
+        .sort((a, b) => {
+          const pa = priority.get(a.category.toLowerCase());
+          const pb = priority.get(b.category.toLowerCase());
+          if (typeof pa === "number" && typeof pb === "number") return pa - pb;
+          if (typeof pa === "number") return -1;
+          if (typeof pb === "number") return 1;
+          return a.category.localeCompare(b.category);
+        });
+
+    return {
+      upcoming: sortGroups(upcomingGroups),
+      past: sortGroups(pastGroups),
+    };
   }, [categoryColors, history]);
 
   const recentAdIndex = useMemo<number | null>(() => {
@@ -2126,19 +2181,6 @@ export default function LeftSidebar() {
     } catch {}
   }, []);
 
-  const withEventTab = useCallback(
-    (href: string, tab: EventContextTab) => {
-      try {
-        const url = new URL(href, window.location.origin);
-        url.searchParams.set("tab", tab);
-        return `${url.pathname}${url.search}${url.hash}`;
-      } catch {
-        return href;
-      }
-    },
-    [],
-  );
-
   const openEventContext = useCallback(
     (row: { id: string; title: string; data?: any }, href: string) => {
       const title = row.title || "Untitled event";
@@ -2148,7 +2190,7 @@ export default function LeftSidebar() {
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
       setActiveEventTab("dashboard");
       setSidebarPage("eventContext");
-      router.push(withEventTab(href, "dashboard"));
+      router.push("/");
     },
     [
       router,
@@ -2158,18 +2200,22 @@ export default function LeftSidebar() {
       setSelectedEventId,
       setSelectedEventTitle,
       setSidebarPage,
-      withEventTab,
     ],
   );
 
   const handleEventTabChange = useCallback(
     (tab: EventContextTab) => {
       setActiveEventTab(tab);
-      if (selectedEventHref) {
-        router.push(withEventTab(selectedEventHref, tab));
+      try {
+        if (pathname !== "/") {
+          router.push("/");
+        }
+      } catch {}
+      if (tab === "dashboard") {
+        setSidebarPage("eventContext");
       }
     },
-    [router, selectedEventHref, setActiveEventTab, withEventTab],
+    [pathname, router, setActiveEventTab, setSidebarPage],
   );
 
   const handleSidebarBackToMyEvents = useCallback(() => {
@@ -2810,16 +2856,18 @@ export default function LeftSidebar() {
                 aria-hidden={sidebarPage !== "createEvent"}
               >
                 <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setSidebarPage("root")}
-                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <ChevronLeft size={16} />
-                    </span>
-                    <span className="truncate">Create Event</span>
-                  </button>
+                  <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                    <button
+                      type="button"
+                      onClick={() => setSidebarPage("root")}
+                      className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <ChevronLeft size={16} />
+                      </span>
+                      <span className="truncate">Create Event</span>
+                    </button>
+                  </div>
 
                   <div className="space-y-2">
                     {createMenuItems.map((item, idx) => {
@@ -2860,59 +2908,136 @@ export default function LeftSidebar() {
                 aria-hidden={sidebarPage !== "myEvents"}
               >
                 <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setSidebarPage("root")}
-                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                      <ChevronLeft size={16} />
-                    </span>
-                    <span className="truncate">My Events</span>
-                  </button>
+                  <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                    <button
+                      type="button"
+                      onClick={() => setSidebarPage("root")}
+                      className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <ChevronLeft size={16} />
+                      </span>
+                      <span className="truncate">My Events</span>
+                    </button>
+                  </div>
 
                   <div className="space-y-3">
-                    {myEventsGrouped.length === 0 ? (
+                    {myEventsGrouped.upcoming.length === 0 &&
+                    myEventsGrouped.past.length === 0 ? (
                       <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
                         No events yet.
                       </div>
                     ) : (
-                      myEventsGrouped.map((group) => (
-                        <section key={group.category} className="space-y-2">
-                          <div className="px-1 pt-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
-                              {group.category}
-                            </p>
-                            <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                      <div className="space-y-4">
+                        {myEventsGrouped.upcoming.length === 0 ? (
+                          <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
+                            No upcoming events.
                           </div>
-                          {group.items.map((item) => (
-                            <button
-                              key={item.row.id}
-                              type="button"
-                              onClick={() => openEventContext(item.row, item.href)}
-                              className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
-                              style={item.style}
-                            >
-                              <span
-                                className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm md:text-base font-semibold">
-                                  {item.title}
-                                </span>
-                                <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
-                                  {item.dateLabel}
-                                </span>
-                              </span>
-                              <ChevronRight
-                                size={16}
-                                className="mt-1 shrink-0 text-[#7a5fc0]"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          ))}
-                        </section>
-                      ))
+                        ) : (
+                          myEventsGrouped.upcoming.map((group) => (
+                            <section key={`upcoming-${group.category}`} className="space-y-2">
+                              <div className="px-1 pt-1">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                  {group.category}
+                                </p>
+                                <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                              </div>
+                              {group.items.map((item) => (
+                                <button
+                                  key={item.row.id}
+                                  type="button"
+                                  onClick={() => openEventContext(item.row, item.href)}
+                                  className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                  style={item.style}
+                                >
+                                  <span
+                                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm md:text-base font-semibold">
+                                      {item.title}
+                                    </span>
+                                    <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                      {item.dateLabel}
+                                    </span>
+                                  </span>
+                                  <ChevronRight
+                                    size={16}
+                                    className="mt-1 shrink-0 text-[#7a5fc0]"
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              ))}
+                            </section>
+                          ))
+                        )}
+
+                        {myEventsGrouped.past.length > 0 && (
+                          <section className="space-y-2">
+                            <div className="px-1 pt-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                  Past Events
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPastEvents((prev) => !prev)}
+                                  className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
+                                >
+                                  <span>
+                                    {showPastEvents ? "Hide past events" : "Show past events"}
+                                  </span>
+                                  <ChevronRight
+                                    size={12}
+                                    className={`transition-transform ${
+                                      showPastEvents ? "rotate-90" : ""
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+                              <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                            </div>
+
+                            {showPastEvents &&
+                              myEventsGrouped.past.map((group) => (
+                                <section key={`past-${group.category}`} className="space-y-2">
+                                  <div className="px-1 pt-1">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                      {group.category}
+                                    </p>
+                                    <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                  </div>
+                                  {group.items.map((item) => (
+                                    <button
+                                      key={item.row.id}
+                                      type="button"
+                                      onClick={() => openEventContext(item.row, item.href)}
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                      style={item.style}
+                                    >
+                                      <span
+                                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
+                                      />
+                                      <span className="min-w-0 flex-1">
+                                        <span className="block truncate text-sm md:text-base font-semibold">
+                                          {item.title}
+                                        </span>
+                                        <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                          {item.dateLabel}
+                                        </span>
+                                      </span>
+                                      <ChevronRight
+                                        size={16}
+                                        className="mt-1 shrink-0 text-[#7a5fc0]"
+                                        aria-hidden="true"
+                                      />
+                                    </button>
+                                  ))}
+                                </section>
+                              ))}
+                          </section>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

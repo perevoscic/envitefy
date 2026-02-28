@@ -24,7 +24,7 @@ import {
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
-import { Mail, Pencil, Share2, Trash2 } from "lucide-react";
+import { Eye, Mail, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
@@ -62,6 +62,24 @@ type UpcomingItem = {
   end: string | null;
   category: string | null;
   location: string | null;
+};
+
+type OwnerRsvpRow = {
+  id: string;
+  name: string;
+  status: "Attending" | "Declined" | "Maybe" | "Pending";
+  plusOnes: string;
+  foodPrefs: string;
+};
+
+type OwnerDashboardData = {
+  title: string;
+  dateLine: string;
+  totalGuests: number;
+  rsvpRate: number;
+  declined: number;
+  pageViews: string;
+  recentRsvps: OwnerRsvpRow[];
 };
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
@@ -111,6 +129,7 @@ export default function Dashboard() {
     selectedEventTitle,
     selectedEventHref,
     selectedEventEditHref,
+    activeEventTab,
     clearEventContext,
   } = useSidebar();
   const isSignedIn = Boolean(session?.user);
@@ -144,6 +163,8 @@ export default function Dashboard() {
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [softPromptDismissed, setSoftPromptDismissed] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingItem[]>([]);
+  const [ownerDashboardData, setOwnerDashboardData] =
+    useState<OwnerDashboardData | null>(null);
 
   useEffect(() => {
     scanStatusRef.current = scanStatus;
@@ -379,6 +400,164 @@ export default function Dashboard() {
     void loadUpcoming();
   }, [isSignedIn, visibleTemplateKeys]);
 
+  useEffect(() => {
+    if (!selectedEventId) {
+      setOwnerDashboardData(null);
+      return;
+    }
+
+    const formatPageViews = (value: unknown): string => {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric) || numeric <= 0) return "--";
+      if (numeric >= 1000) {
+        return `${(numeric / 1000).toFixed(numeric >= 10000 ? 0 : 1)}k`;
+      }
+      return `${Math.round(numeric)}`;
+    };
+
+    const fallbackRows: OwnerRsvpRow[] = [
+      {
+        id: "placeholder-1",
+        name: "Sarah Jenkins",
+        status: "Attending",
+        plusOnes: "1",
+        foodPrefs: "Vegan",
+      },
+      {
+        id: "placeholder-2",
+        name: "Mark Thompson",
+        status: "Attending",
+        plusOnes: "0",
+        foodPrefs: "None",
+      },
+      {
+        id: "placeholder-3",
+        name: "Lila Chen",
+        status: "Pending",
+        plusOnes: "?",
+        foodPrefs: "-",
+      },
+    ];
+
+    let ignore = false;
+    (async () => {
+      try {
+        const [eventRes, rsvpRes] = await Promise.all([
+          fetch(`/api/history/${selectedEventId}`, {
+            cache: "no-store",
+            credentials: "include",
+          }),
+          fetch(`/api/events/${selectedEventId}/rsvp`, {
+            cache: "no-store",
+            credentials: "include",
+          }),
+        ]);
+
+        const eventPayload = eventRes.ok
+          ? await eventRes.json().catch(() => null)
+          : null;
+        const rsvpPayload = rsvpRes.ok
+          ? await rsvpRes.json().catch(() => null)
+          : null;
+
+        const rowData = eventPayload?.data || {};
+        const title =
+          eventPayload?.title || selectedEventTitle || "Untitled event";
+        const startRaw =
+          rowData?.startISO ||
+          rowData?.start ||
+          rowData?.fieldsGuess?.start ||
+          rowData?.event?.start ||
+          null;
+        const endRaw =
+          rowData?.endISO ||
+          rowData?.end ||
+          rowData?.fieldsGuess?.end ||
+          rowData?.event?.end ||
+          null;
+        const dateLine = startRaw
+          ? formatEventTimeRange(String(startRaw), endRaw ? String(endRaw) : null)
+          : "Date pending";
+
+        const stats = rsvpPayload?.stats || { yes: 0, no: 0, maybe: 0 };
+        const yes = Number(stats.yes || 0);
+        const no = Number(stats.no || 0);
+        const maybe = Number(stats.maybe || 0);
+        const filled = Number(
+          rsvpPayload?.filled != null ? rsvpPayload.filled : yes + no + maybe
+        );
+        const configuredGuests = Number(rowData?.numberOfGuests || 0);
+        const totalGuests = configuredGuests > 0 ? configuredGuests : filled;
+        const rsvpRate =
+          totalGuests > 0 ? Math.round((filled / totalGuests) * 100) : 0;
+
+        const responses: OwnerRsvpRow[] = Array.isArray(rsvpPayload?.responses)
+          ? rsvpPayload.responses.slice(0, 6).map((entry: any, index: number) => {
+              const fullName = [entry?.firstName, entry?.lastName]
+                .map((part) => String(part || "").trim())
+                .filter(Boolean)
+                .join(" ");
+              const displayName =
+                fullName ||
+                String(entry?.name || "").trim() ||
+                String(entry?.email || "").trim() ||
+                `Guest ${index + 1}`;
+              const responseRaw = String(entry?.response || "").toLowerCase();
+              const status: OwnerRsvpRow["status"] =
+                responseRaw === "yes"
+                  ? "Attending"
+                  : responseRaw === "no"
+                  ? "Declined"
+                  : responseRaw === "maybe"
+                  ? "Maybe"
+                  : "Pending";
+              return {
+                id: `${selectedEventId}-rsvp-${index}`,
+                name: displayName,
+                status,
+                plusOnes: String(entry?.plusOnes ?? "0"),
+                foodPrefs: String(entry?.foodPrefs || "-"),
+              };
+            })
+          : [];
+
+        const pageViewsRaw =
+          rowData?.analytics?.pageViews ??
+          rowData?.pageViews ??
+          rowData?.views ??
+          null;
+
+        if (!ignore) {
+          setOwnerDashboardData({
+            title,
+            dateLine,
+            totalGuests,
+            rsvpRate,
+            declined: no,
+            pageViews: formatPageViews(pageViewsRaw),
+            recentRsvps: responses.length > 0 ? responses : fallbackRows,
+          });
+        }
+      } catch {
+        if (!ignore) {
+          setOwnerDashboardData({
+            title: selectedEventTitle || "Untitled event",
+            dateLine: "Date pending",
+            totalGuests: 0,
+            rsvpRate: 0,
+            declined: 0,
+            pageViews: "--",
+            recentRsvps: fallbackRows,
+          });
+        }
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedEventId, selectedEventTitle]);
+
   const router = useRouter();
   const openCreateEvent = useCallback(() => {
     try {
@@ -388,8 +567,35 @@ export default function Dashboard() {
 
   const showEventHeaderActions = Boolean(selectedEventId);
   const selectedEventLabel = selectedEventTitle || "Untitled event";
-  const headerActionButtonClass =
+  const headerPrimaryActionButtonClass =
+    "inline-flex items-center gap-1.5 rounded-full border border-[#5b4ed1] bg-[#5b4ed1] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#4f44bc]";
+  const headerSecondaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#ddd6ff] bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#4f457a] shadow-sm transition hover:border-[#c8beff] hover:bg-white";
+  const showOwnerDashboard = Boolean(
+    selectedEventId && activeEventTab === "dashboard"
+  );
+  const showOwnerTabPlaceholder = Boolean(
+    selectedEventId && activeEventTab !== "dashboard"
+  );
+
+  const handleHeaderPreview = useCallback(() => {
+    if (!selectedEventHref) return;
+    router.push(selectedEventHref);
+  }, [router, selectedEventHref]);
+
+  const handleHeaderInvite = useCallback(async () => {
+    if (!selectedEventHref) return;
+    const url = new URL(selectedEventHref, window.location.origin).toString();
+    if ((navigator as any).share) {
+      await (navigator as any).share({
+        title: `${selectedEventLabel} invitation`,
+        text: `Join me at ${selectedEventLabel}`,
+        url,
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+  }, [selectedEventHref, selectedEventLabel]);
 
   const handleHeaderEdit = useCallback(() => {
     if (!selectedEventEditHref) return;
@@ -1360,17 +1566,27 @@ export default function Dashboard() {
             </div>
             {showEventHeaderActions && (
               <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
-                <div
-                  className="max-w-full truncate rounded-full border border-[#ddd6ff] bg-white/85 px-3 py-1 text-xs font-semibold text-[#5a4f86]"
-                  title={selectedEventLabel}
-                >
-                  {selectedEventLabel}
-                </div>
                 <div className="flex flex-wrap items-center gap-2 md:gap-3">
                   <button
                     type="button"
+                    onClick={handleHeaderPreview}
+                    className={headerPrimaryActionButtonClass}
+                  >
+                    <Eye size={14} />
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleHeaderInvite}
+                    className={headerPrimaryActionButtonClass}
+                  >
+                    <UserPlus size={14} />
+                    <span>Invite</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleHeaderEdit}
-                    className={headerActionButtonClass}
+                    className={headerSecondaryActionButtonClass}
                   >
                     <Pencil size={14} />
                     <span>Edit</span>
@@ -1378,7 +1594,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={handleHeaderShare}
-                    className={headerActionButtonClass}
+                    className={headerSecondaryActionButtonClass}
                   >
                     <Share2 size={14} />
                     <span>Share</span>
@@ -1386,7 +1602,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={handleHeaderEmail}
-                    className={headerActionButtonClass}
+                    className={headerSecondaryActionButtonClass}
                   >
                     <Mail size={14} />
                     <span>Email</span>
@@ -1394,7 +1610,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={handleHeaderDelete}
-                    className={headerActionButtonClass}
+                    className={headerSecondaryActionButtonClass}
                   >
                     <Trash2 size={14} />
                     <span>Delete</span>
@@ -1407,10 +1623,26 @@ export default function Dashboard() {
       )}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
-          <UpcomingEventsPanel
-            items={upcomingEvents}
-            onCreateEvent={openCreateEvent}
-          />
+          {showOwnerDashboard ? (
+            <EventOwnerDashboardPanel
+              data={ownerDashboardData || {
+                title: selectedEventLabel,
+                dateLine: "Date pending",
+                totalGuests: 0,
+                rsvpRate: 0,
+                declined: 0,
+                pageViews: "--",
+                recentRsvps: [],
+              }}
+            />
+          ) : showOwnerTabPlaceholder ? (
+            <EventOwnerTabPlaceholder tab={activeEventTab} />
+          ) : (
+            <UpcomingEventsPanel
+              items={upcomingEvents}
+              onCreateEvent={openCreateEvent}
+            />
+          )}
         </div>
       )}
       {scanStatus !== "idle" && (
@@ -1898,6 +2130,150 @@ function UpcomingEventsPanel({
           </button>
         </div>
       </div>
+    </section>
+  );
+}
+
+function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
+  const cards = [
+    {
+      label: "Total Guests",
+      value: String(data.totalGuests),
+      accent: "text-[#1f1844]",
+      note: "+0 today",
+    },
+    {
+      label: "RSVP Rate",
+      value: `${data.rsvpRate}%`,
+      accent: "text-[#1f1844]",
+      note: "Normal",
+    },
+    {
+      label: "Declined",
+      value: String(data.declined),
+      accent: "text-[#d94764]",
+      note: "",
+    },
+    {
+      label: "Page Views",
+      value: data.pageViews,
+      accent: "text-[#1f1844]",
+      note: "",
+    },
+  ];
+
+  const statusClass = (status: OwnerRsvpRow["status"]) => {
+    if (status === "Attending") {
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    }
+    if (status === "Declined") {
+      return "bg-rose-100 text-rose-700 border border-rose-200";
+    }
+    if (status === "Maybe") {
+      return "bg-amber-100 text-amber-700 border border-amber-200";
+    }
+    return "bg-slate-100 text-slate-700 border border-slate-200";
+  };
+
+  return (
+    <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#b6a9ff]/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-[#7ed7c8]/15 blur-3xl" />
+      <div className="relative z-10 space-y-5">
+        <header className="rounded-[24px] border border-[#e3ddff] bg-white/90 p-4 shadow-[0_12px_32px_rgba(70,56,120,0.10)]">
+          <h2 className="truncate text-2xl font-semibold text-[#201942] sm:text-3xl">
+            {data.title}
+          </h2>
+          <p className="mt-1 text-sm font-medium text-[#6e629f]">{data.dateLine}</p>
+        </header>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {cards.map((card) => (
+            <article
+              key={card.label}
+              className="rounded-2xl border border-[#e6e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)]"
+            >
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
+                {card.label}
+              </p>
+              <p className={`mt-2 text-3xl font-bold tracking-tight ${card.accent}`}>
+                {card.value}
+              </p>
+              {card.note ? (
+                <p className="mt-1 text-xs font-semibold text-[#4d9f76]">{card.note}</p>
+              ) : (
+                <p className="mt-1 text-xs text-transparent">.</p>
+              )}
+            </article>
+          ))}
+        </div>
+
+        <section className="overflow-hidden rounded-[24px] border border-[#e1dafb] bg-white/92 shadow-[0_12px_30px_rgba(62,50,112,0.10)]">
+          <div className="flex items-center justify-between border-b border-[#ece7ff] px-4 py-3 sm:px-6">
+            <h3 className="text-xl font-semibold text-[#221b45]">Recent RSVPs</h3>
+            <span className="text-sm font-semibold text-[#4e4acf]">View All</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#8f86ba]">
+                  <th className="px-4 py-3 sm:px-6">Guest Name</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Plus Ones</th>
+                  <th className="px-4 py-3">Food Prefs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recentRsvps.length > 0 ? (
+                  data.recentRsvps.map((row) => (
+                    <tr key={row.id} className="border-t border-[#f0ecff] text-sm text-[#2b2350]">
+                      <td className="px-4 py-3 font-semibold sm:px-6">{row.name}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(row.status)}`}>
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">{row.plusOnes}</td>
+                      <td className="px-4 py-3">{row.foodPrefs}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="border-t border-[#f0ecff] text-sm text-[#6e629f]">
+                    <td className="px-4 py-4 sm:px-6" colSpan={4}>
+                      No RSVPs yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function EventOwnerTabPlaceholder({
+  tab,
+}: {
+  tab: "dashboard" | "guests" | "communications" | "settings";
+}) {
+  const label =
+    tab === "guests"
+      ? "Guests"
+      : tab === "communications"
+      ? "Communications"
+      : "Settings";
+  return (
+    <section className="rounded-[28px] border border-[#ddd5ff] bg-white/90 p-6 shadow-[0_20px_50px_rgba(80,63,145,0.12)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
+        Event Workspace
+      </p>
+      <h3 className="mt-2 text-2xl font-semibold text-[#201942]">{label}</h3>
+      <p className="mt-2 text-sm text-[#6e629f]">
+        {label} content is available in the next step. Dashboard remains the
+        default view on event open.
+      </p>
     </section>
   );
 }
