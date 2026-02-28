@@ -16,10 +16,13 @@ import {
   useRef,
   useState,
 } from "react";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type {
+  CSSProperties,
+  MouseEvent as ReactMouseEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "./providers";
-import { useSidebar } from "./sidebar-context";
+import { useSidebar, type EventContextTab } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
 import {
   CalendarIconGoogle,
@@ -57,6 +60,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
+import EventSidebar from "@/components/navigation/EventSidebar";
 
 declare global {
   interface Window {
@@ -77,6 +81,7 @@ type SidebarAdUnitProps = {
 };
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
+type SidebarPage = "root" | "createEvent" | "myEvents" | "eventContext";
 
 const CALENDAR_TARGETS: Array<{
   key: CalendarProviderKey;
@@ -498,11 +503,9 @@ export default function LeftSidebar() {
       return false;
     }
   })();
-  const [myEventsOpen, setMyEventsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
-  const [createEventOpen, setCreateEventOpen] = useState(false);
-  const [createEventShowAll, setCreateEventShowAll] = useState(false);
+  const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
   const [isHydrated, setIsHydrated] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -585,7 +588,21 @@ export default function LeftSidebar() {
   >(null);
   const [itemMenuScope, setItemMenuScope] = useState<string | null>(null);
 
-  const { isCollapsed, setIsCollapsed, toggleSidebar } = useSidebar();
+  const {
+    isCollapsed,
+    setIsCollapsed,
+    toggleSidebar,
+    selectedEventId,
+    setSelectedEventId,
+    selectedEventTitle,
+    setSelectedEventTitle,
+    selectedEventHref,
+    setSelectedEventHref,
+    setSelectedEventEditHref,
+    activeEventTab,
+    setActiveEventTab,
+    clearEventContext,
+  } = useSidebar();
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
@@ -607,8 +624,11 @@ export default function LeftSidebar() {
     : isOpen
       ? "pointer-events-auto"
       : "pointer-events-none";
+  const isEventMenuActive = Boolean(selectedEventId);
   const overflowClass = isCompact
     ? "overflow-hidden"
+    : isEventMenuActive
+      ? "overflow-hidden"
     : isDesktop || isOpen
       ? "overflow-visible"
       : "overflow-hidden";
@@ -617,6 +637,7 @@ export default function LeftSidebar() {
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
+  const eventSidebarRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -701,7 +722,6 @@ export default function LeftSidebar() {
         : false;
       if (!withinMenu && !withinButton) {
         setMenuOpen(false);
-        setCreateEventOpen(false);
       }
     };
     const onEsc = (e: KeyboardEvent) => {
@@ -774,15 +794,47 @@ export default function LeftSidebar() {
     setItemMenuId(null);
     setItemMenuPos(null);
     setItemMenuCategoryOpenFor(null);
-    // On small screens, auto-collapse the sidebar after navigation
+    // On small screens, auto-collapse the sidebar after navigation, unless the
+    // user just selected an event and is in Event Menu context.
     try {
       const isNarrow =
         typeof window !== "undefined" &&
         typeof window.matchMedia === "function" &&
         window.matchMedia("(max-width: 1023px)").matches;
-      if (isNarrow) setIsCollapsed(true);
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : pathname;
+      const keepEventMenuOpen =
+        Boolean(selectedEventId) &&
+        Boolean(currentPath) &&
+        String(currentPath).includes(String(selectedEventId));
+      if (isNarrow && !keepEventMenuOpen) setIsCollapsed(true);
     } catch {}
-  }, [pathname]);
+  }, [pathname, selectedEventId, setIsCollapsed]);
+
+  useEffect(() => {
+    if (!isEventMenuActive) return;
+    eventSidebarRef.current?.focus();
+  }, [isEventMenuActive]);
+
+  useEffect(() => {
+    if (!isEventMenuActive) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        clearEventContext();
+        setSidebarPage("myEvents");
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [clearEventContext, isEventMenuActive, setSidebarPage]);
+
+  useEffect(() => {
+    const isEventPage = pathname?.startsWith("/event/");
+    if (!isEventPage && selectedEventId) {
+      clearEventContext();
+      setSidebarPage("root");
+    }
+  }, [clearEventContext, pathname, selectedEventId, setSidebarPage]);
 
   const displayName =
     (session?.user?.name as string) ||
@@ -948,7 +1000,7 @@ export default function LeftSidebar() {
     const win = window as any;
     const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
     collapseSidebarOnTouch();
-    setCreateEventOpen(false);
+    setSidebarPage("root");
     try {
       if (typeof fn === "function") {
         fn();
@@ -957,17 +1009,6 @@ export default function LeftSidebar() {
     } catch {}
     openSnapFromSidebar(mode);
   };
-  const toggleSmartSignupCategory = () => {
-    setActiveCategory((prev) =>
-      prev === "Smart sign-up" ? null : "Smart sign-up",
-    );
-  };
-  const openSmartSignupBuilder = () => {
-    try {
-      (window as any).__openSmartSignup?.();
-    } catch {}
-  };
-
   const { visibleTemplateKeys } = useFeatureVisibility();
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
@@ -991,27 +1032,26 @@ export default function LeftSidebar() {
     }
     if (label === "Smart sign-up forms" || label === "Sign up") {
       collapseSidebarOnTouch();
-      setCreateEventOpen(false);
+      setSidebarPage("root");
       router.push("/smart-signup-form");
       return;
     }
     const href = templateHrefMap.get(label) || fallbackHref;
     if (href) {
       collapseSidebarOnTouch();
-      setCreateEventOpen(false);
+      setSidebarPage("root");
       router.push(href);
       return;
     }
-    setCreateEventOpen(false);
+    setSidebarPage("root");
     triggerCreateEvent();
   };
 
   const createMenuItems = useMemo(() => {
-    const keys = createEventShowAll ? undefined : visibleTemplateKeys;
-    return getCreateEventSections(keys)
+    return getCreateEventSections(visibleTemplateKeys)
       .filter((section) => section.title.toLowerCase() !== "quick access")
       .flatMap((section) => section.items);
-  }, [createEventShowAll, visibleTemplateKeys]);
+  }, [visibleTemplateKeys]);
   const createMenuOptionCount = useMemo(
     () => createMenuItems.length,
     [createMenuItems],
@@ -1148,7 +1188,6 @@ export default function LeftSidebar() {
     ],
     [createdEventsCount, smartSignupCount],
   );
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
     {},
   );
@@ -1330,22 +1369,6 @@ export default function LeftSidebar() {
       document.removeEventListener("keydown", onEsc);
     };
   }, [colorMenuFor]);
-
-  useEffect(() => {
-    const onDocClick = (e: Event) => {
-      if (!activeCategory) return;
-      try {
-        const target = e.target as Node | null;
-        // Do not collapse when clicking anywhere inside the sidebar (including Smart sign-up section)
-        if (asideRef.current && asideRef.current.contains(target)) {
-          return;
-        }
-      } catch {}
-      setActiveCategory(null);
-    };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, [activeCategory]);
 
   useEffect(() => {
     // Ensure categories present in history have defaults
@@ -1572,6 +1595,132 @@ export default function LeftSidebar() {
         };
     }
   };
+
+  const myEventsGrouped = useMemo(() => {
+    const priority = new Map<string, number>([
+      ["drafts", 0],
+      ["birthdays", 1],
+      ["general events", 2],
+      ["weddings", 3],
+    ]);
+
+    const isHexColor = (value: string) =>
+      /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value);
+    const hexToRgba = (hex: string, alpha: number) => {
+      const normalized =
+        hex.length === 4
+          ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+          : hex;
+      const r = Number.parseInt(normalized.slice(1, 3), 16);
+      const g = Number.parseInt(normalized.slice(3, 5), 16);
+      const b = Number.parseInt(normalized.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    const resolveDateRaw = (row: { created_at?: string; data?: any }) =>
+      String(
+        row?.data?.startISO ||
+          row?.data?.start ||
+          row?.data?.event?.start ||
+          row?.created_at ||
+          "",
+      );
+    const formatDate = (raw: string) => {
+      if (!raw) return "No date";
+      const dt = new Date(raw);
+      if (Number.isNaN(dt.getTime())) return "No date";
+      return dt.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    };
+
+    const groups = new Map<
+      string,
+      Array<{
+        row: { id: string; title: string; created_at?: string; data?: any };
+        href: string;
+        title: string;
+        dateLabel: string;
+        dateMs: number;
+        tintClass: string;
+        hoverTintClass: string;
+        swatchClass: string;
+        style?: CSSProperties;
+      }>
+    >();
+
+    for (const row of history) {
+      if (!row || typeof row !== "object") continue;
+      const data = (row as any)?.data || {};
+      if (data?.signupForm) continue;
+
+      const isDraft = String(data?.status || "").toLowerCase() === "draft";
+      const normalizedCategory = normalizeCategoryLabel(
+        (data?.category as string | null) ||
+          guessCategoryFromText(
+            `${row.title || ""} ${String(data?.description || "")}`,
+          ),
+      );
+      const category = isDraft
+        ? "Drafts"
+        : normalizedCategory || "General Events";
+
+      const dateRaw = resolveDateRaw(row);
+      const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : NaN;
+      const dateMs = Number.isNaN(parsedDateMs)
+        ? Number.POSITIVE_INFINITY
+        : parsedDateMs;
+      const dateLabel = formatDate(dateRaw);
+      const slug = String(row.title || "event")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const href = `/event/${slug || "event"}-${row.id}`;
+
+      const categoryColor = categoryColors[category] || defaultCategoryColor(category);
+      const palette = colorClasses(categoryColor);
+      const eventHex = String(data?.color || data?.event?.color || "").trim();
+      const style = isHexColor(eventHex)
+        ? {
+            backgroundColor: hexToRgba(eventHex, 0.12),
+            borderColor: hexToRgba(eventHex, 0.26),
+          }
+        : undefined;
+
+      const entry = {
+        row,
+        href,
+        title: row.title || "Untitled event",
+        dateLabel,
+        dateMs,
+        tintClass: palette.tint,
+        hoverTintClass: palette.hoverTint,
+        swatchClass: palette.swatch,
+        style,
+      };
+      const existing = groups.get(category) || [];
+      existing.push(entry);
+      groups.set(category, existing);
+    }
+
+    return Array.from(groups.entries())
+      .map(([category, items]) => ({
+        category,
+        items: [...items].sort((a, b) => {
+          if (a.dateMs !== b.dateMs) return a.dateMs - b.dateMs;
+          return a.title.localeCompare(b.title);
+        }),
+      }))
+      .sort((a, b) => {
+        const pa = priority.get(a.category.toLowerCase());
+        const pb = priority.get(b.category.toLowerCase());
+        if (typeof pa === "number" && typeof pb === "number") return pa - pb;
+        if (typeof pa === "number") return -1;
+        if (typeof pb === "number") return 1;
+        return a.category.localeCompare(b.category);
+      });
+  }, [categoryColors, history]);
 
   const recentAdIndex = useMemo<number | null>(() => {
     if (!history || history.length <= 1) return null;
@@ -1965,21 +2114,70 @@ export default function LeftSidebar() {
     };
   }, []);
 
-  const shareHistoryItem = async (prettyHref: string) => {
+  const shareHistoryItem = useCallback(async (prettyHref: string) => {
     try {
       const url = new URL(prettyHref, window.location.origin).toString();
       if ((navigator as any).share) {
         await (navigator as any).share({ title: "Envitefy", url });
       } else {
         await navigator.clipboard.writeText(url);
-        // eslint-disable-next-line no-alert
         alert("Link copied to clipboard");
       }
     } catch {}
-  };
+  }, []);
+
+  const withEventTab = useCallback(
+    (href: string, tab: EventContextTab) => {
+      try {
+        const url = new URL(href, window.location.origin);
+        url.searchParams.set("tab", tab);
+        return `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        return href;
+      }
+    },
+    [],
+  );
+
+  const openEventContext = useCallback(
+    (row: { id: string; title: string; data?: any }, href: string) => {
+      const title = row.title || "Untitled event";
+      setSelectedEventId(row.id);
+      setSelectedEventTitle(title);
+      setSelectedEventHref(href);
+      setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
+      setActiveEventTab("dashboard");
+      setSidebarPage("eventContext");
+      router.push(withEventTab(href, "dashboard"));
+    },
+    [
+      router,
+      setActiveEventTab,
+      setSelectedEventEditHref,
+      setSelectedEventHref,
+      setSelectedEventId,
+      setSelectedEventTitle,
+      setSidebarPage,
+      withEventTab,
+    ],
+  );
+
+  const handleEventTabChange = useCallback(
+    (tab: EventContextTab) => {
+      setActiveEventTab(tab);
+      if (selectedEventHref) {
+        router.push(withEventTab(selectedEventHref, tab));
+      }
+    },
+    [router, selectedEventHref, setActiveEventTab, withEventTab],
+  );
+
+  const handleSidebarBackToMyEvents = useCallback(() => {
+    clearEventContext();
+    setSidebarPage("myEvents");
+  }, [clearEventContext]);
 
   const renameHistoryItem = async (id: string, currentTitle: string) => {
-    // eslint-disable-next-line no-alert
     const next = prompt("Rename event", currentTitle || "");
     if (next == null) return; // cancelled
     const title = next.trim();
@@ -1997,7 +2195,6 @@ export default function LeftSidebar() {
   };
 
   const deleteHistoryItem = async (id: string, title?: string) => {
-    // eslint-disable-next-line no-alert
     const ok = confirm(
       `Are you sure you want to delete this event?\n\n${
         title || "Untitled event"
@@ -2007,6 +2204,9 @@ export default function LeftSidebar() {
     try {
       await fetch(`/api/history/${id}`, { method: "DELETE" });
       setHistory((prev) => prev.filter((r) => r.id !== id));
+      if (selectedEventId === id) {
+        clearEventContext();
+      }
       // Notify other views (e.g., calendar) to remove events for this history id
       try {
         if (typeof window !== "undefined") {
@@ -2300,6 +2500,12 @@ export default function LeftSidebar() {
   // Avoid SSR/client mismatch by rendering sidebar only after hydration
   if (!isHydrated) return null;
 
+  const selectedHistoryRow = selectedEventId
+    ? history.find((row) => row.id === selectedEventId)
+    : null;
+  const selectedEventLabel =
+    selectedEventTitle || selectedHistoryRow?.title || "Untitled event";
+
   return (
     <>
       {!isOpen && (
@@ -2363,7 +2569,7 @@ export default function LeftSidebar() {
               type="button"
               onClick={() => {
                 setIsCollapsed(false);
-                setCreateEventOpen(true);
+                setSidebarPage("createEvent");
               }}
               className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[0_12px_30px_rgba(109,87,184,0.25)] hover:scale-105 transition"
               title="Create event"
@@ -2385,7 +2591,7 @@ export default function LeftSidebar() {
                       if (item.action === "upload")
                         return launchSnapFromMenu("upload");
                       if (item.action === "create") {
-                        setCreateEventOpen(true);
+                        setSidebarPage("createEvent");
                         return;
                       }
                       if (item.href) {
@@ -2422,10 +2628,12 @@ export default function LeftSidebar() {
           className={`${
             isCompact
               ? "opacity-0 pointer-events-none select-none"
-              : "flex flex-col h-full"
-          } transition-opacity duration-150`}
+              : "flex h-full w-full"
+          } relative`}
           aria-hidden={isCompact}
         >
+          <div className="relative h-full w-full overflow-hidden">
+            <div className="absolute inset-0 z-[1] flex h-full flex-col">
           {/* Header with close button */}
           <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
             {/* Hero-esque intro */}
@@ -2448,7 +2656,7 @@ export default function LeftSidebar() {
                 <Link
                   href="/"
                   onClick={collapseSidebarOnTouch}
-                  className="flex h-12 w-12 items-center justify-center]"
+                  className="flex h-12 w-12 items-center justify-center"
                 >
                   <Image
                     src={SIDEBAR_LOGO_SRC}
@@ -2464,1332 +2672,267 @@ export default function LeftSidebar() {
               </div>
             </div>
           </div>
-          {/* Middle: Event history */}
-          <div className="flex-1 overflow-y-auto overflow-x-visible no-scrollbar">
-            <div className="px-4 pt-0 pb-5 space-y-4">
-              {/* Separator line */}
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent"></div>
-              <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-3">
-                  <Link
-                    href="/"
-                    onClick={collapseSidebarOnTouch}
-                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+          {/* Middle: Navigation area */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex-shrink-0 px-4 pb-3">
+              <div className="grid grid-cols-4 gap-3">
+                <Link
+                  href="/"
+                  onClick={collapseSidebarOnTouch}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                    <Home size={16} />
+                  </span>
+                  <span>Home</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    launchSnapFromMenu("camera");
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                    <Camera size={16} />
+                  </span>
+                  <span>Snap</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    launchSnapFromMenu("upload");
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                    <Upload size={16} />
+                  </span>
+                  <span>Upload</span>
+                </button>
+
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      collapseSidebarOnTouch();
+                      setSidebarPage("root");
+                      router.push("/smart-signup-form");
+                    }}
+                    className="flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    title="Sign up"
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                      <Home size={16} />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                      <FileEdit size={16} />
                     </span>
-                    <span>Home</span>
+                    <span>Sign up</span>
+                  </button>
+                  {smartSignupCount > 0 && (
+                    <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
+                      {smartSignupCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-4">
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent" />
+            </div>
+
+            <div className="relative mt-3 min-h-0 flex-1 overflow-hidden">
+              <div
+                className={`absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5 transition-transform duration-[240ms] ease-in-out ${
+                  sidebarPage === "root"
+                    ? "translate-x-0 pointer-events-auto"
+                    : "-translate-x-full pointer-events-none"
+                }`}
+                aria-hidden={sidebarPage !== "root"}
+              >
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setSidebarPage("createEvent")}
+                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <Plus size={18} />
+                    </span>
+                    <span className="truncate">Create Event</span>
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className={SIDEBAR_BADGE_CLASS}>{createMenuOptionCount}</span>
+                      <ChevronRight size={16} className="text-[#7a5fc0]" />
+                    </span>
+                  </button>
+
+                  <Link
+                    href="/calendar"
+                    onClick={collapseSidebarOnTouch}
+                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <CalendarDays size={18} />
+                    </span>
+                    <span className="truncate">Calendar</span>
+                    <span className="ml-auto inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner">
+                      {history.length}
+                    </span>
                   </Link>
 
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      launchSnapFromMenu("camera");
-                    }}
-                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    onClick={() => setSidebarPage("myEvents")}
+                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                      <Camera size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <Trophy size={18} />
                     </span>
-                    <span>Snap</span>
+                    <span className="truncate">My Events</span>
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className={SIDEBAR_BADGE_CLASS}>{createdEventsCount}</span>
+                      <ChevronRight size={16} className="text-[#7a5fc0]" />
+                    </span>
                   </button>
+                </div>
+              </div>
 
+              <div
+                className={`absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5 transition-transform duration-[240ms] ease-in-out ${
+                  sidebarPage === "createEvent"
+                    ? "translate-x-0 pointer-events-auto"
+                    : "translate-x-full pointer-events-none"
+                }`}
+                aria-hidden={sidebarPage !== "createEvent"}
+              >
+                <div className="space-y-3">
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      launchSnapFromMenu("upload");
-                    }}
-                    className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
+                    onClick={() => setSidebarPage("root")}
+                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                      <Upload size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <ChevronLeft size={16} />
                     </span>
-                    <span>Upload</span>
+                    <span className="truncate">Create Event</span>
                   </button>
 
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        toggleSmartSignupCategory();
-                      }}
-                      className={`flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition ${
-                        activeCategory === "Smart sign-up"
-                          ? "ring-2 ring-[#d9ccff]"
-                          : ""
-                      }`}
-                      aria-pressed={activeCategory === "Smart sign-up"}
-                      title="Sign up"
-                    >
-                      <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                        <FileEdit size={16} />
-                      </span>
-                      <span>Sign up</span>
-                    </button>
-                    {smartSignupCount > 0 && (
-                      <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
-                        {smartSignupCount}
-                      </span>
+                  <div className="space-y-2">
+                    {createMenuItems.map((item, idx) => {
+                      const Icon = ICON_LOOKUP[item.label] || Sparkles;
+                      const colorClass =
+                        CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length];
+                      return (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                          onClick={() =>
+                            handleCreateModalSelect(item.label, (item as any).href)
+                          }
+                        >
+                          <span
+                            className={`flex h-9 w-9 items-center justify-center rounded-2xl ${colorClass}`}
+                          >
+                            <Icon size={16} />
+                          </span>
+                          <span className="truncate">{item.label}</span>
+                          <ChevronRight size={16} className="ml-auto text-[#7a5fc0]" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5 transition-transform duration-[240ms] ease-in-out ${
+                  sidebarPage === "myEvents"
+                    ? "translate-x-0 pointer-events-auto"
+                    : sidebarPage === "eventContext"
+                      ? "-translate-x-full pointer-events-none"
+                      : "translate-x-full pointer-events-none"
+                }`}
+                aria-hidden={sidebarPage !== "myEvents"}
+              >
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setSidebarPage("root")}
+                    className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <ChevronLeft size={16} />
+                    </span>
+                    <span className="truncate">My Events</span>
+                  </button>
+
+                  <div className="space-y-3">
+                    {myEventsGrouped.length === 0 ? (
+                      <div className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}>
+                        No events yet.
+                      </div>
+                    ) : (
+                      myEventsGrouped.map((group) => (
+                        <section key={group.category} className="space-y-2">
+                          <div className="px-1 pt-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                              {group.category}
+                            </p>
+                            <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                          </div>
+                          {group.items.map((item) => (
+                            <button
+                              key={item.row.id}
+                              type="button"
+                              onClick={() => openEventContext(item.row, item.href)}
+                              className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                              style={item.style}
+                            >
+                              <span
+                                className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
+                              />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm md:text-base font-semibold">
+                                  {item.title}
+                                </span>
+                                <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                  {item.dateLabel}
+                                </span>
+                              </span>
+                              <ChevronRight
+                                size={16}
+                                className="mt-1 shrink-0 text-[#7a5fc0]"
+                                aria-hidden="true"
+                              />
+                            </button>
+                          ))}
+                        </section>
+                      ))
                     )}
                   </div>
                 </div>
+              </div>
 
-                <div
-                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 ${
-                    createEventOpen ? "ring-2 ring-[#d9ccff]" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        setCreateEventOpen(!createEventOpen);
-                      }}
-                      className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        <Plus size={18} />
-                      </span>
-                      <span>Create Event</span>
-                    </button>
-                    <div className="ml-auto flex items-center gap-2">
-                      <span className={SIDEBAR_BADGE_CLASS}>
-                        {createMenuOptionCount}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          setCreateEventOpen(!createEventOpen);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                        aria-label="Toggle create menu"
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className={`h-4 w-4 transition-transform ${
-                            createEventOpen ? "rotate-180" : ""
-                          }`}
-                          aria-hidden="true"
-                        >
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  {createEventOpen && (
-                    <div className="mt-3 border-t border-white/70 pt-3">
-                      <div className="overflow-hidden rounded-xl bg-white/60 divide-y divide-[#eee7ff]">
-                        {createMenuItems.map((item, idx) => {
-                          const Icon = ICON_LOOKUP[item.label] || Sparkles;
-                          const colorClass =
-                            CREATE_SECTION_COLORS[
-                              idx % CREATE_SECTION_COLORS.length
-                            ];
-                          return (
-                            <button
-                              key={item.label}
-                              type="button"
-                              className="w-full flex items-center gap-2.5 px-2.5 py-2.5 hover:bg-indigo-50/70 transition-all duration-150 group text-left"
-                              onClick={() =>
-                                handleCreateModalSelect(
-                                  item.label,
-                                  (item as any).href,
-                                )
-                              }
-                            >
-                              <div
-                                className={`p-1.5 rounded-lg ${colorClass} group-hover:scale-110 transition-transform`}
-                              >
-                                <Icon size={15} />
-                              </div>
-                              <span className="text-[#3e315c] font-medium text-sm group-hover:text-indigo-700">
-                                {item.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            setCreateEventShowAll((prev) => !prev);
-                          }}
-                          className="rounded-full border border-white/80 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#5f4a8d] shadow-sm hover:bg-[#f6f2ff]"
-                        >
-                          {createEventShowAll
-                            ? "Use onboarding view"
-                            : "View all templates"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {activeCategory === "Smart sign-up" && (
-                  <div className="mt-1 mb-2">
-                    <div className="mb-2 flex items-center justify-between px-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6a5b8f]">
-                        Sign up forms
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          openSmartSignupBuilder();
-                        }}
-                        className="inline-flex h-7 items-center justify-center gap-1 rounded-full bg-white/85 px-2.5 text-[11px] font-semibold text-[#4f84d6] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                        aria-label="Create sign up form"
-                      >
-                        <Plus size={13} />
-                        <span>New</span>
-                      </button>
-                    </div>
-                    {(() => {
-                      const myEmail = (profileEmail ||
-                        profileEmailRef.current ||
-                        "") as string;
-                      const myUserId =
-                        ((session as any)?.user?.id as string | undefined) ||
-                        null;
-                      const items = sortHistoryRows(
-                        history.filter((h) => {
-                          const data: any = (h as any)?.data;
-                          const form = data?.signupForm;
-                          if (!form || typeof form !== "object") return false;
-                          if (!data?.shared) return true;
-                          const responses: any[] = Array.isArray(form.responses)
-                            ? form.responses
-                            : [];
-                          const hasMyActiveResponse = responses.some((r) => {
-                            if (!r || typeof r !== "object") return false;
-                            if (
-                              String(r.status || "").toLowerCase() ===
-                              "cancelled"
-                            )
-                              return false;
-                            const emailMatches =
-                              myEmail &&
-                              typeof r.email === "string" &&
-                              r.email.toLowerCase() === myEmail;
-                            const userIdMatches =
-                              myUserId &&
-                              typeof r.userId === "string" &&
-                              r.userId === myUserId;
-                            return Boolean(emailMatches || userIdMatches);
-                          });
-                          return hasMyActiveResponse;
-                        }) as any,
-                      );
-                      if (items.length === 0)
-                        return (
-                          <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                            No forms
-                          </div>
-                        );
-                      return (
-                        <div className="space-y-1">
-                          {items.map((h: any) => {
-                            const slug = (h.title || "")
-                              .toLowerCase()
-                              .replace(/[^a-z0-9]+/g, "-")
-                              .replace(/^-+|-+$/g, "");
-                            const prettyHref = `/smart-signup-form/${h.id}`;
-                            // Item-specific gradient row style (falls back to Smart sign-up default)
-                            const signupRowClass = `${signupItemGradientRowClass(
-                              h.id,
-                            )} ${sharedTextClass}`;
-                            return (
-                              <div
-                                key={h.id}
-                                data-history-item={h.id}
-                                className={`relative px-2 py-2 rounded-md text-sm ${signupRowClass}`}
-                              >
-                                <Link
-                                  href={prettyHref}
-                                  onClick={() => {
-                                    try {
-                                      const isTouch =
-                                        typeof window !== "undefined" &&
-                                        typeof window.matchMedia ===
-                                          "function" &&
-                                        window.matchMedia(
-                                          "(hover: none), (pointer: coarse)",
-                                        ).matches;
-                                      if (isTouch) setIsCollapsed(true);
-                                    } catch {}
-                                  }}
-                                  className="block pr-8"
-                                  title={h.title}
-                                >
-                                  <div className="truncate flex items-center gap-2">
-                                    <span className="truncate">
-                                      {h.title || "Untitled form"}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs md:text-sm text-foreground/60">
-                                    {(() => {
-                                      const start =
-                                        (h as any)?.data?.start ||
-                                        (h as any)?.data?.event?.start;
-                                      const dateStr = start || h.created_at;
-                                      return dateStr
-                                        ? new Date(dateStr).toLocaleDateString()
-                                        : "";
-                                    })()}
-                                  </div>
-                                </Link>
-                                <button
-                                  type="button"
-                                  aria-label={`Edit form color`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    // Ensure Smart sign-up stays expanded when opening the color menu
-                                    try {
-                                      setActiveCategory("Smart sign-up");
-                                    } catch {}
-                                    try {
-                                      const rect = (
-                                        e.currentTarget as HTMLElement
-                                      ).getBoundingClientRect();
-                                      const menuWidth = 220;
-                                      const viewportPadding = 8;
-                                      const idealLeft =
-                                        rect.left +
-                                        rect.width / 2 -
-                                        menuWidth / 2;
-                                      const clampedLeft = Math.max(
-                                        viewportPadding,
-                                        Math.min(
-                                          idealLeft,
-                                          window.innerWidth -
-                                            menuWidth -
-                                            viewportPadding,
-                                        ),
-                                      );
-                                      setColorMenuPos({
-                                        left: Math.round(clampedLeft),
-                                        top: Math.round(rect.bottom + 12),
-                                      });
-                                    } catch {
-                                      setColorMenuPos(null);
-                                    }
-                                    setColorMenuFor(`signup-item:${h.id}`);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      (e.currentTarget as HTMLElement).click();
-                                    }
-                                  }}
-                                  className={`absolute right-8 top-2 inline-flex h-4 w-4 rounded-[4px] ${signupItemGradientSwatchClass(
-                                    h.id,
-                                  )} border-0`}
-                                  title="Edit color"
-                                />
-                                <button
-                                  type="button"
-                                  aria-label="Item options"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    // Keep Smart sign-up expanded while the item menu is open
-                                    try {
-                                      setActiveCategory("Smart sign-up");
-                                    } catch {}
-                                    const target =
-                                      e.currentTarget as HTMLElement | null;
-                                    if (itemMenuId === h.id) {
-                                      setItemMenuId(null);
-                                      setItemMenuOpensUpward(false);
-                                      setItemMenuPos(null);
-                                      setItemMenuCategoryOpenFor(null);
-                                      return;
-                                    }
-                                    if (target) {
-                                      const rect =
-                                        target.getBoundingClientRect();
-                                      const viewportHeight = window.innerHeight;
-                                      const menuHeight = 200;
-                                      const spaceBelow =
-                                        viewportHeight - rect.top;
-                                      const shouldOpenUpward =
-                                        spaceBelow < menuHeight + 50;
-                                      setItemMenuOpensUpward(shouldOpenUpward);
-                                      setItemMenuPos({
-                                        left: Math.round(rect.right + 8),
-                                        top: shouldOpenUpward
-                                          ? Math.round(rect.top - 10)
-                                          : Math.round(
-                                              rect.top + rect.height / 2,
-                                            ),
-                                      });
-                                    }
-                                    setItemMenuCategoryOpenFor(null);
-                                    setItemMenuId(h.id);
-                                  }}
-                                  className="absolute top-1.5 right-1.5 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  >
-                                    <circle cx="5" cy="12" r="1.5" />
-                                    <circle cx="12" cy="12" r="1.5" />
-                                    <circle cx="19" cy="12" r="1.5" />
-                                  </svg>
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-
-                <div
-                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex items-center gap-3 px-4 py-3`}
-                >
-                  <Link
-                    href="/calendar"
-                    onClick={() => {
-                      try {
-                        const isTouch =
-                          typeof window !== "undefined" &&
-                          typeof window.matchMedia === "function" &&
-                          window.matchMedia("(hover: none), (pointer: coarse)")
-                            .matches;
-                        if (isTouch) setIsCollapsed(true);
-                      } catch {}
-                    }}
-                    className="flex flex-1 items-center gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f2f5ff] to-white text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                      <CalendarDays size={18} />
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span>Calendar</span>
-                    </span>
-                  </Link>
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className={SIDEBAR_BADGE_CLASS}>
-                      {history.length}
-                    </span>
-                    <button
-                      type="button"
-                      title="New event"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        try {
-                          (window as any).__openCreateEvent?.();
-                        } catch {}
-                      }}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#5e6bcb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                      aria-label="New event"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="miter"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <rect x="2" y="4" width="20" height="18" rx="0"></rect>
-                        <line x1="7" y1="2" x2="7" y2="6"></line>
-                        <line x1="17" y1="2" x2="17" y2="6"></line>
-                        <line x1="8" y1="13" x2="16" y2="13"></line>
-                        <line x1="12" y1="9" x2="12" y2="17"></line>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {(() => {
-                  const sharedCount = 0; // Shared events disabled
-                  if (sharedCount === 0) return null;
-                  return (
-                    <div className="">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveCategory((prev) =>
-                            prev === "Shared events" ? null : "Shared events",
-                          );
-                        }}
-                        className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-sm ${
-                          activeCategory === "Shared events"
-                            ? "sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border/50"
-                            : ""
-                        } hover:bg-surface/70`}
-                        aria-pressed={activeCategory === "Shared events"}
-                        title="Shared events"
-                      >
-                        <span className="truncate inline-flex items-center gap-2">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                            aria-label="Shared events"
-                          >
-                            <title>Shared events</title>
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                          </svg>
-                          <span>Shared Events</span>
-                        </span>
-                        <span className="inline-flex items-center gap-2">
-                          {sharedCount > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                              {sharedCount}
-                            </span>
-                          )}
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Edit Shared events color`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              try {
-                                const rect = (
-                                  e.currentTarget as HTMLElement
-                                ).getBoundingClientRect();
-                                const menuWidth = 220;
-                                const viewportPadding = 8;
-                                const idealLeft =
-                                  rect.left + rect.width / 2 - menuWidth / 2;
-                                const clampedLeft = Math.max(
-                                  viewportPadding,
-                                  Math.min(
-                                    idealLeft,
-                                    window.innerWidth -
-                                      menuWidth -
-                                      viewportPadding,
-                                  ),
-                                );
-                                setColorMenuPos({
-                                  left: Math.round(clampedLeft),
-                                  top: Math.round(rect.bottom + 12),
-                                });
-                              } catch {
-                                setColorMenuPos(null);
-                              }
-                              setColorMenuFor("Shared events");
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                (e.currentTarget as HTMLElement).click();
-                              }
-                            }}
-                            className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${sharedGradientSwatchClass()} border-0`}
-                            title="Edit color"
-                          />
-                        </span>
-                      </button>
-                      {activeCategory === "Shared events" && (
-                        <div className="mt-1 mb-2">
-                          {(() => {
-                            const items = sortHistoryRows(
-                              history.filter((h) =>
-                                Boolean(
-                                  (h as any)?.data?.shared ||
-                                  (h as any)?.data?.sharedOut ||
-                                  (h as any)?.data?.category ===
-                                    "Shared events",
-                                ),
-                              ),
-                            );
-                            if (items.length === 0)
-                              return (
-                                <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                                  No events
-                                </div>
-                              );
-                            return (
-                              <div className="space-y-1">
-                                {items.map((h) => {
-                                  const slug = (h.title || "")
-                                    .toLowerCase()
-                                    .replace(/[^a-z0-9]+/g, "-")
-                                    .replace(/^-+|-+$/g, "");
-                                  const prettyHref = `/smart-signup-form/${h.id}`;
-                                  const explicitCat = (h as any)?.data
-                                    ?.category as string | null;
-                                  const effectiveCategory = (() => {
-                                    const explicit =
-                                      normalizeCategoryLabel(explicitCat);
-                                    if (explicit) return explicit;
-                                    try {
-                                      const text = [
-                                        String((h as any)?.title || ""),
-                                        String(
-                                          (h as any)?.data?.description || "",
-                                        ),
-                                        String((h as any)?.data?.rsvp || ""),
-                                        String(
-                                          (h as any)?.data?.location || "",
-                                        ),
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" ");
-                                      const guessed =
-                                        guessCategoryFromText(text);
-                                      return normalizeCategoryLabel(guessed);
-                                    } catch {
-                                      return null;
-                                    }
-                                  })();
-                                  const isShared = Boolean(
-                                    (h as any)?.data?.shared ||
-                                    (h as any)?.data?.sharedOut ||
-                                    (h as any)?.data?.category ===
-                                      "Shared events",
-                                  );
-                                  const rowAndBadge = (() => {
-                                    if (isShared) {
-                                      return {
-                                        row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                        badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
-                                      };
-                                    }
-                                    if (!effectiveCategory)
-                                      return {
-                                        row: "",
-                                        badge:
-                                          "bg-surface/70 text-foreground/70 border-border/70",
-                                      };
-                                    const color =
-                                      categoryColors[effectiveCategory] ||
-                                      defaultCategoryColor(effectiveCategory);
-                                    const ccls = colorClasses(color);
-                                    const row = ccls.tint;
-                                    return { row, badge: ccls.badge };
-                                  })();
-                                  return (
-                                    <div
-                                      key={h.id}
-                                      data-history-item={h.id}
-                                      className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
-                                    >
-                                      <Link
-                                        href={prettyHref}
-                                        onClick={() => {
-                                          try {
-                                            const isTouch =
-                                              typeof window !== "undefined" &&
-                                              typeof window.matchMedia ===
-                                                "function" &&
-                                              window.matchMedia(
-                                                "(hover: none), (pointer: coarse)",
-                                              ).matches;
-                                            if (isTouch) setIsCollapsed(true);
-                                          } catch {}
-                                        }}
-                                        className="block pr-8"
-                                        title={h.title}
-                                      >
-                                        <div className="truncate flex items-center gap-2">
-                                          <span className="truncate">
-                                            {h.title || "Untitled event"}
-                                          </span>
-                                        </div>
-                                        <div
-                                          className={`text-xs ${
-                                            isShared
-                                              ? sharedMutedTextClass
-                                              : "text-foreground/60"
-                                          }`}
-                                        >
-                                          {(() => {
-                                            const start =
-                                              (h as any)?.data?.start ||
-                                              (h as any)?.data?.event?.start;
-                                            const dateStr =
-                                              start || h.created_at;
-                                            return dateStr
-                                              ? new Date(
-                                                  dateStr,
-                                                ).toLocaleDateString()
-                                              : "";
-                                          })()}
-                                        </div>
-                                      </Link>
-                                      {Boolean(
-                                        (h as any)?.data &&
-                                        (((h as any).data.shared as any) ||
-                                          ((h as any).data.sharedOut as any)),
-                                      ) && (
-                                        <svg
-                                          viewBox="0 0 25.274 25.274"
-                                          fill="currentColor"
-                                          className="h-3.5 w-3.5 text-zinc-900 dark:text-foreground absolute right-2 bottom-2"
-                                          aria-hidden="true"
-                                          aria-label="Shared event"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                        >
-                                          <title>Shared event</title>
-                                          <path d="M24.989,15.893c-0.731-0.943-3.229-3.73-4.34-4.96c0.603-0.77,0.967-1.733,0.967-2.787c0-2.503-2.03-4.534-4.533-4.534 c-2.507,0-4.534,2.031-4.534,4.534c0,1.175,0.455,2.24,1.183,3.045l-1.384,1.748c-0.687-0.772-1.354-1.513-1.792-2.006 c0.601-0.77,0.966-1.733,0.966-2.787c-0.001-2.504-2.03-4.535-4.536-4.535c-2.507,0-4.536,2.031-4.536,4.534 c0,1.175,0.454,2.24,1.188,3.045L0.18,15.553c0,0-0.406,1.084,0,1.424c0.36,0.3,0.887,0.81,1.878,0.258 c-0.107,0.974-0.054,2.214,0.693,2.924c0,0,0.749,1.213,2.65,1.456c0,0,2.1,0.244,4.543-0.367c0,0,1.691-0.312,2.431-1.794 c0.113,0.263,0.266,0.505,0.474,0.705c0,0,0.751,1.213,2.649,1.456c0,0,2.103,0.244,4.54-0.367c0,0,2.102-0.38,2.65-2.339 c0.297-0.004,0.663-0.097,1.149-0.374C24.244,18.198,25.937,17.111,24.989,15.893z M13.671,8.145c0-1.883,1.527-3.409,3.409-3.409 c1.884,0,3.414,1.526,3.414,3.409c0,1.884-1.53,3.411-3.414,3.411C15.198,11.556,13.671,10.029,13.671,8.145z M13.376,12.348 l0.216,0.516c0,0-0.155,0.466-0.363,1.069c-0.194-0.217-0.388-0.437-0.585-0.661L13.376,12.348z M3.576,8.145 c0-1.883,1.525-3.409,3.41-3.409c1.881,0,3.408,1.526,3.408,3.409c0,1.884-1.527,3.411-3.408,3.411 C5.102,11.556,3.576,10.029,3.576,8.145z M2.186,16.398c-0.033,0.07-0.065,0.133-0.091,0.177c-0.801,0.605-1.188,0.216-1.449,0 c-0.259-0.216,0-0.906,0-0.906l2.636-3.321l0.212,0.516c0,0-0.227,0.682-0.503,1.47l-0.665,1.49 C2.325,15.824,2.257,16.049,2.186,16.398z M9.299,20.361c-2.022,0.507-3.758,0.304-3.758,0.304 c-1.574-0.201-2.196-1.204-2.196-1.204c-1.121-1.066-0.348-3.585-0.348-3.585l1.699-3.823c0.671,0.396,1.451,0.627,2.29,0.627 c0.584,0,1.141-0.114,1.656-0.316l2.954,5.417C11.482,19.968,9.299,20.361,9.299,20.361z M9.792,12.758l0.885-0.66 c0,0,2.562,2.827,3.181,3.623c0.617,0.794-0.49,1.501-0.75,1.723c-0.259,0.147-0.464,0.206-0.635,0.226L9.792,12.758z M19.394,20.361c-2.018,0.507-3.758,0.304-3.758,0.304c-1.569-0.201-2.191-1.204-2.191-1.204c-0.182-0.175-0.311-0.389-0.403-0.624 c0.201-0.055,0.433-0.15,0.698-0.301c0.405-0.337,2.102-1.424,1.154-2.643c-0.24-0.308-0.678-0.821-1.184-1.405l1.08-2.435 c0.674,0.396,1.457,0.627,2.293,0.627c0.585,0,1.144-0.114,1.654-0.316l2.955,5.417C21.582,19.968,19.394,20.361,19.394,20.361z M23.201,17.444c-0.255,0.147-0.461,0.206-0.63,0.226l-2.68-4.912l0.879-0.66c0,0,2.562,2.827,3.181,3.623 C24.57,16.516,23.466,17.223,23.201,17.444z"></path>
-                                        </svg>
-                                      )}
-                                      <button
-                                        type="button"
-                                        aria-label="Item options"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          // Keep Smart sign-up expanded while the item menu is open
-                                          try {
-                                            setActiveCategory("Smart sign-up");
-                                          } catch {}
-                                          const target =
-                                            e.currentTarget as HTMLElement | null;
-                                          if (itemMenuId === h.id) {
-                                            setItemMenuId(null);
-                                            setItemMenuOpensUpward(false);
-                                            setItemMenuPos(null);
-                                            setItemMenuCategoryOpenFor(null);
-                                            return;
-                                          }
-                                          if (target) {
-                                            const rect =
-                                              target.getBoundingClientRect();
-                                            const viewportHeight =
-                                              window.innerHeight;
-                                            const menuHeight = 200;
-                                            const spaceBelow =
-                                              viewportHeight - rect.top;
-                                            const shouldOpenUpward =
-                                              spaceBelow < menuHeight + 50;
-                                            setItemMenuOpensUpward(
-                                              shouldOpenUpward,
-                                            );
-                                            setItemMenuPos({
-                                              left: Math.round(rect.right + 8),
-                                              top: shouldOpenUpward
-                                                ? Math.round(rect.top - 10)
-                                                : Math.round(
-                                                    rect.top + rect.height / 2,
-                                                  ),
-                                            });
-                                          }
-                                          setItemMenuCategoryOpenFor(null);
-                                          setItemMenuId(h.id);
-                                        }}
-                                        className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 24 24"
-                                          fill="currentColor"
-                                          className="h-4 w-4"
-                                          aria-hidden="true"
-                                        >
-                                          <circle cx="5" cy="12" r="1.5" />
-                                          <circle cx="12" cy="12" r="1.5" />
-                                          <circle cx="19" cy="12" r="1.5" />
-                                        </svg>
-                                      </button>
-                                      {itemMenuId === h.id &&
-                                        itemMenuPos &&
-                                        createPortal(
-                                          <div
-                                            data-popover="item-menu"
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{
-                                              position: "fixed",
-                                              left: itemMenuPos.left,
-                                              top: itemMenuPos.top,
-                                              transform: itemMenuOpensUpward
-                                                ? "translateY(-100%)"
-                                                : "translateY(-10%)",
-                                            }}
-                                            className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
-                                          >
-                                            <button
-                                              type="button"
-                                              onClick={async (e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setItemMenuId(null);
-                                                setItemMenuOpensUpward(false);
-                                                setItemMenuPos(null);
-                                                await shareHistoryItem(
-                                                  prettyHref,
-                                                );
-                                              }}
-                                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                            >
-                                              <span className="text-sm md:text-base">
-                                                Share
-                                              </span>
-                                            </button>
-                                            {!hideRenameAndChange && (
-                                              <button
-                                                type="button"
-                                                onClick={async (e) => {
-                                                  e.preventDefault();
-                                                  e.stopPropagation();
-                                                  setItemMenuId(null);
-                                                  setItemMenuOpensUpward(false);
-                                                  setItemMenuPos(null);
-                                                  await renameHistoryItem(
-                                                    h.id,
-                                                    h.title,
-                                                  );
-                                                }}
-                                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                              >
-                                                <span className="text-sm md:text-base">
-                                                  Rename
-                                                </span>
-                                              </button>
-                                            )}
-                                            <button
-                                              type="button"
-                                              onClick={async (e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setItemMenuId(null);
-                                                setItemMenuOpensUpward(false);
-                                                setItemMenuPos(null);
-                                                await deleteHistoryItem(h.id);
-                                              }}
-                                              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                            >
-                                              <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className="h-4 w-4"
-                                                aria-hidden="true"
-                                              >
-                                                <polyline points="3 6 5 6 21 6" />
-                                                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                                                <path d="M10 11v6" />
-                                                <path d="M14 11v6" />
-                                                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-                                              </svg>
-                                              <span className="text-sm md:text-base">
-                                                Delete
-                                              </span>
-                                            </button>
-                                          </div>,
-                                          document.body,
-                                        )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-                {/* My Events Section */}
-                <div
-                  className={`${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3 mt-3 ${
-                    myEventsOpen ? "ring-2 ring-[#d9ccff]" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <button
-                      type="button"
-                      onClick={() => setMyEventsOpen((v) => !v)}
-                      className="flex flex-1 items-center gap-3 text-left text-sm md:text-base font-semibold text-[#2f1d47] focus:outline-none"
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        <Trophy size={18} />
-                      </span>
-                      <span>My Events</span>
-                    </button>
-                    <div className="ml-auto flex items-center gap-2">
-                      <span className={SIDEBAR_BADGE_CLASS}>
-                        {history.length}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMyEventsOpen((v) => !v)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#7a5fc0] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white"
-                        aria-label="Toggle My Events"
-                      >
-                        <span
-                          className={`text-lg leading-none transition-transform ${
-                            myEventsOpen ? "rotate-180" : ""
-                          }`}
-                          aria-hidden="true"
-                        >
-                          ▾
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`mt-3 border-t border-white/70 pt-3 ${
-                      myEventsOpen ? "" : "hidden"
-                    }`}
-                  >
-                    {(() => {
-                      const categories = Array.from(
-                        new Set(
-                          history
-                            .map((h) => {
-                              try {
-                                const explicit = normalizeCategoryLabel(
-                                  (h as any)?.data?.category as string | null,
-                                );
-                                if (explicit) return explicit;
-                                const text = [
-                                  String((h as any)?.title || ""),
-                                  String((h as any)?.data?.description || ""),
-                                  String((h as any)?.data?.rsvp || ""),
-                                  String((h as any)?.data?.location || ""),
-                                ]
-                                  .filter(Boolean)
-                                  .join(" ");
-                                const guessed = guessCategoryFromText(text);
-                                return normalizeCategoryLabel(guessed);
-                              } catch {
-                                return null;
-                              }
-                            })
-                            .filter((c): c is string => Boolean(c)),
-                        ),
-                      ).filter(
-                        (c) => c.trim().toLowerCase() !== "shared events",
-                      ); // Shared events section renders above with gradient treatment
-                      // Sort categories A → Z for consistent display
-                      const sortedCategories = [...categories].sort((a, b) =>
-                        a.localeCompare(b),
-                      );
-                      if (categories.length === 0 && draftsCount === 0)
-                        return null;
-                      return (
-                        <div
-                          ref={categoriesRef}
-                          className="overflow-hidden rounded-xl bg-white/60 divide-y divide-[#eee7ff]"
-                        >
-                          {draftsCount > 0 && (
-                            <DraftsSection
-                              embedded
-                              drafts={drafts}
-                              draftsCount={draftsCount}
-                              collapseSidebarOnTouch={collapseSidebarOnTouch}
-                              onDeleteDraft={deleteHistoryItem}
-                            />
-                          )}
-                          {sortedCategories.map((c) => {
-                            // Gather items under this category once to reuse below
-                            const categoryItems = (() => {
-                              try {
-                                return history.filter((h) => {
-                                  const explicit = normalizeCategoryLabel(
-                                    (h as any)?.data?.category as string | null,
-                                  );
-                                  if (explicit) return explicit === c;
-                                  const text = [
-                                    String((h as any)?.title || ""),
-                                    String((h as any)?.data?.description || ""),
-                                    String((h as any)?.data?.rsvp || ""),
-                                    String((h as any)?.data?.location || ""),
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" ");
-                                  const guessed = normalizeCategoryLabel(
-                                    guessCategoryFromText(text),
-                                  );
-                                  return guessed === c;
-                                });
-                              } catch {
-                                return [] as typeof history;
-                              }
-                            })();
-                            const totalCount = categoryItems.length;
-                            const categoryAdIndex =
-                              categoryAdPositions.get(c) ?? null;
-                            return (
-                              <div key={c} className="">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveCategory((prev) =>
-                                      prev === c ? null : c,
-                                    );
-                                  }}
-                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2.5 text-left text-sm font-medium text-[#3e315c] hover:bg-indigo-50/70 transition-all duration-150 ${
-                                    activeCategory === c
-                                      ? "bg-indigo-50/70"
-                                      : ""
-                                  }`}
-                                  aria-pressed={activeCategory === c}
-                                  title={c}
-                                >
-                                  <span className="truncate">{c}</span>
-                                  {(() => {
-                                    const color =
-                                      categoryColors[c] ||
-                                      defaultCategoryColor(c);
-                                    const ccls = colorClasses(color);
-                                    return (
-                                      <span className="inline-flex items-center gap-2">
-                                        {totalCount > 0 && (
-                                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80">
-                                            {totalCount}
-                                          </span>
-                                        )}
-                                        <span
-                                          role="button"
-                                          tabIndex={0}
-                                          aria-label={`Edit ${c} color`}
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            try {
-                                              const rect = (
-                                                e.currentTarget as HTMLElement
-                                              ).getBoundingClientRect();
-                                              const menuWidth = 220;
-                                              const viewportPadding = 8;
-                                              const idealLeft =
-                                                rect.left +
-                                                rect.width / 2 -
-                                                menuWidth / 2;
-                                              const clampedLeft = Math.max(
-                                                viewportPadding,
-                                                Math.min(
-                                                  idealLeft,
-                                                  window.innerWidth -
-                                                    menuWidth -
-                                                    viewportPadding,
-                                                ),
-                                              );
-                                              setColorMenuPos({
-                                                left: Math.round(clampedLeft),
-                                                top: Math.round(
-                                                  rect.bottom + 12,
-                                                ),
-                                              });
-                                            } catch {
-                                              setColorMenuPos(null);
-                                            }
-                                            setColorMenuFor(c);
-                                          }}
-                                          onKeyDown={(e) => {
-                                            if (
-                                              e.key === "Enter" ||
-                                              e.key === " "
-                                            ) {
-                                              e.preventDefault();
-                                              (
-                                                e.currentTarget as HTMLElement
-                                              ).click();
-                                            }
-                                          }}
-                                          className={`inline-flex items-center justify-center h-5 w-5 rounded-[4px] ${ccls.swatch} border`}
-                                          title="Edit color"
-                                        />
-                                      </span>
-                                    );
-                                  })()}
-                                </button>
-                                {activeCategory === c ? (
-                                  <div className="mt-1 mb-2">
-                                    {categoryItems.length === 0 ? (
-                                      <div className="text-xs md:text-sm text-foreground/60 px-1 py-0.5">
-                                        No events
-                                      </div>
-                                    ) : (
-                                      <div className="space-y-1">
-                                        {categoryItems.map((h, index) => {
-                                          const slug = (h.title || "")
-                                            .toLowerCase()
-                                            .replace(/[^a-z0-9]+/g, "-")
-                                            .replace(/^-+|-+$/g, "");
-                                          const dataObj: any =
-                                            (h as any)?.data || {};
-                                          const prettyHref = dataObj?.signupForm
-                                            ? `/smart-signup-form/${h.id}`
-                                            : `/event/${slug}-${h.id}`;
-                                          const explicitCat = (h as any)?.data
-                                            ?.category as string | null;
-                                          const effectiveCategory = (() => {
-                                            const explicit =
-                                              normalizeCategoryLabel(
-                                                explicitCat,
-                                              );
-                                            if (explicit) return explicit;
-                                            try {
-                                              const text = [
-                                                String((h as any)?.title || ""),
-                                                String(
-                                                  (h as any)?.data
-                                                    ?.description || "",
-                                                ),
-                                                String(
-                                                  (h as any)?.data?.rsvp || "",
-                                                ),
-                                                String(
-                                                  (h as any)?.data?.location ||
-                                                    "",
-                                                ),
-                                              ]
-                                                .filter(Boolean)
-                                                .join(" ");
-                                              const guessed =
-                                                guessCategoryFromText(text);
-                                              return normalizeCategoryLabel(
-                                                guessed,
-                                              );
-                                            } catch {
-                                              return null;
-                                            }
-                                          })();
-                                          const isShared = Boolean(
-                                            (h as any)?.data?.shared ||
-                                            (h as any)?.data?.sharedOut ||
-                                            (h as any)?.data?.category ===
-                                              "Shared events",
-                                          );
-                                          const rowAndBadge = (() => {
-                                            if (isShared) {
-                                              return {
-                                                row: `${sharedGradientRowClass()} ${sharedTextClass}`,
-                                                badge: `bg-surface/60 ${sharedMutedTextClass} border-border`,
-                                              };
-                                            }
-                                            if (!effectiveCategory)
-                                              return {
-                                                row: "",
-                                                badge:
-                                                  "bg-surface/70 text-foreground/70 border-border/70",
-                                              };
-                                            const color =
-                                              categoryColors[
-                                                effectiveCategory
-                                              ] ||
-                                              defaultCategoryColor(
-                                                effectiveCategory,
-                                              );
-                                            const ccls = colorClasses(color);
-                                            const row = ccls.tint;
-                                            return { row, badge: ccls.badge };
-                                          })();
-                                          return (
-                                            <Fragment key={h.id}>
-                                              <div
-                                                data-history-item={h.id}
-                                                className={`relative px-2 py-2 rounded-md text-sm ${rowAndBadge.row}`}
-                                              >
-                                                <Link
-                                                  href={prettyHref}
-                                                  onClick={() => {
-                                                    try {
-                                                      const isTouch =
-                                                        typeof window !==
-                                                          "undefined" &&
-                                                        typeof window.matchMedia ===
-                                                          "function" &&
-                                                        window.matchMedia(
-                                                          "(hover: none), (pointer: coarse)",
-                                                        ).matches;
-                                                      if (isTouch)
-                                                        setIsCollapsed(true);
-                                                    } catch {}
-                                                  }}
-                                                  className="block pr-8"
-                                                  title={h.title}
-                                                >
-                                                  <div className="truncate flex items-center gap-2">
-                                                    <span className="truncate">
-                                                      {h.title ||
-                                                        "Untitled event"}
-                                                    </span>
-                                                  </div>
-                                                  <div
-                                                    className={`text-xs ${
-                                                      isShared
-                                                        ? sharedMutedTextClass
-                                                        : "text-foreground/60"
-                                                    }`}
-                                                  >
-                                                    {(() => {
-                                                      const start =
-                                                        (h as any)?.data
-                                                          ?.start ||
-                                                        (h as any)?.data?.event
-                                                          ?.start;
-                                                      const dateStr =
-                                                        start || h.created_at;
-                                                      return dateStr
-                                                        ? new Date(
-                                                            dateStr,
-                                                          ).toLocaleDateString()
-                                                        : "";
-                                                    })()}
-                                                  </div>
-                                                </Link>
-                                                <button
-                                                  type="button"
-                                                  aria-label="Item options"
-                                                  onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    const target =
-                                                      e.currentTarget as HTMLElement | null;
-                                                    if (itemMenuId === h.id) {
-                                                      setItemMenuId(null);
-                                                      setItemMenuOpensUpward(
-                                                        false,
-                                                      );
-                                                      setItemMenuPos(null);
-                                                      setItemMenuCategoryOpenFor(
-                                                        null,
-                                                      );
-                                                      return;
-                                                    }
-                                                    if (target) {
-                                                      const rect =
-                                                        target.getBoundingClientRect();
-                                                      const viewportHeight =
-                                                        window.innerHeight;
-                                                      const menuHeight = 200;
-                                                      const spaceBelow =
-                                                        viewportHeight -
-                                                        rect.top;
-                                                      const shouldOpenUpward =
-                                                        spaceBelow <
-                                                        menuHeight + 50;
-                                                      setItemMenuOpensUpward(
-                                                        shouldOpenUpward,
-                                                      );
-                                                      setItemMenuPos({
-                                                        left: Math.round(
-                                                          rect.right + 8,
-                                                        ),
-                                                        top: shouldOpenUpward
-                                                          ? Math.round(
-                                                              rect.top - 10,
-                                                            )
-                                                          : Math.round(
-                                                              rect.top +
-                                                                rect.height / 2,
-                                                            ),
-                                                      });
-                                                    }
-                                                    setItemMenuCategoryOpenFor(
-                                                      null,
-                                                    );
-                                                    setItemMenuId(h.id);
-                                                  }}
-                                                  className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-surface/70"
-                                                >
-                                                  <span
-                                                    className="text-lg font-normal leading-none"
-                                                    aria-hidden="true"
-                                                  >
-                                                    ⋮
-                                                  </span>
-                                                </button>
-                                                {itemMenuId === h.id &&
-                                                  itemMenuPos &&
-                                                  createPortal(
-                                                    <div
-                                                      data-popover="item-menu"
-                                                      onClick={(e) =>
-                                                        e.stopPropagation()
-                                                      }
-                                                      style={{
-                                                        position: "fixed",
-                                                        left: itemMenuPos.left,
-                                                        top: itemMenuPos.top,
-                                                        transform:
-                                                          itemMenuOpensUpward
-                                                            ? "translateY(-100%)"
-                                                            : "translateY(-10%)",
-                                                      }}
-                                                      className="z-[10000] w-44 rounded-lg border border-border bg-surface/95 text-foreground backdrop-blur shadow-lg p-2"
-                                                    >
-                                                      <button
-                                                        type="button"
-                                                        onClick={async (e) => {
-                                                          e.preventDefault();
-                                                          e.stopPropagation();
-                                                          setItemMenuId(null);
-                                                          setItemMenuOpensUpward(
-                                                            false,
-                                                          );
-                                                          setItemMenuPos(null);
-                                                          await shareHistoryItem(
-                                                            prettyHref,
-                                                          );
-                                                        }}
-                                                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-foreground hover:bg-foreground/10"
-                                                      >
-                                                        <span className="text-sm md:text-base">
-                                                          Delete
-                                                        </span>
-                                                      </button>
-                                                    </div>,
-                                                    document.body,
-                                                  )}
-                                              </div>
-                                              {categoryAdIndex !== null &&
-                                              categoryAdIndex === index ? (
-                                                <SidebarAdUnit />
-                                              ) : null}
-                                            </Fragment>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
+              <div
+                className={`absolute inset-0 overflow-hidden transition-transform duration-[240ms] ease-in-out ${
+                  sidebarPage === "eventContext"
+                    ? "translate-x-0 pointer-events-auto"
+                    : "translate-x-full pointer-events-none"
+                }`}
+                aria-hidden={sidebarPage !== "eventContext"}
+              >
+                <EventSidebar
+                  ref={eventSidebarRef}
+                  eventTitle={selectedEventLabel}
+                  activeEventTab={activeEventTab}
+                  onBack={handleSidebarBackToMyEvents}
+                  onTabChange={handleEventTabChange}
+                />
               </div>
             </div>
           </div>
@@ -4118,7 +3261,10 @@ export default function LeftSidebar() {
               )}
             </div>
           </div>
+
         </div>
+      </div>
+      </div>
       </aside>
 
       {colorMenuFor &&
@@ -4251,3 +3397,4 @@ export default function LeftSidebar() {
     </>
   );
 }
+

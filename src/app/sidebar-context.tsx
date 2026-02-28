@@ -12,7 +12,24 @@ interface SidebarContextType {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
+  selectedEventId: string | null;
+  setSelectedEventId: (eventId: string | null) => void;
+  selectedEventTitle: string | null;
+  setSelectedEventTitle: (title: string | null) => void;
+  selectedEventHref: string | null;
+  setSelectedEventHref: (href: string | null) => void;
+  selectedEventEditHref: string | null;
+  setSelectedEventEditHref: (href: string | null) => void;
+  activeEventTab: EventContextTab;
+  setActiveEventTab: (tab: EventContextTab) => void;
+  clearEventContext: () => void;
 }
+
+export type EventContextTab =
+  | "dashboard"
+  | "guests"
+  | "communications"
+  | "settings";
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
@@ -32,6 +49,18 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   children,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => true);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventTitle, setSelectedEventTitle] = useState<string | null>(
+    null,
+  );
+  const [selectedEventHref, setSelectedEventHref] = useState<string | null>(
+    null,
+  );
+  const [selectedEventEditHref, setSelectedEventEditHref] = useState<
+    string | null
+  >(null);
+  const [activeEventTab, setActiveEventTab] =
+    useState<EventContextTab>("dashboard");
   const STORAGE_KEY = "sidebar:collapsed";
 
   // Restore persisted state on mount
@@ -77,12 +106,31 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
     });
   };
 
+  const clearEventContext = () => {
+    setSelectedEventId(null);
+    setSelectedEventTitle(null);
+    setSelectedEventHref(null);
+    setSelectedEventEditHref(null);
+    setActiveEventTab("dashboard");
+  };
+
   return (
     <SidebarContext.Provider
       value={{
         isCollapsed,
         setIsCollapsed: setIsCollapsedAndPersist,
         toggleSidebar,
+        selectedEventId,
+        setSelectedEventId,
+        selectedEventTitle,
+        setSelectedEventTitle,
+        selectedEventHref,
+        setSelectedEventHref,
+        selectedEventEditHref,
+        setSelectedEventEditHref,
+        activeEventTab,
+        setActiveEventTab,
+        clearEventContext,
       }}
     >
       {children}

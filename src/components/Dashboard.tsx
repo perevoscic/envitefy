@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -16,12 +15,6 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
-import { EnvitefyBuilderHero } from "@/components/home/EnvitefyBuilderHero";
-import { SportsPracticeHero } from "@/components/home/SportsPracticeHero";
-import { AppointmentsGeneralHero } from "@/components/home/AppointmentsGeneralHero";
-import { SnapHero } from "@/components/home/SnapHero";
-import { UploadHero } from "@/components/home/UploadHero";
-import { SmartSignupHero } from "@/components/home/SmartSignupHero";
 import {
   CreateEventIllustration,
   ScanIllustration,
@@ -31,6 +24,7 @@ import {
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
+import { Mail, Pencil, Share2, Trash2 } from "lucide-react";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
@@ -47,6 +41,7 @@ import {
   inferTemplateKeyFromEventData,
 } from "@/config/feature-visibility";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
+import { useSidebar } from "@/app/sidebar-context";
 
 type EventFields = {
   title: string;
@@ -64,7 +59,9 @@ type UpcomingItem = {
   id: string;
   title: string;
   start: string;
+  end: string | null;
   category: string | null;
+  location: string | null;
 };
 
 type HighlightTone = "primary" | "secondary" | "accent" | "success";
@@ -109,16 +106,20 @@ declare global {
 
 export default function Dashboard() {
   const { data: session } = useSession();
+  const {
+    selectedEventId,
+    selectedEventTitle,
+    selectedEventHref,
+    selectedEventEditHref,
+    clearEventContext,
+  } = useSidebar();
   const isSignedIn = Boolean(session?.user);
   const {
     loading: visibilityLoading,
     required: onboardingRequired,
     completed: onboardingCompleted,
-    persona,
-    personas,
     promptDismissedAt,
     visibleTemplateKeys,
-    dashboardLayout,
     refresh: refreshVisibility,
   } = useFeatureVisibility();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -175,7 +176,7 @@ export default function Dashboard() {
         setPreviewKind(null);
       }
     },
-    [clearScanTimers],
+    [clearScanTimers]
   );
 
   const startScanUi = useCallback(
@@ -189,12 +190,12 @@ export default function Dashboard() {
       currentPreviewUrlRef.current = null;
 
       const nextPreviewKind: SnapPreviewKind = selected.type.startsWith(
-        "image/",
+        "image/"
       )
         ? "image"
         : selected.type === "application/pdf"
-          ? "pdf"
-          : "file";
+        ? "pdf"
+        : "file";
       setPreviewKind(nextPreviewKind);
       if (nextPreviewKind === "image") {
         const nextPreviewUrl = URL.createObjectURL(selected);
@@ -221,7 +222,7 @@ export default function Dashboard() {
         });
       }, 100);
     },
-    [clearScanTimers],
+    [clearScanTimers]
   );
 
   const finishScanUi = useCallback(async () => {
@@ -288,7 +289,7 @@ export default function Dashboard() {
       }
       console.error("[snap-upload]", payload, err);
     },
-    [],
+    []
   );
 
   const [connected, setConnected] = useState<{
@@ -334,6 +335,12 @@ export default function Dashboard() {
               data?.fieldsGuess?.start ||
               data?.event?.start ||
               null;
+            const endRaw =
+              data?.endISO ||
+              data?.end ||
+              data?.fieldsGuess?.end ||
+              data?.event?.end ||
+              null;
             const startDate = startRaw ? new Date(startRaw) : null;
             if (!startDate || Number.isNaN(startDate.getTime())) return null;
             if (startDate.getTime() < now) return null;
@@ -348,7 +355,18 @@ export default function Dashboard() {
               id: row.id,
               title: row.title || "Event",
               start: startDate.toISOString(),
+              end:
+                endRaw && !Number.isNaN(new Date(endRaw).getTime())
+                  ? new Date(endRaw).toISOString()
+                  : null,
               category: category || null,
+              location:
+                String(
+                  data?.location ||
+                    data?.fieldsGuess?.location ||
+                    data?.event?.location ||
+                    ""
+                ) || null,
             } as UpcomingItem;
           })
           .filter(Boolean) as UpcomingItem[];
@@ -361,42 +379,65 @@ export default function Dashboard() {
     void loadUpcoming();
   }, [isSignedIn, visibleTemplateKeys]);
 
-  const visibleTemplateHrefs = useMemo(() => {
-    const visible = new Set<TemplateKey>(visibleTemplateKeys);
-    return TEMPLATE_DEFINITIONS.filter((d) => visible.has(d.key)).map(
-      (d) => d.href,
-    );
-  }, [visibleTemplateKeys]);
-
-  const moduleOrder = useMemo(() => {
-    const personaSet = new Set(personas);
-    if (
-      personaSet.has("sports_staff") ||
-      persona === "sports_staff" ||
-      dashboardLayout === "sports_focused"
-    ) {
-      return ["sports", "milestones", "appointments"] as const;
-    }
-    if (personaSet.has("couples") || persona === "couples") {
-      return ["milestones", "appointments", "sports"] as const;
-    }
-    if (
-      personaSet.has("business_teams") ||
-      personaSet.has("organizers") ||
-      persona === "business_teams" ||
-      persona === "organizers"
-    ) {
-      return ["appointments", "milestones", "sports"] as const;
-    }
-    return ["milestones", "sports", "appointments"] as const;
-  }, [dashboardLayout, persona, personas]);
-
   const router = useRouter();
   const openCreateEvent = useCallback(() => {
     try {
       router.push("/event/new");
     } catch {}
   }, [router]);
+
+  const showEventHeaderActions = Boolean(selectedEventId);
+  const selectedEventLabel = selectedEventTitle || "Untitled event";
+  const headerActionButtonClass =
+    "inline-flex items-center gap-1.5 rounded-full border border-[#ddd6ff] bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#4f457a] shadow-sm transition hover:border-[#c8beff] hover:bg-white";
+
+  const handleHeaderEdit = useCallback(() => {
+    if (!selectedEventEditHref) return;
+    router.push(selectedEventEditHref);
+  }, [router, selectedEventEditHref]);
+
+  const handleHeaderShare = useCallback(async () => {
+    if (!selectedEventHref) return;
+    const url = new URL(selectedEventHref, window.location.origin).toString();
+    if ((navigator as any).share) {
+      await (navigator as any).share({
+        title: selectedEventLabel,
+        url,
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+  }, [selectedEventHref, selectedEventLabel]);
+
+  const handleHeaderEmail = useCallback(() => {
+    const subject = encodeURIComponent(selectedEventLabel);
+    const body = encodeURIComponent(
+      selectedEventHref
+        ? `I wanted to share this event with you: ${new URL(
+            selectedEventHref,
+            window.location.origin
+          ).toString()}`
+        : "I wanted to share this event with you."
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }, [selectedEventHref, selectedEventLabel]);
+
+  const handleHeaderDelete = useCallback(async () => {
+    if (!selectedEventId) return;
+    const ok = window.confirm(
+      `Are you sure you want to delete this event?\n\n${selectedEventLabel}`
+    );
+    if (!ok) return;
+    try {
+      await fetch(`/api/history/${selectedEventId}`, { method: "DELETE" });
+      window.dispatchEvent(
+        new CustomEvent("history:deleted", { detail: { id: selectedEventId } })
+      );
+      clearEventContext();
+    } catch {
+      // no-op placeholder until a global toast system is wired here
+    }
+  }, [clearEventContext, selectedEventId, selectedEventLabel]);
 
   const resetForm = useCallback(() => {
     cancelledByUserRef.current = true;
@@ -424,7 +465,7 @@ export default function Dashboard() {
       }
       currentPreviewUrlRef.current = null;
     },
-    [clearScanTimers],
+    [clearScanTimers]
   );
 
   const parseStartToIso = useCallback(
@@ -439,7 +480,7 @@ export default function Dashboard() {
       const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
       return parsed ? new Date(parsed.getTime()).toISOString() : null;
     },
-    [],
+    []
   );
 
   const normalizeAddress = useCallback((raw: string) => {
@@ -478,7 +519,7 @@ export default function Dashboard() {
         timezone,
       } as EventFields;
     },
-    [normalizeAddress, parseStartToIso],
+    [normalizeAddress, parseStartToIso]
   );
 
   const ingest = useCallback(
@@ -513,7 +554,7 @@ export default function Dashboard() {
           // (works on most platforms but may fail on Android)
           console.warn(
             "Failed to read file into memory, using original file object:",
-            readErr,
+            readErr
           );
         }
 
@@ -543,7 +584,7 @@ export default function Dashboard() {
               throw new Error("__scan_cancelled__");
             }
             throw new Error(
-              "Upload timed out. Please check your connection and try again.",
+              "Upload timed out. Please check your connection and try again."
             );
           }
           logUploadIssue(fetchErr, "fetch", {
@@ -555,7 +596,7 @@ export default function Dashboard() {
           const errorMessage =
             fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
           throw new Error(
-            `Upload failed: ${errorMessage}. Please check your connection and try again.`,
+            `Upload failed: ${errorMessage}. Please check your connection and try again.`
           );
         }
 
@@ -600,7 +641,7 @@ export default function Dashboard() {
         // Clean RSVP field: extract ONLY phone number (digits only) or email (no "RSVP:", names, etc.)
         // This ensures the field contains ONLY the contact info that can be used directly for SMS/email
         const cleanRsvp = (
-          rsvpText: string | null | undefined,
+          rsvpText: string | null | undefined
         ): string | null => {
           if (!rsvpText) return null;
           // Try to extract phone number first
@@ -659,8 +700,7 @@ export default function Dashboard() {
         const alreadyLogged =
           err instanceof Error &&
           Boolean(
-            (err as Error & { __snapUploadLogged?: boolean })
-              .__snapUploadLogged,
+            (err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged
           );
         if (!alreadyLogged) {
           logUploadIssue(err, "ingest-final", {
@@ -680,7 +720,7 @@ export default function Dashboard() {
         setLoading(false);
       }
     },
-    [finishScanUi, logUploadIssue, resetScanUi],
+    [finishScanUi, logUploadIssue, resetScanUi]
   );
 
   const onFile = useCallback(
@@ -692,7 +732,7 @@ export default function Dashboard() {
       startScanUi(selected);
       void ingest(selected);
     },
-    [ingest, startScanUi],
+    [ingest, startScanUi]
   );
 
   const openCamera = useCallback(() => {
@@ -864,7 +904,7 @@ export default function Dashboard() {
     const stateParam = btoa(encodeURIComponent(jsonStr));
     window.open(
       `/api/google/auth?state=${encodeURIComponent(stateParam)}`,
-      "_blank",
+      "_blank"
     );
   }, [event, buildSubmissionEvent, setError]);
 
@@ -951,7 +991,7 @@ export default function Dashboard() {
               category: ocrCategory || null,
               data: payload.data,
             },
-          }),
+          })
         );
       }
     } catch (err) {
@@ -1079,7 +1119,7 @@ export default function Dashboard() {
               category: ocrCategory || null,
               data: payload.data,
             },
-          }),
+          })
         );
       }
     } catch (err) {
@@ -1206,7 +1246,7 @@ export default function Dashboard() {
               category: ocrCategory || null,
               data: payload.data,
             },
-          }),
+          })
         );
       }
 
@@ -1237,7 +1277,7 @@ export default function Dashboard() {
   }, [session]);
 
   const showScanSection = Boolean(
-    error || loading || scanStatus !== "idle" || (modalOpen && event),
+    error || loading || scanStatus !== "idle" || (modalOpen && event)
   );
 
   useEffect(() => {
@@ -1298,60 +1338,79 @@ export default function Dashboard() {
       />
       {/* Welcome message */}
       {isSignedIn && (
-        <div className="w-full max-w-6xl mb-8 flex flex-col items-start gap-4 md:mb-10 mt-0">
-          <div className="flex flex-col items-start text-left pt-10">
-            <div
-              className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
-              style={{
-                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-              }}
-            >
-              <span className="text-[#1b1540]">Welcome Back,</span>
-              <br />
-              <span className="text-[#7F8CFF] italic">
-                {(session?.user?.name as string) ||
-                  (session?.user?.email as string)?.split("@")[0] ||
-                  "there"}
-              </span>
+        <div className="w-full max-w-6xl mb-8 mt-0 flex flex-col gap-4 md:mb-10">
+          <div className="flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0 flex flex-col items-start text-left">
+              <div
+                className="truncate text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+                style={{
+                  fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
+                }}
+              >
+                <span className="text-[#1b1540]">Welcome Back,</span>
+                <span className="ml-2 text-[#7F8CFF] italic">
+                  {(session?.user?.name as string) ||
+                    (session?.user?.email as string)?.split("@")[0] ||
+                    "there"}
+                </span>
+              </div>
+              <p className="text-lg sm:text-xl md:text-xl text-[#1b1540] mt-2">
+                Let&apos;s create something unforgettable.
+              </p>
             </div>
-            <p className="text-lg sm:text-xl md:text-xl text-[#1b1540] mt-2">
-              Let's create something unforgettable.
-            </p>
+            {showEventHeaderActions && (
+              <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
+                <div
+                  className="max-w-full truncate rounded-full border border-[#ddd6ff] bg-white/85 px-3 py-1 text-xs font-semibold text-[#5a4f86]"
+                  title={selectedEventLabel}
+                >
+                  {selectedEventLabel}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                  <button
+                    type="button"
+                    onClick={handleHeaderEdit}
+                    className={headerActionButtonClass}
+                  >
+                    <Pencil size={14} />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleHeaderShare}
+                    className={headerActionButtonClass}
+                  >
+                    <Share2 size={14} />
+                    <span>Share</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleHeaderEmail}
+                    className={headerActionButtonClass}
+                  >
+                    <Mail size={14} />
+                    <span>Email</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleHeaderDelete}
+                    className={headerActionButtonClass}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
       {isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-            <SnapHero onSnap={openCamera} className="h-full" />
-            <UploadHero onUpload={openUpload} className="h-full" />
-            <SmartSignupHero className="h-full" />
-          </div>
-          {moduleOrder.map((section: (typeof moduleOrder)[number]) => {
-            if (section === "milestones") {
-              return (
-                <EnvitefyBuilderHero
-                  key={section}
-                  allowedHrefs={visibleTemplateHrefs}
-                />
-              );
-            }
-            if (section === "sports") {
-              return (
-                <SportsPracticeHero
-                  key={section}
-                  allowedHrefs={visibleTemplateHrefs}
-                />
-              );
-            }
-            return (
-              <AppointmentsGeneralHero
-                key={section}
-                allowedHrefs={visibleTemplateHrefs}
-              />
-            );
-          })}
-          <UpcomingEventsPanel items={upcomingEvents} />
+          <UpcomingEventsPanel
+            items={upcomingEvents}
+            onCreateEvent={openCreateEvent}
+          />
         </div>
       )}
       {scanStatus !== "idle" && (
@@ -1451,14 +1510,14 @@ function OnboardingModal({
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<TemplateKey[]>(
-    visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS],
+    visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
   );
 
   useEffect(() => {
     if (!open) return;
     setStep(1);
     setSelectedKeys(
-      visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS],
+      visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
     );
   }, [open, visibleTemplateKeys]);
 
@@ -1591,29 +1650,253 @@ function OnboardingModal({
   );
 }
 
-function UpcomingEventsPanel({ items }: { items: UpcomingItem[] }) {
-  if (!items.length) return null;
+function eventGlyph(item: UpcomingItem): string {
+  const haystack = `${item.title} ${item.category || ""}`.toLowerCase();
+  if (haystack.includes("birthday")) return "BD";
+  if (haystack.includes("wedding")) return "WD";
+  if (haystack.includes("baby")) return "BB";
+  if (haystack.includes("appointment")) return "AP";
+  if (haystack.includes("doctor")) return "AP";
+  if (haystack.includes("sport")) return "SP";
+  if (haystack.includes("soccer")) return "SP";
+  if (haystack.includes("football")) return "SP";
+  if (haystack.includes("gymnastics")) return "SP";
+  return "EV";
+}
+
+function parseSafeDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function formatEventTimeRange(startRaw: string, endRaw: string | null): string {
+  const start = parseSafeDate(startRaw);
+  if (!start) return "Date pending";
+  const dayPart = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(start);
+  const startTime = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(start);
+  const end = parseSafeDate(endRaw);
+  if (!end || end.getTime() <= start.getTime()) {
+    return `${dayPart}, ${startTime}`;
+  }
+  const endTime = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(end);
+  return `${dayPart}, ${startTime} - ${endTime}`;
+}
+
+function UpcomingEventsPanel({
+  items,
+  onCreateEvent,
+}: {
+  items: UpcomingItem[];
+  onCreateEvent: () => void;
+}) {
+  const now = Date.now();
+  const nextEvent = items[0] ?? null;
+  const additionalEvents = items.slice(1, 4);
+  const scheduleEvents =
+    additionalEvents.length > 0
+      ? additionalEvents
+      : nextEvent
+      ? [nextEvent]
+      : [];
+  const upcomingIn30Days = items.filter((item) => {
+    const start = parseSafeDate(item.start);
+    if (!start) return false;
+    const diff = start.getTime() - now;
+    return diff >= 0 && diff <= 30 * 24 * 60 * 60 * 1000;
+  }).length;
+  const scheduleHealth = items.length
+    ? Math.max(
+        10,
+        Math.min(100, Math.round((upcomingIn30Days / items.length) * 100))
+      )
+    : 0;
+  const nextStart = parseSafeDate(nextEvent?.start);
+  const daysUntilNext = nextStart
+    ? Math.ceil((nextStart.getTime() - now) / (24 * 60 * 60 * 1000))
+    : null;
+  const daysMessage =
+    daysUntilNext === null
+      ? "Add your next event"
+      : daysUntilNext <= 0
+      ? "Happening today"
+      : daysUntilNext === 1
+      ? "Tomorrow"
+      : `In ${daysUntilNext} days`;
+
   return (
-    <section className="rounded-3xl border border-[#e7defb] bg-white/80 p-5 shadow-sm">
-      <h3 className="text-lg font-semibold text-[#1b1540]">Upcoming events</h3>
-      <div className="mt-3 space-y-2">
-        {items.map((item) => (
+    <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#b6a9ff]/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-[#7ed7c8]/15 blur-3xl" />
+      <div className="relative z-10 grid gap-4 xl:grid-cols-[1.7fr_1fr]">
+        <article className="rounded-[28px] border border-[#7f8cff]/25 bg-gradient-to-br from-[#3c46c8] via-[#5b4ed1] to-[#854cd8] p-6 text-white shadow-[0_24px_60px_rgba(71,52,150,0.35)] sm:p-8">
+          <span className="inline-flex rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/90">
+            Next Event
+          </span>
+          {nextEvent ? (
+            <>
+              <h3 className="mt-4 text-3xl font-semibold leading-tight !text-white sm:text-4xl">
+                {nextEvent.title}
+              </h3>
+              <p className="mt-3 text-sm font-medium text-white/90 sm:text-base">
+                {formatEventTimeRange(nextEvent.start, nextEvent.end)}
+              </p>
+              <p className="mt-2 text-sm text-white/80">
+                {nextEvent.location || daysMessage}
+              </p>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <Link
+                  href={`/event/${nextEvent.id}`}
+                  className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#40349b] shadow-[0_10px_24px_rgba(21,16,56,0.28)] transition hover:-translate-y-0.5 hover:bg-[#f6f3ff]"
+                >
+                  Open Event
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="mt-4 text-3xl font-semibold leading-tight sm:text-4xl">
+                No upcoming events yet
+              </h3>
+              <p className="mt-3 text-sm text-white/85 sm:text-base">
+                Start with a new event and this dashboard will highlight what is
+                next.
+              </p>
+              <div className="mt-7">
+                <button
+                  type="button"
+                  onClick={onCreateEvent}
+                  className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#40349b] shadow-[0_10px_24px_rgba(21,16,56,0.28)] transition hover:-translate-y-0.5 hover:bg-[#f6f3ff]"
+                >
+                  Book First Event
+                </button>
+              </div>
+            </>
+          )}
+        </article>
+
+        <aside className="rounded-[28px] border border-[#d8dbff] bg-white/88 p-6 shadow-[0_18px_36px_rgba(70,56,120,0.12)] backdrop-blur-sm">
+          <h3 className="text-xl font-semibold text-[#221b45]">
+            Schedule Snapshot
+          </h3>
+          <div className="mt-8 text-center">
+            <p className="text-5xl font-bold tracking-tight text-[#31275e]">
+              {items.length}
+            </p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#6e629f]">
+              Upcoming events
+            </p>
+          </div>
+          <div className="mt-10 space-y-2">
+            <div className="flex items-center justify-between text-sm text-[#62588f]">
+              <span>Next 30 days</span>
+              <span className="font-semibold text-[#3a2f6f]">
+                {upcomingIn30Days} planned
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-[#ebe8ff]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#5c78ff] to-[#49c0ab] transition-all"
+                style={{ width: `${scheduleHealth}%` }}
+              />
+            </div>
+            <p className="text-xs text-[#7a71a7]">{daysMessage}</p>
+          </div>
+        </aside>
+      </div>
+
+      <div className="relative z-10 mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-2xl font-semibold text-[#201942]">My Schedule</h3>
           <Link
-            key={item.id}
-            href={`/event/${item.id}`}
-            className="flex items-center justify-between rounded-xl border border-[#f1edff] bg-white px-3 py-2 text-sm hover:bg-[#faf8ff]"
+            href="/calendar"
+            className="text-sm font-semibold text-[#4e4acf] transition hover:text-[#3a37a5]"
           >
-            <span className="font-medium text-[#2f1d47]">{item.title}</span>
-            <span className="text-[#6b5c9a]">
-              {new Intl.DateTimeFormat("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              }).format(new Date(item.start))}
-            </span>
+            View Calendar
           </Link>
-        ))}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {scheduleEvents.map((item) => {
+            const start = parseSafeDate(item.start);
+            const month = start
+              ? new Intl.DateTimeFormat("en-US", { month: "short" })
+                  .format(start)
+                  .toUpperCase()
+              : "--";
+            const day = start
+              ? new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(
+                  start
+                )
+              : "--";
+            const time = start
+              ? new Intl.DateTimeFormat("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                }).format(start)
+              : "Time TBD";
+            return (
+              <Link
+                key={item.id}
+                href={`/event/${item.id}`}
+                className="group rounded-[24px] border border-[#e5e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)] transition hover:-translate-y-1 hover:border-[#d4cbff] hover:shadow-[0_20px_36px_rgba(64,47,124,0.12)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f2eefe] text-[0.66rem] font-bold tracking-[0.08em] text-[#4f4293]">
+                    {eventGlyph(item)}
+                  </span>
+                  <span className="rounded-full bg-[#f1efff] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6660a0]">
+                    Upcoming
+                  </span>
+                </div>
+                <h4 className="mt-4 line-clamp-2 text-lg font-semibold leading-tight text-[#27204a]">
+                  {item.title}
+                </h4>
+                <p className="mt-1 line-clamp-1 text-sm text-[#7a71a8]">
+                  {item.location || item.category || "Event details"}
+                </p>
+                <div className="mt-6 border-t border-[#efecff] pt-3">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#8f86ba]">
+                    {month}
+                  </p>
+                  <div className="flex items-baseline justify-between">
+                    <p className="text-3xl font-bold tracking-tight text-[#231c47]">
+                      {day}
+                    </p>
+                    <p className="text-sm font-semibold text-[#3e3384]">
+                      {time}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+          <button
+            type="button"
+            onClick={onCreateEvent}
+            className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#c9c1f6] bg-white/45 px-4 text-center transition hover:-translate-y-1 hover:border-[#a7a0e9] hover:bg-white/70"
+          >
+            <span className="text-5xl font-light leading-none text-[#6a61b2]">
+              +
+            </span>
+            <span className="mt-2 text-lg font-semibold text-[#4b437f]">
+              Book New Event
+            </span>
+            <span className="mt-1 text-sm text-[#7a71a8]">
+              Create a fresh invite in seconds
+            </span>
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -1793,7 +2076,7 @@ function SnapEventModal({
         return mutator(prev);
       });
     },
-    [setEvent],
+    [setEvent]
   );
 
   if (!open || !event) {
@@ -1974,7 +2257,7 @@ function SnapEventModal({
                     const dayOptions = [1, 2, 3, 7, 14, 30];
                     const currentDays = Math.max(
                       1,
-                      Math.round((reminder.minutes || 0) / 1440) || 1,
+                      Math.round((reminder.minutes || 0) / 1440) || 1
                     );
                     return (
                       <div
@@ -1987,7 +2270,7 @@ function SnapEventModal({
                           onChange={(e) => {
                             const days = Math.max(
                               1,
-                              Number(e.target.value) || 1,
+                              Number(e.target.value) || 1
                             );
                             updateEvent((current) => {
                               const next = [...(current.reminders || [])];
@@ -2010,7 +2293,7 @@ function SnapEventModal({
                             updateEvent((current) => ({
                               ...current,
                               reminders: (current.reminders || []).filter(
-                                (_, i) => i !== idx,
+                                (_, i) => i !== idx
                               ),
                             }))
                           }
@@ -2241,7 +2524,7 @@ function OptionCard({
   };
 
   const handlePrimaryAction = (
-    event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+    event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>
   ) => {
     event.stopPropagation();
     if (showDetails) {
@@ -2283,7 +2566,7 @@ function OptionCard({
   };
 
   const handleInfoPointer = (
-    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>,
+    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>
   ) => {
     event.preventDefault();
     event.stopPropagation();
@@ -2297,7 +2580,7 @@ function OptionCard({
   };
 
   const closeDetails = (
-    event?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>,
+    event?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
   ) => {
     if (event) {
       event.preventDefault();
