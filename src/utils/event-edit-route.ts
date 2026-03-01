@@ -67,12 +67,12 @@ export const resolveEditHref = (
         ? ((eventData as any).variationId as string)
         : null;
 
-    // Discovery-generated gymnastics events must always open their event-specific edit flow.
+    // Discovery-generated gymnastics events: edit on the event page with a right sidebar (same URL + ?edit=).
     if (
       createdVia === "meet-discovery" ||
       Boolean((eventData as any)?.discoverySource?.input)
     ) {
-      return `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`;
+      return buildEventPath(eventId, eventTitle, { edit: eventId });
     }
 
     // Birthdays
