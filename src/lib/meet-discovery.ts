@@ -419,6 +419,7 @@ export function buildDefaultGymMeetData() {
         showFees: true,
         showMeals: true,
         showAdditionalDocuments: true,
+        gymLayoutImage: "",
         travelMode: "",
         callTime: "",
         pickupWindow: "",
