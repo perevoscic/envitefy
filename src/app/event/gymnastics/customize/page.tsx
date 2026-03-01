@@ -430,6 +430,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const search = useSearchParams();
     const router = useRouter();
     const editEventId = search?.get("edit") ?? undefined;
+    const isEmbed = search?.get("embed") === "1";
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -1216,12 +1217,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           editEventId,
         });
 
+        const isDiscoveryUpdate = Boolean(
+          editEventId && (isDiscoveryEdit || loadedDiscoverySource)
+        );
         const payload: any = {
           title: data.title || config.displayName,
           data: {
             category: config.category,
-            createdVia: "simple-template",
-            createdManually: true,
+            createdVia: isDiscoveryUpdate ? "meet-discovery" : "simple-template",
+            createdManually: isDiscoveryUpdate ? false : true,
+            ...(loadedDiscoverySource && {
+              discoverySource: {
+                ...loadedDiscoverySource,
+                updatedAt: new Date().toISOString(),
+              },
+            }),
             startISO,
             endISO,
             location: locationParts || undefined,
@@ -1316,7 +1326,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             fontSize: result?.data?.fontSize,
           });
 
-          // Force a hard refresh to ensure we get the latest data
+          // When embedded in event page iframe, tell parent to refresh then navigate iframe to event URL
+          if (typeof window !== "undefined" && (window as any).parent !== window) {
+            try {
+              (window as any).parent.postMessage(
+                { type: "envitefy:discovery-edit-saved", eventId: editEventId },
+                window.location.origin
+              );
+            } catch {}
+          }
           router.push(
             buildEventPath(editEventId, payload.title, {
               updated: true,
@@ -1373,6 +1391,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       themeId,
       currentTheme,
       editEventId,
+      isDiscoveryEdit,
+      loadedDiscoverySource,
       router,
     ]);
 
@@ -1514,35 +1534,38 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Build Your Meet Page
+            {useParseDrivenSections ? "Edit your meet" : "Build Your Meet Page"}
           </h2>
           <p className="text-slate-500 text-sm">
-            Complete the essentials first, then add operations and parent
-            communications.
+            {useParseDrivenSections
+              ? "Update details and sections from your uploaded source."
+              : "Complete the essentials first, then add operations and parent communications."}
           </p>
         </div>
 
-        <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-            Starter Mode
+        {!useParseDrivenSections && (
+          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+              Starter Mode
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={resetToBlank}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+              >
+                Start Blank
+              </button>
+              <button
+                type="button"
+                onClick={applySampleData}
+                className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+              >
+                Load Sample Meet
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={resetToBlank}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
-            >
-              Start Blank
-            </button>
-            <button
-              type="button"
-              onClick={applySampleData}
-              className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-            >
-              Load Sample Meet
-            </button>
-          </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
@@ -2381,46 +2404,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       selectedSize?.className,
     ]);
 
-    return (
-      <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <div
-          {...previewTouchHandlers}
-          className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
-        >
-          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
-            <div className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0">
-              <SimpleTemplateView
-                eventId={editEventId || "gymnastics-preview"}
-                eventData={previewEventData}
-                eventTitle={data.title || config.displayName}
-                isOwner={false}
-                isReadOnly={true}
-                viewerKind="readonly"
-                shareUrl=""
-                sessionEmail={null}
-                disableProtectedSectionLocks={true}
-              />
-            </div>
-          </div>
-        </div>
-
-        {mobileMenuOpen && (
-          <div
-            className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
-            onClick={closeMobileMenu}
-            role="presentation"
-          ></div>
-        )}
-
-        <div
-          className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
+    const sidebarPanel = (
+      <div
+        className={
+          isEmbed
+            ? "flex h-full min-h-screen w-full flex-col bg-white"
+            : `w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+                mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+              }`
+        }
+      >
           <ScrollHandoffContainer className="flex-1" {...drawerTouchHandlers}>
             <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
@@ -2436,7 +2429,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
 
             <div className="p-6 pt-4 md:pt-6" style={{ pointerEvents: "auto" }}>
-              {activeView === "main" && renderMainMenu()}
+              {activeView === "main" &&
+                (editEventId && loadingExisting ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-sm font-medium text-slate-600">
+                      Loading event…
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Preparing edit sidebar
+                    </p>
+                  </div>
+                ) : (
+                  renderMainMenu()
+                ))}
               {activeView === "headline" && renderHeadlineEditor}
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
@@ -2472,7 +2477,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <div className="flex gap-3">
               {editEventId && (
                 <button
-                  onClick={() => router.push(`/event/${editEventId}`)}
+                  onClick={() => {
+                    if (isEmbed && typeof window !== "undefined") {
+                      const href = `${window.location.origin}${buildEventPath(editEventId, data.title || "Event")}`;
+                      try {
+                        (window as any).parent.location.href = href;
+                      } catch {
+                        router.push(`/event/${editEventId}`);
+                      }
+                    } else {
+                      router.push(`/event/${editEventId}`);
+                    }
+                  }}
                   className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
                 >
                   Cancel
@@ -2496,6 +2512,52 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           </div>
         </div>
+    );
+
+    if (isEmbed) {
+      return (
+        <div className="min-h-screen w-full bg-white flex flex-col">
+          {sidebarPanel}
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
+        <div
+          {...previewTouchHandlers}
+          className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
+        >
+          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
+            <div className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0">
+              <SimpleTemplateView
+                eventId={editEventId || "gymnastics-preview"}
+                eventData={previewEventData}
+                eventTitle={data.title || config.displayName}
+                isOwner={false}
+                isReadOnly={true}
+                viewerKind="readonly"
+                shareUrl=""
+                sessionEmail={null}
+                disableProtectedSectionLocks={true}
+              />
+            </div>
+          </div>
+        </div>
+
+        {mobileMenuOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
+            onClick={closeMobileMenu}
+            role="presentation"
+          ></div>
+        )}
+
+        {sidebarPanel}
 
         {!mobileMenuOpen && (
           <div className="md:hidden fixed bottom-4 right-4 z-30">

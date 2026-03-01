@@ -60,6 +60,7 @@ import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import EventOwnerWorkspace from "@/components/EventOwnerWorkspace";
+import DiscoveryEventEditLayout from "@/components/DiscoveryEventEditLayout";
 import {
   getEventAccessCookieName,
   verifyEventAccessCookieValue,
@@ -563,10 +564,28 @@ export default async function EventPage({
       : null;
 
   // Handle edit redirect - if edit param is present and user is owner, redirect to customize
+  // (except for discovery gymnastics events: they stay on the event URL and get an inline edit sidebar)
   const editParam = String(
     ((awaitedSearchParams as any)?.edit ?? "") as string
   ).trim();
-  if (editParam && isOwner) {
+  const isDiscoveryGymnasticsEdit =
+    editParam &&
+    isOwner &&
+    (() => {
+      const createdVia = (data as any)?.createdVia;
+      const category = String((data as any)?.category || "").toLowerCase();
+      const tid = (data as any)?.templateId;
+      return (
+        (createdVia === "meet-discovery" ||
+          Boolean((data as any)?.discoverySource?.input)) &&
+        (category === "sport_gymnastics_schedule" ||
+          category === "sport_gymnastics" ||
+          category === "gymnastics" ||
+          tid === "gymnastics-schedule" ||
+          tid === "gymnastics")
+      );
+    })();
+  if (editParam && isOwner && !isDiscoveryGymnasticsEdit) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
   }
@@ -1256,7 +1275,7 @@ export default async function EventPage({
 
   // If it's a simple template (gymnastics, football practice, etc.), render with SimpleTemplateView
   if (isSimpleTemplate) {
-    return (
+    const eventView = (
       <SimpleTemplateView
         eventId={row.id}
         eventData={clientSafeEventData}
@@ -1268,6 +1287,14 @@ export default async function EventPage({
         sessionEmail={sessionEmail}
       />
     );
+    if (isDiscoveryGymnasticsEdit) {
+      return (
+        <DiscoveryEventEditLayout eventId={row.id}>
+          {eventView}
+        </DiscoveryEventEditLayout>
+      );
+    }
+    return eventView;
   }
 
   return (
