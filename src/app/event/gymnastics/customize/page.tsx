@@ -425,6 +425,61 @@ const asTrimmedString = (value: unknown): string =>
 const hasAnyText = (...values: unknown[]): boolean =>
   values.some((value) => asTrimmedString(value).length > 0);
 
+/** Stable layout for section editors so inputs (e.g. Details description) don't remount and lose focus on re-render. */
+function GymnasticsEditorLayout({
+  isEmbed,
+  title,
+  children,
+  onBack,
+  showBack = true,
+}: {
+  isEmbed: boolean;
+  title: string;
+  children: React.ReactNode;
+  onBack: () => void;
+  showBack?: boolean;
+}) {
+  return (
+    <div className="animate-fade-in-right">
+      <div className="mb-6 pb-4 border-b border-slate-100">
+        {!isEmbed && (
+          <div className="flex items-center">
+            <div className="mr-3 w-8">
+              {showBack && (
+                <button
+                  onClick={onBack}
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+            </div>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Customize
+            </span>
+          </div>
+        )}
+        <h2
+          className={`text-lg font-serif font-bold text-slate-800 ${isEmbed && showBack ? "flex items-center gap-2" : "mt-2 text-center"}`}
+        >
+          {isEmbed && showBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+              aria-label="Back to menu"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          {title}
+        </h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
@@ -509,6 +564,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? true
     );
+    const [isInIframe, setIsInIframe] = useState(false);
+    useEffect(() => {
+      if (typeof window !== "undefined") {
+        setIsInIframe(window.self !== window.top);
+      }
+    }, []);
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -557,42 +618,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const idHintsDark = /(night|dark)/i.test(id);
       return hasDarkToken || hasDarkHex || idHintsDark;
     }, [currentTheme]);
-
-    const EditorLayout = ({
-      title,
-      children,
-      onBack,
-      showBack = true,
-    }: {
-      title: string;
-      children: React.ReactNode;
-      onBack: () => void;
-      showBack?: boolean;
-    }) => (
-      <div className="animate-fade-in-right">
-        <div className="mb-6 pb-4 border-b border-slate-100">
-          <div className="flex items-center">
-            <div className="mr-3 w-8">
-              {showBack && (
-                <button
-                  onClick={onBack}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-              )}
-            </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Customize
-            </span>
-          </div>
-          <h2 className="mt-2 text-center text-lg font-serif font-bold text-slate-800">
-            {title}
-          </h2>
-        </div>
-        {children}
-      </div>
-    );
 
     const rawTextClass = currentTheme?.text || "";
     const forceLightText =
@@ -1732,7 +1757,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderHeadlineEditor = useMemo(
       () => (
-        <EditorLayout title="Event Basics" onBack={handleBackToMain} showBack>
+        <GymnasticsEditorLayout isEmbed={isEmbed} title="Event Basics" onBack={handleBackToMain} showBack>
           <div className="space-y-6">
             <InputGroup
               label="Event Title"
@@ -1837,7 +1862,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               placeholder="Street address"
             />
           </div>
-        </EditorLayout>
+        </GymnasticsEditorLayout>
       ),
       [
         data.title,
@@ -1857,7 +1882,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderImagesEditor = () => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title="Images"
         onBack={() => setActiveView("main")}
         showBack
@@ -1902,11 +1927,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             />
           </div>
         </div>
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const renderDesignEditor = () => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title="Design"
         onBack={() => setActiveView("main")}
         showBack
@@ -1997,11 +2022,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           </div>
         </div>
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const renderDetailsEditor = () => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title="Details"
         onBack={() => setActiveView("main")}
         showBack
@@ -2049,7 +2074,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             ))}
           </div>
         </div>
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const handleDiscoverParse = useCallback(async () => {
@@ -2097,7 +2122,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [discoverBusy, discoverFile, discoverUrl, router]);
 
     const renderDiscoverEditor = () => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title="Parse Upload / URL"
         onBack={() => setActiveView("main")}
         showBack
@@ -2159,11 +2184,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {discoverBusy ? "Parsing..." : "Parse and Build Meet Page"}
           </button>
         </div>
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const renderRsvpEditor = () => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title={rsvpCopy.editorTitle}
         onBack={() => setActiveView("main")}
         showBack
@@ -2222,11 +2247,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <strong>Preview:</strong> {rsvpCopy.helperText}
           </div>
         </div>
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const renderPasscodeEditor = () => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title="Passcode"
         onBack={() => setActiveView("main")}
         showBack
@@ -2279,11 +2304,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             to families.
           </div>
         </div>
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
-      <EditorLayout
+      <GymnasticsEditorLayout isEmbed={isEmbed}
         title={section.menuTitle}
         onBack={() => setActiveView("main")}
         showBack
@@ -2296,7 +2321,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           inputClass: baseInputClass,
           textareaClass: baseTextareaClass,
         })}
-      </EditorLayout>
+      </GymnasticsEditorLayout>
     );
 
     const previewEventData = useMemo(() => {
@@ -2415,18 +2440,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
       >
           <ScrollHandoffContainer className="flex-1" {...drawerTouchHandlers}>
-            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-              <button
-                onClick={closeMobileMenu}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
-            </div>
+            {!isEmbed && (
+              <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+                <button
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+                >
+                  <ChevronLeft size={14} />
+                  Back to preview
+                </button>
+                <span className="text-sm font-semibold text-slate-700">
+                  Customize
+                </span>
+              </div>
+            )}
 
             <div className="p-6 pt-4 md:pt-6" style={{ pointerEvents: "auto" }}>
               {activeView === "main" &&
@@ -2559,7 +2586,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
         {sidebarPanel}
 
-        {!mobileMenuOpen && (
+        {!isEmbed && !isInIframe && !mobileMenuOpen && (
           <div className="md:hidden fixed bottom-4 right-4 z-30">
             <button
               type="button"
