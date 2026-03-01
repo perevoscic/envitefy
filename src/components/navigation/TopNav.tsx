@@ -689,7 +689,7 @@ export function ProfileMenu({
 
 // TopNav Component - Desktop only
 export default function TopNav() {
-  const { toggleSidebar } = useSidebar();
+  const { setIsCollapsed } = useSidebar();
   const {
     status,
     pathname,
@@ -836,8 +836,12 @@ export default function TopNav() {
         >
           <button
             type="button"
-            aria-label="Toggle sidebar"
-            onClick={() => toggleSidebar()}
+            aria-label="Open sidebar"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setIsCollapsed(false);
+            }}
             className="inline-flex h-10 w-10 items-center justify-center"
           >
             <span className="flex h-5 w-6 flex-col justify-between">

@@ -241,9 +241,41 @@ curl -X POST \
 
 - **Purpose**: Simpler OCR and chrono-based parse; quick baseline.
 - **Auth**: None.
-- **Input**: `multipart/form-data` `file`.
-- **Output**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events, category }` (schedule/events are empty; football schedule detection removed).
+- **Input (default mode)**: `multipart/form-data` `file`.
+- **Output (default mode)**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events, category }` (schedule/events are empty; football schedule detection removed).
+- **Discovery mode**: `POST /api/ingest?mode=meet_discovery` accepts either:
+  - `multipart/form-data` `file` (`pdf`, `jpg/jpeg`, `png`), or
+  - `multipart/form-data` `url` (event/meet page URL).
+- **Discovery mode output**: `{ eventId }`.
+- **Discovery mode behavior**: Creates a gymnastics event scaffold in `event_history` and stores discovery source input metadata for follow-up parsing.
 - **Env**: Same GCP Vision credentials as above. No LLM usage here.
+
+### Meet Discovery Parse — POST `/api/parse/[eventId]`
+
+- **Purpose**: Run discovery extraction + AI parse for an ingested gymnastics source and persist mapped builder data.
+- **Auth**: Optional; enforces ownership when event has `user_id`.
+- **Behavior**:
+  - Extracts text from source input:
+    - File PDFs use native extraction first; low-text PDFs fall back to OCR.
+    - Images use OCR.
+    - URLs fetch readable HTML text + metadata and parse linked same-domain PDF/image assets.
+  - AI parsing is **OpenAI primary** with strict JSON schema validation.
+  - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.
+  - If still invalid or OpenAI errors, falls back to Gemini once.
+  - Maps parse result into gymnastics builder fields (`title/date/time/timezone/hostGym`, `advancedSections`, communications/passcode, links) and stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps).
+- **Output**: `{ ok, eventId, modelUsed, parseResult, statuses }`.
+- **Env**: `OPENAI_API_KEY` required for primary parse; Gemini fallback needs `GEMINI_API_KEY` (or `GOOGLE_AI_API_KEY`). Optional model overrides: `OPENAI_OCR_MODEL`, `GEMINI_MODEL`.
+
+### Meet Builder Data — GET/PUT `/api/meet/[eventId]`
+
+- **Purpose**: Read/update gymnastics meet page JSON with computed builder step statuses.
+- **Auth**:
+  - GET: optional; enforces ownership for user-owned rows.
+  - PUT: NextAuth session required; owner-only for user-owned rows.
+- **GET Output**: `{ ok, eventId, title, meet_page_json, statuses }`.
+- **PUT Input (JSON)**: `{ patch: object, title?: string }` (deep-merges `patch` into existing meet JSON).
+- **PUT Output**: `{ ok, eventId, meet_page_json, statuses }`.
+- **Statuses**: Includes grouped step statuses for `Essentials`, `Operations`, `Communication`, and `Before Publish`.
 
 ### ICS Agent — GET `/api/ics`
 
@@ -420,7 +452,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Auth**: NextAuth session required; verifies requested `eventId` matches the owner’s next event.
 - **Input (JSON)**: `{ eventId?: string, forceTravel?: boolean, originLat?: number, originLng?: number, originLabel?: string }`.
 - **Origin override**: Clients may pass `originLat`/`originLng` (for example, browser geolocation) when a saved home origin is missing. The route prioritizes this request origin over stored profile origin.
-- **Travel rules**: Uses Mapbox Directions API for ETA/distance. Calls only when origin + destination are available, either event starts within 72 hours or `forceTravel=true`, and cache is stale; cache TTL is 12 hours. When event/home coordinates are missing, the route attempts Mapbox Geocoding from location text before routing.
+- **Travel rules**: Uses Mapbox Directions API for ETA/distance. Calls only when origin + destination are available and either event starts within 72 hours or `forceTravel=true`; normal requests use a 1-hour cache, while `forceTravel=true` bypasses travel cache. When event/home coordinates are missing, the route attempts Mapbox Geocoding from location text before routing.
 - **Weather rules**: Uses WeatherAPI forecast (`/v1/forecast.json`) and picks the hourly forecast point nearest the event start. Calls only when destination is available, event starts within 3 days, and cache is stale; cache TTL is 3 hours.
 - **Cache**: Persists/reads `event_metrics_cache(event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at)`.
 - **Output**: `{ ok, eventId, metrics, meta }` where `metrics` contains cached/refreshed next-event values.
@@ -682,9 +714,10 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2026-03-01: Added gymnastics meet discovery flow: `POST /api/ingest?mode=meet_discovery` (upload or URL to scaffold event), `POST /api/parse/[eventId]` (OpenAI-first strict parse with one retry, Gemini fallback), and `GET/PUT /api/meet/[eventId]` (meet JSON + grouped builder statuses). Discovery now supports URL readable-text extraction plus linked same-domain PDF/image assets and stores parse/source audit metadata.
 - 2026-02-28: Dashboard next-event enrichment now uses Mapbox Directions + Geocoding fallback for travel ETA/distance and WeatherAPI (`WEATHERAPI_KEY` or `WEATHERAPI_API_KEY`) for nearest-time hourly forecast within a 3-day window. Updated `/api/dashboard` eligibility flags and `/api/dashboard/enrich-next-event` env requirements accordingly.
 - 2026-02-28: `/api/dashboard/enrich-next-event` now accepts optional request-origin coordinates (`originLat`/`originLng` + `originLabel`) so clients can calculate travel from current device location when no saved home origin exists.
-- 2026-02-28: Added dashboard APIs `GET /api/dashboard` (DB-only home tiles payload) and `POST /api/dashboard/enrich-next-event` (lazy next-event-only travel/weather enrichment with strict window checks + `event_metrics_cache` TTLs: travel 12h, weather 3h). Main dashboard now renders immediately from DB data and enriches only the next event after initial load.
+- 2026-02-28: Added dashboard APIs `GET /api/dashboard` (DB-only home tiles payload) and `POST /api/dashboard/enrich-next-event` (lazy next-event-only travel/weather enrichment with strict window checks + `event_metrics_cache` TTLs: travel 1h, weather 3h). Main dashboard now renders immediately from DB data and enriches only the next event after initial load.
 - 2026-02-28: OCR latency hardening: `/api/ocr` now runs with a total request-time budget, stage-level timing logs, and fast-mode gating that skips optional rewrite/deep schedule LLM passes unless requested. Added `OPENAI_OCR_FAST_MODEL` support for fast scans, optional `turbo=1` parallel provider race (OpenAI+Google), and `timing=1` debug payloads. Main dashboard/demo OCR calls are set to full-quality mode with `/api/ocr?fast=0`.
 - 2026-02-16: Added Supabase Auth bridge for password reset: `/api/auth/forgot` now generates Supabase recovery links when Supabase envs are configured (with fallback to local `password_resets` tokens), and `/api/auth/reset` accepts Supabase recovery access tokens to update the app's password hash.
 - 2026-02-16: Password reset delivery (`POST /api/auth/forgot`) now sends through Resend first (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`) with SMTP fallback. Updated agent/env docs to remove AWS SES as a requirement for reset-email delivery.

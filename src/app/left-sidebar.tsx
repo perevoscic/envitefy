@@ -693,6 +693,8 @@ export default function LeftSidebar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
+  const lastSidebarOpenAtRef = useRef(0);
+  const openedFromTouchRef = useRef(false);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
   const eventSidebarRef = useRef<HTMLDivElement | null>(null);
@@ -723,7 +725,20 @@ export default function LeftSidebar() {
   useEffect(() => {
     if (!isOpen) {
       setMenuOpen(false);
+      return;
     }
+    // Track open transitions from any trigger (floating hamburger, top nav,
+    // keyboard, etc.) so close handlers can ignore same-gesture events.
+    lastSidebarOpenAtRef.current = Date.now();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!openedFromTouchRef.current) return;
+    // Reset touch-open guard shortly after open so normal close gestures work.
+    const timeout = window.setTimeout(() => {
+      openedFromTouchRef.current = false;
+    }, 1600);
+    return () => window.clearTimeout(timeout);
   }, [isOpen]);
 
   // Fetch connected calendars status
@@ -749,6 +764,10 @@ export default function LeftSidebar() {
       if (!isPhoneHiddenViewport()) return; // Desktop: ignore outside clicks
       const target = e.target as Node | null;
       if (!asideRef.current) return;
+      // Ignore the synthetic "outside" click that can fire immediately after
+      // opening from the mobile hamburger (especially on iOS).
+      if (Date.now() - lastSidebarOpenAtRef.current < 1200) return;
+      if (openedFromTouchRef.current) return;
       // Ignore clicks originating from the hamburger open button
       if (
         openButtonRef.current &&
@@ -2912,8 +2931,32 @@ export default function LeftSidebar() {
         <button
           ref={openButtonRef}
           type="button"
-          className="fixed top-3 left-3 z-[6500] lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#4a4170] shadow-md border border-white/70"
-          onClick={() => setIsCollapsed(false)}
+          className="fixed top-3 left-3 z-[6500] lg:hidden inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white text-[#4a4170] shadow-md border border-white/70 touch-manipulation cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            lastSidebarOpenAtRef.current = Date.now();
+            setIsCollapsed(false);
+          }}
+          onPointerDown={(e) => {
+            // Fire immediately on pointer down for reliable mobile touch (iOS Safari
+            // often drops click on fixed elements after scroll). Pointer events unify
+            // touch and mouse, so this works across devices.
+            if (e.pointerType === "touch") {
+              e.preventDefault();
+              e.stopPropagation();
+              lastSidebarOpenAtRef.current = Date.now();
+              openedFromTouchRef.current = true;
+              setIsCollapsed(false);
+            }
+          }}
+          onTouchStart={(e) => {
+            // Fallback for browsers/devices that don't consistently emit PointerEvents.
+            e.preventDefault();
+            e.stopPropagation();
+            lastSidebarOpenAtRef.current = Date.now();
+            openedFromTouchRef.current = true;
+            setIsCollapsed(false);
+          }}
           aria-label="Open navigation"
         >
           <Menu size={20} />
@@ -2926,7 +2969,11 @@ export default function LeftSidebar() {
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         }`}
-        onClick={() => setIsCollapsed(true)}
+        onClick={() => {
+          if (Date.now() - lastSidebarOpenAtRef.current < 1200) return;
+          if (openedFromTouchRef.current) return;
+          setIsCollapsed(true);
+        }}
         aria-hidden="true"
       />
       <aside

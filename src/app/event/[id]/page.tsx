@@ -1121,8 +1121,17 @@ export default async function EventPage({
     createdVia !== "simple-template";
   const isWeddingTemplate =
     templateId && variationId && categoryNormalized === "weddings";
+  const isDiscoveryGymnasticsTemplate =
+    createdVia === "meet-discovery" &&
+    (categoryNormalized === "sport_gymnastics_schedule" ||
+      categoryNormalized === "sport_gymnastics" ||
+      categoryNormalized === "gymnastics" ||
+      templateId === "gymnastics-schedule" ||
+      templateId === "gymnastics");
   const isSimpleTemplate =
-    (createdVia === "simple-template" || createdVia === "template") &&
+    (createdVia === "simple-template" ||
+      createdVia === "template" ||
+      isDiscoveryGymnasticsTemplate) &&
     templateId &&
     !isBirthdayTemplate &&
     !isWeddingTemplate;
