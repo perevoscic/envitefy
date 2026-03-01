@@ -10,7 +10,18 @@ import {
   MapPin,
   Clock,
   ExternalLink,
+  Trophy,
+  Ticket,
+  Info,
+  Star,
+  Download,
+  Camera,
+  Coffee,
+  ThermometerSnowflake,
+  User,
   Users,
+  ClipboardList,
+  Navigation,
   Check,
   HelpCircle,
   X,
@@ -190,6 +201,8 @@ export default function SimpleTemplateView({
   const [carpoolSubmitting, setCarpoolSubmitting] = useState(false);
   const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
   const [eventDataState, setEventDataState] = useState(eventData);
+  const [discoveryActiveTab, setDiscoveryActiveTab] = useState("spectator");
+  const [discoveryScrolled, setDiscoveryScrolled] = useState(false);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
   const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
   const [rsvpGuestPhoneInput, setRsvpGuestPhoneInput] = useState("");
@@ -229,7 +242,17 @@ export default function SimpleTemplateView({
     normalizedCategory === "sport_gymnastics_schedule" ||
     currentData?.templateId === "gymnastics" ||
     currentData?.templateId === "gymnastics-schedule";
+  const isDiscoveryGymnastics =
+    isGymnasticsTemplate && currentData?.createdVia === "meet-discovery";
   const allowGuestAttendanceRsvp = isGymnasticsTemplate;
+
+  useEffect(() => {
+    if (!isDiscoveryGymnastics) return;
+    const onScroll = () => setDiscoveryScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isDiscoveryGymnastics]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -2624,6 +2647,472 @@ export default function SimpleTemplateView({
       )}
     </div>
   );
+
+  if (isDiscoveryGymnastics) {
+    const parseAdmissionsFromText = (value: any) => {
+      const lines = String(value || "")
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      return lines
+        .map((line) => {
+          const parts = line.split(":").map((part) => part.trim());
+          if (!parts[0]) return null;
+          return {
+            label: parts[0],
+            price: parts[1] || "TBD",
+            note: parts[2] || "",
+          };
+        })
+        .filter(Boolean) as Array<{ label: string; price: string; note: string }>;
+    };
+
+    const parseResultAdmission = Array.isArray(
+      currentData?.discoverySource?.parseResult?.admission
+    )
+      ? currentData.discoverySource.parseResult.admission
+      : [];
+    const admissionCards =
+      parseResultAdmission.length > 0
+        ? parseResultAdmission.map((item: any) => ({
+            label: item?.label || "Admission",
+            price: item?.price || "TBD",
+            note: item?.note || "",
+          }))
+        : parseAdmissionsFromText(customFields?.admission);
+
+    const primaryAthlete =
+      (Array.isArray(rosterAthletes) && rosterAthletes[0]) || {};
+    const meet = advancedSections?.meet || {};
+    const logistics = advancedSections?.logistics || {};
+    const athleteCard = {
+      name: primaryAthlete?.name || "Athlete",
+      level: primaryAthlete?.level || "Level TBD",
+      team:
+        primaryAthlete?.team ||
+        customFields?.team ||
+        currentData?.hostGym ||
+        "Team TBD",
+      session: primaryAthlete?.session || meet?.sessionNumber || "Session TBD",
+      date: formatDate(date) || "Date TBD",
+      stretchTime: formatTime(meet?.warmUpTime) || "TBD",
+      marchIn: formatTime(meet?.marchInTime) || "TBD",
+      assignedGym: currentData?.venue || "Gym assignment pending",
+      awards: currentData?.discoverySource?.parseResult?.athlete?.awards || "Awards TBA",
+    };
+
+    const quickLinks = Array.isArray(currentData?.links) ? currentData.links : [];
+    const liveScoresLink =
+      quickLinks.find((item: any) => /score/i.test(String(item?.label || ""))) ||
+      quickLinks[0];
+    const officialResultsLink = quickLinks[1] || quickLinks[0];
+    const visitorGuideLink = quickLinks[2] || quickLinks[0];
+
+    return (
+      <div className="min-h-screen bg-[#FAF9F6] font-sans text-slate-900 pb-24">
+        <nav
+          className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+            discoveryScrolled
+              ? "bg-[#2D1B4E]/95 backdrop-blur-md shadow-lg py-3"
+              : "bg-transparent py-6"
+          }`}
+        >
+          <div className="max-w-5xl mx-auto px-6 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FFD700] rounded-xl flex items-center justify-center text-[#2D1B4E] shadow-lg rotate-3">
+                <Star size={20} fill="currentColor" />
+              </div>
+              <div>
+                <h1
+                  className={`text-sm font-black tracking-tight uppercase leading-none ${
+                    discoveryScrolled ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  {currentData?.hostGym || "Gymnastics Meet"}
+                </h1>
+                <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-widest mt-1">
+                  Discovery Draft
+                </p>
+              </div>
+            </div>
+            <button className="px-5 py-2.5 bg-[#FFD700] text-[#2D1B4E] rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
+              Event Info
+            </button>
+          </div>
+        </nav>
+
+        <header className="pt-32 pb-20 px-6 bg-white border-b border-slate-100 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#2D1B4E]/5 rounded-full blur-3xl -mr-48 -mt-48" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FFD700]/5 rounded-full blur-3xl -ml-32 -mb-32" />
+          <div className="max-w-5xl mx-auto relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2D1B4E]/5 border border-[#2D1B4E]/10 text-[#2D1B4E] text-[10px] font-bold uppercase tracking-widest mb-6">
+              <CalendarIcon size={12} className="text-[#FFD700]" />{" "}
+              {date ? formatDate(date) : "Date TBD"}
+            </div>
+            <h2 className="text-4xl md:text-6xl font-black text-[#2D1B4E] leading-[1.0] tracking-tight mb-6">
+              {currentData?.eventTitle || eventTitle || "Gymnastics Meet"}
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl leading-relaxed">
+              {description ||
+                `Welcome to ${currentData?.hostGym || "our meet"} at ${
+                  currentData?.venue || "the venue"
+                }.`}
+            </p>
+          </div>
+        </header>
+
+        <main className="max-w-5xl mx-auto px-6 -mt-10 relative z-10">
+          {!isLocked && !isReadOnly && (
+            <div className="mb-8 flex justify-end">
+              <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
+                {isOwner && (
+                  <>
+                    <Link
+                      href={resolveEditHref(eventId, eventData, eventTitle)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                      title="Edit event"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span className="hidden sm:inline">Edit</span>
+                    </Link>
+                    <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+                  </>
+                )}
+                <EventActions
+                  shareUrl={shareUrl}
+                  event={eventData}
+                  historyId={eventId}
+                  className=""
+                  variant="compact"
+                  tone="default"
+                />
+              </div>
+            </div>
+          )}
+
+          <section className="mb-12">
+            <div className="bg-[#2D1B4E] rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Trophy size={140} />
+              </div>
+              <div className="relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-[#FFD700]/20 border border-[#FFD700]/30 flex items-center justify-center text-[#FFD700]">
+                      <User size={32} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black tracking-tight">
+                        {athleteCard.name}
+                      </h3>
+                      <p className="text-teal-400 font-bold text-sm">
+                        {athleteCard.team} • {athleteCard.level}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-teal-300 mb-1">
+                      Competition Assigned
+                    </p>
+                    <p className="text-lg font-black">{athleteCard.assignedGym}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-8 border-y border-white/10">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
+                      Session
+                    </p>
+                    <p className="font-bold">{athleteCard.session}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
+                      Competition Date
+                    </p>
+                    <p className="font-bold">{athleteCard.date}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
+                      Stretch Time
+                    </p>
+                    <p className="font-bold">{athleteCard.stretchTime}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
+                      Awards Area
+                    </p>
+                    <p className="font-bold">{athleteCard.awards}</p>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col md:flex-row items-center gap-4">
+                  <button className="w-full md:w-auto px-8 py-3 bg-[#FFD700] text-[#2D1B4E] rounded-xl font-black text-xs uppercase tracking-widest shadow-lg inline-flex items-center justify-center gap-2">
+                    <Download size={14} />
+                    Download Rotation Sheet
+                  </button>
+                  <p className="text-xs text-white/60 text-center md:text-left">
+                    <Clock size={14} className="inline mr-1" /> Arrive 45 mins prior
+                    to stretch time.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="flex gap-2 bg-white/80 backdrop-blur-md p-1.5 rounded-[22px] shadow-sm border border-slate-100 mb-10 overflow-x-auto no-scrollbar">
+            {[
+              { id: "spectator", label: "Spectator Info", icon: Users },
+              { id: "athlete", label: "Athlete Prep", icon: ClipboardList },
+              { id: "facility", label: "Facility Map", icon: MapPin },
+              { id: "parking", label: "Parking & Traffic", icon: Car },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setDiscoveryActiveTab(tab.id)}
+                className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3.5 rounded-[18px] text-xs font-bold uppercase tracking-wider transition-all ${
+                  discoveryActiveTab === tab.id
+                    ? "bg-[#2D1B4E] text-white shadow-xl"
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <tab.icon size={16} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              {discoveryActiveTab === "spectator" && (
+                <div className="space-y-8">
+                  <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                      <Ticket className="text-teal-600" size={24} /> Daily Admission
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                      {(admissionCards.length ? admissionCards : [{ label: "General", price: "TBD", note: "" }]).map(
+                        (item, i) => (
+                          <div
+                            key={`${item.label}-${i}`}
+                            className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center"
+                          >
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                              {item.label}
+                            </p>
+                            <p className="text-2xl font-black text-slate-900">
+                              {item.price}
+                            </p>
+                            <p className="text-[10px] text-slate-500 mt-1 uppercase">
+                              {item.note}
+                            </p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                    <div className="p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-center gap-3">
+                      <Info size={18} className="text-teal-600" />
+                      <p className="text-xs font-bold text-teal-800">
+                        {description || "Additional spectator details will be shared in announcements."}
+                      </p>
+                    </div>
+                  </section>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-[#FAF9F6] p-8 rounded-[2rem] border border-slate-100">
+                      <h4 className="font-bold flex items-center gap-2 mb-4">
+                        <Camera size={20} className="text-teal-600" /> Photo Rules
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        No flash photography. Follow venue rules and coach instructions.
+                      </p>
+                    </div>
+                    <div className="bg-[#FAF9F6] p-8 rounded-[2rem] border border-slate-100">
+                      <h4 className="font-bold flex items-center gap-2 mb-4">
+                        <Coffee size={20} className="text-teal-600" /> Concessions
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {logistics?.mealPlan || "Concession details will be posted by host gym."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {discoveryActiveTab === "athlete" && (
+                <div className="bg-white rounded-3xl border border-slate-100 p-8">
+                  <h3 className="text-xl font-bold mb-6">Athlete Prep</h3>
+                  <div className="space-y-6">
+                    <div className="flex gap-4">
+                      <div className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold shrink-0">
+                        1
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">Check-In Time</p>
+                        <p className="text-sm text-slate-500 mt-1">
+                          Stretch: {athleteCard.stretchTime}. March-in: {athleteCard.marchIn}.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold shrink-0">
+                        2
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">Uniform & Gear</p>
+                        <p className="text-sm text-slate-500 mt-1">
+                          {(advancedSections?.gear?.leotardOfDay as string) ||
+                            "Competition uniform details pending."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {discoveryActiveTab === "facility" && (
+                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Navigation className="text-teal-600" size={24} /> Arena
+                      Layout
+                    </h3>
+                    <span className="text-xs font-bold text-slate-400">
+                      {currentData?.venue || "Venue TBD"}
+                    </span>
+                  </div>
+                  {advancedSections?.logistics?.gymLayoutImage ? (
+                    <div className="space-y-4">
+                      <div className="aspect-[16/10] rounded-3xl border border-slate-200 relative overflow-hidden bg-slate-50">
+                        <img
+                          src={advancedSections.logistics.gymLayoutImage}
+                          alt="Gym layout"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Uploaded from the builder's Logistics section.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="aspect-[16/10] bg-slate-50 rounded-3xl border border-dashed border-slate-200 relative overflow-hidden flex items-center justify-center px-6 text-center">
+                      <p className="text-sm text-slate-600">
+                        {currentData?.address ||
+                          "Map and facility zones can be added from meet details."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {discoveryActiveTab === "parking" && (
+                <div className="space-y-6">
+                  <div className="bg-red-50 border border-red-100 rounded-3xl p-8 flex items-start gap-4">
+                    <div className="p-3 bg-red-500 text-white rounded-2xl shadow-lg shadow-red-100">
+                      <AlertCircle size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-red-900 mb-1">
+                        Traffic & Parking
+                      </h4>
+                      <p className="text-sm text-red-800/80 leading-relaxed">
+                        {logistics?.trafficAlerts ||
+                          "Allow extra travel time; downtown event traffic can vary."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <Car size={20} className="text-teal-600" /> Parking Notes
+                    </h4>
+                    <p className="text-sm text-slate-500">
+                      {logistics?.parking || "Parking details will be posted in logistics."}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
+                  Quick Links
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    {
+                      label: liveScoresLink?.label || "Live Scores",
+                      url: liveScoresLink?.url || "#",
+                      icon: Trophy,
+                    },
+                    {
+                      label: officialResultsLink?.label || "Official Results",
+                      url: officialResultsLink?.url || "#",
+                      icon: ClipboardList,
+                    },
+                    {
+                      label: visitorGuideLink?.label || "Visitor Guide",
+                      url: visitorGuideLink?.url || "#",
+                      icon: ThermometerSnowflake,
+                    },
+                  ].map((item) => (
+                    <a
+                      key={item.label}
+                      href={item.url}
+                      target={item.url && item.url !== "#" ? "_blank" : undefined}
+                      rel={item.url && item.url !== "#" ? "noopener noreferrer" : undefined}
+                      className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-[#2D1B4E] hover:text-white transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon size={18} className="text-[#FFD700]" />
+                        <span className="text-sm font-bold">{item.label}</span>
+                      </div>
+                      <ExternalLink
+                        size={14}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[#2D1B4E] rounded-[2rem] p-8 text-white">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <Clock size={16} className="text-[#FFD700]" />
+                  </div>
+                  <h4 className="font-bold">Important Note</h4>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  {logistics?.fees ||
+                    "Check announcements for final schedule updates and coach notices."}
+                </p>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                  <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-widest">
+                    Host Committee
+                  </p>
+                  <p className="text-xs mt-1">
+                    {currentData?.hostGym || customFields?.team || "Host Gym"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="event-modern-page w-full">

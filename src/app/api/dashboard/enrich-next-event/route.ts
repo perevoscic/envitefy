@@ -12,7 +12,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TRAVEL_TTL_MS = 12 * 60 * 60 * 1000;
+const TRAVEL_TTL_MS = 1 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
 const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
 let metricsCacheTableEnsured = false;
@@ -389,7 +389,7 @@ export async function POST(req: Request) {
       !!origin &&
       !!MAPBOX_ACCESS_TOKEN &&
       (hoursToStart <= 72 || forceTravel) &&
-      !travelFresh;
+      (forceTravel || !travelFresh);
     const canCallWeather =
       hasDestination &&
       !!WEATHERAPI_KEY &&

@@ -894,13 +894,7 @@ export default function Dashboard({
     if (!eventId) return;
     setMetricsLoading(true);
     try {
-      const shouldUseDeviceOrigin =
-        enrichMeta?.hasOrigin === false ||
-        (nextEventMetrics?.travelMinutes == null &&
-          nextEventMetrics?.travelDistanceKm == null);
-      const currentOrigin = shouldUseDeviceOrigin
-        ? await resolveCurrentPosition()
-        : null;
+      const currentOrigin = await resolveCurrentPosition();
       const res = await fetch("/api/dashboard/enrich-next-event", {
         method: "POST",
         credentials: "include",
@@ -929,9 +923,6 @@ export default function Dashboard({
     }
   }, [
     dashboardData?.nextEvent?.id,
-    enrichMeta?.hasOrigin,
-    nextEventMetrics?.travelDistanceKm,
-    nextEventMetrics?.travelMinutes,
     resolveCurrentPosition,
   ]);
 

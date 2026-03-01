@@ -2,6 +2,7 @@
 import React from "react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -89,14 +90,14 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
     } catch {}
   }, []);
 
-  const setIsCollapsedAndPersist = (collapsed: boolean) => {
+  const setIsCollapsedAndPersist = useCallback((collapsed: boolean) => {
     setIsCollapsed(collapsed);
     try {
       window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
     } catch {}
-  };
+  }, []);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setIsCollapsed((previous) => {
       const next = !previous;
       try {
@@ -104,7 +105,7 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
       } catch {}
       return next;
     });
-  };
+  }, []);
 
   const clearEventContext = () => {
     setSelectedEventId(null);

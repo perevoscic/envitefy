@@ -1441,17 +1441,41 @@ export type EventHistoryRow = {
   created_at?: string;
 };
 
+function sanitizeJsonStringForPostgres(value: string): string {
+  // Remove NUL bytes and replace lone surrogate halves that Postgres JSONB rejects.
+  const noNull = value.replace(/\u0000/g, "");
+  return noNull.replace(
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+    "\uFFFD"
+  );
+}
+
+function sanitizeJsonValueForPostgres(value: any): any {
+  if (value == null) return value;
+  if (typeof value === "string") return sanitizeJsonStringForPostgres(value);
+  if (Array.isArray(value)) return value.map((item) => sanitizeJsonValueForPostgres(item));
+  if (typeof value === "object") {
+    const out: Record<string, any> = {};
+    for (const [key, inner] of Object.entries(value)) {
+      out[key] = sanitizeJsonValueForPostgres(inner);
+    }
+    return out;
+  }
+  return value;
+}
+
 export async function insertEventHistory(params: {
   userId?: string | null;
   title: string;
   data: any;
 }): Promise<EventHistoryRow> {
   const id = randomUUID();
+  const safeData = sanitizeJsonValueForPostgres(params.data ?? {});
   const res = await query<EventHistoryRow>(
     `insert into event_history (id, user_id, title, data, created_at)
      values ($1, $2, $3, $4, coalesce(now(), now()))
      returning id, user_id, title, data, created_at`,
-    [id, params.userId || null, params.title, JSON.stringify(params.data)]
+    [id, params.userId || null, params.title, JSON.stringify(safeData)]
   );
   return res.rows[0];
 }
@@ -1484,12 +1508,13 @@ export async function updateEventHistoryDataMerge(
 ): Promise<EventHistoryRow | null> {
   // Merge provided patch object into existing JSONB data. Later keys override.
   // jsonb concatenation '||' merges objects shallowly; sufficient for category updates.
+  const safePatch = sanitizeJsonValueForPostgres(patch ?? {});
   const res = await query<EventHistoryRow>(
     `update event_history
      set data = coalesce(data, '{}'::jsonb) || $2::jsonb
      where id = $1
      returning id, user_id, title, data, created_at`,
-    [id, JSON.stringify(patch ?? {})]
+    [id, JSON.stringify(safePatch)]
   );
   return res.rows[0] || null;
 }
@@ -1498,12 +1523,13 @@ export async function updateEventHistoryData(
   id: string,
   data: any
 ): Promise<EventHistoryRow | null> {
+  const safeData = sanitizeJsonValueForPostgres(data ?? {});
   const res = await query<EventHistoryRow>(
     `update event_history
      set data = $2::jsonb
      where id = $1
      returning id, user_id, title, data, created_at`,
-    [id, JSON.stringify(data ?? {})]
+    [id, JSON.stringify(safeData)]
   );
   return res.rows[0] || null;
 }

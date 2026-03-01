@@ -9,6 +9,7 @@ import {
   Bus,
   Shirt,
   Car,
+  Image as ImageIcon,
   Plus,
   Trash2,
   AlertCircle,
@@ -76,6 +77,7 @@ type LogisticsInfo = {
   mealPlan: string;
   feeDueDate: string;
   feeAmount: string;
+  gymLayoutImage?: string;
   additionalDocuments: {
     id: string;
     name: string;
@@ -1408,6 +1410,7 @@ const logisticsSection = {
       .toISOString()
       .split("T")[0],
     feeAmount: "$125 per athlete",
+    gymLayoutImage: "",
     additionalDocuments: [
       {
         id: "doc1",
@@ -1460,6 +1463,35 @@ const logisticsSection = {
           (doc: any) => doc.id !== id
         ),
       }));
+    };
+
+    const handleGymLayoutUpload = async (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      if (!/^image\/(png|jpe?g|webp)$/i.test(file.type || "")) {
+        window.alert("Please upload a PNG, JPG, or WEBP image.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        window.alert("Please upload an image smaller than 10MB.");
+        return;
+      }
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+        if (!dataUrl) return;
+        updateField("gymLayoutImage", dataUrl);
+      } catch (err) {
+        console.error("Failed to upload gym layout image", err);
+        window.alert("Could not process this image. Please try another file.");
+      }
     };
 
     const handleDocumentUpload = async (
@@ -1580,6 +1612,43 @@ const logisticsSection = {
             </div>
           </div>
           )}
+        </div>
+
+        <div className="border-t pt-4 space-y-3">
+          <h4 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
+            <ImageIcon size={18} /> Gym Layout Image (optional)
+          </h4>
+          <p className="text-xs text-slate-500">
+            Upload a floor map/photo so families can see arena zones in the
+            Facility tab.
+          </p>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            {logistics.gymLayoutImage ? (
+              <div className="space-y-3">
+                <div className="rounded-lg overflow-hidden border border-slate-200 bg-white">
+                  <img
+                    src={logistics.gymLayoutImage}
+                    alt="Gym layout"
+                    className="w-full h-52 object-cover"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateField("gymLayoutImage", "")}
+                  className="text-sm text-red-600 hover:text-red-800 font-medium"
+                >
+                  Remove gym layout image
+                </button>
+              </div>
+            ) : (
+              <input
+                type="file"
+                className={inputClass}
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                onChange={handleGymLayoutUpload}
+              />
+            )}
+          </div>
         </div>
 
         {/* Hotel */}
@@ -1784,6 +1853,7 @@ const logisticsSection = {
       (showAccommodations && (logistics.hotelName || logistics.hotelAddress)) ||
       (showFees && (logistics.feeAmount || logistics.feeDueDate)) ||
       (showMeals && logistics.mealPlan) ||
+      Boolean(logistics.gymLayoutImage) ||
       (showAdditionalDocuments && documents.length > 0);
     if (!hasData) return null;
 
@@ -1923,6 +1993,26 @@ const logisticsSection = {
                 </a>
               );
             })}
+          </div>
+        )}
+        {logistics.gymLayoutImage && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ImageIcon size={16} className="opacity-70" />
+              <span
+                className={`text-xs uppercase tracking-wide opacity-70 ${textClass}`}
+                style={bodyShadow}
+              >
+                Gym Layout
+              </span>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-white/10 bg-black/10">
+              <img
+                src={logistics.gymLayoutImage}
+                alt="Gym layout"
+                className="w-full h-56 object-cover"
+              />
+            </div>
           </div>
         )}
       </>

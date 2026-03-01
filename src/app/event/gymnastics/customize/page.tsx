@@ -450,6 +450,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       title: "",
       date: initialDate,
       time: "14:00",
+      timezone:
+        typeof Intl !== "undefined" &&
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : "America/Chicago",
+      hostGym: "",
       city: "",
       state: "",
       address: "",
@@ -484,6 +490,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
+    const [discoverUrl, setDiscoverUrl] = useState("");
+    const [discoverFile, setDiscoverFile] = useState<File | null>(null);
+    const [discoverBusy, setDiscoverBusy] = useState(false);
+    const [discoverError, setDiscoverError] = useState("");
     const [loadingExisting, setLoadingExisting] = useState(false);
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? true
@@ -663,12 +673,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const headlineStatus: "not-started" | "in-progress" | "ready" = (() => {
       const filled = [
         Boolean(data.title?.trim()),
-        Boolean(data.date),
+        Boolean(data.date || data.time),
+        Boolean(data.timezone?.trim()),
         Boolean(data.time),
         Boolean(data.venue?.trim() || data.address?.trim()),
+        Boolean(data.hostGym?.trim()),
       ].filter(Boolean).length;
       if (filled === 0) return "not-started";
-      return filled >= 4 ? "ready" : "in-progress";
+      return filled >= 6 ? "ready" : "in-progress";
     })();
 
     const detailsStatus: "not-started" | "in-progress" | "ready" = (() => {
@@ -696,9 +708,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       !data.title?.trim() ? "Event title" : null,
       !data.date ? "Date" : null,
       !data.time ? "Start time" : null,
+      !data.timezone?.trim() ? "Timezone" : null,
       !data.venue?.trim() && !data.address?.trim()
         ? "Venue or address"
         : null,
+      !data.hostGym?.trim() ? "Host gym" : null,
       !(data.details || "").trim() ? "Description" : null,
     ].filter(Boolean) as string[];
     const navItems = useMemo(
@@ -802,6 +816,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             title: json?.title || existing.title || prev.title,
             date: existing.date || loadedDate || prev.date,
             time: existing.time || loadedTime || prev.time,
+            timezone: existing.timezone || prev.timezone,
+            hostGym:
+              existing.hostGym ||
+              existing.team ||
+              existing.customFields?.team ||
+              prev.hostGym,
             city: existing.city || prev.city,
             state: existing.state || prev.state,
             address: existing.address || prev.address,
@@ -831,6 +851,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ...prev.extra,
               ...(existing.extra || {}),
               ...(existing.customFields || {}),
+              team:
+                existing.hostGym ||
+                existing.team ||
+                existing.customFields?.team ||
+                prev.extra?.team ||
+                "",
             },
           }));
 
@@ -1067,6 +1093,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             location: locationParts || undefined,
             address: data.address || undefined,
             venue: data.venue || undefined,
+            timezone: data.timezone || undefined,
+            hostGym: data.hostGym || undefined,
             city: data.city || undefined,
             state: data.state || undefined,
             description: data.details || undefined,
@@ -1083,6 +1111,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             customFields: {
               ...data.extra,
+              team: data.hostGym || data.extra?.team || "",
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
@@ -1185,6 +1214,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.details,
       data.venue,
       data.address,
+      data.timezone,
+      data.hostGym,
       data.city,
       data.state,
       data.hero,
@@ -1497,6 +1528,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: config.prefill?.title ?? `${config.displayName}`,
+        hostGym: config.prefill?.extra?.team || prev.hostGym,
         city: config.prefill?.city || prev.city,
         state: config.prefill?.state || prev.state,
         address: config.prefill?.address || prev.address,
@@ -1529,6 +1561,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: "",
+        hostGym: "",
         city: "",
         state: "",
         address: "",
@@ -1565,6 +1598,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 onChange={(v) => updateData("time", v)}
               />
             </div>
+            <p className="text-xs text-slate-500 -mt-2">
+              Set the exact event start here. You can edit session-specific
+              timing in <strong>Operations → Meet Details</strong>.
+            </p>
+            <InputGroup
+              label="Timezone"
+              value={data.timezone || ""}
+              onChange={(v) => updateData("timezone", v)}
+              placeholder="America/Chicago"
+            />
+            <InputGroup
+              label="Host Gym"
+              value={data.hostGym || ""}
+              onChange={(v) => updateData("hostGym", v)}
+              placeholder="Northern Illinois Gymnastics"
+            />
 
             <InputGroup
               label="Venue"
@@ -1585,6 +1634,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.title,
         data.date,
         data.time,
+        data.timezone,
+        data.hostGym,
         data.venue,
         data.address,
         data.city,
@@ -1790,6 +1841,116 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EditorLayout>
     );
 
+    const handleDiscoverParse = useCallback(async () => {
+      if (discoverBusy) return;
+      setDiscoverError("");
+      const trimmedUrl = discoverUrl.trim();
+      if (!discoverFile && !trimmedUrl) {
+        setDiscoverError("Select a file or paste a URL to continue.");
+        return;
+      }
+      if (discoverFile && trimmedUrl) {
+        setDiscoverError("Use one source at a time (file or URL).");
+        return;
+      }
+      setDiscoverBusy(true);
+      try {
+        const formData = new FormData();
+        if (discoverFile) formData.append("file", discoverFile);
+        else formData.append("url", trimmedUrl);
+
+        const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+        const ingestJson = await ingestRes.json().catch(() => ({}));
+        if (!ingestRes.ok || !ingestJson?.eventId) {
+          throw new Error(ingestJson?.error || "Failed to ingest source");
+        }
+        const eventId = String(ingestJson.eventId);
+        const parseRes = await fetch(`/api/parse/${eventId}`, {
+          method: "POST",
+          credentials: "include",
+        });
+        const parseJson = await parseRes.json().catch(() => ({}));
+        if (!parseRes.ok) {
+          throw new Error(parseJson?.error || "Failed to parse source");
+        }
+        router.push(`/event/gymnastics/customize?edit=${eventId}`);
+      } catch (err: any) {
+        setDiscoverError(String(err?.message || err || "Failed to parse source"));
+      } finally {
+        setDiscoverBusy(false);
+      }
+    }, [discoverBusy, discoverFile, discoverUrl, router]);
+
+    const renderDiscoverEditor = () => (
+      <EditorLayout
+        title="Parse Upload / URL"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
+            Upload a PDF/JPG/PNG or paste an event URL. We will parse details
+            and prefill your meet page builder.
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+              Upload File
+            </label>
+            <input
+              type="file"
+              accept=".pdf,image/png,image/jpeg,image/jpg"
+              onChange={(e) => {
+                const picked = e.target.files?.[0] || null;
+                setDiscoverFile(picked);
+                if (picked) setDiscoverUrl("");
+              }}
+              className={baseInputClass}
+            />
+            {discoverFile ? (
+              <p className="text-xs text-slate-500">Selected: {discoverFile.name}</p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            OR
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+              Event URL
+            </label>
+            <input
+              type="url"
+              value={discoverUrl}
+              onChange={(e) => {
+                setDiscoverUrl(e.target.value);
+                if (e.target.value.trim()) setDiscoverFile(null);
+              }}
+              placeholder="https://example.com/meet-page"
+              className={baseInputClass}
+            />
+          </div>
+          {discoverError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {discoverError}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleDiscoverParse}
+            disabled={discoverBusy}
+            className="w-full py-3 rounded-lg bg-slate-900 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {discoverBusy ? "Parsing..." : "Parse and Build Meet Page"}
+          </button>
+        </div>
+      </EditorLayout>
+    );
+
     const renderRsvpEditor = () => (
       <EditorLayout
         title={rsvpCopy.editorTitle}
@@ -1949,6 +2110,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         location: locationParts || undefined,
         address: data.address || undefined,
         venue: data.venue || undefined,
+        timezone: data.timezone || undefined,
+        hostGym: data.hostGym || undefined,
         city: data.city || undefined,
         state: data.state || undefined,
         description: data.details || undefined,
@@ -1965,6 +2128,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         },
         customFields: {
           ...data.extra,
+          team: data.hostGym || data.extra?.team || "",
           advancedSections: advancedState,
         },
         advancedSections: advancedState,
@@ -2021,6 +2185,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.state,
       data.time,
+      data.timezone,
+      data.hostGym,
       data.venue,
       locationParts,
       selectedFont?.css,
@@ -2087,6 +2253,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
+              {activeView === "discover" && renderDiscoverEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
               {activeView === "passcode" && renderPasscodeEditor()}
               {config.advancedSections?.map((section) =>
