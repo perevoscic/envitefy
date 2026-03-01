@@ -51,6 +51,9 @@ export const resolveEditHref = (
   eventTitle: string
 ): string => {
   try {
+    const createdVia = String((eventData as any)?.createdVia || "")
+      .toLowerCase()
+      .trim();
     const normalizedCategory = String(eventData?.category || "")
       .toLowerCase()
       .trim();
@@ -63,6 +66,14 @@ export const resolveEditHref = (
       typeof (eventData as any)?.variationId === "string"
         ? ((eventData as any).variationId as string)
         : null;
+
+    // Discovery-generated gymnastics events must always open their event-specific edit flow.
+    if (
+      createdVia === "meet-discovery" ||
+      Boolean((eventData as any)?.discoverySource?.input)
+    ) {
+      return `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`;
+    }
 
     // Birthdays
     if (

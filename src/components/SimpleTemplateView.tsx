@@ -15,9 +15,16 @@ import {
   Info,
   Star,
   Download,
+  CreditCard,
+  AlertTriangle,
   Camera,
   Coffee,
   ThermometerSnowflake,
+  ShoppingBag,
+  Droplets,
+  Dog,
+  Ban,
+  PhoneCall,
   User,
   Users,
   ClipboardList,
@@ -91,6 +98,9 @@ type NormalizedRosterAthlete = {
 
 const normalizeRosterStatus = (value?: string) =>
   (value || "").toString().trim().toLowerCase();
+
+const safeString = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 
 const normalizeRosterAthletes = (roster: any): NormalizedRosterAthlete[] => {
   if (!roster || typeof roster !== "object") return [];
@@ -201,7 +211,7 @@ export default function SimpleTemplateView({
   const [carpoolSubmitting, setCarpoolSubmitting] = useState(false);
   const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
   const [eventDataState, setEventDataState] = useState(eventData);
-  const [discoveryActiveTab, setDiscoveryActiveTab] = useState("spectator");
+  const [discoveryActiveTab, setDiscoveryActiveTab] = useState("meet-details");
   const [discoveryScrolled, setDiscoveryScrolled] = useState(false);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
   const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
@@ -2660,7 +2670,7 @@ export default function SimpleTemplateView({
           if (!parts[0]) return null;
           return {
             label: parts[0],
-            price: parts[1] || "TBD",
+            price: parts[1] || "",
             note: parts[2] || "",
           };
         })
@@ -2672,41 +2682,347 @@ export default function SimpleTemplateView({
     )
       ? currentData.discoverySource.parseResult.admission
       : [];
+    const stripRepeatedAdmissionFromPrice = (value: string) =>
+      safeString(value).replace(
+        /\bcash\s*only\s*;?\s*per\s*day\s*;?\s*no\s*weekend\s*passes\.?/gi,
+        ""
+      ).trim();
     const admissionCards =
       parseResultAdmission.length > 0
         ? parseResultAdmission.map((item: any) => ({
             label: item?.label || "Admission",
-            price: item?.price || "TBD",
+            price: stripRepeatedAdmissionFromPrice(item?.price || ""),
             note: item?.note || "",
           }))
-        : parseAdmissionsFromText(customFields?.admission);
+        : parseAdmissionsFromText(customFields?.admission).map((item) => ({
+            ...item,
+            price: stripRepeatedAdmissionFromPrice(item.price),
+          }));
 
-    const primaryAthlete =
-      (Array.isArray(rosterAthletes) && rosterAthletes[0]) || {};
     const meet = advancedSections?.meet || {};
     const logistics = advancedSections?.logistics || {};
-    const athleteCard = {
-      name: primaryAthlete?.name || "Athlete",
-      level: primaryAthlete?.level || "Level TBD",
-      team:
-        primaryAthlete?.team ||
-        customFields?.team ||
-        currentData?.hostGym ||
-        "Team TBD",
-      session: primaryAthlete?.session || meet?.sessionNumber || "Session TBD",
-      date: formatDate(date) || "Date TBD",
-      stretchTime: formatTime(meet?.warmUpTime) || "TBD",
-      marchIn: formatTime(meet?.marchInTime) || "TBD",
-      assignedGym: currentData?.venue || "Gym assignment pending",
-      awards: currentData?.discoverySource?.parseResult?.athlete?.awards || "Awards TBA",
+    const parseResult = currentData?.discoverySource?.parseResult || {};
+    const parseLogistics = parseResult?.logistics || {};
+    const parseMeetDetails = parseResult?.meetDetails || {};
+    const parseCommunications = parseResult?.communications || {};
+    const parseLinks = Array.isArray(parseResult?.links) ? parseResult.links : [];
+    const quickLinks = Array.isArray(currentData?.links) && currentData.links.length
+      ? currentData.links
+      : parseLinks;
+    const normalizedLinks = (Array.isArray(quickLinks) ? quickLinks : [])
+      .map((item: any) => ({
+        label: safeString(item?.label),
+        url: safeString(item?.url),
+      }))
+      .filter((item) => /^https?:\/\//i.test(item.url));
+    const pickLink = (include: RegExp, exclude?: RegExp) =>
+      normalizedLinks.find(
+        (item) =>
+          include.test(`${item.label} ${item.url}`) &&
+          (!exclude || !exclude.test(`${item.label} ${item.url}`))
+      );
+    const rotationLink = pickLink(
+      /(rotation|result|score|schedule|meet\s*info|program|packet|official)/i,
+      /(arcgis|parking|traffic|parkmobile|garage|rate|wayfinding)/i
+    );
+    const mapDashboardLink =
+      pickLink(
+        /(map|dashboard|parking|traffic|arcgis|parkmobile|garage|arrival|route)/i
+      ) || normalizedLinks[0];
+    const ratesInfoLink =
+      pickLink(/(rate|pricing|fee|parking)/i, /(rotation|result|score)/i) ||
+      normalizedLinks.find((item) => item.url !== mapDashboardLink?.url) ||
+      normalizedLinks[1];
+    const contactLinkCandidate =
+      pickLink(/(contact|support|coach|help|phone|organizer)/i) || normalizedLinks[0];
+    const visitorLinkCandidate =
+      pickLink(/(visitor|guide|venue|directions|map|travel|hotel|parking)/i) ||
+      normalizedLinks.find((item) => item.url !== contactLinkCandidate?.url) ||
+      normalizedLinks[1];
+    const sourceInput = currentData?.discoverySource?.input || {};
+    const sourceFileName = safeString(sourceInput?.fileName) || "uploaded-source";
+    const sourceFileUrl =
+      sourceInput?.type === "file" && safeString(sourceInput?.dataUrl)
+        ? String(sourceInput.dataUrl)
+        : "";
+    const hasSourceFileDownload = sourceFileUrl.startsWith("data:");
+    const sourceMime = safeString(sourceInput?.mimeType);
+    const isSourcePdf = /pdf/i.test(sourceMime) || /\.pdf$/i.test(sourceFileName);
+    const eventDatesLabel =
+      currentData?.discoverySource?.parseResult?.dates ||
+      (date ? formatDate(date) : "");
+    const hostName = currentData?.hostGym || customFields?.team || "Host Committee";
+    const navTitle = safeString(currentData?.eventTitle || eventTitle) || hostName;
+    const warmupTimeLabel = formatTime(meet?.warmUpTime);
+    const scheduleHint = warmupTimeLabel
+      ? `First warmup: ${warmupTimeLabel}`
+      : time
+        ? `Start time: ${formatTime(time)}`
+        : "";
+    const venueLabel = safeString(currentData?.venue);
+    const addressLabel = safeString(currentData?.address);
+    const facilityMapAddress = addressLabel || venueLabel;
+    const gymLayoutImageUrl = safeString(
+      advancedSections?.logistics?.gymLayoutImage ||
+        currentData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl
+    );
+    const extractedDiscoveryText = safeString(currentData?.discoverySource?.extractedText);
+    const sourceLines = extractedDiscoveryText
+      ? extractedDiscoveryText
+          .split(/\n+/)
+          .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+          .filter(Boolean)
+      : [];
+    const trafficText = safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts);
+    const normalizeForCompare = (value: string) =>
+      value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const trafficEntriesRaw = trafficText
+      ? trafficText
+          .split(/\n+/)
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : [];
+    const trafficEntries = trafficEntriesRaw.filter((entry, idx, arr) => {
+      const normalized = normalizeForCompare(entry);
+      const fullNormalized = normalizeForCompare(trafficText);
+      if (!normalized) return false;
+      if (normalized === fullNormalized) return false;
+      return arr.findIndex((candidate) => normalizeForCompare(candidate) === normalized) === idx;
+    });
+    const trafficSlotsFromText = (() => {
+      const candidateLines = [trafficText, ...sourceLines]
+        .map((line) => safeString(line))
+        .filter(Boolean)
+        .filter((line) =>
+          /(traffic|disney on ice|benchmark|march|\bam\b|\bpm\b|parking)/i.test(line)
+        );
+      const slots: Array<{ date: string; times: string }> = [];
+      const seen = new Set<string>();
+      let pendingDate = "";
+      for (const line of candidateLines) {
+        const dateMatch = line.match(
+          /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b/i
+        );
+        if (dateMatch?.[0]) pendingDate = dateMatch[0];
+        const timeRanges =
+          line.match(/\b\d{1,2}:\d{2}\s*[AP]M\s*-\s*\d{1,2}:\d{2}\s*[AP]M\b/gi) || [];
+        if (!timeRanges.length) continue;
+        const dateLabel = dateMatch?.[0] || pendingDate;
+        if (!dateLabel) continue;
+        const timesLabel = timeRanges.join(" & ");
+        const key = `${dateLabel.toLowerCase()}::${timesLabel.toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        slots.push({ date: dateLabel, times: timesLabel });
+      }
+      return slots.slice(0, 3);
+    })();
+    const trafficSlots =
+      trafficSlotsFromText.length > 0
+        ? trafficSlotsFromText
+        : trafficEntries.slice(0, 3).map((entry, idx) => ({
+            date: `Traffic Window ${idx + 1}`,
+            times: entry,
+          }));
+    const firstAnnouncement = Array.isArray(parseCommunications?.announcements)
+      ? parseCommunications.announcements.find((item: any) => safeString(item?.body))
+      : null;
+    const admissionPrimaryNote = admissionCards.find((item) => safeString(item.note))?.note || "";
+    const merchandiseLink = pickLink(/(merch|shop|store|vendor|apparel|souvenir|leotard)/i);
+    const announcementBody = safeString(firstAnnouncement?.body);
+    const merchandiseText =
+      /(merch|shop|store|vendor|apparel|souvenir|leotard)/i.test(announcementBody)
+        ? announcementBody
+        : "";
+    const hasRotationLink = Boolean(safeString(rotationLink?.url));
+    const hasAdmissionContent = admissionCards.length > 0 || Boolean(admissionPrimaryNote);
+    const hasSpectatorCards = Boolean(merchandiseText) || hasRotationLink;
+    const rulesUpdateText =
+      safeString(firstAnnouncement?.body) ||
+      safeString(description);
+    const eventCity = (() => {
+      const fromAddress = addressLabel
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+      if (fromAddress.length >= 2) return fromAddress[1].toLowerCase();
+      const venueLower = venueLabel.toLowerCase();
+      if (venueLower.includes("tampa")) return "tampa";
+      if (venueLower.includes("orlando")) return "orlando";
+      return "";
+    })();
+    const additionalInfoStartIdx = sourceLines.findIndex((line) =>
+      /additional\s*info/i.test(line)
+    );
+    const additionalInfoBlock =
+      additionalInfoStartIdx >= 0
+        ? sourceLines.slice(additionalInfoStartIdx + 1, additionalInfoStartIdx + 20)
+        : [];
+    const rideSharePattern = /(rideshare|ride share|uber|lyft|taxi|front drive|drop-?off)/i;
+    const meetDetailCandidateLines = [
+      ...additionalInfoBlock,
+      ...sourceLines.filter((line) =>
+        /(allow extra time|30-45 minutes|east|central|west halls|registration area|guest services|competition area|coffee bar|admission tickets|official results|live scoring|daylight savings|service dogs)/i.test(
+          line
+        )
+      ),
+    ];
+    const stitchedMeetDetails = meetDetailCandidateLines.reduce(
+      (acc: string[], rawLine: string) => {
+        const line = rawLine.trim();
+        if (!line) return acc;
+        if (!acc.length) {
+          acc.push(line);
+          return acc;
+        }
+        const prev = acc[acc.length - 1];
+        const prevEndsSentence = /[.!?]$/.test(prev);
+        const startsContinuation =
+          /^[a-z(]/.test(line) ||
+          /^(and|or|but|because|which|that|to|for|with|on|in|at)\b/i.test(line);
+        if (!prevEndsSentence || startsContinuation) {
+          acc[acc.length - 1] = `${prev} ${line}`.replace(/\s+/g, " ").trim();
+        } else {
+          acc.push(line);
+        }
+        return acc;
+      },
+      []
+    );
+    const meetDetailsLines = stitchedMeetDetails
+      .map((line) => line.trim())
+      .filter((line) => line.length > 20)
+      .filter((line) => {
+        if (!eventCity) return true;
+        const lower = line.toLowerCase();
+        if (eventCity === "tampa" && /\borlando\b/.test(lower)) return false;
+        if (eventCity === "orlando" && /\btampa\b/.test(lower)) return false;
+        return true;
+      })
+      .filter((line, idx, arr) => {
+        const normalized = line.toLowerCase().replace(/\s+/g, " ").trim();
+        return arr.findIndex((candidate) => candidate.toLowerCase().replace(/\s+/g, " ").trim() === normalized) === idx;
+      })
+      .slice(0, 12);
+    const rideShareNote =
+      sourceLines.find((line) => rideSharePattern.test(line)) || "";
+    const facilityLinesFromSource = meetDetailsLines.filter(
+      (line) =>
+        /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area)/i.test(
+          line
+        ) && !rideSharePattern.test(line)
+    );
+    const registrationDeskNote =
+      facilityLinesFromSource.find((line) =>
+        /(registration|guest services|2nd floor|second floor)/i.test(line)
+      ) ||
+      sourceLines.find((line) => /(registration|guest services|2nd floor|second floor)/i.test(line)) ||
+      "";
+    const awardsAreaNote =
+      sourceLines.find((line) => /(awards area|north side)/i.test(line)) ||
+      (safeString(parseResult?.athlete?.awards)
+        ? `Awards area: ${safeString(parseResult?.athlete?.awards)}.`
+        : "");
+    const normalizeCompareText = (value: string) =>
+      value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const venueDetailContains = (note: string) => {
+      const normalizedNote = normalizeCompareText(note);
+      if (!normalizedNote) return false;
+      return facilityLinesFromSource.some((line) => {
+        const normalizedLine = normalizeCompareText(line);
+        return (
+          normalizedLine === normalizedNote ||
+          normalizedLine.includes(normalizedNote) ||
+          normalizedNote.includes(normalizedLine)
+        );
+      });
     };
-
-    const quickLinks = Array.isArray(currentData?.links) ? currentData.links : [];
-    const liveScoresLink =
-      quickLinks.find((item: any) => /score/i.test(String(item?.label || ""))) ||
-      quickLinks[0];
-    const officialResultsLink = quickLinks[1] || quickLinks[0];
-    const visitorGuideLink = quickLinks[2] || quickLinks[0];
+    const showRegistrationDeskNote =
+      Boolean(registrationDeskNote) && !venueDetailContains(registrationDeskNote);
+    const showAwardsAreaNote =
+      Boolean(awardsAreaNote) && !venueDetailContains(awardsAreaNote);
+    const sourcePolicyLine = (pattern: RegExp) =>
+      sourceLines.find((line) => pattern.test(line)) || "";
+    const policyNotes = [
+      safeString(logistics?.mealPlan || parseLogistics?.meals) ||
+        sourcePolicyLine(/(food|beverage|coffee|starbucks|kahwa|outside food)/i),
+      sourcePolicyLine(/(hydration|water bottles|filling stations|fill stations|bring water)/i) ||
+        (safeString(parseResult?.athlete?.stretchTime)
+          ? `Athlete stretch begins at ${parseResult.athlete.stretchTime}. Bring water and arrive prepared.`
+          : ""),
+      safeString(logistics?.waivers || parseLogistics?.waivers) ||
+        sourcePolicyLine(/(service animal|service dog|certified service)/i),
+      safeString(parseMeetDetails?.judgingNotes) ||
+        sourcePolicyLine(/(safety policy|throwing objects|baseballs|footballs|safety)/i),
+    ];
+    const hasPolicyCards = policyNotes.some(Boolean);
+    const detailPairs = [
+      {
+        label: "Gym Name",
+        value: safeString(currentData?.hostGym || parseResult?.hostGym || currentData?.venue),
+      },
+      {
+        label: "Team Level",
+        value: [safeString(parseResult?.athlete?.team), safeString(parseResult?.athlete?.level)]
+          .filter(Boolean)
+          .join(" • "),
+      },
+      {
+        label: "Session",
+        value: safeString(parseResult?.athlete?.session || meet?.sessionNumber),
+      },
+      {
+        label: "Stretch",
+        value:
+          safeString(parseResult?.athlete?.stretchTime) ||
+          formatTime(meet?.warmUpTime || ""),
+      },
+      { label: "Assigned Gym", value: safeString(parseResult?.athlete?.assignedGym) },
+      { label: "Awards", value: safeString(parseResult?.athlete?.awards) },
+      { label: "Uniform", value: safeString(parseResult?.gear?.uniform) },
+      { label: "Volunteer Notes", value: safeString(parseResult?.volunteers?.notes) },
+      { label: "Waivers", value: safeString(parseLogistics?.waivers) },
+    ].filter((item) => item.value);
+    const contactLink = contactLinkCandidate;
+    const visitorLink = visitorLinkCandidate;
+    const directionsUrl = facilityMapAddress
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          facilityMapAddress
+        )}`
+      : "";
+    const hasHostSupport =
+      Boolean(safeString(parseCommunications?.passcode)) ||
+      Boolean(safeString(contactLink?.url)) ||
+      Boolean(safeString(visitorLink?.url)) ||
+      hasSourceFileDownload;
+    const hasParkingContent =
+      Boolean(trafficText) ||
+      Boolean(safeString(logistics?.parking)) ||
+      Boolean(addressLabel) ||
+      Boolean(safeString(logistics?.hotelInfo || parseLogistics?.hotel)) ||
+      Boolean(facilityMapAddress);
+    const hasFacilityContent =
+      Boolean(gymLayoutImageUrl) ||
+      facilityLinesFromSource.length > 0 ||
+      showRegistrationDeskNote ||
+      showAwardsAreaNote;
+    const hasMeetDetailsContent = meetDetailsLines.length > 0;
+    const extractInlineUrl = (line: string) => {
+      const urlMatch = line.match(/(?:https?:\/\/[^\s)]+|www\.[^\s)]+)/i);
+      if (!urlMatch) {
+        return { textWithoutUrl: line, href: null as string | null };
+      }
+      const raw = (urlMatch[0] || "").replace(/[.,;!?]+$/g, "");
+      const href = /^www\./i.test(raw) ? `https://${raw}` : raw;
+      const matchIndex = urlMatch.index ?? line.indexOf(urlMatch[0]);
+      const textWithoutUrl = `${line.slice(0, Math.max(0, matchIndex))}${line.slice(
+        Math.max(0, matchIndex) + (urlMatch[0] || "").length
+      )}`
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+([.,;:!?])/g, "$1")
+        .trim();
+      return { textWithoutUrl, href };
+    };
 
     return (
       <div className="min-h-screen bg-[#FAF9F6] font-sans text-slate-900 pb-24">
@@ -2717,7 +3033,7 @@ export default function SimpleTemplateView({
               : "bg-transparent py-6"
           }`}
         >
-          <div className="max-w-5xl mx-auto px-6 flex justify-between items-center">
+          <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#FFD700] rounded-xl flex items-center justify-center text-[#2D1B4E] shadow-lg rotate-3">
                 <Star size={20} fill="currentColor" />
@@ -2728,40 +3044,44 @@ export default function SimpleTemplateView({
                     discoveryScrolled ? "text-white" : "text-slate-900"
                   }`}
                 >
-                  {currentData?.hostGym || "Gymnastics Meet"}
+                  {navTitle}
                 </h1>
                 <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-widest mt-1">
-                  Discovery Draft
+                  Digital Spectator Guide
                 </p>
               </div>
             </div>
-            <button className="px-5 py-2.5 bg-[#FFD700] text-[#2D1B4E] rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
-              Event Info
-            </button>
           </div>
         </nav>
 
-        <header className="pt-32 pb-20 px-6 bg-white border-b border-slate-100 relative overflow-hidden">
+        <header className="pt-32 pb-16 px-6 bg-white border-b border-slate-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#2D1B4E]/5 rounded-full blur-3xl -mr-48 -mt-48" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FFD700]/5 rounded-full blur-3xl -ml-32 -mb-32" />
-          <div className="max-w-5xl mx-auto relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2D1B4E]/5 border border-[#2D1B4E]/10 text-[#2D1B4E] text-[10px] font-bold uppercase tracking-widest mb-6">
-              <CalendarIcon size={12} className="text-[#FFD700]" />{" "}
-              {date ? formatDate(date) : "Date TBD"}
-            </div>
+          <div className="max-w-6xl mx-auto relative z-10">
+            {eventDatesLabel && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2D1B4E]/5 border border-[#2D1B4E]/10 text-[#2D1B4E] text-[10px] font-bold uppercase tracking-widest mb-6">
+                <CalendarIcon size={12} className="text-[#FFD700]" />{" "}
+                {eventDatesLabel}
+              </div>
+            )}
             <h2 className="text-4xl md:text-6xl font-black text-[#2D1B4E] leading-[1.0] tracking-tight mb-6">
               {currentData?.eventTitle || eventTitle || "Gymnastics Meet"}
             </h2>
-            <p className="text-slate-500 text-lg max-w-xl leading-relaxed">
-              {description ||
-                `Welcome to ${currentData?.hostGym || "our meet"} at ${
-                  currentData?.venue || "the venue"
-                }.`}
-            </p>
+            <div className="flex flex-wrap gap-4 text-sm font-bold text-slate-500">
+              {venueLabel && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={16} className="text-[#FFD700]" /> {venueLabel}
+                </span>
+              )}
+              {scheduleHint && (
+                <span className="flex items-center gap-1.5">
+                  <Clock size={16} className="text-[#FFD700]" /> {scheduleHint}
+                </span>
+              )}
+            </div>
           </div>
         </header>
 
-        <main className="max-w-5xl mx-auto px-6 -mt-10 relative z-10">
+        <main className="max-w-6xl mx-auto px-6 -mt-8 relative z-10">
           {!isLocked && !isReadOnly && (
             <div className="mb-8 flex justify-end">
               <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
@@ -2802,86 +3122,18 @@ export default function SimpleTemplateView({
             </div>
           )}
 
-          <section className="mb-12">
-            <div className="bg-[#2D1B4E] rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <Trophy size={140} />
-              </div>
-              <div className="relative z-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-[#FFD700]/20 border border-[#FFD700]/30 flex items-center justify-center text-[#FFD700]">
-                      <User size={32} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black tracking-tight">
-                        {athleteCard.name}
-                      </h3>
-                      <p className="text-teal-400 font-bold text-sm">
-                        {athleteCard.team} • {athleteCard.level}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-teal-300 mb-1">
-                      Competition Assigned
-                    </p>
-                    <p className="text-lg font-black">{athleteCard.assignedGym}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-8 border-y border-white/10">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
-                      Session
-                    </p>
-                    <p className="font-bold">{athleteCard.session}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
-                      Competition Date
-                    </p>
-                    <p className="font-bold">{athleteCard.date}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
-                      Stretch Time
-                    </p>
-                    <p className="font-bold">{athleteCard.stretchTime}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
-                      Awards Area
-                    </p>
-                    <p className="font-bold">{athleteCard.awards}</p>
-                  </div>
-                </div>
-
-                <div className="mt-8 flex flex-col md:flex-row items-center gap-4">
-                  <button className="w-full md:w-auto px-8 py-3 bg-[#FFD700] text-[#2D1B4E] rounded-xl font-black text-xs uppercase tracking-widest shadow-lg inline-flex items-center justify-center gap-2">
-                    <Download size={14} />
-                    Download Rotation Sheet
-                  </button>
-                  <p className="text-xs text-white/60 text-center md:text-left">
-                    <Clock size={14} className="inline mr-1" /> Arrive 45 mins prior
-                    to stretch time.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div className="flex gap-2 bg-white/80 backdrop-blur-md p-1.5 rounded-[22px] shadow-sm border border-slate-100 mb-10 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 bg-white/90 backdrop-blur-md p-1.5 rounded-[22px] shadow-sm border border-slate-100 mb-10 overflow-x-auto no-scrollbar">
             {[
-              { id: "spectator", label: "Spectator Info", icon: Users },
-              { id: "athlete", label: "Athlete Prep", icon: ClipboardList },
-              { id: "facility", label: "Facility Map", icon: MapPin },
-              { id: "parking", label: "Parking & Traffic", icon: Car },
+              { id: "meet-details", label: "Meet Details", icon: Info },
+              { id: "spectator", label: "Admission & Sales", icon: Ticket },
+              { id: "parking", label: "Traffic & Arrival", icon: Car },
+              { id: "facility", label: "Hall Layout", icon: Navigation },
+              { id: "rules", label: "Safety & Policy", icon: Ban },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setDiscoveryActiveTab(tab.id)}
-                className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3.5 rounded-[18px] text-xs font-bold uppercase tracking-wider transition-all ${
+                className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3.5 rounded-[18px] text-xs font-bold uppercase tracking-wider transition-all ${
                   discoveryActiveTab === tab.id
                     ? "bg-[#2D1B4E] text-white shadow-xl"
                     : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -2895,218 +3147,485 @@ export default function SimpleTemplateView({
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 space-y-8">
-              {discoveryActiveTab === "spectator" && (
-                <div className="space-y-8">
-                  <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+              {discoveryActiveTab === "meet-details" && hasMeetDetailsContent && (
+                <div className="space-y-10">
+                  <section className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                      <Ticket className="text-teal-600" size={24} /> Daily Admission
+                      <Info className="text-[#FFD700]" size={24} /> Meet Details
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                      {(admissionCards.length ? admissionCards : [{ label: "General", price: "TBD", note: "" }]).map(
-                        (item, i) => (
-                          <div
-                            key={`${item.label}-${i}`}
-                            className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center"
-                          >
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                              {item.label}
-                            </p>
-                            <p className="text-2xl font-black text-slate-900">
-                              {item.price}
-                            </p>
-                            <p className="text-[10px] text-slate-500 mt-1 uppercase">
-                              {item.note}
-                            </p>
-                          </div>
-                        )
-                      )}
-                    </div>
-                    <div className="p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-center gap-3">
-                      <Info size={18} className="text-teal-600" />
-                      <p className="text-xs font-bold text-teal-800">
-                        {description || "Additional spectator details will be shared in announcements."}
-                      </p>
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
+                      <ul className="space-y-4">
+                        {meetDetailsLines.map((line) => (
+                          (() => {
+                            const parsedLine = extractInlineUrl(line);
+                            return (
+                              <li
+                                key={`meet-details-line-${line}`}
+                                className="flex items-start gap-3"
+                              >
+                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#2D1B4E]/60" />
+                                <div className="space-y-2">
+                                  <p className="text-sm text-slate-700 leading-relaxed">
+                                    {parsedLine.textWithoutUrl || "Reference link"}
+                                  </p>
+                                  {parsedLine.href && (
+                                    <a
+                                      href={parsedLine.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#2D1B4E] hover:bg-slate-100"
+                                    >
+                                      Open Link <ExternalLink size={12} />
+                                    </a>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })()
+                        ))}
+                      </ul>
                     </div>
                   </section>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-[#FAF9F6] p-8 rounded-[2rem] border border-slate-100">
-                      <h4 className="font-bold flex items-center gap-2 mb-4">
-                        <Camera size={20} className="text-teal-600" /> Photo Rules
-                      </h4>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        No flash photography. Follow venue rules and coach instructions.
-                      </p>
-                    </div>
-                    <div className="bg-[#FAF9F6] p-8 rounded-[2rem] border border-slate-100">
-                      <h4 className="font-bold flex items-center gap-2 mb-4">
-                        <Coffee size={20} className="text-teal-600" /> Concessions
-                      </h4>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        {logistics?.mealPlan || "Concession details will be posted by host gym."}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               )}
 
-              {discoveryActiveTab === "athlete" && (
-                <div className="bg-white rounded-3xl border border-slate-100 p-8">
-                  <h3 className="text-xl font-bold mb-6">Athlete Prep</h3>
-                  <div className="space-y-6">
-                    <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold shrink-0">
-                        1
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800">Check-In Time</p>
-                        <p className="text-sm text-slate-500 mt-1">
-                          Stretch: {athleteCard.stretchTime}. March-in: {athleteCard.marchIn}.
-                        </p>
-                      </div>
+              {discoveryActiveTab === "spectator" && (
+                <div className="space-y-10">
+                  {hasAdmissionContent && (
+                  <section className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <Ticket size={120} />
                     </div>
-                    <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold shrink-0">
-                        2
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800">Uniform & Gear</p>
-                        <p className="text-sm text-slate-500 mt-1">
-                          {(advancedSections?.gear?.leotardOfDay as string) ||
-                            "Competition uniform details pending."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {discoveryActiveTab === "facility" && (
-                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Navigation className="text-teal-600" size={24} /> Arena
-                      Layout
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                      <CreditCard className="text-[#FFD700]" size={24} /> Spectator
+                      Admission
                     </h3>
-                    <span className="text-xs font-bold text-slate-400">
-                      {currentData?.venue || "Venue TBD"}
-                    </span>
-                  </div>
-                  {advancedSections?.logistics?.gymLayoutImage ? (
-                    <div className="space-y-4">
-                      <div className="aspect-[16/10] rounded-3xl border border-slate-200 relative overflow-hidden bg-slate-50">
-                        <img
-                          src={advancedSections.logistics.gymLayoutImage}
-                          alt="Gym layout"
-                          className="w-full h-full object-cover"
-                        />
+                    {admissionCards.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        {admissionCards.map((item, i) => (
+                          <div
+                            key={`${item.label}-${i}`}
+                            className="bg-slate-50 p-6 rounded-3xl border border-slate-100"
+                          >
+                            <div>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                {item.label}
+                              </p>
+                              {item.price && (
+                                <p className="text-2xl font-black text-slate-900">
+                                  {item.price}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-xs text-slate-500">
-                        Uploaded from the builder's Logistics section.
-                      </p>
+                    )}
+                    {admissionPrimaryNote && (
+                      <div className="bg-[#2D1B4E] p-4 rounded-2xl flex items-center gap-4 text-white">
+                        <div className="p-2 bg-white/10 rounded-xl">
+                          <Info size={20} className="text-[#FFD700]" />
+                        </div>
+                        <p className="text-xs text-white/70">
+                          <span className="font-black uppercase tracking-widest text-[#FFD700] block">
+                            Admission note
+                          </span>
+                          {admissionPrimaryNote}
+                        </p>
+                      </div>
+                    )}
+                  </section>
+                  )}
+
+                  {hasSpectatorCards && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {(merchandiseText || merchandiseLink?.url) && (
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <ShoppingBag className="text-[#FFD700] mb-4" size={28} />
+                      <h4 className="font-bold text-lg mb-2">Merchandise</h4>
+                      {merchandiseText ? (
+                        <p className="text-sm text-slate-500 leading-relaxed">
+                          {merchandiseText}
+                        </p>
+                      ) : (
+                        <a
+                          href={merchandiseLink?.url || "#"}
+                          target={merchandiseLink?.url ? "_blank" : undefined}
+                          rel={merchandiseLink?.url ? "noopener noreferrer" : undefined}
+                          className="inline-flex items-center gap-2 text-xs font-black uppercase text-[#2D1B4E] hover:underline"
+                        >
+                          {merchandiseLink?.label || "Merchandise Link"} <ExternalLink size={14} />
+                        </a>
+                      )}
                     </div>
-                  ) : (
-                    <div className="aspect-[16/10] bg-slate-50 rounded-3xl border border-dashed border-slate-200 relative overflow-hidden flex items-center justify-center px-6 text-center">
-                      <p className="text-sm text-slate-600">
-                        {currentData?.address ||
-                          "Map and facility zones can be added from meet details."}
+                    )}
+                    {hasRotationLink && (
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <ClipboardList className="text-[#FFD700] mb-4" size={28} />
+                      <h4 className="font-bold text-lg mb-2">Rotation Sheets</h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        Download or view updated rotation sheets from the official event links.
                       </p>
+                      <a
+                        href={rotationLink?.url || "#"}
+                        target={rotationLink?.url ? "_blank" : undefined}
+                        rel={rotationLink?.url ? "noopener noreferrer" : undefined}
+                        className="mt-6 inline-flex items-center gap-2 text-xs font-black uppercase text-[#2D1B4E] hover:underline"
+                      >
+                        {rotationLink?.label || "Official Website"} <ExternalLink size={14} />
+                      </a>
                     </div>
+                    )}
+                  </div>
                   )}
                 </div>
               )}
 
-              {discoveryActiveTab === "parking" && (
-                <div className="space-y-6">
-                  <div className="bg-red-50 border border-red-100 rounded-3xl p-8 flex items-start gap-4">
-                    <div className="p-3 bg-red-500 text-white rounded-2xl shadow-lg shadow-red-100">
-                      <AlertCircle size={24} />
+              {discoveryActiveTab === "parking" && hasParkingContent && (
+                <div className="space-y-10">
+                  {trafficText && (
+                  <section className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-10">
+                    <div className="flex items-start gap-6">
+                      <div className="p-4 bg-red-500 text-white rounded-2xl shadow-lg shadow-red-200">
+                        <AlertTriangle size={32} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-2xl font-black text-red-900 leading-tight mb-2">
+                          Disney on Ice Traffic Alert
+                        </h3>
+                        <p className="text-red-800/80 text-sm leading-relaxed mb-8">
+                          {trafficText}
+                        </p>
+                        {trafficSlots.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {trafficSlots.map((slot, i) => (
+                            <div
+                              key={`${slot.date}-${i}`}
+                              className="bg-white/60 p-4 rounded-2xl border border-red-100"
+                            >
+                              <p className="text-[10px] font-black text-red-900 uppercase tracking-widest mb-1">
+                                {slot.date}
+                              </p>
+                              <p className="text-[10px] font-bold text-red-700/70">
+                                {slot.times}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-red-900 mb-1">
-                        Traffic & Parking
-                      </h4>
-                      <p className="text-sm text-red-800/80 leading-relaxed">
-                        {logistics?.trafficAlerts ||
-                          "Allow extra travel time; downtown event traffic can vary."}
+                  </section>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {safeString(logistics?.parking) && (
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                          <Car size={20} />
+                        </div>
+                        <h4 className="font-black text-sm uppercase tracking-widest">
+                          Mobile Parking
+                        </h4>
+                      </div>
+                      <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                        {logistics?.parking}
                       </p>
+                      <div className="flex gap-2">
+                        <a
+                          href={mapDashboardLink?.url || "#"}
+                          target={mapDashboardLink?.url ? "_blank" : undefined}
+                          rel={mapDashboardLink?.url ? "noopener noreferrer" : undefined}
+                          className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase text-center"
+                        >
+                          Map Dashboard
+                        </a>
+                        <a
+                          href={ratesInfoLink?.url || "#"}
+                          target={ratesInfoLink?.url ? "_blank" : undefined}
+                          rel={ratesInfoLink?.url ? "noopener noreferrer" : undefined}
+                          className="flex-1 py-3 border border-slate-200 rounded-xl text-[10px] font-bold uppercase text-center"
+                        >
+                          Rates Info
+                        </a>
+                      </div>
                     </div>
+                    )}
+                    {(addressLabel || safeString(logistics?.hotelInfo || parseLogistics?.hotel)) && (
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-teal-50 text-teal-600 rounded-xl">
+                          <Navigation size={20} />
+                        </div>
+                        <h4 className="font-black text-sm uppercase tracking-widest">
+                          Ride Share
+                        </h4>
+                      </div>
+                      {addressLabel && (
+                      <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                        Best drop-off near{" "}
+                        <strong>{addressLabel}</strong>.
+                      </p>
+                      )}
+                      {rideShareNote && (
+                        <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                          {rideShareNote}
+                        </p>
+                      )}
+                      {safeString(logistics?.hotelInfo || parseLogistics?.hotel) && (
+                        <div className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-[10px] font-bold uppercase inline-block">
+                          {safeString(logistics?.hotelInfo || parseLogistics?.hotel)}
+                        </div>
+                      )}
+                    </div>
+                    )}
                   </div>
-                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <Car size={20} className="text-teal-600" /> Parking Notes
-                    </h4>
-                    <p className="text-sm text-slate-500">
-                      {logistics?.parking || "Parking details will be posted in logistics."}
+
+                  {facilityMapAddress && (
+                    <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+                      <h3 className="text-xl font-bold mb-6">Venue location</h3>
+                      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-stretch">
+                        <div className="rounded-3xl overflow-hidden border border-slate-100">
+                          <StaticMap address={facilityMapAddress} height={340} />
+                        </div>
+                        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 flex flex-col justify-between gap-4">
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                              Address
+                            </h4>
+                            <p className="text-sm text-slate-700 leading-relaxed">
+                              {facilityMapAddress}
+                            </p>
+                          </div>
+                          {directionsUrl && (
+                            <a
+                              href={directionsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D1B4E] px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#22143a]"
+                            >
+                              Get Directions <ExternalLink size={12} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
+
+              {discoveryActiveTab === "facility" && hasFacilityContent && (
+                <div className="space-y-10">
+                  <section className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
+                    <h3 className="text-xl font-bold mb-8">Hall Layout</h3>
+                    {gymLayoutImageUrl && (
+                      <div className="mb-8">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
+                          Gym Layout
+                        </h4>
+                        <div className="rounded-3xl border border-slate-200 overflow-hidden">
+                          <img
+                            src={gymLayoutImageUrl}
+                            alt="Gym layout"
+                            className="w-full h-auto object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {facilityLinesFromSource.length > 0 && (
+                      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
+                          Venue Details
+                        </h4>
+                        <div className="space-y-2">
+                          {facilityLinesFromSource.map((line) => {
+                            const parsedLine = extractInlineUrl(line);
+                            return (
+                              <div
+                                key={`facility-line-${line}`}
+                                className="space-y-2 rounded-xl border border-slate-100 bg-white px-3 py-2"
+                              >
+                                <p className="text-sm text-slate-700 leading-relaxed">
+                                  {parsedLine.textWithoutUrl || "Reference link"}
+                                </p>
+                                {parsedLine.href && (
+                                  <a
+                                    href={parsedLine.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#2D1B4E] hover:bg-slate-100"
+                                  >
+                                    Open Link <ExternalLink size={12} />
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {(showRegistrationDeskNote || showAwardsAreaNote) && (
+                      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {showRegistrationDeskNote && (
+                          <div className="flex gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0">
+                              2F
+                            </div>
+                            <div>
+                              <h4 className="font-black text-xs uppercase tracking-widest text-[#2D1B4E] mb-1">
+                                Registration Desk
+                              </h4>
+                              <p className="text-sm text-slate-500 leading-relaxed">
+                                {registrationDeskNote}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {showAwardsAreaNote && (
+                          <div className="flex gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center shrink-0">
+                              3F
+                            </div>
+                            <div>
+                              <h4 className="font-black text-xs uppercase tracking-widest text-[#2D1B4E] mb-1">
+                                Awards Area
+                              </h4>
+                              <p className="text-sm text-slate-500 leading-relaxed">
+                                {awardsAreaNote}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </section>
+                </div>
+              )}
+
+              {discoveryActiveTab === "rules" && hasPolicyCards && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {policyNotes[0] && (
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <Coffee className="text-[#FFD700] mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2">Food & Beverage</h4>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      {policyNotes[0]}
                     </p>
                   </div>
+                  )}
+                  {policyNotes[1] && (
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <Droplets className="text-[#FFD700] mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2">Hydration</h4>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      {policyNotes[1]}
+                    </p>
+                  </div>
+                  )}
+                  {policyNotes[2] && (
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <Dog className="text-[#FFD700] mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2">Service Animals</h4>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      {policyNotes[2]}
+                    </p>
+                  </div>
+                  )}
+                  {policyNotes[3] && (
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <Ban className="text-red-500 mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2">Safety Policy</h4>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      {policyNotes[3]}
+                    </p>
+                  </div>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="space-y-6">
-              <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
-                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
-                  Quick Links
+            <div className="space-y-8">
+              {detailPairs.length > 0 && (
+              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
+                  Meet Essentials
                 </h4>
-                <div className="space-y-3">
-                  {[
-                    {
-                      label: liveScoresLink?.label || "Live Scores",
-                      url: liveScoresLink?.url || "#",
-                      icon: Trophy,
-                    },
-                    {
-                      label: officialResultsLink?.label || "Official Results",
-                      url: officialResultsLink?.url || "#",
-                      icon: ClipboardList,
-                    },
-                    {
-                      label: visitorGuideLink?.label || "Visitor Guide",
-                      url: visitorGuideLink?.url || "#",
-                      icon: ThermometerSnowflake,
-                    },
-                  ].map((item) => (
-                    <a
-                      key={item.label}
-                      href={item.url}
-                      target={item.url && item.url !== "#" ? "_blank" : undefined}
-                      rel={item.url && item.url !== "#" ? "noopener noreferrer" : undefined}
-                      className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-[#2D1B4E] hover:text-white transition-all group"
+                <div className="space-y-6">
+                  {detailPairs.map((item) => (
+                    <div
+                      key={`meet-essential-${item.label}-${item.value}`}
+                      className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
                     >
-                      <div className="flex items-center gap-3">
-                        <item.icon size={18} className="text-[#FFD700]" />
-                        <span className="text-sm font-bold">{item.label}</span>
-                      </div>
-                      <ExternalLink
-                        size={14}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    </a>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-xs whitespace-pre-wrap text-slate-700">
+                        {item.value}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </div>
+              )}
 
-              <div className="bg-[#2D1B4E] rounded-[2rem] p-8 text-white">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <Clock size={16} className="text-[#FFD700]" />
-                  </div>
-                  <h4 className="font-bold">Important Note</h4>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                  {logistics?.fees ||
-                    "Check announcements for final schedule updates and coach notices."}
+              {hasHostSupport && (
+              <div className="bg-[#2D1B4E] rounded-[2.5rem] p-8 text-white shadow-xl shadow-[#2D1B4E]/20">
+                <h4
+                  className="font-black text-lg mb-4"
+                  style={{ color: "#FFFFFF" }}
+                >
+                  Useful Links
+                </h4>
+                <p className="text-xs text-white/50 mb-6 leading-relaxed">
+                  {safeString(parseCommunications?.passcode)
+                    ? `Passcode: ${parseCommunications.passcode}`
+                    : "Support and reference links are provided below."}
                 </p>
-                <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                  <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-widest">
-                    Host Committee
-                  </p>
-                  <p className="text-xs mt-1">
-                    {currentData?.hostGym || customFields?.team || "Host Gym"}
-                  </p>
+                <div className="space-y-2">
+                  {safeString(contactLink?.url) && (
+                    <a
+                      href={contactLink.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                    >
+                      <PhoneCall size={14} /> {contactLink?.label || "Support Link"}
+                    </a>
+                  )}
+                  {safeString(visitorLink?.url) && (
+                    <a
+                      href={visitorLink.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                    >
+                      <MapPin size={14} /> {visitorLink?.label || "Visitor Guide"}
+                    </a>
+                  )}
+                  {directionsUrl && (
+                    <a
+                      href={directionsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                    >
+                      <Navigation size={14} /> Directions to Venue
+                    </a>
+                  )}
+                  {hasSourceFileDownload && (
+                    <a
+                      href={sourceFileUrl}
+                      download={sourceFileName}
+                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                    >
+                      <Download size={14} /> Download {isSourcePdf ? "Source PDF" : "Source File"}
+                    </a>
+                  )}
                 </div>
               </div>
+              )}
             </div>
           </div>
         </main>

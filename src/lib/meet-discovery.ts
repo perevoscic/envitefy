@@ -80,6 +80,38 @@ type ExtractionResult = {
     usedOcr: boolean;
     linkedAssets: Array<{ url: string; contentType: string }>;
     pageTitle?: string | null;
+    gymLayoutImageDataUrl?: string | null;
+  };
+};
+
+export type DiscoveryEvidence = {
+  source: {
+    sourceType: "file" | "url";
+    usedOcr: boolean;
+    pageTitle: string | null;
+    linkedAssetCount: number;
+    extractedChars: number;
+  };
+  candidates: {
+    titleHints: string[];
+    dateHints: string[];
+    timeHints: string[];
+    timezoneHints: string[];
+    venueHints: string[];
+    addressHints: string[];
+    hostGymHints: string[];
+    admissionHints: string[];
+    athleteHints: string[];
+    sessionHints: string[];
+    logisticsHints: string[];
+    policyHints: string[];
+    linkHints: Array<{ label: string; url: string }>;
+  };
+  snippets: {
+    firstLines: string[];
+    additionalInfoLines: string[];
+    trafficLines: string[];
+    hallLayoutLines: string[];
   };
 };
 
@@ -102,6 +134,128 @@ function toIsoOrNull(value: unknown): string | null {
 
 function pickArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
+}
+
+function uniqueLines(lines: string[], limit = 12): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const line of lines.map((item) => safeString(item)).filter(Boolean)) {
+    const key = line.toLowerCase().replace(/\s+/g, " ").trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(line);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+export function buildDiscoveryEvidence(
+  extractedText: string,
+  extractionMeta: ExtractionResult["extractionMeta"]
+): DiscoveryEvidence {
+  const text = cleanExtractedText(extractedText);
+  const lines = text
+    .split(/\n+/)
+    .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+    .filter(Boolean);
+  const firstLines = uniqueLines(lines.slice(0, 24), 12);
+  const additionalInfoStartIdx = lines.findIndex((line) => /additional\s*info/i.test(line));
+  const additionalInfoLines =
+    additionalInfoStartIdx >= 0
+      ? uniqueLines(lines.slice(additionalInfoStartIdx + 1, additionalInfoStartIdx + 26), 12)
+      : [];
+
+  const matchLines = (pattern: RegExp, limit = 12) =>
+    uniqueLines(lines.filter((line) => pattern.test(line)), limit);
+
+  const dateHints = uniqueLines(
+    [
+      ...(text.match(
+        /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:\s*[–-]\s*\d{1,2})?(?:,\s*\d{4})?/gi
+      ) || []),
+      ...(text.match(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g) || []),
+    ],
+    10
+  );
+  const timeHints = uniqueLines(
+    text.match(/\b\d{1,2}(?::\d{2})?\s*[AP]M(?:\s*-\s*\d{1,2}(?::\d{2})?\s*[AP]M)?\b/gi) || [],
+    14
+  );
+  const timezoneHints = uniqueLines(
+    text.match(
+      /\b(?:America\/[A-Za-z_]+|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Eastern|Central|Mountain|Pacific)\b/gi
+    ) || [],
+    8
+  );
+  const addressHints = matchLines(
+    /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/,
+    8
+  );
+  const venueHints = matchLines(
+    /(convention center|arena|center|hall|gymnasium|gym|sports complex|fieldhouse|venue)/i,
+    12
+  );
+  const hostGymHints = matchLines(/(host(ed)? by|gymnastics|gym club|academy|host gym|host)/i, 12);
+  const admissionHints = matchLines(/(admission|ticket|adult|children|cash|weekend pass|door)/i, 12);
+  const athleteHints = matchLines(/(athlete|gymnast|level|team|march in|stretch|assigned gym|awards)/i, 14);
+  const sessionHints = matchLines(/(session|stretch|march in|warm ?up|rotation|awards)/i, 14);
+  const logisticsHints = matchLines(
+    /(parking|traffic|hotel|meal|food|waiver|rideshare|uber|lyft|map|directions|drop[- ]?off)/i,
+    14
+  );
+  const policyHints = matchLines(
+    /(hydration|service animal|service dog|safety|food|beverage|outside food|throwing object|flash)/i,
+    12
+  );
+  const trafficLines = matchLines(/(traffic|disney on ice|benchmark|parking rate|30-45)/i, 8);
+  const hallLayoutLines = matchLines(
+    /(east hall|west hall|central hall|registration|guest services|competition area|coffee bar|awards)/i,
+    10
+  );
+  const titleHints = uniqueLines(
+    [
+      safeString(extractionMeta.pageTitle || ""),
+      ...firstLines.filter((line) => line.length >= 6 && line.length <= 90),
+    ],
+    8
+  );
+  const linkHints = uniqueLines(
+    (text.match(/https?:\/\/[^\s)]+/gi) || []).map((url) => url.replace(/[.,;!?]+$/, "")),
+    14
+  ).map((url) => ({ label: "Source link", url }));
+
+  return {
+    source: {
+      sourceType: extractionMeta.sourceType,
+      usedOcr: extractionMeta.usedOcr,
+      pageTitle: safeString(extractionMeta.pageTitle) || null,
+      linkedAssetCount: Array.isArray(extractionMeta.linkedAssets)
+        ? extractionMeta.linkedAssets.length
+        : 0,
+      extractedChars: text.length,
+    },
+    candidates: {
+      titleHints,
+      dateHints,
+      timeHints,
+      timezoneHints,
+      venueHints,
+      addressHints,
+      hostGymHints,
+      admissionHints,
+      athleteHints,
+      sessionHints,
+      logisticsHints,
+      policyHints,
+      linkHints,
+    },
+    snippets: {
+      firstLines,
+      additionalInfoLines,
+      trafficLines,
+      hallLayoutLines,
+    },
+  };
 }
 
 function extractPdfTextHeuristic(buffer: Buffer): string {
@@ -268,6 +422,84 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{ text: string; usedO
 async function extractTextFromImage(buffer: Buffer): Promise<string> {
   const prepared = await sharp(buffer).resize(2200).grayscale().normalize().toBuffer();
   return ocrBuffer(prepared);
+}
+
+function looksLikeGymLayoutText(text: string): boolean {
+  const normalized = safeString(text).toLowerCase();
+  if (!normalized) return false;
+  if (
+    /(hall\s*layout|facility\s*map|floor\s*plan|venue\s*map|convention\s*center\s*map)/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+  const signals = [
+    /central hall/,
+    /east hall/,
+    /west hall/,
+    /south hall|north hall/,
+    /gym\s*[a-f]/,
+    /awards area/,
+    /registration/,
+    /competition area/,
+    /guest services/,
+    /coffee bar/,
+    /wayfinding|way finding/,
+    /entrance/,
+  ];
+  const score = signals.reduce((count, pattern) => (pattern.test(normalized) ? count + 1 : count), 0);
+  return score >= 2 || /(hall|registration|competition area)/i.test(normalized);
+}
+
+async function toOptimizedImageDataUrl(
+  buffer: Buffer
+): Promise<string | null> {
+  try {
+    const variants: Array<{ width: number; quality: number }> = [
+      { width: 1800, quality: 82 },
+      { width: 1600, quality: 76 },
+      { width: 1400, quality: 72 },
+      { width: 1200, quality: 68 },
+      { width: 1000, quality: 64 },
+    ];
+    for (const variant of variants) {
+      const optimized = await sharp(buffer)
+        .resize({ width: variant.width, withoutEnlargement: true })
+        .jpeg({ quality: variant.quality })
+        .toBuffer();
+      if (optimized.length <= 1_800_000) {
+        return `data:image/jpeg;base64,${optimized.toString("base64")}`;
+      }
+    }
+    // Last-resort tiny output to avoid dropping the screenshot entirely.
+    const fallback = await sharp(buffer)
+      .resize({ width: 900, withoutEnlargement: true })
+      .jpeg({ quality: 58 })
+      .toBuffer();
+    return fallback.length <= 2_000_000
+      ? `data:image/jpeg;base64,${fallback.toString("base64")}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<string | null> {
+  for (let page = 0; page < 20; page += 1) {
+    try {
+      const pageImage = await sharp(buffer, { density: 220, page }).png().toBuffer();
+      const pageText = await extractTextFromImage(pageImage);
+      if (looksLikeGymLayoutText(pageText)) {
+        const dataUrl = await toOptimizedImageDataUrl(pageImage);
+        if (dataUrl) return dataUrl;
+      }
+    } catch {
+      // Continue scanning remaining pages; some PDFs can fail intermittently by page.
+      continue;
+    }
+  }
+  return null;
 }
 
 function stripHtml(input: string): string {
@@ -459,16 +691,30 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
     const mime = (parsed.mimeType || input.mimeType || "").toLowerCase();
     if (/pdf/.test(mime)) {
       const { text, usedOcr } = await extractTextFromPdf(parsed.buffer);
+      const gymLayoutImageDataUrl = await extractGymLayoutImageFromPdf(parsed.buffer);
       return {
         extractedText: text,
-        extractionMeta: { sourceType: "file", usedOcr, linkedAssets: [] },
+        extractionMeta: {
+          sourceType: "file",
+          usedOcr,
+          linkedAssets: [],
+          gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
+        },
       };
     }
     if (/image\/(png|jpe?g|webp)/.test(mime)) {
       const text = await extractTextFromImage(parsed.buffer);
+      const gymLayoutImageDataUrl = looksLikeGymLayoutText(text)
+        ? await toOptimizedImageDataUrl(parsed.buffer)
+        : null;
       return {
         extractedText: text,
-        extractionMeta: { sourceType: "file", usedOcr: true, linkedAssets: [] },
+        extractionMeta: {
+          sourceType: "file",
+          usedOcr: true,
+          linkedAssets: [],
+          gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
+        },
       };
     }
     throw new Error("Unsupported file type for discovery");
@@ -483,6 +729,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   const linkedChunks: string[] = [];
   const linkedMeta: Array<{ url: string; contentType: string }> = [];
   let usedOcr = false;
+  let gymLayoutImageDataUrl: string | null = null;
 
   for (const asset of linkedAssets) {
     try {
@@ -492,6 +739,9 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
         const parsed = await extractTextFromPdf(fetched.buffer);
         linkedChunks.push(parsed.text);
         usedOcr = usedOcr || parsed.usedOcr;
+        if (!gymLayoutImageDataUrl) {
+          gymLayoutImageDataUrl = await extractGymLayoutImageFromPdf(fetched.buffer);
+        }
         continue;
       }
       if (
@@ -501,6 +751,9 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
         const imageText = await extractTextFromImage(fetched.buffer);
         linkedChunks.push(imageText);
         usedOcr = true;
+        if (!gymLayoutImageDataUrl && looksLikeGymLayoutText(imageText)) {
+          gymLayoutImageDataUrl = await toOptimizedImageDataUrl(fetched.buffer);
+        }
       }
     } catch {
       // Best-effort linked assets.
@@ -519,6 +772,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
       usedOcr,
       linkedAssets: linkedMeta,
       pageTitle: safeString(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""),
+      gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
     },
   };
 }
@@ -556,11 +810,42 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
   "links": [{ "label": string, "url": string }]
 }`;
 
+function buildProfessionalParsePrompt(
+  evidence: DiscoveryEvidence,
+  sourceText: string,
+  followup?: string
+): string {
+  const boundedText = cleanExtractedText(sourceText).slice(0, 120000);
+  const evidenceJson = JSON.stringify(evidence, null, 2);
+  return [
+    OPENAI_SCHEMA_INSTRUCTIONS,
+    "",
+    "You are a senior event-data extraction specialist. Extract only what is supported by the provided input.",
+    "Extraction policy:",
+    "1) Prefer values grounded in Evidence JSON candidates/snippets.",
+    "2) Use Source text to resolve ambiguity and fill fields not explicitly present in candidates.",
+    "3) Never invent details. If not present, set null (or [] for arrays).",
+    "4) If multiple candidates conflict, choose the most specific and internally consistent value.",
+    "5) Keep URLs absolute (https://...) whenever possible.",
+    "6) Do not output explanatory text. Output JSON only.",
+    "",
+    "Evidence JSON:",
+    evidenceJson,
+    "",
+    "Source text:",
+    boundedText,
+    "",
+    followup || "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function normalizeParseResult(value: any): ParseResult | null {
   if (!value || typeof value !== "object") return null;
   const eventType = value.eventType === "gymnastics_meet" ? "gymnastics_meet" : "unknown";
-  const title = safeString(value.title) || "Gymnastics Meet";
-  const dates = safeString(value.dates) || "Date TBD";
+  const title = safeString(value.title);
+  const dates = safeString(value.dates);
   return {
     eventType,
     title,
@@ -652,13 +937,16 @@ function extractJsonObject(text: string): any | null {
   }
 }
 
-async function callOpenAiParse(text: string, followup?: string): Promise<{ result: ParseResult | null; raw: string }> {
+async function callOpenAiParse(
+  text: string,
+  evidence: DiscoveryEvidence,
+  followup?: string
+): Promise<{ result: ParseResult | null; raw: string }> {
   const apiKey = process.env.OPENAI_API_KEY || "";
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
   const client = new OpenAI({ apiKey });
-  const sanitizedText = text
-    .replace(/\u0000/g, " ")
-    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
+  const sanitizedText = text.replace(/\u0000/g, " ").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
+  const prompt = buildProfessionalParsePrompt(evidence, sanitizedText, followup);
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || "gpt-5.1",
     temperature: 0,
@@ -670,7 +958,7 @@ async function callOpenAiParse(text: string, followup?: string): Promise<{ resul
       },
       {
         role: "user",
-        content: `${OPENAI_SCHEMA_INSTRUCTIONS}\n\nSource text:\n${sanitizedText}\n\n${followup || ""}`,
+        content: prompt,
       },
     ],
   });
@@ -679,7 +967,10 @@ async function callOpenAiParse(text: string, followup?: string): Promise<{ resul
   return { result: parsed, raw };
 }
 
-async function callGeminiParse(text: string): Promise<{ result: ParseResult | null; raw: string }> {
+async function callGeminiParse(
+  text: string,
+  evidence: DiscoveryEvidence
+): Promise<{ result: ParseResult | null; raw: string }> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
   if (!apiKey) throw new Error("Gemini API key is not configured");
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
@@ -696,7 +987,7 @@ async function callGeminiParse(text: string): Promise<{ result: ParseResult | nu
       contents: [
         {
           role: "user",
-          parts: [{ text: `${OPENAI_SCHEMA_INSTRUCTIONS}\n\nSource text:\n${text}` }],
+          parts: [{ text: buildProfessionalParsePrompt(evidence, text) }],
         },
       ],
     }),
@@ -711,23 +1002,41 @@ async function callGeminiParse(text: string): Promise<{ result: ParseResult | nu
 }
 
 export async function parseMeetFromExtractedText(
-  extractedText: string
-): Promise<{ parseResult: ParseResult; modelUsed: "openai" | "gemini"; rawModelOutput: string }> {
+  extractedText: string,
+  extractionMeta: ExtractionResult["extractionMeta"]
+): Promise<{
+  parseResult: ParseResult;
+  modelUsed: "openai" | "gemini";
+  rawModelOutput: string;
+  evidence: DiscoveryEvidence;
+}> {
+  const evidence = buildDiscoveryEvidence(extractedText, extractionMeta);
   let openAiRaw = "";
   let openAiErrorMessage = "";
   try {
-    const first = await callOpenAiParse(extractedText);
+    const first = await callOpenAiParse(extractedText, evidence);
     openAiRaw = first.raw;
     if (first.result) {
-      return { parseResult: first.result, modelUsed: "openai", rawModelOutput: first.raw };
+      return {
+        parseResult: first.result,
+        modelUsed: "openai",
+        rawModelOutput: first.raw,
+        evidence,
+      };
     }
     const second = await callOpenAiParse(
       extractedText,
+      evidence,
       `Your previous output was invalid. Fix and return valid strict JSON only. Previous output:\n${first.raw}`
     );
     openAiRaw = second.raw;
     if (second.result) {
-      return { parseResult: second.result, modelUsed: "openai", rawModelOutput: second.raw };
+      return {
+        parseResult: second.result,
+        modelUsed: "openai",
+        rawModelOutput: second.raw,
+        evidence,
+      };
     }
     openAiErrorMessage = "OpenAI returned invalid JSON twice.";
   } catch (err: any) {
@@ -742,7 +1051,7 @@ export async function parseMeetFromExtractedText(
         "OpenAI parsing failed and Gemini fallback is not configured. Set GEMINI_API_KEY to enable fallback."
     );
   }
-  const gemini = await callGeminiParse(extractedText);
+  const gemini = await callGeminiParse(extractedText, evidence);
   if (!gemini.result) {
     throw new Error("Gemini returned invalid JSON");
   }
@@ -750,6 +1059,7 @@ export async function parseMeetFromExtractedText(
     parseResult: gemini.result,
     modelUsed: "gemini",
     rawModelOutput: gemini.raw || openAiRaw,
+    evidence,
   };
 }
 
@@ -862,7 +1172,7 @@ export async function mapParseResultToGymData(parseResult: ParseResult, baseData
 
   return {
     ...baseData,
-    title: parseResult.title,
+    title: parseResult.title || baseData?.title || "",
     details: [baseData?.details, parseResult.dates, admissionText].filter(Boolean).join("\n\n"),
     date: date || baseData?.date || "",
     time: time || baseData?.time || "",

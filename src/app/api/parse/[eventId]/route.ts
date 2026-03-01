@@ -54,8 +54,22 @@ export async function POST(
       return NextResponse.json({ error: "Not enough text extracted to parse" }, { status: 422 });
     }
 
-    const parsed = await parseMeetFromExtractedText(extraction.extractedText);
+    const parsed = await parseMeetFromExtractedText(
+      extraction.extractedText,
+      extraction.extractionMeta
+    );
     const mapped = await mapParseResultToGymData(parsed.parseResult, currentData);
+    const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
+    if (
+      detectedGymLayoutImage &&
+      !mapped?.advancedSections?.logistics?.gymLayoutImage
+    ) {
+      mapped.advancedSections = mapped.advancedSections || {};
+      mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
+      mapped.advancedSections.logistics.gymLayoutImage = detectedGymLayoutImage;
+      mapped.customFields = mapped.customFields || {};
+      mapped.customFields.advancedSections = mapped.advancedSections;
+    }
     const nextData = {
       ...mapped,
       discoverySource: {
@@ -64,6 +78,7 @@ export async function POST(
         input: sourceInput,
         extractedText: extraction.extractedText,
         extractionMeta: extraction.extractionMeta,
+        evidence: parsed.evidence,
         parseResult: parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,
