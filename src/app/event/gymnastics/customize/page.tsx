@@ -61,6 +61,9 @@ type ThemeSpec = {
   text: string;
   accent: string;
   preview: string;
+  /** Optional: two-band swatch (left/right) for strict 2-color display */
+  previewFrom?: string;
+  previewTo?: string;
 };
 
 type AdvancedSectionRenderContext = {
@@ -300,13 +303,40 @@ const ThemeSwatch = ({
         : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
     }`}
   >
-    <div className={`h-12 w-full ${theme.preview} border-b border-black/5`} />
+    {/* Two-color band: left half + right half when provided */}
+    <div className="h-12 w-full flex border-b border-black/5">
+      {theme.previewFrom && theme.previewTo ? (
+        <>
+          <div className={`flex-1 min-w-0 ${theme.previewFrom}`} />
+          <div className={`flex-1 min-w-0 ${theme.previewTo}`} />
+        </>
+      ) : (
+        <div className={`h-full w-full ${theme.preview}`} />
+      )}
+    </div>
     <div className="p-3">
       <div className="text-sm font-semibold text-slate-700">{theme.name}</div>
-      <div className="text-xs text-slate-400">Palette preset</div>
+      <div className="text-xs text-slate-400">2-color palette</div>
     </div>
   </button>
 );
+
+/** Where each editor section appears on the generated public event page */
+const SECTION_SHOWS_ON_EVENT: Record<string, string> = {
+  headline: "Event header (title, date, time, venue)",
+  details: "Meet Essentials card + description in Meet Details tab",
+  design: "Theme & typography across the whole page",
+  images: "Hero image and header area",
+  roster: "Team Roster & Attendance section",
+  meet: "Meet Details tab (warm-up, march-in, apparatus, judging, scores link)",
+  practice: "Practice Planner section",
+  logistics: "Logistics & Travel section",
+  gear: "Gear & Uniform section",
+  volunteers: "Volunteers & Carpool section",
+  announcements: "Announcements section",
+  rsvp: "Attendance / RSVP area",
+  passcode: "Access gate for the whole page (when enabled)",
+};
 
 const MenuCard = ({
   title,
@@ -314,12 +344,15 @@ const MenuCard = ({
   icon,
   status,
   onClick,
+  showsOnEvent,
 }: {
   title: string;
   desc: string;
   icon: React.ReactNode;
   status?: "not-started" | "in-progress" | "ready";
   onClick: () => void;
+  /** Where this section appears on the generated event page */
+  showsOnEvent?: string;
 }) => (
   <button
     type="button"
@@ -357,6 +390,11 @@ const MenuCard = ({
         </div>
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+      {showsOnEvent && (
+        <p className="text-[11px] text-slate-400 mt-1.5 italic">
+          Shows on event: {showsOnEvent}
+        </p>
+      )}
     </div>
   </button>
 );
@@ -440,15 +478,16 @@ function GymnasticsEditorLayout({
   showBack?: boolean;
 }) {
   return (
-    <div className="animate-fade-in-right">
-      <div className="mb-6 pb-4 border-b border-slate-100">
+    <div className="animate-fade-in-right" style={{ pointerEvents: "auto" }} data-no-scroll-capture>
+      <div className="mb-6 pb-4 border-b border-slate-100 relative z-10" style={{ pointerEvents: "auto" }}>
         {!isEmbed && (
           <div className="flex items-center">
             <div className="mr-3 w-8">
               {showBack && (
                 <button
+                  type="button"
                   onClick={onBack}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -462,17 +501,38 @@ function GymnasticsEditorLayout({
         <h2
           className={`text-lg font-serif font-bold text-slate-800 ${isEmbed && showBack ? "flex items-center gap-2" : "mt-2 text-center"}`}
         >
-          {isEmbed && showBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-              aria-label="Back to menu"
-            >
-              <ChevronLeft size={20} />
-            </button>
+          {isEmbed && showBack ? (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onBack();
+                }}
+                className="min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer touch-manipulation"
+                aria-label="Back to menu"
+                style={{ pointerEvents: "auto" }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onBack();
+                }}
+                className="flex-1 text-left hover:bg-slate-100 rounded px-2 py-2 -mx-1 transition-colors cursor-pointer touch-manipulation min-h-[44px] flex items-center"
+                aria-label="Back to edit meet options"
+                style={{ pointerEvents: "auto" }}
+              >
+                {title}
+              </button>
+            </>
+          ) : (
+            title
           )}
-          {title}
         </h2>
       </div>
       {children}
@@ -556,7 +616,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
-    const [loadingExisting, setLoadingExisting] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(() =>
+      Boolean(search?.get("edit"))
+    );
     const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<
       Record<string, any> | null
     >(null);
@@ -1602,6 +1664,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Type size={18} />}
             status={headlineStatus}
             onClick={() => setActiveView("headline")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.headline}
           />
           <MenuCard
             title="Details"
@@ -1609,6 +1672,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Edit2 size={18} />}
             status={detailsStatus}
             onClick={() => setActiveView("details")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.details}
           />
           <MenuCard
             title="Design"
@@ -1616,6 +1680,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Palette size={18} />}
             status={themeId ? "ready" : "not-started"}
             onClick={() => setActiveView("design")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.design}
           />
           <MenuCard
             title="Images"
@@ -1623,6 +1688,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<ImageIcon size={18} />}
             status={data.hero ? "ready" : "not-started"}
             onClick={() => setActiveView("images")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.images}
           />
 
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 pt-2">
@@ -1657,6 +1723,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   icon={<Edit2 size={18} />}
                   status={advancedStatus(sectionEnabled)}
                   onClick={() => setActiveView(section.id)}
+                  showsOnEvent={SECTION_SHOWS_ON_EVENT[section.id]}
                 />
               );
             })}
@@ -1670,6 +1737,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<CheckSquare size={18} />}
             status={rsvpStatus}
             onClick={() => setActiveView("rsvp")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.rsvp}
           />
           <MenuCard
             title="Passcode"
@@ -1677,6 +1745,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<LinkIcon size={18} />}
             status={passcodeStatus}
             onClick={() => setActiveView("passcode")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.passcode}
           />
           {visibleAdvancedSections
             ?.filter((section) => section.id === "announcements")
@@ -1688,6 +1757,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 icon={<Edit2 size={18} />}
                 status={advancedStatus(hasAnnouncementEntries)}
                 onClick={() => setActiveView(section.id)}
+                showsOnEvent={SECTION_SHOWS_ON_EVENT.announcements}
               />
             ))}
         </div>
@@ -1975,9 +2045,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           <div className="pt-4 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Typography
-              </p>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Typography (titles)
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Applies to event title and section headings
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
               {GYM_FONTS.map((f) => (
@@ -2406,6 +2481,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.rsvpCopy,
       config.slug,
       currentTheme,
+      themeId,
       data.address,
       data.city,
       data.date,
@@ -2433,13 +2509,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div
         className={
           isEmbed
-            ? "flex h-full min-h-screen w-full flex-col bg-white"
+            ? "flex h-full min-h-0 w-full flex-col bg-white flex-1 min-h-0"
             : `w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
                 mobileMenuOpen ? "translate-x-0" : "translate-x-full"
               }`
         }
       >
-          <ScrollHandoffContainer className="flex-1" {...drawerTouchHandlers}>
+          <ScrollHandoffContainer className={`flex-1 min-h-0 ${isEmbed ? "overflow-y-auto" : ""}`} {...drawerTouchHandlers}>
             {!isEmbed && (
               <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
                 <button
@@ -2486,7 +2562,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           </ScrollHandoffContainer>
 
-          <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+          <div className="flex-shrink-0 p-4 border-t border-slate-100 bg-slate-50 bg-white">
             <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Before Publish
@@ -2543,7 +2619,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return (
-        <div className="min-h-screen w-full bg-white flex flex-col">
+        <div className="h-dvh min-h-screen w-full bg-white flex flex-col overflow-hidden">
           {sidebarPanel}
         </div>
       );
@@ -2562,6 +2638,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0">
               <SimpleTemplateView
+                key={`preview-${themeId}-${data.fontId}-${data.fontSize}`}
                 eventId={editEventId || "gymnastics-preview"}
                 eventData={previewEventData}
                 eventTitle={data.title || config.displayName}

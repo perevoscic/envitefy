@@ -7,7 +7,7 @@ import {
   clearProfileCache,
   PROFILE_CACHE_TTL_MS,
 } from "@/utils/profileCache";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
   useCallback,
@@ -544,6 +544,11 @@ export default function LeftSidebar() {
   const { theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Event page with inline edit sidebar (discovery gymnastics): hide main nav hamburger so it doesn't appear next to "Edit your meet"
+  const isEventPageWithEditSidebar = Boolean(
+    pathname?.startsWith("/event/") && searchParams?.get("edit")
+  );
   // When building a Smart sign-up, hide Rename/Change actions to avoid confusing edits
   const hideRenameAndChange = (() => {
     try {
@@ -2927,7 +2932,7 @@ export default function LeftSidebar() {
 
   return (
     <>
-      {!isOpen && (
+      {!isOpen && !isEventPageWithEditSidebar && (
         <button
           ref={openButtonRef}
           type="button"

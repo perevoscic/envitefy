@@ -38,6 +38,13 @@ export default function ScrollHandoffContainer({
 }: ScrollHandoffContainerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const touchStartYRef = useRef<number | null>(null);
+  const touchTargetRef = useRef<EventTarget | null>(null);
+
+  const isInteractiveTarget = useCallback((target: EventTarget | null): boolean => {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    const el = target.closest?.("button, a, [role='button'], [data-no-scroll-capture]");
+    return Boolean(el);
+  }, []);
 
   const canScrollInDirection = useCallback((el: HTMLDivElement, deltaY: number) => {
     const { scrollTop, scrollHeight, clientHeight } = el;
@@ -81,6 +88,7 @@ export default function ScrollHandoffContainer({
     (event: TouchEvent<HTMLDivElement>) => {
       const touch = event.touches[0];
       touchStartYRef.current = touch?.clientY ?? null;
+      touchTargetRef.current = event.target;
       if (onTouchStart) {
         onTouchStart(event);
       }
@@ -90,6 +98,12 @@ export default function ScrollHandoffContainer({
 
   const handleTouchMove = useCallback(
     (event: TouchEvent<HTMLDivElement>) => {
+      // Don't consume touch if it started on a button/link so clicks still fire.
+      if (isInteractiveTarget(touchTargetRef.current)) {
+        if (onTouchMove) onTouchMove(event);
+        return;
+      }
+
       const el = event.currentTarget;
       const touch = event.touches[0];
 
@@ -115,12 +129,13 @@ export default function ScrollHandoffContainer({
         onTouchMove(event);
       }
     },
-    [canScrollInDirection, onTouchMove]
+    [canScrollInDirection, isInteractiveTarget, onTouchMove]
   );
 
   const handleTouchEnd = useCallback(
     (event: TouchEvent<HTMLDivElement>) => {
       touchStartYRef.current = null;
+      touchTargetRef.current = null;
       if (onTouchEnd) {
         onTouchEnd(event);
       }

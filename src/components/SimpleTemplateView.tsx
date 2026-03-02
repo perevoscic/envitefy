@@ -78,6 +78,8 @@ type SimpleTemplateViewProps = {
     logistics?: boolean;
     volunteers?: boolean;
   };
+  /** When true, hide Edit / Delete / Share / Email so the edit sidebar is the only action surface (e.g. discovery edit mode). */
+  hideOwnerActions?: boolean;
 };
 
 type NormalizedRosterAthlete = {
@@ -170,6 +172,7 @@ export default function SimpleTemplateView({
   disableProtectedSectionLocks = false,
   protectSensitiveSections: protectSensitiveSectionsProp = false,
   protectedSectionFlags: protectedSectionFlagsProp = {},
+  hideOwnerActions = false,
 }: SimpleTemplateViewProps) {
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState("yes");
@@ -3082,7 +3085,7 @@ export default function SimpleTemplateView({
         </header>
 
         <main className="max-w-6xl mx-auto px-6 -mt-8 relative z-10">
-          {!isLocked && !isReadOnly && (
+          {!isLocked && !isReadOnly && !hideOwnerActions && (
             <div className="mb-8 flex justify-end">
               <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
                 {isOwner && (
@@ -3649,7 +3652,7 @@ export default function SimpleTemplateView({
               className={`relative p-6 md:p-8 border-b border-white/10 ${textClass}`}
             >
               {/* Actions - White background bar with Edit/Delete/Share/Email */}
-              {!isLocked && !isReadOnly && (
+              {!isLocked && !isReadOnly && !hideOwnerActions && (
                 <div className="absolute top-3 right-3 z-40 hidden md:block">
                   <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
                     {isOwner && (
@@ -4349,7 +4352,7 @@ export default function SimpleTemplateView({
                 RSVP
               </a>
             )}
-            {isOwner && (
+            {isOwner && !hideOwnerActions && (
               <Link
                 href={resolveEditHref(eventId, eventData, eventTitle)}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
@@ -4357,16 +4360,18 @@ export default function SimpleTemplateView({
                 Edit
               </Link>
             )}
-            <div className="min-w-0 flex-1">
-              <EventActions
-                shareUrl={shareUrl}
-                event={eventData}
-                historyId={eventId}
-                className="w-full justify-center"
-                variant="compact"
-                tone="default"
-              />
-            </div>
+            {!hideOwnerActions && (
+              <div className="min-w-0 flex-1">
+                <EventActions
+                  shareUrl={shareUrl}
+                  event={eventData}
+                  historyId={eventId}
+                  className="w-full justify-center"
+                  variant="compact"
+                  tone="default"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -25,7 +25,7 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
     <div className="flex min-h-screen w-full">
       <div className="min-w-0 flex-1">{children}</div>
       <aside
-        className="hidden w-full border-l border-slate-200 bg-white md:block md:max-w-[420px] md:flex-shrink-0"
+        className="hidden w-full border-l border-slate-200 bg-white md:block md:max-w-[420px] md:flex-shrink-0 md:relative md:z-[60]"
         aria-label="Edit sidebar"
       >
         <iframe
