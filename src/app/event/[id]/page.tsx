@@ -549,7 +549,18 @@ export default async function EventPage({
   }
   const title = row.title as string;
   const createdAt = row.created_at as string | undefined;
-  const data = row.data as any;
+  const data = (() => {
+    if (!row.data) return {};
+    if (typeof row.data === "string") {
+      try {
+        const parsed = JSON.parse(row.data);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return typeof row.data === "object" ? (row.data as any) : {};
+  })();
   const requestedTab = String(
     ((awaitedSearchParams as any)?.tab ?? "") as string
   )
@@ -1141,7 +1152,8 @@ export default async function EventPage({
   const isWeddingTemplate =
     templateId && variationId && categoryNormalized === "weddings";
   const isDiscoveryGymnasticsTemplate =
-    createdVia === "meet-discovery" &&
+    (createdVia === "meet-discovery" ||
+      Boolean((data as any)?.discoverySource?.input)) &&
     (categoryNormalized === "sport_gymnastics_schedule" ||
       categoryNormalized === "sport_gymnastics" ||
       categoryNormalized === "gymnastics" ||
