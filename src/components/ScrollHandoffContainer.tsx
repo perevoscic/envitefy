@@ -11,6 +11,7 @@ import React, {
 type ScrollHandoffContainerProps = HTMLAttributes<HTMLDivElement>;
 
 const SCROLL_EPSILON = 1;
+const TOUCH_TAP_SLOP_PX = 8;
 
 /**
  * ScrollHandoffContainer
@@ -98,12 +99,6 @@ export default function ScrollHandoffContainer({
 
   const handleTouchMove = useCallback(
     (event: TouchEvent<HTMLDivElement>) => {
-      // Don't consume touch if it started on a button/link so clicks still fire.
-      if (isInteractiveTarget(touchTargetRef.current)) {
-        if (onTouchMove) onTouchMove(event);
-        return;
-      }
-
       const el = event.currentTarget;
       const touch = event.touches[0];
 
@@ -114,6 +109,16 @@ export default function ScrollHandoffContainer({
 
       const currentY = touch.clientY;
       const deltaY = touchStartYRef.current - currentY;
+      const absDeltaY = Math.abs(deltaY);
+
+      // Keep tap behavior for buttons/links, but treat a real vertical swipe as scroll.
+      if (
+        isInteractiveTarget(touchTargetRef.current) &&
+        absDeltaY < TOUCH_TAP_SLOP_PX
+      ) {
+        if (onTouchMove) onTouchMove(event);
+        return;
+      }
 
       if (canScrollInDirection(el, deltaY)) {
         // Consume the scroll inside the panel.
@@ -144,7 +149,6 @@ export default function ScrollHandoffContainer({
   );
 
   const mergedClassName = [
-    "max-h-screen",
     "overflow-y-auto",
     "overscroll-contain",
     "[-webkit-overflow-scrolling:touch]",
@@ -167,4 +171,3 @@ export default function ScrollHandoffContainer({
     </div>
   );
 }
-

@@ -1286,6 +1286,7 @@ export default async function EventPage({
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
         hideOwnerActions={isDiscoveryGymnasticsEdit}
+        disableThemeBackground={isDiscoveryGymnasticsEdit}
       />
     );
     if (isDiscoveryGymnasticsEdit) {
