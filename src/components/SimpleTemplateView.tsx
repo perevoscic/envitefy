@@ -276,7 +276,9 @@ export default function SimpleTemplateView({
     currentData?.templateId === "gymnastics" ||
     currentData?.templateId === "gymnastics-schedule";
   const isDiscoveryGymnastics =
-    isGymnasticsTemplate && currentData?.createdVia === "meet-discovery";
+    isGymnasticsTemplate &&
+    (currentData?.createdVia === "meet-discovery" ||
+      Boolean(currentData?.discoverySource?.input));
   const allowGuestAttendanceRsvp = isGymnasticsTemplate;
 
   // Live theme preview from embedded gymnastics customize editor
@@ -508,19 +510,32 @@ export default function SimpleTemplateView({
     advancedSections?.logistics?.weatherPolicy ||
     "";
 
+  const eventTimeZone =
+    (typeof currentData?.timezone === "string" && currentData.timezone) ||
+    (typeof currentData?.timeZone === "string" && currentData.timeZone) ||
+    null;
+
+  const formatDateWithTimeZone = (value: string, options?: Intl.DateTimeFormatOptions) => {
+    if (!value) return "";
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: eventTimeZone || "UTC",
+        ...(options || {}),
+      }).format(new Date(value));
+    } catch {
+      return value;
+    }
+  };
+
   // Format date
   const formatDate = (d: string) => {
     if (!d) return "";
-    try {
-      return new Date(d).toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch {
-      return d;
-    }
+    return formatDateWithTimeZone(d, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // Format time
@@ -1080,7 +1095,7 @@ export default function SimpleTemplateView({
     const formatDate = (value?: string) => {
       if (!value) return "";
       try {
-        return new Date(value).toLocaleDateString("en-US", {
+        return formatDateWithTimeZone(value, {
           month: "short",
           day: "numeric",
           year: "numeric",
@@ -1848,7 +1863,7 @@ export default function SimpleTemplateView({
               {logistics.feeDueDate && (
                 <p className={`text-sm opacity-70 mt-1 ${textClass}`}>
                   <span className="opacity-70">Due:</span>{" "}
-                  {new Date(logistics.feeDueDate).toLocaleDateString()}
+                  {formatDateWithTimeZone(logistics.feeDueDate)}
                 </p>
               )}
             </div>
@@ -2703,7 +2718,7 @@ export default function SimpleTemplateView({
                     )}
                     {date && (
                       <p className={`text-xs opacity-50 mt-2 ${textClass}`}>
-                        {new Date(date).toLocaleDateString()}
+                        {formatDateWithTimeZone(date)}
                       </p>
                     )}
                   </div>
@@ -4118,7 +4133,9 @@ export default function SimpleTemplateView({
                           {rsvpDeadline
                             ? `Kindly respond by ${new Date(
                                 rsvpDeadline
-                              ).toLocaleDateString()}`
+                              ).toLocaleDateString("en-US", {
+                                timeZone: eventTimeZone || "UTC",
+                              })}`
                             : "Please RSVP"}
                         </p>
                       </div>

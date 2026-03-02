@@ -154,21 +154,20 @@ This document describes the app’s server-side agents (API routes) that extract
 
 ### OCR Agent (high-confidence title) — POST `/api/ocr`
 
-- **Purpose**: OCR event flyers/images, parse title/date/time/location/description with OpenAI Vision as primary OCR, Google Vision as fallback (optimized for invitations and appointments).
+- **Purpose**: OCR event flyers/images and parse title/date/time/location/description using OpenAI Vision only (optimized for invitations and appointments).
 - **Auth**: None.
 - **Input**: `multipart/form-data` with `file` (image or PDF).
 - **Query params**:
   - `fast=1`: enables latency-focused mode that time-budgets OCR stages and skips optional rewrite/deep schedule LLM passes.
   - `fast=0`: enables full-quality mode (allows extra rewrite/deep schedule passes when budget remains).
-  - `turbo=1`: races OpenAI + Google OCR providers in parallel and returns the first usable extraction.
+  - `turbo=1`: runs OpenAI OCR in a more aggressive, latency-focused mode (no Google fallback).
   - `timing=1` (or `debug=1`): includes per-stage timing metadata in the JSON response for diagnostics.
   - `rewrite=1`: forces rewrite passes on even when `fast=1`.
   - Existing params remain supported: `llm=1` / `engine=openai` and `gym=1` / `sport=gymnastics`.
 - **OCR Pipeline**:
   1. **Primary**: OpenAI Vision API (direct image analysis, best for cursive/decorative fonts)
-  2. **Fallback**: Google Cloud Vision API (used only if OpenAI fails or returns no results)
-  3. **Enhancement**: Heuristic parsing and text-based LLM cleanup as needed
-- **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable, plus `ocrSource` indicating which OCR method was used (`"openai"`, `"google-sdk"`, or `"google-rest"`).
+  2. **Enhancement**: Heuristic parsing and text-based LLM cleanup as needed
+- **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable, plus `ocrSource` indicating which OCR method was used (currently `"openai"`; older responses may also include `"google-sdk"` or `"google-rest"`).
 - **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets leave location empty when unknown (no external geocoding).
 - **Practice schedules**: Recognizes weekly team practice tables (groups vs. days). The response adds a `practiceSchedule` object with the detected groups, their weekly sessions, and pre-built normalized events that include `RRULE:FREQ=WEEKLY` recurrences for each day/time block. When multiple groups are present, clients should prompt the user to pick one group before saving events.
 
@@ -216,7 +215,6 @@ curl -X POST \
   - **Optional**: `OPENAI_OCR_FAST_MODEL` for `fast=1` extraction path (defaults to `gpt-5.1-mini`, then `LLM_MODEL`).
   - **Optional**: `OCR_TOTAL_BUDGET_MS` to cap total OCR processing budget (default `35000`).
   - **Optional**: `OCR_ENABLE_REWRITES=1` to re-enable rewrite passes by default in fast mode.
-  - **Optional fallback**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (preferred inline) or ADC via `GOOGLE_APPLICATION_CREDENTIALS` for Google Vision fallback.
 
 #### Common OCR Errors
 

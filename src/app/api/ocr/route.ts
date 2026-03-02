@@ -1,10 +1,8 @@
 import * as chrono from "chrono-node";
 import sharp from "sharp";
-import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
-import { GoogleAuth } from "google-auth-library";
 import { corsJson, corsPreflight } from "@/lib/cors";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
@@ -1487,55 +1485,6 @@ function pickTitle(lines: string[], raw: string): string {
   return fallback || "Event from flyer";
 }
 
-/* ------------------------------ Vision REST fallback ------------------------------ */
-
-async function visionRestOCR(ocrBuffer: Buffer, timeoutMs = 30_000) {
-  const b64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
-  if (!b64) throw new Error("Missing GOOGLE_APPLICATION_CREDENTIALS_BASE64");
-  const creds = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
-
-  const auth = new GoogleAuth({
-    credentials: creds,
-    scopes: ["https://www.googleapis.com/auth/cloud-platform"],
-  });
-  const client = await auth.getClient();
-  const token = await client.getAccessToken();
-
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), timeoutMs); // capped by remaining request budget
-  const resp = await fetch("https://vision.googleapis.com/v1/images:annotate", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      requests: [{
-        image: { content: ocrBuffer.toString("base64") },
-        features: [{ type: "TEXT_DETECTION" }],
-        imageContext: { languageHints: ["en"] },
-      }],
-    }),
-    signal: ac.signal,
-  }).catch((e) => {
-    clearTimeout(timer);
-    throw e;
-  });
-  clearTimeout(timer);
-
-  if (!resp.ok) {
-    const txt = await resp.text().catch(() => "");
-    console.warn(">>> REST Vision non-OK", resp.status, txt.slice(0, 300));
-    throw new Error(`REST Vision HTTP ${resp.status}`);
-  }
-  const j: any = await resp.json();
-  return {
-    fullTextAnnotation: { text: j?.responses?.[0]?.fullTextAnnotation?.text || "" },
-    textAnnotations: j?.responses?.[0]?.textAnnotations || [],
-  };
-}
-
-
 /* ------------------------------ route ------------------------------ */
 
 export async function POST(request: Request) {
@@ -1596,13 +1545,12 @@ export async function POST(request: Request) {
     stage.preprocessMs = Date.now() - preprocessStartedAt;
 
     // =============================================================================
-    // STEP 1/2: OCR extraction (OpenAI primary + Google fallback, optional turbo race)
+    // STEP 1/2: OCR extraction (OpenAI-only, optional turbo mode)
     // =============================================================================
     let llmImage: any = null;
     let raw = "";
     let ocrSource = "none";
     let openAiSucceeded = false;
-    const vision = getVisionClient();
 
     const runOpenAiPrimary = async (timeoutMs: number): Promise<{ rawText: string; llm: any }> => {
       const llm = await llmExtractEventFromImage(
@@ -1616,88 +1564,32 @@ export async function POST(request: Request) {
       return { rawText, llm };
     };
 
-    const runGoogleVisionFallback = async (
-      sdkTimeoutMs: number,
-      restTimeoutMs: number
-    ): Promise<{ rawText: string; source: "google-sdk" | "google-rest" }> => {
-      try {
-        if (sdkTimeoutMs < 3_000) throw new Error("VISION_SDK_SKIPPED_LOW_BUDGET");
-        const sdkCall = (async () => {
-          const [res] = await vision.textDetection({
-            image: { content: ocrBuffer },
-            imageContext: { languageHints: ["en"] },
-          });
-          return res;
-        })();
-        const timeout = new Promise<never>((_, rej) =>
-          setTimeout(() => rej(new Error("VISION_SDK_TIMEOUT")), sdkTimeoutMs)
-        );
-        const result = await Promise.race([sdkCall, timeout]);
-        const text =
-          result.fullTextAnnotation?.text ||
-          result.textAnnotations?.[0]?.description ||
-          "";
-        const rawText = (text || "").replace(/\s+\n/g, "\n").trim();
-        if (!rawText) throw new Error("VISION_SDK_EMPTY");
-        return { rawText, source: "google-sdk" };
-      } catch (e) {
-        console.warn(">>> Google Vision SDK failed, using REST:", (e as Error)?.message);
-        if (restTimeoutMs < 3_000) throw new Error("VISION_REST_SKIPPED_LOW_BUDGET");
-        const result = await visionRestOCR(ocrBuffer, restTimeoutMs);
-        const text =
-          result.fullTextAnnotation?.text ||
-          result.textAnnotations?.[0]?.description ||
-          "";
-        const rawText = (text || "").replace(/\s+\n/g, "\n").trim();
-        if (!rawText) throw new Error("VISION_REST_EMPTY");
-        return { rawText, source: "google-rest" };
-      }
-    };
-
     const primaryStartedAt = Date.now();
     if (turboMode && remainingBudgetMs(startedAt, totalBudgetMs, 2_000) > 0) {
       const openAiTimeoutMs = clampTimeoutMs(
         Math.min(12_000, OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 4_000)),
         OPENAI_TIMEOUT_MS
       );
-      const googleSdkTimeoutMs = clampTimeoutMs(
-        Math.min(12_000, remainingBudgetMs(startedAt, totalBudgetMs, 2_500)),
-        45_000
-      );
-      const googleRestTimeoutMs = clampTimeoutMs(
-        Math.min(8_000, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
-        30_000
-      );
-      const raceTasks: Promise<{ source: string; rawText: string; llm?: any }>[] = [];
       if (openAiTimeoutMs >= 3_000) {
-        raceTasks.push(
-          runOpenAiPrimary(openAiTimeoutMs).then(({ rawText, llm }) => ({ source: "openai", rawText, llm }))
-        );
-      }
-      if (googleSdkTimeoutMs >= 3_000 || googleRestTimeoutMs >= 3_000) {
-        raceTasks.push(
-          runGoogleVisionFallback(googleSdkTimeoutMs, googleRestTimeoutMs).then(({ rawText, source }) => ({
-            source,
-            rawText,
-          }))
-        );
-      }
-      if (raceTasks.length) {
         try {
-          const winner = await Promise.any(raceTasks);
-          raw = winner.rawText;
-          ocrSource = winner.source;
-          if (winner.source === "openai") {
-            llmImage = winner.llm || null;
-            openAiSucceeded = true;
-            log(">>> OCR turbo race winner: OpenAI");
-          } else {
-            llmImage = null;
-            log(">>> OCR turbo race winner:", winner.source);
-          }
-        } catch {
-          log(">>> OCR turbo race: no winner (all providers failed)");
+          log(">>> OCR turbo mode: Trying OpenAI Vision (primary)...", {
+            timeoutMs: openAiTimeoutMs,
+            fastMode,
+            ocrModel,
+          });
+          const primary = await runOpenAiPrimary(openAiTimeoutMs);
+          raw = primary.rawText;
+          llmImage = primary.llm;
+          ocrSource = "openai";
+          openAiSucceeded = true;
+          log(">>> OCR turbo mode: OpenAI Vision succeeded ✓");
+        } catch (e) {
+          console.error(">>> OCR turbo mode: OpenAI Vision failed with error:", e);
         }
+      } else {
+        log(">>> OCR turbo mode: Skipping OpenAI primary due to low remaining budget", {
+          openAiTimeoutMs,
+        });
       }
     }
 
@@ -1723,28 +1615,6 @@ export async function POST(request: Request) {
       }
     }
     stage.primaryOcrMs = Date.now() - primaryStartedAt;
-
-    if (!openAiSucceeded && !raw && remainingBudgetMs(startedAt, totalBudgetMs, 1_500) > 0) {
-      const fallbackStartedAt = Date.now();
-      log(">>> OCR: Falling back to Google Vision...");
-      const sdkTimeoutMs = clampTimeoutMs(
-        Math.min(45_000, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
-        45_000
-      );
-      const restTimeoutMs = clampTimeoutMs(
-        Math.min(30_000, remainingBudgetMs(startedAt, totalBudgetMs, 1_000)),
-        30_000
-      );
-      try {
-        const fallback = await runGoogleVisionFallback(sdkTimeoutMs, restTimeoutMs);
-        raw = fallback.rawText;
-        ocrSource = fallback.source;
-        log(">>> OCR: Google Vision fallback succeeded ✓", { source: fallback.source });
-      } catch (e) {
-        log(">>> OCR: Google fallback unavailable", { error: (e as Error)?.message || String(e) });
-      }
-      stage.fallbackOcrMs = Date.now() - fallbackStartedAt;
-    }
 
     // Title detection
     const lines = raw.split("\n").map((l: string) => l.trim()).filter(Boolean);
